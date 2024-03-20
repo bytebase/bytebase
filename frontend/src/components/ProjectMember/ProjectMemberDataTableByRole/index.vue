@@ -14,9 +14,9 @@ import { DataTableColumn, NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoleStore } from "@/store";
-import { PRESET_WORKSPACE_ROLES } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import { ComposedProject, PRESET_WORKSPACE_ROLES } from "@/types";
 import { displayRoleTitle, sortRoles } from "@/utils";
+import { ProjectMember } from "../types";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 
@@ -29,15 +29,16 @@ interface RoleRowData {
 interface UserRowData {
   type: "user";
   name: string;
-  user: User;
+  member: ProjectMember;
 }
 
 const props = defineProps<{
-  userList: User[];
+  project: ComposedProject;
+  members: ProjectMember[];
 }>();
 
 const emit = defineEmits<{
-  (event: "update-user", user: User): void;
+  (event: "update-member", member: string): void;
 }>();
 
 const { t } = useI18n();
@@ -64,15 +65,6 @@ const columns = computed(() => {
                 },
                 displayRoleTitle(row.name)
               ),
-              // Show additional tips for project roles.
-              !PRESET_WORKSPACE_ROLES.includes(row.name) &&
-                h(
-                  "span",
-                  {
-                    class: "ml-1 font-normal text-control-light",
-                  },
-                  `(${t("role.project-roles.apply-to-all-projects")})`
-                ),
               h(
                 "span",
                 {
@@ -85,7 +77,7 @@ const columns = computed(() => {
         }
 
         return h(UserNameCell, {
-          user: row.user,
+          projectMember: row.member,
         });
       },
     },
@@ -98,9 +90,10 @@ const columns = computed(() => {
           return "";
         } else {
           return h(UserOperationsCell, {
-            user: row.user,
+            project: props.project,
+            projectMember: row.member,
             "onUpdate-user": () => {
-              emit("update-user", row.user);
+              emit("update-member", row.member.user.email);
             },
           });
         }
@@ -110,23 +103,30 @@ const columns = computed(() => {
 });
 
 const userListByRole = computed(() => {
-  const roles = sortRoles(roleStore.roleList.map((role) => role.name));
+  const roles = sortRoles(
+    roleStore.roleList
+      .map((role) => role.name)
+      .filter((role) => !PRESET_WORKSPACE_ROLES.includes(role))
+  );
   const rowDataList: RoleRowData[] = [];
 
   for (const role of roles) {
-    const users = props.userList.filter((user) => {
-      return user.roles.includes(role);
+    const members = props.members.filter((member) => {
+      return (
+        member.workspaceLevelProjectRoles.includes(role) ||
+        member.projectRoleBindings.find((binding) => binding.role === role)
+      );
     });
 
-    if (users.length > 0) {
+    if (members.length > 0) {
       rowDataList.push({
         type: "role",
         name: role,
-        children: users.map((user) => {
+        children: members.map((member) => {
           return {
             type: "user",
-            name: user.name,
-            user,
+            name: member.user.name,
+            member,
           };
         }),
       });

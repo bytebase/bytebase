@@ -2,20 +2,30 @@
   <div class="w-full mx-auto space-y-4">
     <FeatureAttention feature="bb.feature.rbac" />
 
-    <div v-if="allowAdmin" class="flex justify-end gap-x-2">
-      <NButton
-        v-if="state.selectedTab === 'users'"
-        :disabled="state.selectedMembers.length === 0"
-        @click="handleRevokeSelectedMembers"
-      >
-        {{ $t("project.members.revoke-access") }}
-      </NButton>
-      <NButton type="primary" @click="state.showAddMemberPanel = true">
-        <template #icon>
-          <heroicons-outline:user-add class="w-4 h-4" />
-        </template>
-        {{ $t("project.members.grant-access") }}
-      </NButton>
+    <div class="w-full flex flex-row justify-between items-center gap-2">
+      <div>
+        <p class="text-lg font-medium leading-7 text-main">
+          <span>{{ $t("common.members") }}</span>
+          <span class="ml-1 font-normal text-control-light">
+            ({{ activeUserList.length }})
+          </span>
+        </p>
+      </div>
+      <div v-if="allowAdmin" class="flex justify-end gap-x-2">
+        <NButton
+          v-if="state.selectedTab === 'users'"
+          :disabled="state.selectedMembers.length === 0"
+          @click="handleRevokeSelectedMembers"
+        >
+          {{ $t("project.members.revoke-access") }}
+        </NButton>
+        <NButton type="primary" @click="state.showAddMemberPanel = true">
+          <template #icon>
+            <heroicons-outline:user-add class="w-4 h-4" />
+          </template>
+          {{ $t("project.members.grant-access") }}
+        </NButton>
+      </div>
     </div>
 
     <div class="textinfolabel">
@@ -30,14 +40,14 @@
       </a>
     </div>
 
-    <NTabs v-model:value="state.selectedTab" type="bar">
+    <NTabs v-model:value="state.selectedTab" type="bar" animated>
       <template #suffix>
         <SearchBox
           v-model:value="state.searchText"
           :placeholder="$t('project.members.search-member')"
         />
       </template>
-      <NTabPane name="users" :tab="$t('project.members.users')">
+      <NTabPane name="users" :tab="$t('settings.members.view-by-principals')">
         <ProjectMemberDataTable
           :project="project"
           :members="projectMembers"
@@ -46,12 +56,11 @@
           @update-selected-members="state.selectedMembers = $event"
         />
       </NTabPane>
-      <NTabPane name="roles" :tab="$t('project.members.roles')">
-        <ProjectRoleTable
+      <NTabPane name="roles" :tab="$t('settings.members.view-by-roles')">
+        <ProjectMemberDataTableByRole
           :project="project"
-          :search-text="state.searchText"
-          :ready="ready"
-          :allow-edit="allowAdmin"
+          :members="projectMembers"
+          @update-member="state.editingMember = $event"
         />
       </NTabPane>
     </NTabs>
@@ -98,8 +107,8 @@ import { State } from "@/types/proto/v1/common";
 import { convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
 import ProjectMemberDataTable from "./ProjectMemberDataTable/index.vue";
+import ProjectMemberDataTableByRole from "./ProjectMemberDataTableByRole/index.vue";
 import ProjectMemberRolePanel from "./ProjectMemberRolePanel/index.vue";
-import ProjectRoleTable from "./ProjectRoleTable";
 import { ProjectMember } from "./types";
 
 interface LocalState {
@@ -120,7 +129,7 @@ const { t } = useI18n();
 const dialog = useDialog();
 const currentUserV1 = useCurrentUserV1();
 const projectResourceName = computed(() => props.project.name);
-const { policy: iamPolicy, ready } = useProjectIamPolicy(projectResourceName);
+const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
 const state = reactive<LocalState>({
   searchText: "",
