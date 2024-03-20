@@ -15,6 +15,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
+	// register splitter functions init().
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -118,7 +120,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 		return nil, errors.Errorf("no database connection established")
 	}
 	cursor := d.dbClient.Cursor()
-	// defer cursor.Close()
+	defer cursor.Close()
 
 	var results []*v1pb.QueryResult
 	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
@@ -142,7 +144,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 	return results, nil
 }
 
-// @TODO(zp): remove this function from the interface.
+// TODO(zp): remove this function from the interface.
 func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
 	return nil, errors.Errorf("Not implemeted")
 }
