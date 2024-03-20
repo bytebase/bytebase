@@ -74,6 +74,9 @@ type tableRequirePKChecker struct {
 
 // EnterCreateTable is called when production createTable is entered.
 func (checker *tableRequirePKChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -125,6 +128,9 @@ func (checker *tableRequirePKChecker) handleTableConstraintDef(tableName string,
 
 // EnterDropTable is called when production dropTable is entered.
 func (checker *tableRequirePKChecker) EnterDropTable(ctx *mysql.DropTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableRefList() == nil {
 		return
 	}
@@ -136,6 +142,9 @@ func (checker *tableRequirePKChecker) EnterDropTable(ctx *mysql.DropTableContext
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *tableRequirePKChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableRef() == nil {
 		return
 	}

@@ -1,7 +1,7 @@
 <template>
   <router-link
     class="px-4 py-3 menu-item w-48"
-    to="/setting/profile"
+    :to="{ name: SETTING_ROUTE_PROFILE }"
     role="menuitem"
   >
     <p class="text-sm flex justify-between space-x-2">
@@ -16,6 +16,7 @@
 </template>
 
 <script setup lang="ts">
+import { SETTING_ROUTE_PROFILE } from "@/router/dashboard/workspaceSetting";
 import { useCurrentUserV1 } from "@/store";
 
 const currentUserV1 = useCurrentUserV1();

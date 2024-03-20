@@ -159,7 +159,7 @@ func parseVersion(version string) (string, string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
 	statement, err := mysqlparser.DealWithDelimiter(statement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to deal with delimiter")
@@ -176,109 +176,33 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 
-	if opts.BeginFunc != nil {
-		if err := opts.BeginFunc(ctx, conn); err != nil {
-			return 0, err
-		}
-	}
-
-	var totalCommands int
-	var chunks [][]base.SingleSQL
-	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
-		singleSQLs, err := mysqlparser.SplitSQL(statement)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to split sql")
-		}
-		singleSQLs = base.FilterEmptySQL(singleSQLs)
-		if len(singleSQLs) == 0 {
-			return 0, nil
-		}
-		totalCommands = len(singleSQLs)
-		ret, err := util.ChunkedSQLScript(singleSQLs, common.MaxSheetChunksCount)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to chunk sql")
-		}
-		chunks = ret
-	} else {
-		chunks = [][]base.SingleSQL{
-			{
-				base.SingleSQL{
-					Text: statement,
-				},
-			},
-		}
-	}
-
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin execute transaction")
 	}
 	defer tx.Rollback()
 
-	currentIndex := 0
-	var totalRowsAffected int64
-	for _, chunk := range chunks {
-		if len(chunk) == 0 {
-			continue
-		}
-		// Start the current chunk.
-
-		// Set the progress information for the current chunk.
-		if opts.UpdateExecutionStatus != nil {
-			opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
-				CommandsTotal:     int32(totalCommands),
-				CommandsCompleted: int32(currentIndex),
-				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line:   int32(chunk[0].FirstStatementLine),
-					Column: int32(chunk[0].FirstStatementColumn),
-				},
-				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line:   int32(chunk[len(chunk)-1].LastLine),
-					Column: int32(chunk[len(chunk)-1].LastColumn),
-				},
-			})
-		}
-
-		chunkText, err := util.ConcatChunk(chunk)
-		if err != nil {
-			return 0, err
-		}
-
-		sqlResult, err := tx.ExecContext(ctx, chunkText)
-		if err != nil {
-			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-				slog.Info("cancel connection", slog.String("connectionID", connectionID))
-				if err := driver.StopConnectionByID(connectionID); err != nil {
-					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
-				}
-			}
-
-			return 0, &db.ErrorWithPosition{
-				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
-				Start: &storepb.TaskRunResult_Position{
-					Line:   int32(chunk[0].FirstStatementLine),
-					Column: int32(chunk[0].FirstStatementColumn),
-				},
-				End: &storepb.TaskRunResult_Position{
-					Line:   int32(chunk[len(chunk)-1].LastLine),
-					Column: int32(chunk[len(chunk)-1].LastColumn),
-				},
+	sqlResult, err := tx.ExecContext(ctx, statement)
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			slog.Info("cancel connection", slog.String("connectionID", connectionID))
+			if err := driver.StopConnectionByID(connectionID); err != nil {
+				slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
 			}
 		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-		}
-		totalRowsAffected += rowsAffected
-		currentIndex += len(chunk)
+
+		return 0, err
 	}
-
+	rowsAffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+		slog.Debug("rowsAffected returns error", log.BBError(err))
+	}
 	if err := tx.Commit(); err != nil {
 		return 0, errors.Wrapf(err, "failed to commit execute transaction")
 	}
 
-	return totalRowsAffected, nil
+	return rowsAffected, nil
 }
 
 // QueryConn queries a SQL statement in a given connection.

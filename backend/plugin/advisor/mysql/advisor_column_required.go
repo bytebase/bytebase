@@ -79,11 +79,17 @@ type columnRequirementChecker struct {
 
 // EnterCreateDatabase is called when production createDatabase is entered.
 func (checker *columnRequirementChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	checker.createTable(ctx)
 }
 
 // EnterDropTable is called when production dropTable is entered.
 func (checker *columnRequirementChecker) EnterDropTable(ctx *mysql.DropTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableRefList() == nil {
 		return
 	}
@@ -96,6 +102,9 @@ func (checker *columnRequirementChecker) EnterDropTable(ctx *mysql.DropTableCont
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *columnRequirementChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

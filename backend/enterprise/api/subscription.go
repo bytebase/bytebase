@@ -14,13 +14,14 @@ type SubscriptionPatch struct {
 
 // Subscription is the API message for subscription.
 type Subscription struct {
-	InstanceCount int          `jsonapi:"attr,instanceCount"`
-	ExpiresTs     int64        `jsonapi:"attr,expiresTs"`
-	StartedTs     int64        `jsonapi:"attr,startedTs"`
-	Plan          api.PlanType `jsonapi:"attr,plan"`
-	Trialing      bool         `jsonapi:"attr,trialing"`
-	OrgID         string       `jsonapi:"attr,orgId"`
-	OrgName       string       `jsonapi:"attr,orgName"`
+	InstanceCount int
+	Seat          int
+	ExpiresTs     int64
+	StartedTs     int64
+	Plan          api.PlanType
+	Trialing      bool
+	OrgID         string
+	OrgName       string
 }
 
 // IsExpired returns if the subscription is expired.

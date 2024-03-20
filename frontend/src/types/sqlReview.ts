@@ -104,15 +104,15 @@ interface CommentFormatPayload {
   maxLength: number;
 }
 
-// The number limit rule payload.
+// The number value rule payload.
 // Used by the backend.
-interface NumberLimitPayload {
+interface NumberValuePayload {
   number: number;
 }
 
-// The string rule payload.
+// The string value rule payload.
 // Used by the backend.
-interface StringPayload {
+interface StringValuePayload {
   string: string;
 }
 
@@ -132,7 +132,8 @@ export interface SchemaPolicyRule {
     | NamingFormatPayload
     | StringArrayLimitPayload
     | CommentFormatPayload
-    | NumberLimitPayload
+    | NumberValuePayload
+    | StringValuePayload
     | CasePayload;
   comment: string;
 }
@@ -403,7 +404,7 @@ export const convertPolicyRuleToRuleTemplate = (
             ...stringComponent,
             payload: {
               ...stringComponent.payload,
-              value: (payload as StringPayload).string,
+              value: (payload as StringValuePayload).string,
             } as StringPayload,
           },
         ],
@@ -617,7 +618,7 @@ export const convertPolicyRuleToRuleTemplate = (
             ...numberComponent,
             payload: {
               ...numberComponent.payload,
-              value: (payload as NumberLimitPayload).number,
+              value: (payload as NumberValuePayload).number,
             } as NumberPayload,
           },
         ],

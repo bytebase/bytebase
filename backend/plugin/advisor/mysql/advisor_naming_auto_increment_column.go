@@ -80,6 +80,9 @@ type namingAutoIncrementColumnChecker struct {
 }
 
 func (checker *namingAutoIncrementColumnChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil || ctx.TableElementList() == nil {
 		return
 	}
@@ -112,6 +115,9 @@ func (*namingAutoIncrementColumnChecker) isAutoIncrement(ctx mysql.IFieldDefinit
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *namingAutoIncrementColumnChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

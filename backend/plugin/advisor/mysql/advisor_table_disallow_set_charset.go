@@ -70,6 +70,9 @@ func (checker *tableDisallowSetCharsetChecker) EnterQuery(ctx *mysql.QueryContex
 }
 
 func (checker *tableDisallowSetCharsetChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.CreateTableOptions() != nil {
 		for _, option := range ctx.CreateTableOptions().AllCreateTableOption() {
 			if option.DefaultCharset() != nil {
@@ -86,6 +89,9 @@ func (checker *tableDisallowSetCharsetChecker) EnterCreateTable(ctx *mysql.Creat
 }
 
 func (checker *tableDisallowSetCharsetChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
 		return
 	}
