@@ -26,7 +26,7 @@
         <template #link>
           <router-link
             class="flex items-center light-link text-sm"
-            to="/setting/sensitive-data#global-masking-rule"
+            to="/sensitive-data#global-masking-rule"
           >
             {{ $t("settings.sensitive-data.global-rules.check-rules") }}
           </router-link>
