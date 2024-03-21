@@ -297,10 +297,11 @@ ruleList:
     category: STATEMENT
     engineList:
       - MYSQL
-  - type: statement.disallow-mix-dml
+  - type: statement.disallow-mix-ddl-dml
     category: STATEMENT
     engineList:
       - MYSQL
+      - POSTGRES
       - TIDB
   - type: statement.prior-backup-check
     category: STATEMENT

@@ -16,12 +16,12 @@
       line: 0
       column: 0
       details: ""
-- statement: UPDATE tech_book SET id = 1;DELETE FROM tech_book WHERE a > 1;
+- statement: ALTER TABLE tech_book ADD COLUMN author TEXT; UPDATE tech_book SET id = 1;DELETE FROM tech_book WHERE a > 1;
   want:
     - status: WARN
-      code: 227
-      title: statement.disallow-mix-dml
-      content: Found 1 DELETE, 1 UPDATE on table ``.`tech_book`, disallow mixing different types of DML statements
+      code: 228
+      title: statement.disallow-mix-ddl-dml
+      content: Mixing DDL with DML is not allowed
       line: 0
       column: 0
       details: ""
