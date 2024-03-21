@@ -2014,7 +2014,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | token | [string](#string) |  |  |
 | engine_name | [string](#string) |  | engine name is the name for secret engine. |
 | secret_name | [string](#string) |  | the secret name in the engine to store the password. |
-| key_name | [string](#string) |  | the key name for the password. |
+| password_key_name | [string](#string) |  | the key name for the password. |
 
 
 

@@ -76,9 +76,9 @@ func getSecretFromVault(ctx context.Context, externalSecret *storepb.DataSourceE
 		return "", errors.Wrapf(err, "failed to get vault secret: %v", err.Error())
 	}
 
-	value, ok := secret.Data[externalSecret.KeyName].(string)
+	value, ok := secret.Data[externalSecret.PasswordKeyName].(string)
 	if !ok {
-		return "", errors.Errorf(`failed to get secret value for "%s/%s"`, externalSecret.SecretName, externalSecret.KeyName)
+		return "", errors.Errorf(`failed to get secret value for "%s/%s"`, externalSecret.SecretName, externalSecret.PasswordKeyName)
 	}
 
 	return value, nil

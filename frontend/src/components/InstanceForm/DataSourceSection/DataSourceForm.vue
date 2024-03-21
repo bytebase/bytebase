@@ -256,7 +256,7 @@
             {{ $t("instance.external-secret.vault-key-name") }}
           </label>
           <BBTextField
-            v-model:value="dataSource.externalSecret.keyName"
+            v-model:value="dataSource.externalSecret.passwordKeyName"
             :required="true"
             class="mt-1 w-full"
             :disabled="!allowEdit"

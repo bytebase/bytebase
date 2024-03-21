@@ -17,7 +17,7 @@ export interface DataSourceExternalSecret {
   /** the secret name in the engine to store the password. */
   secretName: string;
   /** the key name for the password. */
-  keyName: string;
+  passwordKeyName: string;
 }
 
 export enum DataSourceExternalSecret_SecretType {
@@ -185,7 +185,7 @@ function createBaseDataSourceExternalSecret(): DataSourceExternalSecret {
     token: undefined,
     engineName: "",
     secretName: "",
-    keyName: "",
+    passwordKeyName: "",
   };
 }
 
@@ -212,8 +212,8 @@ export const DataSourceExternalSecret = {
     if (message.secretName !== "") {
       writer.uint32(58).string(message.secretName);
     }
-    if (message.keyName !== "") {
-      writer.uint32(66).string(message.keyName);
+    if (message.passwordKeyName !== "") {
+      writer.uint32(66).string(message.passwordKeyName);
     }
     return writer;
   },
@@ -279,7 +279,7 @@ export const DataSourceExternalSecret = {
             break;
           }
 
-          message.keyName = reader.string();
+          message.passwordKeyName = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -299,7 +299,7 @@ export const DataSourceExternalSecret = {
       token: isSet(object.token) ? globalThis.String(object.token) : undefined,
       engineName: isSet(object.engineName) ? globalThis.String(object.engineName) : "",
       secretName: isSet(object.secretName) ? globalThis.String(object.secretName) : "",
-      keyName: isSet(object.keyName) ? globalThis.String(object.keyName) : "",
+      passwordKeyName: isSet(object.passwordKeyName) ? globalThis.String(object.passwordKeyName) : "",
     };
   },
 
@@ -326,8 +326,8 @@ export const DataSourceExternalSecret = {
     if (message.secretName !== "") {
       obj.secretName = message.secretName;
     }
-    if (message.keyName !== "") {
-      obj.keyName = message.keyName;
+    if (message.passwordKeyName !== "") {
+      obj.passwordKeyName = message.passwordKeyName;
     }
     return obj;
   },
@@ -346,7 +346,7 @@ export const DataSourceExternalSecret = {
     message.token = object.token ?? undefined;
     message.engineName = object.engineName ?? "";
     message.secretName = object.secretName ?? "";
-    message.keyName = object.keyName ?? "";
+    message.passwordKeyName = object.passwordKeyName ?? "";
     return message;
   },
 };
