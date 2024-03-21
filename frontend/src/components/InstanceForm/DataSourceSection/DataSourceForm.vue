@@ -459,7 +459,6 @@ import {
   DataSource,
   DataSourceType,
   DataSourceExternalSecret,
-  DataSourceExternalSecret_AppRoleAuthOption,
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
@@ -566,25 +565,26 @@ const changePasswordType = (passwordType: "PLAIN" | "EXTERNAL_SECRET") => {
   state.passwordType = passwordType;
 };
 
-const changeExternalSecretAuthType = (
-  authType: DataSourceExternalSecret_AuthType
-) => {
-  const ds = props.dataSource;
-  if (!ds.externalSecret) {
-    return;
-  }
-  if (authType === DataSourceExternalSecret_AuthType.APP_ROLE) {
-    ds.externalSecret.appRole =
-      DataSourceExternalSecret_AppRoleAuthOption.fromPartial({
-        type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN,
-      });
-    ds.externalSecret.token = undefined;
-  } else {
-    ds.externalSecret.token = "";
-    ds.externalSecret.appRole = undefined;
-  }
-  ds.externalSecret.authType = authType;
-};
+// TODO: support change auth type.
+// const changeExternalSecretAuthType = (
+//   authType: DataSourceExternalSecret_AuthType
+// ) => {
+//   const ds = props.dataSource;
+//   if (!ds.externalSecret) {
+//     return;
+//   }
+//   if (authType === DataSourceExternalSecret_AuthType.APP_ROLE) {
+//     ds.externalSecret.appRole =
+//       DataSourceExternalSecret_AppRoleAuthOption.fromPartial({
+//         type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN,
+//       });
+//     ds.externalSecret.token = undefined;
+//   } else {
+//     ds.externalSecret.token = "";
+//     ds.externalSecret.appRole = undefined;
+//   }
+//   ds.externalSecret.authType = authType;
+// };
 
 const toggleUseEmptyPassword = (on: boolean) => {
   const ds = props.dataSource;
