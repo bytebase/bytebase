@@ -1065,12 +1065,12 @@ func convertToV1DataSourceExternalSecret(externalSecret *storepb.DataSourceExter
 	}
 
 	resp := &v1pb.DataSourceExternalSecret{
-		SecretType: secret.SecretType,
-		Url:        secret.Url,
-		AuthType:   secret.AuthType,
-		EngineName: secret.EngineName,
-		SecretName: secret.SecretName,
-		KeyName:    secret.KeyName,
+		SecretType:      secret.SecretType,
+		Url:             secret.Url,
+		AuthType:        secret.AuthType,
+		EngineName:      secret.EngineName,
+		SecretName:      secret.SecretName,
+		PasswordKeyName: secret.PasswordKeyName,
 	}
 
 	// clear sensitive data.
