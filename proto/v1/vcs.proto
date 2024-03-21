@@ -8,7 +8,8 @@ option go_package = "generated-go/v1";
 
 message PushEvent {
   VcsType vcs_type = 1;
-  string base_dir = 2;
+  // Deprecated
+  reserved 2;
   string ref = 3;
   string before = 4;
   string after = 5;
@@ -17,7 +18,8 @@ message PushEvent {
   string repository_full_path = 8;
   string author_name = 9;
   repeated Commit commits = 10;
-  FileCommit file_commit = 11;
+  // Deprecated
+  reserved 11;
 }
 
 message Commit {
@@ -30,17 +32,6 @@ message Commit {
   string author_email = 7;
   repeated string added_list = 8;
   repeated string modified_list = 9;
-}
-
-message FileCommit {
-  string id = 1;
-  string title = 2;
-  string message = 3;
-  google.protobuf.Timestamp created_time = 4;
-  string url = 5;
-  string author_name = 6;
-  string author_email = 7;
-  string added = 8;
 }
 
 enum VcsType {

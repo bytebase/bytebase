@@ -541,6 +541,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSourceExternalSecret"><span class="badge">M</span>DataSourceExternalSecret</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption"><span class="badge">M</span>DataSourceExternalSecret.AppRoleAuthOption</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DeleteInstanceRequest"><span class="badge">M</span>DeleteInstanceRequest</a>
                 </li>
               
@@ -606,6 +614,14 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.DataSourceExternalSecret.AuthType"><span class="badge">E</span>DataSourceExternalSecret.AuthType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DataSourceExternalSecret.SecretType"><span class="badge">E</span>DataSourceExternalSecret.SecretType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSourceType"><span class="badge">E</span>DataSourceType</a>
                 </li>
               
@@ -625,10 +641,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Commit"><span class="badge">M</span>Commit</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.FileCommit"><span class="badge">M</span>FileCommit</a>
                 </li>
               
                 <li>
@@ -6216,6 +6228,117 @@ Required. </p></td>
 Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
+                <tr>
+                  <td>external_secret</td>
+                  <td><a href="#bytebase.v1.DataSourceExternalSecret">DataSourceExternalSecret</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DataSourceExternalSecret">DataSourceExternalSecret</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>secret_type</td>
+                  <td><a href="#bytebase.v1.DataSourceExternalSecret.SecretType">DataSourceExternalSecret.SecretType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>auth_type</td>
+                  <td><a href="#bytebase.v1.DataSourceExternalSecret.AuthType">DataSourceExternalSecret.AuthType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>app_role</td>
+                  <td><a href="#bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption">DataSourceExternalSecret.AppRoleAuthOption</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>engine_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>engine name is the name for secret engine. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>secret_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>the secret name in the engine to store the password. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>key_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>the key name for the password. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption">DataSourceExternalSecret.AppRoleAuthOption</h3>
+        <p>app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>role_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>secret_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -6809,6 +6932,58 @@ Format: instances/{instance} </p></td>
       
 
       
+        <h3 id="bytebase.v1.DataSourceExternalSecret.AuthType">DataSourceExternalSecret.AuthType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTH_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TOKEN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>APP_ROLE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.DataSourceExternalSecret.SecretType">DataSourceExternalSecret.SecretType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SAECRET_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>VAULT_KV_V2</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.DataSourceType">DataSourceType</h3>
         <p></p>
         <table class="enum-table">
@@ -7202,79 +7377,6 @@ Format: instances/{instance} </p></td>
 
         
       
-        <h3 id="bytebase.v1.FileCommit">FileCommit</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>message</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>created_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>author_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>author_email</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>added</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.PushEvent">PushEvent</h3>
         <p></p>
 
@@ -7288,13 +7390,6 @@ Format: instances/{instance} </p></td>
                 <tr>
                   <td>vcs_type</td>
                   <td><a href="#bytebase.v1.VcsType">VcsType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>base_dir</td>
-                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -7352,13 +7447,6 @@ Format: instances/{instance} </p></td>
                   <td>commits</td>
                   <td><a href="#bytebase.v1.Commit">Commit</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>file_commit</td>
-                  <td><a href="#bytebase.v1.FileCommit">FileCommit</a></td>
-                  <td></td>
                   <td><p> </p></td>
                 </tr>
               
@@ -22195,6 +22283,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
+                  <td>depends_on_specs</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>IDs of the specs that this spec depends on. </p></td>
+                </tr>
+              
+                <tr>
                   <td>create_database_config</td>
                   <td><a href="#bytebase.v1.Plan.CreateDatabaseConfig">Plan.CreateDatabaseConfig</a></td>
                   <td></td>
@@ -22713,7 +22808,7 @@ Could be empty if the rollout of the task does not have an associating plan. </p
                 </tr>
               
                 <tr>
-                  <td>blocked_by_tasks</td>
+                  <td>depends_on_tasks</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
