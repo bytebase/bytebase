@@ -60,7 +60,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 				Status:  level,
 				Title:   title,
 				Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", stmt.Text()),
-				Code:    advisor.StatementMixDDLDML,
+				Code:    advisor.StatementPriorBackupCheck,
 				Line:    stmt.LastLine(),
 			})
 		}

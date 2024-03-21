@@ -120,7 +120,7 @@ func TestMySQLRules(t *testing.T) {
 		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
 		advisor.SchemaRuleColumnRequireDefault,
 		// advisor.SchemaRuleColumnDisallowMixDML disallows mixing different types of DML statements.
-		advisor.SchemaRuleStatementDisallowMixDML,
+		advisor.SchemaRuleStatementDisallowMixDDLDML,
 
 		// Index related rules.
 		// advisor.SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
