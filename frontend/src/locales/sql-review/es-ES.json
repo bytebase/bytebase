@@ -465,9 +465,9 @@
       "title": "Prohibir DML en la misma tabla",
       "description": "La realización de modificaciones concurrentes de datos en una tabla puede generar dificultades para identificar con precisión las filas afectadas. En consecuencia, esto complica el proceso de crear una copia de seguridad precisa de los datos modificados."
     },
-    "statement-disallow-mix-ddl-dml": {
-      "title": "No se permite mezclar DDL y DML",
-      "description": "Para un rendimiento óptimo e integridad de los datos, evite combinar sentencias DDL y DML dentro del mismo script."
+    "statement-prior-backup-check": {
+      "title": "Verificar la existencia de una copia de seguridad previa antes de cambiar los datos",
+      "description": "Esta regla verificará si se puede crear una copia de seguridad antes del cambio de datos. Para más detalles, contiene la existencia de la base de datos objetivo de la copia de seguridad y no permite la sentencia DDL."
     },
     "schema-backward-compatibility": {
       "title": "Comprobación de la compatibilidad con versiones anteriores de la aplicación",
