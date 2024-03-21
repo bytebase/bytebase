@@ -837,7 +837,7 @@ func (p *partitionState) toString(buf io.StringWriter) error {
 		return errors.Errorf("unsupported partition type: %v", p.info.tp)
 	}
 
-	// TODO(zp): MySQL writes the default partitions in the following code, which means that the server
+	// NOTE: MySQL writes the default partitions in the following code, which means that the server
 	// takes the responsibility to generate the partitions. Sadly, we cannot get whether the user
 	// use this or not in the metadata. So we skip it.
 	/*
@@ -848,6 +848,11 @@ func (p *partitionState) toString(buf io.StringWriter) error {
 		    	err += add_int(fptr, part_info->num_parts);
 		}
 	*/
+	if p.info.useDefault != 0 {
+		if _, err := buf.WriteString(fmt.Sprintf("\nPARTITIONS %d", p.info.useDefault)); err != nil {
+			return err
+		}
+	}
 
 	isSubpartitioned := p.subInfo != nil && p.subInfo.tp != storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
 	if isSubpartitioned {
@@ -903,77 +908,87 @@ func (p *partitionState) toString(buf io.StringWriter) error {
 				err += add_int(fptr, part_info->num_subparts);
 		}
 	*/
-
-	// Write the partition list.
-	if len(p.partitions) == 0 {
-		return errors.New("empty partition list")
-	}
-	sortedPartitions := make([]*partitionDefinition, 0, len(p.partitions))
-	for _, partition := range p.partitions {
-		sortedPartitions = append(sortedPartitions, partition)
-	}
-	sort.Slice(sortedPartitions, func(i, j int) bool {
-		return sortedPartitions[i].id < sortedPartitions[j].id
-	})
-	if _, err := buf.WriteString("\n("); err != nil {
-		return err
-	}
-	preposition, err := getPrepositionByType(p.info.tp)
-	if err != nil {
-		return err
-	}
-	for i, partition := range sortedPartitions {
-		if i != 0 {
-			if _, err := buf.WriteString(",\n "); err != nil {
-				return err
-			}
-		}
-		if _, err := buf.WriteString(fmt.Sprintf("PARTITION %s", partition.name)); err != nil {
+	if isSubpartitioned && p.subInfo.useDefault != 0 {
+		if _, err := buf.WriteString(fmt.Sprintf("\nSUBPARTITIONS %d", p.subInfo.useDefault)); err != nil {
 			return err
 		}
-		if preposition != "" {
-			if _, err := buf.WriteString(fmt.Sprintf(" VALUES %s (%s)", preposition, partition.value)); err != nil {
-				return err
-			}
-		}
+	}
 
-		if isSubpartitioned {
-			if _, err := buf.WriteString("\n ("); err != nil {
-				return err
-			}
-			sortedSubpartitions := make([]*partitionDefinition, 0, len(partition.subpartitions))
-			for _, subPartition := range partition.subpartitions {
-				sortedSubpartitions = append(sortedSubpartitions, subPartition)
-			}
-			sort.Slice(sortedSubpartitions, func(i, j int) bool {
-				return sortedSubpartitions[i].id < sortedSubpartitions[j].id
-			})
-			for j, subPartition := range sortedSubpartitions {
-				if _, err := buf.WriteString(fmt.Sprintf("SUBPARTITION %s", subPartition.name)); err != nil {
+	if p.info.useDefault == 0 {
+		// Write the partition list.
+		if len(p.partitions) == 0 {
+			return errors.New("empty partition list")
+		}
+		sortedPartitions := make([]*partitionDefinition, 0, len(p.partitions))
+		for _, partition := range p.partitions {
+			sortedPartitions = append(sortedPartitions, partition)
+		}
+		sort.Slice(sortedPartitions, func(i, j int) bool {
+			return sortedPartitions[i].id < sortedPartitions[j].id
+		})
+		if _, err := buf.WriteString("\n("); err != nil {
+			return err
+		}
+		preposition, err := getPrepositionByType(p.info.tp)
+		if err != nil {
+			return err
+		}
+		for i, partition := range sortedPartitions {
+			if i != 0 {
+				if _, err := buf.WriteString(",\n "); err != nil {
 					return err
 				}
+			}
+			if _, err := buf.WriteString(fmt.Sprintf("PARTITION %s", partition.name)); err != nil {
+				return err
+			}
+			if preposition != "" {
+				if _, err := buf.WriteString(fmt.Sprintf(" VALUES %s (%s)", preposition, partition.value)); err != nil {
+					return err
+				}
+			}
+
+			if isSubpartitioned && p.subInfo.useDefault == 0 {
+				if len(partition.subpartitions) == 0 {
+					return errors.New("empty subpartition list")
+				}
+				if _, err := buf.WriteString("\n ("); err != nil {
+					return err
+				}
+				sortedSubpartitions := make([]*partitionDefinition, 0, len(partition.subpartitions))
+				for _, subPartition := range partition.subpartitions {
+					sortedSubpartitions = append(sortedSubpartitions, subPartition)
+				}
+				sort.Slice(sortedSubpartitions, func(i, j int) bool {
+					return sortedSubpartitions[i].id < sortedSubpartitions[j].id
+				})
+				for j, subPartition := range sortedSubpartitions {
+					if _, err := buf.WriteString(fmt.Sprintf("SUBPARTITION %s", subPartition.name)); err != nil {
+						return err
+					}
+					if err := p.writePartitionOptions(buf); err != nil {
+						return err
+					}
+					if j == len(sortedSubpartitions)-1 {
+						if _, err := buf.WriteString(")"); err != nil {
+							return err
+						}
+					} else {
+						if _, err := buf.WriteString(",\n  "); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
 				if err := p.writePartitionOptions(buf); err != nil {
 					return err
 				}
-				if j == len(sortedSubpartitions)-1 {
-					if _, err := buf.WriteString(")"); err != nil {
-						return err
-					}
-				} else {
-					if _, err := buf.WriteString(",\n  "); err != nil {
-						return err
-					}
-				}
 			}
-		} else {
-			if err := p.writePartitionOptions(buf); err != nil {
-				return err
-			}
-		}
 
-		if i == len(sortedPartitions)-1 {
-			if _, err := buf.WriteString(")"); err != nil {
-				return err
+			if i == len(sortedPartitions)-1 {
+				if _, err := buf.WriteString(")"); err != nil {
+					return err
+				}
 			}
 		}
 	}
