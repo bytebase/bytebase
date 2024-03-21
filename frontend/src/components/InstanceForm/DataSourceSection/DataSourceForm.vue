@@ -226,6 +226,9 @@
           <label class="textlabel block">
             {{ $t("instance.external-secret.vault-secret-engine-name") }}
           </label>
+          <div class="flex space-x-2 text-sm mb-1 text-gray-400">
+            {{ $t("instance.external-secret.vault-secret-engine-tips") }}
+          </div>
           <BBTextField
             v-model:value="dataSource.externalSecret.engineName"
             :required="true"

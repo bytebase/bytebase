@@ -1365,6 +1365,7 @@
         }
       },
       "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-tips": "KV v2 エンジンのみをサポートします。",
       "vault-secret-name": "Vault secret name",
       "vault-key-name": "Vault key name"
     },
