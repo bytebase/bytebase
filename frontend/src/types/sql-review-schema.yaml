@@ -301,6 +301,7 @@ ruleList:
     category: STATEMENT
     engineList:
       - MYSQL
+      - POSTGRES
       - TIDB
   - type: statement.prior-backup-check
     category: STATEMENT
