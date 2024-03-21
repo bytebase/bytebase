@@ -282,12 +282,12 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		g.lastTokenIndex = ctx.CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex() + 1
 	}
 
-	if g.currentTable.partitionStateWrapper != nil {
+	if g.currentTable.partition != nil {
 		if _, err := g.result.WriteString("\n"); err != nil {
 			g.err = err
 			return
 		}
-		if err := g.currentTable.partitionStateWrapper.toString(&g.result); err != nil {
+		if err := g.currentTable.partition.toString(&g.result); err != nil {
 			g.err = err
 			return
 		}
