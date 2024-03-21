@@ -5,7 +5,7 @@
     keypath="custom-approval.approval-flow.risk-not-configured-tips"
   >
     <template #link>
-      <router-link to="/setting/risk-center" class="normal-link">
+      <router-link to="/risk-center" class="normal-link">
         {{ $t("custom-approval.approval-flow.the-related-risk-rules") }}
       </router-link>
     </template>
