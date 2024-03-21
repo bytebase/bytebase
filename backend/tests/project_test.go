@@ -38,7 +38,7 @@ func TestArchiveProject(t *testing.T) {
 			Engine:      v1pb.Engine_SQLITE,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
 		},
 	})
 	a.NoError(err)

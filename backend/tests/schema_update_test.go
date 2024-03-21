@@ -87,7 +87,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			Engine:      v1pb.Engine_SQLITE,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
 		},
 	})
 	a.NoError(err)
@@ -434,7 +434,7 @@ func TestVCS(t *testing.T) {
 					Engine:      v1pb.Engine_SQLITE,
 					Environment: "environments/prod",
 					Activation:  true,
-					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
 				},
 			})
 			a.NoError(err)
@@ -788,7 +788,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 					Engine:      v1pb.Engine_POSTGRES,
 					Environment: "environments/prod",
 					Activation:  true,
-					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase", Id: "admin"}},
 				},
 			})
 			a.NoError(err)
@@ -1241,7 +1241,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 					Engine:      v1pb.Engine_SQLITE,
 					Environment: environment.Name,
 					Activation:  true,
-					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
 				},
 			})
 			a.NoError(err)
@@ -1436,7 +1436,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 					Engine:      v1pb.Engine_POSTGRES,
 					Environment: "environments/prod",
 					Activation:  true,
-					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase", Id: "admin"}},
 				},
 			})
 			a.NoError(err)
@@ -1928,7 +1928,7 @@ CREATE TABLE public.book (
 						Engine:      v1pb.Engine_POSTGRES,
 						Environment: environment.Name,
 						Activation:  true,
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(dbPort), Username: "root"}},
+						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(dbPort), Username: "root", Id: "admin"}},
 					},
 				})
 			case storepb.Engine_MYSQL:
@@ -1939,7 +1939,7 @@ CREATE TABLE public.book (
 						Engine:      v1pb.Engine_MYSQL,
 						Environment: environment.Name,
 						Activation:  true,
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(dbPort), Username: "root"}},
+						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(dbPort), Username: "root", Id: "admin"}},
 					},
 				})
 			default:
@@ -2019,7 +2019,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 			Engine:      v1pb.Engine_SQLITE,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
 		},
 	})
 	a.NoError(err)
@@ -2277,7 +2277,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 					Engine:      v1pb.Engine_MYSQL,
 					Environment: "environments/prod",
 					Activation:  true,
-					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase", Id: "admin"}},
 				},
 			})
 			a.NoError(err)

@@ -1339,7 +1339,36 @@
     "type-or-paste-credentials": "Nhập hoặc dán THÔNG TIN XÁC NHẬN",
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC NHẬN - chỉ viết",
     "password-write-only": "YOUR_DB_PWD - chỉ viết",
-    "secret-manager-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
+    "password-type": {
+      "password": "Mật khẩu",
+      "password-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
+      "external-secret": "Bí mật bên ngoài (Vault)"
+    },
+    "external-secret": {
+      "vault-url": "Vault URL",
+      "vault-auth-type": {
+        "self": "Vault auth type",
+        "token": {
+          "self": "Token",
+          "api-token": "Vault API token",
+          "tips": "Mã thông báo gốc không có TTL."
+        },
+        "app-role": {
+          "self": "App role",
+          "role-id": "Auth role id",
+          "secret-id": "Auth secret id",
+          "secret-id-plain-text": "Văn bản thuần túy cho id bí mật của vai trò",
+          "secret-id-environment": "Tên môi trường cho id bí mật vai trò",
+          "secret-plain-text": "Văn bản thô",
+          "secret-env-name": "Tên môi trường",
+          "secret-tips": "Một id bí mật chưa được gói mà không có TTL. Bạn có thể sử dụng văn bản thuần túy hoặc đặt nó vào môi trường hoặc tệp cục bộ. {learn_more}"
+        }
+      },
+      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-tips": "Chỉ hỗ trợ động cơ KV v2.",
+      "vault-secret-name": "Vault secret name",
+      "vault-key-name": "Vault key name for password"
+    },
     "test-connection": "Kiểm tra kết nối",
     "ignore-and-create": "Bỏ qua và tạo",
     "add-a-postgresql-sample-instance": "Thay vào đó, hãy thêm một phiên bản mẫu PostgreSQL",

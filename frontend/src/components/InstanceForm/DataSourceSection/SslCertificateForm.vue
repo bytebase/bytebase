@@ -61,7 +61,7 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { NTabs, NTabPane, NRadio, NRadioGroup } from "naive-ui";
-import { PropType, reactive, watch } from "vue";
+import { reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import { Engine } from "@/types/proto/v1/common";
@@ -77,16 +77,10 @@ type LocalState = {
   tab: "CA" | "KEY" | "CERT";
 };
 
-const props = defineProps({
-  value: {
-    type: Object as PropType<WithSslOptions>,
-    required: true,
-  },
-  engineType: {
-    type: Object as PropType<Engine>,
-    required: true,
-  },
-});
+const props = defineProps<{
+  value: WithSslOptions;
+  engineType: Engine;
+}>();
 
 const emit = defineEmits<{
   (e: "change", value: WithSslOptions): void;
