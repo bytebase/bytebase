@@ -110,6 +110,7 @@ import type { SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { useBodyLayoutContext } from "@/layouts/common";
 import { Factor } from "@/plugins/cel";
 import {
   featureToRef,
@@ -160,6 +161,7 @@ const hasPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+const { mainContainerRef } = useBodyLayoutContext();
 
 const updateList = async () => {
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
@@ -193,8 +195,7 @@ const addNewRule = () => {
     }),
   });
   nextTick(() => {
-    const elem = document.querySelector("#bb-layout-main");
-    elem?.scrollTo(
+    mainContainerRef.value?.scrollTo(
       0,
       document.body.scrollHeight || document.documentElement.scrollHeight
     );
