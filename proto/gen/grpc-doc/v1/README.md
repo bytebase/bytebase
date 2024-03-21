@@ -97,6 +97,8 @@
     - [BatchSyncInstanceResponse](#bytebase-v1-BatchSyncInstanceResponse)
     - [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest)
     - [DataSource](#bytebase-v1-DataSource)
+    - [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret)
+    - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption)
     - [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest)
     - [GetInstanceRequest](#bytebase-v1-GetInstanceRequest)
     - [Instance](#bytebase-v1-Instance)
@@ -114,13 +116,14 @@
     - [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest)
     - [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest)
   
+    - [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType)
+    - [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType)
     - [DataSourceType](#bytebase-v1-DataSourceType)
   
     - [InstanceService](#bytebase-v1-InstanceService)
   
 - [v1/vcs.proto](#v1_vcs-proto)
     - [Commit](#bytebase-v1-Commit)
-    - [FileCommit](#bytebase-v1-FileCommit)
     - [PushEvent](#bytebase-v1-PushEvent)
   
     - [VcsType](#bytebase-v1-VcsType)
@@ -1988,6 +1991,45 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
 | ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
 | authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
+| external_secret | [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret"></a>
+
+### DataSourceExternalSecret
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| secret_type | [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType) |  |  |
+| url | [string](#string) |  |  |
+| auth_type | [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType) |  |  |
+| app_role | [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption) |  |  |
+| token | [string](#string) |  |  |
+| engine_name | [string](#string) |  | engine name is the name for secret engine. |
+| secret_name | [string](#string) |  | the secret name in the engine to store the password. |
+| key_name | [string](#string) |  | the key name for the password. |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption"></a>
+
+### DataSourceExternalSecret.AppRoleAuthOption
+app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role_id | [string](#string) |  |  |
+| secret_id | [string](#string) |  |  |
 
 
 
@@ -2262,6 +2304,31 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
  
 
 
+<a name="bytebase-v1-DataSourceExternalSecret-AuthType"></a>
+
+### DataSourceExternalSecret.AuthType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTH_TYPE_UNSPECIFIED | 0 |  |
+| TOKEN | 1 |  |
+| APP_ROLE | 2 |  |
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret-SecretType"></a>
+
+### DataSourceExternalSecret.SecretType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SAECRET_TYPE_UNSPECIFIED | 0 |  |
+| VAULT_KV_V2 | 1 |  |
+
+
+
 <a name="bytebase-v1-DataSourceType"></a>
 
 ### DataSourceType
@@ -2334,28 +2401,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-FileCommit"></a>
-
-### FileCommit
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| title | [string](#string) |  |  |
-| message | [string](#string) |  |  |
-| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| url | [string](#string) |  |  |
-| author_name | [string](#string) |  |  |
-| author_email | [string](#string) |  |  |
-| added | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-PushEvent"></a>
 
 ### PushEvent
@@ -2365,7 +2410,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | vcs_type | [VcsType](#bytebase-v1-VcsType) |  |  |
-| base_dir | [string](#string) |  |  |
 | ref | [string](#string) |  |  |
 | before | [string](#string) |  |  |
 | after | [string](#string) |  |  |
@@ -2374,7 +2418,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | repository_full_path | [string](#string) |  |  |
 | author_name | [string](#string) |  |  |
 | commits | [Commit](#bytebase-v1-Commit) | repeated |  |
-| file_commit | [FileCommit](#bytebase-v1-FileCommit) |  |  |
 
 
 
@@ -7982,6 +8025,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
 | id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
+| depends_on_specs | [string](#string) | repeated | IDs of the specs that this spec depends on. |
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
 | change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
 | restore_database_config | [Plan.RestoreDatabaseConfig](#bytebase-v1-Plan-RestoreDatabaseConfig) |  |  |
@@ -8180,7 +8224,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. |
 | skipped_reason | [string](#string) |  |  |
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
-| blocked_by_tasks | [string](#string) | repeated | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| depends_on_tasks | [string](#string) | repeated | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 | target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
 | database_create | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
 | database_schema_baseline | [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline) |  |  |
