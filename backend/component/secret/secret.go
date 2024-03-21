@@ -23,10 +23,10 @@ func ReplaceExternalSecret(ctx context.Context, secret string, externalSecret *s
 		return getSecretFromVault(ctx, externalSecret)
 	}
 
-	return replaceExternalSecret(secret)
+	return getSecretFromText(secret)
 }
 
-func replaceExternalSecret(secret string) (string, error) {
+func getSecretFromText(secret string) (string, error) {
 	ok, secretURL := GetExternalSecretURL(secret)
 	if !ok {
 		return secret, nil
