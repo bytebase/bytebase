@@ -91,8 +91,8 @@ export default defineConfig(() => {
       },
     },
     test: {
-      global: true,
-      environment: "node",
+      globals: true,
+      environment: "jsdom",
     },
     envPrefix: "BB_",
   };
