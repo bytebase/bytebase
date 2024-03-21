@@ -20,9 +20,10 @@
       :expanded-row-keys="
         issueList.filter(isIssueExpanded).map((issue) => issue.uid)
       "
-      :checked-row-keys="[...state.selectedIssueIdList]"
+      :checked-row-keys="Array.from(state.selectedIssueIdList)"
       :row-props="rowProps"
       :render-expand-icon="() => h('span', { class: 'hidden' })"
+      class="issue-table-list"
       @update:checked-row-keys="
         (val) => (state.selectedIssueIdList = new Set(val as string[]))
       "
@@ -373,3 +374,10 @@ const isIssueExpanded = (issue: ComposedIssue): boolean => {
   return sections.some((item) => item.highlight);
 };
 </script>
+
+<style lang="postcss" scoped>
+.issue-table-list :deep(.n-data-table-td),
+.issue-table-list :deep(.n-data-table-th) {
+  @apply !py-1.5;
+}
+</style>

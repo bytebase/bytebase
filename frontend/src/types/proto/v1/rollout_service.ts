@@ -105,8 +105,8 @@ export interface Plan_Spec {
     | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
-  /** IDs of the specs that block this spec. */
-  blockedBySpecs: string[];
+  /** IDs of the specs that this spec depends on. */
+  dependsOnSpecs: string[];
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
   restoreDatabaseConfig?: Plan_RestoreDatabaseConfig | undefined;
@@ -711,7 +711,7 @@ export interface Task {
   skippedReason: string;
   type: Task_Type;
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
-  blockedByTasks: string[];
+  dependsOnTasks: string[];
   /**
    * Format: instances/{instance} if the task is DatabaseCreate.
    * Format: instances/{instance}/databases/{database}
@@ -1761,7 +1761,7 @@ function createBasePlan_Spec(): Plan_Spec {
   return {
     earliestAllowedTime: undefined,
     id: "",
-    blockedBySpecs: [],
+    dependsOnSpecs: [],
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
     restoreDatabaseConfig: undefined,
@@ -1776,7 +1776,7 @@ export const Plan_Spec = {
     if (message.id !== "") {
       writer.uint32(42).string(message.id);
     }
-    for (const v of message.blockedBySpecs) {
+    for (const v of message.dependsOnSpecs) {
       writer.uint32(50).string(v!);
     }
     if (message.createDatabaseConfig !== undefined) {
@@ -1817,7 +1817,7 @@ export const Plan_Spec = {
             break;
           }
 
-          message.blockedBySpecs.push(reader.string());
+          message.dependsOnSpecs.push(reader.string());
           continue;
         case 1:
           if (tag !== 10) {
@@ -1855,8 +1855,8 @@ export const Plan_Spec = {
         ? fromJsonTimestamp(object.earliestAllowedTime)
         : undefined,
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      blockedBySpecs: globalThis.Array.isArray(object?.blockedBySpecs)
-        ? object.blockedBySpecs.map((e: any) => globalThis.String(e))
+      dependsOnSpecs: globalThis.Array.isArray(object?.dependsOnSpecs)
+        ? object.dependsOnSpecs.map((e: any) => globalThis.String(e))
         : [],
       createDatabaseConfig: isSet(object.createDatabaseConfig)
         ? Plan_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
@@ -1878,8 +1878,8 @@ export const Plan_Spec = {
     if (message.id !== "") {
       obj.id = message.id;
     }
-    if (message.blockedBySpecs?.length) {
-      obj.blockedBySpecs = message.blockedBySpecs;
+    if (message.dependsOnSpecs?.length) {
+      obj.dependsOnSpecs = message.dependsOnSpecs;
     }
     if (message.createDatabaseConfig !== undefined) {
       obj.createDatabaseConfig = Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
@@ -1900,7 +1900,7 @@ export const Plan_Spec = {
     const message = createBasePlan_Spec();
     message.earliestAllowedTime = object.earliestAllowedTime ?? undefined;
     message.id = object.id ?? "";
-    message.blockedBySpecs = object.blockedBySpecs?.map((e) => e) || [];
+    message.dependsOnSpecs = object.dependsOnSpecs?.map((e) => e) || [];
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
       ? Plan_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
       : undefined;
@@ -4566,7 +4566,7 @@ function createBaseTask(): Task {
     status: 0,
     skippedReason: "",
     type: 0,
-    blockedByTasks: [],
+    dependsOnTasks: [],
     target: "",
     databaseCreate: undefined,
     databaseSchemaBaseline: undefined,
@@ -4600,7 +4600,7 @@ export const Task = {
     if (message.type !== 0) {
       writer.uint32(48).int32(message.type);
     }
-    for (const v of message.blockedByTasks) {
+    for (const v of message.dependsOnTasks) {
       writer.uint32(58).string(v!);
     }
     if (message.target !== "") {
@@ -4688,7 +4688,7 @@ export const Task = {
             break;
           }
 
-          message.blockedByTasks.push(reader.string());
+          message.dependsOnTasks.push(reader.string());
           continue;
         case 8:
           if (tag !== 66) {
@@ -4757,8 +4757,8 @@ export const Task = {
       status: isSet(object.status) ? task_StatusFromJSON(object.status) : 0,
       skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
       type: isSet(object.type) ? task_TypeFromJSON(object.type) : 0,
-      blockedByTasks: globalThis.Array.isArray(object?.blockedByTasks)
-        ? object.blockedByTasks.map((e: any) => globalThis.String(e))
+      dependsOnTasks: globalThis.Array.isArray(object?.dependsOnTasks)
+        ? object.dependsOnTasks.map((e: any) => globalThis.String(e))
         : [],
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       databaseCreate: isSet(object.databaseCreate) ? Task_DatabaseCreate.fromJSON(object.databaseCreate) : undefined,
@@ -4801,8 +4801,8 @@ export const Task = {
     if (message.type !== 0) {
       obj.type = task_TypeToJSON(message.type);
     }
-    if (message.blockedByTasks?.length) {
-      obj.blockedByTasks = message.blockedByTasks;
+    if (message.dependsOnTasks?.length) {
+      obj.dependsOnTasks = message.dependsOnTasks;
     }
     if (message.target !== "") {
       obj.target = message.target;
@@ -4840,7 +4840,7 @@ export const Task = {
     message.status = object.status ?? 0;
     message.skippedReason = object.skippedReason ?? "";
     message.type = object.type ?? 0;
-    message.blockedByTasks = object.blockedByTasks?.map((e) => e) || [];
+    message.dependsOnTasks = object.dependsOnTasks?.map((e) => e) || [];
     message.target = object.target ?? "";
     message.databaseCreate = (object.databaseCreate !== undefined && object.databaseCreate !== null)
       ? Task_DatabaseCreate.fromPartial(object.databaseCreate)

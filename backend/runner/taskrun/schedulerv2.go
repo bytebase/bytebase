@@ -249,7 +249,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	if task.EarliestAllowedTs != 0 && time.Now().Before(time.Unix(task.EarliestAllowedTs, 0)) {
 		return nil
 	}
-	for _, blockingTaskUID := range task.BlockedBy {
+	for _, blockingTaskUID := range task.DependsOn {
 		blockingTask, err := s.store.GetTaskV2ByID(ctx, blockingTaskUID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get blocking task %v", blockingTaskUID)

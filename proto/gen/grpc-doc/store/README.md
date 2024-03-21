@@ -2026,7 +2026,7 @@ InstanceOptions is the option for instances.
 | ----- | ---- | ----- | ----------- |
 | earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
 | id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
-| blocked_by_specs | [string](#string) | repeated | IDs of the specs that block this spec. |
+| depends_on_specs | [string](#string) | repeated | IDs of the specs that this spec depends on. |
 | create_database_config | [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig) |  |  |
 | change_database_config | [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig) |  |  |
 | restore_database_config | [PlanConfig.RestoreDatabaseConfig](#bytebase-store-PlanConfig-RestoreDatabaseConfig) |  |  |

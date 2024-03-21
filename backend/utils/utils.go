@@ -675,24 +675,10 @@ func convertVcsPushEventCommits(commits []vcs.Commit) []*storepb.Commit {
 	return result
 }
 
-func convertVcsPushEventFileCommit(c *vcs.FileCommit) *storepb.FileCommit {
-	return &storepb.FileCommit{
-		Id:          c.ID,
-		Title:       c.Title,
-		Message:     c.Message,
-		CreatedTs:   c.CreatedTs,
-		Url:         c.URL,
-		AuthorName:  c.AuthorName,
-		AuthorEmail: c.AuthorEmail,
-		Added:       c.Added,
-	}
-}
-
 // ConvertVcsPushEvent converts a vcs.pushEvent to a storepb.PushEvent.
 func ConvertVcsPushEvent(pushEvent *vcs.PushEvent) *storepb.PushEvent {
 	return &storepb.PushEvent{
 		VcsType:            convertVcsPushEventType(pushEvent.VCSType),
-		BaseDir:            pushEvent.BaseDirectory,
 		Ref:                pushEvent.Ref,
 		Before:             pushEvent.Before,
 		After:              pushEvent.After,
@@ -701,7 +687,6 @@ func ConvertVcsPushEvent(pushEvent *vcs.PushEvent) *storepb.PushEvent {
 		RepositoryFullPath: pushEvent.RepositoryFullPath,
 		AuthorName:         pushEvent.AuthorName,
 		Commits:            convertVcsPushEventCommits(pushEvent.CommitList),
-		FileCommit:         convertVcsPushEventFileCommit(&pushEvent.FileCommit),
 	}
 }
 

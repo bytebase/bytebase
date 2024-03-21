@@ -124,7 +124,6 @@
   
 - [v1/vcs.proto](#v1_vcs-proto)
     - [Commit](#bytebase-v1-Commit)
-    - [FileCommit](#bytebase-v1-FileCommit)
     - [PushEvent](#bytebase-v1-PushEvent)
   
     - [VcsType](#bytebase-v1-VcsType)
@@ -2402,28 +2401,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-FileCommit"></a>
-
-### FileCommit
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| title | [string](#string) |  |  |
-| message | [string](#string) |  |  |
-| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| url | [string](#string) |  |  |
-| author_name | [string](#string) |  |  |
-| author_email | [string](#string) |  |  |
-| added | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-PushEvent"></a>
 
 ### PushEvent
@@ -2433,7 +2410,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | vcs_type | [VcsType](#bytebase-v1-VcsType) |  |  |
-| base_dir | [string](#string) |  |  |
 | ref | [string](#string) |  |  |
 | before | [string](#string) |  |  |
 | after | [string](#string) |  |  |
@@ -2442,7 +2418,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | repository_full_path | [string](#string) |  |  |
 | author_name | [string](#string) |  |  |
 | commits | [Commit](#bytebase-v1-Commit) | repeated |  |
-| file_commit | [FileCommit](#bytebase-v1-FileCommit) |  |  |
 
 
 
@@ -8050,7 +8025,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
 | id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
-| blocked_by_specs | [string](#string) | repeated | IDs of the specs that block this spec. |
+| depends_on_specs | [string](#string) | repeated | IDs of the specs that this spec depends on. |
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
 | change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
 | restore_database_config | [Plan.RestoreDatabaseConfig](#bytebase-v1-Plan-RestoreDatabaseConfig) |  |  |
@@ -8249,7 +8224,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. |
 | skipped_reason | [string](#string) |  |  |
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
-| blocked_by_tasks | [string](#string) | repeated | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| depends_on_tasks | [string](#string) | repeated | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 | target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
 | database_create | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
 | database_schema_baseline | [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline) |  |  |
