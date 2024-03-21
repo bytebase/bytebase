@@ -461,9 +461,9 @@
       "title": "要进行连接的字段必须具有相同的数据类型和字符集。",
       "description": "如果连接列的数据类型、字符集不一致，数据库可能无法正确识别匹配的行，从而导致结果不准确或不完整。"
     },
-    "statement-disallow-mix-dml": {
-      "title": "禁止在同一张表上进行多个 DML 操作",
-      "description": "对表格进行并发数据修改可能会给准确识别受影响的行带来挑战。 因此，这会使创建受影响数据的精确备份过程变得复杂。"
+    "statement-disallow-mix-ddl-dml": {
+      "title": "禁止混合 DDL 和 DML 操作",
+      "description": "为了获得最佳性能和数据完整性，请避免在同一个脚本中混合使用 DDL 和 DML 语句。"
     },
     "statement-prior-backup-check": {
       "title": "在数据更改前检查先前的备份",

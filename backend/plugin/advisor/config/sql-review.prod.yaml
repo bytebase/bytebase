@@ -100,7 +100,7 @@ ruleList:
       number: 10
   - type: statement.join-strict-column-attrs
     level: WARNING
-  - type: statement.disallow-mix-dml
+  - type: statement.disallow-mix-ddl-dml
     level: WARNING
   - type: statement.prior-backup-check
     level: ERROR

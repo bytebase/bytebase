@@ -461,9 +461,9 @@
       "title": "Los campos a unir deben tener tipos de datos y conjuntos de caracteres idénticos",
       "description": "Si los tipos de datos y los juegos de caracteres de las columnas de unión no son idénticos, es posible que la base de datos no pueda identificar correctamente las filas coincidentes, lo que dará lugar a resultados inexactos o incompletos."
     },
-    "statement-disallow-mix-dml": {
-      "title": "Prohibir DML en la misma tabla",
-      "description": "La realización de modificaciones concurrentes de datos en una tabla puede generar dificultades para identificar con precisión las filas afectadas. En consecuencia, esto complica el proceso de crear una copia de seguridad precisa de los datos modificados."
+    "statement-disallow-mix-ddl-dml": {
+      "title": "No se permite mezclar DDL y DML",
+      "description": "Para un rendimiento óptimo e integridad de los datos, evite combinar sentencias DDL y DML dentro del mismo script."
     },
     "statement-prior-backup-check": {
       "title": "Verificar la existencia de una copia de seguridad previa antes de cambiar los datos",
