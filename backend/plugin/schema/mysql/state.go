@@ -12,6 +12,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -196,10 +198,7 @@ func (t *tableState) toString(buf io.StringWriter) error {
 	}
 
 	if t.partition != nil {
-		if _, err := buf.WriteString("\n"); err != nil {
-			return err
-		}
-		if err := t.partition.toString(buf); err != nil {
+		if err := t.partition.toString(buf, nil); err != nil {
 			return err
 		}
 	}
@@ -720,9 +719,11 @@ func (g *partitionDefaultNameGenerator) next() string {
 
 // toString() writes the partition state as SHOW CREATE TABLE syntax to buf, referencing MySQL source code:
 // https://sourcegraph.com/github.com/mysql/mysql-server@824e2b4064053f7daf17d7f3f84b7a3ed92e5fb4/-/blob/sql/sql_show.cc?L2528-2550
-func (p *partitionState) toString(buf io.StringWriter) error {
+// partitionClauseCtx is use to minimize the difference between the original one and the output, it is safe to pass nil.
+func (p *partitionState) toString(buf io.StringWriter, partitionClauseCtx mysql.IPartitionClauseContext) error {
 	// Write version specific comment.
 	vsc := p.getVersionSpecificComment()
+	curComment := vsc
 	if _, err := buf.WriteString(vsc); err != nil {
 		return err
 	}
@@ -785,8 +786,8 @@ func (p *partitionState) toString(buf io.StringWriter) error {
 			if _, err := buf.WriteString("KEY "); err != nil {
 				return err
 			}
-			// TODO(zp): MySQL supports an ALGORITHM option with [SUB]PARTITION BY [LINEAR KEY]. ALGORITHM=1 causes the server to use the same key-hashing function as MYSQL 5.1, and ALGORITHM=1 is the only possible output in
-			// the following code. Sadly, I do not know how to get the key_algorithm from the INFORMATION_SCHEMA, AND 5.1 IS TOO LEGACY TO SUPPORT! So skip it.
+			// NOTE: MySQL supports an ALGORITHM option with [SUB]PARTITION BY [LINEAR KEY]. ALGORITHM=1 causes the server to use the same key-hashing function as MYSQL 5.1, and ALGORITHM=1 is the only possible output in
+			// the following code. Sadly, I do not know how to get the key_algorithm from the INFORMATION_SCHEMA, AND 5.1 IS TOO LEGACY TO SUPPORT! So use the original one.
 			/*
 			   current_comment_start is given when called from SHOW CREATE TABLE,
 			   Then only add ALGORITHM = 1, not the default 2 or non-set 0!
@@ -812,6 +813,30 @@ func (p *partitionState) toString(buf io.StringWriter) error {
 			// 		err += add_space(fptr);
 			// 	}
 			// }
+			if partitionClauseCtx != nil && partitionClauseCtx.PartitionTypeDef() != nil {
+				v := partitionClauseCtx.PartitionTypeDef()
+				partitionDefKeyCtx, ok := v.(*mysql.PartitionDefKeyContext)
+				if ok && partitionDefKeyCtx.PartitionKeyAlgorithm() != nil {
+					numText := partitionDefKeyCtx.PartitionKeyAlgorithm().Real_ulong_number().GetText()
+					num, err := strconv.Atoi(numText)
+					if err != nil {
+						slog.Warn(err.Error())
+					} else if num == 1 || (num == 0 && len(curComment) == 0) {
+						if _, err := buf.WriteString(fmt.Sprintf("*/ /*!50611 ALGORITHM = %d */ ", num)); err != nil {
+							return err
+						}
+						if len(curComment) > 0 {
+							s := curComment
+							if curComment[0] == '\n' {
+								s = curComment[1:]
+							}
+							if _, err := buf.WriteString(fmt.Sprintf("%s ", s)); err != nil {
+								return err
+							}
+						}
+					}
+				}
+			}
 			// HACK(zp): Write the part field list. In the MySQL source code, it calls append_identifier(), which considers the quote character. We should figure out the logic of it later.
 			// Currently, I just found that if the expr contains more than one field, it would not be quoted by '`'.
 			// KEY and LINEAR KEY can take the field list.
@@ -1043,7 +1068,7 @@ func (*partitionState) writePartitionOptions(buf io.StringWriter) error {
 func (p *partitionState) getVersionSpecificComment() string {
 	if p.info.tp == storepb.TablePartitionMetadata_RANGE_COLUMNS || p.info.tp == storepb.TablePartitionMetadata_LIST_COLUMNS {
 		// MySQL introduce columns partitioning in 5.5+.
-		return "/*!50500"
+		return "\n/*!50500"
 	}
 
 	/*
@@ -1056,7 +1081,7 @@ func (p *partitionState) getVersionSpecificComment() string {
 	*/
 	// TODO(zp): Users can use function in partition expr or subpartition expr, and the intro version of function should be the infimum of the version.
 	// But sadly, it's a huge work for us to copy the intro version for each function in MySQL. So we skip it.
-	return "/*!50100"
+	return "\n/*!50100"
 }
 
 func getPrepositionByType(tp storepb.TablePartitionMetadata_Type) (string, error) {
