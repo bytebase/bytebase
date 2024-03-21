@@ -81,6 +81,7 @@
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
   
+    - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
   
@@ -1353,6 +1354,7 @@ app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
 | ----- | ---- | ----- | ----------- |
 | role_id | [string](#string) |  |  |
 | secret_id | [string](#string) |  |  |
+| type | [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType) |  |  |
 
 
 
@@ -1384,6 +1386,20 @@ app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
 
 
  
+
+
+<a name="bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType"></a>
+
+### DataSourceExternalSecret.AppRoleAuthOption.SecretType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SECRET_TYPE_UNSPECIFIED | 0 |  |
+| PLAIN | 1 |  |
+| FILE | 2 |  |
+| ENVIRONMENT | 3 |  |
+
 
 
 <a name="bytebase-store-DataSourceExternalSecret-AuthType"></a>

@@ -200,10 +200,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 	}
-	for _, ds := range instanceMessage.DataSources {
-		if err := s.checkDataSource(instanceMessage, ds); err != nil {
-			return nil, err
-		}
+
+	if err := s.checkInstanceDataSources(instanceMessage, instanceMessage.DataSources); err != nil {
+		return nil, err
 	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -246,10 +245,28 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	return convertToInstance(instance)
 }
 
+func (s *InstanceService) checkInstanceDataSources(instance *store.InstanceMessage, dataSources []*store.DataSourceMessage) error {
+	dsIDMap := map[string]bool{}
+	for _, ds := range dataSources {
+		if err := s.checkDataSource(instance, ds); err != nil {
+			return err
+		}
+		if dsIDMap[ds.ID] {
+			return status.Errorf(codes.InvalidArgument, `duplicate data source id "%s"`, ds.ID)
+		}
+		dsIDMap[ds.ID] = true
+	}
+
+	return nil
+}
+
 func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataSource *store.DataSourceMessage) error {
+	if dataSource.ID == "" {
+		return status.Errorf(codes.InvalidArgument, "data source id is required")
+	}
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, s.secret)
 	if err != nil {
-		return err
+		return status.Errorf(codes.Internal, err.Error())
 	}
 
 	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureExternalSecretManager, instance); err != nil {
@@ -303,10 +320,8 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
-			for _, ds := range datasources {
-				if err := s.checkDataSource(instance, ds); err != nil {
-					return nil, err
-				}
+			if err := s.checkInstanceDataSources(instance, datasources); err != nil {
+				return nil, err
 			}
 			patch.DataSources = &datasources
 		case "activation":
@@ -1062,7 +1077,10 @@ func convertToV1DataSourceExternalSecret(externalSecret *storepb.DataSourceExter
 	switch resp.AuthType {
 	case v1pb.DataSourceExternalSecret_APP_ROLE:
 		resp.AuthOption = &v1pb.DataSourceExternalSecret_AppRole{
-			AppRole: &v1pb.DataSourceExternalSecret_AppRoleAuthOption{},
+			AppRole: &v1pb.DataSourceExternalSecret_AppRoleAuthOption{
+				RoleId: secret.GetAppRole().RoleId,
+				Type:   secret.GetAppRole().Type,
+			},
 		}
 	case v1pb.DataSourceExternalSecret_TOKEN:
 		resp.AuthOption = &v1pb.DataSourceExternalSecret_Token{
@@ -1115,6 +1133,19 @@ func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExter
 	secret := new(storepb.DataSourceExternalSecret)
 	if err := convertV1PbToStorePb(externalSecret, secret); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert external secret with error: %v", err.Error())
+	}
+	if secret.Url == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "missing Vault URL")
+	}
+
+	switch secret.AuthType {
+	case storepb.DataSourceExternalSecret_TOKEN:
+	case storepb.DataSourceExternalSecret_APP_ROLE:
+		if secret.GetAppRole() == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "missing Vault app role")
+		}
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupport auth type: %v", secret.AuthType)
 	}
 
 	return secret, nil

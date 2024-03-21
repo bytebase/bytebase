@@ -1,6 +1,7 @@
 package ghost
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -212,12 +213,12 @@ func GetPostponeFlagFilename(taskID int, taskCreatedTs int64, databaseID int, da
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(taskID int, taskCreatedTs int64, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
+func NewMigrationContext(ctx context.Context, taskID int, taskCreatedTs int64, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get password")
 	}
-	updatedPassword, err := secretcomp.ReplaceExternalSecret(password)
+	updatedPassword, err := secretcomp.ReplaceExternalSecret(ctx, password, dataSource.ExternalSecret)
 	if err != nil {
 		return nil, err
 	}

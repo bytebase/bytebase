@@ -23,6 +23,15 @@ message DataSourceExternalSecret {
   message AppRoleAuthOption {
     string role_id = 1;
     string secret_id = 2;
+
+    enum SecretType {
+      SECRET_TYPE_UNSPECIFIED = 0;
+      PLAIN = 1;
+      FILE = 2;
+      ENVIRONMENT = 3;
+    }
+
+    SecretType type = 3;
   }
 
   oneof auth_option {

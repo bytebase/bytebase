@@ -96,6 +96,56 @@ export function dataSourceExternalSecret_AuthTypeToJSON(object: DataSourceExtern
 export interface DataSourceExternalSecret_AppRoleAuthOption {
   roleId: string;
   secretId: string;
+  type: DataSourceExternalSecret_AppRoleAuthOption_SecretType;
+}
+
+export enum DataSourceExternalSecret_AppRoleAuthOption_SecretType {
+  SECRET_TYPE_UNSPECIFIED = 0,
+  PLAIN = 1,
+  FILE = 2,
+  ENVIRONMENT = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(
+  object: any,
+): DataSourceExternalSecret_AppRoleAuthOption_SecretType {
+  switch (object) {
+    case 0:
+    case "SECRET_TYPE_UNSPECIFIED":
+      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED;
+    case 1:
+    case "PLAIN":
+      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN;
+    case 2:
+    case "FILE":
+      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.FILE;
+    case 3:
+    case "ENVIRONMENT":
+      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.UNRECOGNIZED;
+  }
+}
+
+export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToJSON(
+  object: DataSourceExternalSecret_AppRoleAuthOption_SecretType,
+): string {
+  switch (object) {
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED:
+      return "SECRET_TYPE_UNSPECIFIED";
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN:
+      return "PLAIN";
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.FILE:
+      return "FILE";
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT:
+      return "ENVIRONMENT";
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface DataSourceOptions {
@@ -303,7 +353,7 @@ export const DataSourceExternalSecret = {
 };
 
 function createBaseDataSourceExternalSecret_AppRoleAuthOption(): DataSourceExternalSecret_AppRoleAuthOption {
-  return { roleId: "", secretId: "" };
+  return { roleId: "", secretId: "", type: 0 };
 }
 
 export const DataSourceExternalSecret_AppRoleAuthOption = {
@@ -313,6 +363,9 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
     }
     if (message.secretId !== "") {
       writer.uint32(18).string(message.secretId);
+    }
+    if (message.type !== 0) {
+      writer.uint32(24).int32(message.type);
     }
     return writer;
   },
@@ -338,6 +391,13 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
 
           message.secretId = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -351,6 +411,7 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
     return {
       roleId: isSet(object.roleId) ? globalThis.String(object.roleId) : "",
       secretId: isSet(object.secretId) ? globalThis.String(object.secretId) : "",
+      type: isSet(object.type) ? dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(object.type) : 0,
     };
   },
 
@@ -361,6 +422,9 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
     }
     if (message.secretId !== "") {
       obj.secretId = message.secretId;
+    }
+    if (message.type !== 0) {
+      obj.type = dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToJSON(message.type);
     }
     return obj;
   },
@@ -374,6 +438,7 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
     const message = createBaseDataSourceExternalSecret_AppRoleAuthOption();
     message.roleId = object.roleId ?? "";
     message.secretId = object.secretId ?? "";
+    message.type = object.type ?? 0;
     return message;
   },
 };
