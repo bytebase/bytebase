@@ -172,7 +172,8 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	if err != nil {
 		return nil, err
 	}
-	updatedPassword, err := secret.ReplaceExternalSecret(password)
+
+	updatedPassword, err := secret.ReplaceExternalSecret(ctx, password, dataSource.ExternalSecret)
 	if err != nil {
 		return nil, err
 	}

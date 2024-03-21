@@ -81,6 +81,7 @@
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
   
+    - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
   
@@ -1337,7 +1338,7 @@ Used internally for obfuscating the page token.
 | token | [string](#string) |  |  |
 | engine_name | [string](#string) |  | engine name is the name for secret engine. |
 | secret_name | [string](#string) |  | the secret name in the engine to store the password. |
-| key_name | [string](#string) |  | the key name for the password. |
+| password_key_name | [string](#string) |  | the key name for the password. |
 
 
 
@@ -1347,13 +1348,15 @@ Used internally for obfuscating the page token.
 <a name="bytebase-store-DataSourceExternalSecret-AppRoleAuthOption"></a>
 
 ### DataSourceExternalSecret.AppRoleAuthOption
-app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
+
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | role_id | [string](#string) |  |  |
-| secret_id | [string](#string) |  |  |
+| secret_id | [string](#string) |  | the secret id for the role without ttl. |
+| type | [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType) |  |  |
+| mount_path | [string](#string) |  | The path where the approle auth method is mounted. |
 
 
 
@@ -1387,6 +1390,19 @@ app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
  
 
 
+<a name="bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType"></a>
+
+### DataSourceExternalSecret.AppRoleAuthOption.SecretType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SECRET_TYPE_UNSPECIFIED | 0 |  |
+| PLAIN | 1 |  |
+| ENVIRONMENT | 2 |  |
+
+
+
 <a name="bytebase-store-DataSourceExternalSecret-AuthType"></a>
 
 ### DataSourceExternalSecret.AuthType
@@ -1395,8 +1411,8 @@ app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | AUTH_TYPE_UNSPECIFIED | 0 |  |
-| TOKEN | 1 |  |
-| APP_ROLE | 2 |  |
+| TOKEN | 1 | ref: https://developer.hashicorp.com/vault/docs/auth/token |
+| APP_ROLE | 2 | ref: https://developer.hashicorp.com/vault/docs/auth/approle |
 
 
 
@@ -1408,7 +1424,7 @@ app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | SAECRET_TYPE_UNSPECIFIED | 0 |  |
-| VAULT_KV_V2 | 1 |  |
+| VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
 
 
  

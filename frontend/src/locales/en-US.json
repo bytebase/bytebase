@@ -1339,7 +1339,36 @@
     "type-or-paste-credentials": "Type or paste CREDENTIALS",
     "type-or-paste-credentials-write-only": "Type or paste CREDENTIALS - write only",
     "password-write-only": "YOUR_DB_PWD - write only",
-    "secret-manager-tip": "You can also specify external secret manage endpoint",
+    "password-type": {
+      "password": "Password",
+      "password-tip": "You can also specify external secret manage endpoint",
+      "external-secret": "External secret (Vault)"
+    },
+    "external-secret": {
+      "vault-url": "Vault URL",
+      "vault-auth-type": {
+        "self": "Vault auth type",
+        "token": {
+          "self": "Token",
+          "api-token": "Vault API token",
+          "tips": "A root token without TTL."
+        },
+        "app-role": {
+          "self": "App role",
+          "role-id": "Auth role id",
+          "secret-id": "Auth secret id",
+          "secret-id-plain-text": "Plain text for role secret id",
+          "secret-id-environment": "Environment name for role secret id",
+          "secret-plain-text": "Plain text",
+          "secret-env-name": "Environment name",
+          "secret-tips": "An unwrapped secret id without TTL. You can use plain text, or put it into the environment or local file. {learn_more}"
+        }
+      },
+      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-tips": "Only support KV v2 engine.",
+      "vault-secret-name": "Vault secret name",
+      "vault-key-name": "Vault key name for password"
+    },
     "test-connection": "Test Connection",
     "ignore-and-create": "Ignore and create",
     "add-a-postgresql-sample-instance": "Add a PostgreSQL sample instance instead",
