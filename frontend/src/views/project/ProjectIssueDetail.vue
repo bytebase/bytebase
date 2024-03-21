@@ -27,6 +27,7 @@ import {
   useBaseIssueContext,
   useInitializeIssue,
 } from "@/components/IssueV1";
+import { useBodyLayoutContext } from "@/layouts/common";
 import { useUIStateStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { isGrantRequestIssue } from "@/utils";
@@ -73,6 +74,10 @@ provideIssueContext(
   },
   true /* root */
 );
+
+const { overrideMainContainerClass } = useBodyLayoutContext();
+
+overrideMainContainerClass("!py-0");
 
 onMounted(() => {
   if (!uiStateStore.getIntroStateByKey("issue.visit")) {
