@@ -39,6 +39,8 @@ type DataSourceMessage struct {
 	AuthenticationPrivateKeyObfuscated string
 	// (deprecated) Output only.
 	UID int
+	// external secret
+	ExternalSecret *storepb.DataSourceExternalSecret
 }
 
 // Copy returns a copy of the data source message.
@@ -65,6 +67,7 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 		SSHObfuscatedPrivateKey:            m.SSHObfuscatedPrivateKey,
 		UID:                                m.UID,
 		AuthenticationPrivateKeyObfuscated: m.AuthenticationPrivateKeyObfuscated,
+		ExternalSecret:                     m.ExternalSecret,
 	}
 }
 
@@ -96,6 +99,9 @@ type UpdateDataSourceMessage struct {
 	SSHObfuscatedPrivateKey *string
 	// Authentication
 	AuthenticationPrivateKeyObfuscated *string
+	// external secret
+	ExternalSecret       *storepb.DataSourceExternalSecret
+	RemoveExternalSecret bool
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -157,7 +163,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		dataSourceMessage.SSHObfuscatedPassword = dataSourceOptions.SshObfuscatedPassword
 		dataSourceMessage.SSHObfuscatedPrivateKey = dataSourceOptions.SshObfuscatedPrivateKey
 		dataSourceMessage.AuthenticationPrivateKeyObfuscated = dataSourceOptions.AuthenticationPrivateKeyObfuscated
-
+		dataSourceMessage.ExternalSecret = dataSourceOptions.ExternalSecret
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -282,6 +288,15 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	if v := patch.AuthenticationPrivateKeyObfuscated; v != nil {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationPrivateKeyObfuscated', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
 	}
+	if v := patch.ExternalSecret; v != nil {
+		protoBytes, err := protojson.Marshal(v)
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal external secret")
+		}
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('externalSecret', $%d::JSONB)", len(args)+1)), append(args, protoBytes)
+	} else if patch.RemoveExternalSecret {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('externalSecret', $%d::JSONB)", len(args)+1)), append(args, nil)
+	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
 	}
@@ -331,6 +346,7 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		SshObfuscatedPassword:              dataSource.SSHObfuscatedPassword,
 		SshObfuscatedPrivateKey:            dataSource.SSHObfuscatedPrivateKey,
 		AuthenticationPrivateKeyObfuscated: dataSource.AuthenticationPrivateKeyObfuscated,
+		ExternalSecret:                     dataSource.ExternalSecret,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {

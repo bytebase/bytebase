@@ -215,7 +215,7 @@ import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
-import EditProjectRolePanel from "../ProjectRoleTable/EditProjectRolePanel.vue";
+import EditProjectRolePanel from "../EditProjectRolePanel.vue";
 import { ProjectMember } from "../types";
 import RoleDescription from "./RoleDescription.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";

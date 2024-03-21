@@ -144,7 +144,6 @@ type RepositoryTreeNode struct {
 // PushEvent is the API message for a VCS push event.
 type PushEvent struct {
 	VCSType            Type     `json:"vcsType"`
-	BaseDirectory      string   `json:"baseDir"`
 	Ref                string   `json:"ref"`
 	Before             string   `json:"before"`
 	After              string   `json:"after"`
@@ -153,8 +152,6 @@ type PushEvent struct {
 	RepositoryFullPath string   `json:"repositoryFullPath"`
 	AuthorName         string   `json:"authorName"`
 	CommitList         []Commit `json:"commits"`
-	// Legacy field, kept for parsing existing data
-	FileCommit FileCommit `json:"fileCommit"`
 }
 
 // State is the state of a VCS user account.

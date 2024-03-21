@@ -3,9 +3,9 @@
     - status: WARN
       code: 213
       title: statement.disallow-cascade
-      content: CASCADE is not allowed, but detect 1 CASCADE
-      line: 0
-      column: 0
+      content: Cascade is disallowed but used in this statement
+      line: 1
+      column: 1
       details: ""
 - statement: |-
     CREATE TABLE users (
@@ -17,9 +17,9 @@
     - status: WARN
       code: 213
       title: statement.disallow-cascade
-      content: CASCADE is not allowed, but detect 1 CASCADE
-      line: 0
-      column: 0
+      content: Cascade is disallowed but used in this statement
+      line: 1
+      column: 1
       details: ""
 - statement: |-
     CREATE TABLE users (
@@ -48,7 +48,21 @@
     - status: WARN
       code: 213
       title: statement.disallow-cascade
-      content: CASCADE is not allowed, but detect 3 CASCADE
-      line: 0
-      column: 0
+      content: Cascade is disallowed but used in this statement
+      line: 1
+      column: 1
+      details: ""
+    - status: WARN
+      code: 213
+      title: statement.disallow-cascade
+      content: Cascade is disallowed but used in this statement
+      line: 2
+      column: 1
+      details: ""
+    - status: WARN
+      code: 213
+      title: statement.disallow-cascade
+      content: Cascade is disallowed but used in this statement
+      line: 3
+      column: 1
       details: ""
