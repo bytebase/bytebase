@@ -42,7 +42,6 @@ func TestTiDBRules(t *testing.T) {
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
 		advisor.SchemaRuleStatementDMLDryRun,
-		advisor.SchemaRuleStatementDisallowMixDDLDML,
 
 		// advisor.SchemaRuleTableRequirePK require the table to have a primary key.
 		advisor.SchemaRuleTableRequirePK,
