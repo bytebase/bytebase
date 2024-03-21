@@ -302,7 +302,7 @@ ruleList:
     engineList:
       - MYSQL
       - TIDB
-  - type: statement.disallow-mix-ddl-dml
+  - type: statement.prior-backup-check
     category: STATEMENT
     engineList:
       - MYSQL

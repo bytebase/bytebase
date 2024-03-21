@@ -465,9 +465,9 @@
       "title": "Chặn các truy vấn DML trên cùng một bảng",
       "description": "Ch thực hiện các sửa đổi dữ liệu đồng thời trên một bảng có thể dẫn đến những thách thức trong việc xác định chính xác các hàng bị ảnh hưởng. Điều này do đó làm phức tạp quá trình tạo bản sao lưu chính xác của dữ liệu bị ảnh hưởng."
     },
-    "statement-disallow-mix-ddl-dml": {
-      "title": "Không nên trộn lẫn DDL và DML",
-      "description": "Chú ý để đạt hiệu suất tối ưu và tính toàn vẹn dữ liệu, tránh kết hợp các câu lệnh DDL và DML trong cùng một tập lệnh."
+    "statement-prior-backup-check": {
+      "title": "Kiểm tra sao lưu trước khi thay đổi dữ liệu",
+      "description": "Quy tắc này sẽ kiểm tra xem có thể tạo sao lưu trước khi thay đổi dữ liệu hay không. Để biết thêm chi tiết, hãy kiểm tra xem cơ sở dữ liệu mục tiêu sao lưu có tồn tại và không cho phép câu lệnh DDL."
     },
     "schema-backward-compatibility": {
       "title": "Kiểm tra khả năng tương thích ngược của ứng dụng",

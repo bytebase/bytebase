@@ -102,8 +102,8 @@ ruleList:
     level: WARNING
   - type: statement.disallow-mix-dml
     level: WARNING
-  - type: statement.disallow-mix-ddl-dml
-    level: WARNING
+  - type: statement.prior-backup-check
+    level: ERROR
   - type: naming.table
     level: WARNING
     payload:
