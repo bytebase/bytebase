@@ -1359,10 +1359,8 @@
           "secret-id": "Auth secret id",
           "secret-id-plain-text": "Văn bản thuần túy cho id bí mật của vai trò",
           "secret-id-environment": "Tên môi trường cho id bí mật vai trò",
-          "secret-id-file-path": "Đường dẫn tệp đầy đủ cho id bí mật của vai trò",
           "secret-plain-text": "Văn bản thô",
           "secret-env-name": "Tên môi trường",
-          "secret-file-path": "Đường dẫn tập tin",
           "secret-tips": "Một id bí mật chưa được gói mà không có TTL. Bạn có thể sử dụng văn bản thuần túy hoặc đặt nó vào môi trường hoặc tệp cục bộ. {learn_more}"
         }
       },

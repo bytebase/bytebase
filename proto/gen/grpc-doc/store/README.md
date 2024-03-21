@@ -1398,8 +1398,7 @@ Used internally for obfuscating the page token.
 | ---- | ------ | ----------- |
 | SECRET_TYPE_UNSPECIFIED | 0 |  |
 | PLAIN | 1 |  |
-| FILE | 2 |  |
-| ENVIRONMENT | 3 |  |
+| ENVIRONMENT | 2 |  |
 
 
 

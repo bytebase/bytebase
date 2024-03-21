@@ -331,8 +331,7 @@ message DataSourceExternalSecret {
     enum SecretType {
       SECRET_TYPE_UNSPECIFIED = 0;
       PLAIN = 1;
-      FILE = 2;
-      ENVIRONMENT = 3;
+      ENVIRONMENT = 2;
     }
 
     SecretType type = 3;

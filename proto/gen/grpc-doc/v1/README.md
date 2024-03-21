@@ -2316,8 +2316,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | ---- | ------ | ----------- |
 | SECRET_TYPE_UNSPECIFIED | 0 |  |
 | PLAIN | 1 |  |
-| FILE | 2 |  |
-| ENVIRONMENT | 3 |  |
+| ENVIRONMENT | 2 |  |
 
 
 

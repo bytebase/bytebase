@@ -1359,10 +1359,8 @@
           "secret-id": "Auth secret id",
           "secret-id-plain-text": "Texto sin formato para identificación secreta de rol",
           "secret-id-environment": "Nombre del entorno para la identificación secreta del rol",
-          "secret-id-file-path": "Ruta de archivo completa para la identificación secreta del rol",
           "secret-plain-text": "Texto sin formato",
           "secret-env-name": "Nombre del entorno",
-          "secret-file-path": "Ruta de archivo",
           "secret-tips": "Una identificación secreta desenvuelta sin TTL. Puede utilizar texto sin formato o colocarlo en el entorno o en el archivo local. {learn_more}"
         }
       },

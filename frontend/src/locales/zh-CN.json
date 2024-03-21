@@ -1358,10 +1358,8 @@
           "secret-id": "Auth secret id",
           "secret-id-plain-text": "Secret id 明文",
           "secret-id-environment": "储存 secret id 的环境变量名",
-          "secret-id-file-path": "储存 secret id 的完整文件路径",
           "secret-plain-text": "明文",
           "secret-env-name": "环境变量名",
-          "secret-file-path": "文件路径",
           "secret-tips": "未封装、无有效期限的 secret id，您可以使用明文、环境变量名或文件路径。{learn_more}"
         }
       },

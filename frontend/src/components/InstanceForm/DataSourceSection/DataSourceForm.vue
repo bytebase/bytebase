@@ -198,17 +198,6 @@
               </NRadio>
               <NRadio
                 :value="
-                  DataSourceExternalSecret_AppRoleAuthOption_SecretType.FILE
-                "
-              >
-                {{
-                  $t(
-                    "instance.external-secret.vault-auth-type.app-role.secret-file-path"
-                  )
-                }}
-              </NRadio>
-              <NRadio
-                :value="
                   DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT
                 "
               >
@@ -547,10 +536,6 @@ const secretInputPlaceholder = computed(() => {
             case DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT:
               return `${t(
                 "instance.external-secret.vault-auth-type.app-role.secret-id-environment"
-              )} - ${t("common.write-only")}`;
-            case DataSourceExternalSecret_AppRoleAuthOption_SecretType.FILE:
-              return `${t(
-                "instance.external-secret.vault-auth-type.app-role.secret-id-file-path"
               )} - ${t("common.write-only")}`;
           }
       }

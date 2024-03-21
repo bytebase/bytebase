@@ -379,8 +379,7 @@ export interface DataSourceExternalSecret_AppRoleAuthOption {
 export enum DataSourceExternalSecret_AppRoleAuthOption_SecretType {
   SECRET_TYPE_UNSPECIFIED = 0,
   PLAIN = 1,
-  FILE = 2,
-  ENVIRONMENT = 3,
+  ENVIRONMENT = 2,
   UNRECOGNIZED = -1,
 }
 
@@ -395,9 +394,6 @@ export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(
     case "PLAIN":
       return DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN;
     case 2:
-    case "FILE":
-      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.FILE;
-    case 3:
     case "ENVIRONMENT":
       return DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT;
     case -1:
@@ -415,8 +411,6 @@ export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToJSON(
       return "SECRET_TYPE_UNSPECIFIED";
     case DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN:
       return "PLAIN";
-    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.FILE:
-      return "FILE";
     case DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT:
       return "ENVIRONMENT";
     case DataSourceExternalSecret_AppRoleAuthOption_SecretType.UNRECOGNIZED:

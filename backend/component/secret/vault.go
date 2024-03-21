@@ -36,8 +36,6 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 			appRoleSecret.FromString = role.SecretId
 		case storepb.DataSourceExternalSecret_AppRoleAuthOption_ENVIRONMENT:
 			appRoleSecret.FromEnv = role.SecretId
-		case storepb.DataSourceExternalSecret_AppRoleAuthOption_FILE:
-			appRoleSecret.FromFile = role.SecretId
 		}
 
 		opts := []approle.LoginOption{}
