@@ -461,9 +461,9 @@
       "title": "Fields to be joined must have identical data types, character sets",
       "description": "If the data types, character sets of the join columns are not identical, the database may not be able to correctly identify matching rows, leading to inaccurate or incomplete results."
     },
-    "statement-disallow-mix-dml": {
-      "title": "Disallow DMLs on the same table",
-      "description": "Performing concurrent data modifications on a table can lead to challenges in accurately identifying the impacted rows. This consequently complicates the process of creating a precise backup of the affected data."
+    "statement-disallow-mix-ddl-dml": {
+      "title": "Disallow mixing DDL and DML",
+      "description": "For optimal performance and data integrity, avoid combining DDL and DML statements within the same script."
     },
     "statement-prior-backup-check": {
       "title": "Check for prior backup before data change",

@@ -57,7 +57,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 				Status:  level,
 				Title:   title,
 				Content: "Prior backup cannot deal with mixed DDL and DML statements",
-				Code:    advisor.StatementMixDDLDML,
+				Code:    advisor.StatementPriorBackupCheck,
 				Line:    stmt.BaseLine,
 			})
 		}

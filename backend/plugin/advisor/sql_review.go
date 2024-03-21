@@ -121,8 +121,8 @@ const (
 	SchemaRuleStatementMaximumStatementsInTransaction = "statement.maximum-statements-in-transaction"
 	// SchemaRuleStatementJoinStrictColumnAttrs enforce the join strict column attributes.
 	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
-	// SchemaRuleStatementDisallowMixDML disallow mix DML on the same table.
-	SchemaRuleStatementDisallowMixDML = "statement.disallow-mix-dml"
+	// SchemaRuleStatementDisallowMixDDLDML disallow mix DDL and DML on the same table.
+	SchemaRuleStatementDisallowMixDDLDML = "statement.disallow-mix-ddl-dml"
 	// SchemaRuleStatementPriorBackupCheck checks for prior backup.
 	SchemaRuleStatementPriorBackupCheck = "statement.prior-backup-check"
 
@@ -1429,9 +1429,9 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementDisallowUsingTemporary, nil
 		}
-	case SchemaRuleStatementDisallowMixDML:
+	case SchemaRuleStatementDisallowMixDDLDML:
 		if engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB {
-			return MySQLStatementDisallowMixDML, nil
+			return MySQLStatementDisallowMixDDLDML, nil
 		}
 	case SchemaRuleStatementPriorBackupCheck:
 		switch engine {
