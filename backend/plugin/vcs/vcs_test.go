@@ -58,7 +58,6 @@ func TestPushEventUnmarshalToProto(t *testing.T) {
 	a := require.New(t)
 	vcsPushEvent := &PushEvent{
 		VCSType:            GitLab,
-		BaseDirectory:      "aaa",
 		Ref:                "refs/heads/master",
 		Before:             "beforea",
 		After:              "afterb",
@@ -78,16 +77,6 @@ func TestPushEventUnmarshalToProto(t *testing.T) {
 				AddedList:    []string{"123"},
 				ModifiedList: []string{"321"},
 			},
-		},
-		FileCommit: FileCommit{
-			ID:          "1",
-			Title:       "123",
-			Message:     "file",
-			CreatedTs:   123,
-			URL:         "terw",
-			AuthorName:  "hi",
-			AuthorEmail: "none",
-			Added:       "aaa",
 		},
 	}
 	bytes, err := json.Marshal(vcsPushEvent)

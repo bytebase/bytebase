@@ -125,7 +125,6 @@
   
 - [v1/vcs.proto](#v1_vcs-proto)
     - [Commit](#bytebase-v1-Commit)
-    - [FileCommit](#bytebase-v1-FileCommit)
     - [PushEvent](#bytebase-v1-PushEvent)
   
     - [VcsType](#bytebase-v1-VcsType)
@@ -2418,28 +2417,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="bytebase-v1-FileCommit"></a>
-
-### FileCommit
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| title | [string](#string) |  |  |
-| message | [string](#string) |  |  |
-| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| url | [string](#string) |  |  |
-| author_name | [string](#string) |  |  |
-| author_email | [string](#string) |  |  |
-| added | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-PushEvent"></a>
 
 ### PushEvent
@@ -2449,7 +2426,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | vcs_type | [VcsType](#bytebase-v1-VcsType) |  |  |
-| base_dir | [string](#string) |  |  |
 | ref | [string](#string) |  |  |
 | before | [string](#string) |  |  |
 | after | [string](#string) |  |  |
@@ -2458,7 +2434,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | repository_full_path | [string](#string) |  |  |
 | author_name | [string](#string) |  |  |
 | commits | [Commit](#bytebase-v1-Commit) | repeated |  |
-| file_commit | [FileCommit](#bytebase-v1-FileCommit) |  |  |
 
 
 
