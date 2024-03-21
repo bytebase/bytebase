@@ -219,6 +219,12 @@ type metadataDiffTableNode struct {
 	foreignKeys map[string]*metadataDiffForeignKeyNode
 	indexes     map[string]*metadataDiffIndexNode
 	// TableMetaData contains other object types, likes trigger, index etc. But we do not support them yet.
+
+	// partitionNames is designed to help to handle the partition orders.
+	// The size of partitionNames is always equal to the size of partitionsMap,
+	// and all the value appeared in partitionNames is also the key of partitionsMap.
+	partitionNames []string
+	partitionsMap  map[string]*metadataDiffPartitionNode
 }
 
 func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, string) {
@@ -324,11 +330,33 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 		delete(other.indexes, indexName)
 	}
 
+	for _, partitionName := range n.partitionNames {
+		partitionNode := n.partitionsMap[partitionName]
+		otherPartitionNode, in := other.partitionsMap[partitionName]
+		if !in {
+			continue
+		}
+		conflict, msg := partitionNode.tryMerge(otherPartitionNode)
+		if conflict {
+			return true, msg
+		}
+		delete(other.partitionsMap, partitionName)
+	}
+
 	for _, columnName := range other.columnNames {
 		// We had deleted the column node which appeared in both table nodes.
 		if columnNode, in := other.columnsMap[columnName]; in {
 			n.columnsMap[columnName] = columnNode
 			n.columnNames = append(n.columnNames, columnName)
+			continue
+		}
+	}
+
+	for _, partition := range other.partitionNames {
+		// We had deleted the partition node which appeared in both table nodes.
+		if partitionNode, in := other.partitionsMap[partition]; in {
+			n.partitionsMap[partition] = partitionNode
+			n.partitionNames = append(n.partitionNames, partition)
 			continue
 		}
 	}
@@ -397,6 +425,14 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 				return errors.Wrapf(err, "failed to apply diff to index %q", index.name)
 			}
 		}
+
+		for _, partitionName := range n.partitionNames {
+			partition := n.partitionsMap[partitionName]
+			if err := partition.applyDiffTo(newTable); err != nil {
+				return errors.Wrapf(err, "failed to apply diff to partition %q", partition.name)
+			}
+		}
+
 		target.Tables = append(target.Tables, newTable)
 	case diffActionDrop:
 		for i, table := range target.Tables {
@@ -444,6 +480,13 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 				// We need to sort the columns by position after applying the diff.
 				for idx := range newTable.Columns {
 					newTable.Columns[idx].Position = int32(idx + 1)
+				}
+
+				for _, partitionName := range n.partitionNames {
+					partition := n.partitionsMap[partitionName]
+					if err := partition.applyDiffTo(newTable); err != nil {
+						return errors.Wrapf(err, "failed to apply diff to partition %q", partition.name)
+					}
 				}
 				target.Tables[idx] = newTable
 			}
@@ -683,6 +726,118 @@ func (n *metadataDiffIndexNode) applyDiffTo(target *storepb.TableMetadata) error
 		for i, index := range target.Indexes {
 			if index.Name == n.name {
 				target.Indexes[i] = n.head
+				break
+			}
+		}
+	}
+	return nil
+}
+
+type metadataDiffPartitionNode struct {
+	metadataDiffBaseNode
+	name string
+	// nolint
+	base *storepb.TablePartitionMetadata
+	head *storepb.TablePartitionMetadata
+
+	// subpartitionNames is designed to help to handle the subpartition orders.
+	subpartitionNames []string
+	subpartitions     map[string]*metadataDiffPartitionNode
+}
+
+func (n *metadataDiffPartitionNode) tryMerge(other *metadataDiffPartitionNode) (bool, string) {
+	if other == nil {
+		return true, "other node check conflict with partition node must not be nil"
+	}
+
+	if n.name != other.name {
+		return true, fmt.Sprintf("non-expected partition node pair, one is %s, the other is %s", n.name, other.name)
+	}
+	if n.action != other.action {
+		return true, fmt.Sprintf("conflict partition action, one is %s, the other is %s", n.action, other.action)
+	}
+	if n.action == diffActionDrop {
+		return false, ""
+	}
+	if n.action == diffActionCreate {
+		if n.head.Type != other.head.Type {
+			return true, fmt.Sprintf("conflict partition type, one is %s, the other is %s", n.head.Type, other.head.Type)
+		}
+		if n.head.Expression != other.head.Expression {
+			return true, fmt.Sprintf("conflict partition expression, one is %s, the other is %s", n.head.Expression, other.head.Expression)
+		}
+		if n.head.Value != other.head.Value {
+			return true, fmt.Sprintf("conflict partition value, one is %s, the other is %s", n.head.Value, other.head.Value)
+		}
+	}
+
+	if n.action == diffActionUpdate {
+		if other.base.Type != other.head.Type {
+			if n.base.Type != n.head.Type {
+				if n.head.Type != other.head.Type {
+					return true, fmt.Sprintf("conflict partition type, one is %s, the other is %s", n.head.Type, other.head.Type)
+				}
+			} else {
+				n.head.Type = other.head.Type
+			}
+		}
+
+		if other.base.Expression != other.head.Expression {
+			if n.base.Expression != n.head.Expression {
+				if n.head.Expression != other.head.Expression {
+					return true, fmt.Sprintf("conflict partition expression, one is %s, the other is %s", n.head.Expression, other.head.Expression)
+				}
+			} else {
+				n.head.Expression = other.head.Expression
+			}
+		}
+
+		if other.base.Value != other.head.Value {
+			if n.base.Value != n.head.Value {
+				if n.head.Value != other.head.Value {
+					return true, fmt.Sprintf("conflict partition value, one is %s, the other is %s", n.head.Value, other.head.Value)
+				}
+			} else {
+				n.head.Value = other.head.Value
+			}
+		}
+	}
+
+	for _, subpartitionName := range n.subpartitionNames {
+		subpartitionNode := n.subpartitions[subpartitionName]
+		otherSubpartitionNode, in := other.subpartitions[subpartitionName]
+		if !in {
+			continue
+		}
+		conflict, msg := subpartitionNode.tryMerge(otherSubpartitionNode)
+		if conflict {
+			return true, msg
+		}
+		delete(other.subpartitions, subpartitionName)
+	}
+
+	for _, remainingSubpartition := range other.subpartitions {
+		n.subpartitions[remainingSubpartition.name] = remainingSubpartition
+	}
+
+	return false, ""
+}
+
+func (n *metadataDiffPartitionNode) applyDiffTo(target *storepb.TableMetadata) error {
+	switch n.action {
+	case diffActionCreate:
+		target.Partitions = append(target.Partitions, n.head)
+	case diffActionDrop:
+		for i, partition := range target.Partitions {
+			if partition.Name == n.name {
+				target.Partitions = append(target.Partitions[:i], target.Partitions[i+1:]...)
+				break
+			}
+		}
+	case diffActionUpdate:
+		for i, partition := range target.Partitions {
+			if partition.Name == n.name {
+				target.Partitions[i] = n.head
 				break
 			}
 		}
@@ -936,12 +1091,13 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 		metadataDiffBaseNode: metadataDiffBaseNode{
 			action: action,
 		},
-		name:        name,
-		base:        base,
-		head:        head,
-		columnsMap:  make(map[string]*metadataDiffColumnNode),
-		foreignKeys: make(map[string]*metadataDiffForeignKeyNode),
-		indexes:     make(map[string]*metadataDiffIndexNode),
+		name:          name,
+		base:          base,
+		head:          head,
+		columnsMap:    make(map[string]*metadataDiffColumnNode),
+		foreignKeys:   make(map[string]*metadataDiffForeignKeyNode),
+		indexes:       make(map[string]*metadataDiffIndexNode),
+		partitionsMap: make(map[string]*metadataDiffPartitionNode),
 	}
 
 	columnNamesMap := make(map[string]bool)
@@ -1047,6 +1203,47 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 		}
 		if diffNode != nil {
 			tableNode.indexes[indexName] = diffNode
+		}
+	}
+
+	basePartitionMap := make(map[string]*storepb.TablePartitionMetadata)
+	if base != nil {
+		for _, partition := range base.Partitions {
+			basePartitionMap[partition.Name] = partition
+		}
+	}
+
+	headPartitionMap := make(map[string]*storepb.TablePartitionMetadata)
+	if head != nil {
+		for _, partition := range head.Partitions {
+			headPartitionMap[partition.Name] = partition
+		}
+	}
+
+	partitionNamesMap := make(map[string]bool)
+	var partitionNamesSlice []string
+
+	for partitionName := range basePartitionMap {
+		partitionNamesMap[partitionName] = true
+		partitionNamesSlice = append(partitionNamesSlice, partitionName)
+	}
+
+	for partitionName := range headPartitionMap {
+		if _, ok := partitionNamesMap[partitionName]; !ok {
+			partitionNamesSlice = append(partitionNamesSlice, partitionName)
+		}
+		partitionNamesMap[partitionName] = true
+	}
+
+	for _, partitionName := range partitionNamesSlice {
+		basePartition, headPartition := basePartitionMap[partitionName], headPartitionMap[partitionName]
+		diffNode, err := diffPartitionMetadata(basePartition, headPartition)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to diff partition %q", partitionName)
+		}
+		if diffNode != nil {
+			tableNode.partitionsMap[partitionName] = diffNode
+			tableNode.partitionNames = append(tableNode.partitionNames, partitionName)
 		}
 	}
 
@@ -1162,4 +1359,82 @@ func diffIndexMetadata(base, head *storepb.IndexMetadata) (*metadataDiffIndexNod
 		return nil, nil
 	}
 	return indexNode, nil
+}
+
+func diffPartitionMetadata(base, head *storepb.TablePartitionMetadata) (*metadataDiffPartitionNode, error) {
+	if base == nil && head == nil {
+		return nil, errors.New("base and head partition metadata cannot be nil both")
+	}
+
+	var name string
+	action := diffActionUpdate
+	if base == nil {
+		action = diffActionCreate
+		name = head.Name
+	} else if head == nil {
+		action = diffActionDrop
+		name = base.Name
+	} else {
+		name = base.Name
+	}
+
+	partitionNode := &metadataDiffPartitionNode{
+		metadataDiffBaseNode: metadataDiffBaseNode{
+			action: action,
+		},
+		name:          name,
+		base:          base,
+		head:          head,
+		subpartitions: make(map[string]*metadataDiffPartitionNode),
+	}
+
+	baseSubpartitionMap := make(map[string]*storepb.TablePartitionMetadata)
+	if base != nil {
+		for _, partition := range base.Subpartitions {
+			baseSubpartitionMap[partition.Name] = partition
+		}
+	}
+
+	headSubpartitionMap := make(map[string]*storepb.TablePartitionMetadata)
+	if head != nil {
+		for _, partition := range head.Subpartitions {
+			headSubpartitionMap[partition.Name] = partition
+		}
+	}
+
+	subpartitionNamesMap := make(map[string]bool)
+	var subpartitionNamesSlice []string
+
+	for subpartitionName := range baseSubpartitionMap {
+		subpartitionNamesMap[subpartitionName] = true
+		subpartitionNamesSlice = append(subpartitionNamesSlice, subpartitionName)
+	}
+
+	for subpartitionName := range headSubpartitionMap {
+		if _, ok := subpartitionNamesMap[subpartitionName]; !ok {
+			subpartitionNamesSlice = append(subpartitionNamesSlice, subpartitionName)
+		}
+		subpartitionNamesMap[subpartitionName] = true
+	}
+
+	for _, subpartitionName := range subpartitionNamesSlice {
+		baseSubpartition, headSubpartition := baseSubpartitionMap[subpartitionName], headSubpartitionMap[subpartitionName]
+		diffNode, err := diffPartitionMetadata(baseSubpartition, headSubpartition)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to diff subpartition %q", subpartitionName)
+		}
+		if diffNode != nil {
+			partitionNode.subpartitions[subpartitionName] = diffNode
+			partitionNode.subpartitionNames = append(partitionNode.subpartitionNames, subpartitionName)
+		}
+	}
+
+	if action == diffActionUpdate {
+		if len(partitionNode.subpartitions) > 0 || !proto.Equal(base, head) {
+			return partitionNode, nil
+		}
+		return nil, nil
+	}
+
+	return partitionNode, nil
 }
