@@ -1367,7 +1367,7 @@
       "vault-secret-engine-name": "Vault secret engine name",
       "vault-secret-engine-tips": "Solo admite motor KV v2.",
       "vault-secret-name": "Vault secret name",
-      "vault-key-name": "Vault key name"
+      "vault-key-name": "Vault key name for password"
     },
     "test-connection": "Probar conexión",
     "ignore-and-create": "Ignorar y crear",

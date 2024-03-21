@@ -1367,7 +1367,7 @@
       "vault-secret-engine-name": "Vault secret engine name",
       "vault-secret-engine-tips": "KV v2 エンジンのみをサポートします。",
       "vault-secret-name": "Vault secret name",
-      "vault-key-name": "Vault key name"
+      "vault-key-name": "Vault key name for password"
     },
     "test-connection": "無視して作成する",
     "ignore-and-create": "代わりに PostgreSQL のサンプルインスタンスを追加する",

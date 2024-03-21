@@ -1366,7 +1366,7 @@
       "vault-secret-engine-name": "Vault secret engine name",
       "vault-secret-engine-tips": "仅支持 KV v2 储存",
       "vault-secret-name": "Vault secret name",
-      "vault-key-name": "Vault key name"
+      "vault-key-name": "Vault key name for password"
     },
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",

@@ -1367,7 +1367,7 @@
       "vault-secret-engine-name": "Vault secret engine name",
       "vault-secret-engine-tips": "Chỉ hỗ trợ động cơ KV v2.",
       "vault-secret-name": "Vault secret name",
-      "vault-key-name": "Vault key name"
+      "vault-key-name": "Vault key name for password"
     },
     "test-connection": "Kiểm tra kết nối",
     "ignore-and-create": "Bỏ qua và tạo",
