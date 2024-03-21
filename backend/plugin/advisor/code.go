@@ -52,7 +52,7 @@ const (
 	StatementWhereMaximumLogicalOperatorCount Code = 225
 	StatementJoinColumnAttrsNotMatch          Code = 226
 	StatementDisallowMixDML                   Code = 227
-	StatementDisallowMixDDLDML                Code = 228
+	StatementMixDDLDML                        Code = 228
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
@@ -121,6 +121,7 @@ const (
 	DatabaseNotEmpty   Code = 701
 	NotCurrentDatabase Code = 702
 	DatabaseIsDeleted  Code = 703
+	DatabaseNotExists  Code = 704
 
 	// 801 ~ 899 index error code.
 	NotUseIndex                Code = 801
