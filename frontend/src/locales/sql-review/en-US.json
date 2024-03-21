@@ -465,9 +465,9 @@
       "title": "Disallow DMLs on the same table",
       "description": "Performing concurrent data modifications on a table can lead to challenges in accurately identifying the impacted rows. This consequently complicates the process of creating a precise backup of the affected data."
     },
-    "statement-disallow-mix-ddl-dml": {
-      "title": "Disallow mixing DDL and DML",
-      "description": "For optimal performance and data integrity, avoid combining DDL and DML statements within the same script."
+    "statement-prior-backup-check": {
+      "title": "Check for prior backup before data change",
+      "description": "This rule will check if a backup can be created before the data change. For more details, contains the backup target database exists and disallow the DDL statement."
     },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",

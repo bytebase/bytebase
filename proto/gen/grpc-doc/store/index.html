@@ -702,6 +702,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.PlanCheckRunConfig.PreUpdateBackupDetail"><span class="badge">M</span>PlanCheckRunConfig.PreUpdateBackupDetail</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.PlanCheckRunResult"><span class="badge">M</span>PlanCheckRunResult</a>
                 </li>
               
@@ -5542,6 +5546,13 @@ Use a generated title if empty. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>pre_update_backup_detail</td>
+                  <td><a href="#bytebase.store.PlanCheckRunConfig.PreUpdateBackupDetail">PlanCheckRunConfig.PreUpdateBackupDetail</a></td>
+                  <td>optional</td>
+                  <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5571,6 +5582,31 @@ Use a generated title if empty. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanCheckRunConfig.PreUpdateBackupDetail">PlanCheckRunConfig.PreUpdateBackupDetail</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The database for keeping the backup data.
+Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
             </tbody>
