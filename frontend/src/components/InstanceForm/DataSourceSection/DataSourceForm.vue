@@ -69,7 +69,11 @@
               : $t('instance.password-write-only')
           "
           :disabled="!allowEdit || dataSource.useEmptyPassword"
-          :value="dataSource.useEmptyPassword ? '' : dataSource.updatedPassword"
+          :value="
+            dataSource.useEmptyPassword
+              ? ''
+              : getSensitiveValue(dataSource.updatedPassword)
+          "
           @update:value="dataSource.updatedPassword = $event.trim()"
         />
       </div>
@@ -79,8 +83,8 @@
             {{ $t("instance.external-secret.vault-url") }}
           </label>
           <BBTextField
-            :required="true"
             v-model:value="dataSource.externalSecret.url"
+            :required="true"
             class="mt-1 w-full"
             :disabled="!allowEdit"
             :placeholder="$t('instance.external-secret.vault-url')"
@@ -123,10 +127,14 @@
             />
           </div>
           <BBTextField
-            v-model:value="dataSource.externalSecret.token"
+            :value="getSensitiveValue(dataSource.externalSecret.token ?? '')"
             class="mt-1 w-full"
             :disabled="!allowEdit"
             :placeholder="secretInputPlaceholder"
+            @update:value="(val: string) => {
+              const ds = dataSource;
+              ds.externalSecret!.token = val;
+            }"
           />
         </div>
         <div v-else-if="dataSource.externalSecret.appRole" class="space-y-4">
@@ -137,8 +145,8 @@
               }}
             </label>
             <BBTextField
-              :required="true"
               v-model:value="dataSource.externalSecret.appRole.roleId"
+              :required="true"
               class="mt-1 w-full"
               :disabled="!allowEdit"
               :placeholder="
@@ -167,8 +175,8 @@
               </template>
             </i18n-t>
             <NRadioGroup
-              class="textlabel my-1"
               v-model:value="dataSource.externalSecret.appRole.type"
+              class="textlabel my-1"
             >
               <NRadio
                 :value="
@@ -205,10 +213,16 @@
               </NRadio>
             </NRadioGroup>
             <BBTextField
-              v-model:value="dataSource.externalSecret.appRole.secretId"
+              :value="
+                getSensitiveValue(dataSource.externalSecret.appRole.secretId)
+              "
               class="mt-1 w-full"
               :disabled="!allowEdit"
               :placeholder="secretInputPlaceholder"
+              @update:value="(val: string) => {
+                const ds = dataSource;
+                ds.externalSecret!.appRole!.secretId = val;
+              }"
             />
           </div>
         </div>
@@ -217,8 +231,8 @@
             {{ $t("instance.external-secret.vault-secret-engine-name") }}
           </label>
           <BBTextField
-            :required="true"
             v-model:value="dataSource.externalSecret.engineName"
+            :required="true"
             class="mt-1 w-full"
             :disabled="!allowEdit"
             :placeholder="
@@ -231,8 +245,8 @@
             {{ $t("instance.external-secret.vault-secret-name") }}
           </label>
           <BBTextField
-            :required="true"
             v-model:value="dataSource.externalSecret.secretName"
+            :required="true"
             class="mt-1 w-full"
             :disabled="!allowEdit"
             :placeholder="$t('instance.external-secret.vault-secret-name')"
@@ -243,8 +257,8 @@
             {{ $t("instance.external-secret.vault-key-name") }}
           </label>
           <BBTextField
-            :required="true"
             v-model:value="dataSource.externalSecret.keyName"
+            :required="true"
             class="mt-1 w-full"
             :disabled="!allowEdit"
             :placeholder="$t('instance.external-secret.vault-key-name')"
@@ -537,6 +551,12 @@ const secretInputPlaceholder = computed(() => {
 
   return "";
 });
+
+const getSensitiveValue = (val: string) => {
+  return Array.from({ length: val.length })
+    .map((_) => "*")
+    .join("");
+};
 
 const changePasswordType = (passwordType: "PLAIN" | "EXTERNAL_SECRET") => {
   const ds = props.dataSource;
