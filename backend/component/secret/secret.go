@@ -2,6 +2,7 @@
 package secret
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
@@ -9,12 +10,23 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var secretCache = make(map[string]string)
 
 // ReplaceExternalSecret replaces the secret with external secret.
-func ReplaceExternalSecret(secret string) (string, error) {
+func ReplaceExternalSecret(ctx context.Context, secret string, externalSecret *storepb.DataSourceExternalSecret) (string, error) {
+	if externalSecret != nil {
+		// TODO: consider cache?
+		return getSecretFromVault(ctx, externalSecret)
+	}
+
+	return getSecretFromText(secret)
+}
+
+func getSecretFromText(secret string) (string, error) {
 	ok, secretURL := GetExternalSecretURL(secret)
 	if !ok {
 		return secret, nil

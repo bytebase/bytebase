@@ -614,6 +614,10 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType"><span class="badge">E</span>DataSourceExternalSecret.AppRoleAuthOption.SecretType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSourceExternalSecret.AuthType"><span class="badge">E</span>DataSourceExternalSecret.AuthType</a>
                 </li>
               
@@ -6302,7 +6306,7 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
-                  <td>key_name</td>
+                  <td>password_key_name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>the key name for the password. </p></td>
@@ -6316,7 +6320,7 @@ Used for authentication when connecting to the data source. </p></td>
         
       
         <h3 id="bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption">DataSourceExternalSecret.AppRoleAuthOption</h3>
-        <p>app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle</p>
+        <p></p>
 
         
           <table class="field-table">
@@ -6336,7 +6340,21 @@ Used for authentication when connecting to the data source. </p></td>
                   <td>secret_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
+                  <td><p>the secret id for the role without ttl. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</a></td>
+                  <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mount_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The path where the approle auth method is mounted. </p></td>
                 </tr>
               
             </tbody>
@@ -6932,6 +6950,35 @@ Format: instances/{instance} </p></td>
       
 
       
+        <h3 id="bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SECRET_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PLAIN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ENVIRONMENT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.DataSourceExternalSecret.AuthType">DataSourceExternalSecret.AuthType</h3>
         <p></p>
         <table class="enum-table">
@@ -6949,13 +6996,13 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>TOKEN</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>ref: https://developer.hashicorp.com/vault/docs/auth/token</p></td>
               </tr>
             
               <tr>
                 <td>APP_ROLE</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>ref: https://developer.hashicorp.com/vault/docs/auth/approle</p></td>
               </tr>
             
           </tbody>
@@ -6978,7 +7025,7 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>VAULT_KV_V2</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2</p></td>
               </tr>
             
           </tbody>

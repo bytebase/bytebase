@@ -116,6 +116,7 @@
     - [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest)
     - [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest)
   
+    - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType)
     - [DataSourceType](#bytebase-v1-DataSourceType)
@@ -2013,7 +2014,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | token | [string](#string) |  |  |
 | engine_name | [string](#string) |  | engine name is the name for secret engine. |
 | secret_name | [string](#string) |  | the secret name in the engine to store the password. |
-| key_name | [string](#string) |  | the key name for the password. |
+| password_key_name | [string](#string) |  | the key name for the password. |
 
 
 
@@ -2023,13 +2024,15 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 <a name="bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption"></a>
 
 ### DataSourceExternalSecret.AppRoleAuthOption
-app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
+
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | role_id | [string](#string) |  |  |
-| secret_id | [string](#string) |  |  |
+| secret_id | [string](#string) |  | the secret id for the role without ttl. |
+| type | [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType) |  |  |
+| mount_path | [string](#string) |  | The path where the approle auth method is mounted. |
 
 
 
@@ -2304,6 +2307,19 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
  
 
 
+<a name="bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType"></a>
+
+### DataSourceExternalSecret.AppRoleAuthOption.SecretType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SECRET_TYPE_UNSPECIFIED | 0 |  |
+| PLAIN | 1 |  |
+| ENVIRONMENT | 2 |  |
+
+
+
 <a name="bytebase-v1-DataSourceExternalSecret-AuthType"></a>
 
 ### DataSourceExternalSecret.AuthType
@@ -2312,8 +2328,8 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | AUTH_TYPE_UNSPECIFIED | 0 |  |
-| TOKEN | 1 |  |
-| APP_ROLE | 2 |  |
+| TOKEN | 1 | ref: https://developer.hashicorp.com/vault/docs/auth/token |
+| APP_ROLE | 2 | ref: https://developer.hashicorp.com/vault/docs/auth/approle |
 
 
 
@@ -2325,7 +2341,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | SAECRET_TYPE_UNSPECIFIED | 0 |  |
-| VAULT_KV_V2 | 1 |  |
+| VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
 
 
 

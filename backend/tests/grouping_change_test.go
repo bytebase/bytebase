@@ -155,7 +155,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 						Title:       prepareInstance.instanceTitle,
 						Engine:      v1pb.Engine_SQLITE,
 						Environment: "environments/prod",
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
 						Activation:  true,
 					},
 				})
@@ -397,7 +397,7 @@ func TestCreateTableGroup(t *testing.T) {
 						Title:       prepareInstance.instanceTitle,
 						Engine:      v1pb.Engine_SQLITE,
 						Environment: "environments/prod",
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir}},
+						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
 						Activation:  true,
 					},
 				})
@@ -703,7 +703,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 						Title:       prepareInstance.instanceID,
 						Engine:      v1pb.Engine_MYSQL,
 						Environment: "environments/prod",
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "root", Password: ""}},
+						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "root", Password: "", Id: "admin"}},
 						Activation:  true,
 					},
 				})

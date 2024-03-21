@@ -1339,7 +1339,36 @@
     "type-or-paste-credentials": "CREDENTIALS を入力または貼り付けしてください - 書き込みのみ",
     "type-or-paste-credentials-write-only": "YOUR_DB_PWD - 書き込みのみ",
     "password-write-only": "外部シークレット管理エンドポイントを指定することもできます",
-    "secret-manager-tip": "接続をテストする",
+    "password-type": {
+      "password": "パスワード",
+      "password-tip": "外部シークレット管理エンドポイントを指定することもできます",
+      "external-secret": "外部シークレット (Vault)"
+    },
+    "external-secret": {
+      "vault-url": "Vault URL",
+      "vault-auth-type": {
+        "self": "Vault auth type",
+        "token": {
+          "self": "Token",
+          "api-token": "Vault API token",
+          "tips": "TTL のないルート トークン。"
+        },
+        "app-role": {
+          "self": "App role",
+          "role-id": "Auth role id",
+          "secret-id": "Auth secret id",
+          "secret-id-plain-text": "ロールシークレットIDのプレーンテキスト",
+          "secret-id-environment": "ロールシークレットIDの環境名",
+          "secret-plain-text": "プレーンテキスト",
+          "secret-env-name": "環境名",
+          "secret-tips": "TTL なしのラップされていないシークレット ID。 プレーン テキストを使用することも、環境ファイルまたはローカル ファイルに置くこともできます。{learn_more}"
+        }
+      },
+      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-tips": "KV v2 エンジンのみをサポートします。",
+      "vault-secret-name": "Vault secret name",
+      "vault-key-name": "Vault key name for password"
+    },
     "test-connection": "無視して作成する",
     "ignore-and-create": "代わりに PostgreSQL のサンプルインスタンスを追加する",
     "add-a-postgresql-sample-instance": "PostgreSQL のサンプルインスタンスが正常に追加され、接続情報が入力されました。",

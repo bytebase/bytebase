@@ -82,7 +82,7 @@ func TestTenant(t *testing.T) {
 				Engine:      v1pb.Engine_SQLITE,
 				Environment: "environments/test",
 				Activation:  true,
-				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
+				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 			},
 		})
 		a.NoError(err)
@@ -96,7 +96,7 @@ func TestTenant(t *testing.T) {
 				Engine:      v1pb.Engine_SQLITE,
 				Environment: "environments/prod",
 				Activation:  true,
-				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
+				DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir, Id: "admin"}},
 			},
 		})
 		a.NoError(err)
@@ -361,7 +361,7 @@ func TestTenantVCS(t *testing.T) {
 						Engine:      v1pb.Engine_SQLITE,
 						Environment: "environments/test",
 						Activation:  true,
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
+						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 					},
 				})
 				a.NoError(err)
@@ -375,7 +375,7 @@ func TestTenantVCS(t *testing.T) {
 						Engine:      v1pb.Engine_SQLITE,
 						Environment: "environments/prod",
 						Activation:  true,
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir}},
+						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir, Id: "admin"}},
 					},
 				})
 				a.NoError(err)
@@ -671,7 +671,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 						Engine:      v1pb.Engine_SQLITE,
 						Environment: testEnvironment.Name,
 						Activation:  true,
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir}},
+						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 					},
 				})
 				a.NoError(err)

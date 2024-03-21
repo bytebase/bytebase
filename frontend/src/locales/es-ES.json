@@ -1339,7 +1339,36 @@
     "type-or-paste-credentials": "Escriba o pegue las CREDENCIALES",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "password-write-only": "SU_DB_PWD - solo escritura",
-    "secret-manager-tip": "También puede especificar un punto final de gestión de secreto externo",
+    "password-type": {
+      "password": "Contraseña",
+      "password-tip": "También puede especificar un punto final de gestión de secreto externo",
+      "external-secret": "Secreto externo (Vault)"
+    },
+    "external-secret": {
+      "vault-url": "Vault URL",
+      "vault-auth-type": {
+        "self": "Vault auth type",
+        "token": {
+          "self": "Simbólico",
+          "api-token": "Vault API token",
+          "tips": "Un token raíz sin TTL."
+        },
+        "app-role": {
+          "self": "App role",
+          "role-id": "Auth role id",
+          "secret-id": "Auth secret id",
+          "secret-id-plain-text": "Texto sin formato para identificación secreta de rol",
+          "secret-id-environment": "Nombre del entorno para la identificación secreta del rol",
+          "secret-plain-text": "Texto sin formato",
+          "secret-env-name": "Nombre del entorno",
+          "secret-tips": "Una identificación secreta desenvuelta sin TTL. Puede utilizar texto sin formato o colocarlo en el entorno o en el archivo local. {learn_more}"
+        }
+      },
+      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-tips": "Solo admite motor KV v2.",
+      "vault-secret-name": "Vault secret name",
+      "vault-key-name": "Vault key name for password"
+    },
     "test-connection": "Probar conexión",
     "ignore-and-create": "Ignorar y crear",
     "add-a-postgresql-sample-instance": "Agregue una instancia de muestra de PostgreSQL en su lugar",
