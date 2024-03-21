@@ -22,7 +22,7 @@ const (
 		"%s;\n"
 )
 
-func (d *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
+func (d *Driver) Dump(ctx context.Context, _ io.Writer, schemaOnly bool) (string, error) {
 	instanceMetadata, err := d.SyncInstance(ctx)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to sync instance")
@@ -56,7 +56,6 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (stri
 		}
 
 		// TODO(tommy): dump indexes.
-
 	}
 
 	if schemaOnly {

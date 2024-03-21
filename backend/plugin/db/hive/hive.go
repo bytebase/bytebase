@@ -95,21 +95,24 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 		return 0, errors.Errorf("no database connection established")
 	}
 
-	var affectedRows int64
+	var (
+		affectedRows int64
+		cursor       = d.dbClient.Cursor()
+	)
+	defer cursor.Close()
+
 	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split statements")
 	}
 
 	for _, statement := range statements {
-		cursor := d.dbClient.Cursor()
 		cursor.Execute(ctx, statement.Text, false)
 		if cursor.Err != nil {
 			return 0, errors.Wrapf(cursor.Err, "failed to execute statement %s", statement.Text)
 		}
 		operationStatus := cursor.Poll(false)
 		affectedRows += operationStatus.GetNumModifiedRows()
-		cursor.Close()
 	}
 
 	return affectedRows, nil
@@ -138,7 +141,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 			statementStr = fmt.Sprintf("%s LIMIT %d", statementStr, queryCtx.Limit)
 		}
 
-		result, err := d.runSingleQuery(ctx, statementStr, cursor)
+		result, err := runSingleQuery(ctx, statementStr, cursor)
 		if err != nil {
 			result.Error = err.Error()
 			return nil, err
@@ -187,7 +190,7 @@ func parseValueType(value any, gohiveType string) (*v1pb.RowValue, error) {
 	return &rowValue, nil
 }
 
-func (d *Driver) runSingleQuery(ctx context.Context, statement string, cursor *gohive.Cursor) (*v1pb.QueryResult, error) {
+func runSingleQuery(ctx context.Context, statement string, cursor *gohive.Cursor) (*v1pb.QueryResult, error) {
 	var (
 		result    = v1pb.QueryResult{}
 		startTime = time.Now()
