@@ -336,6 +336,9 @@ message DataSourceExternalSecret {
     }
 
     SecretType type = 3;
+
+    // The path where the approle auth method is mounted.
+    string mount_path = 4;
   }
 
   oneof auth_option {

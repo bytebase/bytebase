@@ -90,7 +90,8 @@
             :placeholder="$t('instance.external-secret.vault-url')"
           />
         </div>
-        <div class="sm:col-span-2 sm:col-start-1 space-y-2">
+        <!-- App role is not enabled -->
+        <!-- <div class="sm:col-span-2 sm:col-start-1 space-y-2">
           <label class="textlabel block">
             {{ $t("instance.external-secret.vault-auth-type.self") }}
           </label>
@@ -106,7 +107,7 @@
               {{ $t("instance.external-secret.vault-auth-type.app-role.self") }}
             </NRadio>
           </NRadioGroup>
-        </div>
+        </div> -->
         <div
           v-if="
             dataSource.externalSecret.authType ===
@@ -145,13 +146,19 @@
               }}
             </label>
             <BBTextField
-              v-model:value="dataSource.externalSecret.appRole.roleId"
+              :value="
+                getSensitiveValue(dataSource.externalSecret.appRole.roleId)
+              "
               :required="true"
               class="mt-1 w-full"
               :disabled="!allowEdit"
-              :placeholder="
-                $t('instance.external-secret.vault-auth-type.app-role.role-id')
-              "
+              :placeholder="`${$t(
+                'instance.external-secret.vault-auth-type.app-role.role-id'
+              )} - ${$t('common.write-only')}`"
+              @update:value="(val: string) => {
+                const ds = dataSource;
+                ds.externalSecret!.appRole!.roleId = val;
+              }"
             />
           </div>
           <div class="sm:col-span-2 sm:col-start-1">

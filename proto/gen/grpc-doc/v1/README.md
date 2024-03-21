@@ -2032,6 +2032,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | role_id | [string](#string) |  |  |
 | secret_id | [string](#string) |  | the secret id for the role without ttl. |
 | type | [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType) |  |  |
+| mount_path | [string](#string) |  | The path where the approle auth method is mounted. |
 
 
 

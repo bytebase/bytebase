@@ -22,6 +22,7 @@ export interface DataSourceExternalSecret {
 
 export enum DataSourceExternalSecret_SecretType {
   SAECRET_TYPE_UNSPECIFIED = 0,
+  /** VAULT_KV_V2 - ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 */
   VAULT_KV_V2 = 1,
   UNRECOGNIZED = -1,
 }
@@ -55,7 +56,9 @@ export function dataSourceExternalSecret_SecretTypeToJSON(object: DataSourceExte
 
 export enum DataSourceExternalSecret_AuthType {
   AUTH_TYPE_UNSPECIFIED = 0,
+  /** TOKEN - ref: https://developer.hashicorp.com/vault/docs/auth/token */
   TOKEN = 1,
+  /** APP_ROLE - ref: https://developer.hashicorp.com/vault/docs/auth/approle */
   APP_ROLE = 2,
   UNRECOGNIZED = -1,
 }
@@ -92,11 +95,13 @@ export function dataSourceExternalSecret_AuthTypeToJSON(object: DataSourceExtern
   }
 }
 
-/** app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle */
 export interface DataSourceExternalSecret_AppRoleAuthOption {
   roleId: string;
+  /** the secret id for the role without ttl. */
   secretId: string;
   type: DataSourceExternalSecret_AppRoleAuthOption_SecretType;
+  /** The path where the approle auth method is mounted. */
+  mountPath: string;
 }
 
 export enum DataSourceExternalSecret_AppRoleAuthOption_SecretType {
@@ -353,7 +358,7 @@ export const DataSourceExternalSecret = {
 };
 
 function createBaseDataSourceExternalSecret_AppRoleAuthOption(): DataSourceExternalSecret_AppRoleAuthOption {
-  return { roleId: "", secretId: "", type: 0 };
+  return { roleId: "", secretId: "", type: 0, mountPath: "" };
 }
 
 export const DataSourceExternalSecret_AppRoleAuthOption = {
@@ -366,6 +371,9 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
     }
     if (message.type !== 0) {
       writer.uint32(24).int32(message.type);
+    }
+    if (message.mountPath !== "") {
+      writer.uint32(34).string(message.mountPath);
     }
     return writer;
   },
@@ -398,6 +406,13 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
 
           message.type = reader.int32() as any;
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.mountPath = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -412,6 +427,7 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
       roleId: isSet(object.roleId) ? globalThis.String(object.roleId) : "",
       secretId: isSet(object.secretId) ? globalThis.String(object.secretId) : "",
       type: isSet(object.type) ? dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(object.type) : 0,
+      mountPath: isSet(object.mountPath) ? globalThis.String(object.mountPath) : "",
     };
   },
 
@@ -426,6 +442,9 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
     if (message.type !== 0) {
       obj.type = dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToJSON(message.type);
     }
+    if (message.mountPath !== "") {
+      obj.mountPath = message.mountPath;
+    }
     return obj;
   },
 
@@ -439,6 +458,7 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
     message.roleId = object.roleId ?? "";
     message.secretId = object.secretId ?? "";
     message.type = object.type ?? 0;
+    message.mountPath = object.mountPath ?? "";
     return message;
   },
 };

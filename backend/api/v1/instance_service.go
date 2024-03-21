@@ -1076,10 +1076,11 @@ func convertToV1DataSourceExternalSecret(externalSecret *storepb.DataSourceExter
 	// clear sensitive data.
 	switch resp.AuthType {
 	case v1pb.DataSourceExternalSecret_APP_ROLE:
+		appRole := secret.GetAppRole()
 		resp.AuthOption = &v1pb.DataSourceExternalSecret_AppRole{
 			AppRole: &v1pb.DataSourceExternalSecret_AppRoleAuthOption{
-				RoleId: secret.GetAppRole().RoleId,
-				Type:   secret.GetAppRole().Type,
+				Type:      appRole.Type,
+				MountPath: appRole.MountPath,
 			},
 		}
 	case v1pb.DataSourceExternalSecret_TOKEN:

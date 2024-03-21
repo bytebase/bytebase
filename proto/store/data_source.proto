@@ -7,6 +7,7 @@ option go_package = "generated-go/store";
 message DataSourceExternalSecret {
   enum SecretType {
     SAECRET_TYPE_UNSPECIFIED = 0;
+    // ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2
     VAULT_KV_V2 = 1;
   }
   SecretType secret_type = 1;
@@ -14,14 +15,16 @@ message DataSourceExternalSecret {
 
   enum AuthType {
     AUTH_TYPE_UNSPECIFIED = 0;
+    // ref: https://developer.hashicorp.com/vault/docs/auth/token
     TOKEN = 1;
+    // ref: https://developer.hashicorp.com/vault/docs/auth/approle
     APP_ROLE = 2;
   }
   AuthType auth_type = 3;
 
-  // app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
   message AppRoleAuthOption {
     string role_id = 1;
+    // the secret id for the role without ttl.
     string secret_id = 2;
 
     enum SecretType {
@@ -32,6 +35,9 @@ message DataSourceExternalSecret {
     }
 
     SecretType type = 3;
+
+    // The path where the approle auth method is mounted.
+    string mount_path = 4;
   }
 
   oneof auth_option {

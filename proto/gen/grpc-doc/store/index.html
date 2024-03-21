@@ -3746,7 +3746,7 @@ Example: projects/project-id/branches/branch-id. </p></td>
         
       
         <h3 id="bytebase.store.DataSourceExternalSecret.AppRoleAuthOption">DataSourceExternalSecret.AppRoleAuthOption</h3>
-        <p>app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle</p>
+        <p></p>
 
         
           <table class="field-table">
@@ -3766,7 +3766,7 @@ Example: projects/project-id/branches/branch-id. </p></td>
                   <td>secret_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>the secret id for the role without ttl. </p></td>
                 </tr>
               
                 <tr>
@@ -3774,6 +3774,13 @@ Example: projects/project-id/branches/branch-id. </p></td>
                   <td><a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mount_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The path where the approle auth method is mounted. </p></td>
                 </tr>
               
             </tbody>
@@ -3933,13 +3940,13 @@ Used for authentication when connecting to the data source. </p></td>
               <tr>
                 <td>TOKEN</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>ref: https://developer.hashicorp.com/vault/docs/auth/token</p></td>
               </tr>
             
               <tr>
                 <td>APP_ROLE</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>ref: https://developer.hashicorp.com/vault/docs/auth/approle</p></td>
               </tr>
             
           </tbody>
@@ -3962,7 +3969,7 @@ Used for authentication when connecting to the data source. </p></td>
               <tr>
                 <td>VAULT_KV_V2</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2</p></td>
               </tr>
             
           </tbody>

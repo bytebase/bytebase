@@ -39,10 +39,15 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 		case storepb.DataSourceExternalSecret_AppRoleAuthOption_FILE:
 			appRoleSecret.FromFile = role.SecretId
 		}
+
+		opts := []approle.LoginOption{}
+		if role.MountPath != "" {
+			opts = append(opts, approle.WithMountPath(role.MountPath))
+		}
 		appRoleAuth, err := approle.NewAppRoleAuth(
 			role.RoleId,
 			appRoleSecret,
-			// do not set wrapping token which not matches our scenario.
+			opts...,
 		)
 		if err != nil {
 			return nil, err
