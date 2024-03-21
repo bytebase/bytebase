@@ -31,6 +31,7 @@ func TestGetDesignSchema(t *testing.T) {
 			"testdata/get-design-schema/partition/list.yaml",
 			"testdata/get-design-schema/partition/hash.yaml",
 			"testdata/get-design-schema/partition/key.yaml",
+			"testdata/get-design-schema/partition/write-default.yaml",
 		}
 	)
 

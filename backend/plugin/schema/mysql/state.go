@@ -943,8 +943,14 @@ func (p *partitionState) toString(buf io.StringWriter) error {
 				return err
 			}
 			if preposition != "" {
-				if _, err := buf.WriteString(fmt.Sprintf(" VALUES %s (%s)", preposition, partition.value)); err != nil {
-					return err
+				if partition.value != "MAXVALUE" {
+					if _, err := buf.WriteString(fmt.Sprintf(" VALUES %s (%s)", preposition, partition.value)); err != nil {
+						return err
+					}
+				} else {
+					if _, err := buf.WriteString(fmt.Sprintf(" VALUES %s %s", preposition, partition.value)); err != nil {
+						return err
+					}
 				}
 			}
 
