@@ -915,6 +915,28 @@ func (p *partitionState) toString(buf io.StringWriter, partitionClauseCtx mysql.
 			if _, err := buf.WriteString("KEY "); err != nil {
 				return err
 			}
+			if partitionClauseCtx != nil && partitionClauseCtx.SubPartitions() != nil {
+				if v := partitionClauseCtx.SubPartitions().PartitionKeyAlgorithm(); v != nil {
+					numText := v.Real_ulong_number().GetText()
+					num, err := strconv.Atoi(numText)
+					if err != nil {
+						slog.Warn(err.Error())
+					} else if num == 1 || (num == 0 && len(curComment) == 0) {
+						if _, err := buf.WriteString(fmt.Sprintf("*/ /*!50611 ALGORITHM = %d */ ", num)); err != nil {
+							return err
+						}
+						if len(curComment) > 0 {
+							s := curComment
+							if curComment[0] == '\n' {
+								s = curComment[1:]
+							}
+							if _, err := buf.WriteString(fmt.Sprintf("%s ", s)); err != nil {
+								return err
+							}
+						}
+					}
+				}
+			}
 			fields := splitPartitionExprIntoFields(p.subInfo.expr)
 			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
 				return err
