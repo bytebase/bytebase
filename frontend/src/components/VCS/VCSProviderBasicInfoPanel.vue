@@ -61,7 +61,7 @@ import { NRadio, NRadioGroup } from "naive-ui";
 import { computed, onUnmounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { TEXT_VALIDATION_DELAY, VCSConfig } from "@/types";
-import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
+import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { isUrl } from "@/utils";
 import { vcsListByUIType } from "./utils";
 
@@ -87,21 +87,21 @@ onUnmounted(() => {
 });
 
 const namePlaceholder = computed((): string => {
-  if (props.config.type === ExternalVersionControl_Type.GITLAB) {
+  if (props.config.type === VCSProvider_Type.GITLAB) {
     if (props.config.uiType == "GITLAB_SELF_HOST") {
       return t("gitops.setting.add-git-provider.gitlab-self-host");
     } else if (props.config.uiType == "GITLAB_COM") {
       return "GitLab.com";
     }
-  } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
+  } else if (props.config.type === VCSProvider_Type.GITHUB) {
     if (props.config.uiType == "GITHUB_COM") {
       return "GitHub.com";
     } else if (props.config.uiType === "GITHUB_ENTERPRISE") {
       return "Self Host GitHub Enterprise";
     }
-  } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
+  } else if (props.config.type === VCSProvider_Type.BITBUCKET) {
     return "Bitbucket.org";
-  } else if (props.config.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
+  } else if (props.config.type === VCSProvider_Type.AZURE_DEVOPS) {
     return "Azure DevOps";
   }
   return "";
@@ -109,19 +109,19 @@ const namePlaceholder = computed((): string => {
 
 const instanceUrlLabel = computed((): string => {
   switch (props.config.type) {
-    case ExternalVersionControl_Type.GITLAB:
+    case VCSProvider_Type.GITLAB:
       return t(
         "gitops.setting.add-git-provider.basic-info.gitlab-instance-url"
       );
-    case ExternalVersionControl_Type.GITHUB:
+    case VCSProvider_Type.GITHUB:
       return t(
         "gitops.setting.add-git-provider.basic-info.github-instance-url"
       );
-    case ExternalVersionControl_Type.BITBUCKET:
+    case VCSProvider_Type.BITBUCKET:
       return t(
         "gitops.setting.add-git-provider.basic-info.bitbucket-instance-url"
       );
-    case ExternalVersionControl_Type.AZURE_DEVOPS:
+    case VCSProvider_Type.AZURE_DEVOPS:
       return t("gitops.setting.add-git-provider.basic-info.azure-instance-url");
     default:
       return "";
@@ -129,19 +129,19 @@ const instanceUrlLabel = computed((): string => {
 });
 
 const instanceUrlPlaceholder = computed((): string => {
-  if (props.config.type === ExternalVersionControl_Type.GITLAB) {
+  if (props.config.type === VCSProvider_Type.GITLAB) {
     if (props.config.uiType == "GITLAB_SELF_HOST") {
       return "https://gitlab.example.com";
     } else if (props.config.uiType == "GITLAB_COM") {
       return "https://gitlab.com";
     }
-  } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
+  } else if (props.config.type === VCSProvider_Type.GITHUB) {
     if (props.config.uiType == "GITHUB_COM") {
       return "https://github.com";
     } else if (props.config.uiType == "GITHUB_ENTERPRISE") {
       return "https://github.companyname.com";
     }
-  } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
+  } else if (props.config.type === VCSProvider_Type.BITBUCKET) {
     return "https://bitbucket.org";
   }
   return "";
@@ -150,11 +150,11 @@ const instanceUrlPlaceholder = computed((): string => {
 // github.com instance url is always https://github.com
 const instanceUrlDisabled = computed((): boolean => {
   return (
-    (props.config.type === ExternalVersionControl_Type.GITHUB &&
+    (props.config.type === VCSProvider_Type.GITHUB &&
       props.config.uiType == "GITHUB_COM") ||
-    props.config.type === ExternalVersionControl_Type.BITBUCKET ||
-    props.config.type === ExternalVersionControl_Type.AZURE_DEVOPS ||
-    (props.config.type === ExternalVersionControl_Type.GITLAB &&
+    props.config.type === VCSProvider_Type.BITBUCKET ||
+    props.config.type === VCSProvider_Type.AZURE_DEVOPS ||
+    (props.config.type === VCSProvider_Type.GITLAB &&
       props.config.uiType == "GITLAB_COM")
   );
 });
@@ -190,32 +190,32 @@ const changeUrl = (value: string) => {
 const changeUIType = () => {
   switch (props.config.uiType) {
     case "GITLAB_SELF_HOST":
-      props.config.type = ExternalVersionControl_Type.GITLAB;
+      props.config.type = VCSProvider_Type.GITLAB;
       props.config.instanceUrl = "";
       props.config.name = t("gitops.setting.add-git-provider.gitlab-self-host");
       break;
     case "GITLAB_COM":
-      props.config.type = ExternalVersionControl_Type.GITLAB;
+      props.config.type = VCSProvider_Type.GITLAB;
       props.config.instanceUrl = "https://gitlab.com";
       props.config.name = "GitLab.com";
       break;
     case "GITHUB_COM":
-      props.config.type = ExternalVersionControl_Type.GITHUB;
+      props.config.type = VCSProvider_Type.GITHUB;
       props.config.instanceUrl = "https://github.com";
       props.config.name = "GitHub.com";
       break;
     case "GITHUB_ENTERPRISE":
-      props.config.type = ExternalVersionControl_Type.GITHUB;
+      props.config.type = VCSProvider_Type.GITHUB;
       props.config.instanceUrl = "";
       props.config.name = "Self Host GitHub Enterprise";
       break;
     case "BITBUCKET_ORG":
-      props.config.type = ExternalVersionControl_Type.BITBUCKET;
+      props.config.type = VCSProvider_Type.BITBUCKET;
       props.config.instanceUrl = "https://bitbucket.org";
       props.config.name = "Bitbucket.org";
       break;
     case "AZURE_DEVOPS":
-      props.config.type = ExternalVersionControl_Type.AZURE_DEVOPS;
+      props.config.type = VCSProvider_Type.AZURE_DEVOPS;
       props.config.instanceUrl = "https://dev.azure.com";
       props.config.name = "Azure DevOps";
       break;

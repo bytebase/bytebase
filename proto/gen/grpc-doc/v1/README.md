@@ -266,28 +266,6 @@
   
     - [EnvironmentService](#bytebase-v1-EnvironmentService)
   
-- [v1/externalvs_service.proto](#v1_externalvs_service-proto)
-    - [CreateExternalVersionControlRequest](#bytebase-v1-CreateExternalVersionControlRequest)
-    - [DeleteExternalVersionControlRequest](#bytebase-v1-DeleteExternalVersionControlRequest)
-    - [ExchangeToken](#bytebase-v1-ExchangeToken)
-    - [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest)
-    - [ExternalVersionControl](#bytebase-v1-ExternalVersionControl)
-    - [GetExternalVersionControlRequest](#bytebase-v1-GetExternalVersionControlRequest)
-    - [ListExternalVersionControlsRequest](#bytebase-v1-ListExternalVersionControlsRequest)
-    - [ListExternalVersionControlsResponse](#bytebase-v1-ListExternalVersionControlsResponse)
-    - [ListProjectGitOpsInfoRequest](#bytebase-v1-ListProjectGitOpsInfoRequest)
-    - [ListProjectGitOpsInfoResponse](#bytebase-v1-ListProjectGitOpsInfoResponse)
-    - [OAuthToken](#bytebase-v1-OAuthToken)
-    - [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo)
-    - [SearchExternalVersionControlProjectsRequest](#bytebase-v1-SearchExternalVersionControlProjectsRequest)
-    - [SearchExternalVersionControlProjectsResponse](#bytebase-v1-SearchExternalVersionControlProjectsResponse)
-    - [SearchExternalVersionControlProjectsResponse.Project](#bytebase-v1-SearchExternalVersionControlProjectsResponse-Project)
-    - [UpdateExternalVersionControlRequest](#bytebase-v1-UpdateExternalVersionControlRequest)
-  
-    - [ExternalVersionControl.Type](#bytebase-v1-ExternalVersionControl-Type)
-  
-    - [ExternalVersionControlService](#bytebase-v1-ExternalVersionControlService)
-  
 - [v1/idp_service.proto](#v1_idp_service-proto)
     - [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest)
     - [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest)
@@ -370,6 +348,28 @@
     - [LogEntity.Level](#bytebase-v1-LogEntity-Level)
   
     - [LoggingService](#bytebase-v1-LoggingService)
+  
+- [v1/vcs_provider_service.proto](#v1_vcs_provider_service-proto)
+    - [CreateVCSProviderRequest](#bytebase-v1-CreateVCSProviderRequest)
+    - [DeleteVCSProviderRequest](#bytebase-v1-DeleteVCSProviderRequest)
+    - [ExchangeToken](#bytebase-v1-ExchangeToken)
+    - [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest)
+    - [GetVCSProviderRequest](#bytebase-v1-GetVCSProviderRequest)
+    - [ListProjectGitOpsInfoRequest](#bytebase-v1-ListProjectGitOpsInfoRequest)
+    - [ListProjectGitOpsInfoResponse](#bytebase-v1-ListProjectGitOpsInfoResponse)
+    - [ListVCSProvidersRequest](#bytebase-v1-ListVCSProvidersRequest)
+    - [ListVCSProvidersResponse](#bytebase-v1-ListVCSProvidersResponse)
+    - [OAuthToken](#bytebase-v1-OAuthToken)
+    - [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo)
+    - [SearchVCSProviderProjectsRequest](#bytebase-v1-SearchVCSProviderProjectsRequest)
+    - [SearchVCSProviderProjectsResponse](#bytebase-v1-SearchVCSProviderProjectsResponse)
+    - [SearchVCSProviderProjectsResponse.Project](#bytebase-v1-SearchVCSProviderProjectsResponse-Project)
+    - [UpdateVCSProviderRequest](#bytebase-v1-UpdateVCSProviderRequest)
+    - [VCSProvider](#bytebase-v1-VCSProvider)
+  
+    - [VCSProvider.Type](#bytebase-v1-VCSProvider-Type)
+  
+    - [VCSProviderService](#bytebase-v1-VCSProviderService)
   
 - [v1/project_service.proto](#v1_project_service-proto)
     - [Activity](#bytebase-v1-Activity)
@@ -4634,330 +4634,6 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 
 
-<a name="v1_externalvs_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/externalvs_service.proto
-
-
-
-<a name="bytebase-v1-CreateExternalVersionControlRequest"></a>
-
-### CreateExternalVersionControlRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| external_version_control | [ExternalVersionControl](#bytebase-v1-ExternalVersionControl) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteExternalVersionControlRequest"></a>
-
-### DeleteExternalVersionControlRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the external version control to delete. Format: externalVersionControls/{externalVersionControl} |
-
-
-
-
-
-
-<a name="bytebase-v1-ExchangeToken"></a>
-
-### ExchangeToken
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the external version control to retrieve the linked projects. Format: externalVersionControls/{externalVersionControl} |
-| code | [string](#string) |  |  |
-| type | [ExternalVersionControl.Type](#bytebase-v1-ExternalVersionControl-Type) |  |  |
-| instance_url | [string](#string) |  |  |
-| client_id | [string](#string) |  |  |
-| client_secret | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ExchangeTokenRequest"></a>
-
-### ExchangeTokenRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| exchange_token | [ExchangeToken](#bytebase-v1-ExchangeToken) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ExternalVersionControl"></a>
-
-### ExternalVersionControl
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the external version control, generated by the server, and also is the unique identifier. Format: externalVersionControls/{externalVersionControl} |
-| title | [string](#string) |  | The title of the external version control. It is used to display in the UI. Specified by the client. |
-| type | [ExternalVersionControl.Type](#bytebase-v1-ExternalVersionControl-Type) |  |  |
-| url | [string](#string) |  | The url of the external version control. Specified by the client. For example: github.com, gitlab.com, gitlab.bytebase.com. |
-| api_url | [string](#string) |  | The API url of the external version control. Derived from the url. |
-| application_id | [string](#string) |  | The application ID of the external version control. Specified by the client. |
-| secret | [string](#string) |  | The application secret of the external version control. Specified by the client. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetExternalVersionControlRequest"></a>
-
-### GetExternalVersionControlRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the external version control to retrieve. Format: externalVersionControls/{externalVersionControl} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListExternalVersionControlsRequest"></a>
-
-### ListExternalVersionControlsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Not used. The maximum number of external version control to return. The service may return fewer than this value. If unspecified, at most 100 external version control will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListExternalVersionControls` call. Provide this to retrieve the subsequent page. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListExternalVersionControlsResponse"></a>
-
-### ListExternalVersionControlsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| external_version_controls | [ExternalVersionControl](#bytebase-v1-ExternalVersionControl) | repeated | The list of external version control. |
-| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListProjectGitOpsInfoRequest"></a>
-
-### ListProjectGitOpsInfoRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the external version control to retrieve the linked projects. Format: externalVersionControls/{externalVersionControl} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListProjectGitOpsInfoResponse"></a>
-
-### ListProjectGitOpsInfoResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) | repeated | The binding between external version control and project. |
-
-
-
-
-
-
-<a name="bytebase-v1-OAuthToken"></a>
-
-### OAuthToken
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| access_token | [string](#string) |  |  |
-| refresh_token | [string](#string) |  |  |
-| expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ProjectGitOpsInfo"></a>
-
-### ProjectGitOpsInfo
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the linked repository, generated by the server, and also is the unique identifier. Format: projects/{project}/gitOpsInfo |
-| vcs_uid | [string](#string) |  | The uid for related VCS. |
-| title | [string](#string) |  | The title of the repository. For axample: sample. |
-| full_path | [string](#string) |  | The full_path of the repository. For example: bytebase/sample. |
-| web_url | [string](#string) |  | The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. |
-| branch_filter | [string](#string) |  | The branch Bytebase listens to for changes. For example: main. |
-| base_directory | [string](#string) |  | The root directory where Bytebase observes the file change. If empty, then it observes the entire repository. |
-| file_path_template | [string](#string) |  | Bytebase only observes the file path name matching the template pattern **relative** to the base directory. Required Placeholder: {{DB_NAME}}, {{VERSION}}, {{TYPE]}. Optional Placeholder: {{ENV_ID}}, {{DESCRIPTION}}. Optional Directory Wildcard: &#39;*&#39;, &#39;**&#39;. |
-| schema_path_template | [string](#string) |  | The file path template for storing the latest schema auto-generated by Bytebase after migration. If empty, then Bytebase won&#39;t auto generate it. If specified, required placeholder: {{DB_NAME}}, optional placeholder: {{ENV_ID}}. |
-| sheet_path_template | [string](#string) |  | The file path template for matching the sql files for sheet. If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_ID}}, {{DB_NAME}}. |
-| external_id | [string](#string) |  | The reposition external id in target VCS. |
-| enable_sql_review_ci | [bool](#bool) |  | Set to true to enable SQL review CI for all PR/MRs. |
-| webhook_endpoint_id | [string](#string) |  | The webhook endpoint ID of the repository. |
-| access_token | [string](#string) |  |  |
-| expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| refresh_token | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchExternalVersionControlProjectsRequest"></a>
-
-### SearchExternalVersionControlProjectsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the external version control to retrieve the external version control repositories. Format: externalVersionControls/{externalVersionControl} |
-| access_token | [string](#string) |  |  |
-| refresh_token | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchExternalVersionControlProjectsResponse"></a>
-
-### SearchExternalVersionControlProjectsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| projects | [SearchExternalVersionControlProjectsResponse.Project](#bytebase-v1-SearchExternalVersionControlProjectsResponse-Project) | repeated | The list of project in external version control. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchExternalVersionControlProjectsResponse-Project"></a>
-
-### SearchExternalVersionControlProjectsResponse.Project
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The id of the project in external version control. |
-| title | [string](#string) |  | The title of the project in external version control. |
-| fullpath | [string](#string) |  | The fullpath of the project in external version control. |
-| web_url | [string](#string) |  | Web url of the project in external version control. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateExternalVersionControlRequest"></a>
-
-### UpdateExternalVersionControlRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| external_version_control | [ExternalVersionControl](#bytebase-v1-ExternalVersionControl) |  |  |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-ExternalVersionControl-Type"></a>
-
-### ExternalVersionControl.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
-| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
-| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
-| AZURE_DEVOPS | 4 | Azure DevOps. Using for Azure DevOps GitOps workflow. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-ExternalVersionControlService"></a>
-
-### ExternalVersionControlService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetExternalVersionControl | [GetExternalVersionControlRequest](#bytebase-v1-GetExternalVersionControlRequest) | [ExternalVersionControl](#bytebase-v1-ExternalVersionControl) |  |
-| ListExternalVersionControls | [ListExternalVersionControlsRequest](#bytebase-v1-ListExternalVersionControlsRequest) | [ListExternalVersionControlsResponse](#bytebase-v1-ListExternalVersionControlsResponse) |  |
-| CreateExternalVersionControl | [CreateExternalVersionControlRequest](#bytebase-v1-CreateExternalVersionControlRequest) | [ExternalVersionControl](#bytebase-v1-ExternalVersionControl) |  |
-| UpdateExternalVersionControl | [UpdateExternalVersionControlRequest](#bytebase-v1-UpdateExternalVersionControlRequest) | [ExternalVersionControl](#bytebase-v1-ExternalVersionControl) |  |
-| ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [OAuthToken](#bytebase-v1-OAuthToken) |  |
-| DeleteExternalVersionControl | [DeleteExternalVersionControlRequest](#bytebase-v1-DeleteExternalVersionControlRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| SearchExternalVersionControlProjects | [SearchExternalVersionControlProjectsRequest](#bytebase-v1-SearchExternalVersionControlProjectsRequest) | [SearchExternalVersionControlProjectsResponse](#bytebase-v1-SearchExternalVersionControlProjectsResponse) |  |
-| ListProjectGitOpsInfo | [ListProjectGitOpsInfoRequest](#bytebase-v1-ListProjectGitOpsInfoRequest) | [ListProjectGitOpsInfoResponse](#bytebase-v1-ListProjectGitOpsInfoResponse) |  |
-
- 
-
-
-
 <a name="v1_idp_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -6204,6 +5880,330 @@ ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query. |
 
 
 
+<a name="v1_vcs_provider_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/vcs_provider_service.proto
+
+
+
+<a name="bytebase-v1-CreateVCSProviderRequest"></a>
+
+### CreateVCSProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_provider | [VCSProvider](#bytebase-v1-VCSProvider) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteVCSProviderRequest"></a>
+
+### DeleteVCSProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcs provider to delete. Format: vcsProviders/{vcsProvider} |
+
+
+
+
+
+
+<a name="bytebase-v1-ExchangeToken"></a>
+
+### ExchangeToken
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcs provider to retrieve the linked projects. Format: vcsProviders/{vcsProvider} |
+| code | [string](#string) |  |  |
+| type | [VCSProvider.Type](#bytebase-v1-VCSProvider-Type) |  |  |
+| instance_url | [string](#string) |  |  |
+| client_id | [string](#string) |  |  |
+| client_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ExchangeTokenRequest"></a>
+
+### ExchangeTokenRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| exchange_token | [ExchangeToken](#bytebase-v1-ExchangeToken) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GetVCSProviderRequest"></a>
+
+### GetVCSProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcs provider to retrieve. Format: vcsProviders/{vcsProvider} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListProjectGitOpsInfoRequest"></a>
+
+### ListProjectGitOpsInfoRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcs provider to retrieve the linked projects. Format: vcsProviders/{vcsProvider} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListProjectGitOpsInfoResponse"></a>
+
+### ListProjectGitOpsInfoResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) | repeated | The binding between vcs provider and project. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListVCSProvidersRequest"></a>
+
+### ListVCSProvidersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | Not used. The maximum number of vcs provider to return. The service may return fewer than this value. If unspecified, at most 100 vcs provider will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListVCSProviders` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListVCSProvidersResponse"></a>
+
+### ListVCSProvidersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_providers | [VCSProvider](#bytebase-v1-VCSProvider) | repeated | The list of vcs providers. |
+| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-OAuthToken"></a>
+
+### OAuthToken
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| access_token | [string](#string) |  |  |
+| refresh_token | [string](#string) |  |  |
+| expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ProjectGitOpsInfo"></a>
+
+### ProjectGitOpsInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the linked repository, generated by the server, and also is the unique identifier. Format: projects/{project}/gitOpsInfo |
+| vcs_uid | [string](#string) |  | The uid for related VCS. |
+| title | [string](#string) |  | The title of the repository. For axample: sample. |
+| full_path | [string](#string) |  | The full_path of the repository. For example: bytebase/sample. |
+| web_url | [string](#string) |  | The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. |
+| branch_filter | [string](#string) |  | The branch Bytebase listens to for changes. For example: main. |
+| base_directory | [string](#string) |  | The root directory where Bytebase observes the file change. If empty, then it observes the entire repository. |
+| file_path_template | [string](#string) |  | Bytebase only observes the file path name matching the template pattern **relative** to the base directory. Required Placeholder: {{DB_NAME}}, {{VERSION}}, {{TYPE]}. Optional Placeholder: {{ENV_ID}}, {{DESCRIPTION}}. Optional Directory Wildcard: &#39;*&#39;, &#39;**&#39;. |
+| schema_path_template | [string](#string) |  | The file path template for storing the latest schema auto-generated by Bytebase after migration. If empty, then Bytebase won&#39;t auto generate it. If specified, required placeholder: {{DB_NAME}}, optional placeholder: {{ENV_ID}}. |
+| sheet_path_template | [string](#string) |  | The file path template for matching the sql files for sheet. If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_ID}}, {{DB_NAME}}. |
+| external_id | [string](#string) |  | The reposition external id in target VCS. |
+| enable_sql_review_ci | [bool](#bool) |  | Set to true to enable SQL review CI for all PR/MRs. |
+| webhook_endpoint_id | [string](#string) |  | The webhook endpoint ID of the repository. |
+| access_token | [string](#string) |  |  |
+| expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| refresh_token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchVCSProviderProjectsRequest"></a>
+
+### SearchVCSProviderProjectsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcs provider to retrieve the vcs provider repositories. Format: vcsProviders/{vcsProvider} |
+| access_token | [string](#string) |  |  |
+| refresh_token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchVCSProviderProjectsResponse"></a>
+
+### SearchVCSProviderProjectsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| projects | [SearchVCSProviderProjectsResponse.Project](#bytebase-v1-SearchVCSProviderProjectsResponse-Project) | repeated | The list of project in vcs provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchVCSProviderProjectsResponse-Project"></a>
+
+### SearchVCSProviderProjectsResponse.Project
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The id of the project in vcs provider. |
+| title | [string](#string) |  | The title of the project in vcs provider. |
+| fullpath | [string](#string) |  | The fullpath of the project in vcs provider. |
+| web_url | [string](#string) |  | Web url of the project in vcs provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateVCSProviderRequest"></a>
+
+### UpdateVCSProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_provider | [VCSProvider](#bytebase-v1-VCSProvider) |  |  |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
+
+
+
+
+
+
+<a name="bytebase-v1-VCSProvider"></a>
+
+### VCSProvider
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcs provider, generated by the server, and also is the unique identifier. Format: vcsProviders/{vcsProvider} |
+| title | [string](#string) |  | The title of the vcs provider. It is used to display in the UI. Specified by the client. |
+| type | [VCSProvider.Type](#bytebase-v1-VCSProvider-Type) |  |  |
+| url | [string](#string) |  | The url of the vcs provider. Specified by the client. For example: github.com, gitlab.com, gitlab.bytebase.com. |
+| api_url | [string](#string) |  | The API url of the vcs provider. Derived from the url. |
+| application_id | [string](#string) |  | The application ID of the vcs provider. Specified by the client. |
+| secret | [string](#string) |  | The application secret of the vcs provider. Specified by the client. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-VCSProvider-Type"></a>
+
+### VCSProvider.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
+| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
+| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
+| AZURE_DEVOPS | 4 | Azure DevOps. Using for Azure DevOps GitOps workflow. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-VCSProviderService"></a>
+
+### VCSProviderService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetVCSProvider | [GetVCSProviderRequest](#bytebase-v1-GetVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
+| ListVCSProviders | [ListVCSProvidersRequest](#bytebase-v1-ListVCSProvidersRequest) | [ListVCSProvidersResponse](#bytebase-v1-ListVCSProvidersResponse) |  |
+| CreateVCSProvider | [CreateVCSProviderRequest](#bytebase-v1-CreateVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
+| UpdateVCSProvider | [UpdateVCSProviderRequest](#bytebase-v1-UpdateVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
+| ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [OAuthToken](#bytebase-v1-OAuthToken) |  |
+| DeleteVCSProvider | [DeleteVCSProviderRequest](#bytebase-v1-DeleteVCSProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| SearchVCSProviderProjects | [SearchVCSProviderProjectsRequest](#bytebase-v1-SearchVCSProviderProjectsRequest) | [SearchVCSProviderProjectsResponse](#bytebase-v1-SearchVCSProviderProjectsResponse) |  |
+| ListProjectGitOpsInfo | [ListProjectGitOpsInfoRequest](#bytebase-v1-ListProjectGitOpsInfoRequest) | [ListProjectGitOpsInfoResponse](#bytebase-v1-ListProjectGitOpsInfoResponse) |  |
+
+ 
+
+
+
 <a name="v1_project_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -7020,7 +7020,7 @@ The database group&#39;s `name` field is used to identify the database group to 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  | The binding for the project and external version control. |
+| project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  | The binding for the project and vcs provider. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
 | allow_missing | [bool](#bool) |  | If true, the gitops will be created if it does not exist. |
 

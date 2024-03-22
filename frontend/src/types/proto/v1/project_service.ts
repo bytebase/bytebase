@@ -5,8 +5,8 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
 import { State, stateFromJSON, stateToJSON } from "./common";
-import { ProjectGitOpsInfo } from "./externalvs_service";
 import { IamPolicy } from "./iam_policy";
+import { ProjectGitOpsInfo } from "./vcs_provider_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -477,7 +477,7 @@ export interface UpdateDeploymentConfigRequest {
 }
 
 export interface UpdateProjectGitOpsInfoRequest {
-  /** The binding for the project and external version control. */
+  /** The binding for the project and vcs provider. */
   projectGitopsInfo:
     | ProjectGitOpsInfo
     | undefined;

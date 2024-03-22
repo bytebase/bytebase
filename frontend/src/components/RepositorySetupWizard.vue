@@ -57,7 +57,7 @@
           {{
             $t("repository.sql-review-ci-setup-modal", {
               pr:
-                state.config.vcs.type === ExternalVersionControl_Type.GITLAB
+                state.config.vcs.type === VCSProvider_Type.GITLAB
                   ? $t("repository.merge-request")
                   : $t("repository.pull-request"),
             })
@@ -73,7 +73,7 @@
             {{
               $t("repository.sql-review-ci-setup-pr", {
                 pr:
-                  state.config.vcs.type === ExternalVersionControl_Type.GITLAB
+                  state.config.vcs.type === VCSProvider_Type.GITLAB
                     ? $t("repository.merge-request")
                     : $t("repository.pull-request"),
               })
@@ -114,7 +114,7 @@
         {{
           $t("repository.sql-review-ci-loading-modal", {
             pr:
-              state.config.vcs.type === ExternalVersionControl_Type.GITLAB
+              state.config.vcs.type === VCSProvider_Type.GITLAB
                 ? $t("repository.merge-request")
                 : $t("repository.pull-request"),
           })
@@ -140,16 +140,16 @@ import { PROJECT_V1_ROUTE_GITOPS } from "@/router/dashboard/projectV1";
 import { useRepositoryV1Store, hasFeature, useProjectV1Store } from "@/store";
 import { getVCSUid } from "@/store/modules/v1/common";
 import {
-  OAuthToken,
-  ProjectGitOpsInfo,
-  ExternalVersionControl,
-  ExternalVersionControl_Type,
-} from "@/types/proto/v1/externalvs_service";
-import {
   Project,
   TenantMode,
   SchemaChange,
 } from "@/types/proto/v1/project_service";
+import {
+  OAuthToken,
+  ProjectGitOpsInfo,
+  VCSProvider,
+  VCSProvider_Type,
+} from "@/types/proto/v1/vcs_provider_service";
 import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
 
 // Default file path template is to organize migration files from different environments under separate directories.
@@ -217,7 +217,7 @@ const isTenantProject = computed(() => {
 
 const state = reactive<LocalState>({
   config: {
-    vcs: {} as ExternalVersionControl,
+    vcs: {} as VCSProvider,
     code: "",
     token: OAuthToken.fromPartial({
       accessToken: "",
@@ -308,8 +308,8 @@ const tryFinishSetup = async () => {
   const createFunc = async () => {
     let externalId = state.config.repositoryInfo.externalId;
     if (
-      state.config.vcs.type === ExternalVersionControl_Type.GITHUB ||
-      state.config.vcs.type === ExternalVersionControl_Type.BITBUCKET
+      state.config.vcs.type === VCSProvider_Type.GITHUB ||
+      state.config.vcs.type === VCSProvider_Type.BITBUCKET
     ) {
       externalId = state.config.repositoryInfo.fullPath;
     }
@@ -385,7 +385,7 @@ const setToken = (token: OAuthToken) => {
   state.config.token = token;
 };
 
-const setVCS = (vcs: ExternalVersionControl) => {
+const setVCS = (vcs: VCSProvider) => {
   state.config.vcs = vcs;
 };
 

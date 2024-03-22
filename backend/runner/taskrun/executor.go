@@ -476,7 +476,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_ID}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
 
-		vcs, err := stores.GetExternalVersionControlV2(ctx, repo.VCSUID)
+		vcs, err := stores.GetVCSProviderV2(ctx, repo.VCSUID)
 		if err != nil {
 			return true, nil, errors.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version.Version, database.DatabaseName)
 		}
@@ -678,7 +678,7 @@ func writeBackLatestSchema(
 	ctx context.Context,
 	storage *store.Store,
 	repository *store.RepositoryMessage,
-	vcs *store.ExternalVersionControlMessage,
+	vcs *store.VCSProviderMessage,
 	pushEvent *vcsplugin.PushEvent,
 	mi *db.MigrationInfo,
 	writebackBranch, latestSchemaFile string, schema string, bytebaseURL string,
@@ -810,7 +810,7 @@ func writeBackLatestSchema(
 	return schemaFileMeta.LastCommitID, nil
 }
 
-func getRepositoryAndVCS(ctx context.Context, storage *store.Store, repoUID, vcsUID int) (*store.RepositoryMessage, *store.ExternalVersionControlMessage, error) {
+func getRepositoryAndVCS(ctx context.Context, storage *store.Store, repoUID, vcsUID int) (*store.RepositoryMessage, *store.VCSProviderMessage, error) {
 	repo, err := storage.GetRepositoryV2(ctx, &store.FindRepositoryMessage{
 		UID: &repoUID,
 	})
@@ -820,7 +820,7 @@ func getRepositoryAndVCS(ctx context.Context, storage *store.Store, repoUID, vcs
 	if repo == nil {
 		return nil, nil, errors.Errorf("repository not found after schema write-back: %v", repoUID)
 	}
-	vcs, err := storage.GetExternalVersionControlV2(ctx, vcsUID)
+	vcs, err := storage.GetVCSProviderV2(ctx, vcsUID)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to fetch vcs for schema write-back")
 	}

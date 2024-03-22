@@ -12,8 +12,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 )
 
-// ExternalVersionControlMessage is a message for external version control.
-type ExternalVersionControlMessage struct {
+// VCSProviderMessage is a message for external version control.
+type VCSProviderMessage struct {
 	// Type is the type of the external version control.
 	Type vcs.Type
 	// APIURL is the URL for the external version control API.
@@ -33,8 +33,8 @@ type ExternalVersionControlMessage struct {
 	ID int
 }
 
-// UpdateExternalVersionControlMessage is a message for updating an external version control.
-type UpdateExternalVersionControlMessage struct {
+// UpdateVCSProviderMessage is a message for updating an external version control.
+type UpdateVCSProviderMessage struct {
 	// Name is the name of the external version control.
 	Name *string
 	// Secret is the secret for the external version control.
@@ -43,13 +43,13 @@ type UpdateExternalVersionControlMessage struct {
 	ApplicationID *string
 }
 
-type findExternalVersionControlMessage struct {
+type findVCSProviderMessage struct {
 	// If specified, only external version controls with the given ID will be returned.
 	id *int
 }
 
-// GetExternalVersionControlV2 gets an external version control by ID.
-func (s *Store) GetExternalVersionControlV2(ctx context.Context, id int) (*ExternalVersionControlMessage, error) {
+// GetVCSProviderV2 gets an external version control by ID.
+func (s *Store) GetVCSProviderV2(ctx context.Context, id int) (*VCSProviderMessage, error) {
 	if v, ok := s.vcsIDCache.Get(id); ok {
 		return v, nil
 	}
@@ -60,33 +60,33 @@ func (s *Store) GetExternalVersionControlV2(ctx context.Context, id int) (*Exter
 	}
 	defer tx.Rollback()
 
-	externalVersionControls, err := s.findExternalVersionControlsImplV2(ctx, tx, &findExternalVersionControlMessage{id: &id})
+	vcsProviders, err := s.findVCSProvidersImplV2(ctx, tx, &findVCSProviderMessage{id: &id})
 	if err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	if len(externalVersionControls) == 0 {
+	if len(vcsProviders) == 0 {
 		return nil, nil
-	} else if len(externalVersionControls) > 1 {
-		return nil, errors.Errorf("expected 1 external version control with id %d, got %d", id, len(externalVersionControls))
+	} else if len(vcsProviders) > 1 {
+		return nil, errors.Errorf("expected 1 external version control with id %d, got %d", id, len(vcsProviders))
 	}
 
-	vcs := externalVersionControls[0]
+	vcs := vcsProviders[0]
 	s.vcsIDCache.Add(vcs.ID, vcs)
 	return vcs, nil
 }
 
-// ListExternalVersionControls lists all external version controls.
-func (s *Store) ListExternalVersionControls(ctx context.Context) ([]*ExternalVersionControlMessage, error) {
+// ListVCSProviders lists all external version controls.
+func (s *Store) ListVCSProviders(ctx context.Context) ([]*VCSProviderMessage, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	externalVersionControls, err := s.findExternalVersionControlsImplV2(ctx, tx, &findExternalVersionControlMessage{})
+	vcsProviders, err := s.findVCSProvidersImplV2(ctx, tx, &findVCSProviderMessage{})
 	if err != nil {
 		return nil, err
 	}
@@ -94,14 +94,14 @@ func (s *Store) ListExternalVersionControls(ctx context.Context) ([]*ExternalVer
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	for _, vcs := range externalVersionControls {
+	for _, vcs := range vcsProviders {
 		s.vcsIDCache.Add(vcs.ID, vcs)
 	}
-	return externalVersionControls, nil
+	return vcsProviders, nil
 }
 
-// CreateExternalVersionControlV2 creates an external version control.
-func (s *Store) CreateExternalVersionControlV2(ctx context.Context, principalUID int, create *ExternalVersionControlMessage) (*ExternalVersionControlMessage, error) {
+// CreateVCSProviderV2 creates an external version control.
+func (s *Store) CreateVCSProviderV2(ctx context.Context, principalUID int, create *VCSProviderMessage) (*VCSProviderMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
@@ -122,7 +122,7 @@ func (s *Store) CreateExternalVersionControlV2(ctx context.Context, principalUID
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, name, type, instance_url, api_url, application_id, secret
 	`
-	var externalVersionControl ExternalVersionControlMessage
+	var vcsProvider VCSProviderMessage
 	if err := tx.QueryRowContext(ctx, query,
 		principalUID,
 		principalUID,
@@ -133,13 +133,13 @@ func (s *Store) CreateExternalVersionControlV2(ctx context.Context, principalUID
 		create.ApplicationID,
 		create.Secret,
 	).Scan(
-		&externalVersionControl.ID,
-		&externalVersionControl.Name,
-		&externalVersionControl.Type,
-		&externalVersionControl.InstanceURL,
-		&externalVersionControl.APIURL,
-		&externalVersionControl.ApplicationID,
-		&externalVersionControl.Secret,
+		&vcsProvider.ID,
+		&vcsProvider.Name,
+		&vcsProvider.Type,
+		&vcsProvider.InstanceURL,
+		&vcsProvider.APIURL,
+		&vcsProvider.ApplicationID,
+		&vcsProvider.Secret,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -151,12 +151,12 @@ func (s *Store) CreateExternalVersionControlV2(ctx context.Context, principalUID
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.vcsIDCache.Add(externalVersionControl.ID, &externalVersionControl)
-	return &externalVersionControl, nil
+	s.vcsIDCache.Add(vcsProvider.ID, &vcsProvider)
+	return &vcsProvider, nil
 }
 
-// UpdateExternalVersionControlV2 updates an external version control.
-func (s *Store) UpdateExternalVersionControlV2(ctx context.Context, principalUID int, externalVersionControlUID int, update *UpdateExternalVersionControlMessage) (*ExternalVersionControlMessage, error) {
+// UpdateVCSProviderV2 updates an external version control.
+func (s *Store) UpdateVCSProviderV2(ctx context.Context, principalUID int, vcsProviderUID int, update *UpdateVCSProviderMessage) (*VCSProviderMessage, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []any{principalUID}
 	if v := update.Name; v != nil {
@@ -168,7 +168,7 @@ func (s *Store) UpdateExternalVersionControlV2(ctx context.Context, principalUID
 	if v := update.Secret; v != nil {
 		set, args = append(set, fmt.Sprintf("secret = $%d", len(args)+1)), append(args, *v)
 	}
-	args = append(args, externalVersionControlUID)
+	args = append(args, vcsProviderUID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -176,7 +176,7 @@ func (s *Store) UpdateExternalVersionControlV2(ctx context.Context, principalUID
 	}
 	defer tx.Rollback()
 
-	var externalVersionControl ExternalVersionControlMessage
+	var vcsProvider VCSProviderMessage
 	// Execute update query with RETURNING.
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE vcs
@@ -186,16 +186,16 @@ func (s *Store) UpdateExternalVersionControlV2(ctx context.Context, principalUID
 	`, len(args)),
 		args...,
 	).Scan(
-		&externalVersionControl.ID,
-		&externalVersionControl.Name,
-		&externalVersionControl.Type,
-		&externalVersionControl.InstanceURL,
-		&externalVersionControl.APIURL,
-		&externalVersionControl.ApplicationID,
-		&externalVersionControl.Secret,
+		&vcsProvider.ID,
+		&vcsProvider.Name,
+		&vcsProvider.Type,
+		&vcsProvider.InstanceURL,
+		&vcsProvider.APIURL,
+		&vcsProvider.ApplicationID,
+		&vcsProvider.Secret,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("vcs ID not found: %d", externalVersionControlUID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("vcs ID not found: %d", vcsProviderUID)}
 		}
 		return nil, err
 	}
@@ -203,19 +203,19 @@ func (s *Store) UpdateExternalVersionControlV2(ctx context.Context, principalUID
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	s.vcsIDCache.Add(externalVersionControl.ID, &externalVersionControl)
-	return &externalVersionControl, nil
+	s.vcsIDCache.Add(vcsProvider.ID, &vcsProvider)
+	return &vcsProvider, nil
 }
 
-// DeleteExternalVersionControlV2 deletes an external version control.
-func (s *Store) DeleteExternalVersionControlV2(ctx context.Context, externalVersionControlUID int) error {
+// DeleteVCSProviderV2 deletes an external version control.
+func (s *Store) DeleteVCSProviderV2(ctx context.Context, vcsProviderUID int) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = $1`, externalVersionControlUID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = $1`, vcsProviderUID); err != nil {
 		return err
 	}
 
@@ -223,11 +223,11 @@ func (s *Store) DeleteExternalVersionControlV2(ctx context.Context, externalVers
 		return errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.vcsIDCache.Remove(externalVersionControlUID)
+	s.vcsIDCache.Remove(vcsProviderUID)
 	return nil
 }
 
-func (*Store) findExternalVersionControlsImplV2(ctx context.Context, tx *Tx, find *findExternalVersionControlMessage) ([]*ExternalVersionControlMessage, error) {
+func (*Store) findVCSProvidersImplV2(ctx context.Context, tx *Tx, find *findVCSProviderMessage) ([]*VCSProviderMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.id; v != nil {
 		// Build WHERE clause.
@@ -251,24 +251,24 @@ func (*Store) findExternalVersionControlsImplV2(ctx context.Context, tx *Tx, fin
 		return nil, err
 	}
 	defer rows.Close()
-	var externalVersionControls []*ExternalVersionControlMessage
+	var vcsProviders []*VCSProviderMessage
 	for rows.Next() {
-		var externalVersionControl ExternalVersionControlMessage
+		var vcsProvider VCSProviderMessage
 		if err := rows.Scan(
-			&externalVersionControl.ID,
-			&externalVersionControl.Name,
-			&externalVersionControl.Type,
-			&externalVersionControl.InstanceURL,
-			&externalVersionControl.APIURL,
-			&externalVersionControl.ApplicationID,
-			&externalVersionControl.Secret,
+			&vcsProvider.ID,
+			&vcsProvider.Name,
+			&vcsProvider.Type,
+			&vcsProvider.InstanceURL,
+			&vcsProvider.APIURL,
+			&vcsProvider.ApplicationID,
+			&vcsProvider.Secret,
 		); err != nil {
 			return nil, err
 		}
-		externalVersionControls = append(externalVersionControls, &externalVersionControl)
+		vcsProviders = append(vcsProviders, &vcsProvider)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	return externalVersionControls, nil
+	return vcsProviders, nil
 }
