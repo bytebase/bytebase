@@ -87,6 +87,8 @@ func convertToPlanSpec(spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
 		v1Spec.Config = convertToPlanSpecChangeDatabaseConfig(v)
 	case *storepb.PlanConfig_Spec_RestoreDatabaseConfig:
 		v1Spec.Config = convertToPlanSpecRestoreDatabaseConfig(v)
+	case *storepb.PlanConfig_Spec_ExportDataConfig:
+		v1Spec.Config = convertToPlanSpecExportDataConfig(v)
 	}
 
 	return v1Spec
@@ -201,6 +203,17 @@ func convertToPlanSpecRestoreDatabaseConfig(config *storepb.PlanConfig_Spec_Rest
 	return v1Config
 }
 
+func convertToPlanSpecExportDataConfig(config *storepb.PlanConfig_Spec_ExportDataConfig) *v1pb.Plan_Spec_ExportDataConfig {
+	c := config.ExportDataConfig
+	return &v1pb.Plan_Spec_ExportDataConfig{
+		ExportDataConfig: &v1pb.Plan_ExportDataConfig{
+			Target:  c.Target,
+			Sheet:   c.Sheet,
+			MaxRows: c.MaxRows,
+		},
+	}
+}
+
 func convertPlanSteps(steps []*v1pb.Plan_Step) []*storepb.PlanConfig_Step {
 	storeSteps := make([]*storepb.PlanConfig_Step, len(steps))
 	for i := range steps {
@@ -237,6 +250,8 @@ func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 		storeSpec.Config = convertPlanSpecChangeDatabaseConfig(v)
 	case *v1pb.Plan_Spec_RestoreDatabaseConfig:
 		storeSpec.Config = convertPlanSpecRestoreDatabaseConfig(v)
+	case *v1pb.Plan_Spec_ExportDataConfig:
+		storeSpec.Config = convertPlanSpecExportDataConfig(v)
 	}
 	return storeSpec
 }
@@ -307,6 +322,17 @@ func convertPlanSpecRestoreDatabaseConfig(config *v1pb.Plan_Spec_RestoreDatabase
 		storeConfig.RestoreDatabaseConfig.CreateDatabaseConfig = convertPlanConfigCreateDatabaseConfig(c.CreateDatabaseConfig)
 	}
 	return storeConfig
+}
+
+func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *storepb.PlanConfig_Spec_ExportDataConfig {
+	c := config.ExportDataConfig
+	return &storepb.PlanConfig_Spec_ExportDataConfig{
+		ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
+			Target:  c.Target,
+			Sheet:   c.Sheet,
+			MaxRows: c.MaxRows,
+		},
+	}
 }
 
 // convertDatabaseLabels converts the map[string]string labels to []*api.DatabaseLabel JSON string.

@@ -113,6 +113,7 @@ export interface Plan_Spec {
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
   restoreDatabaseConfig?: Plan_RestoreDatabaseConfig | undefined;
+  exportDataConfig?: Plan_ExportDataConfig | undefined;
 }
 
 export interface Plan_CreateDatabaseConfig {
@@ -296,6 +297,21 @@ export interface Plan_RestoreDatabaseConfig {
     | undefined;
   /** After the PITR operations, the database will be recovered to the state at this time. */
   pointInTime?: Date | undefined;
+}
+
+export interface Plan_ExportDataConfig {
+  /**
+   * The resource name of the target.
+   * Format: instances/{instance-id}/databases/{database-name}
+   */
+  target: string;
+  /**
+   * The resource name of the sheet.
+   * Format: projects/{project}/sheets/{sheet}
+   */
+  sheet: string;
+  /** The max number of rows to export. */
+  maxRows: number;
 }
 
 export interface ListPlanCheckRunsRequest {
@@ -1768,6 +1784,7 @@ function createBasePlan_Spec(): Plan_Spec {
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
     restoreDatabaseConfig: undefined,
+    exportDataConfig: undefined,
   };
 }
 
@@ -1790,6 +1807,9 @@ export const Plan_Spec = {
     }
     if (message.restoreDatabaseConfig !== undefined) {
       Plan_RestoreDatabaseConfig.encode(message.restoreDatabaseConfig, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.exportDataConfig !== undefined) {
+      Plan_ExportDataConfig.encode(message.exportDataConfig, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -1843,6 +1863,13 @@ export const Plan_Spec = {
 
           message.restoreDatabaseConfig = Plan_RestoreDatabaseConfig.decode(reader, reader.uint32());
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.exportDataConfig = Plan_ExportDataConfig.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1870,6 +1897,9 @@ export const Plan_Spec = {
       restoreDatabaseConfig: isSet(object.restoreDatabaseConfig)
         ? Plan_RestoreDatabaseConfig.fromJSON(object.restoreDatabaseConfig)
         : undefined,
+      exportDataConfig: isSet(object.exportDataConfig)
+        ? Plan_ExportDataConfig.fromJSON(object.exportDataConfig)
+        : undefined,
     };
   },
 
@@ -1893,6 +1923,9 @@ export const Plan_Spec = {
     if (message.restoreDatabaseConfig !== undefined) {
       obj.restoreDatabaseConfig = Plan_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig);
     }
+    if (message.exportDataConfig !== undefined) {
+      obj.exportDataConfig = Plan_ExportDataConfig.toJSON(message.exportDataConfig);
+    }
     return obj;
   },
 
@@ -1914,6 +1947,9 @@ export const Plan_Spec = {
       (object.restoreDatabaseConfig !== undefined && object.restoreDatabaseConfig !== null)
         ? Plan_RestoreDatabaseConfig.fromPartial(object.restoreDatabaseConfig)
         : undefined;
+    message.exportDataConfig = (object.exportDataConfig !== undefined && object.exportDataConfig !== null)
+      ? Plan_ExportDataConfig.fromPartial(object.exportDataConfig)
+      : undefined;
     return message;
   },
 };
@@ -2742,6 +2778,95 @@ export const Plan_RestoreDatabaseConfig = {
       : undefined;
     message.backup = object.backup ?? undefined;
     message.pointInTime = object.pointInTime ?? undefined;
+    return message;
+  },
+};
+
+function createBasePlan_ExportDataConfig(): Plan_ExportDataConfig {
+  return { target: "", sheet: "", maxRows: 0 };
+}
+
+export const Plan_ExportDataConfig = {
+  encode(message: Plan_ExportDataConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.target !== "") {
+      writer.uint32(10).string(message.target);
+    }
+    if (message.sheet !== "") {
+      writer.uint32(18).string(message.sheet);
+    }
+    if (message.maxRows !== 0) {
+      writer.uint32(24).int32(message.maxRows);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_ExportDataConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlan_ExportDataConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.target = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.sheet = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maxRows = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Plan_ExportDataConfig {
+    return {
+      target: isSet(object.target) ? globalThis.String(object.target) : "",
+      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
+      maxRows: isSet(object.maxRows) ? globalThis.Number(object.maxRows) : 0,
+    };
+  },
+
+  toJSON(message: Plan_ExportDataConfig): unknown {
+    const obj: any = {};
+    if (message.target !== "") {
+      obj.target = message.target;
+    }
+    if (message.sheet !== "") {
+      obj.sheet = message.sheet;
+    }
+    if (message.maxRows !== 0) {
+      obj.maxRows = Math.round(message.maxRows);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Plan_ExportDataConfig>): Plan_ExportDataConfig {
+    return Plan_ExportDataConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Plan_ExportDataConfig>): Plan_ExportDataConfig {
+    const message = createBasePlan_ExportDataConfig();
+    message.target = object.target ?? "";
+    message.sheet = object.sheet ?? "";
+    message.maxRows = object.maxRows ?? 0;
     return message;
   },
 };
