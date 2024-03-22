@@ -248,7 +248,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	var tasks []*TaskMessage
 	for rows.Next() {
 		task := &TaskMessage{}
-		var blockedBy pgtype.Int4Array
+		var dependsOn pgtype.Int4Array
 		if err := rows.Scan(
 			&task.ID,
 			&task.CreatorID,
@@ -264,11 +264,11 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			&task.Type,
 			&task.Payload,
 			&task.EarliestAllowedTs,
-			&blockedBy,
+			&dependsOn,
 		); err != nil {
 			return nil, err
 		}
-		if err := blockedBy.AssignTo(&task.DependsOn); err != nil {
+		if err := dependsOn.AssignTo(&task.DependsOn); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, task)

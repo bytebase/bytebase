@@ -25,7 +25,10 @@ export interface PlanConfig_Spec {
     | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
-  /** IDs of the specs that this spec depends on. */
+  /**
+   * IDs of the specs that this spec depends on.
+   * Must be a subset of the specs in the same step.
+   */
   dependsOnSpecs: string[];
   createDatabaseConfig?: PlanConfig_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: PlanConfig_ChangeDatabaseConfig | undefined;
