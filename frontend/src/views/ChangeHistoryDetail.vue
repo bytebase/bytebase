@@ -551,17 +551,20 @@ const fetchFullPreviousHistory = async () => {
     ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
   );
 };
+
 const fetchFullHistory = async () => {
   if (state.loading) {
     return;
   }
   state.loading = true;
   try {
-    await changeHistoryStore.getOrFetchChangeHistoryByName(
-      changeHistoryName.value,
-      ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
-    );
-    await fetchFullPreviousHistory();
+    await Promise.all([
+      changeHistoryStore.getOrFetchChangeHistoryByName(
+        changeHistoryName.value,
+        ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
+      ),
+      fetchFullPreviousHistory(),
+    ]);
   } finally {
     state.loading = false;
   }
