@@ -21,6 +21,9 @@ const (
 
 	// IssueDatabaseGeneral is the issue type for general database issues.
 	IssueDatabaseGeneral IssueType = "bb.issue.database.general"
+
+	// IssueDatabaseDataExport is the issue type for requesting data export.
+	IssueDatabaseDataExport IssueType = "bb.issue.database.data-export"
 )
 
 func (t IssueType) String() string {
