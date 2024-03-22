@@ -876,6 +876,13 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		return nil, status.Errorf(codes.InvalidArgument, "no specs updated")
 	}
 
+	oldSpecsByID := make(map[string]*v1pb.Plan_Spec)
+	for _, step := range oldSteps {
+		for _, spec := range step.Specs {
+			oldSpecsByID[spec.Id] = spec
+		}
+	}
+
 	updatedByID := make(map[string]*v1pb.Plan_Spec)
 	for _, spec := range updated {
 		updatedByID[spec.Id] = spec
@@ -885,11 +892,25 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	var taskPatchList []*api.TaskPatch
 	var statementUpdates []api.ActivityPipelineTaskStatementUpdatePayload
 	var earliestUpdates []api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload
+	var taskDAGRebuildList []struct {
+		fromTaskIDs []int
+		toTaskID    int
+	}
 
 	if oldPlan.PipelineUID != nil {
 		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: oldPlan.PipelineUID})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to list tasks: %v", err)
+		}
+		tasksBySpecID := make(map[string][]*store.TaskMessage)
+		for _, task := range tasks {
+			var taskSpecID struct {
+				SpecID string `json:"specId"`
+			}
+			if err := json.Unmarshal([]byte(task.Payload), &taskSpecID); err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
+			}
+			tasksBySpecID[taskSpecID.SpecID] = append(tasksBySpecID[taskSpecID.SpecID], task)
 		}
 		for _, task := range tasks {
 			doUpdate := false
@@ -1039,6 +1060,42 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				return nil, err
 			}
 
+			// task dag
+			if err := func() error {
+				oldSpec, ok := oldSpecsByID[taskSpecID.SpecID]
+				if !ok {
+					return nil
+				}
+
+				sort.Slice(oldSpec.DependsOnSpecs, func(i, j int) bool {
+					return oldSpec.DependsOnSpecs[i] < oldSpec.DependsOnSpecs[j]
+				})
+				sort.Slice(spec.DependsOnSpecs, func(i, j int) bool {
+					return spec.DependsOnSpecs[i] < spec.DependsOnSpecs[j]
+				})
+				if slices.Equal(oldSpec.GetDependsOnSpecs(), spec.GetDependsOnSpecs()) {
+					return nil
+				}
+
+				// rebuild the task dag
+				var fromTaskIDs []int
+				for _, dependsOnSpec := range spec.GetDependsOnSpecs() {
+					for _, dependsOnTask := range tasksBySpecID[dependsOnSpec] {
+						fromTaskIDs = append(fromTaskIDs, dependsOnTask.ID)
+					}
+				}
+				taskDAGRebuildList = append(taskDAGRebuildList, struct {
+					fromTaskIDs []int
+					toTaskID    int
+				}{
+					fromTaskIDs: fromTaskIDs,
+					toTaskID:    task.ID,
+				})
+				return nil
+			}(); err != nil {
+				return nil, err
+			}
+
 			if !doUpdate {
 				continue
 			}
@@ -1089,6 +1146,12 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 					// We don't erase the keys for RollbackCancel and RollbackGenerate here because they will eventually be erased by the rollback runner.
 				}
 			}
+		}
+	}
+
+	for _, taskDAGRebuild := range taskDAGRebuildList {
+		if err := s.store.RebuildTaskDAG(ctx, taskDAGRebuild.fromTaskIDs, taskDAGRebuild.toTaskID); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to rebuild task dag: %v", err)
 		}
 	}
 
