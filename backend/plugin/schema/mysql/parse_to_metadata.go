@@ -531,13 +531,13 @@ func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContex
 				}
 				subPartitionDefinitions[subpd.name] = subpd
 			}
-			pd.subPartitions = subPartitionDefinitions
+			pd.subpartitions = subPartitionDefinitions
 		}
 
 		partitionDefinitions[pd.name] = pd
 	}
 
-	table.partitionStateV2 = &partitionStateV2{
+	table.partition = &partitionState{
 		info:       parititonInfo,
 		subInfo:    subInfo,
 		partitions: partitionDefinitions,
