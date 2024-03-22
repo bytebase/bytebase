@@ -2,6 +2,8 @@ package api
 
 import (
 	"encoding/json"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // TaskStatus is the status of a task.
@@ -247,8 +249,10 @@ type TaskDatabaseDataExportPayload struct {
 	// Common fields
 	SpecID string `json:"specId,omitempty"`
 
-	SheetID int `json:"sheetId,omitempty"`
-	MaxRows int `json:"maxRows,omitempty"`
+	SheetID  int                  `json:"sheetId,omitempty"`
+	MaxRows  int                  `json:"maxRows,omitempty"`
+	Format   storepb.ExportFormat `json:"format,omitempty"`
+	Password string               `json:"password,omitempty"`
 }
 
 // Progress is a generalized struct which can track the progress of a task.
