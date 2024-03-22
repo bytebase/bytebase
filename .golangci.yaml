@@ -30,14 +30,14 @@ issues:
     - fmt.Printf
     - Enter(.*)_(.*)
     - Exit(.*)_(.*)
+  skip-dirs:
+    - proto/generated-go
+    - frontend
 
 run:
   timeout: 30m
   build-tags:
     - mysql
-  skip-dirs:
-    - proto/generated-go
-    - frontend
 
 linters-settings:
   goimports:
@@ -78,6 +78,8 @@ linters-settings:
       - name: import-shadowing
         disabled: true
       - name: early-return
+        disabled: true
+      - name: max-control-nesting
         disabled: true
       - name: comment-spacings
         arguments:
