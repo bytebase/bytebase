@@ -1,7 +1,7 @@
 import { stringify } from "qs";
 import {
   VCSProvider_Type,
-  vcsProvider_TypeToJSON,
+  vCSProvider_TypeToJSON,
 } from "@/types/proto/v1/vcs_provider_service";
 
 export const OAuthStateSessionKey = "oauth-state";
@@ -37,7 +37,7 @@ export function openWindowForOAuth(
 ): Window | null {
   const state: OAuthState = {
     // we use type to determine oauth type when receiving the callback
-    event: `${type}.${vcsProvider_TypeToJSON(vcsType)}-${applicationId}`,
+    event: `${type}.${vCSProvider_TypeToJSON(vcsType)}-${applicationId}`,
     popup: true,
   };
 
