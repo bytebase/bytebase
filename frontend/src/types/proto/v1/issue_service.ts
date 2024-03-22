@@ -291,6 +291,7 @@ export enum Issue_Type {
   TYPE_UNSPECIFIED = 0,
   DATABASE_CHANGE = 1,
   GRANT_REQUEST = 2,
+  DATABASE_DATA_EXPORT = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -305,6 +306,9 @@ export function issue_TypeFromJSON(object: any): Issue_Type {
     case 2:
     case "GRANT_REQUEST":
       return Issue_Type.GRANT_REQUEST;
+    case 3:
+    case "DATABASE_DATA_EXPORT":
+      return Issue_Type.DATABASE_DATA_EXPORT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -320,6 +324,8 @@ export function issue_TypeToJSON(object: Issue_Type): string {
       return "DATABASE_CHANGE";
     case Issue_Type.GRANT_REQUEST:
       return "GRANT_REQUEST";
+    case Issue_Type.DATABASE_DATA_EXPORT:
+      return "DATABASE_DATA_EXPORT";
     case Issue_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

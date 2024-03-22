@@ -50,6 +50,8 @@ const (
 	TaskDatabaseRestorePITRRestore TaskType = "bb.task.database.restore.pitr.restore"
 	// TaskDatabaseRestorePITRCutover is the task type for swapping the pitr and original database.
 	TaskDatabaseRestorePITRCutover TaskType = "bb.task.database.restore.pitr.cutover"
+	// TaskDatabaseDataExport is the task type for exporting database data.
+	TaskDatabaseDataExport TaskType = "bb.task.database.data.export"
 )
 
 // These payload types are only used when marshalling to the json format for saving into the database.
@@ -238,6 +240,15 @@ type TaskDatabaseBackupPayload struct {
 	SpecID        string `json:"specId,omitempty"`
 
 	BackupID int `json:"backupId,omitempty"`
+}
+
+// TaskDatabaseDataExportPayload is the task payload for database data export.
+type TaskDatabaseDataExportPayload struct {
+	// Common fields
+	SpecID string `json:"specId,omitempty"`
+
+	SheetID int `json:"sheetId,omitempty"`
+	MaxRows int `json:"maxRows,omitempty"`
 }
 
 // Progress is a generalized struct which can track the progress of a task.

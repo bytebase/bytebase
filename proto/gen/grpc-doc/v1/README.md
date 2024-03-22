@@ -506,6 +506,7 @@
     - [Task.DatabaseBackup](#bytebase-v1-Task-DatabaseBackup)
     - [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate)
     - [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry)
+    - [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport)
     - [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate)
     - [Task.DatabaseRestoreRestore](#bytebase-v1-Task-DatabaseRestoreRestore)
     - [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline)
@@ -5970,6 +5971,7 @@ ANY means approving any node will proceed.
 | TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_CHANGE | 1 |  |
 | GRANT_REQUEST | 2 |  |
+| DATABASE_DATA_EXPORT | 3 |  |
 
 
 
@@ -8267,6 +8269,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | database_data_update | [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate) |  |  |
 | database_backup | [Task.DatabaseBackup](#bytebase-v1-Task-DatabaseBackup) |  |  |
 | database_restore_restore | [Task.DatabaseRestoreRestore](#bytebase-v1-Task-DatabaseRestoreRestore) |  |  |
+| database_data_export | [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport) |  |  |
 
 
 
@@ -8320,6 +8323,23 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Task-DatabaseDataExport"></a>
+
+### Task.DatabaseDataExport
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name} |
+| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
+| max_rows | [int32](#int32) |  | The max number of rows to export. |
 
 
 
@@ -8595,6 +8615,7 @@ Type is the database change type.
 | DATABASE_BACKUP | 9 | use payload DatabaseBackup |
 | DATABASE_RESTORE_RESTORE | 10 | use payload DatabaseRestoreRestore |
 | DATABASE_RESTORE_CUTOVER | 11 | use payload nil |
+| DATABASE_DATA_EXPORT | 12 | use payload DatabaseDataExport |
 
 
 
