@@ -207,9 +207,11 @@ func convertToPlanSpecExportDataConfig(config *storepb.PlanConfig_Spec_ExportDat
 	c := config.ExportDataConfig
 	return &v1pb.Plan_Spec_ExportDataConfig{
 		ExportDataConfig: &v1pb.Plan_ExportDataConfig{
-			Target:  c.Target,
-			Sheet:   c.Sheet,
-			MaxRows: c.MaxRows,
+			Target:   c.Target,
+			Sheet:    c.Sheet,
+			MaxRows:  c.MaxRows,
+			Format:   convertExportFormat(c.Format),
+			Password: c.Password,
 		},
 	}
 }
@@ -328,9 +330,11 @@ func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *s
 	c := config.ExportDataConfig
 	return &storepb.PlanConfig_Spec_ExportDataConfig{
 		ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
-			Target:  c.Target,
-			Sheet:   c.Sheet,
-			MaxRows: c.MaxRows,
+			Target:   c.Target,
+			Sheet:    c.Sheet,
+			MaxRows:  c.MaxRows,
+			Format:   convertToExportFormat(c.Format),
+			Password: c.Password,
 		},
 	}
 }
@@ -1063,9 +1067,11 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 	sheet := getResourceNameForSheet(project, payload.SheetID)
 	v1pbTaskPayload := v1pb.Task_DatabaseDataExport_{
 		DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
-			Target:  targetDatabaseName,
-			Sheet:   sheet,
-			MaxRows: int32(payload.MaxRows),
+			Target:   targetDatabaseName,
+			Sheet:    sheet,
+			MaxRows:  int32(payload.MaxRows),
+			Format:   convertExportFormat(payload.Format),
+			Password: &payload.Password,
 		},
 	}
 	v1pbTask := &v1pb.Task{
