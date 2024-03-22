@@ -9,8 +9,8 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/common.proto";
-import "v1/externalvs_service.proto";
 import "v1/iam_policy.proto";
+import "v1/vcs_provider_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -332,7 +332,7 @@ message UpdateDeploymentConfigRequest {
 }
 
 message UpdateProjectGitOpsInfoRequest {
-  // The binding for the project and external version control.
+  // The binding for the project and vcs provider.
   ProjectGitOpsInfo project_gitops_info = 2 [(google.api.field_behavior) = REQUIRED];
 
   // The mask of the fields to be updated.

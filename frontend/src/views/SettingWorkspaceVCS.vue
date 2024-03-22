@@ -45,10 +45,7 @@ const vcsV1Store = useVCSV1Store();
 const router = useRouter();
 
 const hasCreateVCSPermission = computed(() => {
-  return hasWorkspacePermissionV2(
-    currentUser.value,
-    "bb.externalVersionControls.create"
-  );
+  return hasWorkspacePermissionV2(currentUser.value, "bb.vcsProviders.create");
 });
 
 const prepareVCSList = () => {

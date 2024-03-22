@@ -232,7 +232,7 @@ func TestVCS(t *testing.T) {
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
-		vcsType             v1pb.ExternalVersionControl_Type
+		vcsType             v1pb.VCSProvider_Type
 		externalID          string
 		repositoryFullPath  string
 		newWebhookPushEvent func(added, modified [][]string, beforeSHA, afterSHA string) any
@@ -240,7 +240,7 @@ func TestVCS(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            v1pb.ExternalVersionControl_GITLAB,
+			vcsType:            v1pb.VCSProvider_GITLAB,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) any {
@@ -267,7 +267,7 @@ func TestVCS(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            v1pb.ExternalVersionControl_GITHUB,
+			vcsType:            v1pb.VCSProvider_GITHUB,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) any {
@@ -306,7 +306,7 @@ func TestVCS(t *testing.T) {
 		{
 			name:               "Bitbucket",
 			vcsProviderCreator: fake.NewBitbucket,
-			vcsType:            v1pb.ExternalVersionControl_BITBUCKET,
+			vcsType:            v1pb.VCSProvider_BITBUCKET,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(added, _ [][]string, beforeSHA, afterSHA string) any {
@@ -386,8 +386,8 @@ func TestVCS(t *testing.T) {
 			}()
 
 			// Create a VCS.
-			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
-				ExternalVersionControl: &v1pb.ExternalVersionControl{
+			evcs, err := ctl.evcsClient.CreateVCSProvider(ctx, &v1pb.CreateVCSProviderRequest{
+				VcsProvider: &v1pb.VCSProvider{
 					Title:         t.Name(),
 					Type:          test.vcsType,
 					Url:           ctl.vcsURL,
@@ -406,7 +406,7 @@ func TestVCS(t *testing.T) {
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
+					VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -631,7 +631,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
-		vcsType             v1pb.ExternalVersionControl_Type
+		vcsType             v1pb.VCSProvider_Type
 		externalID          string
 		repositoryFullPath  string
 		newWebhookPushEvent func(added, modified []string, beforeSHA, afterSHA string) any
@@ -639,7 +639,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            v1pb.ExternalVersionControl_GITLAB,
+			vcsType:            v1pb.VCSProvider_GITLAB,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) any {
@@ -664,7 +664,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            v1pb.ExternalVersionControl_GITHUB,
+			vcsType:            v1pb.VCSProvider_GITHUB,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) any {
@@ -745,8 +745,8 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS
-			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
-				ExternalVersionControl: &v1pb.ExternalVersionControl{
+			evcs, err := ctl.evcsClient.CreateVCSProvider(ctx, &v1pb.CreateVCSProviderRequest{
+				VcsProvider: &v1pb.VCSProvider{
 					Title:         t.Name(),
 					Type:          test.vcsType,
 					Url:           ctl.vcsURL,
@@ -765,7 +765,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
+					VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -994,7 +994,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 	tests := []struct {
 		name                  string
 		vcsProviderCreator    fake.VCSProviderCreator
-		vcsType               v1pb.ExternalVersionControl_Type
+		vcsType               v1pb.VCSProvider_Type
 		baseDirectory         string
 		envName               string
 		filePathTemplate      string
@@ -1006,7 +1006,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		{
 			name:               "singleAsterisk",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            v1pb.ExternalVersionControl_GITLAB,
+			vcsType:            v1pb.VCSProvider_GITLAB,
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_ID}}/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
@@ -1033,7 +1033,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		{
 			name:               "continuousSingleAsterisk",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            v1pb.ExternalVersionControl_GITLAB,
+			vcsType:            v1pb.VCSProvider_GITLAB,
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_ID}}/*/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
@@ -1059,7 +1059,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 		{
 			name:               "doubleAsterisks",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            v1pb.ExternalVersionControl_GITLAB,
+			vcsType:            v1pb.VCSProvider_GITLAB,
 			baseDirectory:      "bbtest",
 			envName:            "wildcard",
 			filePathTemplate:   "{{ENV_ID}}/**/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
@@ -1092,7 +1092,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "wildcard",
 			baseDirectory:      "",
-			vcsType:            v1pb.ExternalVersionControl_GITLAB,
+			vcsType:            v1pb.VCSProvider_GITLAB,
 			filePathTemplate:   "{{ENV_ID}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
@@ -1120,7 +1120,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "prod1",
 			baseDirectory:      "bbtest",
-			vcsType:            v1pb.ExternalVersionControl_GITLAB,
+			vcsType:            v1pb.VCSProvider_GITLAB,
 			filePathTemplate:   "{{ENV_ID}}/**/foo/*/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				// ** matches foo, foo matches foo, * matches bar
@@ -1148,7 +1148,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			vcsProviderCreator: fake.NewGitLab,
 			envName:            "ZO",
 			baseDirectory:      "bbtest",
-			vcsType:            v1pb.ExternalVersionControl_GITLAB,
+			vcsType:            v1pb.VCSProvider_GITLAB,
 			filePathTemplate:   "{{ENV_ID}}/{{DB_NAME}}/sql/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 			commitNewFileNames: []string{
 				fmt.Sprintf("%s/%s/%s/sql/%s##ver1##migrate##create_table_t1.sql", baseDirectory, "zo", dbName, dbName),
@@ -1186,8 +1186,8 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 			// Create a VCS.
-			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
-				ExternalVersionControl: &v1pb.ExternalVersionControl{
+			evcs, err := ctl.evcsClient.CreateVCSProvider(ctx, &v1pb.CreateVCSProviderRequest{
+				VcsProvider: &v1pb.VCSProvider{
 					Title:         t.Name(),
 					Type:          test.vcsType,
 					Url:           ctl.vcsURL,
@@ -1206,7 +1206,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
+					VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
 					Title:              "Test Repository",
 					FullPath:           repoFullPath,
 					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, repoFullPath),
@@ -1290,7 +1290,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 	tests := []struct {
 		name                    string
 		vcsProviderCreator      fake.VCSProviderCreator
-		vcsType                 v1pb.ExternalVersionControl_Type
+		vcsType                 v1pb.VCSProvider_Type
 		externalID              string
 		repositoryFullPath      string
 		getEmptySQLReviewResult func(filePath, rootURL string) *api.VCSSQLReviewResult
@@ -1299,7 +1299,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            v1pb.ExternalVersionControl_GITLAB,
+			vcsType:            v1pb.VCSProvider_GITLAB,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			getEmptySQLReviewResult: func(filePath, rootURL string) *api.VCSSQLReviewResult {
@@ -1341,7 +1341,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            v1pb.ExternalVersionControl_GITHUB,
+			vcsType:            v1pb.VCSProvider_GITHUB,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			getEmptySQLReviewResult: func(filePath, rootURL string) *api.VCSSQLReviewResult {
@@ -1417,8 +1417,8 @@ func TestVCS_SQL_Review(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS.
-			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
-				ExternalVersionControl: &v1pb.ExternalVersionControl{
+			evcs, err := ctl.evcsClient.CreateVCSProvider(ctx, &v1pb.CreateVCSProviderRequest{
+				VcsProvider: &v1pb.VCSProvider{
 					Title:         t.Name(),
 					Type:          test.vcsType,
 					Url:           ctl.vcsURL,
@@ -1455,7 +1455,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			gitOpsInfo, err := ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
+					VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -1554,7 +1554,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 		want              bool
 	}
 	type vcsTestCase struct {
-		vcsType            v1pb.ExternalVersionControl_Type
+		vcsType            v1pb.VCSProvider_Type
 		vcsProviderCreator fake.VCSProviderCreator
 		externalID         string
 		repoFullPath       string
@@ -1563,7 +1563,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 
 	tests := []vcsTestCase{
 		{
-			vcsType:            v1pb.ExternalVersionControl_GITLAB,
+			vcsType:            v1pb.VCSProvider_GITLAB,
 			vcsProviderCreator: fake.NewGitLab,
 			externalID:         "1234",
 			repoFullPath:       "1234",
@@ -1603,7 +1603,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			},
 		},
 		{
-			vcsType:            v1pb.ExternalVersionControl_GITHUB,
+			vcsType:            v1pb.VCSProvider_GITHUB,
 			vcsProviderCreator: fake.NewGitHub,
 			externalID:         "test/branch",
 			repoFullPath:       "test/branch",
@@ -1663,8 +1663,8 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			}()
 
 			// Create a VCS.
-			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
-				ExternalVersionControl: &v1pb.ExternalVersionControl{
+			evcs, err := ctl.evcsClient.CreateVCSProvider(ctx, &v1pb.CreateVCSProviderRequest{
+				VcsProvider: &v1pb.VCSProvider{
 					Title:         "testName",
 					Type:          vcsTest.vcsType,
 					Url:           ctl.vcsURL,
@@ -1691,7 +1691,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 					_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 						ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 							Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-							VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
+							VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
 							Title:              "Test Repository",
 							FullPath:           vcsTest.repoFullPath,
 							WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, vcsTest.repoFullPath),
@@ -2105,7 +2105,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
-		vcsType             v1pb.ExternalVersionControl_Type
+		vcsType             v1pb.VCSProvider_Type
 		externalID          string
 		repositoryFullPath  string
 		newWebhookPushEvent func(added, modified []string, beforeSHA, afterSHA string) any
@@ -2113,7 +2113,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            v1pb.ExternalVersionControl_GITLAB,
+			vcsType:            v1pb.VCSProvider_GITLAB,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) any {
@@ -2138,7 +2138,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            v1pb.ExternalVersionControl_GITHUB,
+			vcsType:            v1pb.VCSProvider_GITHUB,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) any {
@@ -2218,8 +2218,8 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			a.NoError(err)
 
 			// Create a VCS
-			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
-				ExternalVersionControl: &v1pb.ExternalVersionControl{
+			evcs, err := ctl.evcsClient.CreateVCSProvider(ctx, &v1pb.CreateVCSProviderRequest{
+				VcsProvider: &v1pb.VCSProvider{
 					Title:         t.Name(),
 					Type:          test.vcsType,
 					Url:           ctl.vcsURL,
@@ -2253,7 +2253,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
-					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
+					VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),

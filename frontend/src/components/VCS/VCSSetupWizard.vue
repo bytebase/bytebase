@@ -44,9 +44,9 @@ import {
 } from "@/types";
 import {
   OAuthToken,
-  ExternalVersionControl,
-  ExternalVersionControl_Type,
-} from "@/types/proto/v1/externalvs_service";
+  VCSProvider,
+  VCSProvider_Type,
+} from "@/types/proto/v1/vcs_provider_service";
 import { isUrl } from "@/utils";
 import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
 import VCSProviderConfirmPanel from "./VCSProviderConfirmPanel.vue";
@@ -83,7 +83,7 @@ const stepList = [
 
 const state = reactive<LocalState>({
   config: {
-    type: ExternalVersionControl_Type.GITLAB,
+    type: VCSProvider_Type.GITLAB,
     uiType: "GITLAB_SELF_HOST",
     name: t("gitops.setting.add-git-provider.gitlab-self-host"),
     instanceUrl: "",
@@ -105,10 +105,10 @@ const eventListener = (event: Event) => {
   const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
   if (isEmpty(payload.error)) {
     if (
-      state.config.type === ExternalVersionControl_Type.GITLAB ||
-      state.config.type === ExternalVersionControl_Type.GITHUB ||
-      state.config.type === ExternalVersionControl_Type.BITBUCKET ||
-      state.config.type === ExternalVersionControl_Type.AZURE_DEVOPS
+      state.config.type === VCSProvider_Type.GITLAB ||
+      state.config.type === VCSProvider_Type.GITHUB ||
+      state.config.type === VCSProvider_Type.BITBUCKET ||
+      state.config.type === VCSProvider_Type.AZURE_DEVOPS
     ) {
       vcsV1Store
         .exchangeToken({
@@ -146,37 +146,37 @@ const allowNext = computed((): boolean => {
 });
 
 const attentionText = computed((): string => {
-  if (state.config.type === ExternalVersionControl_Type.GITLAB) {
+  if (state.config.type === VCSProvider_Type.GITLAB) {
     if (state.config.uiType == "GITLAB_SELF_HOST") {
       return t(
         "gitops.setting.add-git-provider.gitlab-self-host-admin-requirement"
       );
     }
     return t("gitops.setting.add-git-provider.gitlab-com-admin-requirement");
-  } else if (state.config.type === ExternalVersionControl_Type.GITHUB) {
+  } else if (state.config.type === VCSProvider_Type.GITHUB) {
     return t("gitops.setting.add-git-provider.github-com-admin-requirement");
-  } else if (state.config.type === ExternalVersionControl_Type.BITBUCKET) {
+  } else if (state.config.type === VCSProvider_Type.BITBUCKET) {
     return t("gitops.setting.add-git-provider.bitbucket-admin-requirement");
-  } else if (state.config.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
+  } else if (state.config.type === VCSProvider_Type.AZURE_DEVOPS) {
     return t("gitops.setting.add-git-provider.azure-admin-requirement");
   }
   return "";
 });
 
 const link = computed((): string => {
-  if (state.config.type === ExternalVersionControl_Type.GITLAB) {
+  if (state.config.type === VCSProvider_Type.GITLAB) {
     if (state.config.uiType == "GITLAB_SELF_HOST") {
       return "https://www.bytebase.com/docs/vcs-integration/self-host-gitlab/?source=console";
     }
     return "https://www.bytebase.com/docs/vcs-integration/gitlab-com/?source=console";
-  } else if (state.config.type === ExternalVersionControl_Type.GITHUB) {
+  } else if (state.config.type === VCSProvider_Type.GITHUB) {
     if (state.config.uiType == "GITHUB_COM") {
       return "https://www.bytebase.com/docs/vcs-integration/github-com/?source=console";
     }
     return "https://www.bytebase.com/docs/vcs-integration/github-enterprise/?source=console";
-  } else if (state.config.type === ExternalVersionControl_Type.BITBUCKET) {
+  } else if (state.config.type === VCSProvider_Type.BITBUCKET) {
     return "https://www.bytebase.com/docs/vcs-integration/bitbucket-org/?source=console";
-  } else if (state.config.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
+  } else if (state.config.type === VCSProvider_Type.AZURE_DEVOPS) {
     return "https://www.bytebase.com/docs/vcs-integration/azure-devops/?source=console";
   }
   return "";
@@ -196,11 +196,11 @@ const tryChangeStep = (nextStepIndex: number) => {
     nextStepIndex > state.currentStep
   ) {
     let authorizeUrl = `${state.config.instanceUrl}/oauth/authorize`;
-    if (state.config.type === ExternalVersionControl_Type.GITHUB) {
+    if (state.config.type === VCSProvider_Type.GITHUB) {
       authorizeUrl = `${state.config.instanceUrl}/login/oauth/authorize`;
-    } else if (state.config.type === ExternalVersionControl_Type.BITBUCKET) {
+    } else if (state.config.type === VCSProvider_Type.BITBUCKET) {
       authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
-    } else if (state.config.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
+    } else if (state.config.type === VCSProvider_Type.AZURE_DEVOPS) {
       authorizeUrl = "https://app.vssps.visualstudio.com/oauth2/authorize";
     }
     const newWindow = openWindowForOAuth(
@@ -220,7 +220,7 @@ const tryChangeStep = (nextStepIndex: number) => {
           });
         } else {
           let description = "";
-          if (state.config.type == ExternalVersionControl_Type.GITLAB) {
+          if (state.config.type == VCSProvider_Type.GITLAB) {
             // If application id mismatches, the OAuth workflow will stop early.
             // So the only possibility to reach here is we have a matching application id, while
             // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
@@ -253,7 +253,7 @@ const tryFinishSetup = () => {
       secret: state.config.secret,
       apiUrl: "",
     })
-    .then((vcs: ExternalVersionControl) => {
+    .then((vcs: VCSProvider) => {
       router.push({
         name: WORKSPACE_ROUTE_GITOPS,
       });

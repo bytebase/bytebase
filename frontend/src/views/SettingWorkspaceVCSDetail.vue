@@ -171,9 +171,9 @@ import {
 } from "@/types";
 import {
   OAuthToken,
-  ExternalVersionControl,
-  ExternalVersionControl_Type,
-} from "@/types/proto/v1/externalvs_service";
+  VCSProvider,
+  VCSProvider_Type,
+} from "@/types/proto/v1/vcs_provider_service";
 import {
   idFromSlug,
   uidFromSlug,
@@ -197,7 +197,7 @@ const currentUser = useCurrentUserV1();
 const vcsV1Store = useVCSV1Store();
 const repositoryV1Store = useRepositoryV1Store();
 
-const vcs = computed((): ExternalVersionControl | undefined => {
+const vcs = computed((): VCSProvider | undefined => {
   return vcsV1Store.getVCSByUid(idFromSlug(props.vcsSlug));
 });
 
@@ -219,17 +219,11 @@ const state = reactive<LocalState>({
 });
 
 const hasUpdateVCSPermission = computed(() => {
-  return hasWorkspacePermissionV2(
-    currentUser.value,
-    "bb.externalVersionControls.update"
-  );
+  return hasWorkspacePermissionV2(currentUser.value, "bb.vcsProviders.update");
 });
 
 const hasDeleteVCSPermission = computed(() => {
-  return hasWorkspacePermissionV2(
-    currentUser.value,
-    "bb.externalVersionControls.delete"
-  );
+  return hasWorkspacePermissionV2(currentUser.value, "bb.vcsProviders.delete");
 });
 
 onMounted(() => {
@@ -244,9 +238,9 @@ const eventListener = (event: Event) => {
   const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
   if (isEmpty(payload.error)) {
     if (
-      vcs.value?.type === ExternalVersionControl_Type.GITLAB ||
-      vcs.value?.type === ExternalVersionControl_Type.GITHUB ||
-      vcs.value?.type === ExternalVersionControl_Type.BITBUCKET
+      vcs.value?.type === VCSProvider_Type.GITLAB ||
+      vcs.value?.type === VCSProvider_Type.GITHUB ||
+      vcs.value?.type === VCSProvider_Type.BITBUCKET
     ) {
       vcsV1Store
         .exchangeToken({
@@ -273,7 +267,7 @@ watchEffect(async () => {
     if (
       !hasWorkspacePermissionV2(
         currentUser.value,
-        "bb.externalVersionControls.listProjects"
+        "bb.vcsProviders.listProjects"
       )
     ) {
       pushNotification({
@@ -323,11 +317,11 @@ const doUpdate = () => {
     !isEmpty(state.secret)
   ) {
     let authorizeUrl = `${vcs.value.url}/oauth/authorize`;
-    if (vcs.value.type === ExternalVersionControl_Type.GITHUB) {
+    if (vcs.value.type === VCSProvider_Type.GITHUB) {
       authorizeUrl = `https://github.com/login/oauth/authorize`;
-    } else if (vcs.value.type === ExternalVersionControl_Type.BITBUCKET) {
+    } else if (vcs.value.type === VCSProvider_Type.BITBUCKET) {
       authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
-    } else if (vcs.value.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
+    } else if (vcs.value.type === VCSProvider_Type.AZURE_DEVOPS) {
       authorizeUrl = "https://app.vssps.visualstudio.com/oauth2/authorize";
     }
     const newWindow = openWindowForOAuth(
@@ -342,7 +336,7 @@ const doUpdate = () => {
           return;
         }
         if (token) {
-          const vcsPatch: Partial<ExternalVersionControl> = {
+          const vcsPatch: Partial<VCSProvider> = {
             name: vcs.value.name,
           };
           if (state.title != vcs.value.title) {
@@ -356,7 +350,7 @@ const doUpdate = () => {
           }
           vcsV1Store
             .updateVCS(vcsPatch)
-            .then((vcs: ExternalVersionControl | undefined) => {
+            .then((vcs: VCSProvider | undefined) => {
               if (!vcs) {
                 return;
               }
@@ -371,13 +365,13 @@ const doUpdate = () => {
           // So the only possibility to reach here is we have a matching application ID, while
           // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
           let description = "";
-          if (vcs.value.type == ExternalVersionControl_Type.GITLAB) {
+          if (vcs.value.type == VCSProvider_Type.GITLAB) {
             description =
               "Please make sure Secret matches the one from your GitLab instance Application.";
-          } else if (vcs.value.type == ExternalVersionControl_Type.GITHUB) {
+          } else if (vcs.value.type == VCSProvider_Type.GITHUB) {
             description =
               "Please make sure Client secret matches the one from your GitHub.com Application.";
-          } else if (vcs.value.type == ExternalVersionControl_Type.BITBUCKET) {
+          } else if (vcs.value.type == VCSProvider_Type.BITBUCKET) {
             description =
               "Please make sure Secret matches the one from your Bitbucket.org consumer.";
           }
@@ -391,13 +385,13 @@ const doUpdate = () => {
       };
     }
   } else if (state.title != vcs.value.title) {
-    const vcsPatch: Partial<ExternalVersionControl> = {
+    const vcsPatch: Partial<VCSProvider> = {
       name: vcs.value.name,
       title: state.title,
     };
     vcsV1Store
       .updateVCS(vcsPatch)
-      .then((updatedVCS: ExternalVersionControl | undefined) => {
+      .then((updatedVCS: VCSProvider | undefined) => {
         if (!updatedVCS) {
           return;
         }
