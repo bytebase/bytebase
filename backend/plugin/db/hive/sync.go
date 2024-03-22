@@ -3,6 +3,7 @@ package hive
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// TODO(tommy): another approch for this is fetching data from metastore database.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var instanceMetadata db.InstanceMetadata
 	// version.
@@ -102,85 +102,84 @@ func (d *Driver) getTablesNames(ctx context.Context) ([]string, error) {
 }
 
 // getTables fetches table info and returns structed table data.
-func (d *Driver) getTables(ctx context.Context, viewMap map[string]bool) ([]*storepb.TableMetadata, error) {
-	var tableMetadatas []*storepb.TableMetadata
-
-	// tables' names.
+func (d *Driver) getTables(ctx context.Context) (
+	[]*storepb.TableMetadata,
+	[]*storepb.ExternalTableMetadata,
+	[]*storepb.ViewMetadata,
+	[]*storepb.MaterializedViewMetadata,
+	error,
+) {
+	var (
+		tableMetadatas    []*storepb.TableMetadata
+		extTableMetadatas []*storepb.ExternalTableMetadata
+		viewMetadatas     []*storepb.ViewMetadata
+		mtViewMetadatas   []*storepb.MaterializedViewMetadata
+	)
+	// list tables' names.
 	tabNames, err := d.getTablesNames(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list tables")
+		return nil, nil, nil, nil, errors.Wrapf(err, "failed to list tables")
 	}
 
 	// iterations in tables of certain database.
 	for _, tabName := range tabNames {
-		// filter out view and index names from table names.
-		_, ok := viewMap[tabName]
-		if ok || strings.HasSuffix(tabName, "__") {
+		// filter out index table names.
+		if strings.HasSuffix(tabName, "__") {
 			continue
 		}
 
-		var (
-			tableMetadata storepb.TableMetadata
-			isPartitioned = false
-		)
-
-		// columns info.
-		columnResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("DESC %s", tabName), nil)
+		// different processing according to the type of the table.
+		tableType, columnMetaData, rowCount, viewDefination, err := d.getTableInfo(ctx, tabName)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get columns from table %s", tabName)
-		}
-		for _, columnRow := range columnResults[0].Rows {
-			column := &storepb.ColumnMetadata{
-				Name:    columnRow.Values[0].GetStringValue(),
-				Type:    columnRow.Values[1].GetStringValue(),
-				Comment: columnRow.Values[2].GetStringValue(),
-			}
-			// there will be an empty row if the table is partitioned.
-			if column.Name == "" {
-				isPartitioned = true
-				break
-			}
-			tableMetadata.Columns = append(tableMetadata.Columns, column)
+			return nil, nil, nil, nil, errors.Wrapf(err, "failed to describe table %s's type", tabName)
 		}
 
-		// row counts.
-		countResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("SELECT COUNT(*) FROM %s", tabName), nil)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get number of rows from table %s", tabName)
+		if tableType == "MATERIALIZED_VIEW" {
+			mtViewMetadatas = append(mtViewMetadatas, &storepb.MaterializedViewMetadata{
+				Name:       tabName,
+				Definition: viewDefination,
+			})
+			continue
+		} else if tableType == "VIRTUAL_VIEW" {
+			viewMetadatas = append(viewMetadatas, &storepb.ViewMetadata{
+				Name: tabName,
+			})
+			continue
+		} else if tableType == "EXTERNAL_TABLE" {
+			extTableMetadatas = append(extTableMetadatas, &storepb.ExternalTableMetadata{
+				Name:    tabName,
+				Columns: columnMetaData,
+			})
+			continue
+		} else if tableType != "MANAGED_TABLE" {
+			return nil, nil, nil, nil, errors.Errorf("unsupported table type: %s", tableType)
 		}
+
+		var tableMetadata storepb.TableMetadata
 
 		// indexes.
-		indexResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("SHOW INDEX on %s", tabName), nil)
+		indexResults, err := d.getIndexesByTableName(ctx, tabName)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get index info from table %s", tabName)
-		}
-		for _, row := range indexResults[0].Rows {
-			tableMetadata.Indexes = append(tableMetadata.Indexes, &storepb.IndexMetadata{
-				Name:    row.Values[0].GetStringValue(),
-				Type:    row.Values[4].GetStringValue(),
-				Comment: row.Values[5].GetStringValue(),
-			})
+			return nil, nil, nil, nil, errors.Wrapf(err, "failed to get index info from tab %s", tabName)
 		}
 
 		// partitions.
-		if isPartitioned {
-			partitionResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("SHOW PARTITIONS %s", tabName), nil)
-			// check whether the table is partitioned.
-			if err == nil && partitionResults[0].Error == "" {
-				for _, row := range partitionResults[0].Rows {
-					tableMetadata.Partitions = append(tableMetadata.Partitions, &storepb.TablePartitionMetadata{
-						Name: row.Values[0].GetStringValue(),
-					})
-				}
+		partitionResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("SHOW PARTITIONS %s", tabName), nil)
+		if err == nil && partitionResults[0].Error == "" {
+			for _, row := range partitionResults[0].Rows {
+				tableMetadata.Partitions = append(tableMetadata.Partitions, &storepb.TablePartitionMetadata{
+					Name: row.Values[0].GetStringValue(),
+				})
 			}
 		}
 
-		tableMetadata.RowCount = countResults[0].Rows[0].Values[0].GetInt64Value()
+		tableMetadata.RowCount = int64(rowCount)
 		tableMetadata.Name = tabName
+		tableMetadata.Indexes = indexResults
 		tableMetadatas = append(tableMetadatas, &tableMetadata)
 	}
 
-	return tableMetadatas, nil
+	return tableMetadatas, extTableMetadatas, viewMetadatas, mtViewMetadatas, nil
 }
 
 // getRoles fetches role names and grant info from instance and returns structed role data.
@@ -206,25 +205,29 @@ func (d *Driver) getRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata,
 	return roleMetadata, nil
 }
 
-func (d *Driver) getViews(ctx context.Context) ([]*storepb.ViewMetadata, map[string]bool, error) {
+func (d *Driver) getIndexesByTableName(ctx context.Context, tableName string) ([]*storepb.IndexMetadata, error) {
 	var (
-		viewMetadata []*storepb.ViewMetadata
-		viewMap      = map[string]bool{}
+		indexMetadata []*storepb.IndexMetadata
+		cursor        = d.dbClient.Cursor()
 	)
+	defer cursor.Close()
 
-	viewResults, err := d.QueryConn(ctx, nil, "SHOW VIEWS", nil)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get views")
+	cursor.Execute(ctx, fmt.Sprintf("SHOW INDEX ON %s", tableName), false)
+	if cursor.Err != nil {
+		return nil, errors.Wrapf(cursor.Err, "failed to get index info from table %s", tableName)
 	}
-	for _, row := range viewResults[0].Rows {
-		viewName := row.Values[0].GetStringValue()
-		viewMap[viewName] = true
 
-		viewMetadata = append(viewMetadata, &storepb.ViewMetadata{
-			Name: viewName,
+	for cursor.HasMore(ctx) {
+		rowMap := cursor.RowMap(ctx)
+		indexMetadata = append(indexMetadata, &storepb.IndexMetadata{
+			Name:        strings.ReplaceAll(rowMap["idx_name"].(string), " ", ""),
+			Comment:     strings.ReplaceAll(rowMap["comment"].(string), " ", ""),
+			Type:        strings.ReplaceAll(rowMap["idx_type"].(string), " ", ""),
+			Expressions: strings.Split(strings.ReplaceAll(rowMap["col_names"].(string), " ", ""), ","),
 		})
 	}
-	return viewMetadata, viewMap, nil
+
+	return indexMetadata, nil
 }
 
 // This function gets certain database info by name.
@@ -236,21 +239,92 @@ func (d *Driver) getDatabaseInfoByName(ctx context.Context, databaseName string)
 		return nil, errors.Wrapf(err, "failed to switch to database %s", databaseName)
 	}
 
-	// fetch view metadata.
-	viewMetadata, viewMap, err := d.getViews(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get view metadata from database %s", databaseName)
-	}
-
 	// fetch table metadata.
-	tableMetadata, err := d.getTables(ctx, viewMap)
+	tableMetadata, extTabMetadata, viewMetadata, mtViewMetadata, err := d.getTables(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get table metadata from database %s", databaseName)
 	}
 
 	return &storepb.SchemaMetadata{
-		Name:   databaseName,
-		Tables: tableMetadata,
-		Views:  viewMetadata,
+		Name:              databaseName,
+		Tables:            tableMetadata,
+		ExternalTables:    extTabMetadata,
+		Views:             viewMetadata,
+		MaterializedViews: mtViewMetadata,
 	}, nil
+}
+
+func (d *Driver) getTableInfo(ctx context.Context, tabName string) (
+	string,
+	[]*storepb.ColumnMetadata,
+	int,
+	string,
+	error,
+) {
+	var (
+		columnMetadatas []*storepb.ColumnMetadata
+		tabType         string
+		viewDefination  string
+		numRows         int
+		hasReadColumns  = false
+		cursor          = d.dbClient.Cursor()
+	)
+	defer cursor.Close()
+
+	cursor.Exec(ctx, fmt.Sprintf("DESCRIBE FORMATTED %s", tabName))
+	if cursor.Err != nil {
+		return "", nil, 0, "", errors.Wrapf(cursor.Err, "failed to describe table %s", tabName)
+	}
+
+	for idx := 0; cursor.HasMore(ctx); idx++ {
+		var (
+			typeStr    string
+			commentStr string
+			rowMap     = cursor.RowMap(ctx)
+			colName    = rowMap["col_name"].(string)
+		)
+
+		if idx < 2 {
+			continue
+		}
+		if rowMap["data_type"] == nil {
+			typeStr = ""
+		} else {
+			typeStr = strings.ReplaceAll(rowMap["data_type"].(string), " ", "")
+		}
+		if rowMap["comment"] == nil {
+			commentStr = ""
+		} else {
+			commentStr = strings.ReplaceAll(rowMap["comment"].(string), " ", "")
+		}
+
+		// process table type
+		if strings.Contains(colName, "Table Type") {
+			tabType = strings.ReplaceAll(typeStr, " ", "")
+		} else if colName == "" {
+			hasReadColumns = true
+		}
+		if !hasReadColumns {
+			// process column.
+			columnMetadatas = append(columnMetadatas, &storepb.ColumnMetadata{
+				Name:    colName,
+				Type:    typeStr,
+				Comment: commentStr,
+			})
+		}
+
+		// get row count.
+		if strings.Contains(typeStr, "numRows") {
+			n, err := strconv.Atoi(commentStr)
+			if err != nil {
+				return "", nil, 0, "", errors.Wrapf(err, "failed to parse row count")
+			}
+			numRows = n
+		} else if strings.Contains(colName, "View Original Text") {
+			// get view definition if it exists.
+			viewDefination = typeStr
+		}
+	}
+
+	return tabType, columnMetadatas, numRows, viewDefination, nil
 }
