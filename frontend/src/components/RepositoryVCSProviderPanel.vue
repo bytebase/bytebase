@@ -42,17 +42,17 @@ import { OAuthWindowEventPayload, openWindowForOAuth } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
 import {
-  ExternalVersionControl,
-  ExternalVersionControl_Type,
-} from "@/types/proto/v1/externalvs_service";
+  VCSProvider,
+  VCSProvider_Type,
+} from "@/types/proto/v1/vcs_provider_service";
 
 interface LocalState {
-  selectedVCS?: ExternalVersionControl;
+  selectedVCS?: VCSProvider;
 }
 
 const emit = defineEmits<{
   (event: "next"): void;
-  (event: "set-vcs", payload: ExternalVersionControl): void;
+  (event: "set-vcs", payload: VCSProvider): void;
   (event: "set-code", payload: string): void;
 }>();
 
@@ -93,22 +93,19 @@ const eventListener = (event: Event) => {
 };
 
 const canManageVCSProvider = computed(() => {
-  return hasWorkspacePermissionV2(
-    currentUserV1.value,
-    "bb.externalVersionControls.list"
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.vcsProviders.list");
 });
 
-const selectVCS = (vcs: ExternalVersionControl) => {
+const selectVCS = (vcs: VCSProvider) => {
   state.selectedVCS = vcs;
   emit("set-vcs", vcs);
 
   let authorizeUrl = `${vcs.url}/oauth/authorize`;
-  if (vcs.type === ExternalVersionControl_Type.GITHUB) {
+  if (vcs.type === VCSProvider_Type.GITHUB) {
     authorizeUrl = `${vcs.url}/login/oauth/authorize`;
-  } else if (vcs.type === ExternalVersionControl_Type.BITBUCKET) {
+  } else if (vcs.type === VCSProvider_Type.BITBUCKET) {
     authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
-  } else if (vcs.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
+  } else if (vcs.type === VCSProvider_Type.AZURE_DEVOPS) {
     authorizeUrl = "https://app.vssps.visualstudio.com/oauth2/authorize";
   }
   openWindowForOAuth(

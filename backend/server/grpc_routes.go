@@ -77,7 +77,7 @@ func configureGrpcRouters(
 	v1pb.RegisterSettingServiceServer(grpcServer, apiv1.NewSettingService(stores, profile, licenseService, stateCfg))
 	v1pb.RegisterAnomalyServiceServer(grpcServer, apiv1.NewAnomalyService(stores))
 	v1pb.RegisterSQLServiceServer(grpcServer, apiv1.NewSQLService(stores, schemaSyncer, dbFactory, activityManager, licenseService, profile, iamManager))
-	v1pb.RegisterExternalVersionControlServiceServer(grpcServer, apiv1.NewExternalVersionControlService(stores))
+	v1pb.RegisterVCSProviderServiceServer(grpcServer, apiv1.NewVCSProviderService(stores))
 	v1pb.RegisterRiskServiceServer(grpcServer, apiv1.NewRiskService(stores, licenseService))
 	issueService := apiv1.NewIssueService(stores, activityManager, relayRunner, stateCfg, licenseService, profile, iamManager, metricReporter)
 	v1pb.RegisterIssueServiceServer(grpcServer, issueService)
@@ -137,7 +137,7 @@ func configureGrpcRouters(
 	if err := v1pb.RegisterSQLServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, err
 	}
-	if err := v1pb.RegisterExternalVersionControlServiceHandler(ctx, mux, grpcConn); err != nil {
+	if err := v1pb.RegisterVCSProviderServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, err
 	}
 	if err := v1pb.RegisterRoleServiceHandler(ctx, mux, grpcConn); err != nil {

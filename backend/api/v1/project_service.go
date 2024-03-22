@@ -477,7 +477,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid vcs uid: %s", request.ProjectGitopsInfo.VcsUid)
 			}
-			storeVCS, err := s.store.GetExternalVersionControlV2(ctx, intVCSUID)
+			storeVCS, err := s.store.GetVCSProviderV2(ctx, intVCSUID)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 			}
@@ -516,7 +516,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 			return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
 		}
 
-		vcs, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
+		vcs, err := s.store.GetVCSProviderV2(ctx, repo.VCSUID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 		}
@@ -584,7 +584,7 @@ func (s *ProjectService) SetupProjectSQLReviewCI(ctx context.Context, request *v
 		return nil, err
 	}
 
-	vcs, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
+	vcs, err := s.store.GetVCSProviderV2(ctx, repo.VCSUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
@@ -628,7 +628,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 		return nil, err
 	}
 
-	vcs, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
+	vcs, err := s.store.GetVCSProviderV2(ctx, repo.VCSUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
@@ -1047,7 +1047,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs uid: %s", request.ProjectGitopsInfo.VcsUid)
 	}
-	storeVCS, err := s.store.GetExternalVersionControlV2(ctx, intVCSUID)
+	storeVCS, err := s.store.GetVCSProviderV2(ctx, intVCSUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
@@ -1108,7 +1108,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.InvalidArgument, "invalid schema_path_template: %s", err.Error())
 	}
 
-	vcs, err := s.store.GetExternalVersionControlV2(ctx, repositoryCreate.VCSUID)
+	vcs, err := s.store.GetVCSProviderV2(ctx, repositoryCreate.VCSUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
@@ -1190,7 +1190,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 	return convertToProjectGitOpsInfo(repository), nil
 }
 
-func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *store.RepositoryMessage, vcs *store.ExternalVersionControlMessage) (*vcsplugin.PullRequest, error) {
+func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *store.RepositoryMessage, vcs *store.VCSProviderMessage) (*vcsplugin.PullRequest, error) {
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, err
@@ -1266,7 +1266,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 }
 
 // setupVCSSQLReviewBranch will create a new branch to setup SQL review CI.
-func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository *store.RepositoryMessage, vcs *store.ExternalVersionControlMessage) (*vcsplugin.BranchInfo, error) {
+func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository *store.RepositoryMessage, vcs *store.VCSProviderMessage) (*vcsplugin.BranchInfo, error) {
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
@@ -1316,7 +1316,7 @@ func setupVCSSQLReviewCIForGitHub(
 	ctx context.Context,
 	oauthContext *common.OauthContext,
 	repository *store.RepositoryMessage,
-	vcs *store.ExternalVersionControlMessage,
+	vcs *store.VCSProviderMessage,
 	branch *vcsplugin.BranchInfo,
 	sqlReviewEndpoint string,
 ) error {
@@ -1368,7 +1368,7 @@ func setupVCSSQLReviewCIForBitBucket(
 	ctx context.Context,
 	oauthContext *common.OauthContext,
 	repository *store.RepositoryMessage,
-	vcs *store.ExternalVersionControlMessage,
+	vcs *store.VCSProviderMessage,
 	branch *vcsplugin.BranchInfo,
 	sqlReviewEndpoint string,
 ) error {
@@ -1420,7 +1420,7 @@ func setupVCSSQLReviewCIForGitLab(
 	ctx context.Context,
 	oauthContext *common.OauthContext,
 	repository *store.RepositoryMessage,
-	vcs *store.ExternalVersionControlMessage,
+	vcs *store.VCSProviderMessage,
 	branch *vcsplugin.BranchInfo,
 	sqlReviewEndpoint string,
 ) error {
@@ -1469,7 +1469,7 @@ func setupVCSSQLReviewCIForAzureDevOps(
 	ctx context.Context,
 	oauthContext *common.OauthContext,
 	repository *store.RepositoryMessage,
-	vcs *store.ExternalVersionControlMessage,
+	vcs *store.VCSProviderMessage,
 	branch *vcsplugin.BranchInfo,
 	sqlReviewEndpoint string,
 ) error {
@@ -1522,7 +1522,7 @@ func createOrUpdateVCSSQLReviewFile(
 	ctx context.Context,
 	oauthContext *common.OauthContext,
 	repository *store.RepositoryMessage,
-	vcs *store.ExternalVersionControlMessage,
+	vcs *store.VCSProviderMessage,
 	branch *vcsplugin.BranchInfo,
 	fileName string,
 	getNewContent func(meta *vcsplugin.FileMeta) (string, error),
@@ -3048,7 +3048,7 @@ func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.Proje
 
 func isBranchNotFound(
 	ctx context.Context,
-	vcs *store.ExternalVersionControlMessage,
+	vcs *store.VCSProviderMessage,
 	store *store.Store,
 	webURL, accessToken, refreshToken, externalID, branch, externalURL string,
 ) (bool, error) {

@@ -1,12 +1,9 @@
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import {
-  projectServiceClient,
-  externalVersionControlServiceClient,
-} from "@/grpcweb";
+import { projectServiceClient, vcsProviderServiceClient } from "@/grpcweb";
 import { ComposedRepository } from "@/types";
-import { ProjectGitOpsInfo } from "@/types/proto/v1/externalvs_service";
+import { ProjectGitOpsInfo } from "@/types/proto/v1/vcs_provider_service";
 import { getProjectPathFromRepoName } from "./common";
 import { useProjectV1Store } from "./project";
 
@@ -93,10 +90,9 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
   const fetchRepositoryListByVCS = async (
     vcsName: string
   ): Promise<ProjectGitOpsInfo[]> => {
-    const resp =
-      await externalVersionControlServiceClient.listProjectGitOpsInfo({
-        name: vcsName,
-      });
+    const resp = await vcsProviderServiceClient.listProjectGitOpsInfo({
+      name: vcsName,
+    });
 
     const projectV1Store = useProjectV1Store();
     const repoList: ComposedRepository[] = await Promise.all(

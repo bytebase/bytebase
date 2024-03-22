@@ -126,7 +126,7 @@
         {{
           $t("repository.sql-review-ci-setup-modal", {
             pr:
-              vcs.type === ExternalVersionControl_Type.GITLAB
+              vcs.type === VCSProvider_Type.GITLAB
                 ? $t("repository.merge-request")
                 : $t("repository.pull-request"),
           })
@@ -142,7 +142,7 @@
           {{
             $t("repository.sql-review-ci-setup-pr", {
               pr:
-                vcs.type === ExternalVersionControl_Type.GITLAB
+                vcs.type === VCSProvider_Type.GITLAB
                   ? $t("repository.merge-request")
                   : $t("repository.pull-request"),
             })
@@ -183,7 +183,7 @@
       {{
         $t("repository.sql-review-ci-loading-modal", {
           pr:
-            vcs.type === ExternalVersionControl_Type.GITLAB
+            vcs.type === VCSProvider_Type.GITLAB
               ? $t("repository.merge-request")
               : $t("repository.pull-request"),
         })
@@ -201,7 +201,7 @@
         <i18n-t keypath="repository.sql-review-ci-restore-modal">
           <template #vcs>
             {{
-              vcs.type === ExternalVersionControl_Type.GITLAB
+              vcs.type === VCSProvider_Type.GITLAB
                 ? "GitLab CI"
                 : "GitHub Action"
             }}
@@ -232,7 +232,7 @@
         <i18n-t keypath="repository.sql-review-ci-remove-modal">
           <template #vcs>
             {{
-              vcs.type === ExternalVersionControl_Type.GITLAB
+              vcs.type === VCSProvider_Type.GITLAB
                 ? "GitLab CI"
                 : "GitHub Action"
             }}
@@ -271,12 +271,12 @@ import {
   useRepositoryV1Store,
 } from "@/store";
 import { getVCSUid } from "@/store/modules/v1/common";
+import { Project, SchemaChange } from "@/types/proto/v1/project_service";
 import {
   ProjectGitOpsInfo,
-  ExternalVersionControl,
-  ExternalVersionControl_Type,
-} from "@/types/proto/v1/externalvs_service";
-import { Project, SchemaChange } from "@/types/proto/v1/project_service";
+  VCSProvider,
+  VCSProvider_Type,
+} from "@/types/proto/v1/vcs_provider_service";
 import { supportSQLReviewCI } from "@/utils";
 import { ExternalRepositoryInfo, RepositoryConfig } from "../types";
 
@@ -304,7 +304,7 @@ const props = defineProps({
   },
   vcs: {
     required: true,
-    type: Object as PropType<ExternalVersionControl>,
+    type: Object as PropType<VCSProvider>,
   },
   allowEdit: {
     default: true,
@@ -356,7 +356,7 @@ watch(
 
 const repositoryFormattedFullPath = computed(() => {
   const fullPath = props.repository.fullPath;
-  if (props.vcs.type !== ExternalVersionControl_Type.AZURE_DEVOPS) {
+  if (props.vcs.type !== VCSProvider_Type.AZURE_DEVOPS) {
     return fullPath;
   }
   if (!fullPath.includes("@dev.azure.com")) {

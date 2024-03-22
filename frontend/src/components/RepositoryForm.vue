@@ -250,7 +250,7 @@
         {{
           $t("repository.sql-review-ci-description", {
             pr:
-              vcsType === ExternalVersionControl_Type.GITLAB
+              vcsType === VCSProvider_Type.GITLAB
                 ? $t("repository.merge-request")
                 : $t("repository.pull-request"),
             pathTemplate:
@@ -318,7 +318,6 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
-import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
 import {
   Project,
   TenantMode,
@@ -326,6 +325,7 @@ import {
   schemaChangeToJSON,
 } from "@/types/proto/v1/project_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2, supportSQLReviewCI } from "@/utils";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
@@ -348,7 +348,7 @@ const props = withDefaults(
   defineProps<{
     allowEdit?: boolean;
     create?: boolean;
-    vcsType: ExternalVersionControl_Type;
+    vcsType: VCSProvider_Type;
     vcsName: string;
     repositoryInfo: ExternalRepositoryInfo;
     repositoryConfig: RepositoryConfig;
@@ -401,11 +401,11 @@ const canEnableSQLReview = computed(() => {
 });
 const enableSQLReviewTitle = computed(() => {
   switch (props.vcsType) {
-    case ExternalVersionControl_Type.GITLAB:
+    case VCSProvider_Type.GITLAB:
       return t("repository.sql-review-ci-enable-gitlab");
-    case ExternalVersionControl_Type.GITHUB:
+    case VCSProvider_Type.GITHUB:
       return t("repository.sql-review-ci-enable-github");
-    case ExternalVersionControl_Type.AZURE_DEVOPS:
+    case VCSProvider_Type.AZURE_DEVOPS:
       return t("repository.sql-review-ci-enable-azure");
     default:
       return t("repository.sql-review-ci-enable-title");
@@ -489,7 +489,7 @@ const sampleSchemaPath = (
 };
 
 const getWebhookLink = computed(() => {
-  if (props.vcsType === ExternalVersionControl_Type.AZURE_DEVOPS) {
+  if (props.vcsType === VCSProvider_Type.AZURE_DEVOPS) {
     const parts = props.repositoryInfo.externalId.split("/");
     if (parts.length !== 3) {
       return "";
