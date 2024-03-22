@@ -671,6 +671,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.PlanConfig.ExportDataConfig"><span class="badge">M</span>PlanConfig.ExportDataConfig</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.PlanConfig.RestoreDatabaseConfig"><span class="badge">M</span>PlanConfig.RestoreDatabaseConfig</a>
                 </li>
               
@@ -5334,6 +5338,46 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
 
         
       
+        <h3 id="bytebase.store.PlanConfig.ExportDataConfig">PlanConfig.ExportDataConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>target</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the target.
+Format: instances/{instance-id}/databases/{database-name} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the sheet.
+Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>max_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The max number of rows to export. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.PlanConfig.RestoreDatabaseConfig">PlanConfig.RestoreDatabaseConfig</h3>
         <p></p>
 
@@ -5430,6 +5474,13 @@ Must be a subset of the specs in the same step. </p></td>
                 <tr>
                   <td>restore_database_config</td>
                   <td><a href="#bytebase.store.PlanConfig.RestoreDatabaseConfig">PlanConfig.RestoreDatabaseConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>export_data_config</td>
+                  <td><a href="#bytebase.store.PlanConfig.ExportDataConfig">PlanConfig.ExportDataConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
