@@ -18,7 +18,7 @@
     <template v-if="canManageVCSProvider">
       <i18n-t keypath="repository.choose-git-provider-visit-workspace">
         <template #workspace>
-          <router-link class="normal-link" to="/setting/gitops"
+          <router-link class="normal-link" to="/gitops"
             >{{ $t("common.workspace") }} -
             {{ $t("common.gitops") }}</router-link
           >

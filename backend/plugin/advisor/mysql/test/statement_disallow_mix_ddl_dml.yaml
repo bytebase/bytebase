@@ -1,4 +1,3 @@
-
 - statement: DELETE FROM tech_book WHERE a > 1;
   want:
     - status: SUCCESS
@@ -20,7 +19,7 @@
 - statement: ALTER TABLE tech_book ADD COLUMN author TEXT; UPDATE tech_book SET id = 1;DELETE FROM tech_book WHERE a > 1;
   want:
     - status: WARN
-      code: 228
+      code: 227
       title: statement.disallow-mix-ddl-dml
       content: Mixing DDL with DML is not allowed
       line: 0

@@ -20,7 +20,7 @@
   want:
     - status: WARN
       code: 227
-      title: statement.disallow-mix-dml
+      title: statement.prior-backup-check
       content: Found 1 DELETE, 1 UPDATE on table ``.`tech_book`, disallow mixing different types of DML statements
       line: 0
       column: 0

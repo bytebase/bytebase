@@ -121,10 +121,10 @@ const (
 	SchemaRuleStatementMaximumStatementsInTransaction = "statement.maximum-statements-in-transaction"
 	// SchemaRuleStatementJoinStrictColumnAttrs enforce the join strict column attributes.
 	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
-	// SchemaRuleStatementDisallowMixDML disallow mix DML on the same table.
-	SchemaRuleStatementDisallowMixDML = "statement.disallow-mix-dml"
-	// SchemaRuleStatementDisallowMixDDLDML disallow mix DDL and DML.
+	// SchemaRuleStatementDisallowMixDDLDML disallow mix DDL and DML on the same table.
 	SchemaRuleStatementDisallowMixDDLDML = "statement.disallow-mix-ddl-dml"
+	// SchemaRuleStatementPriorBackupCheck checks for prior backup.
+	SchemaRuleStatementPriorBackupCheck = "statement.prior-backup-check"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -455,14 +455,15 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 
 // SQLReviewCheckContext is the context for SQL review check.
 type SQLReviewCheckContext struct {
-	Charset    string
-	Collation  string
-	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType
-	DBSchema   *storepb.DatabaseSchemaMetadata
-	DbType     storepb.Engine
-	Catalog    catalog.Catalog
-	Driver     *sql.DB
-	Context    context.Context
+	Charset               string
+	Collation             string
+	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
+	DBSchema              *storepb.DatabaseSchemaMetadata
+	DbType                storepb.Engine
+	Catalog               catalog.Catalog
+	Driver                *sql.DB
+	Context               context.Context
+	PreUpdateBackupDetail *storepb.PlanCheckRunConfig_PreUpdateBackupDetail
 
 	// Snowflake specific fields
 	CurrentDatabase string
@@ -768,18 +769,19 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 			checkContext.DbType,
 			advisorType,
 			Context{
-				Charset:         checkContext.Charset,
-				Collation:       checkContext.Collation,
-				DBSchema:        checkContext.DBSchema,
-				ChangeType:      checkContext.ChangeType,
-				AST:             ast,
-				Statements:      statements,
-				Rule:            rule,
-				Catalog:         finder,
-				Driver:          checkContext.Driver,
-				Context:         checkContext.Context,
-				CurrentSchema:   checkContext.CurrentSchema,
-				CurrentDatabase: checkContext.CurrentDatabase,
+				Charset:               checkContext.Charset,
+				Collation:             checkContext.Collation,
+				DBSchema:              checkContext.DBSchema,
+				ChangeType:            checkContext.ChangeType,
+				PreUpdateBackupDetail: checkContext.PreUpdateBackupDetail,
+				AST:                   ast,
+				Statements:            statements,
+				Rule:                  rule,
+				Catalog:               finder,
+				Driver:                checkContext.Driver,
+				Context:               checkContext.Context,
+				CurrentSchema:         checkContext.CurrentSchema,
+				CurrentDatabase:       checkContext.CurrentDatabase,
 			},
 			statements,
 		)
@@ -1427,16 +1429,19 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementDisallowUsingTemporary, nil
 		}
-	case SchemaRuleStatementDisallowMixDML:
-		if engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB {
-			return MySQLStatementDisallowMixDML, nil
-		}
 	case SchemaRuleStatementDisallowMixDDLDML:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
 			return MySQLStatementDisallowMixDDLDML, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLStatementDisallowMixDDLDML, nil
+		}
+	case SchemaRuleStatementPriorBackupCheck:
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+			return MySQLStatementPriorBackupCheck, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLStatementPriorBackupCheck, nil
 		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {

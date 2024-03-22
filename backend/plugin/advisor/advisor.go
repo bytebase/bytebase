@@ -275,11 +275,11 @@ const (
 	// MySQLStatementJoinStrictColumnAttrs is an advisor type for MySQL statement strict column attrs(type, charset) in join.
 	MySQLStatementJoinStrictColumnAttrs Type = "bb.plugin.advisor.mysql.statement.join-strict-column-attrs"
 
-	// MySQLStatementDisallowMixDML is an advisor type for MySQL disallow mix DML on same table.
-	MySQLStatementDisallowMixDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-dml"
-
 	// MySQLStatementDisallowMixDDLDML is an advisor type for MySQL disallow mix DDL and DML.
 	MySQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-ddl-dml"
+
+	// MySQLStatementPriorBackupCheck is an advisor type for MySQL prior backup check.
+	MySQLStatementPriorBackupCheck Type = "bb.plugin.advisor.mysql.statement.prior-backup-check"
 
 	// MySQLProcedureDisallowCreate is an advisor type for MySQL disallow create procedure.
 	MySQLProcedureDisallowCreate Type = "bb.plugin.advisor.mysql.procedure.disallow-create"
@@ -424,11 +424,11 @@ const (
 	// PostgreSQLStatementCheckSetRoleVariable is an advisor type for PostgreSQL to check set role variable.
 	PostgreSQLStatementCheckSetRoleVariable Type = "bb.plugin.advisor.postgresql.statement.check-set-role-variable"
 
-	// PostgreSQLStatementDisallowMixDML is an advisor type for PostgreSQL disallow mix DML on same table.
-	PostgreSQLStatementDisallowMixDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-dml"
-
 	// PostgreSQLStatementDisallowMixDDLDML is an advisor type for PostgreSQL disallow mix DDL and DML.
 	PostgreSQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-ddl-dml"
+
+	// PostgreSQLStatementPriorBackupCheck is an advisor type for PostgreSQL do prior backup check.
+	PostgreSQLStatementPriorBackupCheck Type = "bb.plugin.advisor.postgresql.statement.prior-backup-check"
 
 	// Oracle Advisor.
 
@@ -600,11 +600,12 @@ const (
 
 // Context is the context for advisor.
 type Context struct {
-	Charset    string
-	Collation  string
-	DBSchema   *storepb.DatabaseSchemaMetadata
-	SyntaxMode SyntaxMode
-	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType
+	Charset               string
+	Collation             string
+	DBSchema              *storepb.DatabaseSchemaMetadata
+	SyntaxMode            SyntaxMode
+	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
+	PreUpdateBackupDetail *storepb.PlanCheckRunConfig_PreUpdateBackupDetail
 
 	// SQL review rule special fields.
 	AST     any

@@ -486,6 +486,10 @@
               
               
                 <li>
+                  <a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType"><span class="badge">E</span>DataSourceExternalSecret.AppRoleAuthOption.SecretType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.DataSourceExternalSecret.AuthType"><span class="badge">E</span>DataSourceExternalSecret.AuthType</a>
                 </li>
               
@@ -699,6 +703,10 @@
               
                 <li>
                   <a href="#bytebase.store.PlanCheckRunConfig.GhostFlagsEntry"><span class="badge">M</span>PlanCheckRunConfig.GhostFlagsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanCheckRunConfig.PreUpdateBackupDetail"><span class="badge">M</span>PlanCheckRunConfig.PreUpdateBackupDetail</a>
                 </li>
               
                 <li>
@@ -3728,7 +3736,7 @@ Example: projects/project-id/branches/branch-id. </p></td>
                 </tr>
               
                 <tr>
-                  <td>key_name</td>
+                  <td>password_key_name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>the key name for the password. </p></td>
@@ -3742,7 +3750,7 @@ Example: projects/project-id/branches/branch-id. </p></td>
         
       
         <h3 id="bytebase.store.DataSourceExternalSecret.AppRoleAuthOption">DataSourceExternalSecret.AppRoleAuthOption</h3>
-        <p>app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle</p>
+        <p></p>
 
         
           <table class="field-table">
@@ -3762,7 +3770,21 @@ Example: projects/project-id/branches/branch-id. </p></td>
                   <td>secret_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
+                  <td><p>the secret id for the role without ttl. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</a></td>
+                  <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mount_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The path where the approle auth method is mounted. </p></td>
                 </tr>
               
             </tbody>
@@ -3870,6 +3892,35 @@ Used for authentication when connecting to the data source. </p></td>
       
 
       
+        <h3 id="bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SECRET_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PLAIN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ENVIRONMENT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.store.DataSourceExternalSecret.AuthType">DataSourceExternalSecret.AuthType</h3>
         <p></p>
         <table class="enum-table">
@@ -3887,13 +3938,13 @@ Used for authentication when connecting to the data source. </p></td>
               <tr>
                 <td>TOKEN</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>ref: https://developer.hashicorp.com/vault/docs/auth/token</p></td>
               </tr>
             
               <tr>
                 <td>APP_ROLE</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>ref: https://developer.hashicorp.com/vault/docs/auth/approle</p></td>
               </tr>
             
           </tbody>
@@ -3916,7 +3967,7 @@ Used for authentication when connecting to the data source. </p></td>
               <tr>
                 <td>VAULT_KV_V2</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2</p></td>
               </tr>
             
           </tbody>
@@ -5542,6 +5593,13 @@ Use a generated title if empty. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>pre_update_backup_detail</td>
+                  <td><a href="#bytebase.store.PlanCheckRunConfig.PreUpdateBackupDetail">PlanCheckRunConfig.PreUpdateBackupDetail</a></td>
+                  <td>optional</td>
+                  <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5571,6 +5629,31 @@ Use a generated title if empty. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanCheckRunConfig.PreUpdateBackupDetail">PlanCheckRunConfig.PreUpdateBackupDetail</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The database for keeping the backup data.
+Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
             </tbody>

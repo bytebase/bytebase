@@ -1,4 +1,3 @@
-
 - statement: DELETE FROM tech_book WHERE a > 1;
   want:
     - status: SUCCESS

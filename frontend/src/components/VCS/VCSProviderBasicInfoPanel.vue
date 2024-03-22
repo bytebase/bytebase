@@ -5,7 +5,10 @@
     <span class="text-red-600">*</span>
   </div>
   <div class="flex flex-wrap pt-4 radio-set-row gap-4">
-    <NRadioGroup v-model:value="config.uiType">
+    <NRadioGroup
+      v-model:value="config.uiType"
+      class="!flex flex-row justify-start items-center flex-wrap gap-x-2 gap-y-4"
+    >
       <NRadio
         v-for="vcsWithUIType in vcsListByUIType"
         :key="vcsWithUIType.uiType"
@@ -13,7 +16,7 @@
         @change="changeUIType()"
       >
         <div class="flex space-x-1">
-          <VCSIcon custom-class="h-6" :type="vcsWithUIType.type" />
+          <VCSIcon custom-class="h-5" :type="vcsWithUIType.type" />
           <span class="whitespace-nowrap">
             {{ vcsWithUIType.title }}
           </span>

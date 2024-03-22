@@ -77,7 +77,8 @@ type DataSourceExternalSecret_SecretType int32
 
 const (
 	DataSourceExternalSecret_SAECRET_TYPE_UNSPECIFIED DataSourceExternalSecret_SecretType = 0
-	DataSourceExternalSecret_VAULT_KV_V2              DataSourceExternalSecret_SecretType = 1
+	// ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2
+	DataSourceExternalSecret_VAULT_KV_V2 DataSourceExternalSecret_SecretType = 1
 )
 
 // Enum value maps for DataSourceExternalSecret_SecretType.
@@ -123,8 +124,10 @@ type DataSourceExternalSecret_AuthType int32
 
 const (
 	DataSourceExternalSecret_AUTH_TYPE_UNSPECIFIED DataSourceExternalSecret_AuthType = 0
-	DataSourceExternalSecret_TOKEN                 DataSourceExternalSecret_AuthType = 1
-	DataSourceExternalSecret_APP_ROLE              DataSourceExternalSecret_AuthType = 2
+	// ref: https://developer.hashicorp.com/vault/docs/auth/token
+	DataSourceExternalSecret_TOKEN DataSourceExternalSecret_AuthType = 1
+	// ref: https://developer.hashicorp.com/vault/docs/auth/approle
+	DataSourceExternalSecret_APP_ROLE DataSourceExternalSecret_AuthType = 2
 )
 
 // Enum value maps for DataSourceExternalSecret_AuthType.
@@ -166,6 +169,55 @@ func (x DataSourceExternalSecret_AuthType) Number() protoreflect.EnumNumber {
 // Deprecated: Use DataSourceExternalSecret_AuthType.Descriptor instead.
 func (DataSourceExternalSecret_AuthType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_instance_service_proto_rawDescGZIP(), []int{19, 1}
+}
+
+type DataSourceExternalSecret_AppRoleAuthOption_SecretType int32
+
+const (
+	DataSourceExternalSecret_AppRoleAuthOption_SECRET_TYPE_UNSPECIFIED DataSourceExternalSecret_AppRoleAuthOption_SecretType = 0
+	DataSourceExternalSecret_AppRoleAuthOption_PLAIN                   DataSourceExternalSecret_AppRoleAuthOption_SecretType = 1
+	DataSourceExternalSecret_AppRoleAuthOption_ENVIRONMENT             DataSourceExternalSecret_AppRoleAuthOption_SecretType = 2
+)
+
+// Enum value maps for DataSourceExternalSecret_AppRoleAuthOption_SecretType.
+var (
+	DataSourceExternalSecret_AppRoleAuthOption_SecretType_name = map[int32]string{
+		0: "SECRET_TYPE_UNSPECIFIED",
+		1: "PLAIN",
+		2: "ENVIRONMENT",
+	}
+	DataSourceExternalSecret_AppRoleAuthOption_SecretType_value = map[string]int32{
+		"SECRET_TYPE_UNSPECIFIED": 0,
+		"PLAIN":                   1,
+		"ENVIRONMENT":             2,
+	}
+)
+
+func (x DataSourceExternalSecret_AppRoleAuthOption_SecretType) Enum() *DataSourceExternalSecret_AppRoleAuthOption_SecretType {
+	p := new(DataSourceExternalSecret_AppRoleAuthOption_SecretType)
+	*p = x
+	return p
+}
+
+func (x DataSourceExternalSecret_AppRoleAuthOption_SecretType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DataSourceExternalSecret_AppRoleAuthOption_SecretType) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_instance_service_proto_enumTypes[3].Descriptor()
+}
+
+func (DataSourceExternalSecret_AppRoleAuthOption_SecretType) Type() protoreflect.EnumType {
+	return &file_v1_instance_service_proto_enumTypes[3]
+}
+
+func (x DataSourceExternalSecret_AppRoleAuthOption_SecretType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DataSourceExternalSecret_AppRoleAuthOption_SecretType.Descriptor instead.
+func (DataSourceExternalSecret_AppRoleAuthOption_SecretType) EnumDescriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{19, 0, 0}
 }
 
 type GetInstanceRequest struct {
@@ -1350,7 +1402,7 @@ type DataSourceExternalSecret struct {
 	// the secret name in the engine to store the password.
 	SecretName string `protobuf:"bytes,7,opt,name=secret_name,json=secretName,proto3" json:"secret_name,omitempty"`
 	// the key name for the password.
-	KeyName string `protobuf:"bytes,8,opt,name=key_name,json=keyName,proto3" json:"key_name,omitempty"`
+	PasswordKeyName string `protobuf:"bytes,8,opt,name=password_key_name,json=passwordKeyName,proto3" json:"password_key_name,omitempty"`
 }
 
 func (x *DataSourceExternalSecret) Reset() {
@@ -1441,9 +1493,9 @@ func (x *DataSourceExternalSecret) GetSecretName() string {
 	return ""
 }
 
-func (x *DataSourceExternalSecret) GetKeyName() string {
+func (x *DataSourceExternalSecret) GetPasswordKeyName() string {
 	if x != nil {
-		return x.KeyName
+		return x.PasswordKeyName
 	}
 	return ""
 }
@@ -1763,14 +1815,17 @@ func (x *InstanceResource) GetActivation() bool {
 	return false
 }
 
-// app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
 type DataSourceExternalSecret_AppRoleAuthOption struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RoleId   string `protobuf:"bytes,1,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
-	SecretId string `protobuf:"bytes,2,opt,name=secret_id,json=secretId,proto3" json:"secret_id,omitempty"`
+	RoleId string `protobuf:"bytes,1,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
+	// the secret id for the role without ttl.
+	SecretId string                                                `protobuf:"bytes,2,opt,name=secret_id,json=secretId,proto3" json:"secret_id,omitempty"`
+	Type     DataSourceExternalSecret_AppRoleAuthOption_SecretType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.v1.DataSourceExternalSecret_AppRoleAuthOption_SecretType" json:"type,omitempty"`
+	// The path where the approle auth method is mounted.
+	MountPath string `protobuf:"bytes,4,opt,name=mount_path,json=mountPath,proto3" json:"mount_path,omitempty"`
 }
 
 func (x *DataSourceExternalSecret_AppRoleAuthOption) Reset() {
@@ -1815,6 +1870,20 @@ func (x *DataSourceExternalSecret_AppRoleAuthOption) GetRoleId() string {
 func (x *DataSourceExternalSecret_AppRoleAuthOption) GetSecretId() string {
 	if x != nil {
 		return x.SecretId
+	}
+	return ""
+}
+
+func (x *DataSourceExternalSecret_AppRoleAuthOption) GetType() DataSourceExternalSecret_AppRoleAuthOption_SecretType {
+	if x != nil {
+		return x.Type
+	}
+	return DataSourceExternalSecret_AppRoleAuthOption_SECRET_TYPE_UNSPECIFIED
+}
+
+func (x *DataSourceExternalSecret_AppRoleAuthOption) GetMountPath() string {
+	if x != nil {
+		return x.MountPath
 	}
 	return ""
 }
@@ -1978,7 +2047,7 @@ var file_v1_instance_service_proto_rawDesc = []byte{
 	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x62,
 	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x73, 0x74, 0x61,
 	0x6e, 0x63, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x07, 0x6f, 0x70, 0x74, 0x69,
-	0x6f, 0x6e, 0x73, 0x22, 0xf8, 0x04, 0x0a, 0x18, 0x44, 0x61, 0x74, 0x61, 0x53, 0x6f, 0x75, 0x72,
+	0x6f, 0x6e, 0x73, 0x22, 0xc8, 0x06, 0x0a, 0x18, 0x44, 0x61, 0x74, 0x61, 0x53, 0x6f, 0x75, 0x72,
 	0x63, 0x65, 0x45, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74,
 	0x12, 0x51, 0x0a, 0x0b, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x30, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
@@ -2002,14 +2071,27 @@ var file_v1_instance_service_proto_rawDesc = []byte{
 	0x67, 0x69, 0x6e, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x0a, 0x65, 0x6e, 0x67, 0x69, 0x6e, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x1f, 0x0a, 0x0b, 0x73,
 	0x65, 0x63, 0x72, 0x65, 0x74, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x07, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x0a, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x19, 0x0a, 0x08,
-	0x6b, 0x65, 0x79, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07,
-	0x6b, 0x65, 0x79, 0x4e, 0x61, 0x6d, 0x65, 0x1a, 0x49, 0x0a, 0x11, 0x41, 0x70, 0x70, 0x52, 0x6f,
-	0x6c, 0x65, 0x41, 0x75, 0x74, 0x68, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x17, 0x0a, 0x07,
-	0x72, 0x6f, 0x6c, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x72,
-	0x6f, 0x6c, 0x65, 0x49, 0x64, 0x12, 0x1b, 0x0a, 0x09, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x5f,
-	0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74,
-	0x49, 0x64, 0x22, 0x3b, 0x0a, 0x0a, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x54, 0x79, 0x70, 0x65,
+	0x52, 0x0a, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x2a, 0x0a, 0x11,
+	0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x5f, 0x6b, 0x65, 0x79, 0x5f, 0x6e, 0x61, 0x6d,
+	0x65, 0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72,
+	0x64, 0x4b, 0x65, 0x79, 0x4e, 0x61, 0x6d, 0x65, 0x1a, 0x87, 0x02, 0x0a, 0x11, 0x41, 0x70, 0x70,
+	0x52, 0x6f, 0x6c, 0x65, 0x41, 0x75, 0x74, 0x68, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x17,
+	0x0a, 0x07, 0x72, 0x6f, 0x6c, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x06, 0x72, 0x6f, 0x6c, 0x65, 0x49, 0x64, 0x12, 0x1b, 0x0a, 0x09, 0x73, 0x65, 0x63, 0x72, 0x65,
+	0x74, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x73, 0x65, 0x63, 0x72,
+	0x65, 0x74, 0x49, 0x64, 0x12, 0x56, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x0e, 0x32, 0x42, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x44, 0x61, 0x74, 0x61, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x45, 0x78, 0x74, 0x65, 0x72,
+	0x6e, 0x61, 0x6c, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x2e, 0x41, 0x70, 0x70, 0x52, 0x6f, 0x6c,
+	0x65, 0x41, 0x75, 0x74, 0x68, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x53, 0x65, 0x63, 0x72,
+	0x65, 0x74, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x1d, 0x0a, 0x0a,
+	0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x09, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x61, 0x74, 0x68, 0x22, 0x45, 0x0a, 0x0a, 0x53,
+	0x65, 0x63, 0x72, 0x65, 0x74, 0x54, 0x79, 0x70, 0x65, 0x12, 0x1b, 0x0a, 0x17, 0x53, 0x45, 0x43,
+	0x52, 0x45, 0x54, 0x5f, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49,
+	0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05, 0x50, 0x4c, 0x41, 0x49, 0x4e, 0x10,
+	0x01, 0x12, 0x0f, 0x0a, 0x0b, 0x45, 0x4e, 0x56, 0x49, 0x52, 0x4f, 0x4e, 0x4d, 0x45, 0x4e, 0x54,
+	0x10, 0x02, 0x22, 0x3b, 0x0a, 0x0a, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x54, 0x79, 0x70, 0x65,
 	0x12, 0x1c, 0x0a, 0x18, 0x53, 0x41, 0x45, 0x43, 0x52, 0x45, 0x54, 0x5f, 0x54, 0x59, 0x50, 0x45,
 	0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0f,
 	0x0a, 0x0b, 0x56, 0x41, 0x55, 0x4c, 0x54, 0x5f, 0x4b, 0x56, 0x5f, 0x56, 0x32, 0x10, 0x01, 0x22,
@@ -2212,95 +2294,97 @@ func file_v1_instance_service_proto_rawDescGZIP() []byte {
 	return file_v1_instance_service_proto_rawDescData
 }
 
-var file_v1_instance_service_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_v1_instance_service_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_v1_instance_service_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_v1_instance_service_proto_goTypes = []interface{}{
-	(DataSourceType)(0),                                // 0: bytebase.v1.DataSourceType
-	(DataSourceExternalSecret_SecretType)(0),           // 1: bytebase.v1.DataSourceExternalSecret.SecretType
-	(DataSourceExternalSecret_AuthType)(0),             // 2: bytebase.v1.DataSourceExternalSecret.AuthType
-	(*GetInstanceRequest)(nil),                         // 3: bytebase.v1.GetInstanceRequest
-	(*ListInstancesRequest)(nil),                       // 4: bytebase.v1.ListInstancesRequest
-	(*ListInstancesResponse)(nil),                      // 5: bytebase.v1.ListInstancesResponse
-	(*SearchInstancesRequest)(nil),                     // 6: bytebase.v1.SearchInstancesRequest
-	(*SearchInstancesResponse)(nil),                    // 7: bytebase.v1.SearchInstancesResponse
-	(*CreateInstanceRequest)(nil),                      // 8: bytebase.v1.CreateInstanceRequest
-	(*UpdateInstanceRequest)(nil),                      // 9: bytebase.v1.UpdateInstanceRequest
-	(*DeleteInstanceRequest)(nil),                      // 10: bytebase.v1.DeleteInstanceRequest
-	(*UndeleteInstanceRequest)(nil),                    // 11: bytebase.v1.UndeleteInstanceRequest
-	(*SyncInstanceRequest)(nil),                        // 12: bytebase.v1.SyncInstanceRequest
-	(*SyncInstanceResponse)(nil),                       // 13: bytebase.v1.SyncInstanceResponse
-	(*BatchSyncInstanceRequest)(nil),                   // 14: bytebase.v1.BatchSyncInstanceRequest
-	(*BatchSyncInstanceResponse)(nil),                  // 15: bytebase.v1.BatchSyncInstanceResponse
-	(*AddDataSourceRequest)(nil),                       // 16: bytebase.v1.AddDataSourceRequest
-	(*RemoveDataSourceRequest)(nil),                    // 17: bytebase.v1.RemoveDataSourceRequest
-	(*UpdateDataSourceRequest)(nil),                    // 18: bytebase.v1.UpdateDataSourceRequest
-	(*SyncSlowQueriesRequest)(nil),                     // 19: bytebase.v1.SyncSlowQueriesRequest
-	(*InstanceOptions)(nil),                            // 20: bytebase.v1.InstanceOptions
-	(*Instance)(nil),                                   // 21: bytebase.v1.Instance
-	(*DataSourceExternalSecret)(nil),                   // 22: bytebase.v1.DataSourceExternalSecret
-	(*DataSource)(nil),                                 // 23: bytebase.v1.DataSource
-	(*InstanceResource)(nil),                           // 24: bytebase.v1.InstanceResource
-	(*DataSourceExternalSecret_AppRoleAuthOption)(nil), // 25: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
-	(*fieldmaskpb.FieldMask)(nil),                      // 26: google.protobuf.FieldMask
-	(*durationpb.Duration)(nil),                        // 27: google.protobuf.Duration
-	(State)(0),                                         // 28: bytebase.v1.State
-	(Engine)(0),                                        // 29: bytebase.v1.Engine
-	(*emptypb.Empty)(nil),                              // 30: google.protobuf.Empty
+	(DataSourceType)(0),                                        // 0: bytebase.v1.DataSourceType
+	(DataSourceExternalSecret_SecretType)(0),                   // 1: bytebase.v1.DataSourceExternalSecret.SecretType
+	(DataSourceExternalSecret_AuthType)(0),                     // 2: bytebase.v1.DataSourceExternalSecret.AuthType
+	(DataSourceExternalSecret_AppRoleAuthOption_SecretType)(0), // 3: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	(*GetInstanceRequest)(nil),                                 // 4: bytebase.v1.GetInstanceRequest
+	(*ListInstancesRequest)(nil),                               // 5: bytebase.v1.ListInstancesRequest
+	(*ListInstancesResponse)(nil),                              // 6: bytebase.v1.ListInstancesResponse
+	(*SearchInstancesRequest)(nil),                             // 7: bytebase.v1.SearchInstancesRequest
+	(*SearchInstancesResponse)(nil),                            // 8: bytebase.v1.SearchInstancesResponse
+	(*CreateInstanceRequest)(nil),                              // 9: bytebase.v1.CreateInstanceRequest
+	(*UpdateInstanceRequest)(nil),                              // 10: bytebase.v1.UpdateInstanceRequest
+	(*DeleteInstanceRequest)(nil),                              // 11: bytebase.v1.DeleteInstanceRequest
+	(*UndeleteInstanceRequest)(nil),                            // 12: bytebase.v1.UndeleteInstanceRequest
+	(*SyncInstanceRequest)(nil),                                // 13: bytebase.v1.SyncInstanceRequest
+	(*SyncInstanceResponse)(nil),                               // 14: bytebase.v1.SyncInstanceResponse
+	(*BatchSyncInstanceRequest)(nil),                           // 15: bytebase.v1.BatchSyncInstanceRequest
+	(*BatchSyncInstanceResponse)(nil),                          // 16: bytebase.v1.BatchSyncInstanceResponse
+	(*AddDataSourceRequest)(nil),                               // 17: bytebase.v1.AddDataSourceRequest
+	(*RemoveDataSourceRequest)(nil),                            // 18: bytebase.v1.RemoveDataSourceRequest
+	(*UpdateDataSourceRequest)(nil),                            // 19: bytebase.v1.UpdateDataSourceRequest
+	(*SyncSlowQueriesRequest)(nil),                             // 20: bytebase.v1.SyncSlowQueriesRequest
+	(*InstanceOptions)(nil),                                    // 21: bytebase.v1.InstanceOptions
+	(*Instance)(nil),                                           // 22: bytebase.v1.Instance
+	(*DataSourceExternalSecret)(nil),                           // 23: bytebase.v1.DataSourceExternalSecret
+	(*DataSource)(nil),                                         // 24: bytebase.v1.DataSource
+	(*InstanceResource)(nil),                                   // 25: bytebase.v1.InstanceResource
+	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 26: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
+	(*fieldmaskpb.FieldMask)(nil),                              // 27: google.protobuf.FieldMask
+	(*durationpb.Duration)(nil),                                // 28: google.protobuf.Duration
+	(State)(0),                                                 // 29: bytebase.v1.State
+	(Engine)(0),                                                // 30: bytebase.v1.Engine
+	(*emptypb.Empty)(nil),                                      // 31: google.protobuf.Empty
 }
 var file_v1_instance_service_proto_depIdxs = []int32{
-	21, // 0: bytebase.v1.ListInstancesResponse.instances:type_name -> bytebase.v1.Instance
-	21, // 1: bytebase.v1.SearchInstancesResponse.instances:type_name -> bytebase.v1.Instance
-	21, // 2: bytebase.v1.CreateInstanceRequest.instance:type_name -> bytebase.v1.Instance
-	21, // 3: bytebase.v1.UpdateInstanceRequest.instance:type_name -> bytebase.v1.Instance
-	26, // 4: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	12, // 5: bytebase.v1.BatchSyncInstanceRequest.requests:type_name -> bytebase.v1.SyncInstanceRequest
-	23, // 6: bytebase.v1.AddDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	23, // 7: bytebase.v1.RemoveDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	23, // 8: bytebase.v1.UpdateDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	26, // 9: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	27, // 10: bytebase.v1.InstanceOptions.sync_interval:type_name -> google.protobuf.Duration
-	28, // 11: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
-	29, // 12: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
-	23, // 13: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
-	20, // 14: bytebase.v1.Instance.options:type_name -> bytebase.v1.InstanceOptions
+	22, // 0: bytebase.v1.ListInstancesResponse.instances:type_name -> bytebase.v1.Instance
+	22, // 1: bytebase.v1.SearchInstancesResponse.instances:type_name -> bytebase.v1.Instance
+	22, // 2: bytebase.v1.CreateInstanceRequest.instance:type_name -> bytebase.v1.Instance
+	22, // 3: bytebase.v1.UpdateInstanceRequest.instance:type_name -> bytebase.v1.Instance
+	27, // 4: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	13, // 5: bytebase.v1.BatchSyncInstanceRequest.requests:type_name -> bytebase.v1.SyncInstanceRequest
+	24, // 6: bytebase.v1.AddDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
+	24, // 7: bytebase.v1.RemoveDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
+	24, // 8: bytebase.v1.UpdateDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
+	27, // 9: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	28, // 10: bytebase.v1.InstanceOptions.sync_interval:type_name -> google.protobuf.Duration
+	29, // 11: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
+	30, // 12: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
+	24, // 13: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
+	21, // 14: bytebase.v1.Instance.options:type_name -> bytebase.v1.InstanceOptions
 	1,  // 15: bytebase.v1.DataSourceExternalSecret.secret_type:type_name -> bytebase.v1.DataSourceExternalSecret.SecretType
 	2,  // 16: bytebase.v1.DataSourceExternalSecret.auth_type:type_name -> bytebase.v1.DataSourceExternalSecret.AuthType
-	25, // 17: bytebase.v1.DataSourceExternalSecret.app_role:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
+	26, // 17: bytebase.v1.DataSourceExternalSecret.app_role:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
 	0,  // 18: bytebase.v1.DataSource.type:type_name -> bytebase.v1.DataSourceType
-	22, // 19: bytebase.v1.DataSource.external_secret:type_name -> bytebase.v1.DataSourceExternalSecret
-	29, // 20: bytebase.v1.InstanceResource.engine:type_name -> bytebase.v1.Engine
-	23, // 21: bytebase.v1.InstanceResource.data_sources:type_name -> bytebase.v1.DataSource
-	3,  // 22: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
-	4,  // 23: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
-	6,  // 24: bytebase.v1.InstanceService.SearchInstances:input_type -> bytebase.v1.SearchInstancesRequest
-	8,  // 25: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
-	9,  // 26: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
-	10, // 27: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
-	11, // 28: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
-	12, // 29: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
-	14, // 30: bytebase.v1.InstanceService.BatchSyncInstance:input_type -> bytebase.v1.BatchSyncInstanceRequest
-	16, // 31: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
-	17, // 32: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
-	18, // 33: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
-	19, // 34: bytebase.v1.InstanceService.SyncSlowQueries:input_type -> bytebase.v1.SyncSlowQueriesRequest
-	21, // 35: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
-	5,  // 36: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
-	7,  // 37: bytebase.v1.InstanceService.SearchInstances:output_type -> bytebase.v1.SearchInstancesResponse
-	21, // 38: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
-	21, // 39: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
-	30, // 40: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
-	21, // 41: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
-	13, // 42: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
-	15, // 43: bytebase.v1.InstanceService.BatchSyncInstance:output_type -> bytebase.v1.BatchSyncInstanceResponse
-	21, // 44: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
-	21, // 45: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
-	21, // 46: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
-	30, // 47: bytebase.v1.InstanceService.SyncSlowQueries:output_type -> google.protobuf.Empty
-	35, // [35:48] is the sub-list for method output_type
-	22, // [22:35] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	23, // 19: bytebase.v1.DataSource.external_secret:type_name -> bytebase.v1.DataSourceExternalSecret
+	30, // 20: bytebase.v1.InstanceResource.engine:type_name -> bytebase.v1.Engine
+	24, // 21: bytebase.v1.InstanceResource.data_sources:type_name -> bytebase.v1.DataSource
+	3,  // 22: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	4,  // 23: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
+	5,  // 24: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
+	7,  // 25: bytebase.v1.InstanceService.SearchInstances:input_type -> bytebase.v1.SearchInstancesRequest
+	9,  // 26: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
+	10, // 27: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
+	11, // 28: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
+	12, // 29: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
+	13, // 30: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
+	15, // 31: bytebase.v1.InstanceService.BatchSyncInstance:input_type -> bytebase.v1.BatchSyncInstanceRequest
+	17, // 32: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
+	18, // 33: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
+	19, // 34: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
+	20, // 35: bytebase.v1.InstanceService.SyncSlowQueries:input_type -> bytebase.v1.SyncSlowQueriesRequest
+	22, // 36: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
+	6,  // 37: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
+	8,  // 38: bytebase.v1.InstanceService.SearchInstances:output_type -> bytebase.v1.SearchInstancesResponse
+	22, // 39: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
+	22, // 40: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
+	31, // 41: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
+	22, // 42: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
+	14, // 43: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
+	16, // 44: bytebase.v1.InstanceService.BatchSyncInstance:output_type -> bytebase.v1.BatchSyncInstanceResponse
+	22, // 45: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
+	22, // 46: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
+	22, // 47: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
+	31, // 48: bytebase.v1.InstanceService.SyncSlowQueries:output_type -> google.protobuf.Empty
+	36, // [36:49] is the sub-list for method output_type
+	23, // [23:36] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_v1_instance_service_proto_init() }
@@ -2596,7 +2680,7 @@ func file_v1_instance_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_instance_service_proto_rawDesc,
-			NumEnums:      3,
+			NumEnums:      4,
 			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,

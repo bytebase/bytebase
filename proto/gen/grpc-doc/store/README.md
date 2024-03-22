@@ -81,6 +81,7 @@
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
   
+    - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
   
@@ -132,6 +133,7 @@
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
     - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
     - [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry)
+    - [PlanCheckRunConfig.PreUpdateBackupDetail](#bytebase-store-PlanCheckRunConfig-PreUpdateBackupDetail)
     - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
     - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
@@ -1336,7 +1338,7 @@ Used internally for obfuscating the page token.
 | token | [string](#string) |  |  |
 | engine_name | [string](#string) |  | engine name is the name for secret engine. |
 | secret_name | [string](#string) |  | the secret name in the engine to store the password. |
-| key_name | [string](#string) |  | the key name for the password. |
+| password_key_name | [string](#string) |  | the key name for the password. |
 
 
 
@@ -1346,13 +1348,15 @@ Used internally for obfuscating the page token.
 <a name="bytebase-store-DataSourceExternalSecret-AppRoleAuthOption"></a>
 
 ### DataSourceExternalSecret.AppRoleAuthOption
-app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
+
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | role_id | [string](#string) |  |  |
-| secret_id | [string](#string) |  |  |
+| secret_id | [string](#string) |  | the secret id for the role without ttl. |
+| type | [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType) |  |  |
+| mount_path | [string](#string) |  | The path where the approle auth method is mounted. |
 
 
 
@@ -1386,6 +1390,19 @@ app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
  
 
 
+<a name="bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType"></a>
+
+### DataSourceExternalSecret.AppRoleAuthOption.SecretType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SECRET_TYPE_UNSPECIFIED | 0 |  |
+| PLAIN | 1 |  |
+| ENVIRONMENT | 2 |  |
+
+
+
 <a name="bytebase-store-DataSourceExternalSecret-AuthType"></a>
 
 ### DataSourceExternalSecret.AuthType
@@ -1394,8 +1411,8 @@ app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | AUTH_TYPE_UNSPECIFIED | 0 |  |
-| TOKEN | 1 |  |
-| APP_ROLE | 2 |  |
+| TOKEN | 1 | ref: https://developer.hashicorp.com/vault/docs/auth/token |
+| APP_ROLE | 2 | ref: https://developer.hashicorp.com/vault/docs/auth/approle |
 
 
 
@@ -1407,7 +1424,7 @@ app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | SAECRET_TYPE_UNSPECIFIED | 0 |  |
-| VAULT_KV_V2 | 1 |  |
+| VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
 
 
  
@@ -2099,6 +2116,7 @@ Type is the database change type.
 | database_name | [string](#string) |  |  |
 | database_group_uid | [int64](#int64) | optional | database_group_uid is optional. If it&#39;s set, it means the database is part of a database group. |
 | ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
+| pre_update_backup_detail | [PlanCheckRunConfig.PreUpdateBackupDetail](#bytebase-store-PlanCheckRunConfig-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
 
 
@@ -2115,6 +2133,21 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunConfig-PreUpdateBackupDetail"></a>
+
+### PlanCheckRunConfig.PreUpdateBackupDetail
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The database for keeping the backup data. Format: instances/{instance}/databases/{database} |
 
 
 

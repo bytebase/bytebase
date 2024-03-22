@@ -1338,7 +1338,36 @@
     "type-or-paste-credentials": "输入或粘贴 CREDENTIALS",
     "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
-    "secret-manager-tip": "您也可以指定外部的密码管理服务 endpoint",
+    "password-type": {
+      "password": "密码",
+      "password-tip": "您也可以指定外部的密码管理服务 endpoint",
+      "external-secret": "外部密码管理 (Vault)"
+    },
+    "external-secret": {
+      "vault-url": "Vault URL",
+      "vault-auth-type": {
+        "self": "Vault 验证方式",
+        "token": {
+          "self": "Token",
+          "api-token": "Vault API token",
+          "tips": "没有过期时限的根 token"
+        },
+        "app-role": {
+          "self": "App role",
+          "role-id": "Auth role id",
+          "secret-id": "Auth secret id",
+          "secret-id-plain-text": "Secret id 明文",
+          "secret-id-environment": "储存 secret id 的环境变量名",
+          "secret-plain-text": "明文",
+          "secret-env-name": "环境变量名",
+          "secret-tips": "未封装、无有效期限的 secret id，您可以使用明文、环境变量名或文件路径。{learn_more}"
+        }
+      },
+      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-tips": "仅支持 KV v2 储存",
+      "vault-secret-name": "Vault secret name",
+      "vault-key-name": "Vault key name for password"
+    },
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",
     "add-a-postgresql-sample-instance": "添加一个 PostgreSQL 样本实例",
