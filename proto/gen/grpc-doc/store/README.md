@@ -73,6 +73,7 @@
     - [PageToken](#bytebase-store-PageToken)
   
     - [Engine](#bytebase-store-Engine)
+    - [ExportFormat](#bytebase-store-ExportFormat)
     - [MaskingLevel](#bytebase-store-MaskingLevel)
     - [VcsType](#bytebase-store-VcsType)
   
@@ -1282,6 +1283,21 @@ Used internally for obfuscating the page token.
 
 
 
+<a name="bytebase-store-ExportFormat"></a>
+
+### ExportFormat
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FORMAT_UNSPECIFIED | 0 |  |
+| CSV | 1 |  |
+| JSON | 2 |  |
+| SQL | 3 |  |
+| XLSX | 4 |  |
+
+
+
 <a name="bytebase-store-MaskingLevel"></a>
 
 ### MaskingLevel
@@ -2027,6 +2043,8 @@ InstanceOptions is the option for instances.
 | target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name} |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | max_rows | [int32](#int32) |  | The max number of rows to export. |
+| format | [ExportFormat](#bytebase-store-ExportFormat) |  | The format of the exported file. |
+| password | [string](#string) | optional | The zip password provide by users. Leave it empty if no needs to encrypt the zip file. |
 
 
 

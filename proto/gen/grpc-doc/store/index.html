@@ -455,6 +455,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.ExportFormat"><span class="badge">E</span>ExportFormat</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MaskingLevel"><span class="badge">E</span>MaskingLevel</a>
                 </li>
               
@@ -3598,6 +3602,47 @@ Example: projects/project-id/branches/branch-id. </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.store.ExportFormat">ExportFormat</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>FORMAT_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CSV</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>JSON</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SQL</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>XLSX</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.store.MaskingLevel">MaskingLevel</h3>
         <p></p>
         <table class="enum-table">
@@ -5369,6 +5414,21 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>The max number of rows to export. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>format</td>
+                  <td><a href="#bytebase.store.ExportFormat">ExportFormat</a></td>
+                  <td></td>
+                  <td><p>The format of the exported file. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The zip password provide by users.
+Leave it empty if no needs to encrypt the zip file. </p></td>
                 </tr>
               
             </tbody>
