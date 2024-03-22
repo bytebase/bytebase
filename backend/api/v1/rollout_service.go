@@ -1263,6 +1263,9 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 				if !seenIDInStep[dependOnSpec] {
 					return errors.Errorf("spec %q depends on spec %q, but spec %q is not found in the step", spec.Id, dependOnSpec, dependOnSpec)
 				}
+				if dependOnSpec == spec.Id {
+					return errors.Errorf("spec %q depends on itself", spec.Id)
+				}
 			}
 		}
 	}
