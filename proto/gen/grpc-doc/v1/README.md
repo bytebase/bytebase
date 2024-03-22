@@ -489,6 +489,7 @@
     - [Plan.ChangeDatabaseConfig.RollbackDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
     - [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry)
+    - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.RestoreDatabaseConfig](#bytebase-v1-Plan-RestoreDatabaseConfig)
     - [Plan.Spec](#bytebase-v1-Plan-Spec)
     - [Plan.Step](#bytebase-v1-Plan-Step)
@@ -8013,6 +8014,23 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
+<a name="bytebase-v1-Plan-ExportDataConfig"></a>
+
+### Plan.ExportDataConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name} |
+| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
+| max_rows | [int32](#int32) |  | The max number of rows to export. |
+
+
+
+
+
+
 <a name="bytebase-v1-Plan-RestoreDatabaseConfig"></a>
 
 ### Plan.RestoreDatabaseConfig
@@ -8045,6 +8063,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
 | change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
 | restore_database_config | [Plan.RestoreDatabaseConfig](#bytebase-v1-Plan-RestoreDatabaseConfig) |  |  |
+| export_data_config | [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig) |  |  |
 
 
 

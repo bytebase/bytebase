@@ -194,6 +194,7 @@ message Plan {
       CreateDatabaseConfig create_database_config = 1;
       ChangeDatabaseConfig change_database_config = 2;
       RestoreDatabaseConfig restore_database_config = 3;
+      ExportDataConfig export_data_config = 7;
     }
   }
 
@@ -298,6 +299,17 @@ message Plan {
       // After the PITR operations, the database will be recovered to the state at this time.
       google.protobuf.Timestamp point_in_time = 4;
     }
+  }
+
+  message ExportDataConfig {
+    // The resource name of the target.
+    // Format: instances/{instance-id}/databases/{database-name}
+    string target = 1;
+    // The resource name of the sheet.
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 2;
+    // The max number of rows to export.
+    int32 max_rows = 3;
   }
 }
 
