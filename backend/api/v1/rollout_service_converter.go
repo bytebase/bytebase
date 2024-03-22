@@ -637,6 +637,8 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 		return convertToTaskFromDatabaseRestoreRestore(ctx, s, project, task)
 	case api.TaskDatabaseRestorePITRCutover:
 		return convertToTaskFromDatabaseRestoreCutOver(ctx, s, project, task)
+	case api.TaskDatabaseDataExport:
+		return convertToTaskFromDatabaseDataExport(ctx, s, project, task)
 	case api.TaskGeneral:
 		fallthrough
 	default:
@@ -1042,6 +1044,43 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 	return v1pbTask, nil
 }
 
+func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+	if task.DatabaseID == nil {
+		return nil, errors.Errorf("database id is nil")
+	}
+	payload := &api.TaskDatabaseDataExportPayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
+	}
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database")
+	}
+	if database == nil {
+		return nil, errors.Errorf("database not found")
+	}
+	targetDatabaseName := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
+	sheet := getResourceNameForSheet(project, payload.SheetID)
+	v1pbTaskPayload := v1pb.Task_DatabaseDataExport_{
+		DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
+			Target:  targetDatabaseName,
+			Sheet:   sheet,
+			MaxRows: int32(payload.MaxRows),
+		},
+	}
+	v1pbTask := &v1pb.Task{
+		Name:    fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
+		Uid:     fmt.Sprintf("%d", task.ID),
+		Title:   task.Name,
+		SpecId:  payload.SpecID,
+		Type:    convertToTaskType(task.Type),
+		Status:  convertToTaskStatus(task.LatestTaskRunStatus, false),
+		Target:  targetDatabaseName,
+		Payload: &v1pbTaskPayload,
+	}
+	return v1pbTask, nil
+}
+
 func convertToTaskStatus(latestTaskRunStatus api.TaskRunStatus, skipped bool) v1pb.Task_Status {
 	if skipped {
 		return v1pb.Task_SKIPPED
@@ -1088,6 +1127,8 @@ func convertToTaskType(taskType api.TaskType) v1pb.Task_Type {
 		return v1pb.Task_DATABASE_RESTORE_RESTORE
 	case api.TaskDatabaseRestorePITRCutover:
 		return v1pb.Task_DATABASE_RESTORE_CUTOVER
+	case api.TaskDatabaseDataExport:
+		return v1pb.Task_DATABASE_DATA_EXPORT
 	default:
 		return v1pb.Task_TYPE_UNSPECIFIED
 	}

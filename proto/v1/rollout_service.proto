@@ -594,6 +594,8 @@ message Task {
     DATABASE_RESTORE_RESTORE = 10;
     // use payload nil
     DATABASE_RESTORE_CUTOVER = 11;
+    // use payload DatabaseDataExport
+    DATABASE_DATA_EXPORT = 12;
   }
   Type type = 6;
 
@@ -611,6 +613,7 @@ message Task {
     DatabaseDataUpdate database_data_update = 12;
     DatabaseBackup database_backup = 13;
     DatabaseRestoreRestore database_restore_restore = 14;
+    DatabaseDataExport database_data_export = 16;
   }
 
   message DatabaseCreate {
@@ -690,6 +693,17 @@ message Task {
       // After the PITR operations, the database will be recovered to the state at this time.
       google.protobuf.Timestamp point_in_time = 3;
     }
+  }
+
+  message DatabaseDataExport {
+    // The resource name of the target.
+    // Format: instances/{instance-id}/databases/{database-name}
+    string target = 1;
+    // The resource name of the sheet.
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 2;
+    // The max number of rows to export.
+    int32 max_rows = 3;
   }
 }
 
