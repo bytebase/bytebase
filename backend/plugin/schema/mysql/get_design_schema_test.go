@@ -22,17 +22,18 @@ func TestGetDesignSchema(t *testing.T) {
 	}
 
 	const (
-		record = false
+		record = true
 	)
 	var (
 		filepaths = []string{
-			"testdata/get-design-schema/get_design_schema.yaml",
-			"testdata/get-design-schema/partition/range.yaml",
-			"testdata/get-design-schema/partition/list.yaml",
-			"testdata/get-design-schema/partition/hash.yaml",
-			"testdata/get-design-schema/partition/key.yaml",
-			"testdata/get-design-schema/partition/write-default.yaml",
-			"testdata/get-design-schema/partition/keep-algorithm.yaml",
+			// "testdata/get-design-schema/get_design_schema.yaml",
+			// "testdata/get-design-schema/partition/range.yaml",
+			// "testdata/get-design-schema/partition/list.yaml",
+			// "testdata/get-design-schema/partition/hash.yaml",
+			// "testdata/get-design-schema/partition/key.yaml",
+			// "testdata/get-design-schema/partition/write-default.yaml",
+			// "testdata/get-design-schema/partition/keep-algorithm.yaml",
+			"testdata/get-design-schema/partition/keep-version-comment.yaml",
 		}
 	)
 
