@@ -2538,6 +2538,7 @@ type Plan_Spec struct {
 	// A UUID4 string that uniquely identifies the Spec.
 	Id string `protobuf:"bytes,5,opt,name=id,proto3" json:"id,omitempty"`
 	// IDs of the specs that this spec depends on.
+	// Must be a subset of the specs in the same step.
 	DependsOnSpecs []string `protobuf:"bytes,6,rep,name=depends_on_specs,json=dependsOnSpecs,proto3" json:"depends_on_specs,omitempty"`
 	// Types that are assignable to Config:
 	//
