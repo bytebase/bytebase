@@ -4,26 +4,26 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
+import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 
 const props = defineProps<{
   customClass?: string;
-  type: ExternalVersionControl_Type;
+  type: VCSProvider_Type;
 }>();
 
 const icon = computed(() => {
   let iconType = "";
   switch (props.type) {
-    case ExternalVersionControl_Type.AZURE_DEVOPS:
+    case VCSProvider_Type.AZURE_DEVOPS:
       iconType = "azure-devops";
       break;
-    case ExternalVersionControl_Type.GITLAB:
+    case VCSProvider_Type.GITLAB:
       iconType = "gitlab";
       break;
-    case ExternalVersionControl_Type.GITHUB:
+    case VCSProvider_Type.GITHUB:
       iconType = "github";
       break;
-    case ExternalVersionControl_Type.BITBUCKET:
+    case VCSProvider_Type.BITBUCKET:
       iconType = "bitbucket";
       break;
     default:

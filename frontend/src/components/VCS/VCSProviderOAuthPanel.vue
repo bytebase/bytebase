@@ -557,7 +557,7 @@ import {
   VCSConfig,
   redirectUrl,
 } from "@/types";
-import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
+import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { toClipboard } from "@/utils";
 
 interface LocalState {
@@ -699,15 +699,15 @@ const changeSecret = (value: string) => {
 };
 
 const applicationIdErrorDescription = computed((): string => {
-  if (props.config.type === ExternalVersionControl_Type.GITLAB) {
+  if (props.config.type === VCSProvider_Type.GITLAB) {
     return t(
       "gitops.setting.add-git-provider.oauth-info.gitlab-application-id-error"
     );
-  } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
+  } else if (props.config.type === VCSProvider_Type.GITHUB) {
     return t(
       "gitops.setting.add-git-provider.oauth-info.github-application-id-error"
     );
-  } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
+  } else if (props.config.type === VCSProvider_Type.BITBUCKET) {
     return t(
       "gitops.setting.add-git-provider.oauth-info.bitbucket-application-id-error"
     );
@@ -716,11 +716,11 @@ const applicationIdErrorDescription = computed((): string => {
 });
 
 const secretErrorDescription = computed((): string => {
-  if (props.config.type === ExternalVersionControl_Type.GITLAB) {
+  if (props.config.type === VCSProvider_Type.GITLAB) {
     return t("gitops.setting.add-git-provider.oauth-info.gitlab-secret-error");
-  } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
+  } else if (props.config.type === VCSProvider_Type.GITHUB) {
     return t("gitops.setting.add-git-provider.oauth-info.github-secret-error");
-  } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
+  } else if (props.config.type === VCSProvider_Type.BITBUCKET) {
     return t(
       "gitops.setting.add-git-provider.oauth-info.bitbucket-secret-error"
     );
@@ -729,7 +729,7 @@ const secretErrorDescription = computed((): string => {
 });
 
 const secretField = computed(() => {
-  if (props.config.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
+  if (props.config.type === VCSProvider_Type.AZURE_DEVOPS) {
     return "Client Secret";
   }
   return "Secret";

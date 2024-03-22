@@ -42,13 +42,13 @@ import { PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { WORKSPACE_ROUTE_GITOPS_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1 } from "@/store";
-import { ExternalVersionControl } from "@/types/proto/v1/externalvs_service";
+import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2, vcsSlugV1 } from "@/utils";
 
 const props = defineProps({
   vcs: {
     required: true,
-    type: Object as PropType<ExternalVersionControl>,
+    type: Object as PropType<VCSProvider>,
   },
 });
 
@@ -56,10 +56,7 @@ const router = useRouter();
 const currentUser = useCurrentUserV1();
 
 const hasUpdateVCSPermission = computed(() => {
-  return hasWorkspacePermissionV2(
-    currentUser.value,
-    "bb.externalVersionControls.update"
-  );
+  return hasWorkspacePermissionV2(currentUser.value, "bb.vcsProviders.update");
 });
 
 const editVCS = () => {

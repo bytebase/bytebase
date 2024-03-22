@@ -4,53 +4,53 @@ type Permission string
 
 const (
 	// Workspace-level permissions.
-	PermissionEnvironmentsCreate                    Permission = "bb.environments.create"
-	PermissionEnvironmentsDelete                    Permission = "bb.environments.delete"
-	PermissionEnvironmentsGet                       Permission = "bb.environments.get"
-	PermissionEnvironmentsList                      Permission = "bb.environments.list"
-	PermissionEnvironmentsUndelete                  Permission = "bb.environments.undelete"
-	PermissionEnvironmentsUpdate                    Permission = "bb.environments.update"
-	PermissionExternalVersionControlsCreate         Permission = "bb.externalVersionControls.create"
-	PermissionExternalVersionControlsDelete         Permission = "bb.externalVersionControls.delete"
-	PermissionExternalVersionControlsExchangeToken  Permission = "bb.externalVersionControls.exchangeToken"
-	PermissionExternalVersionControlsGet            Permission = "bb.externalVersionControls.get"
-	PermissionExternalVersionControlsList           Permission = "bb.externalVersionControls.list"
-	PermissionExternalVersionControlsListProjects   Permission = "bb.externalVersionControls.listProjects"
-	PermissionExternalVersionControlsSearchProjects Permission = "bb.externalVersionControls.searchProjects"
-	PermissionExternalVersionControlsUpdate         Permission = "bb.externalVersionControls.update"
-	PermissionIdentityProvidersCreate               Permission = "bb.identityProviders.create"
-	PermissionIdentityProvidersDelete               Permission = "bb.identityProviders.delete"
-	PermissionIdentityProvidersGet                  Permission = "bb.identityProviders.get"
-	PermissionIdentityProvidersUndelete             Permission = "bb.identityProviders.undelete"
-	PermissionIdentityProvidersUpdate               Permission = "bb.identityProviders.update"
-	PermissionInstancesAdminExecute                 Permission = "bb.instances.adminExecute"
-	PermissionInstancesCreate                       Permission = "bb.instances.create"
-	PermissionInstancesDelete                       Permission = "bb.instances.delete"
-	PermissionInstancesGet                          Permission = "bb.instances.get"
-	PermissionInstancesList                         Permission = "bb.instances.list"
-	PermissionInstancesSync                         Permission = "bb.instances.sync"
-	PermissionInstancesUndelete                     Permission = "bb.instances.undelete"
-	PermissionInstancesUpdate                       Permission = "bb.instances.update"
-	PermissionPoliciesCreate                        Permission = "bb.policies.create"
-	PermissionPoliciesDelete                        Permission = "bb.policies.delete"
-	PermissionPoliciesGet                           Permission = "bb.policies.get"
-	PermissionPoliciesList                          Permission = "bb.policies.list"
-	PermissionPoliciesUpdate                        Permission = "bb.policies.update"
-	PermissionProjectsCreate                        Permission = "bb.projects.create"
-	PermissionProjectsDelete                        Permission = "bb.projects.delete"
-	PermissionProjectsList                          Permission = "bb.projects.list"
-	PermissionProjectsUndelete                      Permission = "bb.projects.undelete"
-	PermissionRisksCreate                           Permission = "bb.risks.create"
-	PermissionRisksDelete                           Permission = "bb.risks.delete"
-	PermissionRisksList                             Permission = "bb.risks.list"
-	PermissionRisksUpdate                           Permission = "bb.risks.update"
-	PermissionRolesCreate                           Permission = "bb.roles.create"
-	PermissionRolesDelete                           Permission = "bb.roles.delete"
-	PermissionRolesList                             Permission = "bb.roles.list"
-	PermissionRolesUpdate                           Permission = "bb.roles.update"
-	PermissionSettingsGet                           Permission = "bb.settings.get"
-	PermissionSettingsList                          Permission = "bb.settings.list"
-	PermissionSettingsSet                           Permission = "bb.settings.set"
+	PermissionEnvironmentsCreate         Permission = "bb.environments.create"
+	PermissionEnvironmentsDelete         Permission = "bb.environments.delete"
+	PermissionEnvironmentsGet            Permission = "bb.environments.get"
+	PermissionEnvironmentsList           Permission = "bb.environments.list"
+	PermissionEnvironmentsUndelete       Permission = "bb.environments.undelete"
+	PermissionEnvironmentsUpdate         Permission = "bb.environments.update"
+	PermissionVCSProvidersCreate         Permission = "bb.vcsProviders.create"
+	PermissionVCSProvidersDelete         Permission = "bb.vcsProviders.delete"
+	PermissionVCSProvidersExchangeToken  Permission = "bb.vcsProviders.exchangeToken"
+	PermissionVCSProvidersGet            Permission = "bb.vcsProviders.get"
+	PermissionVCSProvidersList           Permission = "bb.vcsProviders.list"
+	PermissionVCSProvidersListProjects   Permission = "bb.vcsProviders.listProjects"
+	PermissionVCSProvidersSearchProjects Permission = "bb.vcsProviders.searchProjects"
+	PermissionVCSProvidersUpdate         Permission = "bb.vcsProviders.update"
+	PermissionIdentityProvidersCreate    Permission = "bb.identityProviders.create"
+	PermissionIdentityProvidersDelete    Permission = "bb.identityProviders.delete"
+	PermissionIdentityProvidersGet       Permission = "bb.identityProviders.get"
+	PermissionIdentityProvidersUndelete  Permission = "bb.identityProviders.undelete"
+	PermissionIdentityProvidersUpdate    Permission = "bb.identityProviders.update"
+	PermissionInstancesAdminExecute      Permission = "bb.instances.adminExecute"
+	PermissionInstancesCreate            Permission = "bb.instances.create"
+	PermissionInstancesDelete            Permission = "bb.instances.delete"
+	PermissionInstancesGet               Permission = "bb.instances.get"
+	PermissionInstancesList              Permission = "bb.instances.list"
+	PermissionInstancesSync              Permission = "bb.instances.sync"
+	PermissionInstancesUndelete          Permission = "bb.instances.undelete"
+	PermissionInstancesUpdate            Permission = "bb.instances.update"
+	PermissionPoliciesCreate             Permission = "bb.policies.create"
+	PermissionPoliciesDelete             Permission = "bb.policies.delete"
+	PermissionPoliciesGet                Permission = "bb.policies.get"
+	PermissionPoliciesList               Permission = "bb.policies.list"
+	PermissionPoliciesUpdate             Permission = "bb.policies.update"
+	PermissionProjectsCreate             Permission = "bb.projects.create"
+	PermissionProjectsDelete             Permission = "bb.projects.delete"
+	PermissionProjectsList               Permission = "bb.projects.list"
+	PermissionProjectsUndelete           Permission = "bb.projects.undelete"
+	PermissionRisksCreate                Permission = "bb.risks.create"
+	PermissionRisksDelete                Permission = "bb.risks.delete"
+	PermissionRisksList                  Permission = "bb.risks.list"
+	PermissionRisksUpdate                Permission = "bb.risks.update"
+	PermissionRolesCreate                Permission = "bb.roles.create"
+	PermissionRolesDelete                Permission = "bb.roles.delete"
+	PermissionRolesList                  Permission = "bb.roles.list"
+	PermissionRolesUpdate                Permission = "bb.roles.update"
+	PermissionSettingsGet                Permission = "bb.settings.get"
+	PermissionSettingsList               Permission = "bb.settings.list"
+	PermissionSettingsSet                Permission = "bb.settings.set"
 
 	// Project-level permissions.
 	PermissionBackupsCreate                Permission = "bb.backups.create"
@@ -144,14 +144,14 @@ func PermissionExist(p Permission) bool {
 		PermissionEnvironmentsList,
 		PermissionEnvironmentsUndelete,
 		PermissionEnvironmentsUpdate,
-		PermissionExternalVersionControlsCreate,
-		PermissionExternalVersionControlsDelete,
-		PermissionExternalVersionControlsExchangeToken,
-		PermissionExternalVersionControlsGet,
-		PermissionExternalVersionControlsList,
-		PermissionExternalVersionControlsListProjects,
-		PermissionExternalVersionControlsSearchProjects,
-		PermissionExternalVersionControlsUpdate,
+		PermissionVCSProvidersCreate,
+		PermissionVCSProvidersDelete,
+		PermissionVCSProvidersExchangeToken,
+		PermissionVCSProvidersGet,
+		PermissionVCSProvidersList,
+		PermissionVCSProvidersListProjects,
+		PermissionVCSProvidersSearchProjects,
+		PermissionVCSProvidersUpdate,
 		PermissionIdentityProvidersCreate,
 		PermissionIdentityProvidersDelete,
 		PermissionIdentityProvidersGet,
@@ -241,14 +241,14 @@ func GetPermissionLevel(permission Permission) PermissionLevel {
 		PermissionEnvironmentsList,
 		PermissionEnvironmentsUndelete,
 		PermissionEnvironmentsUpdate,
-		PermissionExternalVersionControlsCreate,
-		PermissionExternalVersionControlsDelete,
-		PermissionExternalVersionControlsExchangeToken,
-		PermissionExternalVersionControlsGet,
-		PermissionExternalVersionControlsList,
-		PermissionExternalVersionControlsListProjects,
-		PermissionExternalVersionControlsSearchProjects,
-		PermissionExternalVersionControlsUpdate,
+		PermissionVCSProvidersCreate,
+		PermissionVCSProvidersDelete,
+		PermissionVCSProvidersExchangeToken,
+		PermissionVCSProvidersGet,
+		PermissionVCSProvidersList,
+		PermissionVCSProvidersListProjects,
+		PermissionVCSProvidersSearchProjects,
+		PermissionVCSProvidersUpdate,
 		PermissionIdentityProvidersCreate,
 		PermissionIdentityProvidersDelete,
 		PermissionIdentityProvidersGet,

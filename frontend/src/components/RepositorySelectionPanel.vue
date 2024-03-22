@@ -45,13 +45,13 @@ import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "@/types";
 import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
 import {
   OAuthToken,
-  ExternalVersionControl_Type,
-  SearchExternalVersionControlProjectsResponse_Project,
-} from "@/types/proto/v1/externalvs_service";
+  VCSProvider_Type,
+  SearchVCSProviderProjectsResponse_Project,
+} from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
-  repositoryList: SearchExternalVersionControlProjectsResponse_Project[];
+  repositoryList: SearchVCSProviderProjectsResponse_Project[];
   searchText: string;
 }
 
@@ -92,7 +92,7 @@ const refreshRepositoryList = async () => {
   if (
     !hasWorkspacePermissionV2(
       currentUser.value,
-      "bb.externalVersionControls.searchProjects"
+      "bb.vcsProviders.searchProjects"
     )
   ) {
     pushNotification({
@@ -116,29 +116,27 @@ const repositoryList = computed(() => {
     return state.repositoryList;
   }
   return state.repositoryList.filter(
-    (repository: SearchExternalVersionControlProjectsResponse_Project) => {
+    (repository: SearchVCSProviderProjectsResponse_Project) => {
       return repository.fullpath.toLowerCase().includes(state.searchText);
     }
   );
 });
 
 const attentionText = computed((): string => {
-  if (props.config.vcs.type === ExternalVersionControl_Type.GITLAB) {
+  if (props.config.vcs.type === VCSProvider_Type.GITLAB) {
     return "repository.select-repository-attention-gitlab";
-  } else if (props.config.vcs.type === ExternalVersionControl_Type.GITHUB) {
+  } else if (props.config.vcs.type === VCSProvider_Type.GITHUB) {
     return "repository.select-repository-attention-github";
-  } else if (props.config.vcs.type === ExternalVersionControl_Type.BITBUCKET) {
+  } else if (props.config.vcs.type === VCSProvider_Type.BITBUCKET) {
     return "repository.select-repository-attention-bitbucket";
-  } else if (
-    props.config.vcs.type === ExternalVersionControl_Type.AZURE_DEVOPS
-  ) {
+  } else if (props.config.vcs.type === VCSProvider_Type.AZURE_DEVOPS) {
     return "repository.select-repository-attention-azure-devops";
   }
   return "";
 });
 
 const selectRepository = (
-  repository: SearchExternalVersionControlProjectsResponse_Project
+  repository: SearchVCSProviderProjectsResponse_Project
 ) => {
   emit("set-repository", {
     externalId: repository.id,

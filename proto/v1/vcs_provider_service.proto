@@ -11,103 +11,103 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "generated-go/v1";
 
-service ExternalVersionControlService {
-  rpc GetExternalVersionControl(GetExternalVersionControlRequest) returns (ExternalVersionControl) {
-    option (google.api.http) = {get: "/v1/{name=externalVersionControls/*}"};
+service VCSProviderService {
+  rpc GetVCSProvider(GetVCSProviderRequest) returns (VCSProvider) {
+    option (google.api.http) = {get: "/v1/{name=vcsProviders/*}"};
     option (google.api.method_signature) = "name";
   }
 
-  rpc ListExternalVersionControls(ListExternalVersionControlsRequest) returns (ListExternalVersionControlsResponse) {
-    option (google.api.http) = {get: "/v1/externalVersionControls"};
+  rpc ListVCSProviders(ListVCSProvidersRequest) returns (ListVCSProvidersResponse) {
+    option (google.api.http) = {get: "/v1/vcsProviders"};
     option (google.api.method_signature) = "";
   }
 
-  rpc CreateExternalVersionControl(CreateExternalVersionControlRequest) returns (ExternalVersionControl) {
+  rpc CreateVCSProvider(CreateVCSProviderRequest) returns (VCSProvider) {
     option (google.api.http) = {
-      post: "/v1/externalVersionControls"
-      body: "external_version_control"
+      post: "/v1/vcsProviders"
+      body: "vcs_provider"
     };
     option (google.api.method_signature) = "";
   }
 
-  rpc UpdateExternalVersionControl(UpdateExternalVersionControlRequest) returns (ExternalVersionControl) {
+  rpc UpdateVCSProvider(UpdateVCSProviderRequest) returns (VCSProvider) {
     option (google.api.http) = {
-      patch: "/v1/{external_version_control.name=externalVersionControls/*}"
-      body: "external_version_control"
+      patch: "/v1/{vcs_provider.name=vcsProviders/*}"
+      body: "vcs_provider"
     };
-    option (google.api.method_signature) = "external_version_control,update_mask";
+    option (google.api.method_signature) = "vcs_provider,update_mask";
   }
 
   rpc ExchangeToken(ExchangeTokenRequest) returns (OAuthToken) {
     option (google.api.http) = {
-      post: "/v1/{exchange_token.name=externalVersionControls/*}:exchangeToken"
+      post: "/v1/{exchange_token.name=vcsProviders/*}:exchangeToken"
       body: "exchange_token"
     };
     option (google.api.method_signature) = "";
   }
 
-  rpc DeleteExternalVersionControl(DeleteExternalVersionControlRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=externalVersionControls/*}"};
+  rpc DeleteVCSProvider(DeleteVCSProviderRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=vcsProviders/*}"};
   }
 
-  rpc SearchExternalVersionControlProjects(SearchExternalVersionControlProjectsRequest) returns (SearchExternalVersionControlProjectsResponse) {
+  rpc SearchVCSProviderProjects(SearchVCSProviderProjectsRequest) returns (SearchVCSProviderProjectsResponse) {
     option (google.api.http) = {
-      post: "/v1/{name=externalVersionControls/*}:searchProjects"
+      post: "/v1/{name=vcsProviders/*}:searchProjects"
       body: "*"
     };
   }
 
   rpc ListProjectGitOpsInfo(ListProjectGitOpsInfoRequest) returns (ListProjectGitOpsInfoResponse) {
-    option (google.api.http) = {get: "/v1/{name=externalVersionControls/*}/projects"};
+    option (google.api.http) = {get: "/v1/{name=vcsProviders/*}/projects"};
   }
 }
 
-message CreateExternalVersionControlRequest {
-  ExternalVersionControl external_version_control = 1 [(google.api.field_behavior) = REQUIRED];
+message CreateVCSProviderRequest {
+  VCSProvider vcs_provider = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message GetExternalVersionControlRequest {
-  // The name of the external version control to retrieve.
-  // Format: externalVersionControls/{externalVersionControl}
+message GetVCSProviderRequest {
+  // The name of the vcs provider to retrieve.
+  // Format: vcsProviders/{vcsProvider}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message ListExternalVersionControlsRequest {
-  // Not used. The maximum number of external version control to return. The service may return fewer than this value.
-  // If unspecified, at most 100 external version control will be returned.
+message ListVCSProvidersRequest {
+  // Not used. The maximum number of vcs provider to return. The service may return fewer than this value.
+  // If unspecified, at most 100 vcs provider will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
 
-  // Not used. A page token, received from a previous `ListExternalVersionControls` call.
+  // Not used. A page token, received from a previous `ListVCSProviders` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 2;
 }
 
-message ListExternalVersionControlsResponse {
-  // The list of external version control.
-  repeated ExternalVersionControl external_version_controls = 1;
+message ListVCSProvidersResponse {
+  // The list of vcs providers.
+  repeated VCSProvider vcs_providers = 1;
 
   // Not used. A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-message UpdateExternalVersionControlRequest {
-  ExternalVersionControl external_version_control = 1 [(google.api.field_behavior) = REQUIRED];
+message UpdateVCSProviderRequest {
+  VCSProvider vcs_provider = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to be updated.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-message DeleteExternalVersionControlRequest {
-  // The name of the external version control to delete.
-  // Format: externalVersionControls/{externalVersionControl}
+message DeleteVCSProviderRequest {
+  // The name of the vcs provider to delete.
+  // Format: vcsProviders/{vcsProvider}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message SearchExternalVersionControlProjectsRequest {
-  // The name of the external version control to retrieve the external version control repositories.
-  // Format: externalVersionControls/{externalVersionControl}
+message SearchVCSProviderProjectsRequest {
+  // The name of the vcs provider to retrieve the vcs provider repositories.
+  // Format: vcsProviders/{vcsProvider}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
   string access_token = 2 [(google.api.field_behavior) = REQUIRED];
@@ -115,38 +115,38 @@ message SearchExternalVersionControlProjectsRequest {
   string refresh_token = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
-message SearchExternalVersionControlProjectsResponse {
+message SearchVCSProviderProjectsResponse {
   message Project {
-    // The id of the project in external version control.
+    // The id of the project in vcs provider.
     string id = 1;
-    // The title of the project in external version control.
+    // The title of the project in vcs provider.
     string title = 2;
-    // The fullpath of the project in external version control.
+    // The fullpath of the project in vcs provider.
     string fullpath = 3;
-    // Web url of the project in external version control.
+    // Web url of the project in vcs provider.
     string web_url = 4;
   }
-  // The list of project in external version control.
+  // The list of project in vcs provider.
   repeated Project projects = 1;
 }
 
 message ListProjectGitOpsInfoRequest {
-  // The name of the external version control to retrieve the linked projects.
-  // Format: externalVersionControls/{externalVersionControl}
+  // The name of the vcs provider to retrieve the linked projects.
+  // Format: vcsProviders/{vcsProvider}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message ListProjectGitOpsInfoResponse {
-  // The binding between external version control and project.
+  // The binding between vcs provider and project.
   repeated ProjectGitOpsInfo project_gitops_info = 1;
 }
 
-message ExternalVersionControl {
-  // The name of the external version control, generated by the server, and also is the unique identifier.
-  // Format: externalVersionControls/{externalVersionControl}
+message VCSProvider {
+  // The name of the vcs provider, generated by the server, and also is the unique identifier.
+  // Format: vcsProviders/{vcsProvider}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The title of the external version control. It is used to display in the UI. Specified by the client.
+  // The title of the vcs provider. It is used to display in the UI. Specified by the client.
   string title = 2 [(google.api.field_behavior) = REQUIRED];
 
   enum Type {
@@ -163,17 +163,17 @@ message ExternalVersionControl {
 
   Type type = 3 [(google.api.field_behavior) = REQUIRED];
 
-  // The url of the external version control. Specified by the client.
+  // The url of the vcs provider. Specified by the client.
   // For example: github.com, gitlab.com, gitlab.bytebase.com.
   string url = 4 [(google.api.field_behavior) = REQUIRED];
 
-  // The API url of the external version control. Derived from the url.
+  // The API url of the vcs provider. Derived from the url.
   string api_url = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The application ID of the external version control. Specified by the client.
+  // The application ID of the vcs provider. Specified by the client.
   string application_id = 6 [(google.api.field_behavior) = REQUIRED];
 
-  // The application secret of the external version control. Specified by the client.
+  // The application secret of the vcs provider. Specified by the client.
   string secret = 7 [(google.api.field_behavior) = INPUT_ONLY];
 }
 
@@ -236,13 +236,13 @@ message ExchangeTokenRequest {
 }
 
 message ExchangeToken {
-  // The name of the external version control to retrieve the linked projects.
-  // Format: externalVersionControls/{externalVersionControl}
+  // The name of the vcs provider to retrieve the linked projects.
+  // Format: vcsProviders/{vcsProvider}
   string name = 1;
 
   string code = 2;
 
-  ExternalVersionControl.Type type = 3;
+  VCSProvider.Type type = 3;
 
   string instance_url = 4;
 

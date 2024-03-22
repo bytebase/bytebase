@@ -1,8 +1,5 @@
-import {
-  OAuthToken,
-  ExternalVersionControl,
-} from "@/types/proto/v1/externalvs_service";
 import { SchemaChange } from "@/types/proto/v1/project_service";
+import { OAuthToken, VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { RowStatus } from "./common";
 import { ProjectId } from "./id";
 import { Principal } from "./principal";
@@ -47,7 +44,7 @@ export type ProjectMember = {
 };
 
 export type ProjectRepositoryConfig = {
-  vcs: ExternalVersionControl;
+  vcs: VCSProvider;
   // TODO(zilong): get rid of the token in the frontend.
   token: OAuthToken;
   code: string;
