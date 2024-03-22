@@ -1,0 +1,77 @@
+- description: Default Subpartition Num
+  baseline: |-
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `version_comment`
+    --
+    CREATE TABLE `version_comment` (
+      `id` int DEFAULT NULL,
+      `name` varchar(10) DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    /*!50800 PARTITION BY HASH(`id`)
+    PARTITIONS 2 */;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+  target: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "version_comment",
+              "engine": "InnoDB",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "int",
+                  "nullable": true,
+                  "position": 1,
+                  "defaultNull": true
+                },
+                {
+                  "name": "name",
+                  "type": "varchar(10)",
+                  "nullable": true,
+                  "position": 2,
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "defaultNull": true,
+                  "characterSet": "utf8mb4"
+                }
+              ],
+              "partitions": [
+                {
+                  "name": "p0",
+                  "type": "HASH",
+                  "expression": "`id`",
+                  "useDefault": "2"
+                },
+                {
+                  "name": "p1",
+                  "type": "HASH",
+                  "expression": "`id`",
+                  "useDefault": "2"
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci"
+            }
+          ]
+        }
+      ]
+    }
+  result: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `version_comment`
+    --
+    CREATE TABLE `version_comment` (
+      `id` int DEFAULT NULL,
+      `name` varchar(10) DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    /*!50800 PARTITION BY HASH (`id`)
+    PARTITIONS 2 */;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

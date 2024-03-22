@@ -282,18 +282,23 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		g.lastTokenIndex = ctx.CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex() + 1
 	}
 
-	if g.currentTable.partitionStateWrapper != nil {
-		if _, err := g.result.WriteString("\n"); err != nil {
+	if g.currentTable.partition != nil {
+		if err := g.currentTable.partition.toString(&g.result, ctx.PartitionClause()); err != nil {
 			g.err = err
 			return
 		}
-		if err := g.currentTable.partitionStateWrapper.toString(&g.result); err != nil {
-			g.err = err
-			return
+	}
+
+	if ctx.PartitionClause() != nil {
+		// Skip to the next clause, and skip the ' */' in HIDDEN channel, may skip un-expected hidden token?
+		tokenStream := ctx.GetParser().GetTokenStream()
+		pos := ctx.PartitionClause().GetStop().GetTokenIndex()
+		if tokenStream.Size() >= pos+3 &&
+			tokenStream.Get(pos+1).GetText() == " " &&
+			tokenStream.Get(pos+2).GetText() == "*/" {
+			pos += 2
 		}
-		if ctx.PartitionClause() != nil {
-			g.lastTokenIndex = ctx.PartitionClause().GetStop().GetTokenIndex() + 1
-		}
+		g.lastTokenIndex = pos + 1
 	}
 
 	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
