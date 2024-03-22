@@ -241,6 +241,57 @@ export function maskingLevelToJSON(object: MaskingLevel): string {
   }
 }
 
+export enum ExportFormat {
+  FORMAT_UNSPECIFIED = 0,
+  CSV = 1,
+  JSON = 2,
+  SQL = 3,
+  XLSX = 4,
+  UNRECOGNIZED = -1,
+}
+
+export function exportFormatFromJSON(object: any): ExportFormat {
+  switch (object) {
+    case 0:
+    case "FORMAT_UNSPECIFIED":
+      return ExportFormat.FORMAT_UNSPECIFIED;
+    case 1:
+    case "CSV":
+      return ExportFormat.CSV;
+    case 2:
+    case "JSON":
+      return ExportFormat.JSON;
+    case 3:
+    case "SQL":
+      return ExportFormat.SQL;
+    case 4:
+    case "XLSX":
+      return ExportFormat.XLSX;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ExportFormat.UNRECOGNIZED;
+  }
+}
+
+export function exportFormatToJSON(object: ExportFormat): string {
+  switch (object) {
+    case ExportFormat.FORMAT_UNSPECIFIED:
+      return "FORMAT_UNSPECIFIED";
+    case ExportFormat.CSV:
+      return "CSV";
+    case ExportFormat.JSON:
+      return "JSON";
+    case ExportFormat.SQL:
+      return "SQL";
+    case ExportFormat.XLSX:
+      return "XLSX";
+    case ExportFormat.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** Used internally for obfuscating the page token. */
 export interface PageToken {
   limit: number;

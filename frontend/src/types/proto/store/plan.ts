@@ -2,6 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
+import { ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
 
 export const protobufPackage = "bytebase.store";
 
@@ -238,6 +239,13 @@ export interface PlanConfig_ExportDataConfig {
   sheet: string;
   /** The max number of rows to export. */
   maxRows: number;
+  /** The format of the exported file. */
+  format: ExportFormat;
+  /**
+   * The zip password provide by users.
+   * Leave it empty if no needs to encrypt the zip file.
+   */
+  password?: string | undefined;
 }
 
 function createBasePlanConfig(): PlanConfig {
@@ -1399,7 +1407,7 @@ export const PlanConfig_RestoreDatabaseConfig = {
 };
 
 function createBasePlanConfig_ExportDataConfig(): PlanConfig_ExportDataConfig {
-  return { target: "", sheet: "", maxRows: 0 };
+  return { target: "", sheet: "", maxRows: 0, format: 0, password: undefined };
 }
 
 export const PlanConfig_ExportDataConfig = {
@@ -1412,6 +1420,12 @@ export const PlanConfig_ExportDataConfig = {
     }
     if (message.maxRows !== 0) {
       writer.uint32(24).int32(message.maxRows);
+    }
+    if (message.format !== 0) {
+      writer.uint32(32).int32(message.format);
+    }
+    if (message.password !== undefined) {
+      writer.uint32(42).string(message.password);
     }
     return writer;
   },
@@ -1444,6 +1458,20 @@ export const PlanConfig_ExportDataConfig = {
 
           message.maxRows = reader.int32();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.format = reader.int32() as any;
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1458,6 +1486,8 @@ export const PlanConfig_ExportDataConfig = {
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       maxRows: isSet(object.maxRows) ? globalThis.Number(object.maxRows) : 0,
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
+      password: isSet(object.password) ? globalThis.String(object.password) : undefined,
     };
   },
 
@@ -1472,6 +1502,12 @@ export const PlanConfig_ExportDataConfig = {
     if (message.maxRows !== 0) {
       obj.maxRows = Math.round(message.maxRows);
     }
+    if (message.format !== 0) {
+      obj.format = exportFormatToJSON(message.format);
+    }
+    if (message.password !== undefined) {
+      obj.password = message.password;
+    }
     return obj;
   },
 
@@ -1483,6 +1519,8 @@ export const PlanConfig_ExportDataConfig = {
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
     message.maxRows = object.maxRows ?? 0;
+    message.format = object.format ?? 0;
+    message.password = object.password ?? undefined;
     return message;
   },
 };
