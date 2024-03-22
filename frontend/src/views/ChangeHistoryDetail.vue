@@ -452,7 +452,7 @@ watch(
       }),
       changeHistoryStore.getOrFetchChangeHistoryByName(
         changeHistoryName.value,
-        ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC
+        ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
       ),
     ]);
   },
