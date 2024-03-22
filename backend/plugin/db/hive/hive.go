@@ -87,17 +87,20 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-// Transaction statements [BEGIN, COMMIT, ROLLBACK] are not supported in Hive temporarily.
+// Transaction statements [BEGIN, COMMIT, ROLLBACK] are not supported in Hive 4.0 temporarily.
 // Even in Hive's bucketed transaction table, all the statements are committed automatically by
 // the Hive server.
 func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
 	if d.dbClient == nil {
 		return 0, errors.Errorf("no database connection established")
 	}
-	cursor := d.dbClient.Cursor()
+
+	var (
+		affectedRows int64
+		cursor       = d.dbClient.Cursor()
+	)
 	defer cursor.Close()
 
-	var affectedRows int64
 	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split statements")
@@ -115,14 +118,18 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	return affectedRows, nil
 }
 
+// TODO(tommy): run query asynchronously.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if d.dbClient == nil {
 		return nil, errors.Errorf("no database connection established")
 	}
-	cursor := d.dbClient.Cursor()
+
+	var (
+		results []*v1pb.QueryResult
+		cursor  = d.dbClient.Cursor()
+	)
 	defer cursor.Close()
 
-	var results []*v1pb.QueryResult
 	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split statements")
@@ -137,6 +144,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 		result, err := runSingleQuery(ctx, statementStr, cursor)
 		if err != nil {
 			result.Error = err.Error()
+			return nil, err
 		}
 		results = append(results, result)
 	}
@@ -150,61 +158,76 @@ func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.Q
 }
 
 // This function converts basic types to types that have implemented isRowValue_Kind interface.
-func parseValueType(value any) (*v1pb.RowValue, error) {
+func parseValueType(value any, gohiveType string) (*v1pb.RowValue, error) {
 	var rowValue v1pb.RowValue
-	switch t := value.(type) {
-	case nil:
-		return nil, errors.Errorf("value cannot be %v", t)
-	case bool:
+	switch gohiveType {
+	case "BOOLEAN_TYPE":
 		rowValue.Kind = &v1pb.RowValue_BoolValue{BoolValue: value.(bool)}
-	case int8:
+	case "TINYINT_TYPE":
 		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int8))}
-	case int16:
+	case "SMALLINT_TYPE":
 		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int16))}
-	case int32:
+	case "INT_TYPE":
 		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}
-	case int64:
-		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}
-	// TODO(tommy): dangerous truncation: float64 -> float32.
-	case float64:
-		rowValue.Kind = &v1pb.RowValue_FloatValue{FloatValue: value.(float32)}
-	case string:
-		rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: value.(string)}
-	case []byte:
+	case "BIGINT_TYPE":
+		rowValue.Kind = &v1pb.RowValue_Int64Value{Int64Value: value.(int64)}
+	// dangerous truncation: float64 -> float32.
+	case "FLOAT_TYPE":
+		rowValue.Kind = &v1pb.RowValue_FloatValue{FloatValue: float32(value.(float64))}
+	case "BINARY_TYPE":
 		rowValue.Kind = &v1pb.RowValue_BytesValue{BytesValue: value.([]byte)}
 	default:
-		return nil, errors.Errorf("type not supported")
+		if value == nil {
+			rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: ""}
+		} else if gohiveType == "DOUBLE_TYPE" {
+			// convert float64 to string to avoid trancation.
+			rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: strconv.FormatFloat(value.(float64), 'f', 20, 64)}
+		} else {
+			// convert all remaining types to string.
+			rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: value.(string)}
+		}
 	}
 	return &rowValue, nil
 }
 
 func runSingleQuery(ctx context.Context, statement string, cursor *gohive.Cursor) (*v1pb.QueryResult, error) {
+	var (
+		result    = v1pb.QueryResult{}
+		startTime = time.Now()
+	)
 	statement = strings.TrimRight(statement, ";")
 
-	startTime := time.Now()
+	// run query.
 	cursor.Execute(ctx, statement, false)
+	columnNamesAndTypes := cursor.Description()
+	for _, row := range columnNamesAndTypes {
+		result.ColumnNames = append(result.ColumnNames, row[0])
+	}
+
+	// Latency.
+	result.Latency = durationpb.New(time.Since(startTime))
+
+	// Statement.
+	result.Statement = statement
 	if cursor.Err != nil {
-		return nil, errors.Wrapf(cursor.Err, "failed to execute statement")
+		return &result, errors.Wrapf(cursor.Err, "failed to execute statement")
 	}
 
 	// process query results.
-	var result v1pb.QueryResult
 	for cursor.HasMore(ctx) {
-		for columnName, value := range cursor.RowMap(ctx) {
-			// ColumnNames.
-			result.ColumnNames = append(result.ColumnNames, columnName)
-			// Rows.
-			var queryRow v1pb.QueryRow
-			val, err := parseValueType(value)
+		var queryRow v1pb.QueryRow
+		rowMap := cursor.RowMap(ctx)
+		for idx, columnName := range result.ColumnNames {
+			gohiveTypeStr := columnNamesAndTypes[idx][1]
+			val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
 			if err != nil {
-				return nil, err
+				return &result, err
 			}
 			queryRow.Values = append(queryRow.Values, val)
-			// Latency.
-			result.Latency = durationpb.New(time.Since(startTime))
-			result.Rows = append(result.Rows, &queryRow)
-			result.Statement = statement
 		}
+
+		// Rows.
+		result.Rows = append(result.Rows, &queryRow)
 	}
 	return &result, nil
 }
