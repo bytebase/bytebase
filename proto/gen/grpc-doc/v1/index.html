@@ -2122,6 +2122,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Task.DatabaseDataExport"><span class="badge">M</span>Task.DatabaseDataExport</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Task.DatabaseDataUpdate"><span class="badge">M</span>Task.DatabaseDataUpdate</a>
                 </li>
               
@@ -16925,6 +16929,12 @@ Format: projects/{project}/issues/{issue} </p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>DATABASE_DATA_EXPORT</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
       
@@ -22963,6 +22973,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>database_data_export</td>
+                  <td><a href="#bytebase.v1.Task.DatabaseDataExport">Task.DatabaseDataExport</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -23091,6 +23108,46 @@ Format: projects/{project} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Task.DatabaseDataExport">Task.DatabaseDataExport</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>target</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the target.
+Format: instances/{instance-id}/databases/{database-name} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the sheet.
+Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>max_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The max number of rows to export. </p></td>
                 </tr>
               
             </tbody>
@@ -23880,6 +23937,12 @@ Format: projects/{project}/plans/{plan} </p></td>
                 <td>DATABASE_RESTORE_CUTOVER</td>
                 <td>11</td>
                 <td><p>use payload nil</p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_DATA_EXPORT</td>
+                <td>12</td>
+                <td><p>use payload DatabaseDataExport</p></td>
               </tr>
             
           </tbody>

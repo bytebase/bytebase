@@ -742,6 +742,7 @@ export interface Task {
   databaseDataUpdate?: Task_DatabaseDataUpdate | undefined;
   databaseBackup?: Task_DatabaseBackup | undefined;
   databaseRestoreRestore?: Task_DatabaseRestoreRestore | undefined;
+  databaseDataExport?: Task_DatabaseDataExport | undefined;
 }
 
 export enum Task_Status {
@@ -836,6 +837,8 @@ export enum Task_Type {
   DATABASE_RESTORE_RESTORE = 10,
   /** DATABASE_RESTORE_CUTOVER - use payload nil */
   DATABASE_RESTORE_CUTOVER = 11,
+  /** DATABASE_DATA_EXPORT - use payload DatabaseDataExport */
+  DATABASE_DATA_EXPORT = 12,
   UNRECOGNIZED = -1,
 }
 
@@ -877,6 +880,9 @@ export function task_TypeFromJSON(object: any): Task_Type {
     case 11:
     case "DATABASE_RESTORE_CUTOVER":
       return Task_Type.DATABASE_RESTORE_CUTOVER;
+    case 12:
+    case "DATABASE_DATA_EXPORT":
+      return Task_Type.DATABASE_DATA_EXPORT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -910,6 +916,8 @@ export function task_TypeToJSON(object: Task_Type): string {
       return "DATABASE_RESTORE_RESTORE";
     case Task_Type.DATABASE_RESTORE_CUTOVER:
       return "DATABASE_RESTORE_CUTOVER";
+    case Task_Type.DATABASE_DATA_EXPORT:
+      return "DATABASE_DATA_EXPORT";
     case Task_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -1053,6 +1061,21 @@ export interface Task_DatabaseRestoreRestore {
     | undefined;
   /** After the PITR operations, the database will be recovered to the state at this time. */
   pointInTime?: Date | undefined;
+}
+
+export interface Task_DatabaseDataExport {
+  /**
+   * The resource name of the target.
+   * Format: instances/{instance-id}/databases/{database-name}
+   */
+  target: string;
+  /**
+   * The resource name of the sheet.
+   * Format: projects/{project}/sheets/{sheet}
+   */
+  sheet: string;
+  /** The max number of rows to export. */
+  maxRows: number;
 }
 
 export interface TaskRun {
@@ -4702,6 +4725,7 @@ function createBaseTask(): Task {
     databaseDataUpdate: undefined,
     databaseBackup: undefined,
     databaseRestoreRestore: undefined,
+    databaseDataExport: undefined,
   };
 }
 
@@ -4751,6 +4775,9 @@ export const Task = {
     }
     if (message.databaseRestoreRestore !== undefined) {
       Task_DatabaseRestoreRestore.encode(message.databaseRestoreRestore, writer.uint32(114).fork()).ldelim();
+    }
+    if (message.databaseDataExport !== undefined) {
+      Task_DatabaseDataExport.encode(message.databaseDataExport, writer.uint32(130).fork()).ldelim();
     }
     return writer;
   },
@@ -4867,6 +4894,13 @@ export const Task = {
 
           message.databaseRestoreRestore = Task_DatabaseRestoreRestore.decode(reader, reader.uint32());
           continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
+          message.databaseDataExport = Task_DatabaseDataExport.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4902,6 +4936,9 @@ export const Task = {
       databaseBackup: isSet(object.databaseBackup) ? Task_DatabaseBackup.fromJSON(object.databaseBackup) : undefined,
       databaseRestoreRestore: isSet(object.databaseRestoreRestore)
         ? Task_DatabaseRestoreRestore.fromJSON(object.databaseRestoreRestore)
+        : undefined,
+      databaseDataExport: isSet(object.databaseDataExport)
+        ? Task_DatabaseDataExport.fromJSON(object.databaseDataExport)
         : undefined,
     };
   },
@@ -4953,6 +4990,9 @@ export const Task = {
     if (message.databaseRestoreRestore !== undefined) {
       obj.databaseRestoreRestore = Task_DatabaseRestoreRestore.toJSON(message.databaseRestoreRestore);
     }
+    if (message.databaseDataExport !== undefined) {
+      obj.databaseDataExport = Task_DatabaseDataExport.toJSON(message.databaseDataExport);
+    }
     return obj;
   },
 
@@ -4990,6 +5030,9 @@ export const Task = {
       (object.databaseRestoreRestore !== undefined && object.databaseRestoreRestore !== null)
         ? Task_DatabaseRestoreRestore.fromPartial(object.databaseRestoreRestore)
         : undefined;
+    message.databaseDataExport = (object.databaseDataExport !== undefined && object.databaseDataExport !== null)
+      ? Task_DatabaseDataExport.fromPartial(object.databaseDataExport)
+      : undefined;
     return message;
   },
 };
@@ -5708,6 +5751,95 @@ export const Task_DatabaseRestoreRestore = {
     message.target = object.target ?? "";
     message.backup = object.backup ?? undefined;
     message.pointInTime = object.pointInTime ?? undefined;
+    return message;
+  },
+};
+
+function createBaseTask_DatabaseDataExport(): Task_DatabaseDataExport {
+  return { target: "", sheet: "", maxRows: 0 };
+}
+
+export const Task_DatabaseDataExport = {
+  encode(message: Task_DatabaseDataExport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.target !== "") {
+      writer.uint32(10).string(message.target);
+    }
+    if (message.sheet !== "") {
+      writer.uint32(18).string(message.sheet);
+    }
+    if (message.maxRows !== 0) {
+      writer.uint32(24).int32(message.maxRows);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Task_DatabaseDataExport {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTask_DatabaseDataExport();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.target = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.sheet = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maxRows = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Task_DatabaseDataExport {
+    return {
+      target: isSet(object.target) ? globalThis.String(object.target) : "",
+      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
+      maxRows: isSet(object.maxRows) ? globalThis.Number(object.maxRows) : 0,
+    };
+  },
+
+  toJSON(message: Task_DatabaseDataExport): unknown {
+    const obj: any = {};
+    if (message.target !== "") {
+      obj.target = message.target;
+    }
+    if (message.sheet !== "") {
+      obj.sheet = message.sheet;
+    }
+    if (message.maxRows !== 0) {
+      obj.maxRows = Math.round(message.maxRows);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Task_DatabaseDataExport>): Task_DatabaseDataExport {
+    return Task_DatabaseDataExport.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Task_DatabaseDataExport>): Task_DatabaseDataExport {
+    const message = createBaseTask_DatabaseDataExport();
+    message.target = object.target ?? "";
+    message.sheet = object.sheet ?? "";
+    message.maxRows = object.maxRows ?? 0;
     return message;
   },
 };

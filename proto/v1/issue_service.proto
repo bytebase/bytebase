@@ -243,6 +243,7 @@ message Issue {
     TYPE_UNSPECIFIED = 0;
     DATABASE_CHANGE = 1;
     GRANT_REQUEST = 2;
+    DATABASE_DATA_EXPORT = 3;
   }
   Type type = 5;
 
