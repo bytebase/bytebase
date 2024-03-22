@@ -10,8 +10,6 @@
     <NDataTable
       :columns="columnList"
       :data="issueList"
-      :max-height="640"
-      :virtual-scroll="true"
       :striped="true"
       :bordered="true"
       :loading="loading"
