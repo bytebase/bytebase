@@ -1235,6 +1235,7 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 	var databaseTarget, databaseGroupTarget, deploymentConfigTarget int
 	seenID := map[string]bool{}
 	for _, step := range steps {
+		seenIDInStep := map[string]bool{}
 		for _, spec := range step.Specs {
 			id := spec.GetId()
 			if id == "" {
@@ -1244,6 +1245,7 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 				return errors.Errorf("found duplicate spec id %q", spec.GetId())
 			}
 			seenID[id] = true
+			seenIDInStep[id] = true
 			if config := spec.GetChangeDatabaseConfig(); config != nil {
 				if _, _, err := common.GetInstanceDatabaseID(config.Target); err == nil {
 					databaseTarget++
@@ -1253,6 +1255,16 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 					deploymentConfigTarget++
 				} else {
 					return errors.Errorf("unknown target %q", config.Target)
+				}
+			}
+		}
+		for _, spec := range step.Specs {
+			for _, dependOnSpec := range spec.DependsOnSpecs {
+				if !seenIDInStep[dependOnSpec] {
+					return errors.Errorf("spec %q depends on spec %q, but spec %q is not found in the step", spec.Id, dependOnSpec, dependOnSpec)
+				}
+				if dependOnSpec == spec.Id {
+					return errors.Errorf("spec %q depends on itself", spec.Id)
 				}
 			}
 		}
@@ -1300,6 +1312,8 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 			}
 			return nil
 		}
+
+		taskIndexesBySpecID := map[string][]int{}
 		for _, spec := range step.Specs {
 			taskCreates, taskIndexDAGCreates, err := getTaskCreatesFromSpec(ctx, s, licenseService, dbFactory, spec, project, registerEnvironmentID)
 			if err != nil {
@@ -1307,6 +1321,9 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 			}
 
 			offset := len(stageCreate.TaskList)
+			for i := range taskCreates {
+				taskIndexesBySpecID[spec.Id] = append(taskIndexesBySpecID[spec.Id], i+offset)
+			}
 			for i := range taskIndexDAGCreates {
 				taskIndexDAGCreates[i].FromIndex += offset
 				taskIndexDAGCreates[i].ToIndex += offset
@@ -1314,6 +1331,9 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 			stageCreate.TaskList = append(stageCreate.TaskList, taskCreates...)
 			stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, taskIndexDAGCreates...)
 		}
+		stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, getTaskIndexDAGs(step.Specs, func(specID string) []int {
+			return taskIndexesBySpecID[specID]
+		})...)
 
 		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &stageEnvironmentID})
 		if err != nil {
@@ -1331,6 +1351,23 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 		pipelineCreate.Stages = append(pipelineCreate.Stages, stageCreate)
 	}
 	return pipelineCreate, nil
+}
+
+func getTaskIndexDAGs(specs []*storepb.PlanConfig_Spec, getTaskIndexes func(specID string) []int) []store.TaskIndexDAG {
+	var taskIndexDAGs []store.TaskIndexDAG
+	for _, spec := range specs {
+		for _, dependsOnSpec := range spec.DependsOnSpecs {
+			for _, dependsOnTask := range getTaskIndexes(dependsOnSpec) {
+				for _, task := range getTaskIndexes(spec.Id) {
+					taskIndexDAGs = append(taskIndexDAGs, store.TaskIndexDAG{
+						FromIndex: dependsOnTask,
+						ToIndex:   task,
+					})
+				}
+			}
+		}
+	}
+	return taskIndexDAGs
 }
 
 func (s *RolloutService) createPipeline(ctx context.Context, project *store.ProjectMessage, pipelineCreate *store.PipelineMessage, creatorID int) (*store.PipelineMessage, error) {
