@@ -39,7 +39,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
-          version: v1.55.2
+          version: v1.57.1
           args: -j 8 --verbose --timeout 20m --max-same-issues=30 --allow-parallel-runners
           skip-cache: true
       - name: Run all tests
