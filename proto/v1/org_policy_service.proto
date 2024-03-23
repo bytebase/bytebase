@@ -9,7 +9,6 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/common.proto";
-import "v1/iam_policy.proto";
 
 option go_package = "generated-go/v1";
 
@@ -202,7 +201,6 @@ message Policy {
   PolicyType type = 5;
 
   oneof policy {
-    IamPolicy workspace_iam_policy = 6;
     RolloutPolicy rollout_policy = 19;
     MaskingPolicy masking_policy = 9;
     SQLReviewPolicy sql_review_policy = 11;
@@ -226,7 +224,6 @@ enum PolicyType {
   reserved 2, 6;
 
   POLICY_TYPE_UNSPECIFIED = 0;
-  WORKSPACE_IAM = 1;
   ROLLOUT_POLICY = 11;
   SQL_REVIEW = 4;
   MASKING = 5;

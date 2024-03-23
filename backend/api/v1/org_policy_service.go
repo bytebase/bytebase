@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/grpc/codes"
@@ -540,13 +539,6 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 
 func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
-	case v1pb.PolicyType_WORKSPACE_IAM:
-		iamPolicy := convertToStorePBWorkspaceIAMPolicy(policy.GetWorkspaceIamPolicy())
-		payloadBytes, err := protojson.Marshal(iamPolicy)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal workspace iam policy")
-		}
-		return string(payloadBytes), nil
 	case v1pb.PolicyType_ROLLOUT_POLICY:
 		rolloutPolicy := convertToStorePBRolloutPolicy(policy.GetRolloutPolicy())
 		payloadBytes, err := protojson.Marshal(rolloutPolicy)
@@ -663,18 +655,6 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 
 	pType := v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED
 	switch policyMessage.Type {
-	case api.PolicyTypeWorkspaceIAM:
-		pType = v1pb.PolicyType_WORKSPACE_IAM
-		storepbIAMPolicy := &storepb.IamPolicy{}
-		err := protojson.Unmarshal([]byte(policyMessage.Payload), storepbIAMPolicy)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal workspace IAM policy")
-		}
-		payload, err := convertToV1PBWorkspaceIAMPolicy(storepbIAMPolicy)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert workspace IAM policy")
-		}
-		policy.Policy = payload
 	case api.PolicyTypeRollout:
 		pType = v1pb.PolicyType_ROLLOUT_POLICY
 		payload, err := convertToV1RolloutPolicyPayload(policyMessage.Payload)
@@ -752,54 +732,6 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 	}
 
 	return policy, nil
-}
-
-func convertToV1PBWorkspaceIAMPolicy(policy *storepb.IamPolicy) (*v1pb.Policy_WorkspaceIamPolicy, error) {
-	iamPolicy := &v1pb.IamPolicy{
-		Bindings: []*v1pb.Binding{},
-	}
-	for _, binding := range policy.Bindings {
-		v1pbBinding := v1pb.Binding{
-			Role:      binding.Role,
-			Members:   binding.Members,
-			Condition: binding.Condition,
-		}
-
-		env, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create cel environment")
-		}
-		if binding.Condition.Expression != "" {
-			ast, issues := env.Parse(binding.Condition.Expression)
-			if issues != nil && issues.Err() != nil {
-				return nil, errors.Wrap(issues.Err(), "failed to parse expression")
-			}
-			parsedExpr, err := cel.AstToParsedExpr(ast)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to convert ast to parsed expression")
-			}
-			v1pbBinding.ParsedExpr = parsedExpr
-		}
-		iamPolicy.Bindings = append(iamPolicy.Bindings, &v1pbBinding)
-	}
-	return &v1pb.Policy_WorkspaceIamPolicy{
-		WorkspaceIamPolicy: iamPolicy,
-	}, nil
-}
-
-func convertToStorePBWorkspaceIAMPolicy(policy *v1pb.IamPolicy) *storepb.IamPolicy {
-	iamPolicy := &storepb.IamPolicy{
-		Bindings: []*storepb.Binding{},
-	}
-	for _, binding := range policy.Bindings {
-		iamBinding := storepb.Binding{
-			Role:      binding.Role,
-			Members:   binding.Members,
-			Condition: binding.Condition,
-		}
-		iamPolicy.Bindings = append(iamPolicy.Bindings, &iamBinding)
-	}
-	return iamPolicy
 }
 
 func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, error) {
@@ -1121,8 +1053,6 @@ func convertToRestrictIssueCreationForSQLReviewPayload(policy *v1pb.RestrictIssu
 func convertPolicyType(pType string) (api.PolicyType, error) {
 	var policyType api.PolicyType
 	switch strings.ToUpper(pType) {
-	case v1pb.PolicyType_WORKSPACE_IAM.String():
-		return api.PolicyTypeWorkspaceIAM, nil
 	case v1pb.PolicyType_ROLLOUT_POLICY.String():
 		return api.PolicyTypeRollout, nil
 	case v1pb.PolicyType_SQL_REVIEW.String():

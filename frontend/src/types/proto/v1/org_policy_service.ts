@@ -5,13 +5,11 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
 import { Engine, engineFromJSON, engineToJSON, MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON } from "./common";
-import { IamPolicy } from "./iam_policy";
 
 export const protobufPackage = "bytebase.v1";
 
 export enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0,
-  WORKSPACE_IAM = 1,
   ROLLOUT_POLICY = 11,
   SQL_REVIEW = 4,
   MASKING = 5,
@@ -28,9 +26,6 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 0:
     case "POLICY_TYPE_UNSPECIFIED":
       return PolicyType.POLICY_TYPE_UNSPECIFIED;
-    case 1:
-    case "WORKSPACE_IAM":
-      return PolicyType.WORKSPACE_IAM;
     case 11:
     case "ROLLOUT_POLICY":
       return PolicyType.ROLLOUT_POLICY;
@@ -66,8 +61,6 @@ export function policyTypeToJSON(object: PolicyType): string {
   switch (object) {
     case PolicyType.POLICY_TYPE_UNSPECIFIED:
       return "POLICY_TYPE_UNSPECIFIED";
-    case PolicyType.WORKSPACE_IAM:
-      return "WORKSPACE_IAM";
     case PolicyType.ROLLOUT_POLICY:
       return "ROLLOUT_POLICY";
     case PolicyType.SQL_REVIEW:
@@ -303,7 +296,6 @@ export interface Policy {
   uid: string;
   inheritFromParent: boolean;
   type: PolicyType;
-  workspaceIamPolicy?: IamPolicy | undefined;
   rolloutPolicy?: RolloutPolicy | undefined;
   maskingPolicy?: MaskingPolicy | undefined;
   sqlReviewPolicy?: SQLReviewPolicy | undefined;
@@ -937,7 +929,6 @@ function createBasePolicy(): Policy {
     uid: "",
     inheritFromParent: false,
     type: 0,
-    workspaceIamPolicy: undefined,
     rolloutPolicy: undefined,
     maskingPolicy: undefined,
     sqlReviewPolicy: undefined,
@@ -965,9 +956,6 @@ export const Policy = {
     }
     if (message.type !== 0) {
       writer.uint32(40).int32(message.type);
-    }
-    if (message.workspaceIamPolicy !== undefined) {
-      IamPolicy.encode(message.workspaceIamPolicy, writer.uint32(50).fork()).ldelim();
     }
     if (message.rolloutPolicy !== undefined) {
       RolloutPolicy.encode(message.rolloutPolicy, writer.uint32(154).fork()).ldelim();
@@ -1042,13 +1030,6 @@ export const Policy = {
           }
 
           message.type = reader.int32() as any;
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.workspaceIamPolicy = IamPolicy.decode(reader, reader.uint32());
           continue;
         case 19:
           if (tag !== 154) {
@@ -1145,7 +1126,6 @@ export const Policy = {
       uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       inheritFromParent: isSet(object.inheritFromParent) ? globalThis.Boolean(object.inheritFromParent) : false,
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
-      workspaceIamPolicy: isSet(object.workspaceIamPolicy) ? IamPolicy.fromJSON(object.workspaceIamPolicy) : undefined,
       rolloutPolicy: isSet(object.rolloutPolicy) ? RolloutPolicy.fromJSON(object.rolloutPolicy) : undefined,
       maskingPolicy: isSet(object.maskingPolicy) ? MaskingPolicy.fromJSON(object.maskingPolicy) : undefined,
       sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
@@ -1181,9 +1161,6 @@ export const Policy = {
     }
     if (message.type !== 0) {
       obj.type = policyTypeToJSON(message.type);
-    }
-    if (message.workspaceIamPolicy !== undefined) {
-      obj.workspaceIamPolicy = IamPolicy.toJSON(message.workspaceIamPolicy);
     }
     if (message.rolloutPolicy !== undefined) {
       obj.rolloutPolicy = RolloutPolicy.toJSON(message.rolloutPolicy);
@@ -1232,9 +1209,6 @@ export const Policy = {
     message.uid = object.uid ?? "";
     message.inheritFromParent = object.inheritFromParent ?? false;
     message.type = object.type ?? 0;
-    message.workspaceIamPolicy = (object.workspaceIamPolicy !== undefined && object.workspaceIamPolicy !== null)
-      ? IamPolicy.fromPartial(object.workspaceIamPolicy)
-      : undefined;
     message.rolloutPolicy = (object.rolloutPolicy !== undefined && object.rolloutPolicy !== null)
       ? RolloutPolicy.fromPartial(object.rolloutPolicy)
       : undefined;

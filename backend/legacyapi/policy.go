@@ -28,12 +28,8 @@ const (
 	// DefaultPolicyID is the ID of the default policy.
 	DefaultPolicyID int = 0
 
-	// PolicyTypeWorkspaceIAM is the workspace IAM policy type.
-	PolicyTypeWorkspaceIAM PolicyType = "bb.policy.workspace-iam"
 	// PolicyTypeRollout is the rollout policy type.
 	PolicyTypeRollout PolicyType = "bb.policy.rollout"
-	// PolicyTypeBackupPlan is the backup plan policy type.
-	PolicyTypeBackupPlan PolicyType = "bb.policy.backup-plan"
 	// PolicyTypeSQLReview is the sql review policy type.
 	PolicyTypeSQLReview PolicyType = "bb.policy.sql-review"
 	// PolicyTypeEnvironmentTier is the tier of an environment.
@@ -90,9 +86,7 @@ const (
 var (
 	// AllowedResourceTypes includes allowed resource types for each policy type.
 	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
-		PolicyTypeWorkspaceIAM:                      {PolicyResourceTypeWorkspace},
 		PolicyTypeRollout:                           {PolicyResourceTypeEnvironment},
-		PolicyTypeBackupPlan:                        {PolicyResourceTypeEnvironment},
 		PolicyTypeSQLReview:                         {PolicyResourceTypeEnvironment},
 		PolicyTypeEnvironmentTier:                   {PolicyResourceTypeEnvironment},
 		PolicyTypeMasking:                           {PolicyResourceTypeDatabase},

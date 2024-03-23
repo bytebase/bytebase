@@ -37,7 +37,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
-	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -66,7 +65,6 @@ const (
 type DatabaseService struct {
 	v1pb.UnimplementedDatabaseServiceServer
 	store          *store.Store
-	backupRunner   *backuprun.Runner
 	schemaSyncer   *schemasync.Syncer
 	licenseService enterprise.LicenseService
 	profile        *config.Profile
@@ -74,10 +72,9 @@ type DatabaseService struct {
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterprise.LicenseService, profile *config.Profile, iamManager *iam.Manager) *DatabaseService {
+func NewDatabaseService(store *store.Store, schemaSyncer *schemasync.Syncer, licenseService enterprise.LicenseService, profile *config.Profile, iamManager *iam.Manager) *DatabaseService {
 	return &DatabaseService{
 		store:          store,
-		backupRunner:   br,
 		schemaSyncer:   schemaSyncer,
 		licenseService: licenseService,
 		profile:        profile,
