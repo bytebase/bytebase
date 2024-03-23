@@ -1,6 +1,4 @@
 ALTER TABLE db DROP COLUMN source_backup_id;
-DROP TRIGGER update_backup_updated_ts;
-DROP TRIGGER update_backup_setting_updated_ts;
 DROP TABLE backup;
 DROP TABLE backup_setting;
 DELETE FROM anomaly WHERE type = 'bb.anomaly.database.backup.missing';
