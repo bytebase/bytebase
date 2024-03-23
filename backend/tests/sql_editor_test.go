@@ -189,7 +189,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 		a.NoError(err)
 
-		results, err := ctl.adminQuery(ctx, instance, tt.databaseName, tt.query)
+		results, err := ctl.adminQuery(ctx, database, tt.query)
 		a.NoError(err)
 
 		a.Equal(len(tt.affectedRows), len(results))

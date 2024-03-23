@@ -171,7 +171,6 @@ const useExecuteSQL = () => {
       const instance = isUnknownDatabase
         ? params.connection.instance
         : database.instance;
-      const databaseName = isUnknownDatabase ? "" : database.databaseName;
       const dataSourceId =
         instance === params.connection.instance
           ? params.connection.dataSourceId ?? ""
@@ -180,8 +179,7 @@ const useExecuteSQL = () => {
       try {
         const resultSet = await useSQLStore().queryReadonly(
           {
-            name: instance,
-            connectionDatabase: databaseName,
+            name: database.name,
             dataSourceId: dataSourceId,
             statement,
             limit: RESULT_ROWS_LIMIT,
