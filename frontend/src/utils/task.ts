@@ -12,7 +12,6 @@ import {
   TaskCreate,
   TaskDatabaseCreatePayload,
   TaskDatabaseDataUpdatePayload,
-  TaskDatabasePITRRestorePayload,
   TaskDatabaseSchemaBaselinePayload,
   TaskDatabaseSchemaUpdateGhostSyncPayload,
   TaskDatabaseSchemaUpdatePayload,
@@ -42,17 +41,6 @@ export const extractDatabaseNameFromTask = (
   }
 
   const taskType = taskEntity.type;
-  if (taskType === "bb.task.database.restore.pitr.restore") {
-    // When PITR to new DB, the database might not be created yet.
-    // So we need to extract the name from the task's payload。
-    const payload = taskEntity.payload as TaskDatabasePITRRestorePayload;
-    if (payload.databaseName) {
-      return payload.databaseName;
-    }
-
-    // When PITR in-place, taskEntity.database will be the database entity itself.
-  }
-
   // The task entity is related to a database entity
   if (taskEntity.database) {
     return taskEntity.database.name;
@@ -60,10 +48,7 @@ export const extractDatabaseNameFromTask = (
 
   // The task entity is irrelative to any databases or the related
   // database is not created yet.
-  if (
-    taskType === "bb.task.database.create" ||
-    taskType === "bb.task.database.restore"
-  ) {
+  if (taskType === "bb.task.database.create") {
     // The database is not created yet.
     // extract database info from the task's and payload's properties.
     const payload = taskEntity.payload as TaskDatabaseCreatePayload;

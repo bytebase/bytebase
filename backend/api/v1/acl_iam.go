@@ -223,7 +223,6 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName,
 		v1pb.EnvironmentService_GetEnvironment_FullMethodName,
 		v1pb.EnvironmentService_ListEnvironments_FullMethodName,
-		v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName,
 		v1pb.SettingService_ListSettings_FullMethodName,
 		v1pb.SettingService_GetSetting_FullMethodName,
 		v1pb.SettingService_UpdateSetting_FullMethodName,
@@ -267,10 +266,6 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.DatabaseService_GetDatabaseMetadata_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabaseMetadata_FullMethodName,
 		v1pb.DatabaseService_GetDatabaseSchema_FullMethodName,
-		v1pb.DatabaseService_GetBackupSetting_FullMethodName,
-		v1pb.DatabaseService_UpdateBackupSetting_FullMethodName,
-		v1pb.DatabaseService_CreateBackup_FullMethodName,
-		v1pb.DatabaseService_ListBackups_FullMethodName,
 		v1pb.DatabaseService_ListSecrets_FullMethodName,
 		v1pb.DatabaseService_UpdateSecret_FullMethodName,
 		v1pb.DatabaseService_DeleteSecret_FullMethodName,
@@ -652,22 +647,6 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 			return nil, errors.Wrapf(err, "failed to get databaseName from %q", r.GetName())
 		}
 		databaseNames = append(databaseNames, databaseName)
-	case *v1pb.GetBackupSettingRequest:
-		databaseName, err := common.TrimSuffix(r.GetName(), "/backupSetting")
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get databaseName from %q", r.GetName())
-		}
-		databaseNames = append(databaseNames, databaseName)
-	case *v1pb.UpdateBackupSettingRequest:
-		databaseName, err := common.TrimSuffix(r.GetSetting().GetName(), "/backupSetting")
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get databaseName from %q", r.GetSetting().GetName())
-		}
-		databaseNames = append(databaseNames, databaseName)
-	case *v1pb.CreateBackupRequest:
-		databaseNames = append(databaseNames, r.GetParent())
-	case *v1pb.ListBackupsRequest:
-		databaseNames = append(databaseNames, r.GetParent())
 	case *v1pb.ListSecretsRequest:
 		databaseNames = append(databaseNames, r.GetParent())
 	case *v1pb.UpdateSecretRequest:

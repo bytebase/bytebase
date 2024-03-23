@@ -80,65 +80,6 @@
           />
         </div>
 
-        <div
-          v-if="showBackupSchedulePolicySection"
-          class="flex flex-col gap-y-2"
-        >
-          <label class="textlabel"> {{ $t("policy.backup.name") }} </label>
-          <span
-            v-show="valueChanged('backupPolicy')"
-            class="textlabeltip !ml-0"
-            >{{ $t("policy.backup.tip") }}</span
-          >
-          <NRadioGroup
-            v-model:value="state.backupPolicy.backupPlanPolicy!.schedule"
-            :disabled="!allowEdit"
-            class="!flex flex-col gap-y-2"
-          >
-            <NRadio
-              :value="BackupPlanSchedule.UNSET"
-              style="--n-label-padding: 0 0 0 1rem"
-            >
-              <div class="flex flex-col">
-                <div class="textlabel">
-                  {{ $t("policy.backup.not-enforced") }}
-                </div>
-                <div class="textinfolabel">
-                  {{ $t("policy.backup.not-enforced-info") }}
-                </div>
-              </div>
-            </NRadio>
-            <NRadio
-              :value="BackupPlanSchedule.DAILY"
-              style="--n-label-padding: 0 0 0 1rem"
-            >
-              <div class="flex flex-col">
-                <div class="textlabel flex">
-                  {{ $t("policy.backup.daily") }}
-                  <FeatureBadge feature="bb.feature.backup-policy" />
-                </div>
-                <div class="textinfolabel">
-                  {{ $t("policy.backup.daily-info") }}
-                </div>
-              </div>
-            </NRadio>
-            <NRadio
-              :value="BackupPlanSchedule.WEEKLY"
-              style="--n-label-padding: 0 0 0 1rem"
-            >
-              <div class="flex flex-col">
-                <div class="textlabel flex">
-                  {{ $t("policy.backup.weekly") }}
-                  <FeatureBadge feature="bb.feature.backup-policy" />
-                </div>
-                <div class="mt-1 textinfolabel">
-                  {{ $t("policy.backup.weekly-info") }}
-                </div>
-              </div>
-            </NRadio>
-          </NRadioGroup>
-        </div>
-
         <div v-if="!create" class="flex flex-col gap-y-2">
           <label class="textlabel">
             {{ $t("sql-review.title") }}
@@ -275,7 +216,7 @@
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
-import { NButton, NCheckbox, NInput, NRadioGroup } from "naive-ui";
+import { NButton, NCheckbox, NInput } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, PropType, watch, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -311,7 +252,6 @@ import {
 import {
   Policy,
   PolicyType,
-  BackupPlanSchedule,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
 import {
@@ -325,7 +265,6 @@ import RolloutPolicyConfig from "./EnvironmentForm/RolloutPolicyConfig.vue";
 interface LocalState {
   environment: Environment;
   rolloutPolicy: Policy;
-  backupPolicy: Policy;
   environmentTier: EnvironmentTier;
   missingRequiredFeature?: FeatureType;
 }
@@ -340,10 +279,6 @@ const props = defineProps({
     type: Object as PropType<Environment>,
   },
   rolloutPolicy: {
-    required: true,
-    type: Object as PropType<Policy>,
-  },
-  backupPolicy: {
     required: true,
     type: Object as PropType<Policy>,
   },
@@ -372,13 +307,9 @@ const environmentList = useEnvironmentV1List();
 const state = reactive<LocalState>({
   environment: cloneDeep(props.environment),
   rolloutPolicy: cloneDeep(props.rolloutPolicy),
-  backupPolicy: cloneDeep(props.backupPolicy),
   environmentTier: props.environmentTier,
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
-const showBackupSchedulePolicySection = computed(() => {
-  return false; // Hide for now
-});
 
 const bindings = computed(() => {
   if (props.create) {
@@ -446,13 +377,6 @@ watch(
   () => props.rolloutPolicy,
   (cur: Policy) => {
     state.rolloutPolicy = cloneDeep(cur);
-  }
-);
-
-watch(
-  () => props.backupPolicy,
-  (cur: Policy) => {
-    state.backupPolicy = cloneDeep(cur);
   }
 );
 
@@ -532,20 +456,13 @@ const allowEditSQLReviewPolicy = computed(() => {
 });
 
 const valueChanged = (
-  field?:
-    | "environment"
-    | "approvalPolicy"
-    | "rolloutPolicy"
-    | "backupPolicy"
-    | "environmentTier"
+  field?: "environment" | "approvalPolicy" | "rolloutPolicy" | "environmentTier"
 ): boolean => {
   switch (field) {
     case "environment":
       return !isEqual(props.environment, state.environment);
     case "rolloutPolicy":
       return !isEqual(props.rolloutPolicy, state.rolloutPolicy);
-    case "backupPolicy":
-      return !isEqual(props.backupPolicy, state.backupPolicy);
     case "environmentTier":
       return !isEqual(props.environmentTier, state.environmentTier);
 
@@ -553,7 +470,6 @@ const valueChanged = (
       return (
         !isEqual(props.environment, state.environment) ||
         !isEqual(props.rolloutPolicy, state.rolloutPolicy) ||
-        !isEqual(props.backupPolicy, state.backupPolicy) ||
         !isEqual(props.environmentTier, state.environmentTier)
       );
   }
@@ -579,7 +495,6 @@ onBeforeRouteLeave((to, from, next) => {
 const revertEnvironment = () => {
   state.environment = cloneDeep(props.environment!);
   state.rolloutPolicy = cloneDeep(props.rolloutPolicy!);
-  state.backupPolicy = cloneDeep(props.backupPolicy!);
   state.environmentTier = cloneDeep(props.environmentTier!);
 };
 
@@ -591,7 +506,6 @@ const createEnvironment = () => {
       title: state.environment.title,
     },
     state.rolloutPolicy,
-    state.backupPolicy,
     state.environmentTier
   );
 };
@@ -615,15 +529,6 @@ const updateEnvironment = () => {
       state.environment,
       PolicyType.ROLLOUT_POLICY,
       state.rolloutPolicy
-    );
-  }
-
-  if (!isEqual(props.backupPolicy, state.backupPolicy)) {
-    emit(
-      "update-policy",
-      state.environment,
-      PolicyType.BACKUP_PLAN,
-      state.backupPolicy
     );
   }
 };

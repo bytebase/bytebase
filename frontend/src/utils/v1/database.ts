@@ -70,11 +70,6 @@ export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
   );
 };
 
-export const isPITRDatabaseV1 = (db: ComposedDatabase): boolean => {
-  // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
-  return !!db.databaseName.match(/^(.+?)_pitr_(\d+)(_del)?$/);
-};
-
 export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
   if (db.instanceEntity.state === State.DELETED) {
     return true;
