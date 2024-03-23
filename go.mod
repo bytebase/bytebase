@@ -79,7 +79,6 @@ require (
 	golang.org/x/crypto v0.21.0
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/oauth2 v0.17.0
-	golang.org/x/sys v0.18.0
 	golang.org/x/text v0.14.0
 	google.golang.org/api v0.167.0
 	google.golang.org/genproto v0.0.0-20240228224816-df926f6c8641
@@ -183,6 +182,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.23.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/mod v0.15.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
