@@ -25753,16 +25753,14 @@ Only support update the following fields for now:
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name is the instance name to execute the query against.
-Format: instances/{instance} </p></td>
+Format: instances/{instance}/databases/{databaseName} </p></td>
                 </tr>
               
                 <tr>
                   <td>connection_database</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The connection database name to execute the query against.
-For PostgreSQL, it&#39;s required.
-For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. </p></td>
+                  <td><p><strong>Deprecated.</strong>  </p></td>
                 </tr>
               
                 <tr>
@@ -25789,6 +25787,27 @@ For other database engines, it&#39;s optional. Use empty string to execute again
             </tbody>
           </table>
 
+          
+            
+            
+            <h4>Fields with deprecated option</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Option</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>connection_database</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
           
 
         
@@ -26031,16 +26050,14 @@ If not provided, the database metadata will be fetched from the database. </p></
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name is the instance name to execute the query against.
-Format: instances/{instance} </p></td>
+Format: instances/{instance}/databases/{databaseName} </p></td>
                 </tr>
               
                 <tr>
                   <td>connection_database</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The connection database name to execute the query against.
-For PostgreSQL, it&#39;s required.
-For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. </p></td>
+                  <td><p><strong>Deprecated.</strong>  </p></td>
                 </tr>
               
                 <tr>
@@ -26082,6 +26099,27 @@ The exported data is not masked. </p></td>
             </tbody>
           </table>
 
+          
+            
+            
+            <h4>Fields with deprecated option</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Option</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>connection_database</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
           
 
         
@@ -26243,16 +26281,14 @@ This information will be sorted to match the order of statements in the userSche
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name is the instance name to execute the query against.
-Format: instances/{instance} </p></td>
+Format: instances/{instance}/databases/{databaseName} </p></td>
                 </tr>
               
                 <tr>
                   <td>connection_database</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The connection database name to execute the query against.
-For PostgreSQL, it&#39;s required.
-For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. </p></td>
+                  <td><p><strong>Deprecated.</strong>  </p></td>
                 </tr>
               
                 <tr>
@@ -26288,6 +26324,27 @@ Or it can be used to query a specific read-only data source. </p></td>
             </tbody>
           </table>
 
+          
+            
+            
+            <h4>Fields with deprecated option</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Option</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>connection_database</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
           
 
         
@@ -26740,8 +26797,15 @@ The types come from the Golang SQL driver. </p></td>
               <tr>
                 <td>Query</td>
                 <td>POST</td>
-                <td>/v1/{name=instances/*}:query</td>
+                <td>/v1/{name=instances/*/databases/*}:query</td>
                 <td>*</td>
+              </tr>
+              
+              <tr>
+                <td>Query</td>
+                <td>POST</td>
+                <td>/v1/{name=instances/*}:query</td>
+                <td></td>
               </tr>
               
             
@@ -26750,8 +26814,15 @@ The types come from the Golang SQL driver. </p></td>
               <tr>
                 <td>Export</td>
                 <td>POST</td>
-                <td>/v1/{name=instances/*}:export</td>
+                <td>/v1/{name=instances/*/databases/*}:export</td>
                 <td>*</td>
+              </tr>
+              
+              <tr>
+                <td>Export</td>
+                <td>POST</td>
+                <td>/v1/{name=instances/*}:export</td>
+                <td></td>
               </tr>
               
             
