@@ -1760,9 +1760,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	}
 
 	update := &store.UpdateActivityMessage{
-		UID:        activityUID,
-		CreatorUID: &user.ID,
-		UpdaterUID: user.ID,
+		UID: activityUID,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
