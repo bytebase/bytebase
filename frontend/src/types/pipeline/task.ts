@@ -1,7 +1,6 @@
 import { ErrorCode, MigrationHistoryId, TaskCheckRunId } from "..";
 import { Database } from "../database";
 import {
-  BackupId,
   DatabaseId,
   InstanceId,
   IssueId,
@@ -23,11 +22,8 @@ export type TaskType =
   | "bb.task.database.schema.update"
   | "bb.task.database.schema.update-sdl"
   | "bb.task.database.data.update"
-  | "bb.task.database.restore"
   | "bb.task.database.schema.update.ghost.sync"
-  | "bb.task.database.schema.update.ghost.cutover"
-  | "bb.task.database.restore.pitr.restore"
-  | "bb.task.database.restore.pitr.cutover";
+  | "bb.task.database.schema.update.ghost.cutover";
 
 export type TaskStatus =
   | "PENDING"
@@ -96,25 +92,6 @@ export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
   skippedReason: string;
 };
 
-export type TaskDatabasePITRRestorePayload = {
-  skipped: boolean;
-  skippedReason: string;
-  projectId: ProjectId;
-  pointInTimeTs: number; // UNIX timestamp
-  databaseName?: string; // used when PITR to new DB
-  targetInstanceId?: InstanceId; // used when PITR to new DB
-};
-
-export type TaskDatabasePITRCutoverPayload = {
-  skipped: boolean;
-  skippedReason: string;
-};
-
-export type TaskDatabasePITRDeletePayload = {
-  // empty by now
-  // more input and output parameters in the future
-};
-
 export type RollbackSQLStatus = "PENDING" | "DONE" | "FAILED";
 
 export type TaskDatabaseDataUpdatePayload = {
@@ -132,11 +109,6 @@ export type TaskDatabaseDataUpdatePayload = {
   rollbackFromTaskId?: TaskId;
 };
 
-export type TaskDatabaseRestorePayload = {
-  databaseName: string;
-  backupId: BackupId;
-};
-
 export type TaskPayload =
   | TaskGeneralPayload
   | TaskDatabaseCreatePayload
@@ -145,11 +117,7 @@ export type TaskPayload =
   | TaskDatabaseSchemaUpdateGhostSyncPayload
   | TaskDatabaseSchemaUpdateGhostCutoverPayload
   | TaskDatabaseDataUpdatePayload
-  | TaskDatabaseRestorePayload
-  | TaskEarliestAllowedTimePayload
-  | TaskDatabasePITRRestorePayload
-  | TaskDatabasePITRCutoverPayload
-  | TaskDatabasePITRDeletePayload;
+  | TaskEarliestAllowedTimePayload;
 
 export type TaskProgressPayload = {
   comment: string;
@@ -210,7 +178,6 @@ export type TaskCreate = {
   databaseName?: string;
   characterSet?: string;
   collation?: string;
-  backupId?: BackupId;
   earliestAllowedTs: number;
   rollbackEnabled?: boolean;
 };

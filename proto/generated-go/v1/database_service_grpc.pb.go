@@ -30,10 +30,6 @@ const (
 	DatabaseService_UpdateDatabaseMetadata_FullMethodName = "/bytebase.v1.DatabaseService/UpdateDatabaseMetadata"
 	DatabaseService_GetDatabaseSchema_FullMethodName      = "/bytebase.v1.DatabaseService/GetDatabaseSchema"
 	DatabaseService_DiffSchema_FullMethodName             = "/bytebase.v1.DatabaseService/DiffSchema"
-	DatabaseService_GetBackupSetting_FullMethodName       = "/bytebase.v1.DatabaseService/GetBackupSetting"
-	DatabaseService_UpdateBackupSetting_FullMethodName    = "/bytebase.v1.DatabaseService/UpdateBackupSetting"
-	DatabaseService_CreateBackup_FullMethodName           = "/bytebase.v1.DatabaseService/CreateBackup"
-	DatabaseService_ListBackups_FullMethodName            = "/bytebase.v1.DatabaseService/ListBackups"
 	DatabaseService_ListSlowQueries_FullMethodName        = "/bytebase.v1.DatabaseService/ListSlowQueries"
 	DatabaseService_ListSecrets_FullMethodName            = "/bytebase.v1.DatabaseService/ListSecrets"
 	DatabaseService_UpdateSecret_FullMethodName           = "/bytebase.v1.DatabaseService/UpdateSecret"
@@ -58,10 +54,6 @@ type DatabaseServiceClient interface {
 	UpdateDatabaseMetadata(ctx context.Context, in *UpdateDatabaseMetadataRequest, opts ...grpc.CallOption) (*DatabaseMetadata, error)
 	GetDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaRequest, opts ...grpc.CallOption) (*DatabaseSchema, error)
 	DiffSchema(ctx context.Context, in *DiffSchemaRequest, opts ...grpc.CallOption) (*DiffSchemaResponse, error)
-	GetBackupSetting(ctx context.Context, in *GetBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
-	UpdateBackupSetting(ctx context.Context, in *UpdateBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error)
-	CreateBackup(ctx context.Context, in *CreateBackupRequest, opts ...grpc.CallOption) (*Backup, error)
-	ListBackups(ctx context.Context, in *ListBackupsRequest, opts ...grpc.CallOption) (*ListBackupsResponse, error)
 	ListSlowQueries(ctx context.Context, in *ListSlowQueriesRequest, opts ...grpc.CallOption) (*ListSlowQueriesResponse, error)
 	ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error)
 	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*Secret, error)
@@ -169,42 +161,6 @@ func (c *databaseServiceClient) DiffSchema(ctx context.Context, in *DiffSchemaRe
 	return out, nil
 }
 
-func (c *databaseServiceClient) GetBackupSetting(ctx context.Context, in *GetBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error) {
-	out := new(BackupSetting)
-	err := c.cc.Invoke(ctx, DatabaseService_GetBackupSetting_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *databaseServiceClient) UpdateBackupSetting(ctx context.Context, in *UpdateBackupSettingRequest, opts ...grpc.CallOption) (*BackupSetting, error) {
-	out := new(BackupSetting)
-	err := c.cc.Invoke(ctx, DatabaseService_UpdateBackupSetting_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *databaseServiceClient) CreateBackup(ctx context.Context, in *CreateBackupRequest, opts ...grpc.CallOption) (*Backup, error) {
-	out := new(Backup)
-	err := c.cc.Invoke(ctx, DatabaseService_CreateBackup_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *databaseServiceClient) ListBackups(ctx context.Context, in *ListBackupsRequest, opts ...grpc.CallOption) (*ListBackupsResponse, error) {
-	out := new(ListBackupsResponse)
-	err := c.cc.Invoke(ctx, DatabaseService_ListBackups_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *databaseServiceClient) ListSlowQueries(ctx context.Context, in *ListSlowQueriesRequest, opts ...grpc.CallOption) (*ListSlowQueriesResponse, error) {
 	out := new(ListSlowQueriesResponse)
 	err := c.cc.Invoke(ctx, DatabaseService_ListSlowQueries_FullMethodName, in, out, opts...)
@@ -283,10 +239,6 @@ type DatabaseServiceServer interface {
 	UpdateDatabaseMetadata(context.Context, *UpdateDatabaseMetadataRequest) (*DatabaseMetadata, error)
 	GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error)
 	DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error)
-	GetBackupSetting(context.Context, *GetBackupSettingRequest) (*BackupSetting, error)
-	UpdateBackupSetting(context.Context, *UpdateBackupSettingRequest) (*BackupSetting, error)
-	CreateBackup(context.Context, *CreateBackupRequest) (*Backup, error)
-	ListBackups(context.Context, *ListBackupsRequest) (*ListBackupsResponse, error)
 	ListSlowQueries(context.Context, *ListSlowQueriesRequest) (*ListSlowQueriesResponse, error)
 	ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error)
 	UpdateSecret(context.Context, *UpdateSecretRequest) (*Secret, error)
@@ -330,18 +282,6 @@ func (UnimplementedDatabaseServiceServer) GetDatabaseSchema(context.Context, *Ge
 }
 func (UnimplementedDatabaseServiceServer) DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffSchema not implemented")
-}
-func (UnimplementedDatabaseServiceServer) GetBackupSetting(context.Context, *GetBackupSettingRequest) (*BackupSetting, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetBackupSetting not implemented")
-}
-func (UnimplementedDatabaseServiceServer) UpdateBackupSetting(context.Context, *UpdateBackupSettingRequest) (*BackupSetting, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateBackupSetting not implemented")
-}
-func (UnimplementedDatabaseServiceServer) CreateBackup(context.Context, *CreateBackupRequest) (*Backup, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateBackup not implemented")
-}
-func (UnimplementedDatabaseServiceServer) ListBackups(context.Context, *ListBackupsRequest) (*ListBackupsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListBackups not implemented")
 }
 func (UnimplementedDatabaseServiceServer) ListSlowQueries(context.Context, *ListSlowQueriesRequest) (*ListSlowQueriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListSlowQueries not implemented")
@@ -557,78 +497,6 @@ func _DatabaseService_DiffSchema_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DatabaseService_GetBackupSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetBackupSettingRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).GetBackupSetting(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_GetBackupSetting_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).GetBackupSetting(ctx, req.(*GetBackupSettingRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DatabaseService_UpdateBackupSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateBackupSettingRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).UpdateBackupSetting(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_UpdateBackupSetting_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).UpdateBackupSetting(ctx, req.(*UpdateBackupSettingRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DatabaseService_CreateBackup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateBackupRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).CreateBackup(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_CreateBackup_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).CreateBackup(ctx, req.(*CreateBackupRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DatabaseService_ListBackups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListBackupsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).ListBackups(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_ListBackups_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).ListBackups(ctx, req.(*ListBackupsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _DatabaseService_ListSlowQueries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListSlowQueriesRequest)
 	if err := dec(in); err != nil {
@@ -801,22 +669,6 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DiffSchema",
 			Handler:    _DatabaseService_DiffSchema_Handler,
-		},
-		{
-			MethodName: "GetBackupSetting",
-			Handler:    _DatabaseService_GetBackupSetting_Handler,
-		},
-		{
-			MethodName: "UpdateBackupSetting",
-			Handler:    _DatabaseService_UpdateBackupSetting_Handler,
-		},
-		{
-			MethodName: "CreateBackup",
-			Handler:    _DatabaseService_CreateBackup_Handler,
-		},
-		{
-			MethodName: "ListBackups",
-			Handler:    _DatabaseService_ListBackups_Handler,
 		},
 		{
 			MethodName: "ListSlowQueries",

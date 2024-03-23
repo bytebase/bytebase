@@ -13,7 +13,6 @@ export const targetForSpec = (spec: Plan_Spec | undefined) => {
   return (
     spec.changeDatabaseConfig?.target ??
     spec.createDatabaseConfig?.target ??
-    spec.restoreDatabaseConfig?.target ??
     undefined
   );
 };

@@ -31,10 +31,6 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.DatabaseService_UpdateDatabaseMetadata_FullMethodName: iam.PermissionDatabasesUpdate,
 	v1pb.DatabaseService_GetDatabaseSchema_FullMethodName:      iam.PermissionDatabasesGetSchema,
 	v1pb.DatabaseService_DiffSchema_FullMethodName:             iam.PermissionChangeHistoriesGet,
-	v1pb.DatabaseService_GetBackupSetting_FullMethodName:       iam.PermissionDatabasesGetBackupSetting,
-	v1pb.DatabaseService_UpdateBackupSetting_FullMethodName:    iam.PermissionDatabasesUpdateBackupSetting,
-	v1pb.DatabaseService_CreateBackup_FullMethodName:           iam.PermissionBackupsCreate,
-	v1pb.DatabaseService_ListBackups_FullMethodName:            iam.PermissionBackupsList,
 	v1pb.DatabaseService_ListSlowQueries_FullMethodName:        iam.PermissionSlowQueriesList,
 	v1pb.DatabaseService_ListSecrets_FullMethodName:            iam.PermissionDatabaseSecretsList,
 	v1pb.DatabaseService_UpdateSecret_FullMethodName:           iam.PermissionDatabaseSecretsUpdate,
@@ -48,7 +44,6 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName: iam.PermissionEnvironmentsUndelete,
 	v1pb.EnvironmentService_GetEnvironment_FullMethodName:      iam.PermissionEnvironmentsGet,
 	v1pb.EnvironmentService_ListEnvironments_FullMethodName:    iam.PermissionEnvironmentsList,
-	v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName: iam.PermissionEnvironmentsUpdate,
 
 	// XXX: issues.action needs respective plans.action and rollouts.action permissions if the issue type is change database.
 	v1pb.IssueService_CreateIssue_FullMethodName:             iam.PermissionIssuesCreate,

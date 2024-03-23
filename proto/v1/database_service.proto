@@ -80,29 +80,6 @@ service DatabaseService {
     };
   }
 
-  rpc GetBackupSetting(GetBackupSettingRequest) returns (BackupSetting) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/backupSetting}"};
-  }
-
-  rpc UpdateBackupSetting(UpdateBackupSettingRequest) returns (BackupSetting) {
-    option (google.api.http) = {
-      patch: "/v1/{setting.name=instances/*/databases/*/backupSetting}"
-      body: "setting"
-    };
-  }
-
-  rpc CreateBackup(CreateBackupRequest) returns (Backup) {
-    option (google.api.http) = {
-      post: "/v1/{parent=instances/*/databases/*}/backups"
-      body: "backup"
-    };
-  }
-
-  rpc ListBackups(ListBackupsRequest) returns (ListBackupsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/backups"};
-    option (google.api.method_signature) = "parent";
-  }
-
   rpc ListSlowQueries(ListSlowQueriesRequest) returns (ListSlowQueriesResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/slowQueries"};
     option (google.api.method_signature) = "parent";
@@ -327,55 +304,6 @@ message DiffSchemaRequest {
 
 message DiffSchemaResponse {
   string diff = 1;
-}
-
-message GetBackupSettingRequest {
-  // The name of the database to retrieve backup setting.
-  // Format: instances/{instance}/databases/{database}/backupSetting
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message UpdateBackupSettingRequest {
-  // The database backup setting to update.
-  BackupSetting setting = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-// CreateBackupRequest is the request message for CreateBackup.
-message CreateBackupRequest {
-  // The parent resource where this backup will be created.
-  // Format: instances/{instance}/databases/{database}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
-
-  Backup backup = 2 [(google.api.field_behavior) = REQUIRED];
-}
-
-// ListBackupsRequest is the request message for ListBackup.
-message ListBackupsRequest {
-  // The parent resource where this backup will be created.
-  // Format: instances/{instance}/databases/{database}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // Not used. The maximum number of backups to return. The service may return fewer than
-  // this value.
-  // If unspecified, at most 50 backups will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 2;
-
-  // Not used. A page token, received from a previous `ListBackup` call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided to `ListBackup` must match
-  // the call that provided the page token.
-  string page_token = 3;
-}
-
-message ListBackupsResponse {
-  // The backups from the specified request.
-  repeated Backup backups = 1;
-
-  // Not used. A token, which can be sent as `page_token` to retrieve the next page.
-  // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
 }
 
 message Database {
@@ -868,82 +796,6 @@ message ColumnConfig {
 message DatabaseSchema {
   // The schema dump from database.
   string schema = 1;
-}
-
-// BackupSetting is the setting for database backup.
-message BackupSetting {
-  // The name of the database backup setting.
-  // Format: instances/{instance}/databases/{database}/backupSetting
-  string name = 1;
-
-  // The default maximum age of a Backup created via this BackupPlan.
-  // If specified, a Backup will be automatically deleted after its age reaches.
-  // If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS.
-  // It will be rounded up to the number of days.
-  google.protobuf.Duration backup_retain_duration = 2;
-
-  // Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups.
-  // Support hour of day, day of week. (UTC time)
-  //
-  // Default (empty): Disable automatic backup.
-  string cron_schedule = 3;
-
-  // hook_url(https://www.bytebase.com/docs/disaster-recovery/backup/#post-backup-webhook) is the URL to send a notification when a backup is created.
-  string hook_url = 4;
-}
-
-// The message of the backup.
-message Backup {
-  // The type of the backup.
-  enum BackupType {
-    // The type of the backup is unknown.
-    BACKUP_TYPE_UNSPECIFIED = 0;
-
-    // The backup is created by user.
-    MANUAL = 1;
-
-    // The backup is created by automatic backup.
-    AUTOMATIC = 2;
-
-    // The backup is created automatically after doing PITR.
-    PITR = 3;
-  }
-
-  // The state of the backup.
-  enum BackupState {
-    // The state of the backup is unknown.
-    BACKUP_STATE_UNSPECIFIED = 0;
-
-    // The backup is being pending to create.
-    PENDING_CREATE = 1;
-
-    // The backup is ready to use.
-    DONE = 2;
-
-    // The backup is being deleted.
-    FAILED = 3;
-  }
-
-  // The resource name of the database backup. backup-name is specified by the client.
-  // Format: instances/{instance}/databases/{database}/backups/{backup-name}
-  string name = 1;
-
-  // The timestamp when the backup resource was created initially.
-  google.protobuf.Timestamp create_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The timestamp when the backup resource was updated.
-  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The state of the backup.
-  BackupState state = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The type of the backup.
-  BackupType backup_type = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The comment of the backup.
-  string comment = 6;
-
-  string uid = 7;
 }
 
 // ListSlowQueriesRequest is the request of listing slow query.

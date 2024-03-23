@@ -679,10 +679,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanConfig.RestoreDatabaseConfig"><span class="badge">M</span>PlanConfig.RestoreDatabaseConfig</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.PlanConfig.Spec"><span class="badge">M</span>PlanConfig.Spec</a>
                 </li>
               
@@ -5438,53 +5434,6 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
 
         
       
-        <h3 id="bytebase.store.PlanConfig.RestoreDatabaseConfig">PlanConfig.RestoreDatabaseConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the target to restore.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_database_config</td>
-                  <td><a href="#bytebase.store.PlanConfig.CreateDatabaseConfig">PlanConfig.CreateDatabaseConfig</a></td>
-                  <td>optional</td>
-                  <td><p>create_database_config is present if the user wants to restore to a new database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>backup</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Restore from a backup.
-Format: instances/{instance}/databases/{database}/backups/{backup-name} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>point_in_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>After the PITR operations, the database will be recovered to the state at this time. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.PlanConfig.Spec">PlanConfig.Spec</h3>
         <p></p>
 
@@ -5527,13 +5476,6 @@ Must be a subset of the specs in the same step. </p></td>
                 <tr>
                   <td>change_database_config</td>
                   <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig">PlanConfig.ChangeDatabaseConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>restore_database_config</td>
-                  <td><a href="#bytebase.store.PlanConfig.RestoreDatabaseConfig">PlanConfig.RestoreDatabaseConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

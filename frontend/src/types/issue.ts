@@ -1,6 +1,5 @@
 import { DatabaseResource } from "@/types";
 import {
-  BackupId,
   DatabaseId,
   InstanceId,
   IssueId,
@@ -27,8 +26,7 @@ type IssueTypeDatabase =
   | "bb.issue.database.schema.update"
   | "bb.issue.database.data.update"
   | "bb.issue.database.rollback"
-  | "bb.issue.database.schema.update.ghost"
-  | "bb.issue.database.restore.pitr";
+  | "bb.issue.database.schema.update.ghost";
 
 type IssueTypeGrantRequest = "bb.issue.grant.request";
 
@@ -49,8 +47,6 @@ export type CreateDatabaseContext = {
   characterSet: string;
   collation: string;
   cluster: string;
-  backupId?: BackupId;
-  backupName?: string;
   labels?: string; // JSON encoded
 };
 
@@ -83,13 +79,6 @@ export type MigrationContext = {
   detailList: MigrationDetail[];
 };
 
-export type PITRContext = {
-  databaseId: DatabaseId;
-  pointInTimeTs?: number; // UNIX timestamp
-  backupId?: BackupId;
-  createDatabaseContext?: CreateDatabaseContext;
-};
-
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type EmptyContext = {};
 
@@ -106,7 +95,6 @@ export interface GrantRequestContext {
 export type IssueCreateContext =
   | CreateDatabaseContext
   | MigrationContext
-  | PITRContext
   | GrantRequestContext
   | EmptyContext;
 
