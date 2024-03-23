@@ -582,13 +582,13 @@ func createActivityImplV2(ctx context.Context, tx *Tx, creates ...*ActivityMessa
 			create.Comment,
 			payload,
 		)
-		const count = 7
-		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7))
+		const count = 8
+		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7, i*count+8))
 	}
 	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
 		return nil, err
 	}
-	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload`); err != nil {
+	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, resource_container, container_id, type, level, comment, payload`); err != nil {
 		return nil, err
 	}
 
