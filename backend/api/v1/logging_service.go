@@ -48,7 +48,6 @@ var defaultResourceActionTypeMap = map[string][]api.ActivityType{
 		api.ActivityProjectDatabaseTransfer,
 		api.ActivityProjectMemberCreate,
 		api.ActivityProjectMemberDelete,
-		api.ActivityDatabaseRecoveryPITRDone,
 	},
 	"pipelines": {
 		api.ActivityPipelineStageStatusUpdate,
@@ -390,8 +389,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		api.ActivityProjectRepositoryPush,
 		api.ActivityProjectDatabaseTransfer,
 		api.ActivityProjectMemberCreate,
-		api.ActivityProjectMemberDelete,
-		api.ActivityDatabaseRecoveryPITRDone:
+		api.ActivityProjectMemberDelete:
 		project, err := db.GetProjectV2(ctx, &store.FindProjectMessage{
 			UID: &activity.ContainerUID,
 		})
@@ -483,8 +481,6 @@ func convertToActivityType(action v1pb.LogEntity_Action) (api.ActivityType, erro
 		return api.ActivityProjectMemberCreate, nil
 	case v1pb.LogEntity_ACTION_PROJECT_MEMBER_DELETE:
 		return api.ActivityProjectMemberDelete, nil
-	case v1pb.LogEntity_ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE:
-		return api.ActivityDatabaseRecoveryPITRDone, nil
 
 	case v1pb.LogEntity_ACTION_DATABASE_SQL_EDITOR_QUERY:
 		return api.ActivitySQLEditorQuery, nil
@@ -540,9 +536,6 @@ func convertToActionType(activityType api.ActivityType) v1pb.LogEntity_Action {
 		return v1pb.LogEntity_ACTION_PROJECT_MEMBER_CREATE
 	case api.ActivityProjectMemberDelete:
 		return v1pb.LogEntity_ACTION_PROJECT_MEMBER_DELETE
-	case api.ActivityDatabaseRecoveryPITRDone:
-		return v1pb.LogEntity_ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE
-
 	case api.ActivitySQLEditorQuery:
 		return v1pb.LogEntity_ACTION_DATABASE_SQL_EDITOR_QUERY
 	case api.ActivitySQLExport:
