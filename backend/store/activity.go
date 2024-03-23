@@ -225,8 +225,9 @@ type ActivityMessage struct {
 	UpdatedTs int64
 
 	// Related fields
-	CreatorUID int
-	UpdaterUID int
+	CreatorUID        int
+	UpdaterUID        int
+	ResourceContainer string
 	// The object where this activity belongs
 	// e.g if Type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
 	ContainerUID int
@@ -240,15 +241,16 @@ type ActivityMessage struct {
 
 // FindActivityMessage is the API message for listing activities.
 type FindActivityMessage struct {
-	UID             *int
-	CreatorUID      *int
-	LevelList       []api.ActivityLevel
-	TypeList        []api.ActivityType
-	ContainerUID    *int
-	CreatedTsAfter  *int64
-	CreatedTsBefore *int64
-	Limit           *int
-	Offset          *int
+	UID               *int
+	CreatorUID        *int
+	LevelList         []api.ActivityLevel
+	TypeList          []api.ActivityType
+	ResourceContainer *string
+	ContainerUID      *int
+	CreatedTsAfter    *int64
+	CreatedTsBefore   *int64
+	Limit             *int
+	Offset            *int
 	// If specified, sorts the returned list by id in <<ORDER>>
 	// Different use cases want different orders.
 	// e.g. Issue activity list wants ASC, while view recent activity list wants DESC.
@@ -257,12 +259,10 @@ type FindActivityMessage struct {
 
 // UpdateActivityMessage updates the activity.
 type UpdateActivityMessage struct {
-	UID        int
-	CreatorUID *int
-	UpdaterUID int
-	Comment    *string
-	Level      *api.ActivityLevel
-	Payload    *string
+	UID     int
+	Comment *string
+	Level   *api.ActivityLevel
+	Payload *string
 }
 
 // CreateActivityV2 creates an instance of Activity.
@@ -324,7 +324,7 @@ func (s *Store) UpdateActivityV2(ctx context.Context, update *UpdateActivityMess
 	}
 	defer tx.Rollback()
 
-	set, args := []string{"updater_id = $1"}, []any{update.UpdaterUID}
+	set, args := []string{}, []any{}
 	if v := update.Comment; v != nil {
 		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, *v)
 	}
@@ -336,9 +336,6 @@ func (s *Store) UpdateActivityV2(ctx context.Context, update *UpdateActivityMess
 	}
 
 	where, args := []string{fmt.Sprintf("id = $%d", len(args)+1)}, append(args, update.UID)
-	if v := update.CreatorUID; v != nil {
-		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
-	}
 
 	query := fmt.Sprintf(`
 		UPDATE activity
@@ -350,6 +347,7 @@ func (s *Store) UpdateActivityV2(ctx context.Context, update *UpdateActivityMess
 			updater_id,
 			created_ts,
 			updated_ts,
+			resource_container,
 			container_id,
 			type,
 			level,
@@ -365,6 +363,7 @@ func (s *Store) UpdateActivityV2(ctx context.Context, update *UpdateActivityMess
 		&activity.UpdaterUID,
 		&activity.CreatedTs,
 		&activity.UpdatedTs,
+		&activity.ResourceContainer,
 		&activity.ContainerUID,
 		&activity.Type,
 		&activity.Level,
@@ -484,6 +483,7 @@ func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) 
 			updater_id,
 			created_ts,
 			updated_ts,
+			resource_container,
 			container_id,
 			type,
 			level,
@@ -521,6 +521,7 @@ func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) 
 			&activity.UpdaterUID,
 			&activity.CreatedTs,
 			&activity.UpdatedTs,
+			&activity.ResourceContainer,
 			&activity.ContainerUID,
 			&activity.Type,
 			&activity.Level,
@@ -553,6 +554,7 @@ func createActivityImplV2(ctx context.Context, tx *Tx, creates ...*ActivityMessa
 		`INSERT INTO activity (
 			creator_id,
 			updater_id,
+			resource_container,
 			container_id,
 			type,
 			level,
@@ -573,6 +575,7 @@ func createActivityImplV2(ctx context.Context, tx *Tx, creates ...*ActivityMessa
 		values = append(values,
 			create.CreatorUID,
 			create.CreatorUID,
+			create.ResourceContainer,
 			create.ContainerUID,
 			create.Type,
 			create.Level,
@@ -604,6 +607,7 @@ func createActivityImplV2(ctx context.Context, tx *Tx, creates ...*ActivityMessa
 			&activity.CreatedTs,
 			&activity.UpdaterUID,
 			&activity.UpdatedTs,
+			&activity.ResourceContainer,
 			&activity.ContainerUID,
 			&activity.Type,
 			&activity.Level,
