@@ -5400,7 +5400,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | inherit_from_parent | [bool](#bool) |  |  |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
-| workspace_iam_policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
 | rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
 | masking_policy | [MaskingPolicy](#bytebase-v1-MaskingPolicy) |  |  |
 | sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
@@ -5559,7 +5558,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | POLICY_TYPE_UNSPECIFIED | 0 |  |
-| WORKSPACE_IAM | 1 |  |
 | ROLLOUT_POLICY | 11 |  |
 | SQL_REVIEW | 4 |  |
 | MASKING | 5 |  |

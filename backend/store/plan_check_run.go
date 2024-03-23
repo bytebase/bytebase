@@ -29,8 +29,6 @@ const (
 	PlanCheckDatabaseConnect PlanCheckRunType = "bb.plan-check.database.connect"
 	// PlanCheckDatabaseGhostSync is the plan check type for the gh-ost sync task.
 	PlanCheckDatabaseGhostSync PlanCheckRunType = "bb.plan-check.database.ghost.sync"
-	// PlanCheckDatabasePITRMySQL is the plan check type for MySQL PITR.
-	PlanCheckDatabasePITRMySQL PlanCheckRunType = "bb.plan-check.database.pitr.mysql"
 )
 
 // PlanCheckRunStatus is the status of a plan check run.

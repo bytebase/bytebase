@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/relay"
@@ -40,7 +39,6 @@ func configureGrpcRouters(
 	schemaSyncer *schemasync.Syncer,
 	activityManager *activity.Manager,
 	iamManager *iam.Manager,
-	backupRunner *backuprun.Runner,
 	relayRunner *relay.Runner,
 	planCheckScheduler *plancheck.Scheduler,
 	postCreateUser apiv1.CreateUserFunc,
@@ -70,7 +68,7 @@ func configureGrpcRouters(
 		schemaSyncer,
 		iamManager))
 	v1pb.RegisterProjectServiceServer(grpcServer, apiv1.NewProjectService(stores, activityManager, profile, iamManager, licenseService))
-	v1pb.RegisterDatabaseServiceServer(grpcServer, apiv1.NewDatabaseService(stores, backupRunner, schemaSyncer, licenseService, profile, iamManager))
+	v1pb.RegisterDatabaseServiceServer(grpcServer, apiv1.NewDatabaseService(stores, schemaSyncer, licenseService, profile, iamManager))
 	v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(grpcServer, apiv1.NewOrgPolicyService(stores, licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(grpcServer, apiv1.NewIdentityProviderService(stores, licenseService))

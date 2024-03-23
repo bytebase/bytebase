@@ -399,8 +399,6 @@ CREATE TABLE db (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
     environment_id INTEGER REFERENCES environment (id),
-    -- If db is restored from a backup, then we will record that backup id. We can thus trace up to the original db.
-    source_backup_id INTEGER,
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
     schema_version TEXT NOT NULL,
@@ -480,68 +478,6 @@ CREATE TRIGGER update_data_source_updated_ts
 BEFORE
 UPDATE
     ON data_source FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
--- backup stores the backups for a particular database.
-CREATE TABLE backup (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    database_id INTEGER NOT NULL REFERENCES db (id),
-    name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('PENDING_CREATE', 'DONE', 'FAILED')),
-    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC', 'PITR')),
-    storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL', 'S3', 'GCS', 'OSS')),
-    migration_history_version TEXT NOT NULL,
-    path TEXT NOT NULL,
-    comment TEXT NOT NULL DEFAULT '',
-    payload JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_backup_database_id ON backup(database_id);
-
-CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON backup(database_id, name);
-
-ALTER SEQUENCE backup_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_backup_updated_ts
-BEFORE
-UPDATE
-    ON backup FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
--- backup_setting stores the backup settings for a particular database.
--- This is a strict version of cron expression using UTC timezone uniformly.
-CREATE TABLE backup_setting (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    database_id INTEGER NOT NULL REFERENCES db (id),
-    -- enable automatic backup schedule.
-    enabled BOOLEAN NOT NULL,
-    hour INTEGER NOT NULL CHECK (hour >= 0 AND hour <= 23),
-    -- day_of_week can be -1 which is wildcard (daily automatic backup).
-    day_of_week INTEGER NOT NULL CHECK (day_of_week >= -1 AND day_of_week <= 6),
-    -- retention_period_ts == 0 means unset retention period and we do not delete any data.
-    retention_period_ts INTEGER NOT NULL DEFAULT 0 CHECK (retention_period_ts >= 0),
-    -- hook_url is the callback url to be requested after a successful backup.
-    hook_url TEXT NOT NULL
-);
-
-CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON backup_setting(database_id);
-
-ALTER SEQUENCE backup_setting_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_backup_setting_updated_ts
-BEFORE
-UPDATE
-    ON backup_setting FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 -----------------------
