@@ -633,7 +633,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		// Validate the statement if it's not empty.
 		if factors.Statement != "" {
 			for _, dbName := range factors.DatabaseNames {
-				instanceID, databaseName, err := common.GetInstanceDatabaseID(dbName)
+				instanceID, _, err := common.GetInstanceDatabaseID(dbName)
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid database name %q, error: %v", dbName, err)
 				}
@@ -644,7 +644,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 				if instance == nil {
 					return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 				}
-				if err := validateQueryRequest(instance, databaseName, factors.Statement); err != nil {
+				if err := validateQueryRequest(instance, factors.Statement); err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid statement, error: %v", err)
 				}
 			}

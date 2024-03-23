@@ -158,61 +158,53 @@ func TestSQLExport(t *testing.T) {
 		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 		a.NoError(err)
 
-		for _, databaseNameQuery := range []string{tt.databaseName, ""} {
-			if databaseNameQuery == "" && tt.dbType != storepb.Engine_MYSQL {
-				// not supporting to query SQL when databaseName of PostgreSQL is empty
-				continue
-			}
+		statement := tt.query
+		results, err := ctl.adminQuery(ctx, database, statement)
+		a.NoError(err)
+		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
 
-			statement := tt.query
-			results, err := ctl.adminQuery(ctx, instance, databaseNameQuery, statement)
-			a.NoError(err)
-			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
-
-			request := &v1pb.ExportRequest{
-				Admin:              true,
-				ConnectionDatabase: databaseNameQuery,
-				Format:             v1pb.ExportFormat_SQL,
-				Limit:              1,
-				Name:               instance.Name,
-				Statement:          tt.export,
-				Password:           tt.password,
-			}
-			export, err := ctl.sqlServiceClient.Export(ctx, request)
-			a.NoError(err)
-
-			statement = tt.reset
-			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
-			a.NoError(err)
-			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
-
-			if tt.password != "" {
-				reader := bytes.NewReader(export.Content)
-				zipReader, err := zip.NewReader(reader, int64(len(export.Content)))
-				a.NoError(err)
-				a.Equal(1, len(zipReader.File))
-
-				a.Equal(fmt.Sprintf("export.%s", strings.ToLower(request.Format.String())), zipReader.File[0].Name)
-				compressedFile := zipReader.File[0]
-				compressedFile.SetPassword(tt.password)
-				file, err := compressedFile.Open()
-				a.NoError(err)
-				content, err := io.ReadAll(file)
-				a.NoError(err)
-				statement = string(content)
-			} else {
-				statement = string(export.Content)
-			}
-
-			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
-			a.NoError(err)
-			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
-
-			statement = tt.reset
-			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
-			a.NoError(err)
-			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+		request := &v1pb.ExportRequest{
+			Name:      database.Name,
+			Format:    v1pb.ExportFormat_SQL,
+			Limit:     1,
+			Statement: tt.export,
+			Password:  tt.password,
+			Admin:     true,
 		}
+		export, err := ctl.sqlServiceClient.Export(ctx, request)
+		a.NoError(err)
+
+		statement = tt.reset
+		results, err = ctl.adminQuery(ctx, database, statement)
+		a.NoError(err)
+		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+
+		if tt.password != "" {
+			reader := bytes.NewReader(export.Content)
+			zipReader, err := zip.NewReader(reader, int64(len(export.Content)))
+			a.NoError(err)
+			a.Equal(1, len(zipReader.File))
+
+			a.Equal(fmt.Sprintf("export.%s", strings.ToLower(request.Format.String())), zipReader.File[0].Name)
+			compressedFile := zipReader.File[0]
+			compressedFile.SetPassword(tt.password)
+			file, err := compressedFile.Open()
+			a.NoError(err)
+			content, err := io.ReadAll(file)
+			a.NoError(err)
+			statement = string(content)
+		} else {
+			statement = string(export.Content)
+		}
+
+		results, err = ctl.adminQuery(ctx, database, statement)
+		a.NoError(err)
+		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+
+		statement = tt.reset
+		results, err = ctl.adminQuery(ctx, database, statement)
+		a.NoError(err)
+		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
 	}
 }
 

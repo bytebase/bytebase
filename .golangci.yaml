@@ -84,6 +84,8 @@ linters-settings:
       - name: comment-spacings
         arguments:
           - exhaustive
+  staticcheck:
+    checks: ["all", "-SA1019"]
   gocritic:
     disabled-checks:
       - ifElseChain
