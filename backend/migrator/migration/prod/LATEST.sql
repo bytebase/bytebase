@@ -856,6 +856,8 @@ CREATE TABLE activity (
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
+CREATE INDEX idx_activity_resource_container ON activity(resource_container);
+
 CREATE INDEX idx_activity_container_id ON activity(container_id);
 
 CREATE INDEX idx_activity_created_ts ON activity(created_ts);
