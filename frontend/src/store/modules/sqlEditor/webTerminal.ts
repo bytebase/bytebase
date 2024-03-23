@@ -295,12 +295,9 @@ const mapRequest = (
 ): AdminExecuteRequest => {
   const { connection, statement, explain } = params;
 
-  const instance = useInstanceV1Store().getInstanceByName(connection.instance);
   const database = useDatabaseV1Store().getDatabaseByName(connection.database);
   const request = AdminExecuteRequest.fromJSON({
-    name: instance.name,
-    connectionDatabase:
-      database.uid === String(UNKNOWN_ID) ? "" : database.databaseName,
+    name: database.name,
     statement: explain ? `EXPLAIN ${statement}` : statement,
   });
   return request;
