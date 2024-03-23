@@ -70,11 +70,8 @@ const (
 
 	// SQL Editor related.
 
-	// ActivitySQLEditorQuery is the type for executing query.
-	ActivitySQLEditorQuery ActivityType = "bb.sql-editor.query"
-
-	// SQL related.
-
+	// ActivitySQLQuery is the type for executing query.
+	ActivitySQLQuery ActivityType = "bb.sql.query"
 	// ActivitySQLExport is the type for exporting SQL.
 	ActivitySQLExport ActivityType = "bb.sql.export"
 
