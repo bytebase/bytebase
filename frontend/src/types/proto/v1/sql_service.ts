@@ -21,14 +21,10 @@ export interface DifferPreviewResponse {
 export interface AdminExecuteRequest {
   /**
    * The name is the instance name to execute the query against.
-   * Format: instances/{instance}
+   * Format: instances/{instance}/databases/{databaseName}
    */
   name: string;
-  /**
-   * The connection database name to execute the query against.
-   * For PostgreSQL, it's required.
-   * For other database engines, it's optional. Use empty string to execute against without specifying a database.
-   */
+  /** @deprecated */
   connectionDatabase: string;
   /** The SQL statement to execute. */
   statement: string;
@@ -46,14 +42,10 @@ export interface AdminExecuteResponse {
 export interface ExportRequest {
   /**
    * The name is the instance name to execute the query against.
-   * Format: instances/{instance}
+   * Format: instances/{instance}/databases/{databaseName}
    */
   name: string;
-  /**
-   * The connection database name to execute the query against.
-   * For PostgreSQL, it's required.
-   * For other database engines, it's optional. Use empty string to execute against without specifying a database.
-   */
+  /** @deprecated */
   connectionDatabase: string;
   /** The SQL statement to execute. */
   statement: string;
@@ -78,14 +70,10 @@ export interface ExportResponse {
 export interface QueryRequest {
   /**
    * The name is the instance name to execute the query against.
-   * Format: instances/{instance}
+   * Format: instances/{instance}/databases/{databaseName}
    */
   name: string;
-  /**
-   * The connection database name to execute the query against.
-   * For PostgreSQL, it's required.
-   * For other database engines, it's optional. Use empty string to execute against without specifying a database.
-   */
+  /** @deprecated */
   connectionDatabase: string;
   /** The SQL statement to execute. */
   statement: string;
@@ -2314,10 +2302,12 @@ export const SQLServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              33,
+              77,
               58,
               1,
               42,
+              90,
+              30,
               34,
               28,
               47,
@@ -2348,6 +2338,48 @@ export const SQLServiceDefinition = {
               101,
               114,
               121,
+              34,
+              40,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              113,
+              117,
+              101,
+              114,
+              121,
             ]),
           ],
         },
@@ -2363,10 +2395,12 @@ export const SQLServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              34,
+              79,
               58,
               1,
               42,
+              90,
+              31,
               34,
               29,
               47,
@@ -2386,6 +2420,49 @@ export const SQLServiceDefinition = {
               97,
               110,
               99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+              34,
+              41,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
               101,
               115,
               47,
