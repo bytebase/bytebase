@@ -1191,11 +1191,12 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				return errors.Wrapf(err, "failed to marshal payload")
 			}
 			_, err = s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-				CreatorUID:   user.ID,
-				ContainerUID: task.PipelineID,
-				Type:         api.ActivityPipelineTaskStatementUpdate,
-				Payload:      string(payload),
-				Level:        api.ActivityInfo,
+				CreatorUID:        user.ID,
+				ResourceContainer: project.GetName(),
+				ContainerUID:      task.PipelineID,
+				Type:              api.ActivityPipelineTaskStatementUpdate,
+				Payload:           string(payload),
+				Level:             api.ActivityInfo,
 			}, &activity.Metadata{
 				Issue: issue,
 			})
@@ -1212,11 +1213,12 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				return errors.Wrapf(err, "failed to marshal payload")
 			}
 			_, err = s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-				CreatorUID:   user.ID,
-				ContainerUID: task.PipelineID,
-				Type:         api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
-				Payload:      string(payload),
-				Level:        api.ActivityInfo,
+				CreatorUID:        user.ID,
+				ResourceContainer: project.GetName(),
+				ContainerUID:      task.PipelineID,
+				Type:              api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
+				Payload:           string(payload),
+				Level:             api.ActivityInfo,
 			}, &activity.Metadata{
 				Issue: issue,
 			})
