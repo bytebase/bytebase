@@ -1,6 +1,5 @@
 import { useSQLStore } from "@/store";
 import { ExportFormat } from "@/types/proto/v1/common";
-import { extractDatabaseResourceName } from "@/utils";
 
 export type ExportDataParams = {
   format: ExportFormat;
@@ -16,13 +15,8 @@ export const useExportData = () => {
   const sqlStore = useSQLStore();
 
   const exportData = async (params: ExportDataParams) => {
-    const connectionDatabase = params.database
-      ? extractDatabaseResourceName(params.database).database
-      : "";
-
     const { content } = await sqlStore.exportData({
-      name: params.instance,
-      connectionDatabase,
+      name: params.database,
       statement: params.statement,
       limit: params.limit,
       format: params.format,

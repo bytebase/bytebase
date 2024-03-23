@@ -262,16 +262,12 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	databaseID := 0
-	if database != nil {
-		databaseID = database.UID
-	}
 	activity, err := s.createQueryActivity(ctx, user, api.ActivityInfo, instance.UID, database, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
 		InstanceID:             instance.UID,
 		DeprecatedInstanceName: instance.Title,
-		DatabaseID:             databaseID,
-		DatabaseName:           request.ConnectionDatabase,
+		DatabaseID:             database.UID,
+		DatabaseName:           database.DatabaseName,
 	})
 	if err != nil {
 		return nil, nil, nil, err
@@ -283,19 +279,19 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
 	// Prepare related message.
-	user, environment, instance, maybeDatabase, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
 		return nil, err
 	}
 
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.
-	if maybeDatabase != nil && maybeDatabase.DataShare {
-		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", maybeDatabase.DatabaseName), "")
+	if database.DataShare {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", database.DatabaseName), "")
 	}
 
 	// Validate the request.
-	if err := validateQueryRequest(instance, request.ConnectionDatabase, statement); err != nil {
+	if err := validateQueryRequest(instance, statement); err != nil {
 		return nil, err
 	}
 
@@ -303,14 +299,14 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	if instance.Engine == storepb.Engine_ORACLE {
 		// For Oracle, there are two modes, schema-based and database-based management.
 		// For schema-based management, also say tenant mode, we need to use the schemaName as the databaseName.
-		// So the default schemaName is the connectionDatabase.
+		// So the default schemaName is the database name.
 		// For database-based management, we need to use the dataSource.Username as the schemaName.
 		// So the default schemaName is the dataSource.Username.
 		isSchemaTenantMode := (instance.Options != nil && instance.Options.GetSchemaTenantMode())
 		if isSchemaTenantMode {
-			schemaName = request.ConnectionDatabase
+			schemaName = database.DatabaseName
 		} else {
-			dataSource, _, err := s.dbFactory.GetReadOnlyDatabaseSource(instance, maybeDatabase, "" /* dataSourceID */)
+			dataSource, _, err := s.dbFactory.GetReadOnlyDatabaseSource(instance, database, "" /* dataSourceID */)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to get read only database source: %v", err.Error())
 			}
@@ -322,9 +318,9 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		ctx,
 		instance.Engine,
 		statement,
-		request.ConnectionDatabase,
+		database.DatabaseName,
 		schemaName,
-		s.buildGetDatabaseMetadataFunc(instance, request.ConnectionDatabase),
+		s.buildGetDatabaseMetadataFunc(instance, database.DatabaseName),
 		s.buildListDatabaseNamesFunc(instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
@@ -339,26 +335,22 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}
 
 	// Run SQL review.
-	if _, _, err = s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, maybeDatabase, nil /* Override Metadata */); err != nil {
+	if _, _, err = s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, database, nil /* Override Metadata */); err != nil {
 		return nil, err
 	}
 
-	databaseID := 0
-	if maybeDatabase != nil {
-		databaseID = maybeDatabase.UID
-	}
 	// Create export activity.
-	activity, err := s.createExportActivity(ctx, user, api.ActivityInfo, instance.UID, maybeDatabase, api.ActivitySQLExportPayload{
+	activity, err := s.createExportActivity(ctx, user, api.ActivityInfo, instance.UID, database, api.ActivitySQLExportPayload{
 		Statement:    request.Statement,
 		InstanceID:   instance.UID,
-		DatabaseID:   databaseID,
-		DatabaseName: request.ConnectionDatabase,
+		DatabaseID:   database.UID,
+		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	bytes, durationNs, exportErr := s.doExport(ctx, request, instance, maybeDatabase, spans)
+	bytes, durationNs, exportErr := s.doExport(ctx, request, instance, database, spans)
 
 	if err := s.postExport(ctx, activity, durationNs, exportErr); err != nil {
 		return nil, err
@@ -400,7 +392,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 	result, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
 		Limit:               int(request.Limit),
 		ReadOnly:            true,
-		CurrentDatabase:     request.ConnectionDatabase,
+		CurrentDatabase:     database.DatabaseName,
 		SensitiveSchemaInfo: nil,
 		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
 	})
@@ -430,7 +422,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 			return nil, durationNs, err
 		}
 	case v1pb.ExportFormat_SQL:
-		resourceList, err := s.extractResourceList(ctx, instance.Engine, request.ConnectionDatabase, request.Statement, instance)
+		resourceList, err := s.extractResourceList(ctx, instance.Engine, database.DatabaseName, request.Statement, instance)
 		if err != nil {
 			return nil, 0, status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
 		}
@@ -920,14 +912,10 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 		return nil, status.Errorf(codes.Internal, "Failed to construct activity payload: %v", err)
 	}
 
-	projectID := api.DefaultProjectID
-	if database != nil {
-		projectID = database.ProjectID
-	}
 	activityCreate := &store.ActivityMessage{
 		CreatorUID:        user.ID,
 		Type:              api.ActivitySQLExport,
-		ResourceContainer: fmt.Sprintf("projects/%s", projectID),
+		ResourceContainer: fmt.Sprintf("projects/%s", database.ProjectID),
 		ContainerUID:      containerID,
 		Level:             level,
 		Comment: fmt.Sprintf("Export `%q` in database %q of instance %d.",
@@ -942,61 +930,6 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 	return activity, nil
 }
 
-func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1pb.CheckResponse, error) {
-	if len(request.Statement) > common.MaxSheetCheckSize {
-		return nil, status.Errorf(codes.FailedPrecondition, "statement size exceeds maximum allowed size %dKB", common.MaxSheetCheckSize/1024)
-	}
-
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Database)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-	}
-
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get database, error: %v", err)
-	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Database)
-	}
-
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-		ResourceID: &database.EffectiveEnvironmentID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get environment, error: %v", err)
-	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
-	}
-
-	var overideMetadata *storepb.DatabaseSchemaMetadata
-	if request.Metadata != nil {
-		overideMetadata, _ = convertV1DatabaseMetadata(request.Metadata)
-	}
-	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, request.ChangeType, environment, instance, database, overideMetadata)
-	if err != nil {
-		return nil, err
-	}
-
-	return &v1pb.CheckResponse{
-		Advices: adviceList,
-	}, nil
-}
-
 // Query executes a SQL query.
 // We have the following stages:
 //  1. pre-query
@@ -1004,19 +937,19 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 //  3. post-query
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
 	// Prepare related message.
-	user, environment, instance, maybeDatabase, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
 		return nil, err
 	}
 
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.
-	if maybeDatabase != nil && maybeDatabase.DataShare {
-		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", maybeDatabase.DatabaseName), "")
+	if database.DataShare {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", database.DatabaseName), "")
 	}
 
 	// Validate the request.
-	if err := validateQueryRequest(instance, request.ConnectionDatabase, statement); err != nil {
+	if err := validateQueryRequest(instance, statement); err != nil {
 		return nil, err
 	}
 
@@ -1024,14 +957,14 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if instance.Engine == storepb.Engine_ORACLE {
 		// For Oracle, there are two modes, schema-based and database-based management.
 		// For schema-based management, also say tenant mode, we need to use the schemaName as the databaseName.
-		// So the default schemaName is the connectionDatabase.
+		// So the default schemaName is the database name.
 		// For database-based management, we need to use the dataSource.Username as the schemaName.
 		// So the default schemaName is the dataSource.Username.
 		isSchemaTenantMode := (instance.Options != nil && instance.Options.GetSchemaTenantMode())
 		if isSchemaTenantMode {
-			schemaName = request.ConnectionDatabase
+			schemaName = database.DatabaseName
 		} else {
-			dataSource, _, err := s.dbFactory.GetReadOnlyDatabaseSource(instance, maybeDatabase, "" /* dataSourceID */)
+			dataSource, _, err := s.dbFactory.GetReadOnlyDatabaseSource(instance, database, "" /* dataSourceID */)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to get read only database source: %v", err.Error())
 			}
@@ -1044,9 +977,9 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		ctx,
 		instance.Engine,
 		statement,
-		request.ConnectionDatabase,
+		database.DatabaseName,
 		schemaName,
-		s.buildGetDatabaseMetadataFunc(instance, request.ConnectionDatabase),
+		s.buildGetDatabaseMetadataFunc(instance, database.DatabaseName),
 		s.buildListDatabaseNamesFunc(instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
@@ -1061,7 +994,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	// Run SQL review.
-	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, maybeDatabase, nil /* Override Metadata */)
+	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, database, nil /* Override Metadata */)
 	if err != nil {
 		return nil, err
 	}
@@ -1074,16 +1007,12 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		level = api.ActivityWarn
 	}
 
-	databaseID := 0
-	if maybeDatabase != nil {
-		databaseID = maybeDatabase.UID
-	}
-	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, maybeDatabase, api.ActivitySQLEditorQueryPayload{
+	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, database, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
 		InstanceID:             instance.UID,
 		DeprecatedInstanceName: instance.Title,
-		DatabaseID:             databaseID,
-		DatabaseName:           request.ConnectionDatabase,
+		DatabaseID:             database.UID,
+		DatabaseName:           database.DatabaseName,
 	})
 	if err != nil {
 		return nil, err
@@ -1093,7 +1022,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	var queryErr error
 	var durationNs int64
 	if adviceStatus != advisor.Error {
-		results, durationNs, queryErr = s.doQuery(ctx, request, instance, maybeDatabase)
+		results, durationNs, queryErr = s.doQuery(ctx, request, instance, database)
 		if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 			if err := s.maskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
 				return nil, status.Errorf(codes.Internal, err.Error())
@@ -1162,7 +1091,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
 		Limit:               int(request.Limit),
 		ReadOnly:            true,
-		CurrentDatabase:     request.ConnectionDatabase,
+		CurrentDatabase:     database.DatabaseName,
 		SensitiveSchemaInfo: nil,
 		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
 	})
@@ -1657,14 +1586,10 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 		return nil, status.Errorf(codes.Internal, "Failed to construct activity payload: %v", err)
 	}
 
-	projectID := api.DefaultProjectID
-	if database != nil {
-		projectID = database.ProjectID
-	}
 	activityCreate := &store.ActivityMessage{
 		CreatorUID:        user.ID,
 		Type:              api.ActivitySQLQuery,
-		ResourceContainer: fmt.Sprintf("projects/%s", projectID),
+		ResourceContainer: fmt.Sprintf("projects/%s", database.ProjectID),
 		ContainerUID:      containerID,
 		Level:             level,
 		Comment: fmt.Sprintf("Executed `%q` in database %q of instance %d.",
@@ -1878,68 +1803,66 @@ func (s *SQLService) sqlCheck(
 	return adviceLevel, adviceList, nil
 }
 
-func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken string, databaseName string) (*store.UserMessage, *store.EnvironmentMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
+func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName string, requestDatabaseName string) (*store.UserMessage, *store.EnvironmentMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
 	user, err := s.getUser(ctx)
 	if err != nil {
 		return nil, nil, nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	instance, err := s.getInstanceMessage(ctx, instanceToken)
+	var instanceID, databaseName string
+	if strings.Contains(requestName, "/databases/") {
+		instanceID, databaseName, err = common.GetInstanceDatabaseID(requestName)
+		if err != nil {
+			return nil, nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	} else {
+		instanceID, err = common.GetInstanceID(requestName)
+		if err != nil {
+			return nil, nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		databaseName = requestDatabaseName
+	}
+
+	find := &store.FindInstanceMessage{}
+	instanceUID, isNumber := isNumber(instanceID)
+	if isNumber {
+		find.UID = &instanceUID
+	} else {
+		find.ResourceID = &instanceID
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, find)
 	if err != nil {
 		return nil, nil, nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
-
-	var database *store.DatabaseMessage
-	if databaseName != "" {
-		database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:          &instance.ResourceID,
-			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-		})
-		if err != nil {
-			return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
-		}
-		if database == nil {
-			return nil, nil, nil, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-		}
+	if instance == nil {
+		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 
-	environmentID := instance.EnvironmentID
-	if database != nil {
-		environmentID = database.EffectiveEnvironmentID
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:          &instance.ResourceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	})
+	if err != nil {
+		return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+	}
+	if database == nil {
+		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 	if err != nil {
 		return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch environment: %v", err)
 	}
 	if environment == nil {
-		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "environment ID not found: %s", environmentID)
+		return nil, nil, nil, nil, status.Errorf(codes.NotFound, "environment ID not found: %s", database.EffectiveEnvironmentID)
 	}
 
 	return user, environment, instance, database, nil
 }
 
-// validateQueryRequest validates the query request.
-// 1. Check if the instance exists.
-// 2. Check connection_database if the instance is postgres.
-// 3. Parse statement for Postgres, MySQL, TiDB, Oracle.
-// 4. Check if all statements are SELECT/EXPLAIN/SET statements.
-func validateQueryRequest(instance *store.InstanceMessage, databaseName string, statement string) error {
-	switch instance.Engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
-		if databaseName == "" {
-			return status.Error(codes.InvalidArgument, "connection_database is required for postgres instance")
-		}
-	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-		if instance.Options != nil && instance.Options.SchemaTenantMode && databaseName == "" {
-			return status.Error(codes.InvalidArgument, "connection_database is required for oracle schema tenant mode instance")
-		}
-	case storepb.Engine_MONGODB, storepb.Engine_REDIS:
-		// Do nothing.
-		return nil
-	}
-
+func validateQueryRequest(instance *store.InstanceMessage, statement string) error {
 	ok, err := base.ValidateSQLForEditor(instance.Engine, statement)
 	if err != nil {
 		syntaxErr, ok := err.(*base.SyntaxError)
@@ -2470,31 +2393,6 @@ func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 	return user, nil
 }
 
-func (s *SQLService) getInstanceMessage(ctx context.Context, name string) (*store.InstanceMessage, error) {
-	instanceID, err := common.GetInstanceID(name)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	find := &store.FindInstanceMessage{}
-	instanceUID, isNumber := isNumber(instanceID)
-	if isNumber {
-		find.UID = &instanceUID
-	} else {
-		find.ResourceID = &instanceID
-	}
-
-	instance, err := s.store.GetInstanceV2(ctx, find)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", name)
-	}
-
-	return instance, nil
-}
-
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType storepb.Engine) bool {
 	switch dbType {
@@ -2522,6 +2420,61 @@ func convertChangeType(t v1pb.CheckRequest_ChangeType) storepb.PlanCheckRunConfi
 	default:
 		return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
 	}
+}
+
+func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1pb.CheckResponse, error) {
+	if len(request.Statement) > common.MaxSheetCheckSize {
+		return nil, status.Errorf(codes.FailedPrecondition, "statement size exceeds maximum allowed size %dKB", common.MaxSheetCheckSize/1024)
+	}
+
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Database)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get database, error: %v", err)
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Database)
+	}
+
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &database.EffectiveEnvironmentID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get environment, error: %v", err)
+	}
+	if environment == nil {
+		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
+	}
+
+	var overideMetadata *storepb.DatabaseSchemaMetadata
+	if request.Metadata != nil {
+		overideMetadata, _ = convertV1DatabaseMetadata(request.Metadata)
+	}
+	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, request.ChangeType, environment, instance, database, overideMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1pb.CheckResponse{
+		Advices: adviceList,
+	}, nil
 }
 
 // ParseMyBatisMapper parses a MyBatis mapper XML file and returns the multi-SQL statements.
