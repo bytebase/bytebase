@@ -1315,7 +1315,7 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 	}
 	activityCreate := &store.ActivityMessage{
 		CreatorUID:        user.ID,
-		Type:              api.ActivitySQLEditorQuery,
+		Type:              api.ActivitySQLQuery,
 		ResourceContainer: fmt.Sprintf("projects/%s", projectID),
 		ContainerUID:      containerID,
 		Level:             level,

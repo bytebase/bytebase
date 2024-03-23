@@ -2415,7 +2415,7 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 		case v1pb.Activity_TYPE_PROJECT_MEMBER_DELETE:
 			result = append(result, string(api.ActivityProjectMemberDelete))
 		case v1pb.Activity_TYPE_SQL_EDITOR_QUERY:
-			result = append(result, string(api.ActivitySQLEditorQuery))
+			result = append(result, string(api.ActivitySQLQuery))
 		case v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED:
 			result = append(result, string(api.ActivityNotifyIssueApproved))
 		case v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT:
@@ -2469,7 +2469,7 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 			result = append(result, v1pb.Activity_TYPE_PROJECT_MEMBER_CREATE)
 		case string(api.ActivityProjectMemberDelete):
 			result = append(result, v1pb.Activity_TYPE_PROJECT_MEMBER_DELETE)
-		case string(api.ActivitySQLEditorQuery):
+		case string(api.ActivitySQLQuery):
 			result = append(result, v1pb.Activity_TYPE_SQL_EDITOR_QUERY)
 		case string(api.ActivityNotifyIssueApproved):
 			result = append(result, v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED)
