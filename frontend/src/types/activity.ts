@@ -61,8 +61,6 @@ export function activityName(action: LogEntity_Action): string {
       return t("activity.type.project-member-create");
     case LogEntity_Action.ACTION_PROJECT_MEMBER_DELETE:
       return t("activity.type.project-member-delete");
-    case LogEntity_Action.ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE:
-      return t("activity.type.database-recovery-pitr-done");
   }
   console.assert(false, `undefined text for activity type "${action}"`);
   return "";

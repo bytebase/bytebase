@@ -79,9 +79,6 @@ const (
 	ActivitySQLExport ActivityType = "bb.sql.export"
 
 	// Database related.
-
-	// ActivityDatabaseRecoveryPITRDone is the type for performing PITR on the database successfully.
-	ActivityDatabaseRecoveryPITRDone ActivityType = "bb.database.recovery.pitr.done"
 )
 
 // ActivityLevel is the level of activities.
