@@ -145,11 +145,12 @@ func (exec *DataUpdateExecutor) backupData(
 			return errors.Wrapf(err, "failed to marshal ActivityIssueCreate activity")
 		}
 		activityCreate := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: task.PipelineID,
-			Type:         api.ActivityPipelineTaskPriorBackup,
-			Level:        api.ActivityInfo,
-			Payload:      string(bytes),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      task.PipelineID,
+			Type:              api.ActivityPipelineTaskPriorBackup,
+			Level:             api.ActivityInfo,
+			Payload:           string(bytes),
 		}
 		if _, err := exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
 			slog.Error("failed to create activity",

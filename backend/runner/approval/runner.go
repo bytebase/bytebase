@@ -256,12 +256,13 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			return errors.Wrapf(err, "failed to marshal activity payload")
 		}
 		create := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: *issue.PipelineUID,
-			Type:         api.ActivityNotifyPipelineRollout,
-			Level:        api.ActivityInfo,
-			Comment:      "",
-			Payload:      string(payload),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      *issue.PipelineUID,
+			Type:              api.ActivityNotifyPipelineRollout,
+			Level:             api.ActivityInfo,
+			Comment:           "",
+			Payload:           string(payload),
 		}
 		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 			return err
@@ -293,12 +294,13 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		}
 
 		create := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: issue.UID,
-			Type:         api.ActivityIssueApprovalNotify,
-			Level:        api.ActivityInfo,
-			Comment:      "",
-			Payload:      string(activityPayload),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      issue.UID,
+			Type:              api.ActivityIssueApprovalNotify,
+			Level:             api.ActivityInfo,
+			Comment:           "",
+			Payload:           string(activityPayload),
 		}
 		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 			return err

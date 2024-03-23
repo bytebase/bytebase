@@ -691,22 +691,24 @@ func (s *ProjectService) CreateIAMPolicyUpdateActivity(ctx context.Context, remo
 	for _, binding := range remove.Bindings {
 		for _, member := range binding.Members {
 			activities = append(activities, &store.ActivityMessage{
-				CreatorUID:   creatorUID,
-				ContainerUID: project.UID,
-				Type:         api.ActivityProjectMemberDelete,
-				Level:        api.ActivityInfo,
-				Comment:      fmt.Sprintf("Revoked %s from %s (%s).", binding.Role, member.Name, member.Email),
+				CreatorUID:        creatorUID,
+				ResourceContainer: project.GetName(),
+				ContainerUID:      project.UID,
+				Type:              api.ActivityProjectMemberDelete,
+				Level:             api.ActivityInfo,
+				Comment:           fmt.Sprintf("Revoked %s from %s (%s).", binding.Role, member.Name, member.Email),
 			})
 		}
 	}
 	for _, binding := range add.Bindings {
 		for _, member := range binding.Members {
 			activities = append(activities, &store.ActivityMessage{
-				CreatorUID:   creatorUID,
-				ContainerUID: project.UID,
-				Type:         api.ActivityProjectMemberCreate,
-				Level:        api.ActivityInfo,
-				Comment:      fmt.Sprintf("Granted %s to %s (%s).", member.Name, member.Email, binding.Role),
+				CreatorUID:        creatorUID,
+				ResourceContainer: project.GetName(),
+				ContainerUID:      project.UID,
+				Type:              api.ActivityProjectMemberCreate,
+				Level:             api.ActivityInfo,
+				Comment:           fmt.Sprintf("Granted %s to %s (%s).", member.Name, member.Email, binding.Role),
 			})
 		}
 	}

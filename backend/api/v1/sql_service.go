@@ -266,7 +266,7 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 	if database != nil {
 		databaseID = database.UID
 	}
-	activity, err := s.createQueryActivity(ctx, user, api.ActivityInfo, instance.UID, api.ActivitySQLEditorQueryPayload{
+	activity, err := s.createQueryActivity(ctx, user, api.ActivityInfo, instance.UID, database, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
 		InstanceID:             instance.UID,
 		DeprecatedInstanceName: instance.Title,
@@ -302,7 +302,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}
 	// Create export activity.
 	level := api.ActivityInfo
-	activity, err := s.createExportActivity(ctx, user, level, instance.UID, api.ActivitySQLExportPayload{
+	activity, err := s.createExportActivity(ctx, user, level, instance.UID, database, api.ActivitySQLExportPayload{
 		Statement:    request.Statement,
 		InstanceID:   instance.UID,
 		DatabaseID:   databaseID,
@@ -860,7 +860,7 @@ func convertValueToStringInXLSX(value *v1pb.RowValue) string {
 	}
 }
 
-func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLExportPayload) (*store.ActivityMessage, error) {
+func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, database *store.DatabaseMessage, payload api.ActivitySQLExportPayload) (*store.ActivityMessage, error) {
 	// TODO: use v1 activity API instead of
 	activityBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -872,11 +872,16 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 		return nil, status.Errorf(codes.Internal, "Failed to construct activity payload: %v", err)
 	}
 
+	projectID := api.DefaultProjectID
+	if database != nil {
+		projectID = database.ProjectID
+	}
 	activityCreate := &store.ActivityMessage{
-		CreatorUID:   user.ID,
-		Type:         api.ActivitySQLExport,
-		ContainerUID: containerID,
-		Level:        level,
+		CreatorUID:        user.ID,
+		Type:              api.ActivitySQLExport,
+		ResourceContainer: fmt.Sprintf("projects/%s", projectID),
+		ContainerUID:      containerID,
+		Level:             level,
 		Comment: fmt.Sprintf("Export `%q` in database %q of instance %d.",
 			payload.Statement, payload.DatabaseName, payload.InstanceID),
 		Payload: string(activityBytes),
@@ -977,7 +982,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if database != nil {
 		databaseID = database.UID
 	}
-	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, api.ActivitySQLEditorQueryPayload{
+	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, database, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
 		InstanceID:             instance.UID,
 		DeprecatedInstanceName: instance.Title,
@@ -1292,7 +1297,7 @@ func allPostgresSystemObjects(statement string) bool {
 	return true
 }
 
-func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, payload api.ActivitySQLEditorQueryPayload) (*store.ActivityMessage, error) {
+func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, database *store.DatabaseMessage, payload api.ActivitySQLEditorQueryPayload) (*store.ActivityMessage, error) {
 	// TODO: use v1 activity API instead of
 	activityBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -1304,11 +1309,16 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 		return nil, status.Errorf(codes.Internal, "Failed to construct activity payload: %v", err)
 	}
 
+	projectID := api.DefaultProjectID
+	if database != nil {
+		projectID = database.ProjectID
+	}
 	activityCreate := &store.ActivityMessage{
-		CreatorUID:   user.ID,
-		Type:         api.ActivitySQLEditorQuery,
-		ContainerUID: containerID,
-		Level:        level,
+		CreatorUID:        user.ID,
+		Type:              api.ActivitySQLEditorQuery,
+		ResourceContainer: fmt.Sprintf("projects/%s", projectID),
+		ContainerUID:      containerID,
+		Level:             level,
 		Comment: fmt.Sprintf("Executed `%q` in database %q of instance %d.",
 			payload.Statement, payload.DatabaseName, payload.InstanceID),
 		Payload: string(activityBytes),
