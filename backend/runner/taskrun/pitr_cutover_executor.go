@@ -3,7 +3,6 @@ package taskrun
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -75,42 +74,11 @@ func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, _ context.Context,
 	if err != nil {
 		return true, nil, err
 	}
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-	if err != nil {
-		return true, nil, err
-	}
-
 	// Currently api.TaskDatabasePITRCutoverPayload is empty, so we do not need to unmarshal from task.Payload.
 	terminated, result, err = exec.pitrCutover(ctx, exec.dbFactory, exec.backupRunner, exec.schemaSyncer, exec.profile, task, taskRunUID, database, issue)
 	if err != nil {
 		return terminated, result, err
 	}
-
-	payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
-		TaskID:    task.ID,
-		OldStatus: api.TaskRunning,
-		NewStatus: api.TaskDone,
-		IssueName: issue.Title,
-		TaskName:  task.Name,
-	})
-	if err != nil {
-		slog.Error("failed to marshal activity", log.BBError(err))
-		return terminated, result, nil
-	}
-
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:        task.UpdaterID,
-		ResourceContainer: issue.Project.GetName(),
-		ContainerUID:      issue.Project.UID,
-		Type:              api.ActivityDatabaseRecoveryPITRDone,
-		Level:             api.ActivityInfo,
-		Payload:           string(payload),
-		Comment:           fmt.Sprintf("Restore database %s in instance %s successfully.", database.DatabaseName, instance.Title),
-	}
-	if _, err = exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
-		slog.Error("cannot create an pitr activity", log.BBError(err))
-	}
-
 	return terminated, result, nil
 }
 
