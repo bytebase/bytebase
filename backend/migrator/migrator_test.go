@@ -60,7 +60,7 @@ func TestGetMinorVersions(t *testing.T) {
 		want  []semver.Version
 	}{
 		{
-			names: []string{fmt.Sprintf("migration/dev/%s", latestDataFile), fmt.Sprintf("migration/dev/%s", latestSchemaFile), "migration/dev/1.1", "migration/dev/1.0"},
+			names: []string{fmt.Sprintf("migration/release/%s", latestDataFile), fmt.Sprintf("migration/dev/%s", latestSchemaFile), "migration/release/1.1", "migration/release/1.0"},
 			want:  []semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.0")},
 		},
 		{
@@ -230,5 +230,5 @@ func TestMigrationCompatibility(t *testing.T) {
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("2.15.0"), releaseVersion)
+	require.Equal(t, semver.MustParse("2.15.1"), releaseVersion)
 }
