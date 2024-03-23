@@ -40,7 +40,7 @@ var defaultResourceActionTypeMap = map[string][]api.ActivityType{
 		api.ActivityMemberDeactivate,
 	},
 	"instances": {
-		api.ActivitySQLEditorQuery,
+		api.ActivitySQLQuery,
 		api.ActivitySQLExport,
 	},
 	"projects": {
@@ -401,7 +401,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		}
 		resource = fmt.Sprintf("%s%s", common.ProjectNamePrefix, project.ResourceID)
 	case
-		api.ActivitySQLEditorQuery,
+		api.ActivitySQLQuery,
 		api.ActivitySQLExport:
 		instance, err := db.GetInstanceV2(ctx, &store.FindInstanceMessage{
 			UID: &activity.ContainerUID,
@@ -483,7 +483,7 @@ func convertToActivityType(action v1pb.LogEntity_Action) (api.ActivityType, erro
 		return api.ActivityProjectMemberDelete, nil
 
 	case v1pb.LogEntity_ACTION_DATABASE_SQL_EDITOR_QUERY:
-		return api.ActivitySQLEditorQuery, nil
+		return api.ActivitySQLQuery, nil
 	case v1pb.LogEntity_ACTION_DATABASE_SQL_EXPORT:
 		return api.ActivitySQLExport, nil
 	default:
@@ -536,7 +536,7 @@ func convertToActionType(activityType api.ActivityType) v1pb.LogEntity_Action {
 		return v1pb.LogEntity_ACTION_PROJECT_MEMBER_CREATE
 	case api.ActivityProjectMemberDelete:
 		return v1pb.LogEntity_ACTION_PROJECT_MEMBER_DELETE
-	case api.ActivitySQLEditorQuery:
+	case api.ActivitySQLQuery:
 		return v1pb.LogEntity_ACTION_DATABASE_SQL_EDITOR_QUERY
 	case api.ActivitySQLExport:
 		return v1pb.LogEntity_ACTION_DATABASE_SQL_EXPORT
