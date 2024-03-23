@@ -5,7 +5,6 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
-import "v1/org_policy_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -21,7 +20,7 @@ message SearchAnomaliesRequest {
   // Only support filter by resource and type for now.
   // For example:
   // Search the anomalies of a specific resource: 'resource="instances/{instance}".'
-  // Search the specified types of anomalies: 'type="DATABASE_BACKUP_POLICY_VIOLATION" | "MIGRATION_SCHEMA".'
+  // Search the specified types of anomalies: 'type="MIGRATION_SCHEMA".'
   string filter = 1;
 
   // Not used. The maximum number of anomalies to return. The service may return fewer than
@@ -61,11 +60,6 @@ message Anomaly {
 
     // Database level anomaly.
     //
-    // DATABASE_BACKUP_POLICY_VIOLATION is the anomaly type for database backup policy violation,
-    // e.g. the database backup policy is not meet the environment backup policy.
-    DATABASE_BACKUP_POLICY_VIOLATION = 3;
-    // DATABASE_BACKUP_MISSING is the anomaly type for the backup missing, e.g. the backup is missing.
-    DATABASE_BACKUP_MISSING = 4;
     // DATABASE_CONNECTION is the anomaly type for database connection, e.g. the database had been deleted.
     DATABASE_CONNECTION = 5;
     // DATABASE_SCHEMA_DRIFT is the anomaly type for database schema drift,
@@ -113,28 +107,6 @@ message Anomaly {
     string detail = 1;
   }
 
-  // DatabaseBackupPolicyViolationDetail is the detail for database backup policy violation anomaly.
-  message DatabaseBackupPolicyViolationDetail {
-    // parent is the parent of the database.
-    // Format: environments/{environment}
-    string parent = 1;
-
-    // expected_schedule is the expected backup plan schedule in the parent.
-    BackupPlanSchedule expected_schedule = 2;
-
-    // actual_schedule is the actual backup plan schedule in the database.
-    BackupPlanSchedule actual_schedule = 3;
-  }
-
-  // DatabaseBackupMissingDetail is the detail for database backup missing anomaly.
-  message DatabaseBackupMissingDetail {
-    // expected_schedule is the expected backup plan schedule in the database.
-    BackupPlanSchedule expected_schedule = 1;
-
-    // latest_backup_time is the latest backup time in the database.
-    google.protobuf.Timestamp latest_backup_time = 2;
-  }
-
   // DatabaseSchemaDriftDetail is the detail for database schema drift anomaly.
   message DatabaseSchemaDriftDetail {
     // record_version is the record version of the database schema drift.
@@ -151,8 +123,6 @@ message Anomaly {
   oneof detail {
     InstanceConnectionDetail instance_connection_detail = 4;
     DatabaseConnectionDetail database_connection_detail = 5;
-    DatabaseBackupPolicyViolationDetail database_backup_policy_violation_detail = 6;
-    DatabaseBackupMissingDetail database_backup_missing_detail = 7;
     DatabaseSchemaDriftDetail database_schema_drift_detail = 8;
   }
 

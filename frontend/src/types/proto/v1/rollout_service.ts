@@ -113,7 +113,6 @@ export interface Plan_Spec {
   dependsOnSpecs: string[];
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
-  restoreDatabaseConfig?: Plan_RestoreDatabaseConfig | undefined;
   exportDataConfig?: Plan_ExportDataConfig | undefined;
 }
 
@@ -138,11 +137,6 @@ export interface Plan_CreateDatabaseConfig {
   cluster: string;
   /** owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>". */
   owner: string;
-  /**
-   * backup is the resource name of the backup.
-   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
-   */
-  backup: string;
   /**
    * The environment resource.
    * Format: environments/prod where prod is the environment resource ID.
@@ -200,8 +194,6 @@ export enum Plan_ChangeDatabaseConfig_Type {
   MIGRATE_SDL = 3,
   /** MIGRATE_GHOST - Used for DDL changes using gh-ost. */
   MIGRATE_GHOST = 4,
-  /** BRANCH - Used when restoring from a backup (the restored database branched from the original backup). */
-  BRANCH = 5,
   /** DATA - Used for DML change. */
   DATA = 6,
   UNRECOGNIZED = -1,
@@ -224,9 +216,6 @@ export function plan_ChangeDatabaseConfig_TypeFromJSON(object: any): Plan_Change
     case 4:
     case "MIGRATE_GHOST":
       return Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST;
-    case 5:
-    case "BRANCH":
-      return Plan_ChangeDatabaseConfig_Type.BRANCH;
     case 6:
     case "DATA":
       return Plan_ChangeDatabaseConfig_Type.DATA;
@@ -249,8 +238,6 @@ export function plan_ChangeDatabaseConfig_TypeToJSON(object: Plan_ChangeDatabase
       return "MIGRATE_SDL";
     case Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
       return "MIGRATE_GHOST";
-    case Plan_ChangeDatabaseConfig_Type.BRANCH:
-      return "BRANCH";
     case Plan_ChangeDatabaseConfig_Type.DATA:
       return "DATA";
     case Plan_ChangeDatabaseConfig_Type.UNRECOGNIZED:
@@ -283,21 +270,6 @@ export interface Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
    * Format: instances/{instance}/databases/{database}
    */
   database: string;
-}
-
-export interface Plan_RestoreDatabaseConfig {
-  /**
-   * The resource name of the target to restore.
-   * Format: instances/{instance}/databases/{database}
-   */
-  target: string;
-  /** create_database_config is present if the user wants to restore to a new database. */
-  createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
-  backup?:
-    | string
-    | undefined;
-  /** After the PITR operations, the database will be recovered to the state at this time. */
-  pointInTime?: Date | undefined;
 }
 
 export interface Plan_ExportDataConfig {
@@ -444,7 +416,6 @@ export enum PlanCheckRun_Type {
   DATABASE_STATEMENT_SUMMARY_REPORT = 5,
   DATABASE_CONNECT = 6,
   DATABASE_GHOST_SYNC = 7,
-  DATABASE_PITR_MYSQL = 8,
   UNRECOGNIZED = -1,
 }
 
@@ -474,9 +445,6 @@ export function planCheckRun_TypeFromJSON(object: any): PlanCheckRun_Type {
     case 7:
     case "DATABASE_GHOST_SYNC":
       return PlanCheckRun_Type.DATABASE_GHOST_SYNC;
-    case 8:
-    case "DATABASE_PITR_MYSQL":
-      return PlanCheckRun_Type.DATABASE_PITR_MYSQL;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -502,8 +470,6 @@ export function planCheckRun_TypeToJSON(object: PlanCheckRun_Type): string {
       return "DATABASE_CONNECT";
     case PlanCheckRun_Type.DATABASE_GHOST_SYNC:
       return "DATABASE_GHOST_SYNC";
-    case PlanCheckRun_Type.DATABASE_PITR_MYSQL:
-      return "DATABASE_PITR_MYSQL";
     case PlanCheckRun_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -748,8 +714,6 @@ export interface Task {
   databaseSchemaBaseline?: Task_DatabaseSchemaBaseline | undefined;
   databaseSchemaUpdate?: Task_DatabaseSchemaUpdate | undefined;
   databaseDataUpdate?: Task_DatabaseDataUpdate | undefined;
-  databaseBackup?: Task_DatabaseBackup | undefined;
-  databaseRestoreRestore?: Task_DatabaseRestoreRestore | undefined;
   databaseDataExport?: Task_DatabaseDataExport | undefined;
 }
 
@@ -839,12 +803,6 @@ export enum Task_Type {
   DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER = 7,
   /** DATABASE_DATA_UPDATE - use payload DatabaseDataUpdate */
   DATABASE_DATA_UPDATE = 8,
-  /** DATABASE_BACKUP - use payload DatabaseBackup */
-  DATABASE_BACKUP = 9,
-  /** DATABASE_RESTORE_RESTORE - use payload DatabaseRestoreRestore */
-  DATABASE_RESTORE_RESTORE = 10,
-  /** DATABASE_RESTORE_CUTOVER - use payload nil */
-  DATABASE_RESTORE_CUTOVER = 11,
   /** DATABASE_DATA_EXPORT - use payload DatabaseDataExport */
   DATABASE_DATA_EXPORT = 12,
   UNRECOGNIZED = -1,
@@ -879,15 +837,6 @@ export function task_TypeFromJSON(object: any): Task_Type {
     case 8:
     case "DATABASE_DATA_UPDATE":
       return Task_Type.DATABASE_DATA_UPDATE;
-    case 9:
-    case "DATABASE_BACKUP":
-      return Task_Type.DATABASE_BACKUP;
-    case 10:
-    case "DATABASE_RESTORE_RESTORE":
-      return Task_Type.DATABASE_RESTORE_RESTORE;
-    case 11:
-    case "DATABASE_RESTORE_CUTOVER":
-      return Task_Type.DATABASE_RESTORE_CUTOVER;
     case 12:
     case "DATABASE_DATA_EXPORT":
       return Task_Type.DATABASE_DATA_EXPORT;
@@ -918,12 +867,6 @@ export function task_TypeToJSON(object: Task_Type): string {
       return "DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER";
     case Task_Type.DATABASE_DATA_UPDATE:
       return "DATABASE_DATA_UPDATE";
-    case Task_Type.DATABASE_BACKUP:
-      return "DATABASE_BACKUP";
-    case Task_Type.DATABASE_RESTORE_RESTORE:
-      return "DATABASE_RESTORE_RESTORE";
-    case Task_Type.DATABASE_RESTORE_CUTOVER:
-      return "DATABASE_RESTORE_CUTOVER";
     case Task_Type.DATABASE_DATA_EXPORT:
       return "DATABASE_DATA_EXPORT";
     case Task_Type.UNRECOGNIZED:
@@ -1041,34 +984,6 @@ export function task_DatabaseDataUpdate_RollbackSqlStatusToJSON(
     default:
       return "UNRECOGNIZED";
   }
-}
-
-export interface Task_DatabaseBackup {
-  /**
-   * The resource name of the backup.
-   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
-   */
-  backup: string;
-}
-
-export interface Task_DatabaseRestoreRestore {
-  /**
-   * Target is only used when doing restore to a new database now.
-   * It is empty for the case of in-place restore.
-   * Target {instance} must be within the same environment as the instance of the original database.
-   * {database} is the target database name.
-   * Format: instances/{instance}/databases/database
-   */
-  target: string;
-  /**
-   * Only used when doing restore full backup only.
-   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
-   */
-  backup?:
-    | string
-    | undefined;
-  /** After the PITR operations, the database will be recovered to the state at this time. */
-  pointInTime?: Date | undefined;
 }
 
 export interface Task_DatabaseDataExport {
@@ -1821,7 +1736,6 @@ function createBasePlan_Spec(): Plan_Spec {
     dependsOnSpecs: [],
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
-    restoreDatabaseConfig: undefined,
     exportDataConfig: undefined,
   };
 }
@@ -1842,9 +1756,6 @@ export const Plan_Spec = {
     }
     if (message.changeDatabaseConfig !== undefined) {
       Plan_ChangeDatabaseConfig.encode(message.changeDatabaseConfig, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.restoreDatabaseConfig !== undefined) {
-      Plan_RestoreDatabaseConfig.encode(message.restoreDatabaseConfig, writer.uint32(26).fork()).ldelim();
     }
     if (message.exportDataConfig !== undefined) {
       Plan_ExportDataConfig.encode(message.exportDataConfig, writer.uint32(58).fork()).ldelim();
@@ -1894,13 +1805,6 @@ export const Plan_Spec = {
 
           message.changeDatabaseConfig = Plan_ChangeDatabaseConfig.decode(reader, reader.uint32());
           continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.restoreDatabaseConfig = Plan_RestoreDatabaseConfig.decode(reader, reader.uint32());
-          continue;
         case 7:
           if (tag !== 58) {
             break;
@@ -1932,9 +1836,6 @@ export const Plan_Spec = {
       changeDatabaseConfig: isSet(object.changeDatabaseConfig)
         ? Plan_ChangeDatabaseConfig.fromJSON(object.changeDatabaseConfig)
         : undefined,
-      restoreDatabaseConfig: isSet(object.restoreDatabaseConfig)
-        ? Plan_RestoreDatabaseConfig.fromJSON(object.restoreDatabaseConfig)
-        : undefined,
       exportDataConfig: isSet(object.exportDataConfig)
         ? Plan_ExportDataConfig.fromJSON(object.exportDataConfig)
         : undefined,
@@ -1958,9 +1859,6 @@ export const Plan_Spec = {
     if (message.changeDatabaseConfig !== undefined) {
       obj.changeDatabaseConfig = Plan_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig);
     }
-    if (message.restoreDatabaseConfig !== undefined) {
-      obj.restoreDatabaseConfig = Plan_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig);
-    }
     if (message.exportDataConfig !== undefined) {
       obj.exportDataConfig = Plan_ExportDataConfig.toJSON(message.exportDataConfig);
     }
@@ -1981,10 +1879,6 @@ export const Plan_Spec = {
     message.changeDatabaseConfig = (object.changeDatabaseConfig !== undefined && object.changeDatabaseConfig !== null)
       ? Plan_ChangeDatabaseConfig.fromPartial(object.changeDatabaseConfig)
       : undefined;
-    message.restoreDatabaseConfig =
-      (object.restoreDatabaseConfig !== undefined && object.restoreDatabaseConfig !== null)
-        ? Plan_RestoreDatabaseConfig.fromPartial(object.restoreDatabaseConfig)
-        : undefined;
     message.exportDataConfig = (object.exportDataConfig !== undefined && object.exportDataConfig !== null)
       ? Plan_ExportDataConfig.fromPartial(object.exportDataConfig)
       : undefined;
@@ -2001,7 +1895,6 @@ function createBasePlan_CreateDatabaseConfig(): Plan_CreateDatabaseConfig {
     collation: "",
     cluster: "",
     owner: "",
-    backup: "",
     environment: "",
     labels: {},
   };
@@ -2029,9 +1922,6 @@ export const Plan_CreateDatabaseConfig = {
     }
     if (message.owner !== "") {
       writer.uint32(58).string(message.owner);
-    }
-    if (message.backup !== "") {
-      writer.uint32(66).string(message.backup);
     }
     if (message.environment !== "") {
       writer.uint32(74).string(message.environment);
@@ -2098,13 +1988,6 @@ export const Plan_CreateDatabaseConfig = {
 
           message.owner = reader.string();
           continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.backup = reader.string();
-          continue;
         case 9:
           if (tag !== 74) {
             break;
@@ -2140,7 +2023,6 @@ export const Plan_CreateDatabaseConfig = {
       collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
       cluster: isSet(object.cluster) ? globalThis.String(object.cluster) : "",
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
-      backup: isSet(object.backup) ? globalThis.String(object.backup) : "",
       environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
@@ -2174,9 +2056,6 @@ export const Plan_CreateDatabaseConfig = {
     if (message.owner !== "") {
       obj.owner = message.owner;
     }
-    if (message.backup !== "") {
-      obj.backup = message.backup;
-    }
     if (message.environment !== "") {
       obj.environment = message.environment;
     }
@@ -2204,7 +2083,6 @@ export const Plan_CreateDatabaseConfig = {
     message.collation = object.collation ?? "";
     message.cluster = object.cluster ?? "";
     message.owner = object.owner ?? "";
-    message.backup = object.backup ?? "";
     message.environment = object.environment ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
@@ -2708,114 +2586,6 @@ export const Plan_ChangeDatabaseConfig_PreUpdateBackupDetail = {
   ): Plan_ChangeDatabaseConfig_PreUpdateBackupDetail {
     const message = createBasePlan_ChangeDatabaseConfig_PreUpdateBackupDetail();
     message.database = object.database ?? "";
-    return message;
-  },
-};
-
-function createBasePlan_RestoreDatabaseConfig(): Plan_RestoreDatabaseConfig {
-  return { target: "", createDatabaseConfig: undefined, backup: undefined, pointInTime: undefined };
-}
-
-export const Plan_RestoreDatabaseConfig = {
-  encode(message: Plan_RestoreDatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.target !== "") {
-      writer.uint32(10).string(message.target);
-    }
-    if (message.createDatabaseConfig !== undefined) {
-      Plan_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.backup !== undefined) {
-      writer.uint32(26).string(message.backup);
-    }
-    if (message.pointInTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.pointInTime), writer.uint32(34).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_RestoreDatabaseConfig {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_RestoreDatabaseConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.target = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.createDatabaseConfig = Plan_CreateDatabaseConfig.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.backup = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.pointInTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_RestoreDatabaseConfig {
-    return {
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      createDatabaseConfig: isSet(object.createDatabaseConfig)
-        ? Plan_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
-        : undefined,
-      backup: isSet(object.backup) ? globalThis.String(object.backup) : undefined,
-      pointInTime: isSet(object.pointInTime) ? fromJsonTimestamp(object.pointInTime) : undefined,
-    };
-  },
-
-  toJSON(message: Plan_RestoreDatabaseConfig): unknown {
-    const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.createDatabaseConfig !== undefined) {
-      obj.createDatabaseConfig = Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
-    }
-    if (message.backup !== undefined) {
-      obj.backup = message.backup;
-    }
-    if (message.pointInTime !== undefined) {
-      obj.pointInTime = message.pointInTime.toISOString();
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_RestoreDatabaseConfig>): Plan_RestoreDatabaseConfig {
-    return Plan_RestoreDatabaseConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_RestoreDatabaseConfig>): Plan_RestoreDatabaseConfig {
-    const message = createBasePlan_RestoreDatabaseConfig();
-    message.target = object.target ?? "";
-    message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
-      ? Plan_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
-      : undefined;
-    message.backup = object.backup ?? undefined;
-    message.pointInTime = object.pointInTime ?? undefined;
     return message;
   },
 };
@@ -4768,8 +4538,6 @@ function createBaseTask(): Task {
     databaseSchemaBaseline: undefined,
     databaseSchemaUpdate: undefined,
     databaseDataUpdate: undefined,
-    databaseBackup: undefined,
-    databaseRestoreRestore: undefined,
     databaseDataExport: undefined,
   };
 }
@@ -4814,12 +4582,6 @@ export const Task = {
     }
     if (message.databaseDataUpdate !== undefined) {
       Task_DatabaseDataUpdate.encode(message.databaseDataUpdate, writer.uint32(98).fork()).ldelim();
-    }
-    if (message.databaseBackup !== undefined) {
-      Task_DatabaseBackup.encode(message.databaseBackup, writer.uint32(106).fork()).ldelim();
-    }
-    if (message.databaseRestoreRestore !== undefined) {
-      Task_DatabaseRestoreRestore.encode(message.databaseRestoreRestore, writer.uint32(114).fork()).ldelim();
     }
     if (message.databaseDataExport !== undefined) {
       Task_DatabaseDataExport.encode(message.databaseDataExport, writer.uint32(130).fork()).ldelim();
@@ -4925,20 +4687,6 @@ export const Task = {
 
           message.databaseDataUpdate = Task_DatabaseDataUpdate.decode(reader, reader.uint32());
           continue;
-        case 13:
-          if (tag !== 106) {
-            break;
-          }
-
-          message.databaseBackup = Task_DatabaseBackup.decode(reader, reader.uint32());
-          continue;
-        case 14:
-          if (tag !== 114) {
-            break;
-          }
-
-          message.databaseRestoreRestore = Task_DatabaseRestoreRestore.decode(reader, reader.uint32());
-          continue;
         case 16:
           if (tag !== 130) {
             break;
@@ -4977,10 +4725,6 @@ export const Task = {
         : undefined,
       databaseDataUpdate: isSet(object.databaseDataUpdate)
         ? Task_DatabaseDataUpdate.fromJSON(object.databaseDataUpdate)
-        : undefined,
-      databaseBackup: isSet(object.databaseBackup) ? Task_DatabaseBackup.fromJSON(object.databaseBackup) : undefined,
-      databaseRestoreRestore: isSet(object.databaseRestoreRestore)
-        ? Task_DatabaseRestoreRestore.fromJSON(object.databaseRestoreRestore)
         : undefined,
       databaseDataExport: isSet(object.databaseDataExport)
         ? Task_DatabaseDataExport.fromJSON(object.databaseDataExport)
@@ -5029,12 +4773,6 @@ export const Task = {
     if (message.databaseDataUpdate !== undefined) {
       obj.databaseDataUpdate = Task_DatabaseDataUpdate.toJSON(message.databaseDataUpdate);
     }
-    if (message.databaseBackup !== undefined) {
-      obj.databaseBackup = Task_DatabaseBackup.toJSON(message.databaseBackup);
-    }
-    if (message.databaseRestoreRestore !== undefined) {
-      obj.databaseRestoreRestore = Task_DatabaseRestoreRestore.toJSON(message.databaseRestoreRestore);
-    }
     if (message.databaseDataExport !== undefined) {
       obj.databaseDataExport = Task_DatabaseDataExport.toJSON(message.databaseDataExport);
     }
@@ -5068,13 +4806,6 @@ export const Task = {
     message.databaseDataUpdate = (object.databaseDataUpdate !== undefined && object.databaseDataUpdate !== null)
       ? Task_DatabaseDataUpdate.fromPartial(object.databaseDataUpdate)
       : undefined;
-    message.databaseBackup = (object.databaseBackup !== undefined && object.databaseBackup !== null)
-      ? Task_DatabaseBackup.fromPartial(object.databaseBackup)
-      : undefined;
-    message.databaseRestoreRestore =
-      (object.databaseRestoreRestore !== undefined && object.databaseRestoreRestore !== null)
-        ? Task_DatabaseRestoreRestore.fromPartial(object.databaseRestoreRestore)
-        : undefined;
     message.databaseDataExport = (object.databaseDataExport !== undefined && object.databaseDataExport !== null)
       ? Task_DatabaseDataExport.fromPartial(object.databaseDataExport)
       : undefined;
@@ -5650,152 +5381,6 @@ export const Task_DatabaseDataUpdate = {
     message.rollbackSheet = object.rollbackSheet ?? "";
     message.rollbackFromIssue = object.rollbackFromIssue ?? "";
     message.rollbackFromTask = object.rollbackFromTask ?? "";
-    return message;
-  },
-};
-
-function createBaseTask_DatabaseBackup(): Task_DatabaseBackup {
-  return { backup: "" };
-}
-
-export const Task_DatabaseBackup = {
-  encode(message: Task_DatabaseBackup, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.backup !== "") {
-      writer.uint32(10).string(message.backup);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Task_DatabaseBackup {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTask_DatabaseBackup();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.backup = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Task_DatabaseBackup {
-    return { backup: isSet(object.backup) ? globalThis.String(object.backup) : "" };
-  },
-
-  toJSON(message: Task_DatabaseBackup): unknown {
-    const obj: any = {};
-    if (message.backup !== "") {
-      obj.backup = message.backup;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Task_DatabaseBackup>): Task_DatabaseBackup {
-    return Task_DatabaseBackup.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Task_DatabaseBackup>): Task_DatabaseBackup {
-    const message = createBaseTask_DatabaseBackup();
-    message.backup = object.backup ?? "";
-    return message;
-  },
-};
-
-function createBaseTask_DatabaseRestoreRestore(): Task_DatabaseRestoreRestore {
-  return { target: "", backup: undefined, pointInTime: undefined };
-}
-
-export const Task_DatabaseRestoreRestore = {
-  encode(message: Task_DatabaseRestoreRestore, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.target !== "") {
-      writer.uint32(10).string(message.target);
-    }
-    if (message.backup !== undefined) {
-      writer.uint32(18).string(message.backup);
-    }
-    if (message.pointInTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.pointInTime), writer.uint32(26).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Task_DatabaseRestoreRestore {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTask_DatabaseRestoreRestore();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.target = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.backup = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.pointInTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Task_DatabaseRestoreRestore {
-    return {
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      backup: isSet(object.backup) ? globalThis.String(object.backup) : undefined,
-      pointInTime: isSet(object.pointInTime) ? fromJsonTimestamp(object.pointInTime) : undefined,
-    };
-  },
-
-  toJSON(message: Task_DatabaseRestoreRestore): unknown {
-    const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.backup !== undefined) {
-      obj.backup = message.backup;
-    }
-    if (message.pointInTime !== undefined) {
-      obj.pointInTime = message.pointInTime.toISOString();
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Task_DatabaseRestoreRestore>): Task_DatabaseRestoreRestore {
-    return Task_DatabaseRestoreRestore.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Task_DatabaseRestoreRestore>): Task_DatabaseRestoreRestore {
-    const message = createBaseTask_DatabaseRestoreRestore();
-    message.target = object.target ?? "";
-    message.backup = object.backup ?? undefined;
-    message.pointInTime = object.pointInTime ?? undefined;
     return message;
   },
 };

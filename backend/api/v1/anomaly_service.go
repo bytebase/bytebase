@@ -24,12 +24,10 @@ const (
 )
 
 var typesMap = map[string]api.AnomalyType{
-	"INSTANCE_CONNECTION":              api.AnomalyInstanceConnection,
-	"MIGRATION_SCHEMA":                 api.AnomalyInstanceMigrationSchema,
-	"DATABASE_BACKUP_POLICY_VIOLATION": api.AnomalyDatabaseBackupPolicyViolation,
-	"DATABASE_BACKUP_MISSING":          api.AnomalyDatabaseBackupMissing,
-	"DATABASE_CONNECTION":              api.AnomalyDatabaseConnection,
-	"DATABASE_SCHEMA_DRIFT":            api.AnomalyDatabaseSchemaDrift,
+	"INSTANCE_CONNECTION":   api.AnomalyInstanceConnection,
+	"MIGRATION_SCHEMA":      api.AnomalyInstanceMigrationSchema,
+	"DATABASE_CONNECTION":   api.AnomalyDatabaseConnection,
+	"DATABASE_SCHEMA_DRIFT": api.AnomalyDatabaseSchemaDrift,
 }
 
 // AnomalyService implements the anomaly service.
@@ -161,39 +159,6 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 				Detail: detail.Detail,
 			},
 		}
-	case api.AnomalyDatabaseBackupPolicyViolation:
-		var detail api.AnomalyDatabaseBackupPolicyViolationPayload
-		if err := json.Unmarshal([]byte(anomaly.Payload), &detail); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal database backup policy violation anomaly payload")
-		}
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-			UID: &detail.EnvironmentID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find environment with id %d", detail.EnvironmentID)
-		}
-		pbAnomaly.Type = v1pb.Anomaly_DATABASE_BACKUP_POLICY_VIOLATION
-		pbAnomaly.Detail = &v1pb.Anomaly_DatabaseBackupPolicyViolationDetail_{
-			DatabaseBackupPolicyViolationDetail: &v1pb.Anomaly_DatabaseBackupPolicyViolationDetail{
-				// The instance are bind to a specify environment, and cannot be moved to another environment in Bytebase.
-				// So it's safe to use environmentID here.
-				Parent:           fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, environment.ResourceID),
-				ExpectedSchedule: convertBackupPlanSchedule(detail.ExpectedBackupSchedule),
-				ActualSchedule:   convertBackupPlanSchedule(detail.ActualBackupSchedule),
-			},
-		}
-	case api.AnomalyDatabaseBackupMissing:
-		var detail api.AnomalyDatabaseBackupMissingPayload
-		if err := json.Unmarshal([]byte(anomaly.Payload), &detail); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal database backup missing anomaly payload")
-		}
-		pbAnomaly.Type = v1pb.Anomaly_DATABASE_BACKUP_MISSING
-		pbAnomaly.Detail = &v1pb.Anomaly_DatabaseBackupMissingDetail_{
-			DatabaseBackupMissingDetail: &v1pb.Anomaly_DatabaseBackupMissingDetail{
-				ExpectedSchedule: convertBackupPlanSchedule(detail.ExpectedBackupSchedule),
-				LatestBackupTime: timestamppb.New(time.Unix(detail.LastBackupTs, 0)),
-			},
-		}
 	case api.AnomalyDatabaseConnection:
 		var detail api.AnomalyDatabaseConnectionPayload
 		if err := json.Unmarshal([]byte(anomaly.Payload), &detail); err != nil {
@@ -225,24 +190,8 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 
 func getSeverityFromAnomalyType(tp v1pb.Anomaly_AnomalyType) v1pb.Anomaly_AnomalySeverity {
 	switch tp {
-	case v1pb.Anomaly_DATABASE_BACKUP_POLICY_VIOLATION:
-		return v1pb.Anomaly_MEDIUM
-	case v1pb.Anomaly_DATABASE_BACKUP_MISSING:
-		return v1pb.Anomaly_HIGH
 	case v1pb.Anomaly_INSTANCE_CONNECTION, v1pb.Anomaly_MIGRATION_SCHEMA, v1pb.Anomaly_DATABASE_CONNECTION, v1pb.Anomaly_DATABASE_SCHEMA_DRIFT:
 		return v1pb.Anomaly_CRITICAL
 	}
 	return v1pb.Anomaly_ANOMALY_SEVERITY_UNSPECIFIED
-}
-
-func convertBackupPlanSchedule(s api.BackupPlanPolicySchedule) v1pb.BackupPlanSchedule {
-	switch s {
-	case api.BackupPlanPolicyScheduleUnset:
-		return v1pb.BackupPlanSchedule_UNSET
-	case api.BackupPlanPolicyScheduleDaily:
-		return v1pb.BackupPlanSchedule_DAILY
-	case api.BackupPlanPolicyScheduleWeekly:
-		return v1pb.BackupPlanSchedule_WEEKLY
-	}
-	return v1pb.BackupPlanSchedule_SCHEDULE_UNSPECIFIED
 }

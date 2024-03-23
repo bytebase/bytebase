@@ -91,8 +91,6 @@ const secondaryViewMode = computed((): SecondaryViewMode => {
   if (
     [
       Task_Type.DATABASE_CREATE,
-      Task_Type.DATABASE_RESTORE_RESTORE,
-      Task_Type.DATABASE_RESTORE_CUTOVER,
       Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
       Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER,
     ].includes(props.task.type)

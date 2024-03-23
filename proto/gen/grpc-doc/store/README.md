@@ -126,7 +126,6 @@
     - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
     - [PlanConfig.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry)
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
-    - [PlanConfig.RestoreDatabaseConfig](#bytebase-store-PlanConfig-RestoreDatabaseConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
     - [PlanConfig.Step](#bytebase-store-PlanConfig-Step)
   
@@ -2051,24 +2050,6 @@ InstanceOptions is the option for instances.
 
 
 
-<a name="bytebase-store-PlanConfig-RestoreDatabaseConfig"></a>
-
-### PlanConfig.RestoreDatabaseConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| target | [string](#string) |  | The resource name of the target to restore. Format: instances/{instance}/databases/{database} |
-| create_database_config | [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig) | optional | create_database_config is present if the user wants to restore to a new database. |
-| backup | [string](#string) |  | Restore from a backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
-| point_in_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | After the PITR operations, the database will be recovered to the state at this time. |
-
-
-
-
-
-
 <a name="bytebase-store-PlanConfig-Spec"></a>
 
 ### PlanConfig.Spec
@@ -2082,7 +2063,6 @@ InstanceOptions is the option for instances.
 | depends_on_specs | [string](#string) | repeated | IDs of the specs that this spec depends on. Must be a subset of the specs in the same step. |
 | create_database_config | [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig) |  |  |
 | change_database_config | [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig) |  |  |
-| restore_database_config | [PlanConfig.RestoreDatabaseConfig](#bytebase-store-PlanConfig-RestoreDatabaseConfig) |  |  |
 | export_data_config | [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig) |  |  |
 
 

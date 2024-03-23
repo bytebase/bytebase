@@ -194,7 +194,6 @@ message Plan {
     oneof config {
       CreateDatabaseConfig create_database_config = 1;
       ChangeDatabaseConfig change_database_config = 2;
-      RestoreDatabaseConfig restore_database_config = 3;
       ExportDataConfig export_data_config = 7;
     }
   }
@@ -216,9 +215,6 @@ message Plan {
     string cluster = 6 [(google.api.field_behavior) = OPTIONAL];
     // owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
     string owner = 7 [(google.api.field_behavior) = OPTIONAL];
-    // backup is the resource name of the backup.
-    // Format: instances/{instance}/databases/{database}/backups/{backup-name}
-    string backup = 8 [(google.api.field_behavior) = OPTIONAL];
     // The environment resource.
     // Format: environments/prod where prod is the environment resource ID.
     string environment = 9 [(google.api.field_behavior) = OPTIONAL];
@@ -249,8 +245,6 @@ message Plan {
       MIGRATE_SDL = 3;
       // Used for DDL changes using gh-ost.
       MIGRATE_GHOST = 4;
-      // Used when restoring from a backup (the restored database branched from the original backup).
-      BRANCH = 5;
       // Used for DML change.
       DATA = 6;
     }
@@ -281,25 +275,6 @@ message Plan {
     }
     // If set, a backup of the modified data will be created automatically before any changes are applied.
     optional PreUpdateBackupDetail pre_update_backup_detail = 8;
-  }
-
-  message RestoreDatabaseConfig {
-    // The resource name of the target to restore.
-    // Format: instances/{instance}/databases/{database}
-    string target = 1;
-    // create_database_config is present if the user wants to restore to a new database.
-    optional CreateDatabaseConfig create_database_config = 2;
-    // source determines how to restore the database.
-    // 1. from a backup
-    // 2. from a point in time
-    oneof source {
-      // Restore from a backup.
-      // Format: instances/{instance}/databases/{database}/backups/{backup-name}
-
-      string backup = 3;
-      // After the PITR operations, the database will be recovered to the state at this time.
-      google.protobuf.Timestamp point_in_time = 4;
-    }
   }
 
   message ExportDataConfig {
@@ -411,7 +386,6 @@ message PlanCheckRun {
     DATABASE_STATEMENT_SUMMARY_REPORT = 5;
     DATABASE_CONNECT = 6;
     DATABASE_GHOST_SYNC = 7;
-    DATABASE_PITR_MYSQL = 8;
   }
   Type type = 3;
 
@@ -594,12 +568,6 @@ message Task {
     DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER = 7;
     // use payload DatabaseDataUpdate
     DATABASE_DATA_UPDATE = 8;
-    // use payload DatabaseBackup
-    DATABASE_BACKUP = 9;
-    // use payload DatabaseRestoreRestore
-    DATABASE_RESTORE_RESTORE = 10;
-    // use payload nil
-    DATABASE_RESTORE_CUTOVER = 11;
     // use payload DatabaseDataExport
     DATABASE_DATA_EXPORT = 12;
   }
@@ -617,8 +585,6 @@ message Task {
     DatabaseSchemaBaseline database_schema_baseline = 10;
     DatabaseSchemaUpdate database_schema_update = 11;
     DatabaseDataUpdate database_data_update = 12;
-    DatabaseBackup database_backup = 13;
-    DatabaseRestoreRestore database_restore_restore = 14;
     DatabaseDataExport database_data_export = 16;
   }
 
@@ -676,29 +642,6 @@ message Task {
     // the rollback SQL statement is generated from.
     // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
     string rollback_from_task = 8;
-  }
-
-  message DatabaseBackup {
-    // The resource name of the backup.
-    // Format: instances/{instance}/databases/{database}/backups/{backup-name}
-    string backup = 1;
-  }
-
-  message DatabaseRestoreRestore {
-    // Target is only used when doing restore to a new database now.
-    // It is empty for the case of in-place restore.
-    // Target {instance} must be within the same environment as the instance of the original database.
-    // {database} is the target database name.
-    // Format: instances/{instance}/databases/database
-    string target = 1;
-
-    oneof source {
-      // Only used when doing restore full backup only.
-      // Format: instances/{instance}/databases/{database}/backups/{backup-name}
-      string backup = 2;
-      // After the PITR operations, the database will be recovered to the state at this time.
-      google.protobuf.Timestamp point_in_time = 3;
-    }
   }
 
   message DatabaseDataExport {

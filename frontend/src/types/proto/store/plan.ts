@@ -33,7 +33,6 @@ export interface PlanConfig_Spec {
   dependsOnSpecs: string[];
   createDatabaseConfig?: PlanConfig_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: PlanConfig_ChangeDatabaseConfig | undefined;
-  restoreDatabaseConfig?: PlanConfig_RestoreDatabaseConfig | undefined;
   exportDataConfig?: PlanConfig_ExportDataConfig | undefined;
 }
 
@@ -205,27 +204,6 @@ export interface PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail {
   database: string;
 }
 
-export interface PlanConfig_RestoreDatabaseConfig {
-  /**
-   * The resource name of the target to restore.
-   * Format: instances/{instance}/databases/{database}
-   */
-  target: string;
-  /** create_database_config is present if the user wants to restore to a new database. */
-  createDatabaseConfig?:
-    | PlanConfig_CreateDatabaseConfig
-    | undefined;
-  /**
-   * Restore from a backup.
-   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
-   */
-  backup?:
-    | string
-    | undefined;
-  /** After the PITR operations, the database will be recovered to the state at this time. */
-  pointInTime?: Date | undefined;
-}
-
 export interface PlanConfig_ExportDataConfig {
   /**
    * The resource name of the target.
@@ -388,7 +366,6 @@ function createBasePlanConfig_Spec(): PlanConfig_Spec {
     dependsOnSpecs: [],
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
-    restoreDatabaseConfig: undefined,
     exportDataConfig: undefined,
   };
 }
@@ -409,9 +386,6 @@ export const PlanConfig_Spec = {
     }
     if (message.changeDatabaseConfig !== undefined) {
       PlanConfig_ChangeDatabaseConfig.encode(message.changeDatabaseConfig, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.restoreDatabaseConfig !== undefined) {
-      PlanConfig_RestoreDatabaseConfig.encode(message.restoreDatabaseConfig, writer.uint32(26).fork()).ldelim();
     }
     if (message.exportDataConfig !== undefined) {
       PlanConfig_ExportDataConfig.encode(message.exportDataConfig, writer.uint32(58).fork()).ldelim();
@@ -461,13 +435,6 @@ export const PlanConfig_Spec = {
 
           message.changeDatabaseConfig = PlanConfig_ChangeDatabaseConfig.decode(reader, reader.uint32());
           continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.restoreDatabaseConfig = PlanConfig_RestoreDatabaseConfig.decode(reader, reader.uint32());
-          continue;
         case 7:
           if (tag !== 58) {
             break;
@@ -499,9 +466,6 @@ export const PlanConfig_Spec = {
       changeDatabaseConfig: isSet(object.changeDatabaseConfig)
         ? PlanConfig_ChangeDatabaseConfig.fromJSON(object.changeDatabaseConfig)
         : undefined,
-      restoreDatabaseConfig: isSet(object.restoreDatabaseConfig)
-        ? PlanConfig_RestoreDatabaseConfig.fromJSON(object.restoreDatabaseConfig)
-        : undefined,
       exportDataConfig: isSet(object.exportDataConfig)
         ? PlanConfig_ExportDataConfig.fromJSON(object.exportDataConfig)
         : undefined,
@@ -525,9 +489,6 @@ export const PlanConfig_Spec = {
     if (message.changeDatabaseConfig !== undefined) {
       obj.changeDatabaseConfig = PlanConfig_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig);
     }
-    if (message.restoreDatabaseConfig !== undefined) {
-      obj.restoreDatabaseConfig = PlanConfig_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig);
-    }
     if (message.exportDataConfig !== undefined) {
       obj.exportDataConfig = PlanConfig_ExportDataConfig.toJSON(message.exportDataConfig);
     }
@@ -548,10 +509,6 @@ export const PlanConfig_Spec = {
     message.changeDatabaseConfig = (object.changeDatabaseConfig !== undefined && object.changeDatabaseConfig !== null)
       ? PlanConfig_ChangeDatabaseConfig.fromPartial(object.changeDatabaseConfig)
       : undefined;
-    message.restoreDatabaseConfig =
-      (object.restoreDatabaseConfig !== undefined && object.restoreDatabaseConfig !== null)
-        ? PlanConfig_RestoreDatabaseConfig.fromPartial(object.restoreDatabaseConfig)
-        : undefined;
     message.exportDataConfig = (object.exportDataConfig !== undefined && object.exportDataConfig !== null)
       ? PlanConfig_ExportDataConfig.fromPartial(object.exportDataConfig)
       : undefined;
@@ -1294,114 +1251,6 @@ export const PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail = {
   ): PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail {
     const message = createBasePlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail();
     message.database = object.database ?? "";
-    return message;
-  },
-};
-
-function createBasePlanConfig_RestoreDatabaseConfig(): PlanConfig_RestoreDatabaseConfig {
-  return { target: "", createDatabaseConfig: undefined, backup: undefined, pointInTime: undefined };
-}
-
-export const PlanConfig_RestoreDatabaseConfig = {
-  encode(message: PlanConfig_RestoreDatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.target !== "") {
-      writer.uint32(10).string(message.target);
-    }
-    if (message.createDatabaseConfig !== undefined) {
-      PlanConfig_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.backup !== undefined) {
-      writer.uint32(26).string(message.backup);
-    }
-    if (message.pointInTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.pointInTime), writer.uint32(34).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanConfig_RestoreDatabaseConfig {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanConfig_RestoreDatabaseConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.target = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.createDatabaseConfig = PlanConfig_CreateDatabaseConfig.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.backup = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.pointInTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanConfig_RestoreDatabaseConfig {
-    return {
-      target: isSet(object.target) ? globalThis.String(object.target) : "",
-      createDatabaseConfig: isSet(object.createDatabaseConfig)
-        ? PlanConfig_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
-        : undefined,
-      backup: isSet(object.backup) ? globalThis.String(object.backup) : undefined,
-      pointInTime: isSet(object.pointInTime) ? fromJsonTimestamp(object.pointInTime) : undefined,
-    };
-  },
-
-  toJSON(message: PlanConfig_RestoreDatabaseConfig): unknown {
-    const obj: any = {};
-    if (message.target !== "") {
-      obj.target = message.target;
-    }
-    if (message.createDatabaseConfig !== undefined) {
-      obj.createDatabaseConfig = PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
-    }
-    if (message.backup !== undefined) {
-      obj.backup = message.backup;
-    }
-    if (message.pointInTime !== undefined) {
-      obj.pointInTime = message.pointInTime.toISOString();
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanConfig_RestoreDatabaseConfig>): PlanConfig_RestoreDatabaseConfig {
-    return PlanConfig_RestoreDatabaseConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<PlanConfig_RestoreDatabaseConfig>): PlanConfig_RestoreDatabaseConfig {
-    const message = createBasePlanConfig_RestoreDatabaseConfig();
-    message.target = object.target ?? "";
-    message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
-      ? PlanConfig_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
-      : undefined;
-    message.backup = object.backup ?? undefined;
-    message.pointInTime = object.pointInTime ?? undefined;
     return message;
   },
 };

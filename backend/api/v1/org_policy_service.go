@@ -12,7 +12,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -555,20 +554,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			return "", errors.Wrap(err, "failed to marshal rollout policy")
 		}
 		return string(payloadBytes), nil
-	case v1pb.PolicyType_BACKUP_PLAN:
-		payload, err := convertToBackupPlanPolicyPayload(policy.GetBackupPlanPolicy())
-		if err != nil {
-			return "", status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		if payload.Schedule != api.BackupPlanPolicyScheduleUnset && payload.Schedule != api.BackupPlanPolicyScheduleDaily && payload.Schedule != api.BackupPlanPolicyScheduleWeekly {
-			return "", status.Errorf(codes.InvalidArgument, "invalid backup plan policy schedule: %q", payload.Schedule)
-		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureBackupPolicy); err != nil {
-			if payload.Schedule != api.BackupPlanPolicyScheduleUnset {
-				return "", status.Errorf(codes.PermissionDenied, err.Error())
-			}
-		}
-		return payload.String()
 	case v1pb.PolicyType_SQL_REVIEW:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
@@ -693,13 +678,6 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 	case api.PolicyTypeRollout:
 		pType = v1pb.PolicyType_ROLLOUT_POLICY
 		payload, err := convertToV1RolloutPolicyPayload(policyMessage.Payload)
-		if err != nil {
-			return nil, err
-		}
-		policy.Policy = payload
-	case api.PolicyTypeBackupPlan:
-		pType = v1pb.PolicyType_BACKUP_PLAN
-		payload, err := convertToV1PBBackupPlanPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
@@ -985,54 +963,6 @@ func convertToStorePBMaskingLevel(level v1pb.MaskingLevel) storepb.MaskingLevel 
 	}
 }
 
-func convertToV1PBBackupPlanPolicy(payloadStr string) (*v1pb.Policy_BackupPlanPolicy, error) {
-	payload, err := api.UnmarshalBackupPlanPolicy(payloadStr)
-	if err != nil {
-		return nil, err
-	}
-
-	schedule := v1pb.BackupPlanSchedule_SCHEDULE_UNSPECIFIED
-	switch payload.Schedule {
-	case api.BackupPlanPolicyScheduleUnset:
-		schedule = v1pb.BackupPlanSchedule_UNSET
-	case api.BackupPlanPolicyScheduleDaily:
-		schedule = v1pb.BackupPlanSchedule_DAILY
-	case api.BackupPlanPolicyScheduleWeekly:
-		schedule = v1pb.BackupPlanSchedule_WEEKLY
-	}
-
-	return &v1pb.Policy_BackupPlanPolicy{
-		BackupPlanPolicy: &v1pb.BackupPlanPolicy{
-			Schedule:          schedule,
-			RetentionDuration: &durationpb.Duration{Seconds: int64(payload.RetentionPeriodTs)},
-		},
-	}, nil
-}
-
-func convertToBackupPlanPolicyPayload(policy *v1pb.BackupPlanPolicy) (*api.BackupPlanPolicy, error) {
-	var schedule api.BackupPlanPolicySchedule
-	switch policy.Schedule {
-	case v1pb.BackupPlanSchedule_UNSET:
-		schedule = api.BackupPlanPolicyScheduleUnset
-	case v1pb.BackupPlanSchedule_DAILY:
-		schedule = api.BackupPlanPolicyScheduleDaily
-	case v1pb.BackupPlanSchedule_WEEKLY:
-		schedule = api.BackupPlanPolicyScheduleWeekly
-	default:
-		return nil, errors.Errorf("invalid backup plan schedule %v", policy.Schedule)
-	}
-
-	retentionPeriodTs := 0
-	if policy.RetentionDuration != nil {
-		retentionPeriodTs = int(policy.RetentionDuration.Seconds)
-	}
-
-	return &api.BackupPlanPolicy{
-		Schedule:          schedule,
-		RetentionPeriodTs: retentionPeriodTs,
-	}, nil
-}
-
 func convertToV1RolloutPolicyPayload(payloadStr string) (*v1pb.Policy_RolloutPolicy, error) {
 	p := &v1pb.RolloutPolicy{}
 	if err := protojson.Unmarshal([]byte(payloadStr), p); err != nil {
@@ -1195,8 +1125,6 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeWorkspaceIAM, nil
 	case v1pb.PolicyType_ROLLOUT_POLICY.String():
 		return api.PolicyTypeRollout, nil
-	case v1pb.PolicyType_BACKUP_PLAN.String():
-		return api.PolicyTypeBackupPlan, nil
 	case v1pb.PolicyType_SQL_REVIEW.String():
 		return api.PolicyTypeSQLReview, nil
 	case v1pb.PolicyType_MASKING.String():

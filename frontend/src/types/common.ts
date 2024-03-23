@@ -1,5 +1,4 @@
 import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
-import { BackupSetting } from "./backup";
 import { EMPTY_ID, UNKNOWN_ID } from "./const";
 import { DataSource } from "./dataSource";
 import { Database } from "./database";
@@ -64,7 +63,6 @@ export type ResourceType =
   | "INSTANCE"
   | "DATABASE"
   | "DATA_SOURCE"
-  | "BACKUP_SETTING"
   | "ISSUE"
   | "PIPELINE"
   | "POLICY"
@@ -88,7 +86,6 @@ interface ResourceMaker {
   (type: "INSTANCE"): Instance;
   (type: "DATABASE"): Database;
   (type: "DATA_SOURCE"): DataSource;
-  (type: "BACKUP_SETTING"): BackupSetting;
   (type: "ISSUE"): Issue;
   (type: "PIPELINE"): Pipeline;
   (type: "STAGE"): Stage;
@@ -191,19 +188,10 @@ const makeUnknown = (type: ResourceType) => {
       sshUser: "",
       sshPassword: "",
       sshPrivateKey: "",
+      authenticationPrivateKey: "",
     },
     // UI-only fields
     updateSsl: false,
-  };
-
-  const UNKNOWN_BACKUP_SETTING: BackupSetting = {
-    id: UNKNOWN_ID,
-    databaseId: UNKNOWN_ID,
-    enabled: false,
-    hour: 0,
-    dayOfWeek: 0,
-    hookUrl: "",
-    retentionPeriodTs: 0,
   };
 
   const UNKNOWN_PIPELINE: Pipeline = {
@@ -299,8 +287,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_DATABASE;
     case "DATA_SOURCE":
       return UNKNOWN_DATA_SOURCE;
-    case "BACKUP_SETTING":
-      return UNKNOWN_BACKUP_SETTING;
     case "ISSUE":
       return UNKNOWN_ISSUE;
     case "PIPELINE":
@@ -413,19 +399,10 @@ const makeEmpty = (type: ResourceType) => {
       sshUser: "",
       sshPassword: "",
       sshPrivateKey: "",
+      authenticationPrivateKey: "",
     },
     // UI-only fields
     updateSsl: false,
-  };
-
-  const EMPTY_BACKUP_SETTING: BackupSetting = {
-    id: EMPTY_ID,
-    databaseId: UNKNOWN_ID,
-    enabled: false,
-    hour: 0,
-    dayOfWeek: 0,
-    hookUrl: "",
-    retentionPeriodTs: 0,
   };
 
   const EMPTY_PIPELINE: Pipeline = {
@@ -513,8 +490,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_DATABASE;
     case "DATA_SOURCE":
       return EMPTY_DATA_SOURCE;
-    case "BACKUP_SETTING":
-      return EMPTY_BACKUP_SETTING;
     case "ISSUE":
       return EMPTY_ISSUE;
     case "PIPELINE":

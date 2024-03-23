@@ -20,8 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -34,31 +32,6 @@ import (
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-)
-
-var (
-	bookDataQuery     = `SELECT * FROM book;`
-	bookDataSQLResult = &v1pb.QueryResult{
-		ColumnNames:     []string{"id", "name"},
-		ColumnTypeNames: []string{"INTEGER", "TEXT"},
-		Masked:          []bool{false, false},
-		Sensitive:       []bool{false, false},
-		Rows: []*v1pb.QueryRow{
-			{
-				Values: []*v1pb.RowValue{
-					{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
-					{Kind: &v1pb.RowValue_StringValue{StringValue: "byte"}},
-				},
-			},
-			{
-				Values: []*v1pb.RowValue{
-					{Kind: &v1pb.RowValue_Int64Value{Int64Value: 2}},
-					{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}},
-				},
-			},
-		},
-		Statement: "SELECT * FROM book",
-	}
 )
 
 func TestSchemaAndDataUpdate(t *testing.T) {
@@ -168,63 +141,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		want := wantHistories[i]
 		a.Equal(want, got)
 		a.NotEqual(history.Version, "")
-	}
-
-	// Create a manual backup.
-	backup, err := ctl.databaseServiceClient.CreateBackup(ctx, &v1pb.CreateBackupRequest{
-		Parent: database.Name,
-		Backup: &v1pb.Backup{
-			Name:       fmt.Sprintf("%s/backups/name", database.Name),
-			BackupType: v1pb.Backup_MANUAL,
-		},
-	})
-	a.NoError(err)
-	err = ctl.waitBackup(ctx, database.Name, backup.Name)
-	a.NoError(err)
-
-	// Create an issue that creates a database.
-	cloneDatabaseName := "testClone"
-	err = ctl.createDatabaseFromBackup(ctx, ctl.project, instance, cloneDatabaseName, "" /* owner */, nil /* labels */, backup)
-	a.NoError(err)
-	cloneDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, cloneDatabaseName)})
-	a.NoError(err)
-
-	// Query clone database book table data.
-	queryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
-		Name: instance.Name, ConnectionDatabase: cloneDatabaseName, Statement: bookDataQuery,
-	})
-	a.NoError(err)
-	a.Equal(1, len(queryResp.Results))
-	diff := cmp.Diff(bookDataSQLResult, queryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
-	a.Equal("", diff)
-
-	// Query clone migration history.
-	resp, err = ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
-		Parent: cloneDatabase.Name,
-		View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
-	})
-	a.NoError(err)
-	histories = resp.ChangeHistories
-	wantCloneHistories := []*v1pb.ChangeHistory{
-		{
-			Source:     v1pb.ChangeHistory_UI,
-			Type:       v1pb.ChangeHistory_BRANCH,
-			Status:     v1pb.ChangeHistory_DONE,
-			Schema:     dumpedSchema,
-			PrevSchema: dumpedSchema,
-		},
-	}
-	a.Equal(len(wantCloneHistories), len(histories))
-	for i, history := range histories {
-		got := &v1pb.ChangeHistory{
-			Source:     history.Source,
-			Type:       history.Type,
-			Status:     history.Status,
-			Schema:     history.Schema,
-			PrevSchema: history.PrevSchema,
-		}
-		want := wantCloneHistories[i]
-		a.True(proto.Equal(got, want))
 	}
 }
 

@@ -777,11 +777,6 @@ export enum Activity_Type {
    * TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
    */
   TYPE_SQL_EDITOR_QUERY = 19,
-  /**
-   * TYPE_DATABASE_RECOVERY_PITR_DONE - Database related activity types.
-   * TYPE_DATABASE_RECOVERY_PITR_DONE represents the database recovery to a point in time is done.
-   */
-  TYPE_DATABASE_RECOVERY_PITR_DONE = 20,
   UNRECOGNIZED = -1,
 }
 
@@ -856,9 +851,6 @@ export function activity_TypeFromJSON(object: any): Activity_Type {
     case 19:
     case "TYPE_SQL_EDITOR_QUERY":
       return Activity_Type.TYPE_SQL_EDITOR_QUERY;
-    case 20:
-    case "TYPE_DATABASE_RECOVERY_PITR_DONE":
-      return Activity_Type.TYPE_DATABASE_RECOVERY_PITR_DONE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -914,8 +906,6 @@ export function activity_TypeToJSON(object: Activity_Type): string {
       return "TYPE_PROJECT_MEMBER_DELETE";
     case Activity_Type.TYPE_SQL_EDITOR_QUERY:
       return "TYPE_SQL_EDITOR_QUERY";
-    case Activity_Type.TYPE_DATABASE_RECOVERY_PITR_DONE:
-      return "TYPE_DATABASE_RECOVERY_PITR_DONE";
     case Activity_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

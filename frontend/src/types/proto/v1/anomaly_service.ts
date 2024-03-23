@@ -2,7 +2,6 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
-import { BackupPlanSchedule, backupPlanScheduleFromJSON, backupPlanScheduleToJSON } from "./org_policy_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -13,7 +12,7 @@ export interface SearchAnomaliesRequest {
    * Only support filter by resource and type for now.
    * For example:
    * Search the anomalies of a specific resource: 'resource="instances/{instance}".'
-   * Search the specified types of anomalies: 'type="DATABASE_BACKUP_POLICY_VIOLATION" | "MIGRATION_SCHEMA".'
+   * Search the specified types of anomalies: 'type="MIGRATION_SCHEMA".'
    */
   filter: string;
   /**
@@ -57,8 +56,6 @@ export interface Anomaly {
   severity: Anomaly_AnomalySeverity;
   instanceConnectionDetail?: Anomaly_InstanceConnectionDetail | undefined;
   databaseConnectionDetail?: Anomaly_DatabaseConnectionDetail | undefined;
-  databaseBackupPolicyViolationDetail?: Anomaly_DatabaseBackupPolicyViolationDetail | undefined;
-  databaseBackupMissingDetail?: Anomaly_DatabaseBackupMissingDetail | undefined;
   databaseSchemaDriftDetail?: Anomaly_DatabaseSchemaDriftDetail | undefined;
   createTime: Date | undefined;
   updateTime: Date | undefined;
@@ -77,15 +74,10 @@ export enum Anomaly_AnomalyType {
   /** MIGRATION_SCHEMA - MIGRATION_SCHEMA is the anomaly type for migration schema, e.g. the migration schema in the instance is missing. */
   MIGRATION_SCHEMA = 2,
   /**
-   * DATABASE_BACKUP_POLICY_VIOLATION - Database level anomaly.
+   * DATABASE_CONNECTION - Database level anomaly.
    *
-   * DATABASE_BACKUP_POLICY_VIOLATION is the anomaly type for database backup policy violation,
-   * e.g. the database backup policy is not meet the environment backup policy.
+   * DATABASE_CONNECTION is the anomaly type for database connection, e.g. the database had been deleted.
    */
-  DATABASE_BACKUP_POLICY_VIOLATION = 3,
-  /** DATABASE_BACKUP_MISSING - DATABASE_BACKUP_MISSING is the anomaly type for the backup missing, e.g. the backup is missing. */
-  DATABASE_BACKUP_MISSING = 4,
-  /** DATABASE_CONNECTION - DATABASE_CONNECTION is the anomaly type for database connection, e.g. the database had been deleted. */
   DATABASE_CONNECTION = 5,
   /**
    * DATABASE_SCHEMA_DRIFT - DATABASE_SCHEMA_DRIFT is the anomaly type for database schema drift,
@@ -106,12 +98,6 @@ export function anomaly_AnomalyTypeFromJSON(object: any): Anomaly_AnomalyType {
     case 2:
     case "MIGRATION_SCHEMA":
       return Anomaly_AnomalyType.MIGRATION_SCHEMA;
-    case 3:
-    case "DATABASE_BACKUP_POLICY_VIOLATION":
-      return Anomaly_AnomalyType.DATABASE_BACKUP_POLICY_VIOLATION;
-    case 4:
-    case "DATABASE_BACKUP_MISSING":
-      return Anomaly_AnomalyType.DATABASE_BACKUP_MISSING;
     case 5:
     case "DATABASE_CONNECTION":
       return Anomaly_AnomalyType.DATABASE_CONNECTION;
@@ -133,10 +119,6 @@ export function anomaly_AnomalyTypeToJSON(object: Anomaly_AnomalyType): string {
       return "INSTANCE_CONNECTION";
     case Anomaly_AnomalyType.MIGRATION_SCHEMA:
       return "MIGRATION_SCHEMA";
-    case Anomaly_AnomalyType.DATABASE_BACKUP_POLICY_VIOLATION:
-      return "DATABASE_BACKUP_POLICY_VIOLATION";
-    case Anomaly_AnomalyType.DATABASE_BACKUP_MISSING:
-      return "DATABASE_BACKUP_MISSING";
     case Anomaly_AnomalyType.DATABASE_CONNECTION:
       return "DATABASE_CONNECTION";
     case Anomaly_AnomalyType.DATABASE_SCHEMA_DRIFT:
@@ -215,27 +197,6 @@ export interface Anomaly_InstanceConnectionDetail {
 export interface Anomaly_DatabaseConnectionDetail {
   /** detail is the detail of the database connection failure. */
   detail: string;
-}
-
-/** DatabaseBackupPolicyViolationDetail is the detail for database backup policy violation anomaly. */
-export interface Anomaly_DatabaseBackupPolicyViolationDetail {
-  /**
-   * parent is the parent of the database.
-   * Format: environments/{environment}
-   */
-  parent: string;
-  /** expected_schedule is the expected backup plan schedule in the parent. */
-  expectedSchedule: BackupPlanSchedule;
-  /** actual_schedule is the actual backup plan schedule in the database. */
-  actualSchedule: BackupPlanSchedule;
-}
-
-/** DatabaseBackupMissingDetail is the detail for database backup missing anomaly. */
-export interface Anomaly_DatabaseBackupMissingDetail {
-  /** expected_schedule is the expected backup plan schedule in the database. */
-  expectedSchedule: BackupPlanSchedule;
-  /** latest_backup_time is the latest backup time in the database. */
-  latestBackupTime: Date | undefined;
 }
 
 /** DatabaseSchemaDriftDetail is the detail for database schema drift anomaly. */
@@ -420,8 +381,6 @@ function createBaseAnomaly(): Anomaly {
     severity: 0,
     instanceConnectionDetail: undefined,
     databaseConnectionDetail: undefined,
-    databaseBackupPolicyViolationDetail: undefined,
-    databaseBackupMissingDetail: undefined,
     databaseSchemaDriftDetail: undefined,
     createTime: undefined,
     updateTime: undefined,
@@ -444,16 +403,6 @@ export const Anomaly = {
     }
     if (message.databaseConnectionDetail !== undefined) {
       Anomaly_DatabaseConnectionDetail.encode(message.databaseConnectionDetail, writer.uint32(42).fork()).ldelim();
-    }
-    if (message.databaseBackupPolicyViolationDetail !== undefined) {
-      Anomaly_DatabaseBackupPolicyViolationDetail.encode(
-        message.databaseBackupPolicyViolationDetail,
-        writer.uint32(50).fork(),
-      ).ldelim();
-    }
-    if (message.databaseBackupMissingDetail !== undefined) {
-      Anomaly_DatabaseBackupMissingDetail.encode(message.databaseBackupMissingDetail, writer.uint32(58).fork())
-        .ldelim();
     }
     if (message.databaseSchemaDriftDetail !== undefined) {
       Anomaly_DatabaseSchemaDriftDetail.encode(message.databaseSchemaDriftDetail, writer.uint32(66).fork()).ldelim();
@@ -509,23 +458,6 @@ export const Anomaly = {
 
           message.databaseConnectionDetail = Anomaly_DatabaseConnectionDetail.decode(reader, reader.uint32());
           continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.databaseBackupPolicyViolationDetail = Anomaly_DatabaseBackupPolicyViolationDetail.decode(
-            reader,
-            reader.uint32(),
-          );
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.databaseBackupMissingDetail = Anomaly_DatabaseBackupMissingDetail.decode(reader, reader.uint32());
-          continue;
         case 8:
           if (tag !== 66) {
             break;
@@ -567,12 +499,6 @@ export const Anomaly = {
       databaseConnectionDetail: isSet(object.databaseConnectionDetail)
         ? Anomaly_DatabaseConnectionDetail.fromJSON(object.databaseConnectionDetail)
         : undefined,
-      databaseBackupPolicyViolationDetail: isSet(object.databaseBackupPolicyViolationDetail)
-        ? Anomaly_DatabaseBackupPolicyViolationDetail.fromJSON(object.databaseBackupPolicyViolationDetail)
-        : undefined,
-      databaseBackupMissingDetail: isSet(object.databaseBackupMissingDetail)
-        ? Anomaly_DatabaseBackupMissingDetail.fromJSON(object.databaseBackupMissingDetail)
-        : undefined,
       databaseSchemaDriftDetail: isSet(object.databaseSchemaDriftDetail)
         ? Anomaly_DatabaseSchemaDriftDetail.fromJSON(object.databaseSchemaDriftDetail)
         : undefined,
@@ -597,14 +523,6 @@ export const Anomaly = {
     }
     if (message.databaseConnectionDetail !== undefined) {
       obj.databaseConnectionDetail = Anomaly_DatabaseConnectionDetail.toJSON(message.databaseConnectionDetail);
-    }
-    if (message.databaseBackupPolicyViolationDetail !== undefined) {
-      obj.databaseBackupPolicyViolationDetail = Anomaly_DatabaseBackupPolicyViolationDetail.toJSON(
-        message.databaseBackupPolicyViolationDetail,
-      );
-    }
-    if (message.databaseBackupMissingDetail !== undefined) {
-      obj.databaseBackupMissingDetail = Anomaly_DatabaseBackupMissingDetail.toJSON(message.databaseBackupMissingDetail);
     }
     if (message.databaseSchemaDriftDetail !== undefined) {
       obj.databaseSchemaDriftDetail = Anomaly_DatabaseSchemaDriftDetail.toJSON(message.databaseSchemaDriftDetail);
@@ -633,14 +551,6 @@ export const Anomaly = {
     message.databaseConnectionDetail =
       (object.databaseConnectionDetail !== undefined && object.databaseConnectionDetail !== null)
         ? Anomaly_DatabaseConnectionDetail.fromPartial(object.databaseConnectionDetail)
-        : undefined;
-    message.databaseBackupPolicyViolationDetail =
-      (object.databaseBackupPolicyViolationDetail !== undefined && object.databaseBackupPolicyViolationDetail !== null)
-        ? Anomaly_DatabaseBackupPolicyViolationDetail.fromPartial(object.databaseBackupPolicyViolationDetail)
-        : undefined;
-    message.databaseBackupMissingDetail =
-      (object.databaseBackupMissingDetail !== undefined && object.databaseBackupMissingDetail !== null)
-        ? Anomaly_DatabaseBackupMissingDetail.fromPartial(object.databaseBackupMissingDetail)
         : undefined;
     message.databaseSchemaDriftDetail =
       (object.databaseSchemaDriftDetail !== undefined && object.databaseSchemaDriftDetail !== null)
@@ -762,171 +672,6 @@ export const Anomaly_DatabaseConnectionDetail = {
   fromPartial(object: DeepPartial<Anomaly_DatabaseConnectionDetail>): Anomaly_DatabaseConnectionDetail {
     const message = createBaseAnomaly_DatabaseConnectionDetail();
     message.detail = object.detail ?? "";
-    return message;
-  },
-};
-
-function createBaseAnomaly_DatabaseBackupPolicyViolationDetail(): Anomaly_DatabaseBackupPolicyViolationDetail {
-  return { parent: "", expectedSchedule: 0, actualSchedule: 0 };
-}
-
-export const Anomaly_DatabaseBackupPolicyViolationDetail = {
-  encode(message: Anomaly_DatabaseBackupPolicyViolationDetail, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    if (message.expectedSchedule !== 0) {
-      writer.uint32(16).int32(message.expectedSchedule);
-    }
-    if (message.actualSchedule !== 0) {
-      writer.uint32(24).int32(message.actualSchedule);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Anomaly_DatabaseBackupPolicyViolationDetail {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAnomaly_DatabaseBackupPolicyViolationDetail();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.expectedSchedule = reader.int32() as any;
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.actualSchedule = reader.int32() as any;
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Anomaly_DatabaseBackupPolicyViolationDetail {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      expectedSchedule: isSet(object.expectedSchedule) ? backupPlanScheduleFromJSON(object.expectedSchedule) : 0,
-      actualSchedule: isSet(object.actualSchedule) ? backupPlanScheduleFromJSON(object.actualSchedule) : 0,
-    };
-  },
-
-  toJSON(message: Anomaly_DatabaseBackupPolicyViolationDetail): unknown {
-    const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.expectedSchedule !== 0) {
-      obj.expectedSchedule = backupPlanScheduleToJSON(message.expectedSchedule);
-    }
-    if (message.actualSchedule !== 0) {
-      obj.actualSchedule = backupPlanScheduleToJSON(message.actualSchedule);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Anomaly_DatabaseBackupPolicyViolationDetail>): Anomaly_DatabaseBackupPolicyViolationDetail {
-    return Anomaly_DatabaseBackupPolicyViolationDetail.fromPartial(base ?? {});
-  },
-  fromPartial(
-    object: DeepPartial<Anomaly_DatabaseBackupPolicyViolationDetail>,
-  ): Anomaly_DatabaseBackupPolicyViolationDetail {
-    const message = createBaseAnomaly_DatabaseBackupPolicyViolationDetail();
-    message.parent = object.parent ?? "";
-    message.expectedSchedule = object.expectedSchedule ?? 0;
-    message.actualSchedule = object.actualSchedule ?? 0;
-    return message;
-  },
-};
-
-function createBaseAnomaly_DatabaseBackupMissingDetail(): Anomaly_DatabaseBackupMissingDetail {
-  return { expectedSchedule: 0, latestBackupTime: undefined };
-}
-
-export const Anomaly_DatabaseBackupMissingDetail = {
-  encode(message: Anomaly_DatabaseBackupMissingDetail, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.expectedSchedule !== 0) {
-      writer.uint32(8).int32(message.expectedSchedule);
-    }
-    if (message.latestBackupTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.latestBackupTime), writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Anomaly_DatabaseBackupMissingDetail {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAnomaly_DatabaseBackupMissingDetail();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.expectedSchedule = reader.int32() as any;
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.latestBackupTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Anomaly_DatabaseBackupMissingDetail {
-    return {
-      expectedSchedule: isSet(object.expectedSchedule) ? backupPlanScheduleFromJSON(object.expectedSchedule) : 0,
-      latestBackupTime: isSet(object.latestBackupTime) ? fromJsonTimestamp(object.latestBackupTime) : undefined,
-    };
-  },
-
-  toJSON(message: Anomaly_DatabaseBackupMissingDetail): unknown {
-    const obj: any = {};
-    if (message.expectedSchedule !== 0) {
-      obj.expectedSchedule = backupPlanScheduleToJSON(message.expectedSchedule);
-    }
-    if (message.latestBackupTime !== undefined) {
-      obj.latestBackupTime = message.latestBackupTime.toISOString();
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Anomaly_DatabaseBackupMissingDetail>): Anomaly_DatabaseBackupMissingDetail {
-    return Anomaly_DatabaseBackupMissingDetail.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Anomaly_DatabaseBackupMissingDetail>): Anomaly_DatabaseBackupMissingDetail {
-    const message = createBaseAnomaly_DatabaseBackupMissingDetail();
-    message.expectedSchedule = object.expectedSchedule ?? 0;
-    message.latestBackupTime = object.latestBackupTime ?? undefined;
     return message;
   },
 };
