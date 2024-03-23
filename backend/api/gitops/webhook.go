@@ -1706,12 +1706,13 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 	}
 
 	activityCreate := &store.ActivityMessage{
-		CreatorUID:   creatorID,
-		ContainerUID: project.UID,
-		Type:         api.ActivityProjectRepositoryPush,
-		Level:        api.ActivityInfo,
-		Comment:      fmt.Sprintf("Created issue %q.", issue.Title),
-		Payload:      string(activityPayload),
+		CreatorUID:        creatorID,
+		ResourceContainer: project.GetName(),
+		ContainerUID:      project.UID,
+		Type:              api.ActivityProjectRepositoryPush,
+		Level:             api.ActivityInfo,
+		Comment:           fmt.Sprintf("Created issue %q.", issue.Title),
+		Payload:           string(activityPayload),
 	}
 	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issueUID)).SetInternal(err)
@@ -1830,7 +1831,7 @@ func (s *Service) findProjectDatabases(ctx context.Context, projectID int, dbNam
 }
 
 // getIgnoredFileActivityCreate get a warning project activityCreate for the ignored file with given error.
-func getIgnoredFileActivityCreate(projectID int, pushEvent vcs.PushEvent, file string, err error) *store.ActivityMessage {
+func getIgnoredFileActivityCreate(project *store.ProjectMessage, pushEvent vcs.PushEvent, file string, err error) *store.ActivityMessage {
 	payload, marshalErr := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
 			VCSPushEvent: pushEvent,
@@ -1844,12 +1845,13 @@ func getIgnoredFileActivityCreate(projectID int, pushEvent vcs.PushEvent, file s
 	}
 
 	return &store.ActivityMessage{
-		CreatorUID:   api.SystemBotID,
-		ContainerUID: projectID,
-		Type:         api.ActivityProjectRepositoryPush,
-		Level:        api.ActivityWarn,
-		Comment:      fmt.Sprintf("Ignored file %q, %v.", file, err),
-		Payload:      string(payload),
+		CreatorUID:        api.SystemBotID,
+		ResourceContainer: project.GetName(),
+		ContainerUID:      project.UID,
+		Type:              api.ActivityProjectRepositoryPush,
+		Level:             api.ActivityWarn,
+		Comment:           fmt.Sprintf("Ignored file %q, %v.", file, err),
+		Payload:           string(payload),
 	}
 }
 
@@ -1903,7 +1905,7 @@ func (s *Service) prepareIssueFromSDLFile(ctx context.Context, oauthContext *com
 
 	sdl, err := s.readFileContent(ctx, oauthContext, pushEvent, repoInfo, file)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
+		activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
 		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
@@ -1920,7 +1922,7 @@ func (s *Service) prepareIssueFromSDLFile(ctx context.Context, oauthContext *com
 		Payload:    sheetPayload,
 	})
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
+		activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
 		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
@@ -1936,7 +1938,7 @@ func (s *Service) prepareIssueFromSDLFile(ctx context.Context, oauthContext *com
 
 	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID, dbName, schemaInfo.Environment)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
+		activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
@@ -1966,7 +1968,7 @@ func (s *Service) prepareIssueFromFile(
 	if err != nil {
 		return nil, []*store.ActivityMessage{
 			getIgnoredFileActivityCreate(
-				repoInfo.project.UID,
+				repoInfo.project,
 				pushEvent,
 				fileInfo.item.FileName,
 				errors.Wrap(err, "Failed to read file content"),
@@ -1990,7 +1992,7 @@ func (s *Service) prepareIssueFromFile(
 				Payload:    sheetPayload,
 			})
 			if err != nil {
-				activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
+				activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
 				return nil, []*store.ActivityMessage{activityCreate}
 			}
 
@@ -2008,7 +2010,7 @@ func (s *Service) prepareIssueFromFile(
 		if err != nil {
 			return nil, []*store.ActivityMessage{
 				getIgnoredFileActivityCreate(
-					repoInfo.project.UID,
+					repoInfo.project,
 					pushEvent,
 					fileInfo.item.FileName,
 					errors.Wrap(err, "Failed to parse file content as YAML"),
@@ -2024,7 +2026,7 @@ func (s *Service) prepareIssueFromFile(
 			Payload:    sheetPayload,
 		})
 		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
+			activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
 			return nil, []*store.ActivityMessage{activityCreate}
 		}
 
@@ -2034,7 +2036,7 @@ func (s *Service) prepareIssueFromFile(
 			if err != nil {
 				return nil, []*store.ActivityMessage{
 					getIgnoredFileActivityCreate(
-						repoInfo.project.UID,
+						repoInfo.project,
 						pushEvent,
 						fileInfo.item.FileName,
 						errors.Wrapf(err, "Failed to find project database %q", database.Name),
@@ -2059,7 +2061,7 @@ func (s *Service) prepareIssueFromFile(
 	// TODO(dragonly): handle modified file for tenant mode.
 	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to find project databases"))
+		activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
@@ -2072,7 +2074,7 @@ func (s *Service) prepareIssueFromFile(
 			Payload:    sheetPayload,
 		})
 		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
+			activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
 			return nil, []*store.ActivityMessage{activityCreate}
 		}
 
@@ -2094,7 +2096,7 @@ func (s *Service) prepareIssueFromFile(
 	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileInfo.item.FileName, migrationVersion, content, pushEvent); err != nil {
 		return nil, []*store.ActivityMessage{
 			getIgnoredFileActivityCreate(
-				repoInfo.project.UID,
+				repoInfo.project,
 				pushEvent,
 				fileInfo.item.FileName,
 				errors.Wrap(err, "Failed to find project task"),
@@ -2234,11 +2236,12 @@ func patchTask(ctx context.Context, stores *store.Store, activityManager *activi
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task sheet: %v", taskPatched.Name).SetInternal(err)
 		}
 		if _, err := activityManager.CreateActivity(ctx, &store.ActivityMessage{
-			CreatorUID:   taskPatch.UpdaterID,
-			ContainerUID: taskPatched.PipelineID,
-			Type:         api.ActivityPipelineTaskStatementUpdate,
-			Payload:      string(payload),
-			Level:        api.ActivityInfo,
+			CreatorUID:        taskPatch.UpdaterID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      taskPatched.PipelineID,
+			Type:              api.ActivityPipelineTaskStatementUpdate,
+			Payload:           string(payload),
+			Level:             api.ActivityInfo,
 		}, &activity.Metadata{
 			Issue: issue,
 		}); err != nil {

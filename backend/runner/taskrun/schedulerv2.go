@@ -596,11 +596,12 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						return errors.Wrap(err, "failed to marshal ActivityPipelineStageStatusUpdate payload")
 					}
 					activityCreate := &store.ActivityMessage{
-						CreatorUID:   api.SystemBotID,
-						ContainerUID: *issue.PipelineUID,
-						Type:         api.ActivityPipelineStageStatusUpdate,
-						Level:        api.ActivityInfo,
-						Payload:      string(bytes),
+						CreatorUID:        api.SystemBotID,
+						ResourceContainer: issue.Project.GetName(),
+						ContainerUID:      *issue.PipelineUID,
+						Type:              api.ActivityPipelineStageStatusUpdate,
+						Level:             api.ActivityInfo,
+						Payload:           string(bytes),
 					}
 					if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 						Issue: issue,
@@ -628,12 +629,13 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						return errors.Wrapf(err, "failed to marshal activity payload")
 					}
 					create := &store.ActivityMessage{
-						CreatorUID:   api.SystemBotID,
-						ContainerUID: nextStage.PipelineID,
-						Type:         api.ActivityNotifyPipelineRollout,
-						Level:        api.ActivityInfo,
-						Comment:      "",
-						Payload:      string(payload),
+						CreatorUID:        api.SystemBotID,
+						ResourceContainer: issue.Project.GetName(),
+						ContainerUID:      nextStage.PipelineID,
+						Type:              api.ActivityNotifyPipelineRollout,
+						Level:             api.ActivityInfo,
+						Comment:           "",
+						Payload:           string(payload),
 					}
 					if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 						return err
@@ -662,12 +664,13 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 							return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
 						}
 						activityCreate := &store.ActivityMessage{
-							CreatorUID:   api.SystemBotID,
-							ContainerUID: updatedIssue.UID,
-							Type:         api.ActivityIssueStatusUpdate,
-							Level:        api.ActivityInfo,
-							Comment:      "",
-							Payload:      string(payload),
+							CreatorUID:        api.SystemBotID,
+							ResourceContainer: updatedIssue.Project.GetName(),
+							ContainerUID:      updatedIssue.UID,
+							Type:              api.ActivityIssueStatusUpdate,
+							Level:             api.ActivityInfo,
+							Comment:           "",
+							Payload:           string(payload),
 						}
 						if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 							Issue: updatedIssue,
@@ -712,11 +715,12 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 			return errors.Wrap(err, "failed to marshal ActivityPipelineTaskRunStatusUpdatePayload payload")
 		}
 		activityCreate := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: task.PipelineID,
-			Type:         api.ActivityPipelineTaskRunStatusUpdate,
-			Level:        api.ActivityInfo,
-			Payload:      string(bytes),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      task.PipelineID,
+			Type:              api.ActivityPipelineTaskRunStatusUpdate,
+			Level:             api.ActivityInfo,
+			Payload:           string(bytes),
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 			Issue: issue,

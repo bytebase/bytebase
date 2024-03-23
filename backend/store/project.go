@@ -31,6 +31,10 @@ type ProjectMessage struct {
 	Deleted bool
 }
 
+func (p *ProjectMessage) GetName() string {
+	return fmt.Sprintf("projects/%s", p.ResourceID)
+}
+
 // FindProjectMessage is the message for finding projects.
 type FindProjectMessage struct {
 	// We should only set either UID or ResourceID.
