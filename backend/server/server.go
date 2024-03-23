@@ -42,7 +42,6 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
-	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/mail"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
@@ -73,7 +72,6 @@ type Server struct {
 	schemaSyncer       *schemasync.Syncer
 	slowQuerySyncer    *slowquerysync.Syncer
 	mailSender         *mail.SlowQueryWeeklyMailSender
-	backupRunner       *backuprun.Runner
 	rollbackRunner     *rollbackrun.Runner
 	approvalRunner     *approval.Runner
 	relayRunner        *relay.Runner
@@ -269,7 +267,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.schemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 	if !profile.Readonly {
 		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
-		s.backupRunner = backuprun.NewRunner(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, &profile)
 		s.rollbackRunner = rollbackrun.NewRunner(&profile, storeInstance, s.dbFactory, s.stateCfg)
 		s.mailSender = mail.NewSender(s.store, s.stateCfg)
 		s.relayRunner = relay.NewRunner(storeInstance, s.activityManager, s.stateCfg)
@@ -282,11 +279,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.schemaSyncer, s.stateCfg, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.schemaSyncer, s.stateCfg, s.backupRunner, s.activityManager, profile))
 
 		s.planCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
 		databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
@@ -297,8 +291,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
 		ghostSyncExecutor := plancheck.NewGhostSyncExecutor(storeInstance, s.secret)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
-		pitrMySQLExecutor := plancheck.NewPITRMySQLExecutor(storeInstance, s.dbFactory)
-		s.planCheckScheduler.Register(store.PlanCheckDatabasePITRMySQL, pitrMySQLExecutor)
 		statementReportExecutor := plancheck.NewStatementReportExecutor(storeInstance, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 
@@ -355,7 +347,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.activityManager, s.iamManager, s.backupRunner, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
+	rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.activityManager, s.iamManager, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -388,8 +380,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.slowQuerySyncer.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.mailSender.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.backupRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.rollbackRunner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
