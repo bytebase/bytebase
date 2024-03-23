@@ -9,7 +9,6 @@ import {
   SQLResultSetV1,
   StreamingQueryController,
   SQLEditorTab,
-  UNKNOWN_ID,
   WebTerminalQueryItemV1,
   WebTerminalQueryState,
   SQLEditorQueryParams,
@@ -24,7 +23,7 @@ import {
   extractGrpcErrorMessage,
   getErrorCode as extractGrpcStatusCode,
 } from "@/utils/grpcweb";
-import { useDatabaseV1Store, useInstanceV1Store } from "../v1";
+import { useDatabaseV1Store } from "../v1";
 
 const ENDPOINT = "/v1:adminExecute";
 const SIG_ABORT = 3000 + Status.ABORTED;
