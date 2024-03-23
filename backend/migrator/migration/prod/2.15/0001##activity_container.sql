@@ -1,1 +1,1 @@
-ALTER TABLE activity ADD COLUMN container TEXT;
+ALTER TABLE activity ADD COLUMN resource_container TEXT;
