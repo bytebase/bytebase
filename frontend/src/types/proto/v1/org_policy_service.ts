@@ -1,7 +1,6 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
@@ -14,7 +13,6 @@ export enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0,
   WORKSPACE_IAM = 1,
   ROLLOUT_POLICY = 11,
-  BACKUP_PLAN = 3,
   SQL_REVIEW = 4,
   MASKING = 5,
   SLOW_QUERY = 7,
@@ -36,9 +34,6 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 11:
     case "ROLLOUT_POLICY":
       return PolicyType.ROLLOUT_POLICY;
-    case 3:
-    case "BACKUP_PLAN":
-      return PolicyType.BACKUP_PLAN;
     case 4:
     case "SQL_REVIEW":
       return PolicyType.SQL_REVIEW;
@@ -75,8 +70,6 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "WORKSPACE_IAM";
     case PolicyType.ROLLOUT_POLICY:
       return "ROLLOUT_POLICY";
-    case PolicyType.BACKUP_PLAN:
-      return "BACKUP_PLAN";
     case PolicyType.SQL_REVIEW:
       return "SQL_REVIEW";
     case PolicyType.MASKING:
@@ -149,51 +142,6 @@ export function policyResourceTypeToJSON(object: PolicyResourceType): string {
     case PolicyResourceType.DATABASE:
       return "DATABASE";
     case PolicyResourceType.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum BackupPlanSchedule {
-  SCHEDULE_UNSPECIFIED = 0,
-  UNSET = 1,
-  DAILY = 2,
-  WEEKLY = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function backupPlanScheduleFromJSON(object: any): BackupPlanSchedule {
-  switch (object) {
-    case 0:
-    case "SCHEDULE_UNSPECIFIED":
-      return BackupPlanSchedule.SCHEDULE_UNSPECIFIED;
-    case 1:
-    case "UNSET":
-      return BackupPlanSchedule.UNSET;
-    case 2:
-    case "DAILY":
-      return BackupPlanSchedule.DAILY;
-    case 3:
-    case "WEEKLY":
-      return BackupPlanSchedule.WEEKLY;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return BackupPlanSchedule.UNRECOGNIZED;
-  }
-}
-
-export function backupPlanScheduleToJSON(object: BackupPlanSchedule): string {
-  switch (object) {
-    case BackupPlanSchedule.SCHEDULE_UNSPECIFIED:
-      return "SCHEDULE_UNSPECIFIED";
-    case BackupPlanSchedule.UNSET:
-      return "UNSET";
-    case BackupPlanSchedule.DAILY:
-      return "DAILY";
-    case BackupPlanSchedule.WEEKLY:
-      return "WEEKLY";
-    case BackupPlanSchedule.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -357,7 +305,6 @@ export interface Policy {
   type: PolicyType;
   workspaceIamPolicy?: IamPolicy | undefined;
   rolloutPolicy?: RolloutPolicy | undefined;
-  backupPlanPolicy?: BackupPlanPolicy | undefined;
   maskingPolicy?: MaskingPolicy | undefined;
   sqlReviewPolicy?: SQLReviewPolicy | undefined;
   slowQueryPolicy?: SlowQueryPolicy | undefined;
@@ -381,11 +328,6 @@ export interface RolloutPolicy {
    * roles/CREATOR
    */
   issueRoles: string[];
-}
-
-export interface BackupPlanPolicy {
-  schedule: BackupPlanSchedule;
-  retentionDuration: Duration | undefined;
 }
 
 export interface SlowQueryPolicy {
@@ -997,7 +939,6 @@ function createBasePolicy(): Policy {
     type: 0,
     workspaceIamPolicy: undefined,
     rolloutPolicy: undefined,
-    backupPlanPolicy: undefined,
     maskingPolicy: undefined,
     sqlReviewPolicy: undefined,
     slowQueryPolicy: undefined,
@@ -1030,9 +971,6 @@ export const Policy = {
     }
     if (message.rolloutPolicy !== undefined) {
       RolloutPolicy.encode(message.rolloutPolicy, writer.uint32(154).fork()).ldelim();
-    }
-    if (message.backupPlanPolicy !== undefined) {
-      BackupPlanPolicy.encode(message.backupPlanPolicy, writer.uint32(66).fork()).ldelim();
     }
     if (message.maskingPolicy !== undefined) {
       MaskingPolicy.encode(message.maskingPolicy, writer.uint32(74).fork()).ldelim();
@@ -1118,13 +1056,6 @@ export const Policy = {
           }
 
           message.rolloutPolicy = RolloutPolicy.decode(reader, reader.uint32());
-          continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.backupPlanPolicy = BackupPlanPolicy.decode(reader, reader.uint32());
           continue;
         case 9:
           if (tag !== 74) {
@@ -1216,7 +1147,6 @@ export const Policy = {
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
       workspaceIamPolicy: isSet(object.workspaceIamPolicy) ? IamPolicy.fromJSON(object.workspaceIamPolicy) : undefined,
       rolloutPolicy: isSet(object.rolloutPolicy) ? RolloutPolicy.fromJSON(object.rolloutPolicy) : undefined,
-      backupPlanPolicy: isSet(object.backupPlanPolicy) ? BackupPlanPolicy.fromJSON(object.backupPlanPolicy) : undefined,
       maskingPolicy: isSet(object.maskingPolicy) ? MaskingPolicy.fromJSON(object.maskingPolicy) : undefined,
       sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
       slowQueryPolicy: isSet(object.slowQueryPolicy) ? SlowQueryPolicy.fromJSON(object.slowQueryPolicy) : undefined,
@@ -1257,9 +1187,6 @@ export const Policy = {
     }
     if (message.rolloutPolicy !== undefined) {
       obj.rolloutPolicy = RolloutPolicy.toJSON(message.rolloutPolicy);
-    }
-    if (message.backupPlanPolicy !== undefined) {
-      obj.backupPlanPolicy = BackupPlanPolicy.toJSON(message.backupPlanPolicy);
     }
     if (message.maskingPolicy !== undefined) {
       obj.maskingPolicy = MaskingPolicy.toJSON(message.maskingPolicy);
@@ -1310,9 +1237,6 @@ export const Policy = {
       : undefined;
     message.rolloutPolicy = (object.rolloutPolicy !== undefined && object.rolloutPolicy !== null)
       ? RolloutPolicy.fromPartial(object.rolloutPolicy)
-      : undefined;
-    message.backupPlanPolicy = (object.backupPlanPolicy !== undefined && object.backupPlanPolicy !== null)
-      ? BackupPlanPolicy.fromPartial(object.backupPlanPolicy)
       : undefined;
     message.maskingPolicy = (object.maskingPolicy !== undefined && object.maskingPolicy !== null)
       ? MaskingPolicy.fromPartial(object.maskingPolicy)
@@ -1452,82 +1376,6 @@ export const RolloutPolicy = {
     message.workspaceRoles = object.workspaceRoles?.map((e) => e) || [];
     message.projectRoles = object.projectRoles?.map((e) => e) || [];
     message.issueRoles = object.issueRoles?.map((e) => e) || [];
-    return message;
-  },
-};
-
-function createBaseBackupPlanPolicy(): BackupPlanPolicy {
-  return { schedule: 0, retentionDuration: undefined };
-}
-
-export const BackupPlanPolicy = {
-  encode(message: BackupPlanPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.schedule !== 0) {
-      writer.uint32(8).int32(message.schedule);
-    }
-    if (message.retentionDuration !== undefined) {
-      Duration.encode(message.retentionDuration, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): BackupPlanPolicy {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBackupPlanPolicy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.schedule = reader.int32() as any;
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.retentionDuration = Duration.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): BackupPlanPolicy {
-    return {
-      schedule: isSet(object.schedule) ? backupPlanScheduleFromJSON(object.schedule) : 0,
-      retentionDuration: isSet(object.retentionDuration) ? Duration.fromJSON(object.retentionDuration) : undefined,
-    };
-  },
-
-  toJSON(message: BackupPlanPolicy): unknown {
-    const obj: any = {};
-    if (message.schedule !== 0) {
-      obj.schedule = backupPlanScheduleToJSON(message.schedule);
-    }
-    if (message.retentionDuration !== undefined) {
-      obj.retentionDuration = Duration.toJSON(message.retentionDuration);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<BackupPlanPolicy>): BackupPlanPolicy {
-    return BackupPlanPolicy.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<BackupPlanPolicy>): BackupPlanPolicy {
-    const message = createBaseBackupPlanPolicy();
-    message.schedule = object.schedule ?? 0;
-    message.retentionDuration = (object.retentionDuration !== undefined && object.retentionDuration !== null)
-      ? Duration.fromPartial(object.retentionDuration)
-      : undefined;
     return message;
   },
 };

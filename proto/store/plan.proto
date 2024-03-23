@@ -29,7 +29,6 @@ message PlanConfig {
     oneof config {
       CreateDatabaseConfig create_database_config = 1;
       ChangeDatabaseConfig change_database_config = 2;
-      RestoreDatabaseConfig restore_database_config = 3;
       ExportDataConfig export_data_config = 7;
     }
   }
@@ -116,24 +115,6 @@ message PlanConfig {
     }
     // If set, a backup of the modified data will be created automatically before any changes are applied.
     optional PreUpdateBackupDetail pre_update_backup_detail = 8;
-  }
-
-  message RestoreDatabaseConfig {
-    // The resource name of the target to restore.
-    // Format: instances/{instance}/databases/{database}
-    string target = 1;
-    // create_database_config is present if the user wants to restore to a new database.
-    optional CreateDatabaseConfig create_database_config = 2;
-    // source determines how to restore the database.
-    // 1. from a backup
-    // 2. from a point in time
-    oneof source {
-      // Restore from a backup.
-      // Format: instances/{instance}/databases/{database}/backups/{backup-name}
-      string backup = 3;
-      // After the PITR operations, the database will be recovered to the state at this time.
-      google.protobuf.Timestamp point_in_time = 4;
-    }
   }
 
   message ExportDataConfig {

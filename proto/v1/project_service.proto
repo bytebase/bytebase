@@ -600,10 +600,6 @@ message Activity {
     // SQL Editor related activity types.
     // TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
     TYPE_SQL_EDITOR_QUERY = 19;
-
-    // Database related activity types.
-    // TYPE_DATABASE_RECOVERY_PITR_DONE represents the database recovery to a point in time is done.
-    TYPE_DATABASE_RECOVERY_PITR_DONE = 20;
   }
 }
 

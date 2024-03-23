@@ -1,6 +1,5 @@
 export * from "./environment";
 export * from "./database";
-export * from "./backup";
 export * from "./project";
 export * from "./projectIamPolicy";
 export * from "./projectWebhook";
