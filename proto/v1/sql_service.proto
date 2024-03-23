@@ -14,13 +14,15 @@ option go_package = "generated-go/v1";
 service SQLService {
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
-      post: "/v1/{name=instances/*}:query"
+      post: "/v1/{name=instances/*/databases/*}:query"
+      additional_bindings {post: "/v1/{name=instances/*}:query"}
       body: "*"
     };
   }
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
-      post: "/v1/{name=instances/*}:export"
+      post: "/v1/{name=instances/*/databases/*}:export"
+      additional_bindings {post: "/v1/{name=instances/*}:export"}
       body: "*"
     };
   }
@@ -75,13 +77,10 @@ message DifferPreviewResponse {
 
 message AdminExecuteRequest {
   // The name is the instance name to execute the query against.
-  // Format: instances/{instance}
+  // Format: instances/{instance}/databases/{databaseName}
   string name = 1;
 
-  // The connection database name to execute the query against.
-  // For PostgreSQL, it's required.
-  // For other database engines, it's optional. Use empty string to execute against without specifying a database.
-  string connection_database = 2;
+  string connection_database = 2 [deprecated = true];
 
   // The SQL statement to execute.
   string statement = 3;
@@ -100,13 +99,10 @@ message AdminExecuteResponse {
 
 message ExportRequest {
   // The name is the instance name to execute the query against.
-  // Format: instances/{instance}
+  // Format: instances/{instance}/databases/{databaseName}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // The connection database name to execute the query against.
-  // For PostgreSQL, it's required.
-  // For other database engines, it's optional. Use empty string to execute against without specifying a database.
-  string connection_database = 2;
+  string connection_database = 2 [deprecated = true];
 
   // The SQL statement to execute.
   string statement = 3;
@@ -132,13 +128,10 @@ message ExportResponse {
 
 message QueryRequest {
   // The name is the instance name to execute the query against.
-  // Format: instances/{instance}
+  // Format: instances/{instance}/databases/{databaseName}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // The connection database name to execute the query against.
-  // For PostgreSQL, it's required.
-  // For other database engines, it's optional. Use empty string to execute against without specifying a database.
-  string connection_database = 2;
+  string connection_database = 2 [deprecated = true];
 
   // The SQL statement to execute.
   string statement = 3;
