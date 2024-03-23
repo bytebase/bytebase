@@ -5,7 +5,6 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
-import "v1/org_policy_service.proto";
 
 option go_package = "generated-go/v1";
 

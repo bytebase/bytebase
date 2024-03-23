@@ -16,44 +16,6 @@
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
-- [v1/common.proto](#v1_common-proto)
-    - [Engine](#bytebase-v1-Engine)
-    - [ExportFormat](#bytebase-v1-ExportFormat)
-    - [MaskingLevel](#bytebase-v1-MaskingLevel)
-    - [State](#bytebase-v1-State)
-  
-- [v1/iam_policy.proto](#v1_iam_policy-proto)
-    - [Binding](#bytebase-v1-Binding)
-    - [IamPolicy](#bytebase-v1-IamPolicy)
-  
-- [v1/org_policy_service.proto](#v1_org_policy_service-proto)
-    - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
-    - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
-    - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
-    - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
-    - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
-    - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
-    - [MaskData](#bytebase-v1-MaskData)
-    - [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy)
-    - [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException)
-    - [MaskingPolicy](#bytebase-v1-MaskingPolicy)
-    - [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy)
-    - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
-    - [Policy](#bytebase-v1-Policy)
-    - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy)
-    - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
-    - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
-    - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
-    - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
-    - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
-  
-    - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
-    - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
-    - [PolicyType](#bytebase-v1-PolicyType)
-    - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
-  
-    - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
-  
 - [v1/anomaly_service.proto](#v1_anomaly_service-proto)
     - [Anomaly](#bytebase-v1-Anomaly)
     - [Anomaly.DatabaseConnectionDetail](#bytebase-v1-Anomaly-DatabaseConnectionDetail)
@@ -66,6 +28,12 @@
     - [Anomaly.AnomalyType](#bytebase-v1-Anomaly-AnomalyType)
   
     - [AnomalyService](#bytebase-v1-AnomalyService)
+  
+- [v1/common.proto](#v1_common-proto)
+    - [Engine](#bytebase-v1-Engine)
+    - [ExportFormat](#bytebase-v1-ExportFormat)
+    - [MaskingLevel](#bytebase-v1-MaskingLevel)
+    - [State](#bytebase-v1-State)
   
 - [v1/auth_service.proto](#v1_auth_service-proto)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
@@ -251,6 +219,10 @@
   
     - [EnvironmentService](#bytebase-v1-EnvironmentService)
   
+- [v1/iam_policy.proto](#v1_iam_policy-proto)
+    - [Binding](#bytebase-v1-Binding)
+    - [IamPolicy](#bytebase-v1-IamPolicy)
+  
 - [v1/idp_service.proto](#v1_idp_service-proto)
     - [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest)
     - [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest)
@@ -333,6 +305,34 @@
     - [LogEntity.Level](#bytebase-v1-LogEntity-Level)
   
     - [LoggingService](#bytebase-v1-LoggingService)
+  
+- [v1/org_policy_service.proto](#v1_org_policy_service-proto)
+    - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
+    - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
+    - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
+    - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
+    - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
+    - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
+    - [MaskData](#bytebase-v1-MaskData)
+    - [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy)
+    - [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException)
+    - [MaskingPolicy](#bytebase-v1-MaskingPolicy)
+    - [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy)
+    - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
+    - [Policy](#bytebase-v1-Policy)
+    - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy)
+    - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
+    - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
+    - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
+    - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
+    - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
+  
+    - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
+    - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
+    - [PolicyType](#bytebase-v1-PolicyType)
+    - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
+  
+    - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
 - [v1/vcs_provider_service.proto](#v1_vcs_provider_service-proto)
     - [CreateVCSProviderRequest](#bytebase-v1-CreateVCSProviderRequest)
@@ -803,569 +803,6 @@ The theme resources.
 
 
 
-<a name="v1_common-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/common.proto
-
-
- 
-
-
-<a name="bytebase-v1-Engine"></a>
-
-### Engine
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENGINE_UNSPECIFIED | 0 |  |
-| CLICKHOUSE | 1 |  |
-| MYSQL | 2 |  |
-| POSTGRES | 3 |  |
-| SNOWFLAKE | 4 |  |
-| SQLITE | 5 |  |
-| TIDB | 6 |  |
-| MONGODB | 7 |  |
-| REDIS | 8 |  |
-| ORACLE | 9 |  |
-| SPANNER | 10 |  |
-| MSSQL | 11 |  |
-| REDSHIFT | 12 |  |
-| MARIADB | 13 |  |
-| OCEANBASE | 14 |  |
-| DM | 15 |  |
-| RISINGWAVE | 16 |  |
-| OCEANBASE_ORACLE | 17 |  |
-| STARROCKS | 18 |  |
-| DORIS | 19 |  |
-
-
-
-<a name="bytebase-v1-ExportFormat"></a>
-
-### ExportFormat
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| FORMAT_UNSPECIFIED | 0 |  |
-| CSV | 1 |  |
-| JSON | 2 |  |
-| SQL | 3 |  |
-| XLSX | 4 |  |
-
-
-
-<a name="bytebase-v1-MaskingLevel"></a>
-
-### MaskingLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASKING_LEVEL_UNSPECIFIED | 0 |  |
-| NONE | 1 |  |
-| PARTIAL | 2 |  |
-| FULL | 3 |  |
-
-
-
-<a name="bytebase-v1-State"></a>
-
-### State
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATE_UNSPECIFIED | 0 |  |
-| ACTIVE | 1 |  |
-| DELETED | 2 |  |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="v1_iam_policy-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/iam_policy.proto
-
-
-
-<a name="bytebase-v1-Binding"></a>
-
-### Binding
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
-| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
-| parsed_expr | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  | The parsed expression of the condition. |
-
-
-
-
-
-
-<a name="bytebase-v1-IamPolicy"></a>
-
-### IamPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="v1_org_policy_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/org_policy_service.proto
-
-
-
-<a name="bytebase-v1-CreatePolicyRequest"></a>
-
-### CreatePolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-| policy | [Policy](#bytebase-v1-Policy) |  | The policy to create. |
-| type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DeletePolicyRequest"></a>
-
-### DeletePolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-
-
-
-
-
-
-<a name="bytebase-v1-DisableCopyDataPolicy"></a>
-
-### DisableCopyDataPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GetPolicyRequest"></a>
-
-### GetPolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the policy to retrieve. Format: {resource type}/{resource id}/policies/{policy type} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListPoliciesRequest"></a>
-
-### ListPoliciesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id} |
-| policy_type | [PolicyType](#bytebase-v1-PolicyType) | optional |  |
-| page_size | [int32](#int32) |  | The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 50 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `GetPolicies` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `GetPolicies` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted policies if specified. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListPoliciesResponse"></a>
-
-### ListPoliciesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| policies | [Policy](#bytebase-v1-Policy) | repeated | The policies from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-MaskData"></a>
-
-### MaskData
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-| table | [string](#string) |  |  |
-| column | [string](#string) |  |  |
-| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
-| full_masking_algorithm_id | [string](#string) |  |  |
-| partial_masking_algorithm_id | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-MaskingExceptionPolicy"></a>
-
-### MaskingExceptionPolicy
-MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| masking_exceptions | [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-MaskingExceptionPolicy-MaskingException"></a>
-
-### MaskingExceptionPolicy.MaskingException
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action that the user can access sensitive data. |
-| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
-| member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
-
-* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
-
-
-
-
-
-
-<a name="bytebase-v1-MaskingPolicy"></a>
-
-### MaskingPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| mask_data | [MaskData](#bytebase-v1-MaskData) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-MaskingRulePolicy"></a>
-
-### MaskingRulePolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| rules | [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-MaskingRulePolicy-MaskingRule"></a>
-
-### MaskingRulePolicy.MaskingRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | A unique identifier for a node in UUID format. |
-| condition | [google.type.Expr](#google-type-Expr) |  |  |
-| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Policy"></a>
-
-### Policy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
-| inherit_from_parent | [bool](#bool) |  |  |
-| type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
-| workspace_iam_policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
-| rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
-| masking_policy | [MaskingPolicy](#bytebase-v1-MaskingPolicy) |  |  |
-| sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
-| slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
-| disable_copy_data_policy | [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy) |  |  |
-| masking_rule_policy | [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy) |  |  |
-| masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
-| restrict_issue_creation_for_sql_review_policy | [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy) |  |  |
-| enforce | [bool](#bool) |  |  |
-| resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
-| resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
-
-
-
-
-
-
-<a name="bytebase-v1-RestrictIssueCreationForSQLReviewPolicy"></a>
-
-### RestrictIssueCreationForSQLReviewPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| disallow | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-RolloutPolicy"></a>
-
-### RolloutPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| automatic | [bool](#bool) |  |  |
-| workspace_roles | [string](#string) | repeated |  |
-| project_roles | [string](#string) | repeated |  |
-| issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
-
-
-
-
-
-
-<a name="bytebase-v1-SQLReviewPolicy"></a>
-
-### SQLReviewPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SQLReviewRule"></a>
-
-### SQLReviewRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [string](#string) |  |  |
-| level | [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel) |  |  |
-| payload | [string](#string) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SlowQueryPolicy"></a>
-
-### SlowQueryPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdatePolicyRequest"></a>
-
-### UpdatePolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| policy | [Policy](#bytebase-v1-Policy) |  | The policy to update.
-
-The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the policy is not found, a new policy will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-MaskingExceptionPolicy-MaskingException-Action"></a>
-
-### MaskingExceptionPolicy.MaskingException.Action
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 |  |
-| QUERY | 1 |  |
-| EXPORT | 2 |  |
-
-
-
-<a name="bytebase-v1-PolicyResourceType"></a>
-
-### PolicyResourceType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| RESOURCE_TYPE_UNSPECIFIED | 0 |  |
-| WORKSPACE | 1 |  |
-| ENVIRONMENT | 2 |  |
-| PROJECT | 3 |  |
-| INSTANCE | 4 |  |
-| DATABASE | 5 |  |
-
-
-
-<a name="bytebase-v1-PolicyType"></a>
-
-### PolicyType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| POLICY_TYPE_UNSPECIFIED | 0 |  |
-| WORKSPACE_IAM | 1 |  |
-| ROLLOUT_POLICY | 11 |  |
-| SQL_REVIEW | 4 |  |
-| MASKING | 5 |  |
-| SLOW_QUERY | 7 |  |
-| DISABLE_COPY_DATA | 8 |  |
-| MASKING_RULE | 9 |  |
-| MASKING_EXCEPTION | 10 |  |
-| RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 12 |  |
-
-
-
-<a name="bytebase-v1-SQLReviewRuleLevel"></a>
-
-### SQLReviewRuleLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| LEVEL_UNSPECIFIED | 0 |  |
-| ERROR | 1 |  |
-| WARNING | 2 |  |
-| DISABLED | 3 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-OrgPolicyService"></a>
-
-### OrgPolicyService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetPolicy | [GetPolicyRequest](#bytebase-v1-GetPolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
-| ListPolicies | [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest) | [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse) |  |
-| CreatePolicy | [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
-| UpdatePolicy | [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
-| DeletePolicy | [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-
- 
-
-
-
 <a name="v1_anomaly_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1528,6 +965,94 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | SearchAnomalies | [SearchAnomaliesRequest](#bytebase-v1-SearchAnomaliesRequest) | [SearchAnomaliesResponse](#bytebase-v1-SearchAnomaliesResponse) |  |
+
+ 
+
+
+
+<a name="v1_common-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/common.proto
+
+
+ 
+
+
+<a name="bytebase-v1-Engine"></a>
+
+### Engine
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENGINE_UNSPECIFIED | 0 |  |
+| CLICKHOUSE | 1 |  |
+| MYSQL | 2 |  |
+| POSTGRES | 3 |  |
+| SNOWFLAKE | 4 |  |
+| SQLITE | 5 |  |
+| TIDB | 6 |  |
+| MONGODB | 7 |  |
+| REDIS | 8 |  |
+| ORACLE | 9 |  |
+| SPANNER | 10 |  |
+| MSSQL | 11 |  |
+| REDSHIFT | 12 |  |
+| MARIADB | 13 |  |
+| OCEANBASE | 14 |  |
+| DM | 15 |  |
+| RISINGWAVE | 16 |  |
+| OCEANBASE_ORACLE | 17 |  |
+| STARROCKS | 18 |  |
+| DORIS | 19 |  |
+
+
+
+<a name="bytebase-v1-ExportFormat"></a>
+
+### ExportFormat
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FORMAT_UNSPECIFIED | 0 |  |
+| CSV | 1 |  |
+| JSON | 2 |  |
+| SQL | 3 |  |
+| XLSX | 4 |  |
+
+
+
+<a name="bytebase-v1-MaskingLevel"></a>
+
+### MaskingLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASKING_LEVEL_UNSPECIFIED | 0 |  |
+| NONE | 1 |  |
+| PARTIAL | 2 |  |
+| FULL | 3 |  |
+
+
+
+<a name="bytebase-v1-State"></a>
+
+### State
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATE_UNSPECIFIED | 0 |  |
+| ACTIVE | 1 |  |
+| DELETED | 2 |  |
+
+
+ 
+
+ 
 
  
 
@@ -4361,6 +3886,55 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 
 
+<a name="v1_iam_policy-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/iam_policy.proto
+
+
+
+<a name="bytebase-v1-Binding"></a>
+
+### Binding
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
+| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
+| parsed_expr | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  | The parsed expression of the condition. |
+
+
+
+
+
+
+<a name="bytebase-v1-IamPolicy"></a>
+
+### IamPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="v1_idp_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -5601,6 +5175,432 @@ ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query. |
 | ListLogs | [ListLogsRequest](#bytebase-v1-ListLogsRequest) | [ListLogsResponse](#bytebase-v1-ListLogsResponse) |  |
 | GetLog | [GetLogRequest](#bytebase-v1-GetLogRequest) | [LogEntity](#bytebase-v1-LogEntity) |  |
 | ExportLogs | [ExportLogsRequest](#bytebase-v1-ExportLogsRequest) | [ExportLogsResponse](#bytebase-v1-ExportLogsResponse) |  |
+
+ 
+
+
+
+<a name="v1_org_policy_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/org_policy_service.proto
+
+
+
+<a name="bytebase-v1-CreatePolicyRequest"></a>
+
+### CreatePolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where this instance will be created. Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+| policy | [Policy](#bytebase-v1-Policy) |  | The policy to create. |
+| type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DeletePolicyRequest"></a>
+
+### DeletePolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+
+
+
+
+
+
+<a name="bytebase-v1-DisableCopyDataPolicy"></a>
+
+### DisableCopyDataPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GetPolicyRequest"></a>
+
+### GetPolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the policy to retrieve. Format: {resource type}/{resource id}/policies/{policy type} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListPoliciesRequest"></a>
+
+### ListPoliciesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id} |
+| policy_type | [PolicyType](#bytebase-v1-PolicyType) | optional |  |
+| page_size | [int32](#int32) |  | The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 50 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `GetPolicies` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `GetPolicies` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted policies if specified. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListPoliciesResponse"></a>
+
+### ListPoliciesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| policies | [Policy](#bytebase-v1-Policy) | repeated | The policies from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskData"></a>
+
+### MaskData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+| column | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
+| full_masking_algorithm_id | [string](#string) |  |  |
+| partial_masking_algorithm_id | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingExceptionPolicy"></a>
+
+### MaskingExceptionPolicy
+MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| masking_exceptions | [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingExceptionPolicy-MaskingException"></a>
+
+### MaskingExceptionPolicy.MaskingException
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action that the user can access sensitive data. |
+| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
+| member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
+
+* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingPolicy"></a>
+
+### MaskingPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| mask_data | [MaskData](#bytebase-v1-MaskData) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingRulePolicy"></a>
+
+### MaskingRulePolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingRulePolicy-MaskingRule"></a>
+
+### MaskingRulePolicy.MaskingRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | A unique identifier for a node in UUID format. |
+| condition | [google.type.Expr](#google-type-Expr) |  |  |
+| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Policy"></a>
+
+### Policy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
+| inherit_from_parent | [bool](#bool) |  |  |
+| type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
+| workspace_iam_policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
+| rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
+| masking_policy | [MaskingPolicy](#bytebase-v1-MaskingPolicy) |  |  |
+| sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
+| slow_query_policy | [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy) |  |  |
+| disable_copy_data_policy | [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy) |  |  |
+| masking_rule_policy | [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy) |  |  |
+| masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
+| restrict_issue_creation_for_sql_review_policy | [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy) |  |  |
+| enforce | [bool](#bool) |  |  |
+| resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
+| resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
+
+
+
+
+
+
+<a name="bytebase-v1-RestrictIssueCreationForSQLReviewPolicy"></a>
+
+### RestrictIssueCreationForSQLReviewPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| disallow | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-RolloutPolicy"></a>
+
+### RolloutPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| automatic | [bool](#bool) |  |  |
+| workspace_roles | [string](#string) | repeated |  |
+| project_roles | [string](#string) | repeated |  |
+| issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewPolicy"></a>
+
+### SQLReviewPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule"></a>
+
+### SQLReviewRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [string](#string) |  |  |
+| level | [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel) |  |  |
+| payload | [string](#string) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SlowQueryPolicy"></a>
+
+### SlowQueryPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdatePolicyRequest"></a>
+
+### UpdatePolicyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| policy | [Policy](#bytebase-v1-Policy) |  | The policy to update.
+
+The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the policy is not found, a new policy will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-MaskingExceptionPolicy-MaskingException-Action"></a>
+
+### MaskingExceptionPolicy.MaskingException.Action
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ACTION_UNSPECIFIED | 0 |  |
+| QUERY | 1 |  |
+| EXPORT | 2 |  |
+
+
+
+<a name="bytebase-v1-PolicyResourceType"></a>
+
+### PolicyResourceType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESOURCE_TYPE_UNSPECIFIED | 0 |  |
+| WORKSPACE | 1 |  |
+| ENVIRONMENT | 2 |  |
+| PROJECT | 3 |  |
+| INSTANCE | 4 |  |
+| DATABASE | 5 |  |
+
+
+
+<a name="bytebase-v1-PolicyType"></a>
+
+### PolicyType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| POLICY_TYPE_UNSPECIFIED | 0 |  |
+| WORKSPACE_IAM | 1 |  |
+| ROLLOUT_POLICY | 11 |  |
+| SQL_REVIEW | 4 |  |
+| MASKING | 5 |  |
+| SLOW_QUERY | 7 |  |
+| DISABLE_COPY_DATA | 8 |  |
+| MASKING_RULE | 9 |  |
+| MASKING_EXCEPTION | 10 |  |
+| RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 12 |  |
+
+
+
+<a name="bytebase-v1-SQLReviewRuleLevel"></a>
+
+### SQLReviewRuleLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LEVEL_UNSPECIFIED | 0 |  |
+| ERROR | 1 |  |
+| WARNING | 2 |  |
+| DISABLED | 3 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-OrgPolicyService"></a>
+
+### OrgPolicyService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetPolicy | [GetPolicyRequest](#bytebase-v1-GetPolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
+| ListPolicies | [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest) | [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse) |  |
+| CreatePolicy | [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
+| UpdatePolicy | [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest) | [Policy](#bytebase-v1-Policy) |  |
+| DeletePolicy | [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 
