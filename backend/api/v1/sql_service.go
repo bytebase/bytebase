@@ -27,7 +27,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mapperparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper"
+	"github.com/bytebase/bytebase/backend/store/model"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -42,7 +42,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	mapperparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -282,27 +282,73 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
-	// TODO(zp): Remove this hack after switching all engines to use query span.
-	_, _, instance, _, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
-	if err != nil {
-		return nil, err
-	}
-	switch instance.Engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_ORACLE, storepb.Engine_MSSQL, storepb.Engine_SNOWFLAKE:
-		return s.ExportV2(ctx, request)
-	}
-	user, instance, database, _, _, sensitiveSchemaInfo, err := s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, true /* isExport */)
+	// Prepare related message.
+	user, environment, instance, maybeDatabase, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
 		return nil, err
 	}
 
+	statement := request.Statement
+	// In Redshift datashare, Rewrite query used for parser.
+	if maybeDatabase != nil && maybeDatabase.DataShare {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", maybeDatabase.DatabaseName), "")
+	}
+
+	// Validate the request.
+	if err := validateQueryRequest(instance, request.ConnectionDatabase, statement); err != nil {
+		return nil, err
+	}
+
+	schemaName := ""
+	if instance.Engine == storepb.Engine_ORACLE {
+		// For Oracle, there are two modes, schema-based and database-based management.
+		// For schema-based management, also say tenant mode, we need to use the schemaName as the databaseName.
+		// So the default schemaName is the connectionDatabase.
+		// For database-based management, we need to use the dataSource.Username as the schemaName.
+		// So the default schemaName is the dataSource.Username.
+		isSchemaTenantMode := (instance.Options != nil && instance.Options.GetSchemaTenantMode())
+		if isSchemaTenantMode {
+			schemaName = request.ConnectionDatabase
+		} else {
+			dataSource, _, err := s.dbFactory.GetReadOnlyDatabaseSource(instance, maybeDatabase, "" /* dataSourceID */)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get read only database source: %v", err.Error())
+			}
+			schemaName = dataSource.Username
+		}
+	}
+
+	spans, err := base.GetQuerySpan(
+		ctx,
+		instance.Engine,
+		statement,
+		request.ConnectionDatabase,
+		schemaName,
+		s.buildGetDatabaseMetadataFunc(instance, request.ConnectionDatabase),
+		s.buildListDatabaseNamesFunc(instance),
+		store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
+	}
+
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		if err := s.accessCheck(ctx, instance, user, request.Statement, spans, request.Limit, false /* isAdmin */, true /* isExport */); err != nil {
+			return nil, err
+		}
+	}
+
+	// Run SQL review.
+	if _, _, err = s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, maybeDatabase, nil /* Override Metadata */); err != nil {
+		return nil, err
+	}
+
 	databaseID := 0
-	if database != nil {
-		databaseID = database.UID
+	if maybeDatabase != nil {
+		databaseID = maybeDatabase.UID
 	}
 	// Create export activity.
-	level := api.ActivityInfo
-	activity, err := s.createExportActivity(ctx, user, level, instance.UID, database, api.ActivitySQLExportPayload{
+	activity, err := s.createExportActivity(ctx, user, api.ActivityInfo, instance.UID, maybeDatabase, api.ActivitySQLExportPayload{
 		Statement:    request.Statement,
 		InstanceID:   instance.UID,
 		DatabaseID:   databaseID,
@@ -312,7 +358,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return nil, err
 	}
 
-	bytes, durationNs, exportErr := s.doExport(ctx, request, instance, database, sensitiveSchemaInfo)
+	bytes, durationNs, exportErr := s.doExport(ctx, request, instance, maybeDatabase, spans)
 
 	if err := s.postExport(ctx, activity, durationNs, exportErr); err != nil {
 		return nil, err
@@ -330,6 +376,79 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	return &v1pb.ExportResponse{
 		Content: content,
 	}, nil
+}
+
+// doExport does the export.
+func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]byte, int64, error) {
+	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, "" /* dataSourceID */)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer driver.Close(ctx)
+
+	sqlDB := driver.GetDB()
+	var conn *sql.Conn
+	if sqlDB != nil {
+		conn, err = sqlDB.Conn(ctx)
+		if err != nil {
+			return nil, 0, err
+		}
+		defer conn.Close()
+	}
+
+	start := time.Now().UnixNano()
+	result, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
+		Limit:               int(request.Limit),
+		ReadOnly:            true,
+		CurrentDatabase:     request.ConnectionDatabase,
+		SensitiveSchemaInfo: nil,
+		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+	})
+	durationNs := time.Now().UnixNano() - start
+	if err != nil {
+		return nil, durationNs, err
+	}
+	// only return the last result
+	if len(result) > 1 {
+		result = result[len(result)-1:]
+	}
+
+	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
+		if err := s.maskResults(ctx, spans, result, instance, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
+			return nil, durationNs, err
+		}
+	}
+
+	var content []byte
+	switch request.Format {
+	case v1pb.ExportFormat_CSV:
+		if content, err = exportCSV(result[0]); err != nil {
+			return nil, durationNs, err
+		}
+	case v1pb.ExportFormat_JSON:
+		if content, err = exportJSON(result[0]); err != nil {
+			return nil, durationNs, err
+		}
+	case v1pb.ExportFormat_SQL:
+		resourceList, err := s.extractResourceList(ctx, instance.Engine, request.ConnectionDatabase, request.Statement, instance)
+		if err != nil {
+			return nil, 0, status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
+		}
+		statementPrefix, err := getSQLStatementPrefix(instance.Engine, resourceList, result[0].ColumnNames)
+		if err != nil {
+			return nil, 0, err
+		}
+		if content, err = exportSQL(instance.Engine, statementPrefix, result[0]); err != nil {
+			return nil, durationNs, err
+		}
+	case v1pb.ExportFormat_XLSX:
+		if content, err = exportXLSX(result[0]); err != nil {
+			return nil, durationNs, err
+		}
+	default:
+		return nil, durationNs, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
+	}
+	return content, durationNs, nil
 }
 
 func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
@@ -396,77 +515,6 @@ func doEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
 	}
 
 	return b.Bytes(), nil
-}
-
-func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *base.SensitiveSchemaInfo) ([]byte, int64, error) {
-	// Don't anonymize data for exporting data using admin mode.
-	if request.Admin {
-		sensitiveSchemaInfo = nil
-	}
-
-	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, "" /* dataSourceID */)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer driver.Close(ctx)
-
-	sqlDB := driver.GetDB()
-	var conn *sql.Conn
-	if sqlDB != nil {
-		conn, err = sqlDB.Conn(ctx)
-		if err != nil {
-			return nil, 0, err
-		}
-		defer conn.Close()
-	}
-
-	start := time.Now().UnixNano()
-	result, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
-		Limit:               int(request.Limit),
-		ReadOnly:            true,
-		CurrentDatabase:     request.ConnectionDatabase,
-		SensitiveSchemaInfo: sensitiveSchemaInfo,
-		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
-	})
-	durationNs := time.Now().UnixNano() - start
-	if err != nil {
-		return nil, durationNs, err
-	}
-	// only return the last result
-	if len(result) > 1 {
-		result = result[len(result)-1:]
-	}
-
-	var content []byte
-	switch request.Format {
-	case v1pb.ExportFormat_CSV:
-		if content, err = exportCSV(result[0]); err != nil {
-			return nil, durationNs, err
-		}
-	case v1pb.ExportFormat_JSON:
-		if content, err = exportJSON(result[0]); err != nil {
-			return nil, durationNs, err
-		}
-	case v1pb.ExportFormat_SQL:
-		resourceList, err := s.extractResourceList(ctx, instance.Engine, request.ConnectionDatabase, request.Statement, instance)
-		if err != nil {
-			return nil, 0, status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
-		}
-		statementPrefix, err := getSQLStatementPrefix(instance.Engine, resourceList, result[0].ColumnNames)
-		if err != nil {
-			return nil, 0, err
-		}
-		if content, err = exportSQL(instance.Engine, statementPrefix, result[0]); err != nil {
-			return nil, durationNs, err
-		}
-	case v1pb.ExportFormat_XLSX:
-		if content, err = exportXLSX(result[0]); err != nil {
-			return nil, durationNs, err
-		}
-	default:
-		return nil, durationNs, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
-	}
-	return content, durationNs, nil
 }
 
 func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyMetadataRequest) (*v1pb.StringifyMetadataResponse, error) {
@@ -955,21 +1003,68 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 //  2. do query
 //  3. post-query
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
-	// TODO(zp): Remove this hack after switching all engines to use query span.
-	_, _, instance, _, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
-	if err != nil {
-		return nil, err
-	}
-	switch instance.Engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_ORACLE, storepb.Engine_MSSQL, storepb.Engine_SNOWFLAKE:
-		return s.QueryV2(ctx, request)
-	}
-
-	user, instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, err := s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, false /* isExport */)
+	// Prepare related message.
+	user, environment, instance, maybeDatabase, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
 		return nil, err
 	}
 
+	statement := request.Statement
+	// In Redshift datashare, Rewrite query used for parser.
+	if maybeDatabase != nil && maybeDatabase.DataShare {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", maybeDatabase.DatabaseName), "")
+	}
+
+	// Validate the request.
+	if err := validateQueryRequest(instance, request.ConnectionDatabase, statement); err != nil {
+		return nil, err
+	}
+
+	schemaName := ""
+	if instance.Engine == storepb.Engine_ORACLE {
+		// For Oracle, there are two modes, schema-based and database-based management.
+		// For schema-based management, also say tenant mode, we need to use the schemaName as the databaseName.
+		// So the default schemaName is the connectionDatabase.
+		// For database-based management, we need to use the dataSource.Username as the schemaName.
+		// So the default schemaName is the dataSource.Username.
+		isSchemaTenantMode := (instance.Options != nil && instance.Options.GetSchemaTenantMode())
+		if isSchemaTenantMode {
+			schemaName = request.ConnectionDatabase
+		} else {
+			dataSource, _, err := s.dbFactory.GetReadOnlyDatabaseSource(instance, maybeDatabase, "" /* dataSourceID */)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get read only database source: %v", err.Error())
+			}
+			schemaName = dataSource.Username
+		}
+	}
+
+	// Get query span.
+	spans, err := base.GetQuerySpan(
+		ctx,
+		instance.Engine,
+		statement,
+		request.ConnectionDatabase,
+		schemaName,
+		s.buildGetDatabaseMetadataFunc(instance, request.ConnectionDatabase),
+		s.buildListDatabaseNamesFunc(instance),
+		store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
+	}
+
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		if err := s.accessCheck(ctx, instance, user, request.Statement, spans, request.Limit, false /* isAdmin */, false /* isExport */); err != nil {
+			return nil, err
+		}
+	}
+
+	// Run SQL review.
+	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, maybeDatabase, nil /* Override Metadata */)
+	if err != nil {
+		return nil, err
+	}
 	// Create query activity.
 	level := api.ActivityInfo
 	switch adviceStatus {
@@ -978,11 +1073,12 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	case advisor.Warn:
 		level = api.ActivityWarn
 	}
+
 	databaseID := 0
-	if database != nil {
-		databaseID = database.UID
+	if maybeDatabase != nil {
+		databaseID = maybeDatabase.UID
 	}
-	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, database, api.ActivitySQLEditorQueryPayload{
+	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, maybeDatabase, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
 		InstanceID:             instance.UID,
 		DeprecatedInstanceName: instance.Title,
@@ -997,23 +1093,32 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	var queryErr error
 	var durationNs int64
 	if adviceStatus != advisor.Error {
-		results, durationNs, queryErr = s.doQuery(ctx, request, instance, database, sensitiveSchemaInfo)
+		results, durationNs, queryErr = s.doQuery(ctx, request, instance, maybeDatabase)
+		if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
+			if err := s.maskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+		}
 	}
 
+	// Update activity.
 	if err = s.postQuery(ctx, activity, durationNs, queryErr); err != nil {
 		return nil, err
 	}
-
 	if queryErr != nil {
 		return nil, status.Errorf(codes.Internal, queryErr.Error())
 	}
 
+	allowExport := true
 	// AllowExport is a validate only check.
-	_, _, _, _, _, _, err = s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, true /* isExport */)
-	allowExport := (err == nil)
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		err := s.accessCheck(ctx, instance, user, request.Statement, spans, request.Limit, false /* isAdmin */, true /* isExport */)
+		allowExport = (err == nil)
+	}
 
 	response := &v1pb.QueryResponse{
 		Results:     results,
+		Advices:     advices,
 		AllowExport: allowExport,
 	}
 
@@ -1025,43 +1130,53 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		}
 	}
 
-	response.Advices = adviceList
-
 	return response, nil
 }
 
-// ParseMyBatisMapper parses a MyBatis mapper XML file and returns the multi-SQL statements.
-func (*SQLService) ParseMyBatisMapper(_ context.Context, request *v1pb.ParseMyBatisMapperRequest) (*v1pb.ParseMyBatisMapperResponse, error) {
-	content := string(request.Content)
-
-	parser := mapperparser.NewParser(content)
-	node, err := parser.Parse()
+// doQuery does query.
+func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage) ([]*v1pb.QueryResult, int64, error) {
+	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, request.DataSourceId)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to parse mybatis mapper: %v", err)
+		return nil, 0, err
 	}
+	defer driver.Close(ctx)
 
-	var stringsBuilder strings.Builder
-	if err := node.RestoreSQL(parser.NewRestoreContext().WithRestoreDataNodePlaceholder("@1"), &stringsBuilder); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to restore mybatis mapper: %v", err)
-	}
-
-	statement := stringsBuilder.String()
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to split mybatis mapper: %v", err)
-	}
-
-	var results []string
-	for _, sql := range singleSQLs {
-		if sql.Empty {
-			continue
+	sqlDB := driver.GetDB()
+	var conn *sql.Conn
+	if sqlDB != nil {
+		conn, err = sqlDB.Conn(ctx)
+		if err != nil {
+			return nil, 0, err
 		}
-		results = append(results, sql.Text)
+		defer conn.Close()
 	}
 
-	return &v1pb.ParseMyBatisMapperResponse{
-		Statements: results,
-	}, nil
+	timeout := defaultTimeout
+	if request.Timeout != nil {
+		timeout = request.Timeout.AsDuration()
+	}
+	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
+	defer cancelCtx()
+
+	start := time.Now().UnixNano()
+	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
+		Limit:               int(request.Limit),
+		ReadOnly:            true,
+		CurrentDatabase:     request.ConnectionDatabase,
+		SensitiveSchemaInfo: nil,
+		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+	})
+	select {
+	case <-ctx.Done():
+		// canceled or timed out
+		return nil, time.Now().UnixNano() - start, errors.Errorf("timeout reached: %v", timeout)
+	default:
+		// So the select will not block
+	}
+
+	sanitizeResults(results)
+
+	return results, time.Now().UnixNano() - start, err
 }
 
 // postQuery does the following:
@@ -1104,49 +1219,417 @@ func (s *SQLService) postQuery(ctx context.Context, activity *store.ActivityMess
 	return nil
 }
 
-func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *base.SensitiveSchemaInfo) ([]*v1pb.QueryResult, int64, error) {
-	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, request.DataSourceId)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer driver.Close(ctx)
-
-	sqlDB := driver.GetDB()
-	var conn *sql.Conn
-	if sqlDB != nil {
-		conn, err = sqlDB.Conn(ctx)
-		if err != nil {
-			return nil, 0, err
-		}
-		defer conn.Close()
-	}
-
-	timeout := defaultTimeout
-	if request.Timeout != nil {
-		timeout = request.Timeout.AsDuration()
-	}
-	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
-	defer cancelCtx()
-
-	start := time.Now().UnixNano()
-	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
-		Limit:               int(request.Limit),
-		ReadOnly:            true,
-		CurrentDatabase:     request.ConnectionDatabase,
-		SensitiveSchemaInfo: sensitiveSchemaInfo,
-		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+func (s *SQLService) getMasterForColumnResource(
+	ctx context.Context,
+	m *maskingLevelEvaluator,
+	instance *store.InstanceMessage,
+	sourceColumn base.ColumnResource,
+	maskingExceptionPolicyMap map[string]*storepb.MaskingExceptionPolicy,
+	action storepb.MaskingExceptionPolicy_MaskingException_Action,
+	currentPrincipal *store.UserMessage,
+) (masker.Masker, error) {
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instance.ResourceID,
+		DatabaseName: &sourceColumn.Database,
 	})
-	select {
-	case <-ctx.Done():
-		// canceled or timed out
-		return nil, time.Now().UnixNano() - start, errors.Errorf("timeout reached: %v", timeout)
-	default:
-		// So the select will not block
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find database: %q", sourceColumn.Database)
+	}
+	if database == nil {
+		return masker.NewNoneMasker(), nil
 	}
 
-	sanitizeResults(results)
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &database.ProjectID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find project: %q", database.ProjectID)
+	}
+	if project == nil {
+		return masker.NewNoneMasker(), nil
+	}
 
-	return results, time.Now().UnixNano() - start, err
+	meta, config, err := s.getColumnForColumnResource(ctx, instance.ResourceID, &sourceColumn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database metadata for column resource: %q", sourceColumn.String())
+	}
+	// Span and metadata are not the same in real time, so we fall back to none masker.
+	if meta == nil {
+		return masker.NewNoneMasker(), nil
+	}
+
+	semanticTypeID := ""
+	if config != nil {
+		semanticTypeID = config.SemanticTypeId
+	}
+
+	maskingPolicy, err := s.store.GetMaskingPolicyByDatabaseUID(ctx, database.UID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get masking policy for database: %q", database.DatabaseName)
+	}
+	maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
+	if maskingPolicy != nil {
+		for _, maskData := range maskingPolicy.MaskData {
+			maskingPolicyMap[maskingPolicyKey{
+				schema: maskData.Schema,
+				table:  maskData.Table,
+				column: maskData.Column,
+			}] = maskData
+		}
+	}
+
+	var maskingExceptionPolicy *storepb.MaskingExceptionPolicy
+	// If we cannot find the maskingExceptionPolicy before, we need to find it from the database and record it in cache.
+
+	if _, ok := maskingExceptionPolicyMap[database.ProjectID]; !ok {
+		policy, err := s.store.GetMaskingExceptionPolicyByProjectUID(ctx, project.UID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find masking exception policy for project %q", project.ResourceID)
+		}
+		// It is safe if policy is nil.
+		maskingExceptionPolicyMap[database.ProjectID] = policy
+	}
+	maskingExceptionPolicy = maskingExceptionPolicyMap[database.ProjectID]
+
+	// Build the filtered maskingExceptionPolicy for current principal.
+	var maskingExceptionContainsCurrentPrincipal []*storepb.MaskingExceptionPolicy_MaskingException
+	if maskingExceptionPolicy != nil {
+		for _, maskingException := range maskingExceptionPolicy.MaskingExceptions {
+			if maskingException.Action != action {
+				continue
+			}
+			if maskingException.Member == currentPrincipal.Email {
+				maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
+			}
+		}
+	}
+
+	maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, semanticTypeID, meta.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
+	}
+	return getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel), nil
+}
+
+// getMaskersForQuerySpan returns the maskers for the query span.
+func (s *SQLService) getMaskersForQuerySpan(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, span *base.QuerySpan, action storepb.MaskingExceptionPolicy_MaskingException_Action) ([]masker.Masker, error) {
+	if span == nil {
+		return nil, nil
+	}
+	maskers := make([]masker.Masker, 0, len(span.Results))
+
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	currentPrincipal, err := s.store.GetUser(ctx, &store.FindUserMessage{
+		ID: &principalID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find current principal")
+	}
+	if currentPrincipal == nil {
+		return nil, status.Errorf(codes.Internal, "current principal not found")
+	}
+
+	// Multiple databases may belong to the same project, to reduce the protojson unmarshal cost,
+	// we store the projectResourceID - maskingExceptionPolicy in a map.
+	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
+
+	for _, spanResult := range span.Results {
+		// Likes constant expression, we use the none masker.
+		if len(spanResult.SourceColumns) == 0 {
+			maskers = append(maskers, masker.NewNoneMasker())
+			continue
+		}
+
+		var effectiveMaskers []masker.Masker
+		for column := range spanResult.SourceColumns {
+			newMasker, err := s.getMasterForColumnResource(ctx, m, instance, column, maskingExceptionPolicyMap, action, currentPrincipal)
+			if err != nil {
+				return nil, err
+			}
+			if newMasker == nil {
+				continue
+			}
+			if _, ok := newMasker.(*masker.NoneMasker); ok {
+				continue
+			}
+			effectiveMaskers = append(effectiveMaskers, newMasker)
+		}
+
+		switch len(effectiveMaskers) {
+		case 0:
+			maskers = append(maskers, masker.NewNoneMasker())
+		case 1:
+			maskers = append(maskers, effectiveMaskers[0])
+		default:
+			// If there are more than one source columns, we fall back to the default full masker,
+			// because we don't know how the data be made up.
+			maskers = append(maskers, masker.NewDefaultFullMasker())
+		}
+	}
+	return maskers, nil
+}
+
+func (s *SQLService) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *base.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnConfig, error) {
+	if sourceColumn == nil {
+		return nil, nil, nil
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &sourceColumn.Database,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to find database: %q", sourceColumn.Database)
+	}
+	if database == nil {
+		return nil, nil, nil
+	}
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to find database schema: %q", sourceColumn.Database)
+	}
+	if dbSchema == nil {
+		return nil, nil, nil
+	}
+
+	var columnMetadata *storepb.ColumnMetadata
+	metadata := dbSchema.GetDatabaseMetadata()
+	if metadata == nil {
+		return nil, nil, nil
+	}
+	schema := metadata.GetSchema(sourceColumn.Schema)
+	if schema == nil {
+		return nil, nil, nil
+	}
+	table := schema.GetTable(sourceColumn.Table)
+	if table == nil {
+		return nil, nil, nil
+	}
+	column := table.GetColumn(sourceColumn.Column)
+	if column == nil {
+		return nil, nil, nil
+	}
+	columnMetadata = column
+
+	var columnConfig *storepb.ColumnConfig
+	config := dbSchema.GetDatabaseConfig()
+	if config == nil {
+		return columnMetadata, nil, nil
+	}
+	schemaConfig := config.GetSchemaConfig(sourceColumn.Schema)
+	if schemaConfig == nil {
+		return columnMetadata, nil, nil
+	}
+	tableConfig := schemaConfig.GetTableConfig(sourceColumn.Table)
+	if tableConfig == nil {
+		return columnMetadata, nil, nil
+	}
+
+	columnConfig = tableConfig.GetColumnConfig(sourceColumn.Column)
+	return columnMetadata, columnConfig, nil
+}
+
+func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessage, connectionDatabase string) base.GetDatabaseMetadataFunc {
+	if instance.Engine == storepb.Engine_ORACLE {
+		return func(ctx context.Context, schemaName string) (string, *model.DatabaseMetadata, error) {
+			// There are two modes for Oracle, schema-based and database-based management.
+			// For schema-based management, also say tenant mode, we need to use the schemaName as the databaseName.
+			// For database-based management, we need to use the connectionDatabase as the databaseName.
+			databaseName := connectionDatabase
+			isSchemaTenantMode := (instance.Options != nil && instance.Options.GetSchemaTenantMode())
+			if isSchemaTenantMode {
+				databaseName = schemaName
+			}
+
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &instance.ResourceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return "", nil, err
+			}
+			if database == nil {
+				return "", nil, nil
+			}
+			databaseMetadata, err := s.store.GetDBSchema(ctx, database.UID)
+			if err != nil {
+				return "", nil, err
+			}
+			if databaseMetadata == nil {
+				return "", nil, nil
+			}
+			return databaseName, databaseMetadata.GetDatabaseMetadata(), nil
+		}
+	}
+	return func(ctx context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instance.ResourceID,
+			DatabaseName: &databaseName,
+		})
+		if err != nil {
+			return "", nil, err
+		}
+		if database == nil {
+			return "", nil, nil
+		}
+		databaseMetadata, err := s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return "", nil, err
+		}
+		if databaseMetadata == nil {
+			return "", nil, nil
+		}
+		return databaseName, databaseMetadata.GetDatabaseMetadata(), nil
+	}
+}
+
+func (s *SQLService) buildListDatabaseNamesFunc(instance *store.InstanceMessage) base.ListDatabaseNamesFunc {
+	return func(ctx context.Context) ([]string, error) {
+		databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+			InstanceID: &instance.ResourceID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		names := make([]string, 0, len(databases))
+		for _, database := range databases {
+			names = append(names, database.DatabaseName)
+		}
+		return names, nil
+	}
+}
+
+func (s *SQLService) accessCheck(
+	ctx context.Context,
+	instance *store.InstanceMessage,
+	user *store.UserMessage,
+	statement string,
+	spans []*base.QuerySpan,
+	limit int32,
+	isAdmin,
+	isExport bool) error {
+	// Check if the caller is admin for exporting with admin mode.
+	if isAdmin && isExport && (user.Role != api.WorkspaceAdmin && user.Role != api.WorkspaceDBA) {
+		return status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
+	}
+
+	for _, span := range spans {
+		for column := range span.SourceColumns {
+			databaseResourceURL := common.FormatDatabase(instance.ResourceID, column.Database)
+			attributes := map[string]any{
+				"request.time":      time.Now(),
+				"resource.database": databaseResourceURL,
+				"resource.schema":   column.Schema,
+				"resource.table":    column.Table,
+				"request.statement": encodeToBase64String(statement),
+				"request.row_limit": limit,
+			}
+
+			project, database, err := s.getProjectAndDatabaseMessage(ctx, instance, column.Database)
+			if err != nil {
+				return status.Errorf(codes.Internal, err.Error())
+			}
+			if project == nil && database == nil {
+				// If database not found, skip.
+				// TODO(d): re-evaluate this case.
+				continue
+			}
+			if project == nil {
+				// Never happen
+				return status.Errorf(codes.Internal, "project not found for database: %s", column.Database)
+			}
+			// Allow query databases across different projects.
+			projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+			if err != nil {
+				return status.Errorf(codes.Internal, err.Error())
+			}
+
+			ok, err := s.hasDatabaseAccessRights(ctx, user, projectPolicy, attributes, isExport)
+			if err != nil {
+				return status.Errorf(codes.Internal, "failed to check access control for database: %q, error %v", column.Database, err)
+			}
+			if !ok {
+				return status.Errorf(codes.PermissionDenied, "permission denied to access resource: %q", column.String())
+			}
+		}
+	}
+
+	return nil
+}
+
+// maskResult masks the result in-place based on the dynamic masking policy, query-span, instance and action.
+func (s *SQLService) maskResults(ctx context.Context, spans []*base.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) error {
+	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find classification setting")
+	}
+
+	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find masking rule policy")
+	}
+
+	algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find masking algorithm setting")
+	}
+
+	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find semantic types setting")
+	}
+
+	m := newEmptyMaskingLevelEvaluator().
+		withMaskingRulePolicy(maskingRulePolicy).
+		withDataClassificationSetting(classificationSetting).
+		withMaskingAlgorithmSetting(algorithmSetting).
+		withSemanticTypeSetting(semanticTypesSetting)
+
+	// We expect the len(spans) == len(results), but to avoid NPE, we use the min(len(spans), len(results)) here.
+	loopBoundary := min(len(spans), len(results))
+	for i := 0; i < loopBoundary; i++ {
+		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], action)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get maskers for query span")
+		}
+		mask(maskers, results[i])
+	}
+
+	return nil
+}
+
+func mask(maskers []masker.Masker, result *v1pb.QueryResult) {
+	sensitive := make([]bool, len(result.ColumnNames))
+	for i := range result.ColumnNames {
+		if i < len(maskers) {
+			switch maskers[i].(type) {
+			case *masker.NoneMasker:
+				sensitive[i] = false
+			default:
+				sensitive[i] = true
+			}
+		}
+	}
+
+	for i, row := range result.Rows {
+		for j, value := range row.Values {
+			if value == nil {
+				continue
+			}
+			maskedValue := row.Values[j]
+			if j < len(maskers) && maskers[j] != nil {
+				maskedValue = maskers[j].Mask(&masker.MaskData{
+					DataV2: row.Values[j],
+				})
+			}
+			result.Rows[i].Values[j] = maskedValue
+		}
+	}
+
+	result.Sensitive = sensitive
+	result.Masked = sensitive
 }
 
 // sanitizeResults sanitizes the strings in the results by replacing all the invalid UTF-8 characters with its hexadecimal representation.
@@ -1160,141 +1643,6 @@ func sanitizeResults(results []*v1pb.QueryResult) {
 			}
 		}
 	}
-}
-
-// preCheck does the following:
-//  1. Validate the request.
-//     i. Check if the instance exists.
-//     ii. Check if the database exists.
-//     iii. Check if the query is valid.
-//  2. Check if the user has permission to execute the query.
-//  3. Run SQL review.
-//  4. Get sensitive schema info.
-//  5. Create query activity.
-//
-// Due to the performance consideration, we DO NOT get the sensitive schema info if there are advice error in SQL review.
-func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatabase, statement string, limit int32, isAdmin, isExport bool) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, advisor.Status, []*v1pb.Advice, *base.SensitiveSchemaInfo, error) {
-	// Prepare related message.
-	user, environment, instance, maybeDatabase, err := s.prepareRelatedMessage(ctx, instanceName, connectionDatabase)
-	if err != nil {
-		return nil, nil, nil, advisor.Success, nil, nil, err
-	}
-
-	// Validate the request.
-	if err := validateQueryRequest(instance, connectionDatabase, statement); err != nil {
-		return nil, nil, nil, advisor.Success, nil, nil, err
-	}
-
-	// dataShare must be false when connecting to instance (not database) in sql editor
-	// dataShare must be false when engine is not redshift
-	// engine must be MYSQL or TIDB when connecting to instance (not database) in sql editor
-	dataShare := false
-	if maybeDatabase != nil {
-		dataShare = maybeDatabase.DataShare
-	}
-
-	if isAdmin {
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesAdminExecute, user)
-		if err != nil {
-			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "failed to check if the user has the permission, error: %v", err)
-		}
-		if !ok {
-			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "permission denied, require permission %q", iam.PermissionInstancesAdminExecute)
-		}
-	}
-	// Check if the user has permission to execute the query.
-	if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
-		return nil, nil, nil, advisor.Success, nil, nil, err
-	}
-
-	// Run SQL review.
-	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, maybeDatabase, nil /* Override Metadata */)
-	if err != nil {
-		return nil, nil, nil, adviceStatus, adviceList, nil, err
-	}
-
-	// Get sensitive schema info.
-	maskingType := storepb.MaskingExceptionPolicy_MaskingException_QUERY
-	if isExport {
-		maskingType = storepb.MaskingExceptionPolicy_MaskingException_EXPORT
-	}
-	var sensitiveSchemaInfo *base.SensitiveSchemaInfo
-	if s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData) == nil && adviceStatus != advisor.Error {
-		databaseMap := make(map[string]bool)
-		switch instance.Engine {
-		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			databaseMap[connectionDatabase] = true
-			resources, err := base.ExtractResourceList(instance.Engine, connectionDatabase, "", statement)
-			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s with error %v", statement, err)
-			}
-			for _, resource := range resources {
-				databaseMap[resource.Database] = true
-			}
-		case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
-			if !allPostgresSystemObjects(statement) {
-				databaseMap[connectionDatabase] = true
-			}
-		case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_DM:
-			databaseMap[connectionDatabase] = true
-			if instance.Options != nil && instance.Options.SchemaTenantMode {
-				resources, err := base.ExtractResourceList(storepb.Engine_ORACLE, connectionDatabase, connectionDatabase, statement)
-				if err != nil {
-					return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s", statement)
-				}
-				for _, resource := range resources {
-					databaseMap[resource.Database] = true
-				}
-			}
-		case storepb.Engine_SNOWFLAKE:
-			resources, err := base.ExtractResourceList(storepb.Engine_SNOWFLAKE, connectionDatabase, "schema_placeholder", statement)
-			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s with error %v", statement, err)
-			}
-			for _, resource := range resources {
-				databaseMap[resource.Database] = true
-			}
-		case storepb.Engine_MSSQL:
-			resources, err := base.ExtractResourceList(storepb.Engine_MSSQL, connectionDatabase, "dbo", statement)
-			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get resource list: %s with error %v", statement, err)
-			}
-			for _, resource := range resources {
-				databaseMap[resource.Database] = true
-			}
-		}
-		var databases []string
-		for k := range databaseMap {
-			databases = append(databases, k)
-		}
-		sensitiveSchemaInfo, err = s.getSensitiveSchemaInfo(ctx, instance, databases, connectionDatabase, maskingType)
-		if err != nil {
-			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "Failed to get sensitive schema info for statement: %s, error: %v", statement, err.Error())
-		}
-	}
-
-	return user, instance, maybeDatabase, adviceStatus, adviceList, sensitiveSchemaInfo, nil
-}
-
-func allPostgresSystemObjects(statement string) bool {
-	// We need to distinguish between specified public schema and by default.
-	resources, err := base.ExtractResourceList(storepb.Engine_POSTGRES, "", "", statement)
-	if err != nil {
-		slog.Debug("Failed to extract resource list from statement", slog.String("statement", statement), log.BBError(err))
-		return false
-	}
-	for _, resource := range resources {
-		if pgparser.IsSystemSchema(resource.Schema) {
-			continue
-		}
-		// If schema is not specified, user can access the pg_catalog schema if the table is pg_catalog's system table.
-		// So we need to check this case.
-		if resource.Schema == "" && pgparser.IsSystemTable(resource.Table) {
-			continue
-		}
-		return false
-	}
-	return true
 }
 
 func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, database *store.DatabaseMessage, payload api.ActivitySQLEditorQueryPayload) (*store.ActivityMessage, error) {
@@ -1331,311 +1679,6 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 	return activity, nil
 }
 
-func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store.InstanceMessage, databaseList []string, currentDatabase string, action storepb.MaskingExceptionPolicy_MaskingException_Action) (*base.SensitiveSchemaInfo, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	currentPrincipal, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		ID: &principalID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find current principal")
-	}
-
-	isEmpty := true
-	result := &base.SensitiveSchemaInfo{
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-		DatabaseList:        []base.DatabaseSchema{},
-	}
-
-	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find classification setting")
-	}
-
-	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find masking rule policy")
-	}
-
-	algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find masking algorithm setting")
-	}
-
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find semantic types setting")
-	}
-
-	// Multiple databases may belong to the same project, to reduce the protojson unmarshal cost,
-	// we store the projectResourceID - maskingExceptionPolicy in a map.
-	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
-
-	m := newEmptyMaskingLevelEvaluator().
-		withMaskingRulePolicy(maskingRulePolicy).
-		withDataClassificationSetting(classificationSetting).
-		withMaskingAlgorithmSetting(algorithmSetting).
-		withSemanticTypeSetting(semanticTypesSetting)
-
-	for _, name := range databaseList {
-		databaseName := name
-		if name == "" {
-			if currentDatabase == "" {
-				continue
-			}
-			databaseName = currentDatabase
-		}
-		if isExcludeDatabase(instance.Engine, databaseName) {
-			continue
-		}
-
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:          &instance.ResourceID,
-			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-		})
-		if err != nil {
-			return nil, err
-		}
-		if database == nil {
-			return nil, errors.Errorf("database %q not found", databaseName)
-		}
-
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &database.ProjectID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find project %q", database.ProjectID)
-		}
-		if project == nil {
-			return nil, status.Errorf(codes.Internal, "project of database %q should not be nil", database.DatabaseName)
-		}
-
-		var maskingExceptionPolicy *storepb.MaskingExceptionPolicy
-		// If we cannot find the maskingExceptionPolicy before, we need to find it from the database and record it in cache.
-		if _, ok := maskingExceptionPolicyMap[database.ProjectID]; !ok {
-			policy, err := s.store.GetMaskingExceptionPolicyByProjectUID(ctx, project.UID)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find masking exception policy for project %q", project.ResourceID)
-			}
-			// It is safe if policy is nil.
-			maskingExceptionPolicyMap[database.ProjectID] = policy
-		}
-		maskingExceptionPolicy = maskingExceptionPolicyMap[database.ProjectID]
-
-		// Build the filtered maskingExceptionPolicy for current principal.
-		var maskingExceptionContainsCurrentPrincipal []*storepb.MaskingExceptionPolicy_MaskingException
-		if maskingExceptionPolicy != nil {
-			slog.Debug("found masking exception policy for project", slog.String("database", databaseName), slog.String("project", database.ProjectID), slog.Any("masking exception policy", maskingExceptionPolicy))
-			for _, maskingException := range maskingExceptionPolicy.MaskingExceptions {
-				if maskingException.Action != action {
-					continue
-				}
-				if maskingException.Member == currentPrincipal.Email {
-					slog.Debug("hit masking exception for current principal", slog.String("database", databaseName), slog.String("project", database.ProjectID), slog.Any("masking exception", maskingException))
-					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
-				}
-			}
-		}
-
-		// Filtered the current project's data classification config.
-		var dataClassificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
-		if project.DataClassificationConfigID != "" {
-			for _, dataClassificationSetting := range classificationSetting.Configs {
-				if dataClassificationSetting.Id == project.DataClassificationConfigID {
-					dataClassificationConfig = dataClassificationSetting
-					slog.Debug("found data classification config for project", slog.String("project", project.ResourceID), slog.Any("data classification config id", dataClassificationConfig.Id))
-					break
-				}
-			}
-		}
-
-		// Convert the maskingPolicy to a map to reduce the time complexity of searching.
-		maskingPolicy, err := s.store.GetMaskingPolicyByDatabaseUID(ctx, database.UID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find masking policy for database %q", databaseName)
-		}
-		maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
-		if maskingPolicy != nil {
-			for _, maskData := range maskingPolicy.MaskData {
-				maskingPolicyMap[maskingPolicyKey{
-					schema: maskData.Schema,
-					table:  maskData.Table,
-					column: maskData.Column,
-				}] = maskData
-			}
-		}
-		slog.Debug("found masking policy for database", slog.String("database", databaseName), slog.Any("masking policy", maskingPolicy))
-
-		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to find schema for database %q in instance %q: %v", databaseName, instance.Title, err)
-		}
-
-		if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
-			for _, schema := range dbSchema.GetMetadata().Schemas {
-				var schemaConfig *storepb.SchemaConfig
-				if dbSchema != nil && dbSchema.GetConfig() != nil {
-					for _, c := range dbSchema.GetConfig().SchemaConfigs {
-						if c != nil && c.Name == schema.Name {
-							schemaConfig = c
-							break
-						}
-					}
-				}
-
-				databaseSchema := base.DatabaseSchema{
-					Name: schema.Name,
-				}
-				schemaSchema := base.SchemaSchema{
-					Name:      schema.Name,
-					TableList: []base.TableSchema{},
-				}
-				for _, table := range schema.Tables {
-					var tableConfig *storepb.TableConfig
-					if schemaConfig != nil {
-						for _, c := range schemaConfig.TableConfigs {
-							if c != nil && c.Name == table.Name {
-								tableConfig = c
-								break
-							}
-						}
-					}
-
-					tableSchema := base.TableSchema{
-						Name:       table.Name,
-						ColumnList: []base.ColumnInfo{},
-					}
-					for _, column := range table.Columns {
-						var columnConfig *storepb.ColumnConfig
-						if tableConfig != nil {
-							for _, c := range tableConfig.ColumnConfigs {
-								if c != nil && c.Name == column.Name {
-									columnConfig = c
-									break
-								}
-							}
-						}
-						columnSemanticTypeID := ""
-						if columnConfig != nil {
-							columnSemanticTypeID = columnConfig.SemanticTypeId
-						}
-
-						slog.Debug("processing sensitive schema info", slog.String("schema", schema.Name), slog.String("table", table.Name))
-						maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, schema.Name, table.Name, column.Name, columnSemanticTypeID, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
-						if err != nil {
-							return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
-						}
-						sensitive := maskingLevel == storepb.MaskingLevel_FULL || maskingLevel == storepb.MaskingLevel_PARTIAL
-						if sensitive {
-							isEmpty = false
-						}
-						masker := getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel)
-						tableSchema.ColumnList = append(tableSchema.ColumnList, base.ColumnInfo{
-							Name:              column.Name,
-							MaskingAttributes: base.NewMaskingAttributes(masker),
-						})
-					}
-					schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
-				}
-				databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
-				result.DatabaseList = append(result.DatabaseList, databaseSchema)
-			}
-			continue
-		}
-
-		databaseSchema := base.DatabaseSchema{
-			Name:       databaseName,
-			SchemaList: []base.SchemaSchema{},
-		}
-		for _, schema := range dbSchema.GetMetadata().Schemas {
-			var schemaConfig *storepb.SchemaConfig
-			if dbSchema != nil && dbSchema.GetConfig() != nil {
-				for _, c := range dbSchema.GetConfig().SchemaConfigs {
-					if c != nil && c.Name == schema.Name {
-						schemaConfig = c
-						break
-					}
-				}
-			}
-			schemaSchema := base.SchemaSchema{
-				Name:      schema.Name,
-				TableList: []base.TableSchema{},
-			}
-			for _, table := range schema.Tables {
-				var tableConfig *storepb.TableConfig
-				if schemaConfig != nil {
-					for _, c := range schemaConfig.TableConfigs {
-						if c != nil && c.Name == table.Name {
-							tableConfig = c
-							break
-						}
-					}
-				}
-				tableSchema := base.TableSchema{
-					Name:       table.Name,
-					ColumnList: []base.ColumnInfo{},
-				}
-				for _, column := range table.Columns {
-					var columnConfig *storepb.ColumnConfig
-					if tableConfig != nil {
-						for _, c := range tableConfig.ColumnConfigs {
-							if c != nil && c.Name == column.Name {
-								columnConfig = c
-							}
-						}
-					}
-					columnSemanticTypeID := ""
-					if columnConfig != nil {
-						columnSemanticTypeID = columnConfig.SemanticTypeId
-					}
-
-					slog.Debug("processing sensitive schema info", slog.String("database", database.DatabaseName), slog.String("schema", schema.Name), slog.String("table", table.Name), slog.String("column", column.Name))
-					maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, schema.Name, table.Name, column.Name, columnSemanticTypeID, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
-					if err != nil {
-						return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
-					}
-					sensitive := maskingLevel == storepb.MaskingLevel_FULL || maskingLevel == storepb.MaskingLevel_PARTIAL
-					if sensitive {
-						isEmpty = false
-					}
-					masker := getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel)
-					tableSchema.ColumnList = append(tableSchema.ColumnList, base.ColumnInfo{
-						Name:              column.Name,
-						MaskingAttributes: base.NewMaskingAttributes(masker),
-					})
-				}
-				schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
-			}
-			for _, view := range schema.Views {
-				viewSchema := base.ViewSchema{
-					Name:       view.Name,
-					Definition: view.Definition,
-				}
-				schemaSchema.ViewList = append(schemaSchema.ViewList, viewSchema)
-			}
-			for _, materializedView := range schema.MaterializedViews {
-				materializedViewSchema := base.ViewSchema{
-					Name:       materializedView.Name,
-					Definition: materializedView.Definition,
-				}
-				schemaSchema.ViewList = append(schemaSchema.ViewList, materializedViewSchema)
-			}
-			databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
-		}
-		result.DatabaseList = append(result.DatabaseList, databaseSchema)
-	}
-
-	if isEmpty {
-		// If there is no tables, this query may access system databases, such as INFORMATION_SCHEMA.
-		// Skip to extract sensitive column for this query.
-		result = nil
-	}
-	return result, nil
-}
-
 func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.MaskingAlgorithmSetting_Algorithm, level storepb.MaskingLevel) masker.Masker {
 	if algorithm == nil {
 		switch level {
@@ -1669,37 +1712,6 @@ func convertRangeMaskSlices(slices []*storepb.MaskingAlgorithmSetting_Algorithm_
 		})
 	}
 	return result
-}
-
-func isExcludeDatabase(dbType storepb.Engine, database string) bool {
-	switch dbType {
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
-		return isMySQLExcludeDatabase(database)
-	case storepb.Engine_TIDB:
-		if isMySQLExcludeDatabase(database) {
-			return true
-		}
-		return database == "metrics_schema"
-	case storepb.Engine_SNOWFLAKE:
-		return database == "SNOWFLAKE"
-	default:
-		return false
-	}
-}
-
-func isMySQLExcludeDatabase(database string) bool {
-	if strings.ToLower(database) == "information_schema" {
-		return true
-	}
-
-	switch database {
-	case "mysql":
-	case "sys":
-	case "performance_schema":
-	default:
-		return false
-	}
-	return true
 }
 
 // getReadOnlyDataSource returns the read-only data source for the instance.
@@ -2283,105 +2295,6 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 	}
 }
 
-func (s *SQLService) checkQueryRights(
-	ctx context.Context,
-	databaseName string,
-	datashare bool,
-	statement string,
-	limit int32,
-	user *store.UserMessage,
-	instance *store.InstanceMessage,
-	isExport bool,
-) error {
-	// TODO(d): use a Redshift extraction for shared database.
-	extractingStatement := statement
-	if datashare {
-		extractingStatement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", databaseName), "")
-	}
-	resourceList, err := s.extractResourceList(ctx, instance.Engine, databaseName, extractingStatement, instance)
-	if err != nil {
-		return status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
-	}
-
-	databaseMap := make(map[string]bool)
-	for _, resource := range resourceList {
-		if resource.LinkedServer != "" && instance.Engine == storepb.Engine_MSSQL {
-			continue
-		}
-		databaseMap[resource.Database] = true
-	}
-
-	if databaseName != "" {
-		databaseMap[databaseName] = true
-	}
-
-	var project *store.ProjectMessage
-
-	databaseMessageMap := make(map[string]*store.DatabaseMessage)
-	for database := range databaseMap {
-		projectMessage, databaseMessage, err := s.getProjectAndDatabaseMessage(ctx, instance, database)
-		if err != nil {
-			return err
-		}
-		if projectMessage == nil && databaseMessage == nil {
-			// If database not found, skip.
-			continue
-		}
-		if projectMessage == nil {
-			// Never happen
-			return status.Errorf(codes.Internal, "project not found for database: %s", databaseMessage.DatabaseName)
-		}
-		if project == nil {
-			project = projectMessage
-		}
-		if project.UID != projectMessage.UID {
-			return status.Errorf(codes.InvalidArgument, "allow querying databases within the same project only")
-		}
-		databaseMessageMap[database] = databaseMessage
-	}
-
-	if len(databaseMessageMap) == 0 && project == nil {
-		project, _, err = s.getProjectAndDatabaseMessage(ctx, instance, databaseName)
-		if err != nil {
-			return status.Errorf(codes.Internal, err.Error())
-		}
-	}
-
-	if project == nil {
-		// Background: We allow users to execute queries at the instance level in MySQL.
-		// However, for certain statements like `select 1`, we cannot get its related project.
-		// So for those users without admin permission in workspace, we'd like to return permission denied.
-		return status.Error(codes.PermissionDenied, "permission denied on instance-level queries")
-	}
-
-	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return status.Errorf(codes.Internal, err.Error())
-	}
-
-	for _, resource := range resourceList {
-		databaseResourceURL := common.FormatDatabase(instance.ResourceID, resource.Database)
-		attributes := map[string]any{
-			"request.time":      time.Now(),
-			"resource.database": databaseResourceURL,
-			"resource.schema":   resource.Schema,
-			"resource.table":    resource.Table,
-			"request.statement": encodeToBase64String(statement),
-			"request.row_limit": limit,
-		}
-
-		ok, err := s.hasDatabaseAccessRights(ctx, user, projectPolicy, attributes, isExport)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
-		}
-		if !ok {
-			return status.Errorf(codes.PermissionDenied, "permission denied to access resource: %q", resource.Pretty())
-		}
-	}
-
-	return nil
-}
-
 func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
 	wantPermission := iam.PermissionDatabasesQuery
 	if isExport {
@@ -2598,6 +2511,53 @@ func encodeToBase64String(statement string) string {
 	return base64Encoded
 }
 
+func convertChangeType(t v1pb.CheckRequest_ChangeType) storepb.PlanCheckRunConfig_ChangeDatabaseType {
+	switch t {
+	case v1pb.CheckRequest_DDL:
+		return storepb.PlanCheckRunConfig_DDL
+	case v1pb.CheckRequest_DDL_GHOST:
+		return storepb.PlanCheckRunConfig_DDL_GHOST
+	case v1pb.CheckRequest_DML:
+		return storepb.PlanCheckRunConfig_DML
+	default:
+		return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
+	}
+}
+
+// ParseMyBatisMapper parses a MyBatis mapper XML file and returns the multi-SQL statements.
+func (*SQLService) ParseMyBatisMapper(_ context.Context, request *v1pb.ParseMyBatisMapperRequest) (*v1pb.ParseMyBatisMapperResponse, error) {
+	content := string(request.Content)
+
+	parser := mapperparser.NewParser(content)
+	node, err := parser.Parse()
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse mybatis mapper: %v", err)
+	}
+
+	var stringsBuilder strings.Builder
+	if err := node.RestoreSQL(parser.NewRestoreContext().WithRestoreDataNodePlaceholder("@1"), &stringsBuilder); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to restore mybatis mapper: %v", err)
+	}
+
+	statement := stringsBuilder.String()
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to split mybatis mapper: %v", err)
+	}
+
+	var results []string
+	for _, sql := range singleSQLs {
+		if sql.Empty {
+			continue
+		}
+		results = append(results, sql.Text)
+	}
+
+	return &v1pb.ParseMyBatisMapperResponse{
+		Statements: results,
+	}, nil
+}
+
 // DifferPreview returns the diff preview of the given SQL statement and metadata.
 func (*SQLService) DifferPreview(_ context.Context, request *v1pb.DifferPreviewRequest) (*v1pb.DifferPreviewResponse, error) {
 	storeSchemaMetadata, _ := convertV1DatabaseMetadata(request.NewMetadata)
@@ -2610,17 +2570,4 @@ func (*SQLService) DifferPreview(_ context.Context, request *v1pb.DifferPreviewR
 	return &v1pb.DifferPreviewResponse{
 		Schema: schema,
 	}, nil
-}
-
-func convertChangeType(t v1pb.CheckRequest_ChangeType) storepb.PlanCheckRunConfig_ChangeDatabaseType {
-	switch t {
-	case v1pb.CheckRequest_DDL:
-		return storepb.PlanCheckRunConfig_DDL
-	case v1pb.CheckRequest_DDL_GHOST:
-		return storepb.PlanCheckRunConfig_DDL_GHOST
-	case v1pb.CheckRequest_DML:
-		return storepb.PlanCheckRunConfig_DML
-	default:
-		return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
-	}
 }
