@@ -353,7 +353,16 @@ func (s *LoggingService) ExportLogs(ctx context.Context, request *v1pb.ExportLog
 	return &v1pb.ExportLogsResponse{Content: content}, nil
 }
 
-func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.ActivityMessage) (*v1pb.LogEntity, error) {
+func convertToLogEntity(ctx context.Context, stores *store.Store, activity *store.ActivityMessage) (*v1pb.LogEntity, error) {
+	parent := activity.ResourceContainer
+	if parent == "" {
+		workspaceID, err := stores.GetWorkspaceID(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to find workspace id with error: %v", err.Error())
+		}
+		parent = fmt.Sprintf("workspaces/%s", workspaceID)
+	}
+
 	resource := ""
 	switch activity.Type {
 	case
@@ -361,7 +370,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		api.ActivityMemberRoleUpdate,
 		api.ActivityMemberActivate,
 		api.ActivityMemberDeactivate:
-		user, err := db.GetUserByID(ctx, activity.ContainerUID)
+		user, err := stores.GetUserByID(ctx, activity.ContainerUID)
 		if err != nil {
 			return nil, err
 		}
@@ -390,7 +399,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		api.ActivityProjectDatabaseTransfer,
 		api.ActivityProjectMemberCreate,
 		api.ActivityProjectMemberDelete:
-		project, err := db.GetProjectV2(ctx, &store.FindProjectMessage{
+		project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{
 			UID: &activity.ContainerUID,
 		})
 		if err != nil {
@@ -403,7 +412,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 	case
 		api.ActivitySQLQuery,
 		api.ActivitySQLExport:
-		instance, err := db.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{
 			UID: &activity.ContainerUID,
 		})
 		if err != nil {
@@ -415,7 +424,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		resource = fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID)
 	}
 
-	user, err := db.GetUserByID(ctx, activity.CreatorUID)
+	user, err := stores.GetUserByID(ctx, activity.CreatorUID)
 	if err != nil {
 		return nil, err
 	}
@@ -424,7 +433,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 	}
 
 	return &v1pb.LogEntity{
-		Name:       fmt.Sprintf("%s%d", common.LogNamePrefix, activity.UID),
+		Name:       fmt.Sprintf("%s/%s%d", parent, common.LogNamePrefix, activity.UID),
 		Creator:    fmt.Sprintf("%s%s", common.UserNamePrefix, user.Email),
 		Resource:   resource,
 		Action:     convertToActionType(activity.Type),
