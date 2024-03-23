@@ -94,7 +94,7 @@ func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) 
 		databaseID = maybeDatabase.UID
 	}
 	// Create export activity.
-	activity, err := s.createExportActivity(ctx, user, api.ActivityInfo, instance.UID, api.ActivitySQLExportPayload{
+	activity, err := s.createExportActivity(ctx, user, api.ActivityInfo, instance.UID, maybeDatabase, api.ActivitySQLExportPayload{
 		Statement:    request.Statement,
 		InstanceID:   instance.UID,
 		DatabaseID:   databaseID,
@@ -200,7 +200,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	if maybeDatabase != nil {
 		databaseID = maybeDatabase.UID
 	}
-	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, api.ActivitySQLEditorQueryPayload{
+	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, maybeDatabase, api.ActivitySQLEditorQueryPayload{
 		Statement:              request.Statement,
 		InstanceID:             instance.UID,
 		DeprecatedInstanceName: instance.Title,

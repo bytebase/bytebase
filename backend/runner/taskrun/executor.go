@@ -519,10 +519,11 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			}
 
 			activityCreate := &store.ActivityMessage{
-				CreatorUID:   task.CreatorID,
-				ContainerUID: task.PipelineID,
-				Type:         api.ActivityPipelineTaskFileCommit,
-				Level:        api.ActivityInfo,
+				CreatorUID:        task.CreatorID,
+				ResourceContainer: issue.Project.GetName(),
+				ContainerUID:      task.PipelineID,
+				Type:              api.ActivityPipelineTaskFileCommit,
+				Level:             api.ActivityInfo,
 				Comment: fmt.Sprintf("Committed the latest schema after applying migration version %s to %q.",
 					mi.Version.Version,
 					mi.Database,
