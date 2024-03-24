@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -251,6 +252,9 @@ func checkAndConvertToStoreVersionControl(vcsProvider *v1pb.VCSProvider) (*store
 	if vcsProvider.Type == v1pb.VCSProvider_TYPE_UNSPECIFIED {
 		return nil, errors.Errorf("Empty VCSProvider.Type")
 	}
+	if vcsProvider.Url == "" {
+		return nil, errors.Errorf("Empty VCSProvider.Url")
+	}
 	if vcsProvider.AccessToken == "" {
 		return nil, errors.Errorf("Empty VCSProvider.Secret")
 	}
@@ -264,6 +268,7 @@ func checkAndConvertToStoreVersionControl(vcsProvider *v1pb.VCSProvider) (*store
 		return nil, err
 	}
 
+	storeVCSProvider.InstanceURL = strings.TrimRight(vcsProvider.Url, "/")
 	storeVCSProvider.Type = tp
 	return storeVCSProvider, nil
 }
