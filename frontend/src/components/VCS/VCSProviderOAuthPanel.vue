@@ -1,75 +1,46 @@
 <template>
   <div class="space-y-4">
-    <ol class="textinfolabel space-y-2">
-      <template v-if="config.uiType == 'GITLAB_SELF_HOST'">
+    <ul class="textinfolabel space-y-2">
+      <template
+        v-if="
+          config.uiType == 'GITLAB_SELF_HOST' || config.uiType == 'GITLAB_COM'
+        "
+      >
         <li>
-          1.
+          •
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.gitlab-self-host-login-as-admin"
-            )
-          }}
-          <img class="w-auto" src="../../assets/gitlab_admin_area.png" />
-        </li>
-        <li>
-          2.
-          {{
-            $t(
-              "gitops.setting.add-git-provider.oauth-info.gitlab-self-host-visit-admin-page"
+              "gitops.setting.add-git-provider.access-token.gitlab-project-access-token"
             )
           }}
         </li>
         <li>
-          3.
+          •
           {{
-            $t("gitops.setting.add-git-provider.oauth-info.create-oauth-app")
+            $t(
+              "gitops.setting.add-git-provider.access-token.gitlab-group-access-token"
+            )
           }}
         </li>
         <li>
-          4.
+          •
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.gitlab-paste-oauth-info"
+              "gitops.setting.add-git-provider.access-token.gitlab-personal-access-token"
             )
           }}
         </li>
       </template>
-      <template v-else-if="config.uiType == 'GITLAB_COM'">
-        <li>
-          1.
-          {{
-            $t("gitops.setting.add-git-provider.oauth-info.gitlab-com-login")
-          }}
-        </li>
-        <li>
-          2.
-          {{
-            $t(
-              "gitops.setting.add-git-provider.oauth-info.gitlab-com-visit-application-page"
-            )
-          }}
-        </li>
-        <li>
-          3.
-          {{
-            $t("gitops.setting.add-git-provider.oauth-info.create-oauth-app")
-          }}
-        </li>
-        <li>
-          4.
-          {{
-            $t(
-              "gitops.setting.add-git-provider.oauth-info.gitlab-paste-oauth-info"
-            )
-          }}
-        </li>
-      </template>
-      <template v-else-if="config.uiType == 'GITHUB_COM'">
+      <template
+        v-if="
+          config.uiType == 'GITHUB_COM' || config.uiType == 'GITHUB_ENTERPRISE'
+        "
+      >
         <li>
           1.
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.github-login-as-admin"
+              "gitops.setting.add-git-provider.access-token.github-login-as-admin"
             )
           }}
           <img class="w-auto" src="../../assets/github_admin_settings.png" />
@@ -78,64 +49,25 @@
           2.
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.github-visit-admin-page"
+              "gitops.setting.add-git-provider.access-token.github-visit-admin-page"
             )
-          }}
-        </li>
-        <li>
-          3.
-          {{
-            $t("gitops.setting.add-git-provider.oauth-info.create-oauth-app")
           }}
         </li>
         <li>
           4.
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.github-paste-oauth-info"
+              "gitops.setting.add-git-provider.access-token.github-paste-oauth-info"
             )
           }}
         </li>
       </template>
-      <template v-else-if="config.uiType == 'GITHUB_ENTERPRISE'">
+      <template v-if="config.uiType == 'BITBUCKET_ORG'">
         <li>
           1.
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.github-enterprise-login-as-admin"
-            )
-          }}
-          <img class="w-auto" src="../../assets/github_admin_settings.png" />
-        </li>
-        <li>
-          2.
-          {{
-            $t(
-              "gitops.setting.add-git-provider.oauth-info.github-visit-admin-page"
-            )
-          }}
-        </li>
-        <li>
-          3.
-          {{
-            $t("gitops.setting.add-git-provider.oauth-info.create-oauth-app")
-          }}
-        </li>
-        <li>
-          4.
-          {{
-            $t(
-              "gitops.setting.add-git-provider.oauth-info.github-paste-oauth-info"
-            )
-          }}
-        </li>
-      </template>
-      <template v-else-if="config.uiType == 'BITBUCKET_ORG'">
-        <li>
-          1.
-          {{
-            $t(
-              "gitops.setting.add-git-provider.oauth-info.bitbucket-login-as-admin"
+              "gitops.setting.add-git-provider.access-token.bitbucket-login-as-admin"
             )
           }}
         </li>
@@ -143,56 +75,46 @@
           2.
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.bitbucket-visit-admin-page"
+              "gitops.setting.add-git-provider.access-token.bitbucket-visit-admin-page"
             )
-          }}
-        </li>
-        <li>
-          3.
-          {{
-            $t("gitops.setting.add-git-provider.oauth-info.create-oauth-app")
           }}
         </li>
         <li>
           4.
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.bitbucket-paste-oauth-info"
+              "gitops.setting.add-git-provider.access-token.bitbucket-paste-oauth-info"
             )
           }}
         </li>
       </template>
-      <template v-else-if="config.uiType == 'AZURE_DEVOPS'">
+      <template v-if="config.uiType == 'AZURE_DEVOPS'">
         <li>
           1.
           {{
-            $t("gitops.setting.add-git-provider.oauth-info.azure-devops-login")
+            $t(
+              "gitops.setting.add-git-provider.access-token.azure-devops-login"
+            )
           }}
         </li>
         <li>
           2.
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.azure-devops-visit-application-page"
+              "gitops.setting.add-git-provider.access-token.azure-devops-visit-application-page"
             )
-          }}
-        </li>
-        <li>
-          3.
-          {{
-            $t("gitops.setting.add-git-provider.oauth-info.create-oauth-app")
           }}
         </li>
         <li>
           4.
           {{
             $t(
-              "gitops.setting.add-git-provider.oauth-info.azure-paste-oauth-info"
+              "gitops.setting.add-git-provider.access-token.azure-paste-oauth-info"
             )
           }}
         </li>
       </template>
-    </ol>
+    </ul>
     <div>
       <div class="mt-4 textlabel">
         Access Token <span class="text-red-600">*</span>
