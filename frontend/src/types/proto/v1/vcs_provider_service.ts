@@ -201,8 +201,6 @@ export interface ProjectGitOpsInfo {
   schemaPathTemplate: string;
   /** The reposition external id in target VCS. */
   externalId: string;
-  /** Set to true to enable SQL review CI for all PR/MRs. */
-  enableSqlReviewCi: boolean;
   /** The webhook endpoint ID of the repository. */
   webhookEndpointId: string;
 }
@@ -1079,7 +1077,6 @@ function createBaseProjectGitOpsInfo(): ProjectGitOpsInfo {
     filePathTemplate: "",
     schemaPathTemplate: "",
     externalId: "",
-    enableSqlReviewCi: false,
     webhookEndpointId: "",
   };
 }
@@ -1115,9 +1112,6 @@ export const ProjectGitOpsInfo = {
     }
     if (message.externalId !== "") {
       writer.uint32(90).string(message.externalId);
-    }
-    if (message.enableSqlReviewCi === true) {
-      writer.uint32(96).bool(message.enableSqlReviewCi);
     }
     if (message.webhookEndpointId !== "") {
       writer.uint32(106).string(message.webhookEndpointId);
@@ -1202,13 +1196,6 @@ export const ProjectGitOpsInfo = {
 
           message.externalId = reader.string();
           continue;
-        case 12:
-          if (tag !== 96) {
-            break;
-          }
-
-          message.enableSqlReviewCi = reader.bool();
-          continue;
         case 13:
           if (tag !== 106) {
             break;
@@ -1237,7 +1224,6 @@ export const ProjectGitOpsInfo = {
       filePathTemplate: isSet(object.filePathTemplate) ? globalThis.String(object.filePathTemplate) : "",
       schemaPathTemplate: isSet(object.schemaPathTemplate) ? globalThis.String(object.schemaPathTemplate) : "",
       externalId: isSet(object.externalId) ? globalThis.String(object.externalId) : "",
-      enableSqlReviewCi: isSet(object.enableSqlReviewCi) ? globalThis.Boolean(object.enableSqlReviewCi) : false,
       webhookEndpointId: isSet(object.webhookEndpointId) ? globalThis.String(object.webhookEndpointId) : "",
     };
   },
@@ -1274,9 +1260,6 @@ export const ProjectGitOpsInfo = {
     if (message.externalId !== "") {
       obj.externalId = message.externalId;
     }
-    if (message.enableSqlReviewCi === true) {
-      obj.enableSqlReviewCi = message.enableSqlReviewCi;
-    }
     if (message.webhookEndpointId !== "") {
       obj.webhookEndpointId = message.webhookEndpointId;
     }
@@ -1298,7 +1281,6 @@ export const ProjectGitOpsInfo = {
     message.filePathTemplate = object.filePathTemplate ?? "";
     message.schemaPathTemplate = object.schemaPathTemplate ?? "";
     message.externalId = object.externalId ?? "";
-    message.enableSqlReviewCi = object.enableSqlReviewCi ?? false;
     message.webhookEndpointId = object.webhookEndpointId ?? "";
     return message;
   },

@@ -22,12 +22,3 @@ export const getVCSUIType = (vcs: VCSProvider): VCSUIType => {
       return "GITLAB_SELF_HOST";
   }
 };
-
-export const supportSQLReviewCI = (vcsType: VCSProvider_Type): boolean => {
-  return (
-    vcsType === VCSProvider_Type.GITHUB ||
-    vcsType === VCSProvider_Type.GITLAB ||
-    vcsType === VCSProvider_Type.AZURE_DEVOPS ||
-    (vcsType === VCSProvider_Type.BITBUCKET && isDev())
-  );
-};

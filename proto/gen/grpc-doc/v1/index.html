@@ -1689,14 +1689,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SetupSQLReviewCIRequest"><span class="badge">M</span>SetupSQLReviewCIRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SetupSQLReviewCIResponse"><span class="badge">M</span>SetupSQLReviewCIResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.TestWebhookRequest"><span class="badge">M</span>TestWebhookRequest</a>
                 </li>
               
@@ -16432,13 +16424,6 @@ If specified, required placeholder: {{DB_NAME}}, optional placeholder: {{ENV_ID}
                 </tr>
               
                 <tr>
-                  <td>enable_sql_review_ci</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Set to true to enable SQL review CI for all PR/MRs. </p></td>
-                </tr>
-              
-                <tr>
                   <td>webhook_endpoint_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -18237,55 +18222,6 @@ Format: projects/{project} </p></td>
 
         
       
-        <h3 id="bytebase.v1.SetupSQLReviewCIRequest">SetupSQLReviewCIRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the GitOps info.
-Format: projects/{project}/gitOpsInfo </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SetupSQLReviewCIResponse">SetupSQLReviewCIResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>pull_request_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The CI setup PR URL for the repository. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.TestWebhookRequest">TestWebhookRequest</h3>
         <p></p>
 
@@ -19316,13 +19252,6 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>SetupProjectSQLReviewCI</td>
-                <td><a href="#bytebase.v1.SetupSQLReviewCIRequest">SetupSQLReviewCIRequest</a></td>
-                <td><a href="#bytebase.v1.SetupSQLReviewCIResponse">SetupSQLReviewCIResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>GetProjectGitOpsInfo</td>
                 <td><a href="#bytebase.v1.GetProjectGitOpsInfoRequest">GetProjectGitOpsInfoRequest</a></td>
                 <td><a href="#bytebase.v1.ProjectGitOpsInfo">ProjectGitOpsInfo</a></td>
@@ -19608,16 +19537,6 @@ The API will default to the BASIC view.</p></td>
                 <td>DELETE</td>
                 <td>/v1/{name=projects/*/gitOpsInfo}</td>
                 <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>SetupProjectSQLReviewCI</td>
-                <td>PATCH</td>
-                <td>/v1/{name=projects/*/gitOpsInfo}:setupSQLReviewCI</td>
-                <td>*</td>
               </tr>
               
             

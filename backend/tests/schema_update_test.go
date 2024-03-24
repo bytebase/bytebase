@@ -1366,19 +1366,6 @@ func TestVCS_SQL_Review(t *testing.T) {
 			})
 			a.NoError(err)
 			a.NotNil(gitOpsInfo)
-			a.Equal(false, gitOpsInfo.EnableSqlReviewCi)
-
-			resp, err := ctl.projectServiceClient.SetupProjectSQLReviewCI(ctx, &v1pb.SetupSQLReviewCIRequest{
-				Name: fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-			})
-			a.NoError(err)
-			a.NotEmpty(resp.PullRequestUrl)
-
-			gitOpsInfo, err = ctl.projectServiceClient.GetProjectGitOpsInfo(ctx, &v1pb.GetProjectGitOpsInfoRequest{
-				Name: fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-			})
-			a.NoError(err)
-			a.Equal(true, gitOpsInfo.EnableSqlReviewCi)
 
 			// Simulate Git commits and pull request for SQL review.
 			prID := rand.Int()
