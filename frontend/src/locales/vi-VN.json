@@ -1790,13 +1790,7 @@
     "file-path-template-description": "Bytebase chỉ quan sát tên đường dẫn tệp khớp với mẫu mẫu liên quan đến thư mục cơ sở.",
     "file-path-example-schema-migration": "Ví dụ về đường dẫn tệp cho kiểu di chuyển lược đồ",
     "file-path-example-data-migration": "Ví dụ về đường dẫn tệp cho loại di chuyển dữ liệu",
-    "schema-path-template": "Mẫu đường dẫn lược đồ",
-    "schema-writeback-description": "Khi được chỉ định, sau mỗi lần di chuyển, Bytebase sẽ ghi lược đồ mới nhất vào đường dẫn lược đồ tương ứng với thư mục cơ sở trong cùng nhánh với cam kết ban đầu kích hoạt quá trình di chuyển. Để trống nếu bạn không muốn Bytebase thực hiện việc này.",
-    "schema-writeback-protected-branch": "Đảm bảo nhánh đã thay đổi không được bảo vệ hoặc cho phép người bảo trì kho lưu trữ đẩy tới nhánh được bảo vệ đó.",
     "if-specified": "Nếu được chỉ định",
-    "schema-path-example": "Ví dụ về đường dẫn lược đồ",
-    "sheet-path-template": "Mẫu đường dẫn trang tính",
-    "sheet-path-template-description": "Bytebase chỉ quan sát các tệp có tên đường dẫn khớp với mẫu mẫu liên quan đến thư mục cơ sở. Các tệp phù hợp sẽ được đồng bộ hóa với SQL Editor để sử dụng ở đó.",
     "sql-review-ci": "CI đánh giá SQL",
     "sql-review-ci-enable": "Bật CI đánh giá SQL",
     "sql-review-ci-enable-gitlab": "Kích hoạt CI đánh giá SQL thông qua GitLab CI",
@@ -2560,14 +2554,6 @@
       "bb-feature-custom-approval": {
         "title": "Phê duyệt tùy chỉnh",
         "desc": "Định cấu hình mức độ rủi ro và luồng phê duyệt cho các nhiệm vụ khác nhau."
-      },
-      "bb-feature-vcs-schema-write-back": {
-        "title": "Viết lại lược đồ",
-        "desc": "Sau khi thay đổi lược đồ thành công, việc ghi lại lược đồ cho phép Bytebase ghi lại ảnh chụp nhanh lược đồ đầy đủ mới nhất vào kho lưu trữ VCS của bạn."
-      },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "Đồng bộ hóa tập lệnh SQL từ VCS",
-        "desc": "Đồng bộ hóa các tập lệnh SQL được lưu trữ trong VCS sang Trang tính."
       },
       "bb-feature-vcs-sql-review": {
         "title": "Đánh giá SQL trong quy trình làm việc GitOps",
