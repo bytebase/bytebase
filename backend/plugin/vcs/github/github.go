@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -234,16 +233,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx *common.OauthCo
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
+		oauthCtx.AccessToken,
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "GET")
@@ -279,16 +269,7 @@ func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx *common.OauthCo
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
+		oauthCtx.AccessToken,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
@@ -326,65 +307,6 @@ func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx *common.OauthCo
 	}
 
 	return ret, nil
-}
-
-// oauthResponse is a GitHub OAuth response.
-type oauthResponse struct {
-	AccessToken      string `json:"access_token" `
-	Error            string `json:"error,omitempty"`
-	ErrorDescription string `json:"error_description,omitempty"`
-}
-
-// toVCSOAuthToken converts the response to *vcs.OAuthToken.
-func (o oauthResponse) toVCSOAuthToken() *vcs.OAuthToken {
-	oauthToken := &vcs.OAuthToken{
-		AccessToken: o.AccessToken,
-		// GitHub OAuth token never expires
-	}
-	return oauthToken
-}
-
-// ExchangeOAuthToken exchanges OAuth content with the provided authorization code.
-func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
-	urlParams := &url.Values{}
-	urlParams.Set("client_id", oauthExchange.ClientID)
-	urlParams.Set("client_secret", oauthExchange.ClientSecret)
-	urlParams.Set("code", oauthExchange.Code)
-	urlParams.Set("redirect_uri", oauthExchange.RedirectURL)
-	url := fmt.Sprintf("%s/login/oauth/access_token?%s", instanceURL, urlParams.Encode())
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
-	if err != nil {
-		urlParams.Set("client_secret", "**redacted**")
-		redactedURL := fmt.Sprintf("%s/login/oauth/access_token?%s", instanceURL, urlParams.Encode())
-		return nil, errors.Wrapf(err, "construct POST %s", redactedURL)
-	}
-
-	// GitHub returns URL-encoded parameters as the response format by default,
-	// we need to ask for a JSON response explicitly.
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to exchange OAuth token")
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read OAuth response body, code %v", resp.StatusCode)
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	oauthResp := new(oauthResponse)
-	if err := json.Unmarshal(body, oauthResp); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal OAuth response body, code %v", resp.StatusCode)
-	}
-	if oauthResp.Error != "" {
-		return nil, errors.Errorf("failed to exchange OAuth token, error: %v, error_description: %v", oauthResp.Error, oauthResp.ErrorDescription)
-	}
-	return oauthResp.toVCSOAuthToken(), nil
 }
 
 // FetchAllRepositoryList fetches all repositories where the authenticated user
@@ -437,16 +359,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx *c
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
+		oauthCtx.AccessToken,
 	)
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "GET %s", url)
@@ -488,16 +401,7 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx *common
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
+		oauthCtx.AccessToken,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
@@ -565,17 +469,8 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx *common.OauthContext
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
+		oauthCtx.AccessToken,
 		bytes.NewReader(body),
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "PUT %s", url)
@@ -614,16 +509,7 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx *common.OauthConte
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
+		oauthCtx.AccessToken,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
@@ -671,16 +557,7 @@ func (p *Provider) getLastCommitID(ctx context.Context, oauthCtx *common.OauthCo
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
+		oauthCtx.AccessToken,
 	)
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
@@ -714,16 +591,7 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx *common.OauthCo
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
+		oauthCtx.AccessToken,
 		map[string]string{
 			"Accept": "application/vnd.github.raw",
 		},
@@ -819,16 +687,7 @@ func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx *c
 		ctx,
 		p.client,
 		requestURL,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
+		oauthCtx.AccessToken,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", requestURL)
@@ -876,16 +735,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext,
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
+		oauthCtx.AccessToken,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
@@ -936,17 +786,8 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx *common.OauthConte
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
+		oauthCtx.AccessToken,
 		bytes.NewReader(body),
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "GET %s", url)
@@ -984,17 +825,8 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx *common.Oauth
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
+		oauthCtx.AccessToken,
 		bytes.NewReader(body),
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "POST %s", url)
@@ -1056,17 +888,8 @@ func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx *comm
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
+		oauthCtx.AccessToken,
 		bytes.NewReader(body),
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "PUT %s", url)
@@ -1148,16 +971,7 @@ func (p *Provider) getRepositoryPublicKey(ctx context.Context, oauthCtx *common.
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
+		oauthCtx.AccessToken,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
@@ -1190,17 +1004,8 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthCont
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
+		oauthCtx.AccessToken,
 		bytes.NewReader(payload),
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
 	)
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
@@ -1236,17 +1041,8 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx *common.OauthConte
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
+		oauthCtx.AccessToken,
 		bytes.NewReader(payload),
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "PATCH %s", url)
@@ -1273,16 +1069,7 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthCont
 		ctx,
 		p.client,
 		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
+		oauthCtx.AccessToken,
 	)
 	if err != nil {
 		return errors.Wrapf(err, "DELETE %s", url)
@@ -1298,70 +1085,6 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthCont
 		)
 	}
 	return nil
-}
-
-// oauthContext is the request context for refreshing oauth token.
-type oauthContext struct {
-	ClientID     string
-	ClientSecret string
-	RefreshToken string
-	GrantType    string
-}
-
-type refreshOAuthResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    string `json:"expires_in"`
-	CreatedAt    int64  `json:"created_at"`
-	// token_type, scope are not used.
-}
-
-func tokenRefresher(instanceURL string, oauthCtx oauthContext, refresher common.TokenRefresher) oauth.TokenRefresher {
-	return func(ctx context.Context, client *http.Client, oldToken *string) error {
-		params := &url.Values{}
-		params.Set("client_id", oauthCtx.ClientID)
-		params.Set("client_secret", oauthCtx.ClientSecret)
-		params.Set("refresh_token", oauthCtx.RefreshToken)
-		params.Set("grant_type", "refresh_token")
-
-		url := fmt.Sprintf("%s/login/oauth/access_token", instanceURL)
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(params.Encode()))
-		if err != nil {
-			return errors.Wrapf(err, "construct POST %s", url)
-		}
-
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		resp, err := client.Do(req)
-		if err != nil {
-			return errors.Wrapf(err, "POST %s", url)
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return errors.Wrapf(err, "read body of POST %s", url)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return errors.Errorf("non-200 POST %s status code %d with body %q", url, resp.StatusCode, body)
-		}
-
-		var r refreshOAuthResponse
-		if err = json.Unmarshal(body, &r); err != nil {
-			return errors.Wrapf(err, "unmarshal body from POST %s", url)
-		}
-
-		// Update the old token to new value for retries.
-		*oldToken = r.AccessToken
-
-		// OAuth token never expires for traditional GitHub OAuth (i.e. not a GitHub App)
-		var expireAt int64
-		if r.ExpiresIn != "" {
-			expiresIn, _ := strconv.ParseInt(r.ExpiresIn, 10, 64)
-			expireAt = r.CreatedAt + expiresIn
-		}
-		return refresher(r.AccessToken, r.RefreshToken, expireAt)
-	}
 }
 
 // ToVCS returns the push event in VCS format.

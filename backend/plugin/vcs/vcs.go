@@ -214,12 +214,6 @@ type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
 
-	// Exchange oauth token with the provided code
-	//
-	// instanceURL: VCS instance URL
-	// oauthExchange: api message for exchanging oauth token
-	ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*OAuthToken, error)
-
 	// Fetch the commit data by id
 	//
 	// oauthCtx: OAuth context to fetch commit

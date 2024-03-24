@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
@@ -91,16 +89,11 @@ func (s *VCSProviderService) UpdateVCSProvider(ctx context.Context, request *v1p
 				return nil, status.Errorf(codes.InvalidArgument, "title should not be empty")
 			}
 			update.Name = &request.VcsProvider.Title
-		case "application_id":
-			if request.VcsProvider.ApplicationId == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "application_id should not be empty")
-			}
-			update.ApplicationID = &request.VcsProvider.ApplicationId
-		case "secret":
-			if request.VcsProvider.Secret == "" {
+		case "access_token":
+			if request.VcsProvider.AccessToken == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "secret should not be empty")
 			}
-			update.Secret = &request.VcsProvider.Secret
+			update.AccessToken = &request.VcsProvider.AccessToken
 		}
 	}
 
@@ -162,12 +155,7 @@ func (s *VCSProviderService) SearchVCSProviderProjects(ctx context.Context, requ
 	apiExternalProjectList, err := vcs.Get(vcsProvider.Type, vcs.ProviderConfig{}).FetchAllRepositoryList(
 		ctx,
 		&common.OauthContext{
-			ClientID:     vcsProvider.ApplicationID,
-			ClientSecret: vcsProvider.Secret,
-			AccessToken:  request.AccessToken,
-			RefreshToken: request.RefreshToken,
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			Refresher:    nil,
+			AccessToken: vcsProvider.AccessToken,
 		},
 		vcsProvider.InstanceURL,
 	)
@@ -212,83 +200,6 @@ func (s *VCSProviderService) ListProjectGitOpsInfo(ctx context.Context, request 
 	return resp, nil
 }
 
-// ExchangeToken exchanges the OAuth token for VCS.
-func (s *VCSProviderService) ExchangeToken(ctx context.Context, request *v1pb.ExchangeTokenRequest) (*v1pb.OAuthToken, error) {
-	var vcsType vcs.Type
-	var instanceURL string
-	var oauthExchange *common.OAuthExchange
-
-	if request.ExchangeToken.Name == fmt.Sprintf("%s-", common.VCSProviderPrefix) {
-		tp, err := convertVCSProviderTypeToVCSType(request.ExchangeToken.Type)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		vcsType = tp
-
-		instanceURL = request.ExchangeToken.InstanceUrl
-		oauthExchange = &common.OAuthExchange{
-			ClientID:     request.ExchangeToken.ClientId,
-			ClientSecret: request.ExchangeToken.ClientSecret,
-			Code:         request.ExchangeToken.Code,
-		}
-
-		if instanceURL == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "instance url is required")
-		}
-		if oauthExchange.ClientID == "" || oauthExchange.ClientSecret == "" || oauthExchange.Code == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "client_id, client_secret and code is required")
-		}
-	} else {
-		vcsProvider, err := s.getVCS(ctx, request.ExchangeToken.Name)
-		if err != nil {
-			return nil, err
-		}
-
-		vcsType = vcsProvider.Type
-		instanceURL = vcsProvider.InstanceURL
-		clientID := request.ExchangeToken.ClientId
-		clientSecret := request.ExchangeToken.ClientSecret
-		// Since we may not pass in ClientID and ClientSecret in the request, we will use the client ID and secret from VCS store even if it's stale.
-		// If it's stale, we should return better error messages and ask users to update the VCS secrets.
-		// https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/frontend/src/components/RepositorySelectionPanel.vue?L77:8&subtree=true
-		// https://github.com/bytebase/bytebase/issues/1372
-		if clientID == "" || clientSecret == "" {
-			clientID = vcsProvider.ApplicationID
-			clientSecret = vcsProvider.Secret
-		}
-		oauthExchange = &common.OAuthExchange{
-			ClientID:     clientID,
-			ClientSecret: clientSecret,
-			Code:         request.ExchangeToken.Code,
-		}
-	}
-
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
-	}
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
-	}
-
-	oauthExchange.RedirectURL = fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl)
-	oauthToken, err := vcs.Get(vcsType, vcs.ProviderConfig{}).
-		ExchangeOAuthToken(
-			ctx,
-			instanceURL,
-			oauthExchange,
-		)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to exchange OAuth token with error: %v. Make sure %q matches your browser host. Note that if you are not using port 80 or 443, you should also specify the port such as --external-url=http://host:port", err.Error(), setting.ExternalUrl)
-	}
-
-	return &v1pb.OAuthToken{
-		AccessToken:  oauthToken.AccessToken,
-		RefreshToken: oauthToken.RefreshToken,
-		ExpiresTime:  timestamppb.New(time.Unix(oauthToken.ExpiresTs, 0)),
-	}, nil
-}
-
 func (s *VCSProviderService) getVCS(ctx context.Context, name string) (*store.VCSProviderMessage, error) {
 	vcsProviderUID, err := common.GetVCSProviderID(name)
 	if err != nil {
@@ -328,12 +239,10 @@ func convertToVCSProvider(vcsProvider *store.VCSProviderMessage) *v1pb.VCSProvid
 	}
 
 	return &v1pb.VCSProvider{
-		Name:          fmt.Sprintf("%s%d", common.VCSProviderPrefix, vcsProvider.ID),
-		Title:         vcsProvider.Name,
-		Type:          tp,
-		Url:           vcsProvider.InstanceURL,
-		ApiUrl:        vcsProvider.APIURL,
-		ApplicationId: vcsProvider.ApplicationID,
+		Name:  fmt.Sprintf("%s%d", common.VCSProviderPrefix, vcsProvider.ID),
+		Title: vcsProvider.Name,
+		Type:  tp,
+		Url:   vcsProvider.InstanceURL,
 	}
 }
 
@@ -347,16 +256,12 @@ func checkAndConvertToStoreVersionControl(vcsProvider *v1pb.VCSProvider) (*store
 	if vcsProvider.Url == "" {
 		return nil, errors.Errorf("Empty VCSProvider.Url")
 	}
-	if vcsProvider.ApplicationId == "" {
-		return nil, errors.Errorf("Empty VCSProvider.ApplicationId")
-	}
-	if vcsProvider.Secret == "" {
+	if vcsProvider.AccessToken == "" {
 		return nil, errors.Errorf("Empty VCSProvider.Secret")
 	}
 	storeVCSProvider := &store.VCSProviderMessage{
-		Name:          vcsProvider.Title,
-		ApplicationID: vcsProvider.ApplicationId,
-		Secret:        vcsProvider.Secret,
+		Name:        vcsProvider.Title,
+		AccessToken: vcsProvider.AccessToken,
 	}
 
 	tp, err := convertVCSProviderTypeToVCSType(vcsProvider.Type)
