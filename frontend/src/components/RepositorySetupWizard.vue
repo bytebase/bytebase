@@ -317,7 +317,6 @@ const tryFinishSetup = async () => {
       baseDirectory: state.config.repositoryConfig.baseDirectory,
       filePathTemplate: state.config.repositoryConfig.filePathTemplate,
       schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
-      sheetPathTemplate: state.config.repositoryConfig.sheetPathTemplate,
       externalId: externalId,
       enableSqlReviewCi: false,
     };

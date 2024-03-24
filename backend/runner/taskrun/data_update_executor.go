@@ -72,7 +72,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 		return true, nil, err
 	}
 	version := model.Version{Version: payload.SchemaVersion}
-	return runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, taskRunUID, db.Data, statement, version, &payload.SheetID)
+	return runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.Data, statement, version, &payload.SheetID)
 }
 
 func (exec *DataUpdateExecutor) backupData(

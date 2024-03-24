@@ -129,10 +129,6 @@ const (
 
 	// VCS Integration.
 
-	// FeatureVCSSchemaWriteBack allows user to enable the latest schema write-back in VCS workflow.
-	FeatureVCSSchemaWriteBack FeatureType = "bb.feature.vcs-schema-write-back"
-	// FeatureVCSSheetSync allows to sync sheets from the VCS in VCS workflow.
-	FeatureVCSSheetSync FeatureType = "bb.feature.vcs-sheet-sync"
 	// FeatureVCSSQLReviewWorkflow allows user to enable the SQL review CI in VCS workflow.
 	FeatureVCSSQLReviewWorkflow FeatureType = "bb.feature.vcs-sql-review"
 
@@ -242,10 +238,6 @@ func (e FeatureType) Name() string {
 	case FeatureSchemaTemplate:
 		return "Schema template"
 	// VCS Integration
-	case FeatureVCSSchemaWriteBack:
-		return "Schema write-back"
-	case FeatureVCSSheetSync:
-		return "Sync sheets from VCS"
 	case FeatureVCSSQLReviewWorkflow:
 		return "VCS SQL review workflow"
 	// Database management
@@ -330,8 +322,6 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureDatabaseGrouping: {false, false, true},
 	FeatureSchemaTemplate:   {false, false, true},
 	// VCS Integration
-	FeatureVCSSchemaWriteBack:   {false, true, true},
-	FeatureVCSSheetSync:         {false, true, true},
 	FeatureVCSSQLReviewWorkflow: {true, true, true},
 	// Database management
 	FeatureReadReplicaConnection:      {false, false, true},
@@ -364,7 +354,6 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	FeatureTaskScheduleTime: true,
 	FeatureOnlineMigration:  true,
 	// VCS Integration
-	FeatureVCSSchemaWriteBack:   true,
 	FeatureVCSSQLReviewWorkflow: true,
 	FeatureMybatisSQLReview:     true,
 	// Database management

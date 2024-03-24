@@ -1789,13 +1789,7 @@
     "file-path-template-description": "Bytebase 仅会跟踪那些文件路径匹配模版 (相对于指定根目录）的文件。",
     "file-path-example-schema-migration": "针对 schema 变更类型的文件路径样例",
     "file-path-example-data-migration": "针对数据变更类型的文件路径样例",
-    "schema-path-template": "Schema 路径模版",
-    "schema-writeback-description": "如果指定，在每一次变更之后，Bytebase 将把最新的 Schema 回写到本来触发变更的提交分支，回写的具体路径则是相对于前面指定的根目录。如果您不希望 Bytebase 这样做，则置为空。",
-    "schema-writeback-protected-branch": "请保证被变更的分支不是处于保护 (protected) 状态，或者仓库允许他的 maintainer 可以推送变更到保护分支。",
     "if-specified": "如果指定",
-    "schema-path-example": "Schema 路径样例",
-    "sheet-path-template": "工作表路径模板",
-    "sheet-path-template-description": "Bytebase 仅跟踪文件路径匹配模版 (相对于指定根目录）的文件。匹配的文件将被同步到 SQL Editor 以供使用。",
     "sql-review-ci": "SQL 审核 CI",
     "sql-review-ci-enable": "开启 SQL 审核 CI",
     "sql-review-ci-enable-gitlab": "基于 GitLab CI 开启 SQL 审核",
@@ -2559,14 +2553,6 @@
       "bb-feature-custom-approval": {
         "title": "自定义审批",
         "desc": "为不同的任务配置风险等级和自定义审批流。"
-      },
-      "bb-feature-vcs-schema-write-back": {
-        "title": "Schema 回写",
-        "desc": "当一个 Schema 变更完成后，可以将最新的 Schema 快照回写到 VCS。"
-      },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "从 VCS 同步 SQL 脚本",
-        "desc": "将保存在 VCS 中的 SQL 脚本同步到 Sheet 中。"
       },
       "bb-feature-vcs-sql-review": {
         "title": "GitOps 工作流中的 SQL 审核",

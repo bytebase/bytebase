@@ -1790,13 +1790,7 @@
     "file-path-template-description": "Bytebaseは、ベースディレクトリに対して相対的なテンプレートパターンに一致するファイルパス名のみを監視します。",
     "file-path-example-schema-migration": "スキーママイグレーションタイプのファイルパスの例",
     "file-path-example-data-migration": "データマイグレーションタイプのファイルパスの例",
-    "schema-path-template": "スキーマパスのテンプレート",
-    "schema-writeback-description": "指定された場合、各マイグレーションの後、Bytebaseは元のコミットがトリガーとなったブランチ内のベースディレクトリに対するスキーマパスに最新のスキーマを書き込みます。これを行いたくない場合は空にしてください。",
-    "schema-writeback-protected-branch": "変更されたブランチが保護されていないことを確認するか、リポジトリのメンテナがその保護されたブランチにプッシュできるようにします。",
     "if-specified": "指定された場合",
-    "schema-path-example": "スキーマパスの例",
-    "sheet-path-template": "シートパスのテンプレート",
-    "sheet-path-template-description": "Bytebaseは、ベースディレクトリに対して相対的なテンプレートパターンに一致するパス名を持つファイルのみを監視します。一致したファイルはSQLエディタに同期され、そこで使用されます。",
     "sql-review-ci": "SQLレビューCI",
     "sql-review-ci-enable": "SQLレビューCIを有効にする",
     "sql-review-ci-enable-gitlab": "GitLab CIを介してSQLレビューCIを有効にする",
@@ -2560,14 +2554,6 @@
       "bb-feature-custom-approval": {
         "title": "カスタム承認",
         "desc": "さまざまなタスクに対してリスクレベルと承認フローを設定します。"
-      },
-      "bb-feature-vcs-schema-write-back": {
-        "title": "スキーマの書き戻し",
-        "desc": "スキーマの変更が成功した後、スキーマの書き戻しにより、Bytebaseは最新の完全なスキーマスナップショットをVCSリポジトリに書き戻すことができます。"
-      },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "VCSからSQLスクリプトを同期する",
-        "desc": "VCSに保存されているSQLスクリプトをシートに同期します。"
       },
       "bb-feature-vcs-sql-review": {
         "title": "GitOpsワークフローでのSQLレビュー",
