@@ -23,14 +23,6 @@
             {{ vcs.url }}
           </dd>
         </div>
-        <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
-          <dt class="text-sm font-medium text-control-light">
-            {{ $t("common.application") }} ID
-          </dt>
-          <dd class="mt-1 flex text-sm text-main col-span-2">
-            {{ vcs.applicationId }}
-          </dd>
-        </div>
       </dl>
     </div>
   </div>

@@ -40,11 +40,10 @@ export default { name: "RepositorySelectionPanel" };
 </script>
 
 <script setup lang="ts">
-import { reactive, computed, onMounted, nextTick } from "vue";
+import { reactive, computed, onMounted } from "vue";
 import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "@/types";
 import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
 import {
-  OAuthToken,
   VCSProvider_Type,
   SearchVCSProviderProjectsResponse_Project,
 } from "@/types/proto/v1/vcs_provider_service";
@@ -59,7 +58,6 @@ const props = defineProps<{ config: ProjectRepositoryConfig }>();
 
 const emit = defineEmits<{
   (event: "next"): void;
-  (event: "set-token", payload: OAuthToken): void;
   (event: "set-repository", payload: ExternalRepositoryInfo): void;
 }>();
 
@@ -75,17 +73,7 @@ onMounted(() => {
 });
 
 const prepareRepositoryList = () => {
-  vcsV1Store
-    .exchangeToken({
-      vcsName: props.config.vcs.name,
-      code: props.config.code,
-    })
-    .then((token: OAuthToken) => {
-      emit("set-token", token);
-      nextTick(() => {
-        refreshRepositoryList();
-      });
-    });
+  refreshRepositoryList();
 };
 
 const refreshRepositoryList = async () => {
@@ -104,9 +92,7 @@ const refreshRepositoryList = async () => {
   }
 
   const projects = await vcsV1Store.listVCSExternalProjects(
-    props.config.vcs.name,
-    props.config.token.accessToken,
-    props.config.token.refreshToken
+    props.config.vcs.name
   );
   state.repositoryList = projects;
 };

@@ -12,15 +12,9 @@ import { vcsProviderPrefix } from "./common";
 export const useVCSV1Store = defineStore("vcs_v1", () => {
   const vcsMapByName = reactive(new Map<string, VCSProvider>());
 
-  const listVCSExternalProjects = async (
-    vcsName: string,
-    accessToken: string,
-    refreshToken: string
-  ) => {
+  const listVCSExternalProjects = async (vcsName: string) => {
     const resp = await vcsProviderServiceClient.searchVCSProviderProjects({
       name: vcsName,
-      accessToken,
-      refreshToken,
     });
     return resp.projects;
   };
@@ -138,10 +132,10 @@ const getUpdateMaskForVCS = (
     updateMask.push("title");
   }
   if (
-    !isUndefined(update.applicationId) &&
-    !isEqual(origin.applicationId, update.applicationId)
+    !isUndefined(update.accessToken) &&
+    !isEqual(origin.accessToken, update.accessToken)
   ) {
-    updateMask.push("application_id");
+    updateMask.push("access_token");
   }
   return updateMask;
 };

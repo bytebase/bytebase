@@ -240,7 +240,6 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.VCSProviderService_ListVCSProviders_FullMethodName,
 		v1pb.VCSProviderService_GetVCSProvider_FullMethodName,
 		v1pb.VCSProviderService_CreateVCSProvider_FullMethodName,
-		v1pb.VCSProviderService_ExchangeToken_FullMethodName,
 		v1pb.VCSProviderService_UpdateVCSProvider_FullMethodName,
 		v1pb.VCSProviderService_DeleteVCSProvider_FullMethodName,
 		v1pb.VCSProviderService_SearchVCSProviderProjects_FullMethodName,

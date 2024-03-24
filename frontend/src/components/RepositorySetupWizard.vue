@@ -34,7 +34,6 @@
         <RepositorySelectionPanel
           :config="state.config"
           @next="next()"
-          @set-token="setToken"
           @set-repository="setRepository"
         />
       </template>
@@ -145,7 +144,6 @@ import {
   SchemaChange,
 } from "@/types/proto/v1/project_service";
 import {
-  OAuthToken,
   ProjectGitOpsInfo,
   VCSProvider,
   VCSProvider_Type,
@@ -219,10 +217,6 @@ const state = reactive<LocalState>({
   config: {
     vcs: {} as VCSProvider,
     code: "",
-    token: OAuthToken.fromPartial({
-      accessToken: "",
-      refreshToken: "",
-    }),
     repositoryInfo: {
       externalId: "",
       name: "",
@@ -325,9 +319,6 @@ const tryFinishSetup = async () => {
       schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
       sheetPathTemplate: state.config.repositoryConfig.sheetPathTemplate,
       externalId: externalId,
-      accessToken: state.config.token.accessToken,
-      expiresTime: state.config.token.expiresTime,
-      refreshToken: state.config.token.refreshToken,
       enableSqlReviewCi: false,
     };
     await repositoryV1Store.upsertRepository(
@@ -379,10 +370,6 @@ const cancel = () => {
 
 const setCode = (code: string) => {
   state.config.code = code;
-};
-
-const setToken = (token: OAuthToken) => {
-  state.config.token = token;
 };
 
 const setVCS = (vcs: VCSProvider) => {

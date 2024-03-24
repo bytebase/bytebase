@@ -3,7 +3,6 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -65,8 +64,6 @@ export interface SearchVCSProviderProjectsRequest {
    * Format: vcsProviders/{vcsProvider}
    */
   name: string;
-  accessToken: string;
-  refreshToken: string;
 }
 
 export interface SearchVCSProviderProjectsResponse {
@@ -112,12 +109,8 @@ export interface VCSProvider {
    * For example: github.com, gitlab.com, gitlab.bytebase.com.
    */
   url: string;
-  /** The API url of the vcs provider. Derived from the url. */
-  apiUrl: string;
-  /** The application ID of the vcs provider. Specified by the client. */
-  applicationId: string;
-  /** The application secret of the vcs provider. Specified by the client. */
-  secret: string;
+  /** The access token of the vcs provider. */
+  accessToken: string;
 }
 
 export enum VCSProvider_Type {
@@ -206,43 +199,12 @@ export interface ProjectGitOpsInfo {
    * If specified, required placeholder: {{DB_NAME}}, optional placeholder: {{ENV_ID}}.
    */
   schemaPathTemplate: string;
-  /**
-   * The file path template for matching the sql files for sheet.
-   * If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_ID}}, {{DB_NAME}}.
-   */
-  sheetPathTemplate: string;
   /** The reposition external id in target VCS. */
   externalId: string;
   /** Set to true to enable SQL review CI for all PR/MRs. */
   enableSqlReviewCi: boolean;
   /** The webhook endpoint ID of the repository. */
   webhookEndpointId: string;
-  accessToken: string;
-  expiresTime: Date | undefined;
-  refreshToken: string;
-}
-
-export interface ExchangeTokenRequest {
-  exchangeToken: ExchangeToken | undefined;
-}
-
-export interface ExchangeToken {
-  /**
-   * The name of the vcs provider to retrieve the linked projects.
-   * Format: vcsProviders/{vcsProvider}
-   */
-  name: string;
-  code: string;
-  type: VCSProvider_Type;
-  instanceUrl: string;
-  clientId: string;
-  clientSecret: string;
-}
-
-export interface OAuthToken {
-  accessToken: string;
-  refreshToken: string;
-  expiresTime: Date | undefined;
 }
 
 function createBaseCreateVCSProviderRequest(): CreateVCSProviderRequest {
@@ -645,19 +607,13 @@ export const DeleteVCSProviderRequest = {
 };
 
 function createBaseSearchVCSProviderProjectsRequest(): SearchVCSProviderProjectsRequest {
-  return { name: "", accessToken: "", refreshToken: "" };
+  return { name: "" };
 }
 
 export const SearchVCSProviderProjectsRequest = {
   encode(message: SearchVCSProviderProjectsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.accessToken !== "") {
-      writer.uint32(18).string(message.accessToken);
-    }
-    if (message.refreshToken !== "") {
-      writer.uint32(26).string(message.refreshToken);
     }
     return writer;
   },
@@ -676,20 +632,6 @@ export const SearchVCSProviderProjectsRequest = {
 
           message.name = reader.string();
           continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.accessToken = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.refreshToken = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -700,23 +642,13 @@ export const SearchVCSProviderProjectsRequest = {
   },
 
   fromJSON(object: any): SearchVCSProviderProjectsRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      accessToken: isSet(object.accessToken) ? globalThis.String(object.accessToken) : "",
-      refreshToken: isSet(object.refreshToken) ? globalThis.String(object.refreshToken) : "",
-    };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: SearchVCSProviderProjectsRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.accessToken !== "") {
-      obj.accessToken = message.accessToken;
-    }
-    if (message.refreshToken !== "") {
-      obj.refreshToken = message.refreshToken;
     }
     return obj;
   },
@@ -727,8 +659,6 @@ export const SearchVCSProviderProjectsRequest = {
   fromPartial(object: DeepPartial<SearchVCSProviderProjectsRequest>): SearchVCSProviderProjectsRequest {
     const message = createBaseSearchVCSProviderProjectsRequest();
     message.name = object.name ?? "";
-    message.accessToken = object.accessToken ?? "";
-    message.refreshToken = object.refreshToken ?? "";
     return message;
   },
 };
@@ -1019,7 +949,7 @@ export const ListProjectGitOpsInfoResponse = {
 };
 
 function createBaseVCSProvider(): VCSProvider {
-  return { name: "", title: "", type: 0, url: "", apiUrl: "", applicationId: "", secret: "" };
+  return { name: "", title: "", type: 0, url: "", accessToken: "" };
 }
 
 export const VCSProvider = {
@@ -1036,14 +966,8 @@ export const VCSProvider = {
     if (message.url !== "") {
       writer.uint32(34).string(message.url);
     }
-    if (message.apiUrl !== "") {
-      writer.uint32(42).string(message.apiUrl);
-    }
-    if (message.applicationId !== "") {
-      writer.uint32(50).string(message.applicationId);
-    }
-    if (message.secret !== "") {
-      writer.uint32(58).string(message.secret);
+    if (message.accessToken !== "") {
+      writer.uint32(42).string(message.accessToken);
     }
     return writer;
   },
@@ -1088,21 +1012,7 @@ export const VCSProvider = {
             break;
           }
 
-          message.apiUrl = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.applicationId = reader.string();
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.secret = reader.string();
+          message.accessToken = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1119,9 +1029,7 @@ export const VCSProvider = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       type: isSet(object.type) ? vCSProvider_TypeFromJSON(object.type) : 0,
       url: isSet(object.url) ? globalThis.String(object.url) : "",
-      apiUrl: isSet(object.apiUrl) ? globalThis.String(object.apiUrl) : "",
-      applicationId: isSet(object.applicationId) ? globalThis.String(object.applicationId) : "",
-      secret: isSet(object.secret) ? globalThis.String(object.secret) : "",
+      accessToken: isSet(object.accessToken) ? globalThis.String(object.accessToken) : "",
     };
   },
 
@@ -1139,14 +1047,8 @@ export const VCSProvider = {
     if (message.url !== "") {
       obj.url = message.url;
     }
-    if (message.apiUrl !== "") {
-      obj.apiUrl = message.apiUrl;
-    }
-    if (message.applicationId !== "") {
-      obj.applicationId = message.applicationId;
-    }
-    if (message.secret !== "") {
-      obj.secret = message.secret;
+    if (message.accessToken !== "") {
+      obj.accessToken = message.accessToken;
     }
     return obj;
   },
@@ -1160,9 +1062,7 @@ export const VCSProvider = {
     message.title = object.title ?? "";
     message.type = object.type ?? 0;
     message.url = object.url ?? "";
-    message.apiUrl = object.apiUrl ?? "";
-    message.applicationId = object.applicationId ?? "";
-    message.secret = object.secret ?? "";
+    message.accessToken = object.accessToken ?? "";
     return message;
   },
 };
@@ -1178,13 +1078,9 @@ function createBaseProjectGitOpsInfo(): ProjectGitOpsInfo {
     baseDirectory: "",
     filePathTemplate: "",
     schemaPathTemplate: "",
-    sheetPathTemplate: "",
     externalId: "",
     enableSqlReviewCi: false,
     webhookEndpointId: "",
-    accessToken: "",
-    expiresTime: undefined,
-    refreshToken: "",
   };
 }
 
@@ -1217,9 +1113,6 @@ export const ProjectGitOpsInfo = {
     if (message.schemaPathTemplate !== "") {
       writer.uint32(74).string(message.schemaPathTemplate);
     }
-    if (message.sheetPathTemplate !== "") {
-      writer.uint32(82).string(message.sheetPathTemplate);
-    }
     if (message.externalId !== "") {
       writer.uint32(90).string(message.externalId);
     }
@@ -1228,15 +1121,6 @@ export const ProjectGitOpsInfo = {
     }
     if (message.webhookEndpointId !== "") {
       writer.uint32(106).string(message.webhookEndpointId);
-    }
-    if (message.accessToken !== "") {
-      writer.uint32(114).string(message.accessToken);
-    }
-    if (message.expiresTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.expiresTime), writer.uint32(122).fork()).ldelim();
-    }
-    if (message.refreshToken !== "") {
-      writer.uint32(130).string(message.refreshToken);
     }
     return writer;
   },
@@ -1311,13 +1195,6 @@ export const ProjectGitOpsInfo = {
 
           message.schemaPathTemplate = reader.string();
           continue;
-        case 10:
-          if (tag !== 82) {
-            break;
-          }
-
-          message.sheetPathTemplate = reader.string();
-          continue;
         case 11:
           if (tag !== 90) {
             break;
@@ -1339,27 +1216,6 @@ export const ProjectGitOpsInfo = {
 
           message.webhookEndpointId = reader.string();
           continue;
-        case 14:
-          if (tag !== 114) {
-            break;
-          }
-
-          message.accessToken = reader.string();
-          continue;
-        case 15:
-          if (tag !== 122) {
-            break;
-          }
-
-          message.expiresTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-        case 16:
-          if (tag !== 130) {
-            break;
-          }
-
-          message.refreshToken = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1380,13 +1236,9 @@ export const ProjectGitOpsInfo = {
       baseDirectory: isSet(object.baseDirectory) ? globalThis.String(object.baseDirectory) : "",
       filePathTemplate: isSet(object.filePathTemplate) ? globalThis.String(object.filePathTemplate) : "",
       schemaPathTemplate: isSet(object.schemaPathTemplate) ? globalThis.String(object.schemaPathTemplate) : "",
-      sheetPathTemplate: isSet(object.sheetPathTemplate) ? globalThis.String(object.sheetPathTemplate) : "",
       externalId: isSet(object.externalId) ? globalThis.String(object.externalId) : "",
       enableSqlReviewCi: isSet(object.enableSqlReviewCi) ? globalThis.Boolean(object.enableSqlReviewCi) : false,
       webhookEndpointId: isSet(object.webhookEndpointId) ? globalThis.String(object.webhookEndpointId) : "",
-      accessToken: isSet(object.accessToken) ? globalThis.String(object.accessToken) : "",
-      expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
-      refreshToken: isSet(object.refreshToken) ? globalThis.String(object.refreshToken) : "",
     };
   },
 
@@ -1419,9 +1271,6 @@ export const ProjectGitOpsInfo = {
     if (message.schemaPathTemplate !== "") {
       obj.schemaPathTemplate = message.schemaPathTemplate;
     }
-    if (message.sheetPathTemplate !== "") {
-      obj.sheetPathTemplate = message.sheetPathTemplate;
-    }
     if (message.externalId !== "") {
       obj.externalId = message.externalId;
     }
@@ -1430,15 +1279,6 @@ export const ProjectGitOpsInfo = {
     }
     if (message.webhookEndpointId !== "") {
       obj.webhookEndpointId = message.webhookEndpointId;
-    }
-    if (message.accessToken !== "") {
-      obj.accessToken = message.accessToken;
-    }
-    if (message.expiresTime !== undefined) {
-      obj.expiresTime = message.expiresTime.toISOString();
-    }
-    if (message.refreshToken !== "") {
-      obj.refreshToken = message.refreshToken;
     }
     return obj;
   },
@@ -1457,295 +1297,9 @@ export const ProjectGitOpsInfo = {
     message.baseDirectory = object.baseDirectory ?? "";
     message.filePathTemplate = object.filePathTemplate ?? "";
     message.schemaPathTemplate = object.schemaPathTemplate ?? "";
-    message.sheetPathTemplate = object.sheetPathTemplate ?? "";
     message.externalId = object.externalId ?? "";
     message.enableSqlReviewCi = object.enableSqlReviewCi ?? false;
     message.webhookEndpointId = object.webhookEndpointId ?? "";
-    message.accessToken = object.accessToken ?? "";
-    message.expiresTime = object.expiresTime ?? undefined;
-    message.refreshToken = object.refreshToken ?? "";
-    return message;
-  },
-};
-
-function createBaseExchangeTokenRequest(): ExchangeTokenRequest {
-  return { exchangeToken: undefined };
-}
-
-export const ExchangeTokenRequest = {
-  encode(message: ExchangeTokenRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.exchangeToken !== undefined) {
-      ExchangeToken.encode(message.exchangeToken, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ExchangeTokenRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExchangeTokenRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.exchangeToken = ExchangeToken.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ExchangeTokenRequest {
-    return { exchangeToken: isSet(object.exchangeToken) ? ExchangeToken.fromJSON(object.exchangeToken) : undefined };
-  },
-
-  toJSON(message: ExchangeTokenRequest): unknown {
-    const obj: any = {};
-    if (message.exchangeToken !== undefined) {
-      obj.exchangeToken = ExchangeToken.toJSON(message.exchangeToken);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ExchangeTokenRequest>): ExchangeTokenRequest {
-    return ExchangeTokenRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ExchangeTokenRequest>): ExchangeTokenRequest {
-    const message = createBaseExchangeTokenRequest();
-    message.exchangeToken = (object.exchangeToken !== undefined && object.exchangeToken !== null)
-      ? ExchangeToken.fromPartial(object.exchangeToken)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseExchangeToken(): ExchangeToken {
-  return { name: "", code: "", type: 0, instanceUrl: "", clientId: "", clientSecret: "" };
-}
-
-export const ExchangeToken = {
-  encode(message: ExchangeToken, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.code !== "") {
-      writer.uint32(18).string(message.code);
-    }
-    if (message.type !== 0) {
-      writer.uint32(24).int32(message.type);
-    }
-    if (message.instanceUrl !== "") {
-      writer.uint32(34).string(message.instanceUrl);
-    }
-    if (message.clientId !== "") {
-      writer.uint32(42).string(message.clientId);
-    }
-    if (message.clientSecret !== "") {
-      writer.uint32(50).string(message.clientSecret);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ExchangeToken {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExchangeToken();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.code = reader.string();
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.type = reader.int32() as any;
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.instanceUrl = reader.string();
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.clientId = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.clientSecret = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ExchangeToken {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      code: isSet(object.code) ? globalThis.String(object.code) : "",
-      type: isSet(object.type) ? vCSProvider_TypeFromJSON(object.type) : 0,
-      instanceUrl: isSet(object.instanceUrl) ? globalThis.String(object.instanceUrl) : "",
-      clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
-      clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
-    };
-  },
-
-  toJSON(message: ExchangeToken): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.code !== "") {
-      obj.code = message.code;
-    }
-    if (message.type !== 0) {
-      obj.type = vCSProvider_TypeToJSON(message.type);
-    }
-    if (message.instanceUrl !== "") {
-      obj.instanceUrl = message.instanceUrl;
-    }
-    if (message.clientId !== "") {
-      obj.clientId = message.clientId;
-    }
-    if (message.clientSecret !== "") {
-      obj.clientSecret = message.clientSecret;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ExchangeToken>): ExchangeToken {
-    return ExchangeToken.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ExchangeToken>): ExchangeToken {
-    const message = createBaseExchangeToken();
-    message.name = object.name ?? "";
-    message.code = object.code ?? "";
-    message.type = object.type ?? 0;
-    message.instanceUrl = object.instanceUrl ?? "";
-    message.clientId = object.clientId ?? "";
-    message.clientSecret = object.clientSecret ?? "";
-    return message;
-  },
-};
-
-function createBaseOAuthToken(): OAuthToken {
-  return { accessToken: "", refreshToken: "", expiresTime: undefined };
-}
-
-export const OAuthToken = {
-  encode(message: OAuthToken, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.accessToken !== "") {
-      writer.uint32(10).string(message.accessToken);
-    }
-    if (message.refreshToken !== "") {
-      writer.uint32(18).string(message.refreshToken);
-    }
-    if (message.expiresTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.expiresTime), writer.uint32(122).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): OAuthToken {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseOAuthToken();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.accessToken = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.refreshToken = reader.string();
-          continue;
-        case 15:
-          if (tag !== 122) {
-            break;
-          }
-
-          message.expiresTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): OAuthToken {
-    return {
-      accessToken: isSet(object.accessToken) ? globalThis.String(object.accessToken) : "",
-      refreshToken: isSet(object.refreshToken) ? globalThis.String(object.refreshToken) : "",
-      expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
-    };
-  },
-
-  toJSON(message: OAuthToken): unknown {
-    const obj: any = {};
-    if (message.accessToken !== "") {
-      obj.accessToken = message.accessToken;
-    }
-    if (message.refreshToken !== "") {
-      obj.refreshToken = message.refreshToken;
-    }
-    if (message.expiresTime !== undefined) {
-      obj.expiresTime = message.expiresTime.toISOString();
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<OAuthToken>): OAuthToken {
-    return OAuthToken.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<OAuthToken>): OAuthToken {
-    const message = createBaseOAuthToken();
-    message.accessToken = object.accessToken ?? "";
-    message.refreshToken = object.refreshToken ?? "";
-    message.expiresTime = object.expiresTime ?? undefined;
     return message;
   },
 };
@@ -1962,95 +1516,6 @@ export const VCSProviderServiceDefinition = {
         },
       },
     },
-    exchangeToken: {
-      name: "ExchangeToken",
-      requestType: ExchangeTokenRequest,
-      requestStream: false,
-      responseType: OAuthToken,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([0])],
-          578365826: [
-            new Uint8Array([
-              72,
-              58,
-              14,
-              101,
-              120,
-              99,
-              104,
-              97,
-              110,
-              103,
-              101,
-              95,
-              116,
-              111,
-              107,
-              101,
-              110,
-              34,
-              54,
-              47,
-              118,
-              49,
-              47,
-              123,
-              101,
-              120,
-              99,
-              104,
-              97,
-              110,
-              103,
-              101,
-              95,
-              116,
-              111,
-              107,
-              101,
-              110,
-              46,
-              110,
-              97,
-              109,
-              101,
-              61,
-              118,
-              99,
-              115,
-              80,
-              114,
-              111,
-              118,
-              105,
-              100,
-              101,
-              114,
-              115,
-              47,
-              42,
-              125,
-              58,
-              101,
-              120,
-              99,
-              104,
-              97,
-              110,
-              103,
-              101,
-              84,
-              111,
-              107,
-              101,
-              110,
-            ]),
-          ],
-        },
-      },
-    },
     deleteVCSProvider: {
       name: "DeleteVCSProvider",
       requestType: DeleteVCSProviderRequest,
@@ -2217,32 +1682,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(date.getTime() / 1_000);
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
-function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds.toNumber() || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
-  return new globalThis.Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Date {
-  if (o instanceof globalThis.Date) {
-    return o;
-  } else if (typeof o === "string") {
-    return new globalThis.Date(o);
-  } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

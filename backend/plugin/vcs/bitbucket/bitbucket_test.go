@@ -12,54 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/internal/oauth"
 )
-
-func TestProvider_ExchangeOAuthToken(t *testing.T) {
-	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
-		assert.Equal(t, "/site/oauth2/access_token", r.URL.Path)
-		assert.Equal(t, "Basic dGVzdF9jbGllbnRfaWQ6dGVzdF9jbGllbnRfc2VjcmV0", r.Header.Get("Authorization"))
-
-		require.NoError(t, r.ParseForm())
-		assert.Equal(t, "authorization_code", r.PostForm.Get("grant_type"))
-		assert.Equal(t, "test_code", r.PostForm.Get("code"))
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Body: io.NopCloser(strings.NewReader(`
-{
- "access_token": "de6780bc506a0446309bd9362820ba8aed28aa506c71eedbe1c5c4f9dd350e54",
- "token_type": "bearer",
- "expires_in": 3600,
- "refresh_token": "8257e65c97202ed1726cf9571600918f3bffb2544b26e00a61df9897668c33a1"
-}
-`)),
-		}, nil
-	},
-	)
-
-	ctx := context.Background()
-	got, err := p.ExchangeOAuthToken(ctx, "",
-		&common.OAuthExchange{
-			ClientID:     "test_client_id",
-			ClientSecret: "test_client_secret",
-			Code:         "test_code",
-			RedirectURL:  "http://localhost:3000",
-		},
-	)
-	require.NoError(t, err)
-
-	// We use time.Now() to compute the values of CreatedAt and ExpiresTs so there
-	// is no point to assert.
-	got.CreatedAt = 0
-	got.ExpiresTs = 0
-
-	want := &vcs.OAuthToken{
-		AccessToken:  "de6780bc506a0446309bd9362820ba8aed28aa506c71eedbe1c5c4f9dd350e54",
-		RefreshToken: "8257e65c97202ed1726cf9571600918f3bffb2544b26e00a61df9897668c33a1",
-		ExpiresIn:    3600,
-	}
-	assert.Equal(t, want, got)
-}
 
 func TestProvider_FetchCommitByID(t *testing.T) {
 	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
@@ -865,58 +818,6 @@ func TestProvider_DeleteWebhook(t *testing.T) {
 	ctx := context.Background()
 	err := p.DeleteWebhook(ctx, &common.OauthContext{}, bitbucketCloudURL, "1", "1")
 	require.NoError(t, err)
-}
-
-func TestOAuth_RefreshToken(t *testing.T) {
-	ctx := context.Background()
-	client := &http.Client{
-		Transport: &common.MockRoundTripper{
-			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-				token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-				if token == "expired" {
-					return &http.Response{
-						StatusCode: http.StatusUnauthorized,
-						Body: io.NopCloser(strings.NewReader(`
-					{"error":"invalid_grant","error_description":"The provided authorization grant is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client."}
-					`)),
-					}, nil
-				}
-
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body: io.NopCloser(strings.NewReader(`
-{
-  "access_token": "ghu_16C7e42F292c6912E7710c838347Ae178B4a",
-  "expires_in": 3600,
-  "refresh_token": "ghr_1B4a2e77838347a7E420ce178F2E7c6912E169246c34E1ccbF66C46812d16D5B1A9Dc86A1498"
-}
-`)),
-				}, nil
-			},
-		},
-	}
-	token := "expired"
-
-	calledRefresher := false
-	refresher := func(_, _ string, _ int64) error {
-		calledRefresher = true
-		return nil
-	}
-
-	_, _, _, err := oauth.Get(
-		ctx,
-		client,
-		"https://https://api.bitbucket.org/2.0/user",
-		&token,
-		tokenRefresher(
-			bitbucketCloudURL,
-			oauthContext{},
-			refresher,
-		),
-	)
-	require.NoError(t, err)
-	assert.Equal(t, "ghu_16C7e42F292c6912E7710c838347Ae178B4a", token)
-	assert.True(t, calledRefresher)
 }
 
 func newMockProvider(mockRoundTrip func(r *http.Request) (*http.Response, error)) vcs.Provider {
