@@ -2065,8 +2065,6 @@
         "bitbucket-admin-requirement": "Debes ser el administrador del espacio de trabajo de Bitbucket.",
         "azure-devops-service": "Servicio Azure DevOps",
         "azure-admin-requirement": "Debes ser administrador de la organización de Azure DevOps.",
-        "oauth-info-correct": "La información de OAuth verificada es correcta",
-        "check-oauth-info-match": "Por favor asegúrate de que la clave secreta coincida con la de tu instancia de GitLab de la aplicación.",
         "add-success": "Proveedor de Git {vcs} agregado exitosamente",
         "choose": "Elige proveedor de Git",
         "basic-info": {

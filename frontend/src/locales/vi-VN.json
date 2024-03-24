@@ -2065,8 +2065,6 @@
         "bitbucket-admin-requirement": "Bạn cần phải là quản trị viên của không gian làm việc Bitbucket đã chọn để định cấu hình điều này. Nếu không, bạn cần yêu cầu quản trị viên không gian làm việc Bitbucket của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn không gian làm việc Bitbucket, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
         "azure-devops-service": "Dịch vụ Azure DevOps",
         "azure-admin-requirement": "TBạn phải là quản trị viên của tổ chức Azure DevOps.",
-        "oauth-info-correct": "Thông tin OAuth đã được xác minh là chính xác",
-        "check-oauth-info-match": "Vui lòng đảm bảo Bí mật khớp với bí mật từ Ứng dụng phiên bản GitLab của bạn.",
         "add-success": "Đã thêm thành công nhà cung cấp Git {vcs}",
         "choose": "Chọn nhà cung cấp Git",
         "basic-info": {

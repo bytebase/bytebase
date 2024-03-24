@@ -2065,8 +2065,6 @@
         "bitbucket-admin-requirement": "Bitbucketのワークスペースの管理者でなければなりません。",
         "azure-devops-service": "Azure DevOps サービス",
         "azure-admin-requirement":"Azure DevOpsの組織の管理者である必要があります。",
-        "oauth-info-correct": "OAuth情報が正しいことを確認してください",
-        "check-oauth-info-match": "SecretがGitLabインスタンスアプリケーションと一致していることを確認してください。",
         "add-success": "Gitプロバイダー {vcs} を正常に追加しました",
         "choose": "Gitプロバイダーを選択してください",
         "basic-info": {
