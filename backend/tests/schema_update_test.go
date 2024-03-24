@@ -145,7 +145,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 }
 
 func TestVCS(t *testing.T) {
-	t.Skip()
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator
@@ -539,7 +538,6 @@ func TestVCS(t *testing.T) {
 }
 
 func TestVCS_SDL_POSTGRES(t *testing.T) {
-	t.Skip()
 	// TODO(rebelice): remove skip when support PostgreSQL SDL.
 	t.Skip()
 	tests := []struct {
@@ -879,7 +877,6 @@ ALTER TABLE ONLY public.users
 }
 
 func TestWildcardInVCSFilePathTemplate(t *testing.T) {
-	t.Skip()
 	branchFilter := "feature/foo"
 	dbName := "db1"
 	externalID := "121"
@@ -1194,7 +1191,6 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 }
 
 func TestVCS_SQL_Review(t *testing.T) {
-	t.Skip()
 	tests := []struct {
 		name                    string
 		vcsProviderCreator      fake.VCSProviderCreator
@@ -1451,7 +1447,6 @@ func TestVCS_SQL_Review(t *testing.T) {
 }
 
 func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
-	t.Skip()
 	type testCase struct {
 		name              string
 		existedBranchList []string
@@ -2003,7 +1998,6 @@ func TestMarkTaskAsDone(t *testing.T) {
 }
 
 func TestVCS_SDL_MySQL(t *testing.T) {
-	t.Skip()
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator

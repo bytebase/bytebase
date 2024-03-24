@@ -194,7 +194,6 @@ func TestTenant(t *testing.T) {
 }
 
 func TestTenantVCS(t *testing.T) {
-	t.Skip()
 	t.Parallel()
 	tests := []struct {
 		name                string
@@ -507,7 +506,6 @@ func TestTenantVCS(t *testing.T) {
 // TestTenantVCS_YAML tests the behavior when use a YAML file to do DML in a
 // tenant project.
 func TestTenantVCS_YAML(t *testing.T) {
-	t.Skip()
 	a := require.New(t)
 
 	tests := []struct {
