@@ -2061,7 +2061,7 @@
         "gitlab-self-host": "自托管 GitLab",
         "gitlab-self-host-admin-requirement": "您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab 整个实例级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
         "gitlab-com-admin-requirement": "您的账号必须对您打算关联的代码仓库拥有管理员权限。通常这个账号对应的是一个专门的服务账号而非个人账号。",
-        "github-self-host-ee": "自托管 GitHub 企业版 (EE)",
+        "github-self-host": "自托管 GitHub",
         "github-com-admin-requirement": "您必须是 GitHub 组织的管理员才能进行该配置。否则您需要让您的 GitHub 组织管理员把 Bytebase 先注册为组织级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
         "bitbucket-admin-requirement": "您必须是 Bitbucket 工作空间的管理员才能进行该配置。否则您需要让您的 Bitbucket 工作空间管理员把 Bytebase 先注册为工作空间级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。",
         "azure-devops-service": "Azure DevOps 服务",
