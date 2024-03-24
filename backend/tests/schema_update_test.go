@@ -1,14 +1,10 @@
 package tests
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
-	"math/rand"
-	"net/http"
 	"strconv"
 	"strings"
 	"testing"
@@ -16,13 +12,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
@@ -1185,262 +1179,6 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 	}
 }
 
-func TestVCS_SQL_Review(t *testing.T) {
-	tests := []struct {
-		name                    string
-		vcsProviderCreator      fake.VCSProviderCreator
-		vcsType                 v1pb.VCSProvider_Type
-		externalID              string
-		repositoryFullPath      string
-		getEmptySQLReviewResult func(filePath, rootURL string) *api.VCSSQLReviewResult
-		getSQLReviewResult      func(filePath string) *api.VCSSQLReviewResult
-	}{
-		{
-			name:               "GitLab",
-			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            v1pb.VCSProvider_GITLAB,
-			externalID:         "121",
-			repositoryFullPath: "test/schemaUpdate",
-			getEmptySQLReviewResult: func(filePath, rootURL string) *api.VCSSQLReviewResult {
-				pathes := strings.Split(filePath, "/")
-				return &api.VCSSQLReviewResult{
-					Status: advisor.Warn,
-					Content: []string{
-						fmt.Sprintf(
-							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite errors=\"0\" failures=\"1\" tests=\"1\" name=\"%s\">\n<testcase name=\"[WARN] %s#L1: SQL review is disabled\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Cannot found SQL review policy or instance license. You can configure the SQL review policy on %s/setting/sql-review, and assign license to the instance.\nPlease check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#3\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
-							filePath,
-							pathes[len(pathes)-1],
-							filePath,
-							filePath,
-							rootURL,
-						),
-					},
-				}
-			},
-			getSQLReviewResult: func(filePath string) *api.VCSSQLReviewResult {
-				pathes := strings.Split(filePath, "/")
-				filename := pathes[len(pathes)-1]
-				return &api.VCSSQLReviewResult{
-					Status: advisor.Warn,
-					Content: []string{
-						fmt.Sprintf(
-							"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n<testsuite errors=\"0\" failures=\"2\" tests=\"27\" name=\"%s\">\n<testcase name=\"[WARN] %s#L1: column.required\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Table \"book\" requires columns: created_ts, creator_id, updated_ts, updater_id.\nPlease check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#401\n</failure>\n</testcase>\n<testcase name=\"[WARN] %s#L1: column.no-null\" classname=\"%s\" file=\"%s#L1\">\n<failure>\nError: Column \"name\" in \"public\".\"book\" cannot have NULL value.\nPlease check the docs at https://www.bytebase.com/docs/reference/error-code/advisor#402\n</failure>\n</testcase>\n</testsuite>\n</testsuites>",
-							filePath,
-							filename,
-							filePath,
-							filePath,
-							filename,
-							filePath,
-							filePath,
-						),
-					},
-				}
-			},
-		},
-		{
-			name:               "GitHub",
-			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            v1pb.VCSProvider_GITHUB,
-			externalID:         "octocat/Hello-World",
-			repositoryFullPath: "octocat/Hello-World",
-			getEmptySQLReviewResult: func(filePath, rootURL string) *api.VCSSQLReviewResult {
-				return &api.VCSSQLReviewResult{
-					Status: advisor.Warn,
-					Content: []string{
-						fmt.Sprintf(
-							"::warning file=%s,line=1,col=1,endColumn=2,title=SQL review is disabled (3)::Cannot found SQL review policy or instance license. You can configure the SQL review policy on %s/setting/sql-review, and assign license to the instance%%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#3",
-							filePath,
-							rootURL,
-						),
-					},
-				}
-			},
-			getSQLReviewResult: func(filePath string) *api.VCSSQLReviewResult {
-				return &api.VCSSQLReviewResult{
-					Status: advisor.Warn,
-					Content: []string{
-						fmt.Sprintf(
-							"::warning file=%s,line=1,col=1,endColumn=2,title=column.required (401)::Table \"book\" requires columns: created_ts, creator_id, updated_ts, updater_id%%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#401",
-							filePath,
-						),
-						fmt.Sprintf(
-							"::warning file=%s,line=1,col=1,endColumn=2,title=column.no-null (402)::Column \"name\" in \"public\".\"book\" cannot have NULL value%%0ADoc: https://www.bytebase.com/docs/reference/error-code/advisor#402",
-							filePath,
-						),
-					},
-				}
-			},
-		},
-	}
-
-	for _, test := range tests {
-		// Fix the problem that closure in a for loop will always use the last element.
-		test := test
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
-			a := require.New(t)
-			ctx := context.Background()
-			ctl := &controller{}
-			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: test.vcsProviderCreator,
-				// We check against empty SQL Review policy, while our onboarding data generation
-				// will create a SQL Review policy. Thus we need to skip onboarding data generation.
-				skipOnboardingData: true,
-			})
-			a.NoError(err)
-			defer func() {
-				_ = ctl.Close(ctx)
-			}()
-			// Create a PostgreSQL instance.
-			pgPort := getTestPort()
-			stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
-			defer stopInstance()
-
-			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
-			a.NoError(err)
-			defer func() {
-				_ = pgDB.Close()
-			}()
-
-			err = pgDB.Ping()
-			a.NoError(err)
-
-			const databaseName = "testVCSSchemaUpdate"
-			_, err = pgDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
-			a.NoError(err)
-			_, err = pgDB.Exec("CREATE USER bytebase WITH ENCRYPTED PASSWORD 'bytebase'")
-			a.NoError(err)
-			_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
-			a.NoError(err)
-
-			// Create a VCS.
-			evcs, err := ctl.evcsClient.CreateVCSProvider(ctx, &v1pb.CreateVCSProviderRequest{
-				VcsProvider: &v1pb.VCSProvider{
-					Title:       t.Name(),
-					Type:        test.vcsType,
-					Url:         ctl.vcsURL,
-					AccessToken: "testApplicationSecret",
-				},
-			})
-			a.NoError(err)
-
-			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
-				InstanceId: generateRandomString("instance", 10),
-				Instance: &v1pb.Instance{
-					Title:       "pgInstance",
-					Engine:      v1pb.Engine_POSTGRES,
-					Environment: "environments/prod",
-					Activation:  true,
-					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase", Id: "admin"}},
-				},
-			})
-			a.NoError(err)
-
-			// Create an issue that creates a database.
-			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "bytebase", nil)
-			a.NoError(err)
-
-			// Create a repository.
-			ctl.vcsProvider.CreateRepository(test.externalID)
-
-			// Create the branch.
-			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
-			a.NoError(err)
-
-			gitOpsInfo, err := ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
-				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
-					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-					VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
-					Title:              "Test Repository",
-					FullPath:           test.repositoryFullPath,
-					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
-					BranchFilter:       "feature/foo",
-					BaseDirectory:      baseDirectory,
-					FilePathTemplate:   "{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
-					SchemaPathTemplate: "{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql",
-					ExternalId:         test.externalID,
-				},
-				AllowMissing: true,
-			})
-			a.NoError(err)
-			a.NotNil(gitOpsInfo)
-			a.Equal(false, gitOpsInfo.EnableSqlReviewCi)
-
-			resp, err := ctl.projectServiceClient.SetupProjectSQLReviewCI(ctx, &v1pb.SetupSQLReviewCIRequest{
-				Name: fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-			})
-			a.NoError(err)
-			a.NotEmpty(resp.PullRequestUrl)
-
-			gitOpsInfo, err = ctl.projectServiceClient.GetProjectGitOpsInfo(ctx, &v1pb.GetProjectGitOpsInfoRequest{
-				Name: fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-			})
-			a.NoError(err)
-			a.Equal(true, gitOpsInfo.EnableSqlReviewCi)
-
-			// Simulate Git commits and pull request for SQL review.
-			prID := rand.Int()
-			gitFile := "bbtest/prod/testVCSSchemaUpdate##ver3##migrate##create_table_book.sql"
-			fileContent := "CREATE TABLE book (id serial PRIMARY KEY, name TEXT);"
-			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: fileContent})
-			a.NoError(err)
-
-			err = ctl.vcsProvider.AddPullRequest(
-				test.externalID,
-				prID,
-				[]*vcs.PullRequestFile{
-					{
-						Path:         gitFile,
-						LastCommitID: "last_commit_id",
-						IsDeleted:    false,
-					},
-				},
-			)
-			a.NoError(err)
-
-			// trigger SQL review with empty policy.
-			res, err := ctl.postVCSSQLReview(ctx, gitOpsInfo, &api.VCSSQLReviewRequest{
-				RepositoryID:  gitOpsInfo.ExternalId,
-				PullRequestID: fmt.Sprintf("%d", prID),
-				WebURL:        gitOpsInfo.WebUrl,
-			})
-			a.NoError(err)
-
-			emptySQLReview := test.getEmptySQLReviewResult(gitFile, ctl.rootURL)
-			a.Equal(emptySQLReview.Status, res.Status)
-			a.Equal(emptySQLReview.Content, res.Content)
-
-			// create the SQL review policy then re-trigger the VCS SQL review.
-			reviewPolicy, err := prodTemplateSQLReviewPolicyForPostgreSQL()
-			a.NoError(err)
-
-			_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-				Parent: "environments/prod",
-				Policy: &v1pb.Policy{
-					Type: v1pb.PolicyType_SQL_REVIEW,
-					Policy: &v1pb.Policy_SqlReviewPolicy{
-						SqlReviewPolicy: reviewPolicy,
-					},
-				},
-			})
-			a.NoError(err)
-
-			reviewResult, err := ctl.postVCSSQLReview(ctx, gitOpsInfo, &api.VCSSQLReviewRequest{
-				RepositoryID:  gitOpsInfo.ExternalId,
-				PullRequestID: fmt.Sprintf("%d", prID),
-				WebURL:        gitOpsInfo.WebUrl,
-			})
-			a.NoError(err)
-
-			expectResult := test.getSQLReviewResult(gitFile)
-			a.Equal(expectResult.Status, reviewResult.Status)
-			a.Equal(expectResult.Content, reviewResult.Content)
-		})
-	}
-}
-
 func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 	type testCase struct {
 		name              string
@@ -1610,44 +1348,6 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 			}
 		})()
 	}
-}
-
-// postVCSSQLReview will create the VCS SQL review and get the response.
-func (ctl *controller) postVCSSQLReview(ctx context.Context, gitOpsInfo *v1pb.ProjectGitOpsInfo, request *api.VCSSQLReviewRequest) (*api.VCSSQLReviewResult, error) {
-	url := fmt.Sprintf("%s/hook/sql-review/%s", ctl.rootURL, gitOpsInfo.WebhookEndpointId)
-
-	payload, err := json.Marshal(request)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create a new POST request to %q", url)
-	}
-
-	workspaceID, err := ctl.getWorkspaceID(ctx)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("X-SQL-Review-Token", workspaceID)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read response body")
-	}
-
-	res := new(api.VCSSQLReviewResult)
-	if err := json.Unmarshal([]byte(body), res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
 }
 
 func TestGetLatestSchema(t *testing.T) {

@@ -38,7 +38,6 @@ const (
 	ProjectService_TestWebhook_FullMethodName                  = "/bytebase.v1.ProjectService/TestWebhook"
 	ProjectService_UpdateProjectGitOpsInfo_FullMethodName      = "/bytebase.v1.ProjectService/UpdateProjectGitOpsInfo"
 	ProjectService_UnsetProjectGitOpsInfo_FullMethodName       = "/bytebase.v1.ProjectService/UnsetProjectGitOpsInfo"
-	ProjectService_SetupProjectSQLReviewCI_FullMethodName      = "/bytebase.v1.ProjectService/SetupProjectSQLReviewCI"
 	ProjectService_GetProjectGitOpsInfo_FullMethodName         = "/bytebase.v1.ProjectService/GetProjectGitOpsInfo"
 	ProjectService_ListDatabaseGroups_FullMethodName           = "/bytebase.v1.ProjectService/ListDatabaseGroups"
 	ProjectService_GetDatabaseGroup_FullMethodName             = "/bytebase.v1.ProjectService/GetDatabaseGroup"
@@ -76,7 +75,6 @@ type ProjectServiceClient interface {
 	TestWebhook(ctx context.Context, in *TestWebhookRequest, opts ...grpc.CallOption) (*TestWebhookResponse, error)
 	UpdateProjectGitOpsInfo(ctx context.Context, in *UpdateProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error)
 	UnsetProjectGitOpsInfo(ctx context.Context, in *UnsetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	SetupProjectSQLReviewCI(ctx context.Context, in *SetupSQLReviewCIRequest, opts ...grpc.CallOption) (*SetupSQLReviewCIResponse, error)
 	GetProjectGitOpsInfo(ctx context.Context, in *GetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error)
 	ListDatabaseGroups(ctx context.Context, in *ListDatabaseGroupsRequest, opts ...grpc.CallOption) (*ListDatabaseGroupsResponse, error)
 	GetDatabaseGroup(ctx context.Context, in *GetDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
@@ -262,15 +260,6 @@ func (c *projectServiceClient) UnsetProjectGitOpsInfo(ctx context.Context, in *U
 	return out, nil
 }
 
-func (c *projectServiceClient) SetupProjectSQLReviewCI(ctx context.Context, in *SetupSQLReviewCIRequest, opts ...grpc.CallOption) (*SetupSQLReviewCIResponse, error) {
-	out := new(SetupSQLReviewCIResponse)
-	err := c.cc.Invoke(ctx, ProjectService_SetupProjectSQLReviewCI_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *projectServiceClient) GetProjectGitOpsInfo(ctx context.Context, in *GetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error) {
 	out := new(ProjectGitOpsInfo)
 	err := c.cc.Invoke(ctx, ProjectService_GetProjectGitOpsInfo_FullMethodName, in, out, opts...)
@@ -410,7 +399,6 @@ type ProjectServiceServer interface {
 	TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error)
 	UpdateProjectGitOpsInfo(context.Context, *UpdateProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error)
 	UnsetProjectGitOpsInfo(context.Context, *UnsetProjectGitOpsInfoRequest) (*emptypb.Empty, error)
-	SetupProjectSQLReviewCI(context.Context, *SetupSQLReviewCIRequest) (*SetupSQLReviewCIResponse, error)
 	GetProjectGitOpsInfo(context.Context, *GetProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error)
 	ListDatabaseGroups(context.Context, *ListDatabaseGroupsRequest) (*ListDatabaseGroupsResponse, error)
 	GetDatabaseGroup(context.Context, *GetDatabaseGroupRequest) (*DatabaseGroup, error)
@@ -484,9 +472,6 @@ func (UnimplementedProjectServiceServer) UpdateProjectGitOpsInfo(context.Context
 }
 func (UnimplementedProjectServiceServer) UnsetProjectGitOpsInfo(context.Context, *UnsetProjectGitOpsInfoRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnsetProjectGitOpsInfo not implemented")
-}
-func (UnimplementedProjectServiceServer) SetupProjectSQLReviewCI(context.Context, *SetupSQLReviewCIRequest) (*SetupSQLReviewCIResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetupProjectSQLReviewCI not implemented")
 }
 func (UnimplementedProjectServiceServer) GetProjectGitOpsInfo(context.Context, *GetProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProjectGitOpsInfo not implemented")
@@ -864,24 +849,6 @@ func _ProjectService_UnsetProjectGitOpsInfo_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_SetupProjectSQLReviewCI_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetupSQLReviewCIRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).SetupProjectSQLReviewCI(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_SetupProjectSQLReviewCI_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).SetupProjectSQLReviewCI(ctx, req.(*SetupSQLReviewCIRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ProjectService_GetProjectGitOpsInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetProjectGitOpsInfoRequest)
 	if err := dec(in); err != nil {
@@ -1194,10 +1161,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UnsetProjectGitOpsInfo",
 			Handler:    _ProjectService_UnsetProjectGitOpsInfo_Handler,
-		},
-		{
-			MethodName: "SetupProjectSQLReviewCI",
-			Handler:    _ProjectService_SetupProjectSQLReviewCI_Handler,
 		},
 		{
 			MethodName: "GetProjectGitOpsInfo",

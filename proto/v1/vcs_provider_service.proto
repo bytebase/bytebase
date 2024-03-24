@@ -195,9 +195,6 @@ message ProjectGitOpsInfo {
   // The reposition external id in target VCS.
   string external_id = 11;
 
-  // Set to true to enable SQL review CI for all PR/MRs.
-  bool enable_sql_review_ci = 12;
-
   // The webhook endpoint ID of the repository.
   string webhook_endpoint_id = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
