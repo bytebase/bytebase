@@ -2555,10 +2555,6 @@
         "title": "Custom approval",
         "desc": "Configure risk level and approval flow for different tasks."
       },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "Synchronize SQL scripts from VCS",
-        "desc": "Synchronize SQL scripts stored in VCS to Sheet."
-      },
       "bb-feature-vcs-sql-review": {
         "title": "SQL Review in GitOps workflow",
         "desc": "Add the SQL Review CI to your VCS repository pipeline. SQL Review will be triggered in the pull request for changed SQL files."
