@@ -16,8 +16,6 @@ import (
 type VCSProviderMessage struct {
 	// Type is the type of the external version control.
 	Type vcs.Type
-	// APIURL is the URL for the external version control API.
-	APIURL string
 	// InstanceURL is the URL for the external version control instance.
 	InstanceURL string
 	// Name is the name of the external version control.
@@ -111,11 +109,10 @@ func (s *Store) CreateVCSProviderV2(ctx context.Context, principalUID int, creat
 			name,
 			type,
 			instance_url,
-			api_url,
 			access_token
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, name, type, instance_url, api_url, access_token
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, name, type, instance_url, access_token
 	`
 	var vcsProvider VCSProviderMessage
 	if err := tx.QueryRowContext(ctx, query,
@@ -124,14 +121,12 @@ func (s *Store) CreateVCSProviderV2(ctx context.Context, principalUID int, creat
 		create.Name,
 		create.Type,
 		create.InstanceURL,
-		create.APIURL,
 		create.AccessToken,
 	).Scan(
 		&vcsProvider.ID,
 		&vcsProvider.Name,
 		&vcsProvider.Type,
 		&vcsProvider.InstanceURL,
-		&vcsProvider.APIURL,
 		&vcsProvider.AccessToken,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -172,7 +167,7 @@ func (s *Store) UpdateVCSProviderV2(ctx context.Context, principalUID int, vcsPr
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, name, type, instance_url, api_url, access_token
+		RETURNING id, name, type, instance_url, access_token
 	`, len(args)),
 		args...,
 	).Scan(
@@ -180,7 +175,6 @@ func (s *Store) UpdateVCSProviderV2(ctx context.Context, principalUID int, vcsPr
 		&vcsProvider.Name,
 		&vcsProvider.Type,
 		&vcsProvider.InstanceURL,
-		&vcsProvider.APIURL,
 		&vcsProvider.AccessToken,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -229,7 +223,6 @@ func (*Store) findVCSProvidersImplV2(ctx context.Context, tx *Tx, find *findVCSP
 			name,
 			type,
 			instance_url,
-			api_url,
 			access_token
 		FROM vcs
 		WHERE `+strings.Join(where, " AND "),
@@ -247,7 +240,6 @@ func (*Store) findVCSProvidersImplV2(ctx context.Context, tx *Tx, find *findVCSP
 			&vcsProvider.Name,
 			&vcsProvider.Type,
 			&vcsProvider.InstanceURL,
-			&vcsProvider.APIURL,
 			&vcsProvider.AccessToken,
 		); err != nil {
 			return nil, err
