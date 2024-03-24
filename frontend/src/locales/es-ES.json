@@ -2053,20 +2053,18 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase admite el flujo de trabajo de GitOps, donde los scripts de migración de la base de datos se almacenan en el sistema de control de versiones (VCS) y los scripts de migración recién creados activarán automáticamente el cambio de base de datos correspondiente. Los administrador de Bytebase administran todos los VCS aplicables aquí para que los propietarios de proyectos puedan vincular los proyectos con sus repositorios de Git desde estos VCS.",
+      "description": "En el flujo de trabajo GitOps de Bytebase, los desarrolladores almacenan scripts de migración en VCS. Las solicitudes de extracción provocan revisiones SQL, y las fusionadas inician planes de migración. Los administradores configuran proveedores de VCS, mientras que los propietarios del proyecto establecen conexiones de VCS dentro de los proyectos.",
       "add-git-provider": {
         "self": "Agregar un proveedor de Git",
         "description": "Antes de que cualquier proyecto pueda habilitar el flujo de trabajo de GitOps, Bytebase primero debe integrarse con el sistema de control de versiones (VCS) correspondiente registrándose como una aplicación OAuth en ese VCS. A continuación se muestran los pasos para configurar esto, también puede seguir nuestra {guide}.",
         "gitlab-self-host": "GitLab autohospedado",
-        "gitlab-self-host-admin-requirement": "Debe ser un administrador de su instancia de GitLab elegida para configurar esto. De lo contrario, debe solicitar al administrador de su instancia de GitLab que registre Bytebase como una aplicación OAuth de instancia de GitLab y luego proporcionarle ese ID de aplicación y secreto para completar en el paso 'información de la aplicación OAuth'.",
-        "gitlab-com-admin-requirement": "Su cuenta debe tener acceso de administrador a cualquiera de los repositorios que se van a vincular. Por lo general, esta cuenta corresponde a un usuario de servicio dedicado en lugar de a un usuario humano.",
+        "gitlab-self-host-admin-requirement": "Debes ser administrador de la instancia de GitLab.",
+        "gitlab-com-admin-requirement": "Debes ser administrador de los proyectos o grupos.",
         "github-self-host": "GitHub autohospedado",
-        "github-com-admin-requirement": "Debe ser administrador de la organización de GitHub elegida para configurar esto. De lo contrario, debe solicitar al administrador de su organización de GitHub que registre Bytebase como una aplicación OAuth de organización de GitHub y luego proporcionarle ese ID de aplicación y secreto para completar en el paso 'información de la aplicación OAuth'.",
-        "bitbucket-admin-requirement": "Necesitas ser administrador de tu espacio de trabajo de Bitbucket elegido para configurar esto. De lo contrario, debes pedirle al administrador de tu espacio de trabajo de Bitbucket que registre Bytebase como una aplicación OAuth para todo el espacio de trabajo de Bitbucket, y luego proporcionarte la ID de la aplicación y la clave secreta para que las ingreses en el paso 'Información de la aplicación OAuth'.",
+        "github-com-admin-requirement": "Debes ser administrador de la organización de GitHub.",
+        "bitbucket-admin-requirement": "Debes ser el administrador del espacio de trabajo de Bitbucket.",
         "azure-devops-service": "Servicio Azure DevOps",
-        "azure-admin-requirement": "Necesitas ser administrador de la organización de Azure DevOps que haya elegido para configurar esto. De lo contrario, debe pedirle al administrador del espacio de trabajo de Bitbucket que registre Bytebase como una aplicación de OAuth para toda la organización de Azure DevOps y luego proporcionarle el ID de la aplicación y el secreto del cliente para completar en el paso 'Información de la aplicación de OAuth'.",
-        "oauth-info-correct": "La información de OAuth verificada es correcta",
-        "check-oauth-info-match": "Por favor asegúrate de que la clave secreta coincida con la de tu instancia de GitLab de la aplicación.",
+        "azure-admin-requirement": "Debes ser administrador de la organización de Azure DevOps.",
         "add-success": "Proveedor de Git {vcs} agregado exitosamente",
         "choose": "Elige proveedor de Git",
         "basic-info": {

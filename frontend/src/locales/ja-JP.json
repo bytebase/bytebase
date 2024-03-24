@@ -2053,20 +2053,18 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebaseは、データベースのマイグレーションスクリプトがバージョン管理システム（VCS）に保存され、新しく作成されたマイグレーションスクリプトが対応するデータベースの変更を自動的にトリガーするGitOpsワークフローをサポートしています。Bytebaseの管理者はここで適用可能なすべてのVCSを管理し、プロジェクトの所有者はこれらのVCSから自分のGitリポジトリにプロジェクトをリンクすることができます。",
+      "description": "BytebaseのGitOpsワークフローでは、開発者はマイグレーションスクリプトをVCSに保存します。プルリクエストはSQLレビューを促し、マージされたものはマイグレーション計画を開始します。管理者はVCSプロバイダを設定し、プロジェクトオーナーはプロジェクト内でVCS接続を確立します。",
       "add-git-provider": {
         "self": "Gitプロバイダを追加する",
         "description": "プロジェクトがGitOpsワークフローを有効にする前に、Bytebaseはまず対応するバージョン管理システム（VCS）と統合する必要があります。そのためには、VCSでOAuthアプリケーションとして登録する必要があります。以下にその手順を示します。また、{guide}に従っても設定できます。",
         "gitlab-self-host": "GitLab Self-Hosted",
-        "gitlab-self-host-admin-requirement": "これを設定するには、選択したGitLabインスタンスの管理者である必要があります。そうでない場合は、GitLabインスタンスの管理者にBytebaseをGitLabインスタンス全体のOAuthアプリケーションとして登録してもらい、そのアプリケーションIDとシークレットを「OAuthアプリケーション情報」のステップで入力してもらう必要があります。",
-        "gitlab-com-admin-requirement": "リンクするためには、アカウントにはリポジトリのいずれかに対する管理者アクセス権限が必要です。通常、このアカウントは人間のユーザーではなく、専用のサービスユーザーに対応しています。",
+        "gitlab-self-host-admin-requirement": "GitLabインスタンスの管理者である必要があります。",
+        "gitlab-com-admin-requirement": "プロジェクトまたはグループの管理者である必要があります。",
         "github-self-host": "GitLab Self-Hosted",
-        "github-com-admin-requirement": "これを設定するには、選択した GitHub 組織の管理者である必要があります。そうでない場合は、GitHub 組織の管理者に Bytebase を GitHub 組織全体の OAuth アプリケーションとして登録してもらい、そのアプリケーション ID とシークレットを 'OAuth アプリケーション情報' ステップで入力してもらう必要があります。",
-        "bitbucket-admin-requirement": "これを設定するには、選択した Bitbucket ワークスペースの管理者である必要があります。そうでない場合は、Bitbucket ワークスペースの管理者に Bytebase を Bitbucket ワークスペース全体の OAuth アプリケーションとして登録してもらい、そのアプリケーション ID とシークレットを 'OAuth アプリケーション情報' ステップで入力してもらう必要があります。",
+        "github-com-admin-requirement": "GitHubの組織の管理者である必要があります。",
+        "bitbucket-admin-requirement": "Bitbucketのワークスペースの管理者でなければなりません。",
         "azure-devops-service": "Azure DevOps サービス",
-        "azure-admin-requirement": "これを設定するには、選択した Azure DevOps 組織の管理者である必要があります。そうでない場合は、Azure DevOps 組織の管理者に Bytebase を Azure DevOps 組織全体の OAuth アプリケーションとして登録してもらい、そのアプリケーション ID とクライアントシークレットを 'OAuth アプリケーション情報' ステップで入力してもらう必要があります。",
-        "oauth-info-correct": "OAuth情報が正しいことを確認してください",
-        "check-oauth-info-match": "SecretがGitLabインスタンスアプリケーションと一致していることを確認してください。",
+        "azure-admin-requirement":"Azure DevOpsの組織の管理者である必要があります。",
         "add-success": "Gitプロバイダー {vcs} を正常に追加しました",
         "choose": "Gitプロバイダーを選択してください",
         "basic-info": {
