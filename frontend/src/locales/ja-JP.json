@@ -2053,12 +2053,12 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebaseは、データベースのマイグレーションスクリプトがバージョン管理システム（VCS）に保存され、新しく作成されたマイグレーションスクリプトが対応するデータベースの変更を自動的にトリガーするGitOpsワークフローをサポートしています。Bytebaseの管理者はここで適用可能なすべてのVCSを管理し、プロジェクトの所有者はこれらのVCSから自分のGitリポジトリにプロジェクトをリンクすることができます。",
+      "description": "BytebaseのGitOpsワークフローでは、開発者はマイグレーションスクリプトをVCSに保存します。プルリクエストはSQLレビューを促し、マージされたものはマイグレーション計画を開始します。管理者はVCSプロバイダを設定し、プロジェクトオーナーはプロジェクト内でVCS接続を確立します。",
       "add-git-provider": {
         "self": "Gitプロバイダを追加する",
         "description": "プロジェクトがGitOpsワークフローを有効にする前に、Bytebaseはまず対応するバージョン管理システム（VCS）と統合する必要があります。そのためには、VCSでOAuthアプリケーションとして登録する必要があります。以下にその手順を示します。また、{guide}に従っても設定できます。",
         "gitlab-self-host": "GitLab Self-Hosted",
-        "gitlab-self-host-admin-requirement": "これを設定するには、選択したGitLabインスタンスの管理者である必要があります。そうでない場合は、GitLabインスタンスの管理者にBytebaseをGitLabインスタンス全体のOAuthアプリケーションとして登録してもらい、そのアプリケーションIDとシークレットを「OAuthアプリケーション情報」のステップで入力してもらう必要があります。",
+        "gitlab-self-host-admin-requirement": "GitLab インスタンスの管理者である必要があります。",
         "gitlab-com-admin-requirement": "リンクするためには、アカウントにはリポジトリのいずれかに対する管理者アクセス権限が必要です。通常、このアカウントは人間のユーザーではなく、専用のサービスユーザーに対応しています。",
         "github-self-host": "GitLab Self-Hosted",
         "github-com-admin-requirement": "これを設定するには、選択した GitHub 組織の管理者である必要があります。そうでない場合は、GitHub 組織の管理者に Bytebase を GitHub 組織全体の OAuth アプリケーションとして登録してもらい、そのアプリケーション ID とシークレットを 'OAuth アプリケーション情報' ステップで入力してもらう必要があります。",
