@@ -76,7 +76,6 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.ProjectService_TestWebhook_FullMethodName:                  iam.PermissionProjectsUpdate,
 	v1pb.ProjectService_UpdateProjectGitOpsInfo_FullMethodName:      iam.PermissionProjectsUpdate,
 	v1pb.ProjectService_UnsetProjectGitOpsInfo_FullMethodName:       iam.PermissionProjectsUpdate,
-	v1pb.ProjectService_SetupProjectSQLReviewCI_FullMethodName:      iam.PermissionProjectsUpdate,
 	v1pb.ProjectService_GetProjectGitOpsInfo_FullMethodName:         iam.PermissionProjectsGet,
 	v1pb.ProjectService_ListDatabaseGroups_FullMethodName:           iam.PermissionProjectsGet,
 	v1pb.ProjectService_GetDatabaseGroup_FullMethodName:             iam.PermissionProjectsGet,

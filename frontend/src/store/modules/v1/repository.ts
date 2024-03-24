@@ -80,13 +80,6 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
     repositoryMapByProject.delete(project);
   };
 
-  const setupSQLReviewCI = async (project: string): Promise<string> => {
-    const resp = await projectServiceClient.setupProjectSQLReviewCI({
-      name: project + "/gitOpsInfo",
-    });
-    return resp.pullRequestUrl;
-  };
-
   const fetchRepositoryListByVCS = async (
     vcsName: string
   ): Promise<ProjectGitOpsInfo[]> => {
@@ -116,7 +109,6 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
   };
 
   return {
-    setupSQLReviewCI,
     upsertRepository,
     deleteRepository,
     getRepositoryByProject,
@@ -158,12 +150,6 @@ const getUpdateMaskForRepository = (
     !isEqual(origin.schemaPathTemplate, update.schemaPathTemplate)
   ) {
     updateMask.push("schema_path_template");
-  }
-  if (
-    !isUndefined(update.enableSqlReviewCi) &&
-    !isEqual(origin.enableSqlReviewCi, update.enableSqlReviewCi)
-  ) {
-    updateMask.push("enable_sql_review_ci");
   }
   return updateMask;
 };
