@@ -504,8 +504,6 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 				return nil, status.Errorf(codes.InvalidArgument, "invalid schema_path_template: %s", err.Error())
 			}
 			patch.SchemaPathTemplate = &request.ProjectGitopsInfo.SchemaPathTemplate
-		case "sheet_path_template":
-			patch.SheetPathTemplate = &request.ProjectGitopsInfo.SheetPathTemplate
 		case "enable_sql_review_ci":
 			patch.EnableSQLReviewCI = &request.ProjectGitopsInfo.EnableSqlReviewCi
 		}
@@ -1074,7 +1072,6 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		BaseDirectory:      baseDir,
 		FilePathTemplate:   request.ProjectGitopsInfo.FilePathTemplate,
 		SchemaPathTemplate: request.ProjectGitopsInfo.SchemaPathTemplate,
-		SheetPathTemplate:  request.ProjectGitopsInfo.SheetPathTemplate,
 		ExternalID:         request.ProjectGitopsInfo.ExternalId,
 	}
 
@@ -3009,7 +3006,6 @@ func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.Proje
 		BaseDirectory:      repository.BaseDirectory,
 		FilePathTemplate:   repository.FilePathTemplate,
 		SchemaPathTemplate: repository.SchemaPathTemplate,
-		SheetPathTemplate:  repository.SheetPathTemplate,
 		EnableSqlReviewCi:  repository.EnableSQLReviewCI,
 		WebhookEndpointId:  repository.WebhookEndpointID,
 		ExternalId:         repository.ExternalID,

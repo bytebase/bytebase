@@ -144,7 +144,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	}
 }
 
-func TestVCS(t *testing.T) {
+func TestSimpleVCS(t *testing.T) {
 	tests := []struct {
 		name                string
 		vcsProviderCreator  fake.VCSProviderCreator

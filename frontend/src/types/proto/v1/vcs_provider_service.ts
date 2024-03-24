@@ -199,11 +199,6 @@ export interface ProjectGitOpsInfo {
    * If specified, required placeholder: {{DB_NAME}}, optional placeholder: {{ENV_ID}}.
    */
   schemaPathTemplate: string;
-  /**
-   * The file path template for matching the sql files for sheet.
-   * If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_ID}}, {{DB_NAME}}.
-   */
-  sheetPathTemplate: string;
   /** The reposition external id in target VCS. */
   externalId: string;
   /** Set to true to enable SQL review CI for all PR/MRs. */
@@ -1083,7 +1078,6 @@ function createBaseProjectGitOpsInfo(): ProjectGitOpsInfo {
     baseDirectory: "",
     filePathTemplate: "",
     schemaPathTemplate: "",
-    sheetPathTemplate: "",
     externalId: "",
     enableSqlReviewCi: false,
     webhookEndpointId: "",
@@ -1118,9 +1112,6 @@ export const ProjectGitOpsInfo = {
     }
     if (message.schemaPathTemplate !== "") {
       writer.uint32(74).string(message.schemaPathTemplate);
-    }
-    if (message.sheetPathTemplate !== "") {
-      writer.uint32(82).string(message.sheetPathTemplate);
     }
     if (message.externalId !== "") {
       writer.uint32(90).string(message.externalId);
@@ -1204,13 +1195,6 @@ export const ProjectGitOpsInfo = {
 
           message.schemaPathTemplate = reader.string();
           continue;
-        case 10:
-          if (tag !== 82) {
-            break;
-          }
-
-          message.sheetPathTemplate = reader.string();
-          continue;
         case 11:
           if (tag !== 90) {
             break;
@@ -1252,7 +1236,6 @@ export const ProjectGitOpsInfo = {
       baseDirectory: isSet(object.baseDirectory) ? globalThis.String(object.baseDirectory) : "",
       filePathTemplate: isSet(object.filePathTemplate) ? globalThis.String(object.filePathTemplate) : "",
       schemaPathTemplate: isSet(object.schemaPathTemplate) ? globalThis.String(object.schemaPathTemplate) : "",
-      sheetPathTemplate: isSet(object.sheetPathTemplate) ? globalThis.String(object.sheetPathTemplate) : "",
       externalId: isSet(object.externalId) ? globalThis.String(object.externalId) : "",
       enableSqlReviewCi: isSet(object.enableSqlReviewCi) ? globalThis.Boolean(object.enableSqlReviewCi) : false,
       webhookEndpointId: isSet(object.webhookEndpointId) ? globalThis.String(object.webhookEndpointId) : "",
@@ -1288,9 +1271,6 @@ export const ProjectGitOpsInfo = {
     if (message.schemaPathTemplate !== "") {
       obj.schemaPathTemplate = message.schemaPathTemplate;
     }
-    if (message.sheetPathTemplate !== "") {
-      obj.sheetPathTemplate = message.sheetPathTemplate;
-    }
     if (message.externalId !== "") {
       obj.externalId = message.externalId;
     }
@@ -1317,7 +1297,6 @@ export const ProjectGitOpsInfo = {
     message.baseDirectory = object.baseDirectory ?? "";
     message.filePathTemplate = object.filePathTemplate ?? "";
     message.schemaPathTemplate = object.schemaPathTemplate ?? "";
-    message.sheetPathTemplate = object.sheetPathTemplate ?? "";
     message.externalId = object.externalId ?? "";
     message.enableSqlReviewCi = object.enableSqlReviewCi ?? false;
     message.webhookEndpointId = object.webhookEndpointId ?? "";

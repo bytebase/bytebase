@@ -192,10 +192,6 @@ message ProjectGitOpsInfo {
   // If specified, required placeholder: {{DB_NAME}}, optional placeholder: {{ENV_ID}}.
   string schema_path_template = 9;
 
-  // The file path template for matching the sql files for sheet.
-  // If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_ID}}, {{DB_NAME}}.
-  string sheet_path_template = 10;
-
   // The reposition external id in target VCS.
   string external_id = 11;
 
