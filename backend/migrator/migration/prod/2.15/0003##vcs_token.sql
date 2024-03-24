@@ -6,3 +6,5 @@ ALTER TABLE repository DROP COLUMN sheet_path_template;
 ALTER TABLE repository DROP COLUMN access_token;
 ALTER TABLE repository DROP COLUMN expires_ts;
 ALTER TABLE repository DROP COLUMN refresh_token;
+ALTER TABLE repository DROP COLUMN enable_sql_review_ci;
+ALTER TABLE repository DROP COLUMN enable_cd;

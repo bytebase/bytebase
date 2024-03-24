@@ -146,61 +146,6 @@
         }}
       </div>
     </div>
-    <div v-if="canEnableSQLReview">
-      <div class="textlabel flex gap-x-1">
-        {{ $t("repository.sql-review-ci") }}
-        <FeatureBadge feature="bb.feature.vcs-sql-review" />
-      </div>
-      <div class="mt-1 textinfolabel">
-        {{
-          $t("repository.sql-review-ci-description", {
-            pr:
-              vcsType === VCSProvider_Type.GITLAB
-                ? $t("repository.merge-request")
-                : $t("repository.pull-request"),
-            pathTemplate: $t("repository.file-path-template"),
-          })
-        }}
-      </div>
-      <BBAttention
-        v-if="
-          instanceWithoutLicense.length > 0 &&
-          subscriptionStore.currentPlan !== PlanType.FREE &&
-          hasFeature('bb.feature.vcs-sql-review')
-        "
-        class="my-4"
-        type="warning"
-        :title="$t('subscription.features.bb-feature-vcs-sql-review.title')"
-        :description="
-          $t('subscription.instance-assignment.missing-license-for-instances', {
-            count: instanceWithoutLicense.length,
-            name: instanceWithoutLicense.map((ins) => ins.title).join(','),
-          })
-        "
-        :action-text="
-          canManageInstanceLicense
-            ? $t('subscription.instance-assignment.assign-license')
-            : ''
-        "
-        @click="state.showInstanceAssignmentDrawer = true"
-      />
-      <div class="flex space-x-4 mt-2">
-        <NCheckbox
-          :disabled="!allowEdit"
-          :label="enableSQLReviewTitle"
-          :checked="repositoryConfig.enableSQLReviewCI"
-          @update:checked="(on: boolean) => {
-            repositoryConfig.enableSQLReviewCI = on;
-            onSQLReviewCIToggle(on);
-          }"
-        />
-      </div>
-    </div>
-    <FeatureModal
-      feature="bb.feature.vcs-sql-review"
-      :open="state.showFeatureModal"
-      @cancel="state.showFeatureModal = false"
-    />
   </div>
   <InstanceAssignment
     :show="state.showInstanceAssignmentDrawer"
@@ -209,16 +154,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox, NSelect, SelectOption } from "naive-ui";
+import { NSelect, SelectOption } from "naive-ui";
 import { reactive, computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBBetaBadge } from "@/bbkit";
-import {
-  hasFeature,
-  useSubscriptionV1Store,
-  useDatabaseV1Store,
-  useCurrentUserV1,
-} from "@/store";
 import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
 import {
   Project,
@@ -226,9 +165,7 @@ import {
   SchemaChange,
   schemaChangeToJSON,
 } from "@/types/proto/v1/project_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
-import { hasWorkspacePermissionV2, supportSQLReviewCI } from "@/utils";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const FILE_OPTIONAL_DIRECTORY_WILDCARD = "*, **";
@@ -269,45 +206,11 @@ const state = reactive<LocalState>({
   showInstanceAssignmentDrawer: false,
 });
 
-const subscriptionStore = useSubscriptionV1Store();
-
-const databaseV1List = computed(() => {
-  return useDatabaseV1Store().databaseListByProject(props.project.name);
-});
-
-const canManageInstanceLicense = computed((): boolean => {
-  return hasWorkspacePermissionV2(
-    useCurrentUserV1().value,
-    "bb.instances.update"
-  );
-});
-
-const instanceWithoutLicense = computed(() => {
-  return databaseV1List.value
-    .map((db) => db.instanceEntity)
-    .filter((ins) => !ins.activation);
-});
-
 const isTenantProject = computed(() => {
   return props.project.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 const isProjectSchemaChangeTypeDDL = computed(() => {
   return (props.schemaChangeType || SchemaChange.DDL) === SchemaChange.DDL;
-});
-const canEnableSQLReview = computed(() => {
-  return supportSQLReviewCI(props.vcsType);
-});
-const enableSQLReviewTitle = computed(() => {
-  switch (props.vcsType) {
-    case VCSProvider_Type.GITLAB:
-      return t("repository.sql-review-ci-enable-gitlab");
-    case VCSProvider_Type.GITHUB:
-      return t("repository.sql-review-ci-enable-github");
-    case VCSProvider_Type.AZURE_DEVOPS:
-      return t("repository.sql-review-ci-enable-azure");
-    default:
-      return t("repository.sql-review-ci-enable-title");
-  }
 });
 
 const sampleFilePath = (
@@ -375,12 +278,6 @@ const fileOptionalPlaceholder = computed(() => {
   tags.push("{{DESCRIPTION}}");
   return tags;
 });
-
-const onSQLReviewCIToggle = (on: boolean) => {
-  if (on && !hasFeature("bb.feature.vcs-sql-review")) {
-    state.showFeatureModal = true;
-  }
-};
 
 const renderLabel = (option: SelectOption) => {
   const value = option.value as SchemaChange;

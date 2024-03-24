@@ -3,7 +3,6 @@ import {
   VCSProvider,
   VCSProvider_Type,
 } from "@/types/proto/v1/vcs_provider_service";
-import { isDev } from "@/utils";
 
 export const getVCSUIType = (vcs: VCSProvider): VCSUIType => {
   switch (vcs.type) {
@@ -21,13 +20,4 @@ export const getVCSUIType = (vcs: VCSProvider): VCSUIType => {
     default:
       return "GITLAB_SELF_HOST";
   }
-};
-
-export const supportSQLReviewCI = (vcsType: VCSProvider_Type): boolean => {
-  return (
-    vcsType === VCSProvider_Type.GITHUB ||
-    vcsType === VCSProvider_Type.GITLAB ||
-    vcsType === VCSProvider_Type.AZURE_DEVOPS ||
-    (vcsType === VCSProvider_Type.BITBUCKET && isDev())
-  );
 };
