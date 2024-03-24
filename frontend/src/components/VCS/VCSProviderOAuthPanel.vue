@@ -37,79 +37,38 @@
         "
       >
         <li>
-          1.
+          •
           {{
             $t(
-              "gitops.setting.add-git-provider.access-token.github-login-as-admin"
-            )
-          }}
-          <img class="w-auto" src="../../assets/github_admin_settings.png" />
-        </li>
-        <li>
-          2.
-          {{
-            $t(
-              "gitops.setting.add-git-provider.access-token.github-visit-admin-page"
-            )
-          }}
-        </li>
-        <li>
-          4.
-          {{
-            $t(
-              "gitops.setting.add-git-provider.access-token.github-paste-oauth-info"
+              "gitops.setting.add-git-provider.access-token.github-personal-access-token"
             )
           }}
         </li>
       </template>
       <template v-if="config.uiType == 'BITBUCKET_ORG'">
         <li>
-          1.
+          •
           {{
             $t(
-              "gitops.setting.add-git-provider.access-token.bitbucket-login-as-admin"
+              "gitops.setting.add-git-provider.access-token.bitbucket-resource-access-token"
             )
           }}
         </li>
         <li>
-          2.
+          •
           {{
             $t(
-              "gitops.setting.add-git-provider.access-token.bitbucket-visit-admin-page"
-            )
-          }}
-        </li>
-        <li>
-          4.
-          {{
-            $t(
-              "gitops.setting.add-git-provider.access-token.bitbucket-paste-oauth-info"
+              "gitops.setting.add-git-provider.access-token.bitbucket-personal-access-token"
             )
           }}
         </li>
       </template>
       <template v-if="config.uiType == 'AZURE_DEVOPS'">
         <li>
-          1.
+          •
           {{
             $t(
-              "gitops.setting.add-git-provider.access-token.azure-devops-login"
-            )
-          }}
-        </li>
-        <li>
-          2.
-          {{
-            $t(
-              "gitops.setting.add-git-provider.access-token.azure-devops-visit-application-page"
-            )
-          }}
-        </li>
-        <li>
-          4.
-          {{
-            $t(
-              "gitops.setting.add-git-provider.access-token.azure-paste-oauth-info"
+              "gitops.setting.add-git-provider.access-token.azure-devops-personal-access-token"
             )
           }}
         </li>

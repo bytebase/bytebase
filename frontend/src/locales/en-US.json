@@ -2083,16 +2083,10 @@
           "gitlab-project-access-token": "Generate a project access token for managing a single project.",
           "gitlab-group-access-token": "Generate a group access token to manage all projects within the group.",
           "gitlab-personal-access-token": "Create a dedicated service user and generate a personal access token with the maintainer role for the group or all projects to be managed.",
-          "github-login-as-admin": "Log in as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
-          "github-visit-admin-page": "Go to the Settings page, then navigate to \"Developer settings > OAuth Apps\" section and click \"Register an application\" button.",
-          "github-paste-oauth-info": "Paste the Client ID and Client secret from that just created application into fields below.",
-          "github-enterprise-login-as-admin": "Log in as an organization admin user to your hosted GitHub Enterprise site. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
-          "bitbucket-login-as-admin": "Log in as an workspace admin user to the Bitbucket.org. The account must be an workspace admin of the Bitbucket workspace (able to access the workspace Settings page).",
-          "bitbucket-visit-admin-page": "Go to the Settings page, then navigate to \"APPS AND FEATURES > OAuth consumers\" section and click \"Add a consumer\" button.",
-          "bitbucket-paste-oauth-info": "Paste the Key and Secret from that just created consumer into fields below.",
-          "azure-devops-login": "Log in as whichever account you want Bytebase to act as. Usually this account corresponds to a dedicated service user instead of a human user.",
-          "azure-devops-visit-application-page": "Go to the applications page.",
-          "azure-paste-oauth-info": "Paste the Application ID and Client Secret from that just created application into fields below."
+          "github-personal-access-token": "Create a dedicated service user and generate a personal access token with the member role for the organization or all projects to be managed.",
+          "bitbucket-resource-access-token": "Generate an access token for repositories, projects, or workspaces to manage resources at different levels.",
+          "bitbucket-personal-access-token": "Create a dedicated service user and generate a personal access token with read and write permissions for the organizations, projects, or repositories to be managed.",
+          "azure-devops-personal-access-token": "Create a dedicated service user and generate a personal access token with the member role for the organization or all projects to be managed."
         },
         "confirm": {
           "confirm-info": "Confirm the info",

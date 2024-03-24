@@ -2083,16 +2083,10 @@
           "gitlab-project-access-token": "Genera un token de acceso al proyecto para administrar un solo proyecto.",
           "gitlab-group-access-token": "Genera un token de acceso de grupo para administrar todos los proyectos dentro del grupo.",
           "gitlab-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de mantenedor para el grupo o todos los proyectos que se deseen gestionar.",
-          "github-login-as-admin": "Inicie sesión como usuario administrador de la organización en GitHub.com. La cuenta debe ser un administrador de la organización de GitHub (capaz de acceder a la página de Configuración de la organización).",
-          "github-visit-admin-page": "Vaya a la página de Configuración, luego vaya a la sección \"Configuración de desarrollador > Aplicaciones OAuth\" y haga clic en el botón \"Registrar una aplicación\".",
-          "github-paste-oauth-info": "Pegue el ID de cliente y el secreto de cliente de la aplicación recién creada en los campos a continuación.",
-          "github-enterprise-login-as-admin": "Inicia sesión en tu sitio GitHub Enterprise como administrador de la organización. Esta cuenta debe ser un administrador de organización de GitHub (con acceso a la página de configuración de la organización).",
-          "bitbucket-login-as-admin": "Inicie sesión como usuario administrador de la organización en Bitbucket.org. La cuenta debe ser un administrador de la organización de Bitbucket (capaz de acceder a la página de Configuración de la organización).",
-          "bitbucket-visit-admin-page": "Vaya a la página de Configuración, luego vaya a la sección \"APPS AND FEATURES > OAuth consumers\" y haga clic en el botón \"Add a consumer\".",
-          "bitbucket-paste-oauth-info": "Pegue la Clave y el Secreto del consumidor recién creado en los campos a continuación.",
-          "azure-devops-login": "Inicie sesión con la cuenta con la que desee que actúe Bytebase. Por lo general, esta cuenta corresponde a un usuario de servicio dedicado en lugar de un usuario humano.",
-          "azure-devops-visit-application-page": "Ir a la página de aplicaciones.",
-          "azure-paste-oauth-info": "Pegue el ID de la aplicación y el secreto del cliente de la aplicación que acaba de crear en los campos a continuación."
+          "github-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de miembro para la organización o todos los proyectos que se deseen gestionar.",
+          "bitbucket-resource-access-token": "Genera un token de acceso para repositorios, proyectos o espacios de trabajo para gestionar recursos en diferentes niveles.",
+          "bitbucket-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con permisos de lectura y escritura para las organizaciones, proyectos o repositorios que se deseen gestionar.",
+          "azure-devops-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de miembro para la organización o todos los proyectos que se deseen gestionar."
         },
         "confirm": {
           "confirm-info": "Confirmar la información",
