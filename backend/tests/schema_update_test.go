@@ -471,11 +471,6 @@ func TestSimpleVCS(t *testing.T) {
 			// Create an issue that updates database schema.
 			err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 			a.NoError(err)
-			latestFileName := fmt.Sprintf("%s/%s/.%s##LATEST.sql", baseDirectory, "prod", databaseName)
-			files, err := ctl.vcsProvider.GetFiles(test.externalID, latestFileName)
-			a.NoError(err)
-			a.Len(files, 1)
-			a.Equal(dumpedSchema4, files[latestFileName])
 
 			// Get migration history.
 			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{

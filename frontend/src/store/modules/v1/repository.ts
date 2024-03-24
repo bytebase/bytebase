@@ -160,12 +160,6 @@ const getUpdateMaskForRepository = (
     updateMask.push("schema_path_template");
   }
   if (
-    !isUndefined(update.sheetPathTemplate) &&
-    !isEqual(origin.sheetPathTemplate, update.sheetPathTemplate)
-  ) {
-    updateMask.push("sheet_path_template");
-  }
-  if (
     !isUndefined(update.enableSqlReviewCi) &&
     !isEqual(origin.enableSqlReviewCi, update.enableSqlReviewCi)
   ) {
