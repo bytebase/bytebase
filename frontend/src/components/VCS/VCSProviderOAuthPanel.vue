@@ -252,50 +252,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
-import { VCSConfig, redirectUrl } from "@/types";
-import { toClipboard } from "@/utils";
+import { VCSConfig } from "@/types";
 
 const props = defineProps<{
   config: VCSConfig;
 }>();
-
-const { t } = useI18n();
-
-const createOAuthApplicationUrl = computed((): string => {
-  if (props.config.uiType == "GITLAB_SELF_HOST") {
-    return `${props.config.instanceUrl}/admin/applications/new`;
-  } else if (props.config.uiType == "GITLAB_COM") {
-    return `https://gitlab.com/-/profile/applications`;
-  } else if (props.config.uiType == "GITHUB_COM") {
-    return `https://github.com/settings/applications/new`;
-  } else if (props.config.uiType == "AZURE_DEVOPS") {
-    return `https://app.vsaex.visualstudio.com/app/register`;
-  }
-  return "";
-});
-
-const copyHomepageURL = () => {
-  toClipboard("https://bytebase.com").then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: t("gitops.setting.add-git-provider.oauth-info.copy-homepage-url"),
-    });
-  });
-};
-
-const copyRedirectURI = () => {
-  toClipboard(redirectUrl()).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: t("gitops.setting.add-git-provider.oauth-info.copy-redirect-uri"),
-    });
-  });
-};
 
 const changeAccessToken = (value: string) => {
   // eslint-disable-next-line vue/no-mutating-props
