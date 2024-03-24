@@ -270,7 +270,6 @@ func checkAndConvertToStoreVersionControl(vcsProvider *v1pb.VCSProvider) (*store
 	}
 
 	storeVCSProvider.InstanceURL = strings.TrimRight(vcsProvider.Url, "/")
-	storeVCSProvider.APIURL = vcs.Get(tp, vcs.ProviderConfig{}).APIURL(vcsProvider.Url)
 	storeVCSProvider.Type = tp
 	return storeVCSProvider, nil
 }
