@@ -104,11 +104,6 @@ export interface VCSProvider {
   /** The title of the vcs provider. It is used to display in the UI. Specified by the client. */
   title: string;
   type: VCSProvider_Type;
-  /**
-   * The url of the vcs provider. Specified by the client.
-   * For example: github.com, gitlab.com, gitlab.bytebase.com.
-   */
-  url: string;
   /** The access token of the vcs provider. */
   accessToken: string;
 }
@@ -949,7 +944,7 @@ export const ListProjectGitOpsInfoResponse = {
 };
 
 function createBaseVCSProvider(): VCSProvider {
-  return { name: "", title: "", type: 0, url: "", accessToken: "" };
+  return { name: "", title: "", type: 0, accessToken: "" };
 }
 
 export const VCSProvider = {
@@ -963,11 +958,8 @@ export const VCSProvider = {
     if (message.type !== 0) {
       writer.uint32(24).int32(message.type);
     }
-    if (message.url !== "") {
-      writer.uint32(34).string(message.url);
-    }
     if (message.accessToken !== "") {
-      writer.uint32(42).string(message.accessToken);
+      writer.uint32(34).string(message.accessToken);
     }
     return writer;
   },
@@ -1005,13 +997,6 @@ export const VCSProvider = {
             break;
           }
 
-          message.url = reader.string();
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
           message.accessToken = reader.string();
           continue;
       }
@@ -1028,7 +1013,6 @@ export const VCSProvider = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       type: isSet(object.type) ? vCSProvider_TypeFromJSON(object.type) : 0,
-      url: isSet(object.url) ? globalThis.String(object.url) : "",
       accessToken: isSet(object.accessToken) ? globalThis.String(object.accessToken) : "",
     };
   },
@@ -1044,9 +1028,6 @@ export const VCSProvider = {
     if (message.type !== 0) {
       obj.type = vCSProvider_TypeToJSON(message.type);
     }
-    if (message.url !== "") {
-      obj.url = message.url;
-    }
     if (message.accessToken !== "") {
       obj.accessToken = message.accessToken;
     }
@@ -1061,7 +1042,6 @@ export const VCSProvider = {
     message.name = object.name ?? "";
     message.title = object.title ?? "";
     message.type = object.type ?? 0;
-    message.url = object.url ?? "";
     message.accessToken = object.accessToken ?? "";
     return message;
   },

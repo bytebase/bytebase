@@ -150,12 +150,8 @@ message VCSProvider {
 
   Type type = 3 [(google.api.field_behavior) = REQUIRED];
 
-  // The url of the vcs provider. Specified by the client.
-  // For example: github.com, gitlab.com, gitlab.bytebase.com.
-  string url = 4 [(google.api.field_behavior) = REQUIRED];
-
   // The access token of the vcs provider.
-  string access_token = 5 [(google.api.field_behavior) = INPUT_ONLY];
+  string access_token = 4 [(google.api.field_behavior) = INPUT_ONLY];
 }
 
 message ProjectGitOpsInfo {
