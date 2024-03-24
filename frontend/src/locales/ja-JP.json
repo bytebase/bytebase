@@ -2061,7 +2061,7 @@
         "gitlab-self-host": "GitLab Self-Hosted",
         "gitlab-self-host-admin-requirement": "これを設定するには、選択したGitLabインスタンスの管理者である必要があります。そうでない場合は、GitLabインスタンスの管理者にBytebaseをGitLabインスタンス全体のOAuthアプリケーションとして登録してもらい、そのアプリケーションIDとシークレットを「OAuthアプリケーション情報」のステップで入力してもらう必要があります。",
         "gitlab-com-admin-requirement": "リンクするためには、アカウントにはリポジトリのいずれかに対する管理者アクセス権限が必要です。通常、このアカウントは人間のユーザーではなく、専用のサービスユーザーに対応しています。",
-        "github-self-host-ee": "GitHub セルフホストエンタープライズエディション（EE）",
+        "github-self-host": "GitLab Self-Hosted",
         "github-com-admin-requirement": "これを設定するには、選択した GitHub 組織の管理者である必要があります。そうでない場合は、GitHub 組織の管理者に Bytebase を GitHub 組織全体の OAuth アプリケーションとして登録してもらい、そのアプリケーション ID とシークレットを 'OAuth アプリケーション情報' ステップで入力してもらう必要があります。",
         "bitbucket-admin-requirement": "これを設定するには、選択した Bitbucket ワークスペースの管理者である必要があります。そうでない場合は、Bitbucket ワークスペースの管理者に Bytebase を Bitbucket ワークスペース全体の OAuth アプリケーションとして登録してもらい、そのアプリケーション ID とシークレットを 'OAuth アプリケーション情報' ステップで入力してもらう必要があります。",
         "azure-devops-service": "Azure DevOps サービス",
