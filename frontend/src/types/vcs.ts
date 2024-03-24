@@ -19,8 +19,7 @@ export interface VCSConfig {
   uiType: VCSUIType;
   name: string;
   instanceUrl: string;
-  applicationId: string;
-  secret: string;
+  accessToken: string;
 }
 
 export type VCS = {
@@ -32,8 +31,7 @@ export type VCS = {
   uiType: VCSUIType;
   instanceUrl: string;
   apiUrl: string;
-  applicationId: string;
-  secret: string;
+  accessToken: string;
 };
 
 export type VCSFileCommit = {
@@ -68,20 +66,3 @@ export type VCSPushEvent = {
   fileCommit: VCSFileCommit;
   commits: VCSCommit[];
 };
-
-export function isValidVCSApplicationIdOrSecret(
-  vcsType: VCSProvider_Type,
-  str: string
-): boolean {
-  if (vcsType == VCSProvider_Type.GITLAB) {
-    return /^(.{1,}-){0,1}[a-zA-Z0-9_]{64}$/.test(str);
-  } else if (vcsType == VCSProvider_Type.GITHUB) {
-    return /^[a-zA-Z0-9_]{20}$|^[a-zA-Z0-9_]{40}$/.test(str);
-  } else if (vcsType == VCSProvider_Type.BITBUCKET) {
-    return /^[a-zA-Z0-9_]{18}$|^[a-zA-Z0-9_]{32}$/.test(str);
-  } else if (vcsType == VCSProvider_Type.AZURE_DEVOPS) {
-    // TODO: Azure App id is uuid but the secret is random string. We may need to distinguish them.
-    return /^[a-zA-Z0-9-_.]{1,}$/.test(str);
-  }
-  return false;
-}

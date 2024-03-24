@@ -111,11 +111,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 
 		repo := repositoryList[0]
 		oauthContext := &common.OauthContext{
-			ClientID:     repo.vcs.ApplicationID,
-			ClientSecret: repo.vcs.Secret,
-			AccessToken:  repo.repository.AccessToken,
-			RefreshToken: repo.repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
+			AccessToken: repo.vcs.AccessToken,
 		}
 
 		baseVCSPushEvent, err := pushEvent.ToVCS()
@@ -191,11 +187,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		}
 		repo := repositoryList[0]
 		oauthContext := &common.OauthContext{
-			ClientID:     repo.vcs.ApplicationID,
-			ClientSecret: repo.vcs.Secret,
-			AccessToken:  repo.repository.AccessToken,
-			RefreshToken: repo.repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
+			AccessToken: repo.vcs.AccessToken,
 		}
 
 		baseVCSPushEvent := pushEvent.ToVCS()
@@ -260,11 +252,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			repo := repositoryList[0]
 
 			oauthContext := &common.OauthContext{
-				ClientID:     repo.vcs.ApplicationID,
-				ClientSecret: repo.vcs.Secret,
-				AccessToken:  repo.repository.AccessToken,
-				RefreshToken: repo.repository.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
+				AccessToken: repo.vcs.AccessToken,
 			}
 
 			var commitList []vcs.Commit
@@ -407,18 +395,9 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			return c.String(http.StatusOK, "No repository matched")
 		}
 
-		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
-		}
-
+		repo := repositoryList[0]
 		oauthContext := &common.OauthContext{
-			ClientID:     repositoryList[0].vcs.ApplicationID,
-			ClientSecret: repositoryList[0].vcs.Secret,
-			AccessToken:  repositoryList[0].repository.AccessToken,
-			RefreshToken: repositoryList[0].repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repositoryList[0].repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+			AccessToken: repo.vcs.AccessToken,
 		}
 
 		if len(pushEvent.Resource.Commits) == 0 {
@@ -634,12 +613,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		repo := repositoryList[0]
 
 		oauthContext := &common.OauthContext{
-			ClientID:     repo.vcs.ApplicationID,
-			ClientSecret: repo.vcs.Secret,
-			AccessToken:  repo.repository.AccessToken,
-			RefreshToken: repo.repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+			AccessToken: repo.vcs.AccessToken,
 		}
 
 		prFiles, err := vcs.Get(repo.vcs.Type, vcs.ProviderConfig{}).ListPullRequestFile(

@@ -7,7 +7,6 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
-import "google/protobuf/timestamp.proto";
 
 option go_package = "generated-go/v1";
 
@@ -36,14 +35,6 @@ service VCSProviderService {
       body: "vcs_provider"
     };
     option (google.api.method_signature) = "vcs_provider,update_mask";
-  }
-
-  rpc ExchangeToken(ExchangeTokenRequest) returns (OAuthToken) {
-    option (google.api.http) = {
-      post: "/v1/{exchange_token.name=vcsProviders/*}:exchangeToken"
-      body: "exchange_token"
-    };
-    option (google.api.method_signature) = "";
   }
 
   rpc DeleteVCSProvider(DeleteVCSProviderRequest) returns (google.protobuf.Empty) {
@@ -109,10 +100,6 @@ message SearchVCSProviderProjectsRequest {
   // The name of the vcs provider to retrieve the vcs provider repositories.
   // Format: vcsProviders/{vcsProvider}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
-
-  string access_token = 2 [(google.api.field_behavior) = REQUIRED];
-
-  string refresh_token = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 message SearchVCSProviderProjectsResponse {
@@ -167,14 +154,8 @@ message VCSProvider {
   // For example: github.com, gitlab.com, gitlab.bytebase.com.
   string url = 4 [(google.api.field_behavior) = REQUIRED];
 
-  // The API url of the vcs provider. Derived from the url.
-  string api_url = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The application ID of the vcs provider. Specified by the client.
-  string application_id = 6 [(google.api.field_behavior) = REQUIRED];
-
-  // The application secret of the vcs provider. Specified by the client.
-  string secret = 7 [(google.api.field_behavior) = INPUT_ONLY];
+  // The access token of the vcs provider.
+  string access_token = 5 [(google.api.field_behavior) = INPUT_ONLY];
 }
 
 message ProjectGitOpsInfo {
@@ -211,10 +192,6 @@ message ProjectGitOpsInfo {
   // If specified, required placeholder: {{DB_NAME}}, optional placeholder: {{ENV_ID}}.
   string schema_path_template = 9;
 
-  // The file path template for matching the sql files for sheet.
-  // If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_ID}}, {{DB_NAME}}.
-  string sheet_path_template = 10;
-
   // The reposition external id in target VCS.
   string external_id = 11;
 
@@ -223,38 +200,4 @@ message ProjectGitOpsInfo {
 
   // The webhook endpoint ID of the repository.
   string webhook_endpoint_id = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  string access_token = 14 [(google.api.field_behavior) = INPUT_ONLY];
-
-  google.protobuf.Timestamp expires_time = 15 [(google.api.field_behavior) = INPUT_ONLY];
-
-  string refresh_token = 16 [(google.api.field_behavior) = INPUT_ONLY];
-}
-
-message ExchangeTokenRequest {
-  ExchangeToken exchange_token = 1;
-}
-
-message ExchangeToken {
-  // The name of the vcs provider to retrieve the linked projects.
-  // Format: vcsProviders/{vcsProvider}
-  string name = 1;
-
-  string code = 2;
-
-  VCSProvider.Type type = 3;
-
-  string instance_url = 4;
-
-  string client_id = 5;
-
-  string client_secret = 6;
-}
-
-message OAuthToken {
-  string access_token = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  string refresh_token = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  google.protobuf.Timestamp expires_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

@@ -285,12 +285,10 @@ func TestTenantVCS(t *testing.T) {
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateVCSProvider(ctx, &v1pb.CreateVCSProviderRequest{
 				VcsProvider: &v1pb.VCSProvider{
-					Title:         t.Name(),
-					Type:          test.vcsType,
-					Url:           ctl.vcsURL,
-					ApiUrl:        ctl.vcsProvider.APIURL(ctl.vcsURL),
-					ApplicationId: "testApplicationID",
-					Secret:        "testApplicationSecret",
+					Title:       t.Name(),
+					Type:        test.vcsType,
+					Url:         ctl.vcsURL,
+					AccessToken: "testApplicationSecret",
 				},
 			})
 			a.NoError(err)
@@ -327,8 +325,6 @@ func TestTenantVCS(t *testing.T) {
 					FilePathTemplate:   "{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 					SchemaPathTemplate: ".LATEST.sql",
 					ExternalId:         test.externalID,
-					AccessToken:        "accessToken1",
-					RefreshToken:       "refreshToken1",
 				},
 				AllowMissing: true,
 			})
@@ -601,12 +597,10 @@ func TestTenantVCS_YAML(t *testing.T) {
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateVCSProvider(ctx, &v1pb.CreateVCSProviderRequest{
 				VcsProvider: &v1pb.VCSProvider{
-					Title:         t.Name(),
-					Type:          test.vcsType,
-					Url:           ctl.vcsURL,
-					ApiUrl:        ctl.vcsProvider.APIURL(ctl.vcsURL),
-					ApplicationId: "testApplicationID",
-					Secret:        "testApplicationSecret",
+					Title:       t.Name(),
+					Type:        test.vcsType,
+					Url:         ctl.vcsURL,
+					AccessToken: "testApplicationSecret",
 				},
 			})
 			a.NoError(err)
@@ -641,8 +635,6 @@ func TestTenantVCS_YAML(t *testing.T) {
 					FilePathTemplate:   "{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
 					SchemaPathTemplate: ".LATEST.sql",
 					ExternalId:         test.externalID,
-					AccessToken:        "accessToken1",
-					RefreshToken:       "refreshToken1",
 				},
 				AllowMissing: true,
 			})

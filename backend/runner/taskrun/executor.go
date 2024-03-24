@@ -685,11 +685,7 @@ func writeBackLatestSchema(
 	writebackBranch, latestSchemaFile string, schema string, bytebaseURL string,
 ) (string, error) {
 	oauthContext := &common.OauthContext{
-		ClientID:     vcs.ApplicationID,
-		ClientSecret: vcs.Secret,
-		AccessToken:  repository.AccessToken,
-		RefreshToken: repository.RefreshToken,
-		Refresher:    utils.RefreshToken(ctx, storage, repository.WebURL),
+		AccessToken: vcs.AccessToken,
 	}
 	schemaFileMeta, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(
 		ctx,

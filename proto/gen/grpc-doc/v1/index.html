@@ -1462,14 +1462,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ExchangeToken"><span class="badge">M</span>ExchangeToken</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ExchangeTokenRequest"><span class="badge">M</span>ExchangeTokenRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetVCSProviderRequest"><span class="badge">M</span>GetVCSProviderRequest</a>
                 </li>
               
@@ -1487,10 +1479,6 @@
               
                 <li>
                   <a href="#bytebase.v1.ListVCSProvidersResponse"><span class="badge">M</span>ListVCSProvidersResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.OAuthToken"><span class="badge">M</span>OAuthToken</a>
                 </li>
               
                 <li>
@@ -16217,90 +16205,6 @@ Format: vcsProviders/{vcsProvider} </p></td>
 
         
       
-        <h3 id="bytebase.v1.ExchangeToken">ExchangeToken</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the vcs provider to retrieve the linked projects.
-Format: vcsProviders/{vcsProvider} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>code</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.VCSProvider.Type">VCSProvider.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>instance_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>client_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>client_secret</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ExchangeTokenRequest">ExchangeTokenRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>exchange_token</td>
-                  <td><a href="#bytebase.v1.ExchangeToken">ExchangeToken</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetVCSProviderRequest">GetVCSProviderRequest</h3>
         <p></p>
 
@@ -16441,44 +16345,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.OAuthToken">OAuthToken</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>access_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>refresh_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>expires_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.ProjectGitOpsInfo">ProjectGitOpsInfo</h3>
         <p></p>
 
@@ -16559,14 +16425,6 @@ If specified, required placeholder: {{DB_NAME}}, optional placeholder: {{ENV_ID}
                 </tr>
               
                 <tr>
-                  <td>sheet_path_template</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The file path template for matching the sql files for sheet.
-If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_ID}}, {{DB_NAME}}. </p></td>
-                </tr>
-              
-                <tr>
                   <td>external_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -16585,27 +16443,6 @@ If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_ID}}, 
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The webhook endpoint ID of the repository. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>access_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>expires_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>refresh_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -16631,20 +16468,6 @@ If specified, required Placeholder: {{NAME}}, optional Placeholder: {{ENV_ID}}, 
                   <td></td>
                   <td><p>The name of the vcs provider to retrieve the vcs provider repositories.
 Format: vcsProviders/{vcsProvider} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>access_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>refresh_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -16795,24 +16618,10 @@ For example: github.com, gitlab.com, gitlab.bytebase.com. </p></td>
                 </tr>
               
                 <tr>
-                  <td>api_url</td>
+                  <td>access_token</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The API url of the vcs provider. Derived from the url. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>application_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The application ID of the vcs provider. Specified by the client. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>secret</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The application secret of the vcs provider. Specified by the client. </p></td>
+                  <td><p>The access token of the vcs provider. </p></td>
                 </tr>
               
             </tbody>
@@ -16906,13 +16715,6 @@ For example: github.com, gitlab.com, gitlab.bytebase.com. </p></td>
               </tr>
             
               <tr>
-                <td>ExchangeToken</td>
-                <td><a href="#bytebase.v1.ExchangeTokenRequest">ExchangeTokenRequest</a></td>
-                <td><a href="#bytebase.v1.OAuthToken">OAuthToken</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>DeleteVCSProvider</td>
                 <td><a href="#bytebase.v1.DeleteVCSProviderRequest">DeleteVCSProviderRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
@@ -16988,16 +16790,6 @@ For example: github.com, gitlab.com, gitlab.bytebase.com. </p></td>
                 <td>PATCH</td>
                 <td>/v1/{vcs_provider.name=vcsProviders/*}</td>
                 <td>vcs_provider</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ExchangeToken</td>
-                <td>POST</td>
-                <td>/v1/{exchange_token.name=vcsProviders/*}:exchangeToken</td>
-                <td>exchange_token</td>
               </tr>
               
             

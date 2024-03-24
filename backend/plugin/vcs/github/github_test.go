@@ -13,7 +13,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/internal/oauth"
 )
 
 func TestProvider_FetchCommitByID(t *testing.T) {
@@ -70,44 +69,6 @@ func TestProvider_FetchCommitByID(t *testing.T) {
 		ID:         "7638417db6d59f3c431d3e1f261cc637155684cd",
 		AuthorName: "Monalisa Octocat",
 		CreatedTs:  1415397705,
-	}
-	assert.Equal(t, want, got)
-}
-
-func TestProvider_ExchangeOAuthToken(t *testing.T) {
-	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
-		assert.Equal(t, "/login/oauth/access_token", r.URL.Path)
-		assert.Equal(t, "client_id=test_client_id&client_secret=test_client_secret&code=test_code&redirect_uri=http%3A%2F%2Flocalhost%3A3000", r.URL.RawQuery)
-		assert.Equal(t, "application/json", r.Header.Get("Accept"))
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			// Example response taken from https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps#response
-			Body: io.NopCloser(strings.NewReader(`
-{
-  "access_token":"gho_16C7e42F292c6912E7710c838347Ae178B4a",
-  "scope":"repo,gist",
-  "token_type":"bearer"
-}
-`)),
-		}, nil
-	},
-	)
-
-	ctx := context.Background()
-	got, err := p.ExchangeOAuthToken(
-		ctx,
-		githubComURL,
-		&common.OAuthExchange{
-			ClientID:     "test_client_id",
-			ClientSecret: "test_client_secret",
-			Code:         "test_code",
-			RedirectURL:  "http://localhost:3000",
-		},
-	)
-	require.NoError(t, err)
-
-	want := &vcs.OAuthToken{
-		AccessToken: "gho_16C7e42F292c6912E7710c838347Ae178B4a",
 	}
 	assert.Equal(t, want, got)
 }
@@ -709,62 +670,6 @@ func TestProvider_DeleteWebhook(t *testing.T) {
 	ctx := context.Background()
 	err := p.DeleteWebhook(ctx, &common.OauthContext{}, githubComURL, "1", "1")
 	require.NoError(t, err)
-}
-
-func TestOAuth_RefreshToken(t *testing.T) {
-	ctx := context.Background()
-	client := &http.Client{
-		Transport: &common.MockRoundTripper{
-			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-				token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-				if token == "expired" {
-					return &http.Response{
-						StatusCode: http.StatusBadRequest,
-						Body: io.NopCloser(strings.NewReader(`
-					{"error":"invalid_grant","error_description":"The provided authorization grant is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client."}
-					`)),
-					}, nil
-				}
-
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					// Example response taken from https://docs.github.com/en/developers/apps/building-github-apps/refreshing-user-to-server-access-tokens#renewing-a-user-token-with-a-refresh-token
-					Body: io.NopCloser(strings.NewReader(`
-{
-  "access_token": "ghu_16C7e42F292c6912E7710c838347Ae178B4a",
-  "expires_in": "28800",
-  "refresh_token": "ghr_1B4a2e77838347a7E420ce178F2E7c6912E169246c34E1ccbF66C46812d16D5B1A9Dc86A1498",
-  "refresh_token_expires_in": "15811200",
-  "scope": "",
-  "token_type": "bearer"
-}
-`)),
-				}, nil
-			},
-		},
-	}
-	token := "expired"
-
-	calledRefresher := false
-	refresher := func(_, _ string, _ int64) error {
-		calledRefresher = true
-		return nil
-	}
-
-	_, _, _, err := oauth.Get(
-		ctx,
-		client,
-		"https://api.github.com/users/octocat",
-		&token,
-		tokenRefresher(
-			githubComURL,
-			oauthContext{},
-			refresher,
-		),
-	)
-	require.NoError(t, err)
-	assert.Equal(t, "ghu_16C7e42F292c6912E7710c838347Ae178B4a", token)
-	assert.True(t, calledRefresher)
 }
 
 func TestProvider_GetBranch(t *testing.T) {

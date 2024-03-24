@@ -22,10 +22,8 @@ type VCSProviderMessage struct {
 	InstanceURL string
 	// Name is the name of the external version control.
 	Name string
-	// Secret is the secret for the external version control.
-	Secret string
-	// ApplicationID is the ID of the application.
-	ApplicationID string
+	// AccessToken is the access token for the external version control.
+	AccessToken string
 
 	// Output only fields.
 	//
@@ -37,10 +35,8 @@ type VCSProviderMessage struct {
 type UpdateVCSProviderMessage struct {
 	// Name is the name of the external version control.
 	Name *string
-	// Secret is the secret for the external version control.
-	Secret *string
-	// ApplicationID is the ID of the application.
-	ApplicationID *string
+	// AccessToken is the secret for the external version control.
+	AccessToken *string
 }
 
 type findVCSProviderMessage struct {
@@ -116,11 +112,10 @@ func (s *Store) CreateVCSProviderV2(ctx context.Context, principalUID int, creat
 			type,
 			instance_url,
 			api_url,
-			application_id,
-			secret
+			access_token
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, name, type, instance_url, api_url, application_id, secret
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id, name, type, instance_url, api_url, access_token
 	`
 	var vcsProvider VCSProviderMessage
 	if err := tx.QueryRowContext(ctx, query,
@@ -130,16 +125,14 @@ func (s *Store) CreateVCSProviderV2(ctx context.Context, principalUID int, creat
 		create.Type,
 		create.InstanceURL,
 		create.APIURL,
-		create.ApplicationID,
-		create.Secret,
+		create.AccessToken,
 	).Scan(
 		&vcsProvider.ID,
 		&vcsProvider.Name,
 		&vcsProvider.Type,
 		&vcsProvider.InstanceURL,
 		&vcsProvider.APIURL,
-		&vcsProvider.ApplicationID,
-		&vcsProvider.Secret,
+		&vcsProvider.AccessToken,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -162,11 +155,8 @@ func (s *Store) UpdateVCSProviderV2(ctx context.Context, principalUID int, vcsPr
 	if v := update.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := update.ApplicationID; v != nil {
-		set, args = append(set, fmt.Sprintf("application_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := update.Secret; v != nil {
-		set, args = append(set, fmt.Sprintf("secret = $%d", len(args)+1)), append(args, *v)
+	if v := update.AccessToken; v != nil {
+		set, args = append(set, fmt.Sprintf("access_token = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, vcsProviderUID)
 
@@ -182,7 +172,7 @@ func (s *Store) UpdateVCSProviderV2(ctx context.Context, principalUID int, vcsPr
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, name, type, instance_url, api_url, application_id, secret
+		RETURNING id, name, type, instance_url, api_url, access_token
 	`, len(args)),
 		args...,
 	).Scan(
@@ -191,8 +181,7 @@ func (s *Store) UpdateVCSProviderV2(ctx context.Context, principalUID int, vcsPr
 		&vcsProvider.Type,
 		&vcsProvider.InstanceURL,
 		&vcsProvider.APIURL,
-		&vcsProvider.ApplicationID,
-		&vcsProvider.Secret,
+		&vcsProvider.AccessToken,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("vcs ID not found: %d", vcsProviderUID)}
@@ -241,8 +230,7 @@ func (*Store) findVCSProvidersImplV2(ctx context.Context, tx *Tx, find *findVCSP
 			type,
 			instance_url,
 			api_url,
-			application_id,
-			secret
+			access_token
 		FROM vcs
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -260,8 +248,7 @@ func (*Store) findVCSProvidersImplV2(ctx context.Context, tx *Tx, find *findVCSP
 			&vcsProvider.Type,
 			&vcsProvider.InstanceURL,
 			&vcsProvider.APIURL,
-			&vcsProvider.ApplicationID,
-			&vcsProvider.Secret,
+			&vcsProvider.AccessToken,
 		); err != nil {
 			return nil, err
 		}

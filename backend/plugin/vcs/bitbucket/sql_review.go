@@ -62,7 +62,7 @@ func getSQLReviewStep(endpoint string) string {
 // EnableSQLReviewCI enables the pipeline.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pipelines/#api-repositories-workspace-repo-slug-pipelines-config-put.
-func EnableSQLReviewCI(ctx context.Context, oauthCtx *common.OauthContext, apiURL, instanceURL, repositoryID string) error {
+func EnableSQLReviewCI(ctx context.Context, oauthCtx *common.OauthContext, apiURL, repositoryID string) error {
 	body, err := json.Marshal(
 		pipelineConfig{
 			Enabled: true,
@@ -78,17 +78,8 @@ func EnableSQLReviewCI(ctx context.Context, oauthCtx *common.OauthContext, apiUR
 		ctx,
 		client,
 		url,
-		&oauthCtx.AccessToken,
+		oauthCtx.AccessToken,
 		bytes.NewReader(body),
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "PUT %s", url)
