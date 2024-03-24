@@ -34,7 +34,6 @@ import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification, useVCSV1Store } from "@/store";
 import { VCSConfig } from "@/types";
 import {
-  OAuthToken,
   VCSProvider,
   VCSProvider_Type,
 } from "@/types/proto/v1/vcs_provider_service";
@@ -55,7 +54,6 @@ const CONFIRM_STEP = 1;
 interface LocalState {
   config: VCSConfig;
   currentStep: number;
-  oAuthResultCallback?: (token: OAuthToken | undefined) => void;
 }
 
 const { t } = useI18n();

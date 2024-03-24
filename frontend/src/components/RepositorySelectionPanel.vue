@@ -44,7 +44,6 @@ import { reactive, computed, onMounted } from "vue";
 import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "@/types";
 import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
 import {
-  OAuthToken,
   VCSProvider_Type,
   SearchVCSProviderProjectsResponse_Project,
 } from "@/types/proto/v1/vcs_provider_service";
@@ -59,7 +58,6 @@ const props = defineProps<{ config: ProjectRepositoryConfig }>();
 
 const emit = defineEmits<{
   (event: "next"): void;
-  (event: "set-token", payload: OAuthToken): void;
   (event: "set-repository", payload: ExternalRepositoryInfo): void;
 }>();
 
