@@ -2053,20 +2053,18 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase supports GitOps workflow where database migration scripts are stored in the version control system (VCS), and newly created migration scripts will automatically trigger the corresponding database change. Bytebase admins manage all the applicable VCSs here, so that project owners can link the projects with their Git repositories from these VCSs.",
+      "description": "In Bytebase's GitOps workflow, developers store migration scripts in VCS. Pull requests prompt SQL reviews, and merged ones initiate migration plans. Administrators configure VCS providers, while project owners establish VCS connections within projects.",
       "add-git-provider": {
         "self": "Add a Git provider",
         "description": "Before any project can enable GitOps workflow, Bytebase first needs to integrate with the corresponding version control system (VCS) by registering as an OAuth application in that VCS. Below are the steps to configure this, you can also follow our {guide}.",
         "gitlab-self-host": "GitLab Self-Hosted",
-        "gitlab-self-host-admin-requirement": "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a GitLab instance-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
-        "gitlab-com-admin-requirement": "Your account needs to have Admin access to any of the repositories to be linked. Usually this account corresponds to a dedicated service user instead of a human user.",
+        "gitlab-self-host-admin-requirement": "You must be the administrator of the GitLab instance.",
+        "gitlab-com-admin-requirement": "You must be the administrator of the projects or groups.",
         "github-self-host": "GitHub Self-Hosted",
-        "github-com-admin-requirement": "You need to be an admin of your chosen GitHub organization to configure this. Otherwise, you need to ask your GitHub organization admin to register Bytebase as a GitHub organization-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
-        "bitbucket-admin-requirement": "You need to be an admin of your chosen Bitbucket workspace to configure this. Otherwise, you need to ask your Bitbucket workspace admin to register Bytebase as a Bitbucket workspace-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
+        "github-com-admin-requirement": "You must be the administrator of the GitHub organization.",
+        "bitbucket-admin-requirement": "You must be the administrator of the Bitbucket workspace.",
         "azure-devops-service": "Azure DevOps Service",
-        "azure-admin-requirement": "You need to be an admin of your chosen Azure DevOps organization to configure this. Otherwise, you need to ask your Bitbucket workspace admin to register Bytebase as a Azure DevOps organization-wide OAuth application, then provide you that Application ID and Client Secret to fill at the 'OAuth application info' step.",
-        "oauth-info-correct": "Verified OAuth info is correct",
-        "check-oauth-info-match": "Please make sure Secret matches the one from your GitLab instance Application.",
+        "azure-admin-requirement": "You must be the administrator of the Azure DevOps organization.",
         "add-success": "Successfully added Git provider {vcs}",
         "choose": "Choose Git provider",
         "basic-info": {
