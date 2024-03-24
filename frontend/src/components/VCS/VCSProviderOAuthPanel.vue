@@ -1,49 +1,5 @@
 <template>
   <div class="space-y-4">
-    <div class="textlabel">
-      <template v-if="config.uiType == 'GITLAB_SELF_HOST'">
-        {{
-          $t(
-            "gitops.setting.add-git-provider.oauth-info.gitlab-self-host-register-oauth-application"
-          )
-        }}
-      </template>
-      <template v-else-if="config.uiType == 'GITLAB_COM'">
-        {{
-          $t(
-            "gitops.setting.add-git-provider.oauth-info.gitlab-com-register-oauth-application"
-          )
-        }}
-      </template>
-      <template v-else-if="config.uiType == 'GITHUB_COM'">
-        {{
-          $t(
-            "gitops.setting.add-git-provider.oauth-info.github-register-oauth-application"
-          )
-        }}
-      </template>
-      <template v-else-if="config.uiType == 'GITHUB_ENTERPRISE'">
-        {{
-          $t(
-            "gitops.setting.add-git-provider.oauth-info.github-register-oauth-application"
-          )
-        }}
-      </template>
-      <template v-else-if="config.uiType == 'BITBUCKET_ORG'">
-        {{
-          $t(
-            "gitops.setting.add-git-provider.oauth-info.bitbucket-register-oauth-application"
-          )
-        }}
-      </template>
-      <template v-else-if="config.uiType == 'AZURE_DEVOPS'">
-        {{
-          $t(
-            "gitops.setting.add-git-provider.oauth-info.azure-register-oauth-application"
-          )
-        }}
-      </template>
-    </div>
     <ol class="textinfolabel space-y-2">
       <template v-if="config.uiType == 'GITLAB_SELF_HOST'">
         <li>
