@@ -2061,7 +2061,7 @@
         "gitlab-self-host": "GitLab tự lưu trữ",
         "gitlab-self-host-admin-requirement": "Bạn cần phải là Quản trị viên của phiên bản GitLab đã chọn để định cấu hình phiên bản này. Nếu không, bạn cần yêu cầu Quản trị viên phiên bản GitLab của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn phiên bản GitLab, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
         "gitlab-com-admin-requirement": "Tài khoản của bạn cần có quyền truy cập Quản trị viên vào bất kỳ kho lưu trữ nào để được liên kết. Thông thường tài khoản này tương ứng với người dùng dịch vụ chuyên dụng thay vì người dùng con người.",
-        "github-self-host-ee": "Phiên bản doanh nghiệp tự lưu trữ GitHub (EE)",
+        "github-self-host": "GitHub tự lưu trữ",
         "github-com-admin-requirement": "Bạn cần phải là quản trị viên của tổ chức GitHub đã chọn để định cấu hình tổ chức này. Nếu không, bạn cần yêu cầu quản trị viên tổ chức GitHub của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn tổ chức GitHub, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
         "bitbucket-admin-requirement": "Bạn cần phải là quản trị viên của không gian làm việc Bitbucket đã chọn để định cấu hình điều này. Nếu không, bạn cần yêu cầu quản trị viên không gian làm việc Bitbucket của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn không gian làm việc Bitbucket, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
         "azure-devops-service": "Dịch vụ Azure DevOps",
