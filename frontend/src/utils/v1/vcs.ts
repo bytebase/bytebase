@@ -3,7 +3,6 @@ import {
   VCSProvider,
   VCSProvider_Type,
 } from "@/types/proto/v1/vcs_provider_service";
-import { isDev } from "@/utils";
 
 export const getVCSUIType = (vcs: VCSProvider): VCSUIType => {
   switch (vcs.type) {
