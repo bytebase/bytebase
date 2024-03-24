@@ -326,7 +326,6 @@ const state = reactive<LocalState>({
     branchFilter: props.repository.branchFilter,
     filePathTemplate: props.repository.filePathTemplate,
     schemaPathTemplate: props.repository.schemaPathTemplate,
-    sheetPathTemplate: props.repository.sheetPathTemplate,
     enableSQLReviewCI: props.repository.enableSqlReviewCi,
   },
   schemaChangeType: props.project.schemaChange,
@@ -348,7 +347,6 @@ watch(
       branchFilter: cur.branchFilter,
       filePathTemplate: cur.filePathTemplate,
       schemaPathTemplate: cur.schemaPathTemplate,
-      sheetPathTemplate: cur.sheetPathTemplate,
       enableSQLReviewCI: cur.enableSqlReviewCi,
     };
   }
@@ -398,8 +396,6 @@ const allowUpdate = computed(() => {
         state.repositoryConfig.filePathTemplate ||
       props.repository.schemaPathTemplate !==
         state.repositoryConfig.schemaPathTemplate ||
-      props.repository.sheetPathTemplate !==
-        state.repositoryConfig.sheetPathTemplate ||
       props.repository.enableSqlReviewCi !==
         state.repositoryConfig.enableSQLReviewCI ||
       props.project.schemaChange !== state.schemaChangeType)
@@ -501,13 +497,6 @@ const doUpdate = async () => {
   ) {
     repositoryPatch.schemaPathTemplate =
       state.repositoryConfig.schemaPathTemplate;
-  }
-  if (
-    props.repository.sheetPathTemplate !=
-    state.repositoryConfig.sheetPathTemplate
-  ) {
-    repositoryPatch.sheetPathTemplate =
-      state.repositoryConfig.sheetPathTemplate;
   }
   if (
     props.repository.enableSqlReviewCi !=

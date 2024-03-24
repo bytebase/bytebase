@@ -1789,13 +1789,7 @@
     "file-path-template-description": "Bytebase solo observa la ruta del archivo que coincida con el patrón de plantilla en relación al directorio base.",
     "file-path-example-schema-migration": "Ejemplo de ruta de archivo para el tipo de migración de esquema",
     "file-path-example-data-migration": "Ejemplo de ruta de archivo para el tipo de migración de datos",
-    "schema-path-template": "Plantilla de ruta de esquema",
-    "schema-writeback-description": "Cuando se especifica, después de cada migración, Bytebase escribirá el último esquema en la ruta de esquema en relación al directorio base en la misma rama que el commit original que activó la migración. Deje en blanco si no desea que Bytebase haga esto.",
-    "schema-writeback-protected-branch": "Asegúrese de que la rama modificada no esté protegida o permita que el mantenedor del repositorio haga push a esa rama protegida.",
     "if-specified": "Si se especifica",
-    "schema-path-example": "Ejemplo de ruta de esquema",
-    "sheet-path-template": "Plantilla de ruta de hoja",
-    "sheet-path-template-description": "Bytebase solo observa archivos con nombres de ruta que coincidan con el patrón de plantilla en relación al directorio base. Los archivos coincidentes se sincronizarán con el editor de SQL para su uso allí.",
     "sql-review-ci": "Revisión de SQL CI",
     "sql-review-ci-enable": "Habilitar la revisión de SQL CI",
     "sql-review-ci-enable-gitlab": "Habilitar la revisión de SQL CI a través de GitLab CI",
@@ -2560,14 +2554,6 @@
       "bb-feature-custom-approval": {
         "title": "Aprobación personalizada",
         "desc": "Configure el nivel de riesgo y el flujo de aprobación para diferentes tareas."
-      },
-      "bb-feature-vcs-schema-write-back": {
-        "title": "Escritura de esquema",
-        "desc": "Después de un cambio de esquema exitoso, la escritura de esquema permite a Bytebase escribir de nuevo la última instantánea completa del esquema en su repositorio de VCS."
-      },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "Sincronizar scripts SQL desde VCS",
-        "desc": "Sincronice los scripts SQL almacenados en VCS en la hoja de cálculo."
       },
       "bb-feature-vcs-sql-review": {
         "title": "Revisión de SQL en el flujo de trabajo de GitOps",

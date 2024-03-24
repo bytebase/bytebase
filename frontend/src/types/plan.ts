@@ -36,8 +36,6 @@ export type FeatureType =
   | "bb.feature.database-grouping"
   | "bb.feature.schema-template"
   // VCS Integration
-  | "bb.feature.vcs-schema-write-back"
-  | "bb.feature.vcs-sheet-sync"
   | "bb.feature.vcs-sql-review"
   // Database management
   | "bb.feature.pitr"
@@ -85,7 +83,6 @@ export const instanceLimitFeature = new Set<FeatureType>([
   // VCS Integration
   "bb.feature.vcs-sql-review",
   "bb.feature.mybatis-sql-review",
-  "bb.feature.vcs-schema-write-back",
 ]);
 
 export const planTypeToString = (planType: PlanType): string => {
