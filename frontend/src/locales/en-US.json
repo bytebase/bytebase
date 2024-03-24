@@ -2061,7 +2061,7 @@
         "gitlab-self-host": "GitLab Self-Hosted",
         "gitlab-self-host-admin-requirement": "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a GitLab instance-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
         "gitlab-com-admin-requirement": "Your account needs to have Admin access to any of the repositories to be linked. Usually this account corresponds to a dedicated service user instead of a human user.",
-        "github-self-host-ee": "GitHub Self-Hosted Enterprise Edition (EE)",
+        "github-self-host": "GitHub Self-Hosted",
         "github-com-admin-requirement": "You need to be an admin of your chosen GitHub organization to configure this. Otherwise, you need to ask your GitHub organization admin to register Bytebase as a GitHub organization-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
         "bitbucket-admin-requirement": "You need to be an admin of your chosen Bitbucket workspace to configure this. Otherwise, you need to ask your Bitbucket workspace admin to register Bytebase as a Bitbucket workspace-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
         "azure-devops-service": "Azure DevOps Service",

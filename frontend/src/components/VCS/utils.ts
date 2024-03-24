@@ -30,7 +30,7 @@ export const vcsListByUIType = computed(
       {
         type: VCSProvider_Type.GITHUB,
         uiType: "GITHUB_ENTERPRISE",
-        title: t("gitops.setting.add-git-provider.github-self-host-ee"),
+        title: t("gitops.setting.add-git-provider.github-self-host"),
       },
       {
         type: VCSProvider_Type.AZURE_DEVOPS,
