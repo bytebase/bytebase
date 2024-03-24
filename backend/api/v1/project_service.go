@@ -37,11 +37,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-const (
-	// sqlReviewInVCSPRTitle is the pull request title for SQL review CI setup.
-	sqlReviewInVCSPRTitle = "chore: setup SQL review CI for Bytebase"
-)
-
 // ProjectService implements the project service.
 type ProjectService struct {
 	v1pb.UnimplementedProjectServiceServer
@@ -1122,47 +1117,6 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 	}
 
 	return convertToProjectGitOpsInfo(repository), nil
-}
-
-// setupVCSSQLReviewBranch will create a new branch to setup SQL review CI.
-func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository *store.RepositoryMessage, vcs *store.VCSProviderMessage) (*vcsplugin.BranchInfo, error) {
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
-	}
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
-	}
-	oauthContext := &common.OauthContext{
-		AccessToken: vcs.AccessToken,
-	}
-	branch, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).GetBranch(
-		ctx,
-		oauthContext,
-		vcs.InstanceURL,
-		repository.ExternalID,
-		repository.BranchFilter,
-	)
-	if err != nil {
-		return nil, err
-	}
-	slog.Debug("VCS target branch info", slog.String("last_commit", branch.LastCommitID), slog.String("name", branch.Name))
-
-	branchCreate := &vcsplugin.BranchInfo{
-		Name:         fmt.Sprintf("bytebase-vcs-%d", time.Now().Unix()),
-		LastCommitID: branch.LastCommitID,
-	}
-	if err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).CreateBranch(
-		ctx,
-		oauthContext,
-		vcs.InstanceURL,
-		repository.ExternalID,
-		branchCreate,
-	); err != nil {
-		return nil, err
-	}
-
-	return branchCreate, nil
 }
 
 // CreateDatabaseGroup creates a database group.
