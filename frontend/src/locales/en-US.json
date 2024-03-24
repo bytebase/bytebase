@@ -1790,13 +1790,7 @@
     "file-path-template-description": "Bytebase only observes the file path name matching the template pattern relative to the base directory.",
     "file-path-example-schema-migration": "File path example for schema migration type",
     "file-path-example-data-migration": "File path example for data migration type",
-    "schema-path-template": "Schema path template",
-    "schema-writeback-description": "When specified, after each migration, Bytebase will write the latest schema to the schema path relative to the base directory in the same branch as the original commit triggering the migration. Leave empty if you don't want Bytebase to do this.",
-    "schema-writeback-protected-branch": "Make sure the changed branch is not protected or allow repository maintainer to push to that protected branch.",
     "if-specified": "If specified",
-    "schema-path-example": "Schema path example",
-    "sheet-path-template": "Sheet path template",
-    "sheet-path-template-description": "Bytebase only observes files with pathnames matching the template pattern relative to the base directory. The matched files will be synchronized to the SQL Editor for usage there.",
     "sql-review-ci": "SQL Review CI",
     "sql-review-ci-enable": "Enable SQL Review CI",
     "sql-review-ci-enable-gitlab": "Enable SQL Review CI via GitLab CI",
@@ -2560,14 +2554,6 @@
       "bb-feature-custom-approval": {
         "title": "Custom approval",
         "desc": "Configure risk level and approval flow for different tasks."
-      },
-      "bb-feature-vcs-schema-write-back": {
-        "title": "Schema write-back",
-        "desc": "After a successful schema change, schema write-back enables Bytebase to write back the latest full schema snapshot to your VCS repository."
-      },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "Synchronize SQL scripts from VCS",
-        "desc": "Synchronize SQL scripts stored in VCS to Sheet."
       },
       "bb-feature-vcs-sql-review": {
         "title": "SQL Review in GitOps workflow",

@@ -146,101 +146,6 @@
         }}
       </div>
     </div>
-    <div>
-      <div class="textlabel flex gap-x-1">
-        {{ $t("repository.schema-path-template") }}
-        <span v-if="isProjectSchemaChangeTypeSDL" class="text-red-600">*</span>
-        <FeatureBadge feature="bb.feature.vcs-schema-write-back" />
-      </div>
-      <div class="mt-1 textinfolabel space-x-1">
-        <span v-if="isProjectSchemaChangeTypeSDL">
-          {{ $t("project.settings.schema-path-template-sdl-description") }}
-        </span>
-        <template v-else>
-          <span>{{ $t("repository.schema-writeback-description") }}</span>
-          <span class="font-medium text-main">
-            {{ $t("repository.schema-writeback-protected-branch") }}
-          </span>
-        </template>
-        <span v-if="!hasFeature('bb.feature.vcs-schema-write-back')">
-          {{
-            $t(
-              subscriptionStore.getFeatureRequiredPlanString(
-                "bb.feature.vcs-schema-write-back"
-              )
-            )
-          }}
-        </span>
-        <LearnMoreLink
-          url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files?source=console#schema-path-template"
-          class="ml-1"
-        />
-      </div>
-      <BBAttention
-        v-if="
-          instanceWithoutLicense.length > 0 &&
-          hasFeature('bb.feature.vcs-schema-write-back')
-        "
-        class="my-4"
-        type="warning"
-        :title="
-          $t('subscription.features.bb-feature-vcs-schema-write-back.title')
-        "
-        :description="
-          $t('subscription.instance-assignment.missing-license-for-instances', {
-            count: instanceWithoutLicense.length,
-            name: instanceWithoutLicense.map((ins) => ins.title).join(','),
-          })
-        "
-        :action-text="$t('subscription.instance-assignment.assign-license')"
-        @click="state.showInstanceAssignmentDrawer = true"
-      />
-      <BBTextField
-        v-if="hasFeature('bb.feature.vcs-schema-write-back')"
-        id="schemapathtemplate"
-        v-model:value="repositoryConfig.schemaPathTemplate"
-        name="schemapathtemplate"
-        class="mt-2 w-full"
-        :disabled="!allowEdit"
-      />
-      <BBTextField
-        v-else-if="isProjectSchemaChangeTypeSDL"
-        id="schemapathtemplate"
-        v-model:value="repositoryConfig.schemaPathTemplate"
-        name="schemapathtemplate"
-        class="mt-2 w-full"
-        :disabled="!allowEdit"
-      />
-      <BBTextField
-        v-else-if="isProjectSchemaChangeTypeDDL"
-        class="mt-2 w-full"
-        :value="
-          subscriptionStore.getRquiredPlanString(
-            'bb.feature.vcs-schema-write-back'
-          )
-        "
-        :disabled="true"
-      />
-      <div v-if="schemaTagPlaceholder" class="mt-2 textinfolabel">
-        <span class="text-red-600">*</span>
-        <span v-if="isProjectSchemaChangeTypeDDL" class="ml-1">
-          {{ $t("repository.if-specified") }},
-        </span>
-        <span class="ml-1">{{ schemaTagPlaceholder }}</span>
-      </div>
-      <div
-        v-if="repositoryConfig.schemaPathTemplate"
-        class="mt-2 textinfolabel"
-      >
-        • {{ $t("repository.schema-path-example") }}:
-        {{
-          sampleSchemaPath(
-            repositoryConfig.baseDirectory,
-            repositoryConfig.schemaPathTemplate
-          )
-        }}
-      </div>
-    </div>
     <div v-if="canEnableSQLReview">
       <div class="textlabel flex gap-x-1">
         {{ $t("repository.sql-review-ci") }}
@@ -253,10 +158,7 @@
               vcsType === VCSProvider_Type.GITLAB
                 ? $t("repository.merge-request")
                 : $t("repository.pull-request"),
-            pathTemplate:
-              schemaChangeType == SchemaChange.DDL
-                ? $t("repository.file-path-template")
-                : $t("repository.schema-path-template"),
+            pathTemplate: $t("repository.file-path-template"),
           })
         }}
       </div>
@@ -329,7 +231,6 @@ import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2, supportSQLReviewCI } from "@/utils";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
-const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
 const FILE_OPTIONAL_DIRECTORY_WILDCARD = "*, **";
 const SINGLE_ASTERISK_REGEX = /\/\*\//g;
 const DOUBLE_ASTERISKS_REGEX = /\/\*\*\//g;
@@ -393,9 +294,6 @@ const isTenantProject = computed(() => {
 const isProjectSchemaChangeTypeDDL = computed(() => {
   return (props.schemaChangeType || SchemaChange.DDL) === SchemaChange.DDL;
 });
-const isProjectSchemaChangeTypeSDL = computed(() => {
-  return (props.schemaChangeType || SchemaChange.DDL) === SchemaChange.SDL;
-});
 const canEnableSQLReview = computed(() => {
   return supportSQLReviewCI(props.vcsType);
 });
@@ -458,36 +356,6 @@ const sampleFilePath = (
   return result;
 };
 
-const sampleSchemaPath = (
-  baseDirectory: string,
-  schemaPathTemplate: string
-): string => {
-  type Item = {
-    placeholder: string;
-    sampleText: string;
-  };
-  const placeholderList: Item[] = [
-    {
-      placeholder: "{{DB_NAME}}",
-      sampleText: "db1",
-    },
-    {
-      placeholder: "{{ENV_ID}}",
-      sampleText: "env1",
-    },
-    {
-      placeholder: "{{ENV_NAME}}", // for legacy support
-      sampleText: "env1",
-    },
-  ];
-  let result = `${baseDirectory}/${schemaPathTemplate}`;
-  for (const item of placeholderList) {
-    const re = new RegExp(item.placeholder, "g");
-    result = result.replace(re, item.sampleText);
-  }
-  return result;
-};
-
 const getWebhookLink = computed(() => {
   if (props.vcsType === VCSProvider_Type.AZURE_DEVOPS) {
     const parts = props.repositoryInfo.externalId.split("/");
@@ -506,37 +374,6 @@ const fileOptionalPlaceholder = computed(() => {
   if (!isTenantProject.value) tags.push("{{ENV_ID}}");
   tags.push("{{DESCRIPTION}}");
   return tags;
-});
-
-const schemaRequiredTagPlaceholder = computed(() => {
-  const tags = [] as string[];
-  // Only allows {{DB_NAME}} to be an optional placeholder for non-tenant mode projects
-  if (!isTenantProject.value) tags.push(SCHEMA_REQUIRED_PLACEHOLDER);
-  return tags;
-});
-
-const schemaOptionalTagPlaceholder = computed(() => {
-  const tags = [] as string[];
-  // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
-  if (!isTenantProject.value) tags.push("{{ENV_ID}}");
-  return tags;
-});
-
-const schemaTagPlaceholder = computed(() => {
-  const placeholders: string[] = [];
-  const required = schemaRequiredTagPlaceholder.value;
-  const optional = schemaOptionalTagPlaceholder.value;
-  if (required.length > 0) {
-    placeholders.push(
-      `${t("common.required-placeholder")}: ${required.join(", ")}`
-    );
-  }
-  if (optional.length > 0) {
-    placeholders.push(
-      `${t("common.optional-placeholder")}: ${optional.join(", ")}`
-    );
-  }
-  return placeholders.join("; ");
 });
 
 const onSQLReviewCIToggle = (on: boolean) => {
