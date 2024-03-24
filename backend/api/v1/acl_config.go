@@ -117,7 +117,6 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.VCSProviderService_ListVCSProviders_FullMethodName:          iam.PermissionVCSProvidersList,
 	v1pb.VCSProviderService_GetVCSProvider_FullMethodName:            iam.PermissionVCSProvidersGet,
 	v1pb.VCSProviderService_CreateVCSProvider_FullMethodName:         iam.PermissionVCSProvidersCreate,
-	v1pb.VCSProviderService_ExchangeToken_FullMethodName:             iam.PermissionVCSProvidersExchangeToken,
 	v1pb.VCSProviderService_UpdateVCSProvider_FullMethodName:         iam.PermissionVCSProvidersUpdate,
 	v1pb.VCSProviderService_DeleteVCSProvider_FullMethodName:         iam.PermissionVCSProvidersDelete,
 	v1pb.VCSProviderService_SearchVCSProviderProjects_FullMethodName: iam.PermissionVCSProvidersSearchProjects,

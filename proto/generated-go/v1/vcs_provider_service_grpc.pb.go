@@ -24,7 +24,6 @@ const (
 	VCSProviderService_ListVCSProviders_FullMethodName          = "/bytebase.v1.VCSProviderService/ListVCSProviders"
 	VCSProviderService_CreateVCSProvider_FullMethodName         = "/bytebase.v1.VCSProviderService/CreateVCSProvider"
 	VCSProviderService_UpdateVCSProvider_FullMethodName         = "/bytebase.v1.VCSProviderService/UpdateVCSProvider"
-	VCSProviderService_ExchangeToken_FullMethodName             = "/bytebase.v1.VCSProviderService/ExchangeToken"
 	VCSProviderService_DeleteVCSProvider_FullMethodName         = "/bytebase.v1.VCSProviderService/DeleteVCSProvider"
 	VCSProviderService_SearchVCSProviderProjects_FullMethodName = "/bytebase.v1.VCSProviderService/SearchVCSProviderProjects"
 	VCSProviderService_ListProjectGitOpsInfo_FullMethodName     = "/bytebase.v1.VCSProviderService/ListProjectGitOpsInfo"
@@ -38,7 +37,6 @@ type VCSProviderServiceClient interface {
 	ListVCSProviders(ctx context.Context, in *ListVCSProvidersRequest, opts ...grpc.CallOption) (*ListVCSProvidersResponse, error)
 	CreateVCSProvider(ctx context.Context, in *CreateVCSProviderRequest, opts ...grpc.CallOption) (*VCSProvider, error)
 	UpdateVCSProvider(ctx context.Context, in *UpdateVCSProviderRequest, opts ...grpc.CallOption) (*VCSProvider, error)
-	ExchangeToken(ctx context.Context, in *ExchangeTokenRequest, opts ...grpc.CallOption) (*OAuthToken, error)
 	DeleteVCSProvider(ctx context.Context, in *DeleteVCSProviderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	SearchVCSProviderProjects(ctx context.Context, in *SearchVCSProviderProjectsRequest, opts ...grpc.CallOption) (*SearchVCSProviderProjectsResponse, error)
 	ListProjectGitOpsInfo(ctx context.Context, in *ListProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ListProjectGitOpsInfoResponse, error)
@@ -88,15 +86,6 @@ func (c *vCSProviderServiceClient) UpdateVCSProvider(ctx context.Context, in *Up
 	return out, nil
 }
 
-func (c *vCSProviderServiceClient) ExchangeToken(ctx context.Context, in *ExchangeTokenRequest, opts ...grpc.CallOption) (*OAuthToken, error) {
-	out := new(OAuthToken)
-	err := c.cc.Invoke(ctx, VCSProviderService_ExchangeToken_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *vCSProviderServiceClient) DeleteVCSProvider(ctx context.Context, in *DeleteVCSProviderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, VCSProviderService_DeleteVCSProvider_FullMethodName, in, out, opts...)
@@ -132,7 +121,6 @@ type VCSProviderServiceServer interface {
 	ListVCSProviders(context.Context, *ListVCSProvidersRequest) (*ListVCSProvidersResponse, error)
 	CreateVCSProvider(context.Context, *CreateVCSProviderRequest) (*VCSProvider, error)
 	UpdateVCSProvider(context.Context, *UpdateVCSProviderRequest) (*VCSProvider, error)
-	ExchangeToken(context.Context, *ExchangeTokenRequest) (*OAuthToken, error)
 	DeleteVCSProvider(context.Context, *DeleteVCSProviderRequest) (*emptypb.Empty, error)
 	SearchVCSProviderProjects(context.Context, *SearchVCSProviderProjectsRequest) (*SearchVCSProviderProjectsResponse, error)
 	ListProjectGitOpsInfo(context.Context, *ListProjectGitOpsInfoRequest) (*ListProjectGitOpsInfoResponse, error)
@@ -154,9 +142,6 @@ func (UnimplementedVCSProviderServiceServer) CreateVCSProvider(context.Context, 
 }
 func (UnimplementedVCSProviderServiceServer) UpdateVCSProvider(context.Context, *UpdateVCSProviderRequest) (*VCSProvider, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateVCSProvider not implemented")
-}
-func (UnimplementedVCSProviderServiceServer) ExchangeToken(context.Context, *ExchangeTokenRequest) (*OAuthToken, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ExchangeToken not implemented")
 }
 func (UnimplementedVCSProviderServiceServer) DeleteVCSProvider(context.Context, *DeleteVCSProviderRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteVCSProvider not implemented")
@@ -252,24 +237,6 @@ func _VCSProviderService_UpdateVCSProvider_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
-func _VCSProviderService_ExchangeToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExchangeTokenRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(VCSProviderServiceServer).ExchangeToken(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: VCSProviderService_ExchangeToken_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VCSProviderServiceServer).ExchangeToken(ctx, req.(*ExchangeTokenRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _VCSProviderService_DeleteVCSProvider_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteVCSProviderRequest)
 	if err := dec(in); err != nil {
@@ -346,10 +313,6 @@ var VCSProviderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateVCSProvider",
 			Handler:    _VCSProviderService_UpdateVCSProvider_Handler,
-		},
-		{
-			MethodName: "ExchangeToken",
-			Handler:    _VCSProviderService_ExchangeToken_Handler,
 		},
 		{
 			MethodName: "DeleteVCSProvider",

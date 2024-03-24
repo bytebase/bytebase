@@ -5,12 +5,7 @@ type TokenRefresher func(token, refreshToken string, expiresTs int64) error
 
 // OauthContext encapsulated the oauth info.
 type OauthContext struct {
-	ClientID     string
-	ClientSecret string
-	AccessToken  string
-	RefreshToken string
-	RedirectURL  string
-	Refresher    TokenRefresher
+	AccessToken string
 }
 
 // OAuthExchange encapsulated the exchange OAuth context.

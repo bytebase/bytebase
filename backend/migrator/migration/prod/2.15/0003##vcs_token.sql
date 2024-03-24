@@ -1,0 +1,3 @@
+ALTER TABLE vcs DROP COLUMN application_id;
+ALTER TABLE vcs DROP COLUMN secret;
+ALTER TABLE vcs ADD COLUMN access_token TEXT NOT NULL DEFAULT '';

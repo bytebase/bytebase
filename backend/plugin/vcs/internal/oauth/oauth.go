@@ -16,16 +16,12 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 )
 
-// TokenRefresher is a function to refresh the OAuth token and assign back to
-// the old token upon a successful refresh.
-type TokenRefresher func(ctx context.Context, client *http.Client, oldToken *string) error
-
-func requester(ctx context.Context, client *http.Client, method, url string, token *string, body io.Reader) func() (*http.Response, error) {
+func requester(ctx context.Context, client *http.Client, method, url string, token string, body io.Reader) func() (*http.Response, error) {
 	//nolint:bodyclose
 	return requesterWithHeader(ctx, client, method, url, token, body, nil)
 }
 
-func requesterWithHeader(ctx context.Context, client *http.Client, method, url string, token *string, body io.Reader, header map[string]string) func() (*http.Response, error) {
+func requesterWithHeader(ctx context.Context, client *http.Client, method, url string, token string, body io.Reader, header map[string]string) func() (*http.Response, error) {
 	// The body may be read multiple times but io.Reader is meant to be read once,
 	// so we read the body first and build the reader every time.
 	var bodyBytes []byte
@@ -45,7 +41,7 @@ func requesterWithHeader(ctx context.Context, client *http.Client, method, url s
 		}
 
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", *token))
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
 		for k, v := range header {
 			req.Header.Set(k, v)
 		}
@@ -60,92 +56,79 @@ func requesterWithHeader(ctx context.Context, client *http.Client, method, url s
 
 // Post makes a HTTP POST request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
-func Post(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
-	return PostWithHeader(ctx, client, url, token, body, tokenRefresher, nil)
+func Post(ctx context.Context, client *http.Client, url string, token string, body io.Reader) (code int, header http.Header, respBody string, err error) {
+	return PostWithHeader(ctx, client, url, token, body, nil)
 }
 
 // PostWithHeader makes a HTTP POST request to the given URL using the token and
 // additional header. It refreshes token and retries the request in the case of
 // the token has expired.
-func PostWithHeader(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher, header map[string]string) (code int, _ http.Header, respBody string, err error) {
+func PostWithHeader(ctx context.Context, client *http.Client, url string, token string, body io.Reader, header map[string]string) (code int, _ http.Header, respBody string, err error) {
 	//nolint:bodyclose
-	return retry(ctx, client, token, tokenRefresher, requesterWithHeader(ctx, client, http.MethodPost, url, token, body, header))
+	return retry(ctx, requesterWithHeader(ctx, client, http.MethodPost, url, token, body, header))
 }
 
 // Get makes a HTTP GET request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
-func Get(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+func Get(ctx context.Context, client *http.Client, url string, token string) (code int, header http.Header, respBody string, err error) {
 	//nolint:bodyclose
-	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodGet, url, token, nil))
+	return retry(ctx, requester(ctx, client, http.MethodGet, url, token, nil))
 }
 
 // GetWithHeader makes a HTTP GET request to the given URL using the token and
 // additional header. It refreshes token and retries the request in the case of
 // the token has expired.
-func GetWithHeader(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher, header map[string]string) (code int, _ http.Header, respBody string, err error) {
+func GetWithHeader(ctx context.Context, client *http.Client, url string, token string, header map[string]string) (code int, _ http.Header, respBody string, err error) {
 	//nolint:bodyclose
-	return retry(ctx, client, token, tokenRefresher, requesterWithHeader(ctx, client, http.MethodGet, url, token, nil, header))
+	return retry(ctx, requesterWithHeader(ctx, client, http.MethodGet, url, token, nil, header))
 }
 
 // Put makes a HTTP PUT request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
-func Put(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+func Put(ctx context.Context, client *http.Client, url string, token string, body io.Reader) (code int, header http.Header, respBody string, err error) {
 	//nolint:bodyclose
-	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPut, url, token, body))
+	return retry(ctx, requester(ctx, client, http.MethodPut, url, token, body))
 }
 
 // Patch makes a HTTP PATCH request to the given URL using the token. It
 // refreshes token and retries the request in the case of the token has expired.
-func Patch(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+func Patch(ctx context.Context, client *http.Client, url string, token string, body io.Reader) (code int, header http.Header, respBody string, err error) {
 	//nolint:bodyclose
-	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPatch, url, token, body))
+	return retry(ctx, requester(ctx, client, http.MethodPatch, url, token, body))
 }
 
 // Delete makes a HTTP DELETE request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
-func Delete(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
+func Delete(ctx context.Context, client *http.Client, url string, token string) (code int, header http.Header, respBody string, err error) {
 	//nolint:bodyclose
-	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodDelete, url, token, nil))
+	return retry(ctx, requester(ctx, client, http.MethodDelete, url, token, nil))
 }
 
-const maxRetries = 3
-
-func retry(ctx context.Context, client *http.Client, token *string, tokenRefresher TokenRefresher, f func() (*http.Response, error)) (code int, header http.Header, respBody string, err error) {
-	var resp *http.Response
-	var body []byte
-	for retries := 0; retries < maxRetries; retries++ {
-		select {
-		case <-ctx.Done():
-			return 0, nil, "", ctx.Err()
-		default:
-		}
-
-		resp, err = f()
-		if err != nil {
-			return 0, nil, "", err
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return 0, nil, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
-		}
-		if err := resp.Body.Close(); err != nil {
-			slog.Warn("failed to close resp body", log.BBError(err))
-		}
-
-		if err = getOAuthErrorDetails(resp.StatusCode, body); err != nil {
-			if _, ok := err.(*oauthError); ok {
-				// Refresh the token
-				if err := tokenRefresher(ctx, client, token); err != nil {
-					return 0, nil, "", err
-				}
-				continue
-			}
-			return 0, nil, "", errors.Errorf("got unexpected OAuth error %T", err)
-		}
-		return resp.StatusCode, resp.Header, string(body), nil
+func retry(ctx context.Context, f func() (*http.Response, error)) (code int, header http.Header, respBody string, err error) {
+	// TODO(d): handle timeout retries.
+	select {
+	case <-ctx.Done():
+		return 0, nil, "", ctx.Err()
+	default:
 	}
-	return 0, nil, "", errors.Errorf("retries exceeded for OAuth refresher with status code %d and body %q", resp.StatusCode, string(body))
+
+	resp, err := f()
+	if err != nil {
+		return 0, nil, "", err
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, nil, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
+	}
+	if err := resp.Body.Close(); err != nil {
+		slog.Warn("failed to close resp body", log.BBError(err))
+	}
+
+	if err = getOAuthErrorDetails(resp.StatusCode, body); err != nil {
+		return 0, nil, "", errors.Errorf("got unexpected OAuth error %T", err)
+	}
+	return resp.StatusCode, resp.Header, string(body), nil
 }
 
 type oauthError struct {

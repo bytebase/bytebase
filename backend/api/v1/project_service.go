@@ -529,13 +529,9 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 			notFound, err := isBranchNotFound(
 				ctx,
 				vcs,
-				s.store,
-				repo.WebURL,
-				repo.AccessToken,
-				repo.RefreshToken,
+				vcs.AccessToken,
 				repo.ExternalID,
 				*v,
-				setting.ExternalUrl,
 			)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
@@ -666,12 +662,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 			ctx,
 			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
 			&common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    refreshTokenNoop(),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+				AccessToken: vcs.AccessToken,
 			},
 			vcs.InstanceURL,
 			repo.ExternalID,
@@ -1085,11 +1076,6 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		SchemaPathTemplate: request.ProjectGitopsInfo.SchemaPathTemplate,
 		SheetPathTemplate:  request.ProjectGitopsInfo.SheetPathTemplate,
 		ExternalID:         request.ProjectGitopsInfo.ExternalId,
-		AccessToken:        request.ProjectGitopsInfo.AccessToken,
-		RefreshToken:       request.ProjectGitopsInfo.RefreshToken,
-	}
-	if request.ProjectGitopsInfo.ExpiresTime != nil {
-		repositoryCreate.ExpiresTs = request.ProjectGitopsInfo.ExpiresTime.AsTime().Unix()
 	}
 
 	if repositoryCreate.BranchFilter == "" {
@@ -1123,13 +1109,9 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		notFound, err := isBranchNotFound(
 			ctx,
 			vcs,
-			s.store,
-			repositoryCreate.WebURL,
-			repositoryCreate.AccessToken,
-			repositoryCreate.RefreshToken,
+			vcs.AccessToken,
 			repositoryCreate.ExternalID,
 			repositoryCreate.BranchFilter,
-			setting.ExternalUrl,
 		)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to check branch %s with error: %v", repositoryCreate.BranchFilter, err.Error())
@@ -1170,7 +1152,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		if gitopsWebhookURL == "" {
 			gitopsWebhookURL = setting.ExternalUrl
 		}
-		webhookID, err := createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, repositoryCreate.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID, gitopsWebhookURL)
+		webhookID, err := createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, vcs.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID, gitopsWebhookURL)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create webhook for project %s with error: %v", repositoryCreate.ProjectResourceID, err.Error())
 		}
@@ -1208,12 +1190,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 	}
 
 	oauthContext := &common.OauthContext{
-		ClientID:     vcs.ApplicationID,
-		ClientSecret: vcs.Secret,
-		AccessToken:  repository.AccessToken,
-		RefreshToken: repository.RefreshToken,
-		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+		AccessToken: vcs.AccessToken,
 	}
 
 	if err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).UpsertEnvironmentVariable(
@@ -1277,12 +1254,7 @@ func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository
 		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
 	oauthContext := &common.OauthContext{
-		ClientID:     vcs.ApplicationID,
-		ClientSecret: vcs.Secret,
-		AccessToken:  repository.AccessToken,
-		RefreshToken: repository.RefreshToken,
-		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+		AccessToken: vcs.AccessToken,
 	}
 	branch, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).GetBranch(
 		ctx,
@@ -1375,7 +1347,7 @@ func setupVCSSQLReviewCIForBitBucket(
 	sqlReviewEndpoint string,
 ) error {
 	bitbucketPlugin := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{})
-	if err := bitbucket.EnableSQLReviewCI(ctx, oauthContext, bitbucketPlugin.APIURL(vcs.InstanceURL), vcs.InstanceURL, repository.ExternalID); err != nil {
+	if err := bitbucket.EnableSQLReviewCI(ctx, oauthContext, bitbucketPlugin.APIURL(vcs.InstanceURL), repository.ExternalID); err != nil {
 		return errors.Wrapf(err, "failed to enable the pipeline")
 	}
 
@@ -3047,16 +3019,10 @@ func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.Proje
 func isBranchNotFound(
 	ctx context.Context,
 	vcs *store.VCSProviderMessage,
-	store *store.Store,
-	webURL, accessToken, refreshToken, externalID, branch, externalURL string,
+	accessToken, externalID, branch string,
 ) (bool, error) {
 	oauthContext := &common.OauthContext{
-		ClientID:     vcs.ApplicationID,
-		ClientSecret: vcs.Secret,
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		Refresher:    utils.RefreshToken(ctx, store, webURL),
-		RedirectURL:  fmt.Sprintf("%s/oauth/callback", externalURL),
+		AccessToken: accessToken,
 	}
 	_, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).GetBranch(ctx,
 		oauthContext,
@@ -3141,8 +3107,6 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 		ctx,
 		&common.OauthContext{
 			AccessToken: accessToken,
-			// We use refreshTokenNoop() because the repository isn't created yet.
-			Refresher: refreshTokenNoop(),
 		},
 		instanceURL,
 		externalRepoID,
@@ -3152,11 +3116,4 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 		return "", errors.Wrap(err, "failed to create webhook")
 	}
 	return webhookID, nil
-}
-
-// refreshToken is a no-op token refresher. It should be used when the repository isn't created yet.
-func refreshTokenNoop() common.TokenRefresher {
-	return func(_, _ string, _ int64) error {
-		return nil
-	}
 }
