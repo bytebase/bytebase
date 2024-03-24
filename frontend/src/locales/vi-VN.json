@@ -2053,20 +2053,18 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase hỗ trợ quy trình làm việc GitOps trong đó các tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong hệ thống kiểm soát phiên bản (VCS) và các tập lệnh di chuyển mới được tạo sẽ tự động kích hoạt thay đổi cơ sở dữ liệu tương ứng. Quản trị viên Bytebase quản lý tất cả các VCS hiện hành tại đây để chủ dự án có thể liên kết các dự án với kho Git của họ từ các VCS này.",
+      "description": "Trong luồng làm việc GitOps của Bytebase, các nhà phát triển lưu trữ các tập lệnh di chuyển trong VCS. Các yêu cầu kéo gợi nhớ xem xét SQL, và các yêu cầu được hợp nhất khởi động kế hoạch di chuyển. Người quản trị cấu hình các nhà cung cấp VCS, trong khi chủ dự án thiết lập kết nối VCS trong các dự án.",
       "add-git-provider": {
         "self": "Thêm nhà cung cấp Git",
         "description": "Trước khi bất kỳ dự án nào có thể kích hoạt quy trình làm việc GitOps, trước tiên Bytebase cần tích hợp với hệ thống kiểm soát phiên bản (VCS) tương ứng bằng cách đăng ký làm ứng dụng OAuth trong VCS đó. Dưới đây là các bước để định cấu hình tính năng này, bạn cũng có thể làm theo {guide} của chúng tôi.",
         "gitlab-self-host": "GitLab tự lưu trữ",
-        "gitlab-self-host-admin-requirement": "Bạn cần phải là Quản trị viên của phiên bản GitLab đã chọn để định cấu hình phiên bản này. Nếu không, bạn cần yêu cầu Quản trị viên phiên bản GitLab của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn phiên bản GitLab, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
-        "gitlab-com-admin-requirement": "Tài khoản của bạn cần có quyền truy cập Quản trị viên vào bất kỳ kho lưu trữ nào để được liên kết. Thông thường tài khoản này tương ứng với người dùng dịch vụ chuyên dụng thay vì người dùng con người.",
+        "gitlab-self-host-admin-requirement": "Bạn phải là một quản trị viên của GitLab để có thể thực hiện điều này.",
+        "gitlab-com-admin-requirement": "Bạn phải là quản trị viên của các dự án hoặc nhóm.",
         "github-self-host": "GitHub tự lưu trữ",
-        "github-com-admin-requirement": "Bạn cần phải là quản trị viên của tổ chức GitHub đã chọn để định cấu hình tổ chức này. Nếu không, bạn cần yêu cầu quản trị viên tổ chức GitHub của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn tổ chức GitHub, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
+        "github-com-admin-requirement": "TBạn phải là quản trị viên của tổ chức GitHub.",
         "bitbucket-admin-requirement": "Bạn cần phải là quản trị viên của không gian làm việc Bitbucket đã chọn để định cấu hình điều này. Nếu không, bạn cần yêu cầu quản trị viên không gian làm việc Bitbucket của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn không gian làm việc Bitbucket, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
         "azure-devops-service": "Dịch vụ Azure DevOps",
-        "azure-admin-requirement": "Bạn cần phải là quản trị viên của tổ chức Azure DevOps đã chọn để đặt cấu hình này. Nếu không, bạn cần yêu cầu quản trị viên không gian làm việc Bitbucket của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn tổ chức Azure DevOps, sau đó cung cấp cho bạn ID ứng dụng và Bí mật ứng dụng khách đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
-        "oauth-info-correct": "Thông tin OAuth đã được xác minh là chính xác",
-        "check-oauth-info-match": "Vui lòng đảm bảo Bí mật khớp với bí mật từ Ứng dụng phiên bản GitLab của bạn.",
+        "azure-admin-requirement": "TBạn phải là quản trị viên của tổ chức Azure DevOps.",
         "add-success": "Đã thêm thành công nhà cung cấp Git {vcs}",
         "choose": "Chọn nhà cung cấp Git",
         "basic-info": {
