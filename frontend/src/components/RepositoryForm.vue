@@ -158,10 +158,7 @@
               vcsType === VCSProvider_Type.GITLAB
                 ? $t("repository.merge-request")
                 : $t("repository.pull-request"),
-            pathTemplate:
-              schemaChangeType == SchemaChange.DDL
-                ? $t("repository.file-path-template")
-                : $t("repository.schema-path-template"),
+            pathTemplate: $t("repository.file-path-template"),
           })
         }}
       </div>
@@ -234,7 +231,6 @@ import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2, supportSQLReviewCI } from "@/utils";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
-const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
 const FILE_OPTIONAL_DIRECTORY_WILDCARD = "*, **";
 const SINGLE_ASTERISK_REGEX = /\/\*\//g;
 const DOUBLE_ASTERISKS_REGEX = /\/\*\*\//g;
@@ -298,9 +294,6 @@ const isTenantProject = computed(() => {
 const isProjectSchemaChangeTypeDDL = computed(() => {
   return (props.schemaChangeType || SchemaChange.DDL) === SchemaChange.DDL;
 });
-const isProjectSchemaChangeTypeSDL = computed(() => {
-  return (props.schemaChangeType || SchemaChange.DDL) === SchemaChange.SDL;
-});
 const canEnableSQLReview = computed(() => {
   return supportSQLReviewCI(props.vcsType);
 });
@@ -363,36 +356,6 @@ const sampleFilePath = (
   return result;
 };
 
-const sampleSchemaPath = (
-  baseDirectory: string,
-  schemaPathTemplate: string
-): string => {
-  type Item = {
-    placeholder: string;
-    sampleText: string;
-  };
-  const placeholderList: Item[] = [
-    {
-      placeholder: "{{DB_NAME}}",
-      sampleText: "db1",
-    },
-    {
-      placeholder: "{{ENV_ID}}",
-      sampleText: "env1",
-    },
-    {
-      placeholder: "{{ENV_NAME}}", // for legacy support
-      sampleText: "env1",
-    },
-  ];
-  let result = `${baseDirectory}/${schemaPathTemplate}`;
-  for (const item of placeholderList) {
-    const re = new RegExp(item.placeholder, "g");
-    result = result.replace(re, item.sampleText);
-  }
-  return result;
-};
-
 const getWebhookLink = computed(() => {
   if (props.vcsType === VCSProvider_Type.AZURE_DEVOPS) {
     const parts = props.repositoryInfo.externalId.split("/");
@@ -411,37 +374,6 @@ const fileOptionalPlaceholder = computed(() => {
   if (!isTenantProject.value) tags.push("{{ENV_ID}}");
   tags.push("{{DESCRIPTION}}");
   return tags;
-});
-
-const schemaRequiredTagPlaceholder = computed(() => {
-  const tags = [] as string[];
-  // Only allows {{DB_NAME}} to be an optional placeholder for non-tenant mode projects
-  if (!isTenantProject.value) tags.push(SCHEMA_REQUIRED_PLACEHOLDER);
-  return tags;
-});
-
-const schemaOptionalTagPlaceholder = computed(() => {
-  const tags = [] as string[];
-  // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
-  if (!isTenantProject.value) tags.push("{{ENV_ID}}");
-  return tags;
-});
-
-const schemaTagPlaceholder = computed(() => {
-  const placeholders: string[] = [];
-  const required = schemaRequiredTagPlaceholder.value;
-  const optional = schemaOptionalTagPlaceholder.value;
-  if (required.length > 0) {
-    placeholders.push(
-      `${t("common.required-placeholder")}: ${required.join(", ")}`
-    );
-  }
-  if (optional.length > 0) {
-    placeholders.push(
-      `${t("common.optional-placeholder")}: ${optional.join(", ")}`
-    );
-  }
-  return placeholders.join("; ");
 });
 
 const onSQLReviewCIToggle = (on: boolean) => {
