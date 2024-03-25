@@ -310,7 +310,6 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.ProjectService_UpdateProjectGitOpsInfo_FullMethodName,
 		v1pb.ProjectService_UnsetProjectGitOpsInfo_FullMethodName,
 		v1pb.ProjectService_GetProjectGitOpsInfo_FullMethodName,
-		v1pb.ProjectService_SetupProjectSQLReviewCI_FullMethodName,
 
 		v1pb.ProjectService_GetDatabaseGroup_FullMethodName,
 		v1pb.ProjectService_CreateDatabaseGroup_FullMethodName,
@@ -510,8 +509,6 @@ func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any
 	case *v1pb.UpdateProjectGitOpsInfoRequest:
 		projectGitopsInfos = append(projectGitopsInfos, r.GetProjectGitopsInfo().GetName())
 	case *v1pb.UnsetProjectGitOpsInfoRequest:
-		projectGitopsInfos = append(projectGitopsInfos, r.GetName())
-	case *v1pb.SetupSQLReviewCIRequest:
 		projectGitopsInfos = append(projectGitopsInfos, r.GetName())
 	case *v1pb.GetProjectGitOpsInfoRequest:
 		projectGitopsInfos = append(projectGitopsInfos, r.GetName())

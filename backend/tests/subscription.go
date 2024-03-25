@@ -29,11 +29,3 @@ func (ctl *controller) removeLicense(ctx context.Context) error {
 func (ctl *controller) getSubscription(ctx context.Context) (*v1pb.Subscription, error) {
 	return ctl.subscriptionServiceClient.GetSubscription(ctx, &v1pb.GetSubscriptionRequest{})
 }
-
-func (ctl *controller) getWorkspaceID(ctx context.Context) (string, error) {
-	resp, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, &v1pb.GetActuatorInfoRequest{})
-	if err != nil {
-		return "", err
-	}
-	return resp.WorkspaceId, nil
-}

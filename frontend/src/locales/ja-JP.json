@@ -1790,13 +1790,7 @@
     "file-path-template-description": "Bytebaseは、ベースディレクトリに対して相対的なテンプレートパターンに一致するファイルパス名のみを監視します。",
     "file-path-example-schema-migration": "スキーママイグレーションタイプのファイルパスの例",
     "file-path-example-data-migration": "データマイグレーションタイプのファイルパスの例",
-    "schema-path-template": "スキーマパスのテンプレート",
-    "schema-writeback-description": "指定された場合、各マイグレーションの後、Bytebaseは元のコミットがトリガーとなったブランチ内のベースディレクトリに対するスキーマパスに最新のスキーマを書き込みます。これを行いたくない場合は空にしてください。",
-    "schema-writeback-protected-branch": "変更されたブランチが保護されていないことを確認するか、リポジトリのメンテナがその保護されたブランチにプッシュできるようにします。",
     "if-specified": "指定された場合",
-    "schema-path-example": "スキーマパスの例",
-    "sheet-path-template": "シートパスのテンプレート",
-    "sheet-path-template-description": "Bytebaseは、ベースディレクトリに対して相対的なテンプレートパターンに一致するパス名を持つファイルのみを監視します。一致したファイルはSQLエディタに同期され、そこで使用されます。",
     "sql-review-ci": "SQLレビューCI",
     "sql-review-ci-enable": "SQLレビューCIを有効にする",
     "sql-review-ci-enable-gitlab": "GitLab CIを介してSQLレビューCIを有効にする",
@@ -2053,21 +2047,18 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebaseは、データベースのマイグレーションスクリプトがバージョン管理システム（VCS）に保存され、新しく作成されたマイグレーションスクリプトが対応するデータベースの変更を自動的にトリガーするGitOpsワークフローをサポートしています。Bytebaseの管理者はここで適用可能なすべてのVCSを管理し、プロジェクトの所有者はこれらのVCSから自分のGitリポジトリにプロジェクトをリンクすることができます。",
-      "description-highlight": "設定済みのVCSを介したサードパーティのログインを有効にする場合は、SSOでそれを設定してください。",
+      "description": "BytebaseのGitOpsワークフローでは、開発者はマイグレーションスクリプトをVCSに保存します。プルリクエストはSQLレビューを促し、マージされたものはマイグレーション計画を開始します。管理者はVCSプロバイダを設定し、プロジェクトオーナーはプロジェクト内でVCS接続を確立します。",
       "add-git-provider": {
         "self": "Gitプロバイダを追加する",
         "description": "プロジェクトがGitOpsワークフローを有効にする前に、Bytebaseはまず対応するバージョン管理システム（VCS）と統合する必要があります。そのためには、VCSでOAuthアプリケーションとして登録する必要があります。以下にその手順を示します。また、{guide}に従っても設定できます。",
         "gitlab-self-host": "GitLab Self-Hosted",
-        "gitlab-self-host-admin-requirement": "これを設定するには、選択したGitLabインスタンスの管理者である必要があります。そうでない場合は、GitLabインスタンスの管理者にBytebaseをGitLabインスタンス全体のOAuthアプリケーションとして登録してもらい、そのアプリケーションIDとシークレットを「OAuthアプリケーション情報」のステップで入力してもらう必要があります。",
-        "gitlab-com-admin-requirement": "リンクするためには、アカウントにはリポジトリのいずれかに対する管理者アクセス権限が必要です。通常、このアカウントは人間のユーザーではなく、専用のサービスユーザーに対応しています。",
+        "gitlab-self-host-admin-requirement": "GitLabインスタンスの管理者である必要があります。",
+        "gitlab-com-admin-requirement": "プロジェクトまたはグループの管理者である必要があります。",
         "github-self-host": "GitLab Self-Hosted",
-        "github-com-admin-requirement": "これを設定するには、選択した GitHub 組織の管理者である必要があります。そうでない場合は、GitHub 組織の管理者に Bytebase を GitHub 組織全体の OAuth アプリケーションとして登録してもらい、そのアプリケーション ID とシークレットを 'OAuth アプリケーション情報' ステップで入力してもらう必要があります。",
-        "bitbucket-admin-requirement": "これを設定するには、選択した Bitbucket ワークスペースの管理者である必要があります。そうでない場合は、Bitbucket ワークスペースの管理者に Bytebase を Bitbucket ワークスペース全体の OAuth アプリケーションとして登録してもらい、そのアプリケーション ID とシークレットを 'OAuth アプリケーション情報' ステップで入力してもらう必要があります。",
+        "github-com-admin-requirement": "GitHubの組織の管理者である必要があります。",
+        "bitbucket-admin-requirement": "Bitbucketのワークスペースの管理者でなければなりません。",
         "azure-devops-service": "Azure DevOps サービス",
-        "azure-admin-requirement": "これを設定するには、選択した Azure DevOps 組織の管理者である必要があります。そうでない場合は、Azure DevOps 組織の管理者に Bytebase を Azure DevOps 組織全体の OAuth アプリケーションとして登録してもらい、そのアプリケーション ID とクライアントシークレットを 'OAuth アプリケーション情報' ステップで入力してもらう必要があります。",
-        "oauth-info-correct": "OAuth情報が正しいことを確認してください",
-        "check-oauth-info-match": "SecretがGitLabインスタンスアプリケーションと一致していることを確認してください。",
+        "azure-admin-requirement":"Azure DevOpsの組織の管理者である必要があります。",
         "add-success": "Gitプロバイダー {vcs} を正常に追加しました",
         "choose": "Gitプロバイダーを選択してください",
         "basic-info": {
@@ -2081,38 +2072,15 @@
           "display-name": "表示名",
           "display-name-label": "同じGitプロバイダーを使用する異なる設定の識別に役立つオプションの表示名です。"
         },
-        "oauth-info": {
+        "access-token": {
           "self": "OAuthアプリケーション情報",
-          "gitlab-self-host-register-oauth-application": "BytebaseをGitLabインスタンス全体のOAuthアプリケーションとして登録します。",
-          "gitlab-self-host-login-as-admin": "GitLabインスタンスの管理者ユーザーとしてログインします。アカウントはGitLabインスタンス全体の管理者である必要があります（上部バーにレンチアイコンが表示されます）。",
-          "gitlab-self-host-visit-admin-page": "レンチアイコンをクリックして管理ページに移動し、「Applications」セクションに移動し、「New application」ボタンをクリックします。",
-          "gitlab-com-register-oauth-application": "BytebaseをGitLabユーザーのOAuthアプリケーションとして登録します。",
-          "gitlab-com-login": "Bytebaseが動作するアカウントとしてログインします。通常、このアカウントは人間のユーザーではなく、専用のサービスユーザーに対応します。",
-          "azure-devops-login": "Bytebaseが動作するアカウントとしてログインしてください。通常、このアカウントは人間のユーザーではなく、専用のサービスユーザーに対応しています。",
-          "gitlab-com-visit-application-page": "環境設定->アプリケーションページに移動してください。右上隅のプロフィール画像からアクセスできます。",
-          "azure-devops-visit-application-page": "アプリケーションページに移動してください。",
-          "gitlab-paste-oauth-info": "作成したアプリケーションからApplication IDとSecretを以下のフィールドに貼り付けてください。",
-          "azure-paste-oauth-info": "作成したアプリケーションからApplication IDとClient Secretを以下のフィールドに貼り付けてください。",
-          "github-register-oauth-application": "BytebaseをGitHubの組織全体のOAuthアプリケーションとして登録してください。",
-          "github-login-as-admin": "GitHub.comの組織管理者ユーザーとしてログインしてください。アカウントはGitHub組織の管理者である必要があります（組織の設定ページにアクセスできる）。",
-          "github-visit-admin-page": "設定ページに移動し、「開発者設定 > OAuthアプリ」セクションに移動し、「アプリケーションを登録する」ボタンをクリックしてください。",
-          "github-paste-oauth-info": "作成したアプリケーションからClient IDとClient Secretを以下のフィールドに貼り付けてください。",
-          "github-enterprise-login-as-admin": "ホストされているGitHub Enterpriseサイトに組織管理者ユーザーとしてログインしてください。アカウントはGitHub組織の管理者である必要があります（組織の設定ページにアクセスできる）。",
-          "bitbucket-register-oauth-application": "Bitbucketのワークスペース全体のOAuthコンシューマーとしてBytebaseを登録します。",
-          "azure-register-oauth-application": "Azure DevOpsの組織全体のOAuthコンシューマーとしてBytebaseを登録します。",
-          "bitbucket-login-as-admin": "Bitbucket.orgのワークスペース管理者ユーザーとしてログインします。アカウントはBitbucketワークスペースの管理者である必要があります（ワークスペースの設定ページにアクセスできる）。",
-          "bitbucket-visit-admin-page": "設定ページに移動し、「APPS AND FEATURES > OAuth consumers」セクションに移動し、「コンシューマーを追加」ボタンをクリックします。",
-          "bitbucket-paste-oauth-info": "作成したコンシューマーからキーとシークレットを以下のフィールドに貼り付けます。",
-          "copy-homepage-url": "ホームページのURLがクリップボードにコピーされました。OAuthアプリケーションのフォームの対応するフィールドに貼り付けてください。",
-          "copy-redirect-uri": "リダイレクトURIがクリップボードにコピーされました。OAuthアプリケーションのフォームの対応するフィールドに貼り付けてください。",
-          "direct-link": "直接リンク",
-          "create-oauth-app": "以下の情報でBytebaseのOAuthアプリケーションを作成します。",
-          "gitlab-application-id-error": "アプリケーションIDは64文字の英数字である必要があります。",
-          "gitlab-secret-error": "シークレットは64文字の英数字である必要があります。",
-          "github-application-id-error": "アプリケーションIDは20文字の英数字である必要があります。GitHubアプリではなくOAuthアプリであることを確認してください。",
-          "github-secret-error": "シークレットは40文字の英数字である必要があります。",
-          "bitbucket-application-id-error": "アプリケーションIDは18文字の英数字である必要があります",
-          "bitbucket-secret-error": "シークレットは32文字の英数字である必要があります"
+          "gitlab-project-access-token": "単一のプロジェクトを管理するためにプロジェクトアクセストークンを生成してください。",
+          "gitlab-group-access-token": "グループ内のすべてのプロジェクトを管理するために、グループアクセストークンを生成します。",
+          "gitlab-personal-access-token": "専用のサービスユーザーを作成し、管理対象のグループまたはすべてのプロジェクトのメンテナー役割用の個人アクセス トークンを生成します。",
+          "github-personal-access-token": "専用のサービスユーザーを作成し、管理される組織またはすべてのプロジェクト用にメンバーの役割を持つ個人アクセス トークンを生成します。",
+          "bitbucket-resource-access-token": "リポジトリ、プロジェクト、またはワークスペースのリソースを異なるレベルで管理するためのアクセストークンを生成します。",
+          "bitbucket-personal-access-token": "専用のサービスユーザーを作成し、管理対象の組織、プロジェクト、またはリポジトリに対する読み書き権限を持つ個人アクセス トークンを生成してください。",
+          "azure-devops-personal-access-token": "専用のサービスユーザーを作成し、管理される組織またはすべてのプロジェクト用にメンバーの役割を持つ個人アクセス トークンを生成します。"
         },
         "confirm": {
           "confirm-info": "情報を確認してください",
@@ -2586,14 +2554,6 @@
       "bb-feature-custom-approval": {
         "title": "カスタム承認",
         "desc": "さまざまなタスクに対してリスクレベルと承認フローを設定します。"
-      },
-      "bb-feature-vcs-schema-write-back": {
-        "title": "スキーマの書き戻し",
-        "desc": "スキーマの変更が成功した後、スキーマの書き戻しにより、Bytebaseは最新の完全なスキーマスナップショットをVCSリポジトリに書き戻すことができます。"
-      },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "VCSからSQLスクリプトを同期する",
-        "desc": "VCSに保存されているSQLスクリプトをシートに同期します。"
       },
       "bb-feature-vcs-sql-review": {
         "title": "GitOpsワークフローでのSQLレビュー",

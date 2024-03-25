@@ -3,8 +3,6 @@ export type RepositoryConfig = {
   branchFilter: string;
   filePathTemplate: string;
   schemaPathTemplate: string;
-  sheetPathTemplate: string;
-  enableSQLReviewCI: boolean;
 };
 
 export type ExternalRepositoryInfo = {
