@@ -479,16 +479,6 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 				baseDir = strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
 			}
 			patch.BaseDirectory = &baseDir
-		case "file_path_template":
-			if err := api.ValidateRepositoryFilePathTemplate(request.ProjectGitopsInfo.FilePathTemplate, project.TenantMode); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid file_path_template: %s", err.Error())
-			}
-			patch.FilePathTemplate = &request.ProjectGitopsInfo.FilePathTemplate
-		case "schema_path_template":
-			if err := api.ValidateRepositorySchemaPathTemplate(request.ProjectGitopsInfo.SchemaPathTemplate, project.TenantMode); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid schema_path_template: %s", err.Error())
-			}
-			patch.SchemaPathTemplate = &request.ProjectGitopsInfo.SchemaPathTemplate
 		}
 	}
 
@@ -994,16 +984,14 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		VCSResourceID:     vcs.ResourceID,
 		ProjectResourceID: project.ResourceID,
 		// TODO(d): pass in the resource ID from API.
-		ResourceID:         "default",
-		WebhookURLHost:     setting.ExternalUrl,
-		Title:              request.ProjectGitopsInfo.Title,
-		FullPath:           request.ProjectGitopsInfo.FullPath,
-		WebURL:             request.ProjectGitopsInfo.WebUrl,
-		BranchFilter:       request.ProjectGitopsInfo.BranchFilter,
-		BaseDirectory:      baseDir,
-		FilePathTemplate:   request.ProjectGitopsInfo.FilePathTemplate,
-		SchemaPathTemplate: request.ProjectGitopsInfo.SchemaPathTemplate,
-		ExternalID:         request.ProjectGitopsInfo.ExternalId,
+		ResourceID:     "default",
+		WebhookURLHost: setting.ExternalUrl,
+		Title:          request.ProjectGitopsInfo.Title,
+		FullPath:       request.ProjectGitopsInfo.FullPath,
+		WebURL:         request.ProjectGitopsInfo.WebUrl,
+		BranchFilter:   request.ProjectGitopsInfo.BranchFilter,
+		BaseDirectory:  baseDir,
+		ExternalID:     request.ProjectGitopsInfo.ExternalId,
 	}
 
 	if repositoryCreate.BranchFilter == "" {
@@ -1014,14 +1002,6 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 	// This avoids to a certain extent that the creation succeeds but does not work.
 	if err := vcsplugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
-	}
-
-	if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate, project.TenantMode); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid file_path_template: %v", err.Error())
-	}
-
-	if err := api.ValidateRepositorySchemaPathTemplate(repositoryCreate.SchemaPathTemplate, project.TenantMode); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid schema_path_template: %s", err.Error())
 	}
 
 	// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
@@ -2466,17 +2446,15 @@ func validateMember(member string) error {
 
 func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.ProjectGitOpsInfo {
 	return &v1pb.ProjectGitOpsInfo{
-		Name:               fmt.Sprintf("%s%s/gitOpsInfo", common.ProjectNamePrefix, repository.ProjectResourceID),
-		Vcs:                fmt.Sprintf("%s%s", common.VCSProviderPrefix, repository.VCSResourceID),
-		Title:              repository.Title,
-		FullPath:           repository.FullPath,
-		WebUrl:             repository.WebURL,
-		BranchFilter:       repository.BranchFilter,
-		BaseDirectory:      repository.BaseDirectory,
-		FilePathTemplate:   repository.FilePathTemplate,
-		SchemaPathTemplate: repository.SchemaPathTemplate,
-		WebhookEndpointId:  repository.WebhookEndpointID,
-		ExternalId:         repository.ExternalID,
+		Name:              fmt.Sprintf("%s%s/gitOpsInfo", common.ProjectNamePrefix, repository.ProjectResourceID),
+		Vcs:               fmt.Sprintf("%s%s", common.VCSProviderPrefix, repository.VCSResourceID),
+		Title:             repository.Title,
+		FullPath:          repository.FullPath,
+		WebUrl:            repository.WebURL,
+		BranchFilter:      repository.BranchFilter,
+		BaseDirectory:     repository.BaseDirectory,
+		WebhookEndpointId: repository.WebhookEndpointID,
+		ExternalId:        repository.ExternalID,
 	}
 }
 
