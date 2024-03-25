@@ -13,13 +13,10 @@ import {
 import { ExportFormat } from "@/types/proto/v1/common";
 import {
   LogEntity,
-  LogEntity_Action,
-  LogEntity_Level,
   logEntity_ActionToJSON,
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
 import { isDatabaseRelatedIssue, extractRolloutUID } from "@/utils";
-import { useCurrentUserV1 } from "../auth";
 import { userNamePrefix, getLogId, logNamePrefix } from "./common";
 
 dayjs.extend(utc);
@@ -105,24 +102,6 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
     return mergedList;
   };
 
-  const fetchActivityListForQueryHistory = async ({
-    limit,
-    order,
-  }: {
-    limit: number;
-    order: "asc" | "desc";
-  }) => {
-    const currentUserV1 = useCurrentUserV1();
-
-    return fetchActivityList({
-      action: [LogEntity_Action.ACTION_DATABASE_SQL_EDITOR_QUERY],
-      creatorEmail: currentUserV1.value.email,
-      order,
-      pageSize: limit,
-      level: [LogEntity_Level.LEVEL_INFO, LogEntity_Level.LEVEL_WARNING],
-    }).then((resp) => resp.logEntities);
-  };
-
   const fetchActivityByUID = async (uid: IdType) => {
     if (uid == EMPTY_ID || uid == UNKNOWN_ID) {
       return;
@@ -155,7 +134,6 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
   return {
     fetchActivityList,
     fetchActivityListForIssueV1,
-    fetchActivityListForQueryHistory,
     fetchActivityByUID,
     getActivityListByIssueV1,
     getResourceId,

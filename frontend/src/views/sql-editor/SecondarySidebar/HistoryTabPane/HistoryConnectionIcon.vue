@@ -11,13 +11,18 @@
 import { computed } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useInstanceV1Store } from "@/store";
-import { SQLEditorQueryHistory, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types";
+import { QueryHistory } from "@/types/proto/v1/sql_service";
+import { extractDatabaseResourceName } from "@/utils";
 
 const props = defineProps<{
-  queryHistory: SQLEditorQueryHistory;
+  queryHistory: QueryHistory;
 }>();
 
 const instance = computed(() => {
-  return useInstanceV1Store().getInstanceByName(props.queryHistory.instance);
+  const resourceId = extractDatabaseResourceName(
+    props.queryHistory.database
+  ).instance;
+  return useInstanceV1Store().getInstanceByName(`instances/${resourceId}`);
 });
 </script>

@@ -25,7 +25,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/store/model"
 
@@ -928,6 +930,148 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 		return nil, status.Errorf(codes.Internal, "Failed to create activity: %v", err)
 	}
 	return activity, nil
+}
+
+// ListQueryHistories lists query histories.
+func (s *SQLService) ListQueryHistories(ctx context.Context, request *v1pb.ListQueryHistoriesRequest) (*v1pb.ListQueryHistoriesResponse, error) {
+	var pageToken storepb.PageToken
+	if request.PageToken != "" {
+		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
+		}
+	} else {
+		pageToken.Limit = request.PageSize
+	}
+
+	limit := int(pageToken.Limit)
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	limitPlusOne := limit + 1
+	offset := int(pageToken.Offset)
+
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+
+	order := api.DESC
+	activityFind := &store.FindActivityMessage{
+		Order: &order,
+		TypeList: []api.ActivityType{
+			api.ActivitySQLQuery,
+		},
+		CreatorUID: &principalID,
+		LevelList: []api.ActivityLevel{
+			api.ActivityInfo,
+			api.ActivityWarn,
+			api.ActivityError,
+		},
+		Limit:  &limitPlusOne,
+		Offset: &offset,
+	}
+
+	filters, err := parseFilter(request.Filter)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	var instanceName string
+	var databaseName string
+	for _, spec := range filters {
+		switch spec.key {
+		case "database":
+			instanceID, _, err := common.GetInstanceDatabaseID(spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			databaseName = spec.value
+			instanceName = fmt.Sprintf("%s%s", common.InstanceNamePrefix, instanceID)
+		case "instance":
+			instanceName = spec.value
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filter %s", spec.key)
+		}
+	}
+
+	if instanceName != "" {
+		instance, err := getInstanceMessage(ctx, s.store, instanceName)
+		if err != nil {
+			return nil, err
+		}
+		activityFind.ContainerUID = &instance.UID
+	}
+
+	activityList, err := s.store.ListActivityV2(ctx, activityFind)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list activity: %v", err.Error())
+	}
+
+	nextPageToken := ""
+	if len(activityList) == limitPlusOne {
+		activityList = activityList[:limit]
+		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
+			Limit:  int32(limit),
+			Offset: int32(limit + offset),
+		}); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
+	}
+
+	resp := &v1pb.ListQueryHistoriesResponse{
+		NextPageToken: nextPageToken,
+	}
+	for _, activity := range activityList {
+		queryHistory, err := s.convertToQueryHistory(ctx, activity)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert log entity, error: %v", err)
+		}
+		// TODO: set database in activity query.
+		if databaseName != "" && queryHistory.Database != databaseName {
+			continue
+		}
+		resp.QueryHistories = append(resp.QueryHistories, queryHistory)
+	}
+
+	return resp, nil
+}
+
+func (s *SQLService) convertToQueryHistory(ctx context.Context, activity *store.ActivityMessage) (*v1pb.QueryHistory, error) {
+	var payload api.ActivitySQLEditorQueryPayload
+	if err := json.Unmarshal([]byte(activity.Payload), &payload); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to unmarshal payload for activity %v: %v", activity.UID, err.Error())
+	}
+
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		UID: &payload.DatabaseID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", payload.DatabaseID)
+	}
+
+	user, err := s.store.GetUserByID(ctx, activity.CreatorUID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, errors.Errorf("cannot found user with id %d", activity.ContainerUID)
+	}
+
+	return &v1pb.QueryHistory{
+		Name:       fmt.Sprintf("queryHistories/%d", activity.UID),
+		Statement:  payload.Statement,
+		Error:      &payload.Error,
+		Database:   common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		Creator:    fmt.Sprintf("%s%s", common.UserNamePrefix, user.Email),
+		CreateTime: timestamppb.New(time.Unix(activity.CreatedTs, 0)),
+		Duration:   durationpb.New(time.Duration(payload.DurationNs)),
+	}, nil
 }
 
 // Query executes a SQL query.
