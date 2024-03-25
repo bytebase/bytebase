@@ -195,8 +195,8 @@ dependencies:
     specifier: 3.17.5
     version: 3.17.5
   vscode-ws-jsonrpc:
-    specifier: 3.1.0
-    version: 3.1.0
+    specifier: 3.3.0
+    version: 3.3.0
   vue:
     specifier: 3.4.21
     version: 3.4.21(typescript@5.4.3)
@@ -6847,8 +6847,8 @@ packages:
       vscode-languageserver-protocol: 3.17.5
     dev: false
 
-  /vscode-ws-jsonrpc@3.1.0:
-    resolution: {integrity: sha512-Z3as2O9rml9rYMYjZQABeCtYEqmRa0TJRUOe6MElXDswNvXiJnu7+vqyy4c6GX+/8SfI0C+sDBJ7naM5wHz0gA==}
+  /vscode-ws-jsonrpc@3.3.0:
+    resolution: {integrity: sha512-dTuDWJIwK5rBTQlM87JVK/JsTM+ARFuXw8B0erpEYrXay8QCBTOeO6yu2iyY5TuOwWikIenlBCEF6MgbzYgKIw==}
     engines: {node: '>=16.11.0', npm: '>=8.0.0'}
     dependencies:
       vscode-jsonrpc: 8.2.0
