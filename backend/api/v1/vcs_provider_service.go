@@ -34,7 +34,7 @@ func (s *VCSProviderService) GetVCSProvider(ctx context.Context, request *v1pb.G
 		return nil, err
 	}
 
-	return convertToVCSProvider(vcs), nil
+	return convertVCSProvider(vcs), nil
 }
 
 // ListVCSProviders lists vcs providers.
@@ -48,7 +48,18 @@ func (s *VCSProviderService) ListVCSProviders(ctx context.Context, _ *v1pb.ListV
 
 // CreateVCSProvider creates a new vcs provider.
 func (s *VCSProviderService) CreateVCSProvider(ctx context.Context, request *v1pb.CreateVCSProviderRequest) (*v1pb.VCSProvider, error) {
-	vcsProvider, err := checkAndConvertToStoreVersionControl(request.VcsProvider)
+	vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &request.VcsProviderId})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if vcsProvider != nil {
+		return nil, status.Errorf(codes.AlreadyExists, "vcs provider %s already exists", request.VcsProviderId)
+	}
+
+	if !isValidResourceID(request.VcsProviderId) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs provider ID %v", request.VcsProviderId)
+	}
+	vcsProvider, err = convertV1VCSProvider(request)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -56,13 +67,11 @@ func (s *VCSProviderService) CreateVCSProvider(ctx context.Context, request *v1p
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	// TODO(d): pass in the resource ID from API.
-	vcsProvider.ResourceID = strings.ToLower(string(vcsProvider.Type))
-	storeVCSProvider, err := s.store.CreateVCSProviderV2(ctx, principalID, vcsProvider)
+	storeVCSProvider, err := s.store.CreateVCSProvider(ctx, principalID, vcsProvider)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create vcs provider: %v", err)
 	}
-	return convertToVCSProvider(storeVCSProvider), nil
+	return convertVCSProvider(storeVCSProvider), nil
 }
 
 // UpdateVCSProvider updates an existing vcs provider.
@@ -95,11 +104,11 @@ func (s *VCSProviderService) UpdateVCSProvider(ctx context.Context, request *v1p
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	vcsProvider, err = s.store.UpdateVCSProviderV2(ctx, principalID, vcsProvider.ID, update)
+	vcsProvider, err = s.store.UpdateVCSProvider(ctx, principalID, vcsProvider.ID, update)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertToVCSProvider(vcsProvider), nil
+	return convertVCSProvider(vcsProvider), nil
 }
 
 // DeleteVCSProvider deletes an existing vcs provider.
@@ -109,7 +118,7 @@ func (s *VCSProviderService) DeleteVCSProvider(ctx context.Context, request *v1p
 		return nil, err
 	}
 
-	if err := s.store.DeleteVCSProviderV2(ctx, vcsProvider.ID); err != nil {
+	if err := s.store.DeleteVCSProvider(ctx, vcsProvider.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to delete vcs provider: %v", err)
 	}
 	return &emptypb.Empty{}, nil
@@ -190,7 +199,7 @@ func (s *VCSProviderService) getVCS(ctx context.Context, name string) (*store.VC
 		find.ResourceID = &vcsResourceID
 	}
 
-	vcsProvider, err := s.store.GetVCSProviderV2(ctx, find)
+	vcsProvider, err := s.store.GetVCSProvider(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to retrieve vcs provider: %v", err)
 	}
@@ -203,12 +212,12 @@ func (s *VCSProviderService) getVCS(ctx context.Context, name string) (*store.VC
 func convertToVCSProviders(vcsProviders []*store.VCSProviderMessage) []*v1pb.VCSProvider {
 	var res []*v1pb.VCSProvider
 	for _, vcsProvider := range vcsProviders {
-		res = append(res, convertToVCSProvider(vcsProvider))
+		res = append(res, convertVCSProvider(vcsProvider))
 	}
 	return res
 }
 
-func convertToVCSProvider(vcsProvider *store.VCSProviderMessage) *v1pb.VCSProvider {
+func convertVCSProvider(vcsProvider *store.VCSProviderMessage) *v1pb.VCSProvider {
 	tp := v1pb.VCSProvider_TYPE_UNSPECIFIED
 	switch vcsProvider.Type {
 	case vcs.GitHub:
@@ -222,38 +231,40 @@ func convertToVCSProvider(vcsProvider *store.VCSProviderMessage) *v1pb.VCSProvid
 	}
 
 	return &v1pb.VCSProvider{
-		Name:  fmt.Sprintf("%s%d", common.VCSProviderPrefix, vcsProvider.ID),
-		Title: vcsProvider.Name,
+		Name:  fmt.Sprintf("%s%s", common.VCSProviderPrefix, vcsProvider.ResourceID),
+		Title: vcsProvider.Title,
 		Type:  tp,
 		Url:   vcsProvider.InstanceURL,
 	}
 }
 
-func checkAndConvertToStoreVersionControl(vcsProvider *v1pb.VCSProvider) (*store.VCSProviderMessage, error) {
-	if vcsProvider.Title == "" {
+func convertV1VCSProvider(request *v1pb.CreateVCSProviderRequest) (*store.VCSProviderMessage, error) {
+	v1VCSProvider := request.GetVcsProvider()
+	if v1VCSProvider.GetTitle() == "" {
 		return nil, errors.Errorf("Empty VCSProvider.Title")
 	}
-	if vcsProvider.Type == v1pb.VCSProvider_TYPE_UNSPECIFIED {
+	if v1VCSProvider.GetType() == v1pb.VCSProvider_TYPE_UNSPECIFIED {
 		return nil, errors.Errorf("Empty VCSProvider.Type")
 	}
-	if vcsProvider.Url == "" {
+	if v1VCSProvider.GetUrl() == "" {
 		return nil, errors.Errorf("Empty VCSProvider.Url")
 	}
-	if vcsProvider.AccessToken == "" {
+	if v1VCSProvider.GetAccessToken() == "" {
 		return nil, errors.Errorf("Empty VCSProvider.Secret")
 	}
-	storeVCSProvider := &store.VCSProviderMessage{
-		Name:        vcsProvider.Title,
-		AccessToken: vcsProvider.AccessToken,
-	}
-
-	tp, err := convertVCSProviderTypeToVCSType(vcsProvider.Type)
+	tp, err := convertVCSProviderTypeToVCSType(v1VCSProvider.GetType())
 	if err != nil {
 		return nil, err
 	}
 
-	storeVCSProvider.InstanceURL = strings.TrimRight(vcsProvider.Url, "/")
-	storeVCSProvider.Type = tp
+	storeVCSProvider := &store.VCSProviderMessage{
+		ResourceID:  request.GetVcsProviderId(),
+		Title:       v1VCSProvider.GetTitle(),
+		Type:        tp,
+		InstanceURL: strings.TrimRight(v1VCSProvider.GetUrl(), "/"),
+		AccessToken: v1VCSProvider.GetAccessToken(),
+	}
+
 	return storeVCSProvider, nil
 }
 

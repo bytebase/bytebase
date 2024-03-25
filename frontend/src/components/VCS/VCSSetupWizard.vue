@@ -52,6 +52,7 @@ const state = reactive<LocalState>({
   config: {
     type: VCSProvider_Type.GITLAB,
     uiType: "GITLAB_SELF_HOST",
+    resourceId: "",
     name: t("gitops.setting.add-git-provider.gitlab-self-host"),
     instanceUrl: "",
     accessToken: "",
@@ -69,7 +70,7 @@ const allowCreate = computed(() => {
 
 const tryFinishSetup = () => {
   vcsV1Store
-    .createVCS({
+    .createVCS(state.config.resourceId, {
       name: "",
       title: state.config.name,
       type: state.config.type,

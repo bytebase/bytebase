@@ -3,10 +3,8 @@ import {
   getProjectName,
   getWorksheetId,
   worksheetNamePrefix,
-  getVCSUid,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { VCSProvider as VCSV1 } from "@/types/proto/v1/vcs_provider_service";
 import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { IssueId, SQLReviewPolicy } from "../types";
 import { IdType } from "../types/id";
@@ -56,10 +54,6 @@ export function stageSlug(stageName: string, stageIndex: number): string {
 
 export function taskSlug(name: string, id: IdType): string {
   return [slug(name), id].join("-");
-}
-
-export function vcsSlugV1(vcs: VCSV1): string {
-  return [slug(vcs.title), getVCSUid(vcs.name)].join("-");
 }
 
 export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
