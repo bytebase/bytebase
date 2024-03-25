@@ -1,18 +1,24 @@
 <template>
   <div class="space-y-4">
-    <div class="flex justify-end">
-      <div v-if="vcsWithUIType" class="flex flex-row items-center space-x-2">
-        <div class="textlabel whitespace-nowrap">
-          {{ vcsWithUIType.title }}
-        </div>
-        <VCSIcon custom-class="h-6" :type="vcsWithUIType.type" />
-      </div>
-    </div>
-
     <div>
-      <label for="instanceurl" class="textlabel">
-        {{ $t("common.instance") }} URL
-      </label>
+      <div class="flex items-center space-x-2">
+        <label for="instanceurl" class="textlabel">
+          {{ $t("common.instance") }} URL
+        </label>
+        <div class="flex items-center">
+          <div
+            v-if="vcsWithUIType"
+            class="flex flex-row items-center space-x-1"
+          >
+            (
+            <div class="textlabel whitespace-nowrap">
+              {{ vcsWithUIType.title }}
+            </div>
+            <VCSIcon custom-class="h-4" :type="vcsWithUIType.type" />
+            )
+          </div>
+        </div>
+      </div>
       <BBTextField
         id="instanceurl"
         name="instanceurl"

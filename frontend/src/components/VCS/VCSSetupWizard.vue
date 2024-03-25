@@ -1,44 +1,34 @@
 <template>
-  <BBAttention
-    v-if="showAttention"
-    type="warning"
-    :description="attentionText"
-    :link="link"
-  />
-  <StepTab
-    class="mt-4 mb-8"
-    :current-index="state.currentStep"
-    :step-list="stepList"
-    :allow-next="allowNext"
-    :show-cancel="showCancel"
-    :finish-title="$t('common.confirm-and-add')"
-    @update:current-index="tryChangeStep"
-    @finish="tryFinishSetup"
-    @cancel="cancelSetup"
-  >
-    <template #0>
-      <VCSProviderBasicInfoPanel :config="state.config" />
-    </template>
-    <template #1>
-      <VCSProviderOAuthPanel :config="state.config" />
-    </template>
-  </StepTab>
+  <VCSProviderBasicInfoPanel :config="state.config" />
+  <div class="pt-4 mt-6 flex border-t justify-end">
+    <div class="space-x-3">
+      <NButton @click.prevent="cancelSetup">
+        {{ $t("common.cancel") }}
+      </NButton>
+      <NButton
+        type="primary"
+        :disabled="!allowCreate"
+        @click.prevent="tryFinishSetup"
+      >
+        {{ $t("common.confirm-and-add") }}
+      </NButton>
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { StepTab } from "@/components/v2";
 import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
-import { pushNotification, useVCSV1Store } from "@/store";
+import { pushNotification, useVCSV1Store, useCurrentUserV1 } from "@/store";
 import { VCSConfig } from "@/types";
 import {
   VCSProvider,
   VCSProvider_Type,
 } from "@/types/proto/v1/vcs_provider_service";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
-import VCSProviderOAuthPanel from "./VCSProviderOAuthPanel.vue";
 
 withDefaults(
   defineProps<{
@@ -49,21 +39,14 @@ withDefaults(
   }
 );
 
-const CONFIRM_STEP = 1;
-
 interface LocalState {
   config: VCSConfig;
-  currentStep: number;
 }
 
 const { t } = useI18n();
 const router = useRouter();
 const vcsV1Store = useVCSV1Store();
-
-const stepList = [
-  { title: t("gitops.setting.add-git-provider.basic-info.self") },
-  { title: t("common.confirm") },
-];
+const currentUser = useCurrentUserV1();
 
 const state = reactive<LocalState>({
   config: {
@@ -73,57 +56,16 @@ const state = reactive<LocalState>({
     instanceUrl: "",
     accessToken: "",
   },
-  currentStep: 0,
 });
 
-const allowNext = computed((): boolean => {
-  return true;
+const allowCreate = computed(() => {
+  return (
+    hasWorkspacePermissionV2(currentUser.value, "bb.vcsProviders.create") &&
+    state.config.instanceUrl &&
+    state.config.accessToken &&
+    state.config.name
+  );
 });
-
-const attentionText = computed((): string => {
-  if (state.config.type === VCSProvider_Type.GITLAB) {
-    if (state.config.uiType == "GITLAB_SELF_HOST") {
-      return t(
-        "gitops.setting.add-git-provider.gitlab-self-host-admin-requirement"
-      );
-    }
-    return t("gitops.setting.add-git-provider.gitlab-com-admin-requirement");
-  } else if (state.config.type === VCSProvider_Type.GITHUB) {
-    return t("gitops.setting.add-git-provider.github-com-admin-requirement");
-  } else if (state.config.type === VCSProvider_Type.BITBUCKET) {
-    return t("gitops.setting.add-git-provider.bitbucket-admin-requirement");
-  } else if (state.config.type === VCSProvider_Type.AZURE_DEVOPS) {
-    return t("gitops.setting.add-git-provider.azure-admin-requirement");
-  }
-  return "";
-});
-
-const link = computed((): string => {
-  if (state.config.type === VCSProvider_Type.GITLAB) {
-    if (state.config.uiType == "GITLAB_SELF_HOST") {
-      return "https://www.bytebase.com/docs/vcs-integration/self-host-gitlab/?source=console";
-    }
-    return "https://www.bytebase.com/docs/vcs-integration/gitlab-com/?source=console";
-  } else if (state.config.type === VCSProvider_Type.GITHUB) {
-    if (state.config.uiType == "GITHUB_COM") {
-      return "https://www.bytebase.com/docs/vcs-integration/github-com/?source=console";
-    }
-    return "https://www.bytebase.com/docs/vcs-integration/github-enterprise/?source=console";
-  } else if (state.config.type === VCSProvider_Type.BITBUCKET) {
-    return "https://www.bytebase.com/docs/vcs-integration/bitbucket-org/?source=console";
-  } else if (state.config.type === VCSProvider_Type.AZURE_DEVOPS) {
-    return "https://www.bytebase.com/docs/vcs-integration/azure-devops/?source=console";
-  }
-  return "";
-});
-
-const showAttention = computed((): boolean => {
-  return state.currentStep != CONFIRM_STEP;
-});
-
-const tryChangeStep = (nextStepIndex: number) => {
-  state.currentStep = nextStepIndex;
-};
 
 const tryFinishSetup = () => {
   vcsV1Store
