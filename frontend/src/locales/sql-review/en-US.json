@@ -593,6 +593,10 @@
     "statement-add-foreign-key-not-valid": {
       "title": "Enforce including \"NOT VALID\" option when adding foreign keys",
       "description": "Adding foreign keys needs to verify the existing data and lock the table. This blocks read and write, which may cause business interruption. It is recommended to add the \"NOT VALID\" option to validate new data and validate existing data after the change is completed. Suggestion error level: Warning"
+    },
+    "statement-non-transactional": {
+      "title": "Detect and report non-transactional statements",
+      "description": ""
     }
   },
   "level": {
