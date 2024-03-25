@@ -125,6 +125,14 @@ const filterSidebarByPermissions = (
     })
     .map((item) => ({
       ...item,
+      expand:
+        item.expand ||
+        (item.children ?? [])
+          .reduce((classList, child) => {
+            classList.push(...getItemClass(child));
+            return classList;
+          }, [] as string[])
+          .includes("router-link-active"),
       children: filterSidebarByPermissions(item.children ?? []),
     }));
 };
