@@ -1004,13 +1004,9 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		baseDir = strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
 	}
 
-	vcsID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs id: %s", request.ProjectGitopsInfo.VcsUid)
-	}
-
 	repositoryCreate := &store.RepositoryMessage{
-		VCSUID:            int(vcsID),
+		VCSUID:            storeVCS.ID,
+		VCSResourceID:     storeVCS.ResourceID,
 		ProjectResourceID: project.ResourceID,
 		// TODO(d): pass in the resource ID from API.
 		ResourceID:         "default",
