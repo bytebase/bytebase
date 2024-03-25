@@ -173,7 +173,7 @@ func (s *Store) UpdateVCSProviderV2(ctx context.Context, principalUID int, vcsPr
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, resource_id name, type, instance_url, access_token
+		RETURNING id, resource_id, name, type, instance_url, access_token
 	`, len(args)),
 		args...,
 	).Scan(
