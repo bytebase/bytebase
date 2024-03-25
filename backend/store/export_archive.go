@@ -20,7 +20,7 @@ type ExportArchiveMessage struct {
 	Payload     *storepb.ExportArchivePayload
 }
 
-// FindExportArchiveMessage is the API message for finding branches.
+// FindExportArchiveMessage is the API message for finding export archives.
 type FindExportArchiveMessage struct {
 	UID *int
 }
