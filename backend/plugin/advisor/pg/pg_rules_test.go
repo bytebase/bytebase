@@ -25,6 +25,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementInsertRowLimit,
 		advisor.SchemaRuleStatementNoSelectAll,
 		advisor.SchemaRuleStatementNoLeadingWildcardLike,
+		advisor.SchemaRuleStatementNonTransactional,
 		advisor.SchemaRuleStatementRequireWhere,
 		advisor.SchemaRuleCharsetAllowlist,
 		advisor.SchemaRuleTableNoFK,
