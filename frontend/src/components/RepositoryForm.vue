@@ -77,7 +77,6 @@
         :disabled="!allowEdit"
       />
     </div>
-    <!-- Project schemaChangeType selector -->
     <div>
       <div class="textlabel">
         {{ $t("project.settings.schema-change-type") }}
@@ -87,13 +86,6 @@
           class="ml-1"
         />
       </div>
-      <NSelect
-        :options="schemaChangeTypeOptions"
-        :value="schemaChangeType"
-        :render-label="renderLabel"
-        class="mt-1"
-        @update:value="$emit('change-schema-change-type', $event)"
-      />
     </div>
     <div>
       <div class="textlabel">
@@ -125,7 +117,7 @@
         {{ $t("common.optional-directory-wildcard") }}:
         {{ FILE_OPTIONAL_DIRECTORY_WILDCARD }}
       </div>
-      <div v-if="isProjectSchemaChangeTypeDDL" class="mt-2 textinfolabel">
+      <div class="mt-2 textinfolabel">
         • {{ $t("repository.file-path-example-schema-migration") }}:
         {{
           sampleFilePath(
@@ -154,17 +146,9 @@
 </template>
 
 <script lang="ts" setup>
-import { NSelect, SelectOption } from "naive-ui";
-import { reactive, computed, h } from "vue";
-import { useI18n } from "vue-i18n";
-import { BBBetaBadge } from "@/bbkit";
+import { reactive, computed } from "vue";
 import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
-import {
-  Project,
-  TenantMode,
-  SchemaChange,
-  schemaChangeToJSON,
-} from "@/types/proto/v1/project_service";
+import { Project, TenantMode } from "@/types/proto/v1/project_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
@@ -179,7 +163,6 @@ interface LocalState {
 
 defineEmits<{
   (event: "change-repository"): void;
-  (event: "change-schema-change-type", changeType: SchemaChange): void;
 }>();
 
 const props = withDefaults(
@@ -191,15 +174,12 @@ const props = withDefaults(
     repositoryInfo: ExternalRepositoryInfo;
     repositoryConfig: RepositoryConfig;
     project: Project;
-    schemaChangeType: SchemaChange;
   }>(),
   {
     allowEdit: true,
     create: false,
   }
 );
-
-const { t } = useI18n();
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
@@ -208,9 +188,6 @@ const state = reactive<LocalState>({
 
 const isTenantProject = computed(() => {
   return props.project.tenantMode === TenantMode.TENANT_MODE_ENABLED;
-});
-const isProjectSchemaChangeTypeDDL = computed(() => {
-  return (props.schemaChangeType || SchemaChange.DDL) === SchemaChange.DDL;
 });
 
 const sampleFilePath = (
@@ -277,32 +254,5 @@ const fileOptionalPlaceholder = computed(() => {
   if (!isTenantProject.value) tags.push("{{ENV_ID}}");
   tags.push("{{DESCRIPTION}}");
   return tags;
-});
-
-const renderLabel = (option: SelectOption) => {
-  const value = option.value as SchemaChange;
-  const child = [
-    h(
-      "span",
-      {},
-      t(
-        `project.settings.select-schema-change-type-${schemaChangeToJSON(
-          value
-        ).toLowerCase()}`
-      )
-    ),
-  ];
-  if (value === SchemaChange.SDL) {
-    child.push(h(BBBetaBadge, { class: "!leading-3" }));
-  }
-
-  return h("div", { class: "flex items-center gap-x-2" }, child);
-};
-
-const schemaChangeTypeOptions = computed(() => {
-  return [SchemaChange.DDL, SchemaChange.SDL].map((val) => ({
-    value: val,
-    label: schemaChangeToJSON(val),
-  }));
 });
 </script>

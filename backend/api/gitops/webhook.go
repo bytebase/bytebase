@@ -948,22 +948,7 @@ func (s *Service) processFilesInProject(ctx context.Context, oauthContext *commo
 	creatorID := s.getIssueCreatorID(ctx, pushEvent.CommitList[0].AuthorEmail)
 	for _, fileInfo := range fileInfoList {
 		if fileInfo.fType == fileTypeSchema {
-			if fileInfo.repoInfo.project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
-				// Create one issue per schema file for SDL project.
-				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, oauthContext, repoInfo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
-				activityCreateList = append(activityCreateList, activityCreateListForFile...)
-				if len(migrationDetailListForFile) != 0 {
-					databaseName := fileInfo.migrationInfo.Database
-					issueName := fmt.Sprintf(sdlIssueNameTemplate, databaseName, "Alter schema")
-					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
-					if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailListForFile); err != nil {
-						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue %s, error %v", issueName, err).SetInternal(err)
-					}
-					createdIssueList = append(createdIssueList, issueName)
-				}
-			} else {
-				slog.Debug("Ignored schema file for non-SDL project", slog.String("fileName", fileInfo.item.FileName), slog.String("type", string(fileInfo.item.ItemType)))
-			}
+			slog.Debug("Ignored schema file for non-SDL project", slog.String("fileName", fileInfo.item.FileName), slog.String("type", string(fileInfo.item.ItemType)))
 		} else { // fileInfo.fType == fileTypeMigration
 			// This is a migration-based DDL or DML file and we would allow it for both DDL and SDL schema change type project.
 			// For DDL schema change type project, this is expected.
@@ -1013,22 +998,7 @@ func (s *Service) processFilesInBatchProject(ctx context.Context, oauthContext *
 	creatorID := s.getIssueCreatorID(ctx, pushEvent.CommitList[0].AuthorEmail)
 	for _, fileInfo := range fileInfoList {
 		if fileInfo.fType == fileTypeSchema {
-			if fileInfo.repoInfo.project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
-				// Create one issue per schema file for SDL project.
-				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, oauthContext, repoInfo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
-				activityCreateList = append(activityCreateList, activityCreateListForFile...)
-				if len(migrationDetailListForFile) != 0 {
-					databaseName := fileInfo.migrationInfo.Database
-					issueName := fmt.Sprintf(sdlIssueNameTemplate, databaseName, "Alter schema")
-					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
-					if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailListForFile); err != nil {
-						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue %s, error %v", issueName, err).SetInternal(err)
-					}
-					createdIssueList = append(createdIssueList, issueName)
-				}
-			} else {
-				slog.Debug("Ignored schema file for non-SDL project", slog.String("fileName", fileInfo.item.FileName), slog.String("type", string(fileInfo.item.ItemType)))
-			}
+			slog.Debug("Ignored schema file for non-SDL project", slog.String("fileName", fileInfo.item.FileName), slog.String("type", string(fileInfo.item.ItemType)))
 		} else { // fileInfo.fType == fileTypeMigration
 			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, oauthContext, repoInfo, pushEvent, fileInfo)
 			if len(migrationDetailListForFile) != 1 {
@@ -1391,67 +1361,6 @@ func (s *Service) readFileContent(ctx context.Context, oauthContext *common.Oaut
 		return "", errors.Wrap(err, "read content")
 	}
 	return content, nil
-}
-
-// prepareIssueFromSDLFile returns the migration info and a list of update
-// schema details derived from the given push event for SDL.
-func (s *Service) prepareIssueFromSDLFile(ctx context.Context, oauthContext *common.OauthContext, repoInfo *repoInfo, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*migrationDetail, []*store.ActivityMessage) {
-	dbName := schemaInfo.Database
-	if dbName == "" && repoInfo.project.TenantMode == api.TenantModeDisabled {
-		slog.Debug("Ignored schema file without a database name", slog.String("file", file))
-		return nil, nil
-	}
-
-	sdl, err := s.readFileContent(ctx, oauthContext, pushEvent, repoInfo, file)
-	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
-		return nil, []*store.ActivityMessage{activityCreate}
-	}
-
-	sheetPayload := &storepb.SheetPayload{
-		VcsPayload: &storepb.SheetPayload_VCSPayload{
-			PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
-		},
-	}
-	sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
-		CreatorID:  api.SystemBotID,
-		ProjectUID: repoInfo.project.UID,
-		Title:      file,
-		Statement:  sdl,
-		Payload:    sheetPayload,
-	})
-	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
-		return nil, []*store.ActivityMessage{activityCreate}
-	}
-
-	var migrationDetailList []*migrationDetail
-	if repoInfo.project.TenantMode == api.TenantModeTenant {
-		return []*migrationDetail{
-			{
-				migrationType: db.MigrateSDL,
-				sheetID:       sheet.UID,
-			},
-		}, nil
-	}
-
-	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID, dbName, schemaInfo.Environment)
-	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
-		return nil, []*store.ActivityMessage{activityCreate}
-	}
-
-	for _, database := range databases {
-		migrationDetailList = append(migrationDetailList,
-			&migrationDetail{
-				migrationType: db.MigrateSDL,
-				databaseID:    database.UID,
-				sheetID:       sheet.UID,
-			},
-		)
-	}
-
-	return migrationDetailList, nil
 }
 
 // prepareIssueFromFile returns a list of update schema details derived

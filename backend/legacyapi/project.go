@@ -59,18 +59,6 @@ const (
 	TenantModeTenant ProjectTenantMode = "TENANT"
 )
 
-// ProjectSchemaChangeType is the schema change type for projects.
-type ProjectSchemaChangeType string
-
-const (
-	// ProjectSchemaChangeTypeDDL is the Data Definition Language (DDL) schema
-	// migration.
-	ProjectSchemaChangeTypeDDL ProjectSchemaChangeType = "DDL"
-	// ProjectSchemaChangeTypeSDL is the Schema Definition Language (SDL) schema
-	// migration.
-	ProjectSchemaChangeTypeSDL ProjectSchemaChangeType = "SDL"
-)
-
 var (
 	// DBNameToken is the token for database name.
 	DBNameToken = "{{DB_NAME}}"
