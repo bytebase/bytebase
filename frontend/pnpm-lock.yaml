@@ -90,8 +90,8 @@ dependencies:
     specifier: 4.17.21
     version: 4.17.21
   lucide-vue-next:
-    specifier: ^0.343.0
-    version: 0.343.0(vue@3.4.21)
+    specifier: ^0.363.0
+    version: 0.363.0(vue@3.4.21)
   markdown-it:
     specifier: ^14.0.0
     version: 14.0.0
@@ -4831,8 +4831,8 @@ packages:
     resolution: {integrity: sha512-AI2r85+4MquTw9ZYqabu4nMwy9Oftlfa/e/52t9IjtfG+mGBbTNdAoZ3RQKLHR6r0wQnwZnPIEh/Ya6XTWAKNA==}
     dev: false
 
-  /lucide-vue-next@0.343.0(vue@3.4.21):
-    resolution: {integrity: sha512-mDp/hL7HM5tGuoa8AcJMfbcpmJWxZT917RMeS4/dPTqiUS+fVxD0UT2qKuuYlEzvJedkJTApuDJ6N2ZbsJMAYA==}
+  /lucide-vue-next@0.363.0(vue@3.4.21):
+    resolution: {integrity: sha512-dc5KgrXhCPMEzKz6voDVvxXkwEr7n+Q4b7qLyS2e3DTlH9GMFydS4fHoSvpZR/a5M7i1EOpFI8/BA8SPjAOwEQ==}
     peerDependencies:
       vue: '>=3.0.1'
     dependencies:
