@@ -189,7 +189,6 @@ const makeUnknown = (type: ResourceType) => {
       sshUser: "",
       sshPassword: "",
       sshPrivateKey: "",
-      authenticationPrivateKey: "",
     },
     // UI-only fields
     updateSsl: false,
@@ -261,8 +260,7 @@ const makeUnknown = (type: ResourceType) => {
     uiType: "GITLAB_SELF_HOST",
     instanceUrl: "",
     apiUrl: "",
-    applicationId: "",
-    secret: "",
+    accessToken: "",
   };
 
   const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
@@ -401,7 +399,6 @@ const makeEmpty = (type: ResourceType) => {
       sshUser: "",
       sshPassword: "",
       sshPrivateKey: "",
-      authenticationPrivateKey: "",
     },
     // UI-only fields
     updateSsl: false,
@@ -473,8 +470,7 @@ const makeEmpty = (type: ResourceType) => {
     uiType: "GITLAB_SELF_HOST",
     instanceUrl: "",
     apiUrl: "",
-    applicationId: "",
-    secret: "",
+    accessToken: "",
   };
 
   switch (type) {

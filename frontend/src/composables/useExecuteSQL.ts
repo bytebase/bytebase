@@ -180,6 +180,7 @@ const useExecuteSQL = () => {
         const resultSet = await useSQLStore().queryReadonly(
           {
             name: database.name,
+            connectionDatabase: database.databaseName, // deprecated field, remove me later
             dataSourceId: dataSourceId,
             statement,
             limit: RESULT_ROWS_LIMIT,

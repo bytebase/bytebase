@@ -35,7 +35,6 @@ export const isDatabaseRelatedIssue = (issue: ComposedIssue): boolean => {
       Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER,
       Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
       Task_Type.DATABASE_DATA_UPDATE,
-      Task_Type.DATABASE_BACKUP,
     ];
     return DATABASE_RELATED_TASK_TYPE_LIST.includes(task.type);
   });
