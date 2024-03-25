@@ -149,16 +149,8 @@ func createSQLReviewPipeline(ctx context.Context, oauthCtx *common.OauthContext,
 		ctx,
 		client,
 		apiURL,
-		&oauthCtx.AccessToken,
+		oauthCtx.AccessToken,
 		bytes.NewReader(body),
-		tokenRefresher(
-			oauthContext{
-				RefreshToken: oauthCtx.RefreshToken,
-				ClientSecret: oauthCtx.ClientSecret,
-				RedirectURL:  oauthCtx.RedirectURL,
-			},
-			oauthCtx.Refresher,
-		),
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "POST %s", apiURL)
@@ -222,16 +214,8 @@ func createSQLReviewBranchPolicy(ctx context.Context, oauthCtx *common.OauthCont
 		ctx,
 		client,
 		apiURL,
-		&oauthCtx.AccessToken,
+		oauthCtx.AccessToken,
 		bytes.NewReader(body),
-		tokenRefresher(
-			oauthContext{
-				RefreshToken: oauthCtx.RefreshToken,
-				ClientSecret: oauthCtx.ClientSecret,
-				RedirectURL:  oauthCtx.RedirectURL,
-			},
-			oauthCtx.Refresher,
-		),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "POST %s", apiURL)

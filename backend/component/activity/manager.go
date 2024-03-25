@@ -59,12 +59,13 @@ func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, tasks []
 		}
 
 		activityCreate := &store.ActivityMessage{
-			CreatorUID:   updaterUID,
-			ContainerUID: task.PipelineID,
-			Type:         api.ActivityPipelineTaskRunStatusUpdate,
-			Level:        api.ActivityInfo,
-			Comment:      comment,
-			Payload:      string(payload),
+			CreatorUID:        updaterUID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      task.PipelineID,
+			Type:              api.ActivityPipelineTaskRunStatusUpdate,
+			Level:             api.ActivityInfo,
+			Comment:           comment,
+			Payload:           string(payload),
 		}
 		creates = append(creates, activityCreate)
 	}
@@ -145,12 +146,13 @@ func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks [
 		}
 
 		activityCreate := &store.ActivityMessage{
-			CreatorUID:   updaterID,
-			ContainerUID: task.PipelineID,
-			Type:         api.ActivityPipelineTaskRunStatusUpdate,
-			Level:        api.ActivityInfo,
-			Comment:      comment,
-			Payload:      string(payload),
+			CreatorUID:        updaterID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      task.PipelineID,
+			Type:              api.ActivityPipelineTaskRunStatusUpdate,
+			Level:             api.ActivityInfo,
+			Comment:           comment,
+			Payload:           string(payload),
 		}
 		creates = append(creates, activityCreate)
 	}
@@ -230,12 +232,13 @@ func (m *Manager) BatchCreateActivitiesForCancelTaskRuns(ctx context.Context, ta
 		}
 
 		activityCreate := &store.ActivityMessage{
-			CreatorUID:   updaterUID,
-			ContainerUID: task.PipelineID,
-			Type:         api.ActivityPipelineTaskRunStatusUpdate,
-			Level:        api.ActivityInfo,
-			Comment:      comment,
-			Payload:      string(payload),
+			CreatorUID:        updaterUID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      task.PipelineID,
+			Type:              api.ActivityPipelineTaskRunStatusUpdate,
+			Level:             api.ActivityInfo,
+			Comment:           comment,
+			Payload:           string(payload),
 		}
 		creates = append(creates, activityCreate)
 	}

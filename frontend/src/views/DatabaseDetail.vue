@@ -24,13 +24,6 @@
                     :tooltip="true"
                     class="w-5 h-5"
                   />
-
-                  <BBBadge
-                    v-if="isPITRDatabaseV1(database)"
-                    text="PITR"
-                    :can-remove="false"
-                    class="text-xs"
-                  />
                 </h1>
               </div>
             </div>
@@ -141,15 +134,6 @@
         <DatabaseChangeHistoryPanel :database="database" />
       </NTabPane>
       <NTabPane
-        v-if="
-          showBackupRestoreTab && allowToChangeDatabase && allowGetBackupSetting
-        "
-        name="backup-and-restore"
-        :tab="$t('common.backup-and-restore')"
-      >
-        <DatabaseBackupPanel :database="database" />
-      </NTabPane>
-      <NTabPane
         v-if="allowToChangeDatabase && allowListSlowQueries"
         name="slow-query"
         :tab="$t('slow-query.slow-queries')"
@@ -219,7 +203,6 @@ import { computed, reactive, watch, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useRoute } from "vue-router";
-import DatabaseBackupPanel from "@/components/Database/DatabaseBackupPanel.vue";
 import DatabaseChangeHistoryPanel from "@/components/Database/DatabaseChangeHistoryPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
 import DatabaseSlowQueryPanel from "@/components/Database/DatabaseSlowQueryPanel.vue";
@@ -255,7 +238,6 @@ import { UNKNOWN_ID, unknownEnvironment } from "@/types";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { State } from "@/types/proto/v1/common";
 import {
-  isPITRDatabaseV1,
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
   allowUsingSchemaEditorV1,
@@ -265,7 +247,6 @@ import {
 const databaseHashList = [
   "overview",
   "change-history",
-  "backup-and-restore",
   "slow-query",
   "setting",
 ] as const;
@@ -312,13 +293,9 @@ const {
   allowTransferDatabase,
   allowChangeData,
   allowAlterSchema,
-  allowGetBackupSetting,
   allowListChangeHistories,
   allowListSlowQueries,
 } = useDatabaseDetailContext();
-const showBackupRestoreTab = computed(() => {
-  return false; // hide for now
-});
 
 onMounted(async () => {
   anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({

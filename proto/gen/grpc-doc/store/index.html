@@ -455,6 +455,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.ExportFormat"><span class="badge">E</span>ExportFormat</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MaskingLevel"><span class="badge">E</span>MaskingLevel</a>
                 </li>
               
@@ -484,6 +488,10 @@
                   <a href="#bytebase.store.DataSourceOptions"><span class="badge">M</span>DataSourceOptions</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType"><span class="badge">E</span>DataSourceExternalSecret.AppRoleAuthOption.SecretType</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.DataSourceExternalSecret.AuthType"><span class="badge">E</span>DataSourceExternalSecret.AuthType</a>
@@ -667,7 +675,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanConfig.RestoreDatabaseConfig"><span class="badge">M</span>PlanConfig.RestoreDatabaseConfig</a>
+                  <a href="#bytebase.store.PlanConfig.ExportDataConfig"><span class="badge">M</span>PlanConfig.ExportDataConfig</a>
                 </li>
               
                 <li>
@@ -3590,6 +3598,47 @@ Example: projects/project-id/branches/branch-id. </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.store.ExportFormat">ExportFormat</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>FORMAT_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CSV</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>JSON</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SQL</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>XLSX</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.store.MaskingLevel">MaskingLevel</h3>
         <p></p>
         <table class="enum-table">
@@ -3732,7 +3781,7 @@ Example: projects/project-id/branches/branch-id. </p></td>
                 </tr>
               
                 <tr>
-                  <td>key_name</td>
+                  <td>password_key_name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>the key name for the password. </p></td>
@@ -3746,7 +3795,7 @@ Example: projects/project-id/branches/branch-id. </p></td>
         
       
         <h3 id="bytebase.store.DataSourceExternalSecret.AppRoleAuthOption">DataSourceExternalSecret.AppRoleAuthOption</h3>
-        <p>app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle</p>
+        <p></p>
 
         
           <table class="field-table">
@@ -3766,7 +3815,21 @@ Example: projects/project-id/branches/branch-id. </p></td>
                   <td>secret_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
+                  <td><p>the secret id for the role without ttl. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</a></td>
+                  <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mount_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The path where the approle auth method is mounted. </p></td>
                 </tr>
               
             </tbody>
@@ -3874,6 +3937,35 @@ Used for authentication when connecting to the data source. </p></td>
       
 
       
+        <h3 id="bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SECRET_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PLAIN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ENVIRONMENT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.store.DataSourceExternalSecret.AuthType">DataSourceExternalSecret.AuthType</h3>
         <p></p>
         <table class="enum-table">
@@ -3891,13 +3983,13 @@ Used for authentication when connecting to the data source. </p></td>
               <tr>
                 <td>TOKEN</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>ref: https://developer.hashicorp.com/vault/docs/auth/token</p></td>
               </tr>
             
               <tr>
                 <td>APP_ROLE</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>ref: https://developer.hashicorp.com/vault/docs/auth/approle</p></td>
               </tr>
             
           </tbody>
@@ -3920,7 +4012,7 @@ Used for authentication when connecting to the data source. </p></td>
               <tr>
                 <td>VAULT_KV_V2</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2</p></td>
               </tr>
             
           </tbody>
@@ -5287,7 +5379,7 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
 
         
       
-        <h3 id="bytebase.store.PlanConfig.RestoreDatabaseConfig">PlanConfig.RestoreDatabaseConfig</h3>
+        <h3 id="bytebase.store.PlanConfig.ExportDataConfig">PlanConfig.ExportDataConfig</h3>
         <p></p>
 
         
@@ -5301,30 +5393,38 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td>target</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The resource name of the target to restore.
-Format: instances/{instance}/databases/{database} </p></td>
+                  <td><p>The resource name of the target.
+Format: instances/{instance-id}/databases/{database-name} </p></td>
                 </tr>
               
                 <tr>
-                  <td>create_database_config</td>
-                  <td><a href="#bytebase.store.PlanConfig.CreateDatabaseConfig">PlanConfig.CreateDatabaseConfig</a></td>
-                  <td>optional</td>
-                  <td><p>create_database_config is present if the user wants to restore to a new database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>backup</td>
+                  <td>sheet</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Restore from a backup.
-Format: instances/{instance}/databases/{database}/backups/{backup-name} </p></td>
+                  <td><p>The resource name of the sheet.
+Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
-                  <td>point_in_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>max_rows</td>
+                  <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>After the PITR operations, the database will be recovered to the state at this time. </p></td>
+                  <td><p>The max number of rows to export. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>format</td>
+                  <td><a href="#bytebase.store.ExportFormat">ExportFormat</a></td>
+                  <td></td>
+                  <td><p>The format of the exported file. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The zip password provide by users.
+Leave it empty if no needs to encrypt the zip file. </p></td>
                 </tr>
               
             </tbody>
@@ -5362,7 +5462,8 @@ Format: instances/{instance}/databases/{database}/backups/{backup-name} </p></td
                   <td>depends_on_specs</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>IDs of the specs that this spec depends on. </p></td>
+                  <td><p>IDs of the specs that this spec depends on.
+Must be a subset of the specs in the same step. </p></td>
                 </tr>
               
                 <tr>
@@ -5380,8 +5481,8 @@ Format: instances/{instance}/databases/{database}/backups/{backup-name} </p></td
                 </tr>
               
                 <tr>
-                  <td>restore_database_config</td>
-                  <td><a href="#bytebase.store.PlanConfig.RestoreDatabaseConfig">PlanConfig.RestoreDatabaseConfig</a></td>
+                  <td>export_data_config</td>
+                  <td><a href="#bytebase.store.PlanConfig.ExportDataConfig">PlanConfig.ExportDataConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

@@ -140,7 +140,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "root", Password: ""}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "root", Password: "", Id: "admin"}},
 		},
 	})
 	a.NoError(err)
@@ -152,7 +152,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "root"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "root", Id: "admin"}},
 		},
 	})
 	a.NoError(err)
@@ -189,7 +189,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 		a.NoError(err)
 
-		results, err := ctl.adminQuery(ctx, instance, tt.databaseName, tt.query)
+		results, err := ctl.adminQuery(ctx, database, tt.query)
 		a.NoError(err)
 
 		a.Equal(len(tt.affectedRows), len(results))

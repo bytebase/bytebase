@@ -9,15 +9,14 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (ctl *controller) adminQuery(ctx context.Context, instance *v1pb.Instance, databaseName, query string) ([]*v1pb.QueryResult, error) {
+func (ctl *controller) adminQuery(ctx context.Context, database *v1pb.Database, query string) ([]*v1pb.QueryResult, error) {
 	c, err := ctl.sqlServiceClient.AdminExecute(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if err := c.Send(&v1pb.AdminExecuteRequest{
-		Name:               instance.Name,
-		ConnectionDatabase: databaseName,
-		Statement:          query,
+		Name:      database.Name,
+		Statement: query,
 	}); err != nil {
 		return nil, err
 	}

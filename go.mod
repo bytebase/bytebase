@@ -17,7 +17,7 @@ require (
 	github.com/beltran/gohive v1.7.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/mysql-parser v0.0.0-20240315091443-ac59cc21115a
-	github.com/bytebase/plsql-parser v0.0.0-20240312070534-3df16db96661
+	github.com/bytebase/plsql-parser v0.0.0-20240322071012-dfb1a879b106
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
 	github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535
 	github.com/bytebase/tidb-parser v0.0.0-20240112100539-135234be63bd
@@ -37,6 +37,8 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
+	github.com/hashicorp/vault/api v1.12.1
+	github.com/hashicorp/vault/api/auth/approle v0.6.0
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jackc/pgtype v1.14.2
 	github.com/jackc/pgx/v5 v5.5.4
@@ -77,7 +79,6 @@ require (
 	golang.org/x/crypto v0.21.0
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/oauth2 v0.17.0
-	golang.org/x/sys v0.18.0
 	golang.org/x/text v0.14.0
 	google.golang.org/api v0.167.0
 	google.golang.org/genproto v0.0.0-20240228224816-df926f6c8641
@@ -101,6 +102,7 @@ require (
 	github.com/beltran/gosasl v0.0.0-20200715011608-d5475aebb293 // indirect
 	github.com/beltran/gssapi v0.0.0-20200324152954-d86554db4bab // indirect
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
+	github.com/cenkalti/backoff/v3 v3.0.0 // indirect
 	github.com/cloudfoundry/gosigar v1.3.6 // indirect
 	github.com/cockroachdb/errors v1.8.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20190617123548-eb05cc24525f // indirect
@@ -114,6 +116,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.5 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-zookeeper/zk v1.0.1 // indirect
@@ -126,7 +129,16 @@ require (
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/gorilla/sessions v1.2.2 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/hashicorp/go-retryablehttp v0.6.6 // indirect
+	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
+	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.6 // indirect
+	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
+	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
+	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
@@ -139,6 +151,8 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
+	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
@@ -148,6 +162,7 @@ require (
 	github.com/richardlehane/mscfb v1.0.4 // indirect
 	github.com/richardlehane/msoleps v1.0.3 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
+	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
@@ -167,6 +182,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.23.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/mod v0.15.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

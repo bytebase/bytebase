@@ -4,6 +4,7 @@ package bytebase.store;
 
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
+import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -22,12 +23,13 @@ message PlanConfig {
     // A UUID4 string that uniquely identifies the Spec.
     string id = 5;
     // IDs of the specs that this spec depends on.
+    // Must be a subset of the specs in the same step.
     repeated string depends_on_specs = 6;
 
     oneof config {
       CreateDatabaseConfig create_database_config = 1;
       ChangeDatabaseConfig change_database_config = 2;
-      RestoreDatabaseConfig restore_database_config = 3;
+      ExportDataConfig export_data_config = 7;
     }
   }
 
@@ -115,21 +117,19 @@ message PlanConfig {
     optional PreUpdateBackupDetail pre_update_backup_detail = 8;
   }
 
-  message RestoreDatabaseConfig {
-    // The resource name of the target to restore.
-    // Format: instances/{instance}/databases/{database}
+  message ExportDataConfig {
+    // The resource name of the target.
+    // Format: instances/{instance-id}/databases/{database-name}
     string target = 1;
-    // create_database_config is present if the user wants to restore to a new database.
-    optional CreateDatabaseConfig create_database_config = 2;
-    // source determines how to restore the database.
-    // 1. from a backup
-    // 2. from a point in time
-    oneof source {
-      // Restore from a backup.
-      // Format: instances/{instance}/databases/{database}/backups/{backup-name}
-      string backup = 3;
-      // After the PITR operations, the database will be recovered to the state at this time.
-      google.protobuf.Timestamp point_in_time = 4;
-    }
+    // The resource name of the sheet.
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 2;
+    // The max number of rows to export.
+    int32 max_rows = 3;
+    // The format of the exported file.
+    ExportFormat format = 4;
+    // The zip password provide by users.
+    // Leave it empty if no needs to encrypt the zip file.
+    optional string password = 5;
   }
 }

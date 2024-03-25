@@ -1,8 +1,8 @@
 import { stringify } from "qs";
 import {
-  ExternalVersionControl_Type,
-  externalVersionControl_TypeToJSON,
-} from "@/types/proto/v1/externalvs_service";
+  VCSProvider_Type,
+  vCSProvider_TypeToJSON,
+} from "@/types/proto/v1/vcs_provider_service";
 
 export const OAuthStateSessionKey = "oauth-state";
 
@@ -33,13 +33,11 @@ export function openWindowForOAuth(
   endpoint: string,
   applicationId: string,
   type: OAuthType,
-  vcsType: ExternalVersionControl_Type
+  vcsType: VCSProvider_Type
 ): Window | null {
   const state: OAuthState = {
     // we use type to determine oauth type when receiving the callback
-    event: `${type}.${externalVersionControl_TypeToJSON(
-      vcsType
-    )}-${applicationId}`,
+    event: `${type}.${vCSProvider_TypeToJSON(vcsType)}-${applicationId}`,
     popup: true,
   };
 
@@ -53,26 +51,26 @@ export function openWindowForOAuth(
   // Set proper popup window size for different VCS types
   let windowOpenOptions = "";
 
-  if (vcsType == ExternalVersionControl_Type.GITHUB) {
+  if (vcsType == VCSProvider_Type.GITHUB) {
     // GitHub OAuth App scopes: https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps
     // We need the workflow scope to update GitHub action files.
 
     endpointQueryParams["scope"] = "api,repo,workflow";
     windowOpenOptions =
       "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes";
-  } else if (vcsType == ExternalVersionControl_Type.BITBUCKET) {
+  } else if (vcsType == VCSProvider_Type.BITBUCKET) {
     // Bitbucket OAuth App scopes: https://developer.atlassian.com/cloud/bitbucket/rest/intro/#authentication
     // Do not call `encodeURIComponent` here, will be encoded later.
     endpointQueryParams["scope"] = "account repository:write webhook";
     windowOpenOptions =
       "location=yes,left=200,top=200,height=640,width=720,scrollbars=yes,status=yes";
-  } else if (vcsType == ExternalVersionControl_Type.GITLAB) {
+  } else if (vcsType == VCSProvider_Type.GITLAB) {
     // GITLAB
     // GitLab OAuth App scopes: https://docs.gitlab.com/ee/integration/oauth_provider.html#authorized-applications
     endpointQueryParams["scope"] = "api";
     windowOpenOptions =
       "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes";
-  } else if (vcsType == ExternalVersionControl_Type.AZURE_DEVOPS) {
+  } else if (vcsType == VCSProvider_Type.AZURE_DEVOPS) {
     // Scopes for Azure: https://learn.microsoft.com/zh-cn/azure/devops/integrate/get-started/authentication/oauth?view=azure-devops#scopes
     // We need full scopes in the application: https://stackoverflow.com/questions/56143321/azure-devops-oauth-enpoint-always-returns-error-invalidscope
     endpointQueryParams["scope"] =

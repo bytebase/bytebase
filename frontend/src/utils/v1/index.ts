@@ -3,7 +3,6 @@ export * from "./environment";
 export * from "./instance";
 export * from "./database";
 export * from "./databaseGroup";
-export * from "./backup";
 export * from "./project";
 export * from "./projectWebhook";
 export * from "./deploymentConfig";

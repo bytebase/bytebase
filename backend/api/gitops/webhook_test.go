@@ -201,7 +201,7 @@ func TestGetFileInfo(t *testing.T) {
 						FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
 					},
 					project: &store.ProjectMessage{},
-					vcs:     &store.ExternalVersionControlMessage{},
+					vcs:     &store.VCSProviderMessage{},
 				},
 			},
 		)
@@ -233,7 +233,7 @@ func TestGetFileInfo(t *testing.T) {
 						FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
 					},
 					project: &store.ProjectMessage{},
-					vcs:     &store.ExternalVersionControlMessage{},
+					vcs:     &store.VCSProviderMessage{},
 				},
 			},
 		)
@@ -268,7 +268,7 @@ func TestGetFileInfo(t *testing.T) {
 					project: &store.ProjectMessage{
 						TenantMode: api.TenantModeTenant,
 					},
-					vcs: &store.ExternalVersionControlMessage{},
+					vcs: &store.VCSProviderMessage{},
 				},
 			},
 		)
@@ -303,7 +303,7 @@ func TestGetFileInfo(t *testing.T) {
 					project: &store.ProjectMessage{
 						TenantMode: api.TenantModeTenant,
 					},
-					vcs: &store.ExternalVersionControlMessage{},
+					vcs: &store.VCSProviderMessage{},
 				},
 			},
 		)
@@ -324,7 +324,7 @@ func TestGetFileInfo(t *testing.T) {
 						FilePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}.sql",
 					},
 					project: &store.ProjectMessage{},
-					vcs:     &store.ExternalVersionControlMessage{},
+					vcs:     &store.VCSProviderMessage{},
 				},
 			},
 		)
@@ -346,7 +346,7 @@ func TestGetFileInfo(t *testing.T) {
 					project: &store.ProjectMessage{
 						Title: "project-1",
 					},
-					vcs: &store.ExternalVersionControlMessage{},
+					vcs: &store.VCSProviderMessage{},
 				},
 				{
 					repository: &store.RepositoryMessage{
@@ -356,7 +356,7 @@ func TestGetFileInfo(t *testing.T) {
 					project: &store.ProjectMessage{
 						Title: "project-2",
 					},
-					vcs: &store.ExternalVersionControlMessage{},
+					vcs: &store.VCSProviderMessage{},
 				},
 			},
 		)

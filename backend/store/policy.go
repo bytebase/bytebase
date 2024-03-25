@@ -14,26 +14,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// GetBackupPlanPolicyByEnvID will get the backup plan policy for an environment.
-func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID int) (*api.BackupPlanPolicy, error) {
-	resourceType := api.PolicyResourceTypeEnvironment
-	pType := api.PolicyTypeBackupPlan
-	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
-		ResourceType: &resourceType,
-		ResourceUID:  &environmentID,
-		Type:         &pType,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if policy == nil {
-		return &api.BackupPlanPolicy{
-			Schedule: api.BackupPlanPolicyScheduleUnset,
-		}, nil
-	}
-	return api.UnmarshalBackupPlanPolicy(policy.Payload)
-}
-
 func (s *Store) GetRolloutPolicy(ctx context.Context, environmentID int) (*storepb.RolloutPolicy, error) {
 	resourceType := api.PolicyResourceTypeEnvironment
 	pType := api.PolicyTypeRollout

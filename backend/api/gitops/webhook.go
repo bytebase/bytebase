@@ -15,11 +15,9 @@ import (
 	"net/url"
 	"path"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -32,9 +30,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	configparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/configuration"
-	mapperparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper"
-	"github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper/ast"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store/model"
 
@@ -111,11 +106,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 
 		repo := repositoryList[0]
 		oauthContext := &common.OauthContext{
-			ClientID:     repo.vcs.ApplicationID,
-			ClientSecret: repo.vcs.Secret,
-			AccessToken:  repo.repository.AccessToken,
-			RefreshToken: repo.repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
+			AccessToken: repo.vcs.AccessToken,
 		}
 
 		baseVCSPushEvent, err := pushEvent.ToVCS()
@@ -191,11 +182,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		}
 		repo := repositoryList[0]
 		oauthContext := &common.OauthContext{
-			ClientID:     repo.vcs.ApplicationID,
-			ClientSecret: repo.vcs.Secret,
-			AccessToken:  repo.repository.AccessToken,
-			RefreshToken: repo.repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
+			AccessToken: repo.vcs.AccessToken,
 		}
 
 		baseVCSPushEvent := pushEvent.ToVCS()
@@ -260,11 +247,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			repo := repositoryList[0]
 
 			oauthContext := &common.OauthContext{
-				ClientID:     repo.vcs.ApplicationID,
-				ClientSecret: repo.vcs.Secret,
-				AccessToken:  repo.repository.AccessToken,
-				RefreshToken: repo.repository.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
+				AccessToken: repo.vcs.AccessToken,
 			}
 
 			var commitList []vcs.Commit
@@ -407,18 +390,9 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			return c.String(http.StatusOK, "No repository matched")
 		}
 
-		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
-		}
-
+		repo := repositoryList[0]
 		oauthContext := &common.OauthContext{
-			ClientID:     repositoryList[0].vcs.ApplicationID,
-			ClientSecret: repositoryList[0].vcs.Secret,
-			AccessToken:  repositoryList[0].repository.AccessToken,
-			RefreshToken: repositoryList[0].repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repositoryList[0].repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+			AccessToken: repo.vcs.AccessToken,
 		}
 
 		if len(pushEvent.Resource.Commits) == 0 {
@@ -576,481 +550,6 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
 	})
-
-	// id is the webhookEndpointID in repository
-	// This endpoint is generated and injected into GitHub action & GitLab CI during the VCS setup.
-	g.POST("/sql-review/:id", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		body, err := io.ReadAll(c.Request().Body)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read SQL review request").SetInternal(err)
-		}
-		slog.Debug("SQL review request received for VCS project",
-			slog.String("webhook_endpoint_id", c.Param("id")),
-			slog.String("request", string(body)),
-		)
-
-		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
-		}
-
-		var request api.VCSSQLReviewRequest
-		if err := json.Unmarshal(body, &request); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed SQL review request").SetInternal(err)
-		}
-
-		workspaceID, err := s.store.GetWorkspaceID(ctx)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-
-		token := c.Request().Header.Get("X-SQL-Review-Token")
-
-		filter := func(repo *store.RepositoryMessage) (bool, error) {
-			if !repo.EnableSQLReviewCI {
-				slog.Debug("Skip repository as the SQL review CI is not enabled.",
-					slog.Int("repository_id", repo.UID),
-					slog.String("repository_external_id", repo.ExternalID),
-				)
-				return false, nil
-			}
-
-			// We will use workspace id as token in integration test for skipping the check.
-			return token == workspaceID || token == repo.WebhookSecretToken, nil
-		}
-
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), request.RepositoryID, filter)
-		if err != nil {
-			return err
-		}
-		if len(repositoryList) == 0 {
-			slog.Debug("Empty handle repo list. Ignore this request.")
-			return c.JSON(http.StatusOK, &api.VCSSQLReviewResult{
-				Status:  advisor.Success,
-				Content: []string{},
-			})
-		}
-		repo := repositoryList[0]
-
-		oauthContext := &common.OauthContext{
-			ClientID:     repo.vcs.ApplicationID,
-			ClientSecret: repo.vcs.Secret,
-			AccessToken:  repo.repository.AccessToken,
-			RefreshToken: repo.repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		}
-
-		prFiles, err := vcs.Get(repo.vcs.Type, vcs.ProviderConfig{}).ListPullRequestFile(
-			ctx,
-			oauthContext,
-			repo.vcs.InstanceURL,
-			repo.repository.ExternalID,
-			request.PullRequestID,
-		)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list pull request file").SetInternal(err)
-		}
-
-		sqlFileName2Advice := s.sqlAdviceForSQLFiles(ctx, oauthContext, repositoryList, prFiles, setting.ExternalUrl)
-
-		if s.licenseService.IsFeatureEnabled(api.FeatureMybatisSQLReview) == nil {
-			// If the commit file list contains the file which extension is xml and the content
-			// contains "https://mybatis.org/dtd/mybatis-3-mapper.dtd", we will try to apply
-			// sql-review to it.
-			// To apply sql-review to it, proceed as follows:
-			// 1. Look in the sibling and parent directories for directories containing similar
-			// <!DOCTYPE configuration
-			//   PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
-			//   "https://mybatis.org/dtd/mybatis-3-config.dtd">
-			// of the xml file
-			// 2. If we can find it, then we will extract the sql from the mapper xml
-			// 3. match the environments in the configuration xml, look for the sql-review policy in the environment and apply it.
-			var isMybatisMapperXMLRegex = regexp.MustCompile(`(?i)http(s)?://mybatis\.org/dtd/mybatis-3-mapper\.dtd`)
-
-			mybatisMapperXMLFiles := make(map[string]string)
-			var commitID string
-			for _, prFile := range prFiles {
-				if !strings.HasSuffix(prFile.Path, ".xml") {
-					continue
-				}
-				fileContent, err := vcs.Get(repo.vcs.Type, vcs.ProviderConfig{}).ReadFileContent(
-					ctx,
-					oauthContext,
-					repo.vcs.InstanceURL,
-					repo.repository.ExternalID,
-					prFile.Path,
-					vcs.RefInfo{
-						RefType: vcs.RefTypeCommit,
-						RefName: prFile.LastCommitID,
-					},
-				)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read file content").SetInternal(err)
-				}
-				if !isMybatisMapperXMLRegex.MatchString(fileContent) {
-					continue
-				}
-				mybatisMapperXMLFiles[prFile.Path] = fileContent
-				commitID = prFile.LastCommitID
-			}
-			if len(mybatisMapperXMLFiles) > 0 {
-				mapperAdvices, err := s.sqlAdviceForMybatisMapperFiles(ctx, oauthContext, mybatisMapperXMLFiles, commitID, repo)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get sql advice for mybatis mapper files").SetInternal(err)
-				}
-				for filename, mapperAdvice := range mapperAdvices {
-					sqlFileName2Advice[filename] = mapperAdvice
-				}
-			}
-		}
-
-		response := &api.VCSSQLReviewResult{}
-		switch repo.vcs.Type {
-		case vcs.GitHub:
-			response = convertSQLAdviceToGitHubActionResult(sqlFileName2Advice)
-		case vcs.GitLab:
-			response = convertSQLAdviceToGitLabCIResult(sqlFileName2Advice)
-		case vcs.AzureDevOps:
-			response = convertSQLAdviceToGitLabCIResult(sqlFileName2Advice)
-		case vcs.Bitbucket:
-			response = convertSQLAdviceToGitLabCIResult(sqlFileName2Advice)
-		}
-
-		slog.Debug("SQL review finished",
-			slog.String("pull_request", request.PullRequestID),
-			slog.String("status", string(response.Status)),
-			slog.String("content", strings.Join(response.Content, "\n")),
-			slog.String("repository_id", request.RepositoryID),
-			slog.String("vcs", string(repo.vcs.Type)),
-		)
-
-		return c.JSON(http.StatusOK, response)
-	})
-}
-
-func (s *Service) sqlAdviceForMybatisMapperFiles(ctx context.Context, oauthContext *common.OauthContext, mybatisMapperContent map[string]string, commitID string, repoInfo *repoInfo) (map[string][]advisor.Advice, error) {
-	if len(mybatisMapperContent) == 0 {
-		return map[string][]advisor.Advice{}, nil
-	}
-	if commitID == "" {
-		return nil, errors.Errorf("Unexpected empty commit id")
-	}
-
-	sqlCheckAdvices := make(map[string][]advisor.Advice)
-	mybatisMapperXMLFileData, err := buildMybatisMapperXMLFileData(ctx, oauthContext, repoInfo, commitID, mybatisMapperContent)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to build mybatis mapper xml file data")
-	}
-	var wg sync.WaitGroup
-	for _, mybatisMapperXMLFile := range mybatisMapperXMLFileData {
-		slog.Debug("Mybatis mapper xml file data",
-			slog.String("mapper file", mybatisMapperXMLFile.mapperPath),
-			slog.String("config file", mybatisMapperXMLFile.configPath),
-		)
-		if mybatisMapperXMLFile.configContent == "" {
-			continue
-		}
-		wg.Add(1)
-		go func(datum *mybatisMapperXMLFileDatum) {
-			defer wg.Done()
-			adviceList, err := s.sqlAdviceForMybatisMapperFile(ctx, datum)
-			if err != nil {
-				slog.Error(
-					"Failed to take SQL review for file",
-					slog.String("file", datum.mapperContent),
-					slog.String("repository", repoInfo.repository.WebURL),
-					log.BBError(err),
-				)
-				sqlCheckAdvices[datum.configPath] = []advisor.Advice{
-					{
-						Status:  advisor.Warn,
-						Code:    advisor.Internal,
-						Title:   "Failed to take SQL review",
-						Content: fmt.Sprintf("Failed to take SQL review for file %s with error %v", datum.mapperPath, err),
-						Line:    1,
-					},
-				}
-			} else if len(adviceList) > 0 {
-				sqlCheckAdvices[datum.mapperPath] = adviceList
-			}
-		}(mybatisMapperXMLFile)
-	}
-	wg.Wait()
-
-	return sqlCheckAdvices, nil
-}
-
-func (s *Service) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *mybatisMapperXMLFileDatum) ([]advisor.Advice, error) {
-	var result []advisor.Advice
-	var environmentIDs []string
-	// If the configuration file is found, we extract the environment from the configuration file.
-	conf, err := configparser.ParseConfiguration(datum.configContent)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract environment ids").SetInternal(err)
-	}
-
-	allEnvironments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to list environments").SetInternal(err)
-	}
-
-	for _, confEnv := range conf.Environments {
-		environmentIDs = append(environmentIDs, confEnv.ID)
-		for _, env := range allEnvironments {
-			if strings.EqualFold(env.Title, confEnv.ID) {
-				// If the environment is found, we extract the sql-review policy from the environment.
-				policy, err := s.store.GetSQLReviewPolicy(ctx, env.UID)
-				if err != nil {
-					if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-						slog.Debug("Cannot found SQL review policy in environment", slog.String("Environment", confEnv.ID), log.BBError(err))
-						continue
-					}
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get SQL review policy").SetInternal(err)
-				}
-				if policy == nil {
-					continue
-				}
-				engineType, err := extractDBTypeFromJDBCConnectionString(confEnv.JDBCConnString)
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract db type").SetInternal(err)
-				}
-				if engineType == storepb.Engine_ENGINE_UNSPECIFIED {
-					continue
-				}
-				emptyCatalog, err := store.NewEmptyCatalog(engineType)
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to get empty catalog").SetInternal(err)
-				}
-
-				mybatisSQLs, lineMapping, err := extractMybatisMapperSQL(datum.mapperContent, engineType)
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to extract mybatis mapper sql").SetInternal(err)
-				}
-
-				adviceList, err := advisor.SQLReviewCheck(mybatisSQLs, policy.RuleList, advisor.SQLReviewCheckContext{
-					Catalog: emptyCatalog,
-					DbType:  engineType,
-				})
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to check sql review").SetInternal(err)
-				}
-				// Remap the line number to the original file.
-				for _, advice := range adviceList {
-					for _, line := range lineMapping {
-						if advice.Line <= line.SQLLastLine {
-							advice.Line = line.OriginalEleLine
-							break
-						}
-					}
-					result = append(result, advice)
-				}
-			}
-		}
-	}
-	if len(result) == 0 {
-		return []advisor.Advice{
-			{
-				Status: advisor.Warn,
-				Code:   advisor.NotFound,
-				Title:  fmt.Sprintf("SQL review policy not found for environment %s", strings.Join(environmentIDs, ",")),
-				// TODO(zp): add link to doc.
-				Content: "check doc for details.",
-				Line:    1,
-			},
-		}, nil
-	}
-	return result, nil
-}
-
-func (s *Service) sqlAdviceForSQLFiles(
-	ctx context.Context,
-	oauthContext *common.OauthContext,
-	repoInfoList []*repoInfo,
-	prFiles []*vcs.PullRequestFile,
-	externalURL string,
-) map[string][]advisor.Advice {
-	distinctFileList := []vcs.DistinctFileItem{}
-	for _, prFile := range prFiles {
-		if prFile.IsDeleted {
-			continue
-		}
-		distinctFileList = append(distinctFileList, vcs.DistinctFileItem{
-			FileName: prFile.Path,
-			Commit: vcs.Commit{
-				ID: prFile.LastCommitID,
-			},
-		})
-	}
-
-	sqlCheckAdvice := map[string][]advisor.Advice{}
-	var wg sync.WaitGroup
-
-	repoID2FileItemList := groupFileInfoByRepo(distinctFileList, repoInfoList)
-
-	for _, fileInfoListInRepo := range repoID2FileItemList {
-		for _, file := range fileInfoListInRepo {
-			wg.Add(1)
-			go func(file fileInfo) {
-				defer wg.Done()
-				adviceList, err := s.sqlAdviceForFile(ctx, oauthContext, file, externalURL)
-				if err != nil {
-					slog.Error(
-						"Failed to take SQL review for file",
-						slog.String("file", file.item.FileName),
-						slog.String("external_id", file.repoInfo.repository.ExternalID),
-						log.BBError(err),
-					)
-					sqlCheckAdvice[file.item.FileName] = []advisor.Advice{
-						{
-							Status:  advisor.Warn,
-							Code:    advisor.Internal,
-							Title:   "Failed to take SQL review",
-							Content: fmt.Sprintf("Failed to take SQL review for file %s with error %v", file.item.FileName, err),
-							Line:    1,
-						},
-					}
-				} else if adviceList != nil {
-					sqlCheckAdvice[file.item.FileName] = adviceList
-				}
-			}(file)
-		}
-	}
-	wg.Wait()
-	return sqlCheckAdvice
-}
-
-func (s *Service) sqlAdviceForFile(
-	ctx context.Context,
-	oauthContext *common.OauthContext,
-	fileInfo fileInfo,
-	externalURL string,
-) ([]advisor.Advice, error) {
-	slog.Debug("Processing file",
-		slog.String("file", fileInfo.item.FileName),
-		slog.String("vcs", string(fileInfo.repoInfo.vcs.Type)),
-	)
-
-	// TODO: support tenant mode project
-	if fileInfo.repoInfo.project.TenantMode == api.TenantModeTenant {
-		return []advisor.Advice{
-			{
-				Status:  advisor.Warn,
-				Code:    advisor.Unsupported,
-				Title:   "Tenant mode is not supported",
-				Content: fmt.Sprintf("Project %s a tenant mode project.", fileInfo.repoInfo.project.Title),
-				Line:    1,
-			},
-		}, nil
-	}
-
-	// TODO(ed): findProjectDatabases doesn't support the tenant mode.
-	// We can use https://github.com/bytebase/bytebase/blob/main/server/issue.go#L691 to find databases in tenant mode project.
-	databases, err := s.findProjectDatabases(ctx, fileInfo.repoInfo.project.UID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
-	if err != nil {
-		slog.Debug(
-			"Failed to list database migration info",
-			slog.String("project", fileInfo.repoInfo.repository.ProjectResourceID),
-			slog.String("database", fileInfo.migrationInfo.Database),
-			slog.String("environment", fileInfo.migrationInfo.Environment),
-			log.BBError(err),
-		)
-		return nil, errors.Errorf("Failed to list databse with error: %v", err)
-	}
-
-	fileContent, err := vcs.Get(fileInfo.repoInfo.vcs.Type, vcs.ProviderConfig{}).ReadFileContent(
-		ctx,
-		oauthContext,
-		fileInfo.repoInfo.vcs.InstanceURL,
-		fileInfo.repoInfo.repository.ExternalID,
-		fileInfo.item.FileName,
-		vcs.RefInfo{
-			RefType: vcs.RefTypeCommit,
-			RefName: fileInfo.item.Commit.ID,
-		},
-	)
-	if err != nil {
-		return nil, errors.Errorf("Failed to read file cotent for %s with error: %v", fileInfo.item.FileName, err)
-	}
-
-	// There may exist many databases that match the file name.
-	// We just need to use the first one, which has the SQL review policy and can let us take the check.
-	for _, database := range databases {
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-		if err != nil {
-			return nil, err
-		}
-		if instance == nil {
-			return nil, errors.Errorf("cannot found instance %s", database.InstanceID)
-		}
-		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureVCSSQLReviewWorkflow, instance); err != nil {
-			slog.Debug(err.Error(), slog.String("instance", instance.ResourceID))
-			continue
-		}
-
-		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
-		if err != nil {
-			return nil, err
-		}
-		if environment == nil {
-			return nil, errors.Errorf("cannot found environment %s", instance.EnvironmentID)
-		}
-		policy, err := s.store.GetSQLReviewPolicy(ctx, environment.UID)
-		if err != nil {
-			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-				slog.Debug("Cannot found SQL review policy in environment", slog.String("Environment", database.EffectiveEnvironmentID), log.BBError(err))
-				continue
-			}
-			return nil, errors.Errorf("Failed to get SQL review policy in environment %v with error: %v", instance.EnvironmentID, err)
-		}
-
-		advisorMode := advisor.SyntaxModeNormal
-		if fileInfo.repoInfo.project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
-			advisorMode = advisor.SyntaxModeSDL
-		}
-		catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */, advisorMode)
-		if err != nil {
-			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.UID, err)
-		}
-
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-		if err != nil {
-			return nil, err
-		}
-		connection := driver.GetDB()
-		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
-		if err != nil {
-			return nil, err
-		}
-		if dbSchema == nil {
-			return nil, errors.Errorf("database schema %v not found", database.UID)
-		}
-		adviceList, err := advisor.SQLReviewCheck(fileContent, policy.RuleList, advisor.SQLReviewCheckContext{
-			Charset:   dbSchema.GetMetadata().CharacterSet,
-			Collation: dbSchema.GetMetadata().Collation,
-			DbType:    instance.Engine,
-			Catalog:   catalog,
-			Driver:    connection,
-			Context:   ctx,
-		})
-		driver.Close(ctx)
-		if err != nil {
-			return nil, errors.Errorf("Failed to exec the SQL check for database %v with error: %v", database.UID, err)
-		}
-
-		return adviceList, nil
-	}
-
-	return []advisor.Advice{
-		{
-			Status:  advisor.Warn,
-			Code:    advisor.Unsupported,
-			Title:   "SQL review is disabled",
-			Content: fmt.Sprintf("Cannot found SQL review policy or instance license. You can configure the SQL review policy on %s/setting/sql-review, and assign license to the instance", externalURL),
-			Line:    1,
-		},
-	}, nil
 }
 
 type repositoryFilter func(*store.RepositoryMessage) (bool, error)
@@ -1058,7 +557,7 @@ type repositoryFilter func(*store.RepositoryMessage) (bool, error)
 type repoInfo struct {
 	repository *store.RepositoryMessage
 	project    *store.ProjectMessage
-	vcs        *store.ExternalVersionControlMessage
+	vcs        *store.VCSProviderMessage
 }
 
 func (s *Service) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRepositoryID string, filter repositoryFilter) ([]*repoInfo, error) {
@@ -1090,7 +589,7 @@ func (s *Service) filterRepository(ctx context.Context, webhookEndpointID string
 			)
 			continue
 		}
-		externalVCS, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
+		externalVCS, err := s.store.GetVCSProviderV2(ctx, repo.VCSUID)
 		if err != nil {
 			slog.Error("failed to find the vcs",
 				slog.Int("vcs_uid", repo.VCSUID),
@@ -1706,12 +1205,13 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 	}
 
 	activityCreate := &store.ActivityMessage{
-		CreatorUID:   creatorID,
-		ContainerUID: project.UID,
-		Type:         api.ActivityProjectRepositoryPush,
-		Level:        api.ActivityInfo,
-		Comment:      fmt.Sprintf("Created issue %q.", issue.Title),
-		Payload:      string(activityPayload),
+		CreatorUID:        creatorID,
+		ResourceContainer: project.GetName(),
+		ContainerUID:      project.UID,
+		Type:              api.ActivityProjectRepositoryPush,
+		Level:             api.ActivityInfo,
+		Comment:           fmt.Sprintf("Created issue %q.", issue.Title),
+		Payload:           string(activityPayload),
 	}
 	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issueUID)).SetInternal(err)
@@ -1830,7 +1330,7 @@ func (s *Service) findProjectDatabases(ctx context.Context, projectID int, dbNam
 }
 
 // getIgnoredFileActivityCreate get a warning project activityCreate for the ignored file with given error.
-func getIgnoredFileActivityCreate(projectID int, pushEvent vcs.PushEvent, file string, err error) *store.ActivityMessage {
+func getIgnoredFileActivityCreate(project *store.ProjectMessage, pushEvent vcs.PushEvent, file string, err error) *store.ActivityMessage {
 	payload, marshalErr := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
 			VCSPushEvent: pushEvent,
@@ -1844,12 +1344,13 @@ func getIgnoredFileActivityCreate(projectID int, pushEvent vcs.PushEvent, file s
 	}
 
 	return &store.ActivityMessage{
-		CreatorUID:   api.SystemBotID,
-		ContainerUID: projectID,
-		Type:         api.ActivityProjectRepositoryPush,
-		Level:        api.ActivityWarn,
-		Comment:      fmt.Sprintf("Ignored file %q, %v.", file, err),
-		Payload:      string(payload),
+		CreatorUID:        api.SystemBotID,
+		ResourceContainer: project.GetName(),
+		ContainerUID:      project.UID,
+		Type:              api.ActivityProjectRepositoryPush,
+		Level:             api.ActivityWarn,
+		Comment:           fmt.Sprintf("Ignored file %q, %v.", file, err),
+		Payload:           string(payload),
 	}
 }
 
@@ -1867,7 +1368,7 @@ func (s *Service) readFileContent(ctx context.Context, oauthContext *common.Oaut
 	}
 
 	repo := repos[0]
-	externalVCS, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
+	externalVCS, err := s.store.GetVCSProviderV2(ctx, repo.VCSUID)
 	if err != nil {
 		return "", err
 	}
@@ -1903,7 +1404,7 @@ func (s *Service) prepareIssueFromSDLFile(ctx context.Context, oauthContext *com
 
 	sdl, err := s.readFileContent(ctx, oauthContext, pushEvent, repoInfo, file)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
+		activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
 		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
@@ -1920,7 +1421,7 @@ func (s *Service) prepareIssueFromSDLFile(ctx context.Context, oauthContext *com
 		Payload:    sheetPayload,
 	})
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
+		activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, file, errors.Wrap(err, "Failed to create a sheet"))
 		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
@@ -1936,7 +1437,7 @@ func (s *Service) prepareIssueFromSDLFile(ctx context.Context, oauthContext *com
 
 	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID, dbName, schemaInfo.Environment)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
+		activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, file, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
@@ -1966,7 +1467,7 @@ func (s *Service) prepareIssueFromFile(
 	if err != nil {
 		return nil, []*store.ActivityMessage{
 			getIgnoredFileActivityCreate(
-				repoInfo.project.UID,
+				repoInfo.project,
 				pushEvent,
 				fileInfo.item.FileName,
 				errors.Wrap(err, "Failed to read file content"),
@@ -1990,7 +1491,7 @@ func (s *Service) prepareIssueFromFile(
 				Payload:    sheetPayload,
 			})
 			if err != nil {
-				activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
+				activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
 				return nil, []*store.ActivityMessage{activityCreate}
 			}
 
@@ -2008,7 +1509,7 @@ func (s *Service) prepareIssueFromFile(
 		if err != nil {
 			return nil, []*store.ActivityMessage{
 				getIgnoredFileActivityCreate(
-					repoInfo.project.UID,
+					repoInfo.project,
 					pushEvent,
 					fileInfo.item.FileName,
 					errors.Wrap(err, "Failed to parse file content as YAML"),
@@ -2024,7 +1525,7 @@ func (s *Service) prepareIssueFromFile(
 			Payload:    sheetPayload,
 		})
 		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
+			activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
 			return nil, []*store.ActivityMessage{activityCreate}
 		}
 
@@ -2034,7 +1535,7 @@ func (s *Service) prepareIssueFromFile(
 			if err != nil {
 				return nil, []*store.ActivityMessage{
 					getIgnoredFileActivityCreate(
-						repoInfo.project.UID,
+						repoInfo.project,
 						pushEvent,
 						fileInfo.item.FileName,
 						errors.Wrapf(err, "Failed to find project database %q", database.Name),
@@ -2059,7 +1560,7 @@ func (s *Service) prepareIssueFromFile(
 	// TODO(dragonly): handle modified file for tenant mode.
 	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
 	if err != nil {
-		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to find project databases"))
+		activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*store.ActivityMessage{activityCreate}
 	}
 
@@ -2072,7 +1573,7 @@ func (s *Service) prepareIssueFromFile(
 			Payload:    sheetPayload,
 		})
 		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
+			activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
 			return nil, []*store.ActivityMessage{activityCreate}
 		}
 
@@ -2094,7 +1595,7 @@ func (s *Service) prepareIssueFromFile(
 	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileInfo.item.FileName, migrationVersion, content, pushEvent); err != nil {
 		return nil, []*store.ActivityMessage{
 			getIgnoredFileActivityCreate(
-				repoInfo.project.UID,
+				repoInfo.project,
 				pushEvent,
 				fileInfo.item.FileName,
 				errors.Wrap(err, "Failed to find project task"),
@@ -2234,11 +1735,12 @@ func patchTask(ctx context.Context, stores *store.Store, activityManager *activi
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity after updating task sheet: %v", taskPatched.Name).SetInternal(err)
 		}
 		if _, err := activityManager.CreateActivity(ctx, &store.ActivityMessage{
-			CreatorUID:   taskPatch.UpdaterID,
-			ContainerUID: taskPatched.PipelineID,
-			Type:         api.ActivityPipelineTaskStatementUpdate,
-			Payload:      string(payload),
-			Level:        api.ActivityInfo,
+			CreatorUID:        taskPatch.UpdaterID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      taskPatched.PipelineID,
+			Type:              api.ActivityPipelineTaskStatementUpdate,
+			Payload:           string(payload),
+			Level:             api.ActivityInfo,
 		}, &activity.Metadata{
 			Issue: issue,
 		}); err != nil {
@@ -2458,132 +1960,4 @@ func extractDBTypeFromJDBCConnectionString(jdbcURL string) (storepb.Engine, erro
 		return storepb.Engine_POSTGRES, nil
 	}
 	return storepb.Engine_ENGINE_UNSPECIFIED, nil
-}
-
-// extractMybatisMapperSQL will extract the SQL from mybatis mapper XML.
-func extractMybatisMapperSQL(mapperContent string, engineType storepb.Engine) (string, []*ast.MybatisSQLLineMapping, error) {
-	mybatisMapperParser := mapperparser.NewParser(mapperContent)
-	mybatisMapperNode, err := mybatisMapperParser.Parse()
-	if err != nil {
-		return "", nil, errors.Wrapf(err, "failed to parse mybatis mapper xml")
-	}
-
-	var placeholder string
-	switch engineType {
-	case storepb.Engine_MYSQL, storepb.Engine_POSTGRES:
-		placeholder = "@1"
-	default:
-		return "", nil, errors.Errorf("unsupported database type %q", engineType)
-	}
-
-	var sb strings.Builder
-	lineMapping, err := mybatisMapperNode.RestoreSQLWithLineMapping(mybatisMapperParser.NewRestoreContext().WithRestoreDataNodePlaceholder(placeholder), &sb)
-	if err != nil {
-		return "", nil, errors.Wrapf(err, "failed to restore mybatis mapper xml")
-	}
-	return sb.String(), lineMapping, nil
-}
-
-// mybatisMapperXMLFileDatum is the metadata of mybatis mapper XML file.
-// It maintains the mybatis mapper XML file path, mapper XML file content, and the corresponding mybatis configuration XML content.
-type mybatisMapperXMLFileDatum struct {
-	// mapperPath is the git ls-tree syntax filepath of the mybatis mapper XML file.
-	mapperPath string
-	// mapperContent is the content of the mybatis mapper XML file.
-	mapperContent string
-	// configPath is the git ls-tree syntax filepath of the mybatis configuration XML file,
-	// it is empty if the mybatis configuration XML file is not found.
-	configPath string
-	// configContent is the content of the mybatis configuration XML file,
-	// it is empty if the mybatis configuration XML file is not found.
-	configContent string
-}
-
-// buildMybatisMapperXMLFileData will build the mybatis mapper XML file data.
-//
-//	ctx: the context.
-//	repo: the repository will be list file tree and get file content from.
-//	commitID: the commitID is the snapshot of the file tree and file content.
-//	mapperFiles: the map of the mybatis mapper XML file path and content.
-func buildMybatisMapperXMLFileData(ctx context.Context, oauthContext *common.OauthContext, repoInfo *repoInfo, commitID string, mapperFiles map[string]string) ([]*mybatisMapperXMLFileDatum, error) {
-	if len(mapperFiles) == 0 {
-		return []*mybatisMapperXMLFileDatum{}, nil
-	}
-
-	var mybatisMapperXMLFileData []*mybatisMapperXMLFileDatum
-	// isMybatisConfigXMLRegex is the regex to match the mybatis configuration XML file, if it can match the file content,
-	// we regard the file as the mybatis configuration XML file.
-	var isMybatisConfigXMLRegex = regexp.MustCompile(`(?i)http(s)?://mybatis\.org/dtd/mybatis-3-config\.dtd`)
-	// configPathCache is the cache of the mybatis configuration XML file directory,
-	// the key is the mybatis mapper XML file ls-tree syntax directory, and value is the mybatis configuration XML file ls-tree syntax path.
-	configPathCache := make(map[string]string)
-	// configCache is the cache of the mybatis configuration XML file content,
-	// the key is the mybatis configuration XML file ls-tree syntax path, and value is the mybatis configuration XML file content.
-	// each value is configPathCache must be the key of configCache.
-	configCache := make(map[string]string)
-
-	for mapperFilePath, mapperFileContent := range mapperFiles {
-		configPath := mapperFilePath
-		datum := &mybatisMapperXMLFileDatum{
-			mapperPath:    mapperFilePath,
-			mapperContent: mapperFileContent,
-		}
-		for {
-			currentDir := filepath.Dir(configPath)
-			// git ls-tree syntax filepath didn't support '.', so we need to replace it with "" to represent the root directory.
-			if currentDir == "." {
-				currentDir = ""
-			}
-			if configPath, ok := configPathCache[currentDir]; ok {
-				datum.configPath = configPath
-				datum.configContent = configCache[configPath]
-				break
-			}
-
-			filesInDir, err := vcs.Get(repoInfo.vcs.Type, vcs.ProviderConfig{}).FetchRepositoryFileList(
-				ctx,
-				oauthContext,
-				repoInfo.vcs.InstanceURL,
-				repoInfo.repository.ExternalID,
-				commitID,
-				currentDir,
-			)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to fetch repository file list for repository %q commitID %q directory %q", repoInfo.repository.WebURL, commitID, currentDir)
-			}
-
-			for _, file := range filesInDir {
-				if file.Type != "blob" || !strings.HasSuffix(file.Path, ".xml") {
-					continue
-				}
-				fileContent, err := vcs.Get(repoInfo.vcs.Type, vcs.ProviderConfig{}).ReadFileContent(
-					ctx,
-					oauthContext,
-					repoInfo.vcs.InstanceURL,
-					repoInfo.repository.ExternalID,
-					file.Path,
-					vcs.RefInfo{
-						RefType: vcs.RefTypeCommit,
-						RefName: commitID,
-					},
-				)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to read file content for repository %q commitID %q file %q", repoInfo.repository.WebURL, commitID, file.Path)
-				}
-				if !isMybatisConfigXMLRegex.MatchString(fileContent) {
-					continue
-				}
-				configPathCache[currentDir] = file.Path
-				configCache[file.Path] = fileContent
-				datum.configPath = file.Path
-				datum.configContent = fileContent
-			}
-			if currentDir == "" {
-				break
-			}
-			configPath = currentDir
-		}
-		mybatisMapperXMLFileData = append(mybatisMapperXMLFileData, datum)
-	}
-	return mybatisMapperXMLFileData, nil
 }

@@ -238,9 +238,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         path: "",
         name: WORKSPACE_ROUTE_GITOPS,
         meta: {
-          requiredWorkspacePermissionList: () => [
-            "bb.externalVersionControls.list",
-          ],
+          requiredWorkspacePermissionList: () => ["bb.vcsProviders.list"],
         },
         component: () => import("@/views/SettingWorkspaceVCS.vue"),
         props: true,
@@ -250,9 +248,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_GITOPS_CREATE,
         meta: {
           title: () => t("repository.add-git-provider"),
-          requiredWorkspacePermissionList: () => [
-            "bb.externalVersionControls.create",
-          ],
+          requiredWorkspacePermissionList: () => ["bb.vcsProviders.create"],
         },
         component: () => import("@/views/SettingWorkspaceVCSCreate.vue"),
         props: true,
@@ -261,9 +257,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         path: ":vcsSlug",
         name: WORKSPACE_ROUTE_GITOPS_DETAIL,
         meta: {
-          requiredWorkspacePermissionList: () => [
-            "bb.externalVersionControls.get",
-          ],
+          requiredWorkspacePermissionList: () => ["bb.vcsProviders.get"],
         },
         component: () => import("@/views/SettingWorkspaceVCSDetail.vue"),
         props: true,

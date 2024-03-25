@@ -6,13 +6,11 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -541,13 +539,6 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 
 func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
-	case v1pb.PolicyType_WORKSPACE_IAM:
-		iamPolicy := convertToStorePBWorkspaceIAMPolicy(policy.GetWorkspaceIamPolicy())
-		payloadBytes, err := protojson.Marshal(iamPolicy)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal workspace iam policy")
-		}
-		return string(payloadBytes), nil
 	case v1pb.PolicyType_ROLLOUT_POLICY:
 		rolloutPolicy := convertToStorePBRolloutPolicy(policy.GetRolloutPolicy())
 		payloadBytes, err := protojson.Marshal(rolloutPolicy)
@@ -555,20 +546,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			return "", errors.Wrap(err, "failed to marshal rollout policy")
 		}
 		return string(payloadBytes), nil
-	case v1pb.PolicyType_BACKUP_PLAN:
-		payload, err := convertToBackupPlanPolicyPayload(policy.GetBackupPlanPolicy())
-		if err != nil {
-			return "", status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		if payload.Schedule != api.BackupPlanPolicyScheduleUnset && payload.Schedule != api.BackupPlanPolicyScheduleDaily && payload.Schedule != api.BackupPlanPolicyScheduleWeekly {
-			return "", status.Errorf(codes.InvalidArgument, "invalid backup plan policy schedule: %q", payload.Schedule)
-		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureBackupPolicy); err != nil {
-			if payload.Schedule != api.BackupPlanPolicyScheduleUnset {
-				return "", status.Errorf(codes.PermissionDenied, err.Error())
-			}
-		}
-		return payload.String()
 	case v1pb.PolicyType_SQL_REVIEW:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
@@ -678,28 +655,9 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 
 	pType := v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED
 	switch policyMessage.Type {
-	case api.PolicyTypeWorkspaceIAM:
-		pType = v1pb.PolicyType_WORKSPACE_IAM
-		storepbIAMPolicy := &storepb.IamPolicy{}
-		err := protojson.Unmarshal([]byte(policyMessage.Payload), storepbIAMPolicy)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal workspace IAM policy")
-		}
-		payload, err := convertToV1PBWorkspaceIAMPolicy(storepbIAMPolicy)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert workspace IAM policy")
-		}
-		policy.Policy = payload
 	case api.PolicyTypeRollout:
 		pType = v1pb.PolicyType_ROLLOUT_POLICY
 		payload, err := convertToV1RolloutPolicyPayload(policyMessage.Payload)
-		if err != nil {
-			return nil, err
-		}
-		policy.Policy = payload
-	case api.PolicyTypeBackupPlan:
-		pType = v1pb.PolicyType_BACKUP_PLAN
-		payload, err := convertToV1PBBackupPlanPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
@@ -774,54 +732,6 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 	}
 
 	return policy, nil
-}
-
-func convertToV1PBWorkspaceIAMPolicy(policy *storepb.IamPolicy) (*v1pb.Policy_WorkspaceIamPolicy, error) {
-	iamPolicy := &v1pb.IamPolicy{
-		Bindings: []*v1pb.Binding{},
-	}
-	for _, binding := range policy.Bindings {
-		v1pbBinding := v1pb.Binding{
-			Role:      binding.Role,
-			Members:   binding.Members,
-			Condition: binding.Condition,
-		}
-
-		env, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create cel environment")
-		}
-		if binding.Condition.Expression != "" {
-			ast, issues := env.Parse(binding.Condition.Expression)
-			if issues != nil && issues.Err() != nil {
-				return nil, errors.Wrap(issues.Err(), "failed to parse expression")
-			}
-			parsedExpr, err := cel.AstToParsedExpr(ast)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to convert ast to parsed expression")
-			}
-			v1pbBinding.ParsedExpr = parsedExpr
-		}
-		iamPolicy.Bindings = append(iamPolicy.Bindings, &v1pbBinding)
-	}
-	return &v1pb.Policy_WorkspaceIamPolicy{
-		WorkspaceIamPolicy: iamPolicy,
-	}, nil
-}
-
-func convertToStorePBWorkspaceIAMPolicy(policy *v1pb.IamPolicy) *storepb.IamPolicy {
-	iamPolicy := &storepb.IamPolicy{
-		Bindings: []*storepb.Binding{},
-	}
-	for _, binding := range policy.Bindings {
-		iamBinding := storepb.Binding{
-			Role:      binding.Role,
-			Members:   binding.Members,
-			Condition: binding.Condition,
-		}
-		iamPolicy.Bindings = append(iamPolicy.Bindings, &iamBinding)
-	}
-	return iamPolicy
 }
 
 func convertToV1PBSQLReviewPolicy(payloadStr string) (*v1pb.Policy_SqlReviewPolicy, error) {
@@ -985,54 +895,6 @@ func convertToStorePBMaskingLevel(level v1pb.MaskingLevel) storepb.MaskingLevel 
 	}
 }
 
-func convertToV1PBBackupPlanPolicy(payloadStr string) (*v1pb.Policy_BackupPlanPolicy, error) {
-	payload, err := api.UnmarshalBackupPlanPolicy(payloadStr)
-	if err != nil {
-		return nil, err
-	}
-
-	schedule := v1pb.BackupPlanSchedule_SCHEDULE_UNSPECIFIED
-	switch payload.Schedule {
-	case api.BackupPlanPolicyScheduleUnset:
-		schedule = v1pb.BackupPlanSchedule_UNSET
-	case api.BackupPlanPolicyScheduleDaily:
-		schedule = v1pb.BackupPlanSchedule_DAILY
-	case api.BackupPlanPolicyScheduleWeekly:
-		schedule = v1pb.BackupPlanSchedule_WEEKLY
-	}
-
-	return &v1pb.Policy_BackupPlanPolicy{
-		BackupPlanPolicy: &v1pb.BackupPlanPolicy{
-			Schedule:          schedule,
-			RetentionDuration: &durationpb.Duration{Seconds: int64(payload.RetentionPeriodTs)},
-		},
-	}, nil
-}
-
-func convertToBackupPlanPolicyPayload(policy *v1pb.BackupPlanPolicy) (*api.BackupPlanPolicy, error) {
-	var schedule api.BackupPlanPolicySchedule
-	switch policy.Schedule {
-	case v1pb.BackupPlanSchedule_UNSET:
-		schedule = api.BackupPlanPolicyScheduleUnset
-	case v1pb.BackupPlanSchedule_DAILY:
-		schedule = api.BackupPlanPolicyScheduleDaily
-	case v1pb.BackupPlanSchedule_WEEKLY:
-		schedule = api.BackupPlanPolicyScheduleWeekly
-	default:
-		return nil, errors.Errorf("invalid backup plan schedule %v", policy.Schedule)
-	}
-
-	retentionPeriodTs := 0
-	if policy.RetentionDuration != nil {
-		retentionPeriodTs = int(policy.RetentionDuration.Seconds)
-	}
-
-	return &api.BackupPlanPolicy{
-		Schedule:          schedule,
-		RetentionPeriodTs: retentionPeriodTs,
-	}, nil
-}
-
 func convertToV1RolloutPolicyPayload(payloadStr string) (*v1pb.Policy_RolloutPolicy, error) {
 	p := &v1pb.RolloutPolicy{}
 	if err := protojson.Unmarshal([]byte(payloadStr), p); err != nil {
@@ -1191,12 +1053,8 @@ func convertToRestrictIssueCreationForSQLReviewPayload(policy *v1pb.RestrictIssu
 func convertPolicyType(pType string) (api.PolicyType, error) {
 	var policyType api.PolicyType
 	switch strings.ToUpper(pType) {
-	case v1pb.PolicyType_WORKSPACE_IAM.String():
-		return api.PolicyTypeWorkspaceIAM, nil
 	case v1pb.PolicyType_ROLLOUT_POLICY.String():
 		return api.PolicyTypeRollout, nil
-	case v1pb.PolicyType_BACKUP_PLAN.String():
-		return api.PolicyTypeBackupPlan, nil
 	case v1pb.PolicyType_SQL_REVIEW.String():
 		return api.PolicyTypeSQLReview, nil
 	case v1pb.PolicyType_MASKING.String():

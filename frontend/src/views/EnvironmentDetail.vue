@@ -3,10 +3,9 @@
     <ArchiveBanner v-if="state.environment.state == State.DELETED" />
   </div>
   <EnvironmentForm
-    v-if="state.rolloutPolicy && state.backupPolicy && state.environmentTier"
+    v-if="state.rolloutPolicy && state.environmentTier"
     :environment="state.environment"
     :rollout-policy="state.rolloutPolicy"
-    :backup-policy="state.backupPolicy"
     :environment-tier="state.environmentTier"
     @update="doUpdate"
     @archive="doArchive"
@@ -18,40 +17,18 @@
     :feature="state.missingRequiredFeature"
     @cancel="state.missingRequiredFeature = undefined"
   />
-  <BBModal
-    v-if="state.showDisableAutoBackupModal"
-    :title="$t('environment.disable-auto-backup.self')"
-    @close="state.showDisableAutoBackupModal = false"
-  >
-    <div class="space-y-2 textinfolabel pr-16">
-      <p v-for="(line, i) in disableAutoBackupContent.split('\n')" :key="i">
-        {{ line }}
-      </p>
-    </div>
-
-    <div class="flex items-center justify-end gap-x-3 pt-4 mt-4 border-t">
-      <NButton @click="state.showDisableAutoBackupModal = false">
-        {{ $t("common.no") }}
-      </NButton>
-      <NButton type="primary" @click="disableEnvironmentAutoBackup">
-        {{ $t("common.yes") }}
-      </NButton>
-    </div>
-  </BBModal>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { NButton } from "naive-ui";
-import { computed, reactive, watch, watchEffect } from "vue";
+import { reactive, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import BBModal from "@/bbkit/BBModal.vue";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import EnvironmentForm from "@/components/EnvironmentForm.vue";
 import { ENVIRONMENT_V1_ROUTE_DETAIL } from "@/router/dashboard/environmentV1";
 import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { hasFeature, pushNotification, useBackupV1Store } from "@/store";
+import { hasFeature, pushNotification } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
   useEnvironmentV1Store,
@@ -59,8 +36,6 @@ import {
 } from "@/store/modules/v1/environment";
 import {
   usePolicyV1Store,
-  defaultBackupSchedule,
-  getDefaultBackupPlanPolicy,
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
 import { VirtualRoleType, unknownEnvironment } from "@/types";
@@ -73,7 +48,6 @@ import {
   Policy as PolicyV1,
   PolicyType as PolicyTypeV1,
   PolicyResourceType,
-  BackupPlanSchedule,
 } from "@/types/proto/v1/org_policy_service";
 import { extractEnvironmentResourceName } from "@/utils";
 
@@ -81,14 +55,11 @@ interface LocalState {
   environment: Environment;
   showArchiveModal: boolean;
   rolloutPolicy?: PolicyV1;
-  backupPolicy?: PolicyV1;
   environmentTier?: EnvironmentTier;
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
     | "bb.feature.custom-approval"
-    | "bb.feature.backup-policy"
     | "bb.feature.environment-tier-policy";
-  showDisableAutoBackupModal: boolean;
 }
 
 const props = defineProps({
@@ -104,7 +75,6 @@ const router = useRouter();
 const { t } = useI18n();
 const environmentV1Store = useEnvironmentV1Store();
 const policyV1Store = usePolicyV1Store();
-const backupStore = useBackupV1Store();
 
 const state = reactive<LocalState>({
   environment:
@@ -112,7 +82,6 @@ const state = reactive<LocalState>({
       `${environmentNamePrefix}${props.environmentId}`
     ) || unknownEnvironment(),
   showArchiveModal: false,
-  showDisableAutoBackupModal: false,
 });
 
 const prepareEnvironment = async () => {
@@ -135,18 +104,9 @@ const preparePolicy = () => {
       const rolloutPolicy = policies.find(
         (policy) => policy.type === PolicyTypeV1.ROLLOUT_POLICY
       );
-      const backupPolicy = policies.find(
-        (policy) => policy.type === PolicyTypeV1.BACKUP_PLAN
-      );
       state.rolloutPolicy =
         rolloutPolicy ||
         getEmptyRolloutPolicy(
-          state.environment.name,
-          PolicyResourceType.ENVIRONMENT
-        );
-      state.backupPolicy =
-        backupPolicy ||
-        getDefaultBackupPlanPolicy(
           state.environment.name,
           PolicyResourceType.ENVIRONMENT
         );
@@ -250,15 +210,6 @@ const updatePolicy = async (
       }
     }
   }
-  if (policyType === PolicyTypeV1.BACKUP_PLAN) {
-    if (
-      policy.backupPlanPolicy?.schedule != defaultBackupSchedule &&
-      !hasFeature("bb.feature.backup-policy")
-    ) {
-      state.missingRequiredFeature = "bb.feature.backup-policy";
-      return;
-    }
-  }
 
   const updatedPolicy = await policyV1Store.upsertPolicy({
     parentPath: environment.name,
@@ -269,32 +220,8 @@ const updatePolicy = async (
     case PolicyTypeV1.ROLLOUT_POLICY:
       state.rolloutPolicy = updatedPolicy;
       break;
-    case PolicyTypeV1.BACKUP_PLAN:
-      state.backupPolicy = updatedPolicy;
-      break;
   }
 
   success();
-  if (policyType === PolicyTypeV1.BACKUP_PLAN) {
-    if (
-      state.backupPolicy?.backupPlanPolicy?.schedule == BackupPlanSchedule.UNSET
-    ) {
-      // Changing backup policy from "DAILY"|"WEEKLY" to "UNSET"
-      state.showDisableAutoBackupModal = true;
-    }
-  }
-};
-
-const disableAutoBackupContent = computed(() => {
-  return t("environment.disable-auto-backup.content");
-});
-
-const disableEnvironmentAutoBackup = async () => {
-  await backupStore.upsertEnvironmentBackupSetting({
-    name: `${state.environment.name}/backupSetting`,
-    enabled: false,
-  });
-  success();
-  state.showDisableAutoBackupModal = false;
 };
 </script>

@@ -117,7 +117,7 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	// allow creator to get issue.
 	if issue.Creator.ID != user.ID {
 		needPermissions := []iam.Permission{iam.PermissionIssuesGet}
-		if issue.Type == api.IssueDatabaseGeneral {
+		if issue.Type == api.IssueDatabaseGeneral || issue.Type == api.IssueDatabaseDataExport {
 			needPermissions = append(needPermissions, iam.PermissionPlansGet)
 		}
 		for _, p := range needPermissions {
@@ -462,6 +462,8 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 		return s.createIssueGrantRequest(ctx, request)
 	case v1pb.Issue_DATABASE_CHANGE:
 		return s.createIssueDatabaseChange(ctx, request)
+	case v1pb.Issue_DATABASE_DATA_EXPORT:
+		return s.createIssueDatabaseDataExport(ctx, request)
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "unknown issue type %q", request.Issue.Type)
 	}
@@ -568,11 +570,12 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
 	}
 	activityCreate := &store.ActivityMessage{
-		CreatorUID:   principalID,
-		ContainerUID: issue.UID,
-		Type:         api.ActivityIssueCreate,
-		Level:        api.ActivityInfo,
-		Payload:      string(bytes),
+		CreatorUID:        principalID,
+		ResourceContainer: project.GetName(),
+		ContainerUID:      issue.UID,
+		Type:              api.ActivityIssueCreate,
+		Level:             api.ActivityInfo,
+		Payload:           string(bytes),
 	}
 	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 		Issue: issue,
@@ -630,7 +633,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		// Validate the statement if it's not empty.
 		if factors.Statement != "" {
 			for _, dbName := range factors.DatabaseNames {
-				instanceID, databaseName, err := common.GetInstanceDatabaseID(dbName)
+				instanceID, _, err := common.GetInstanceDatabaseID(dbName)
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid database name %q, error: %v", dbName, err)
 				}
@@ -641,7 +644,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 				if instance == nil {
 					return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 				}
-				if err := validateQueryRequest(instance, databaseName, factors.Statement); err != nil {
+				if err := validateQueryRequest(instance, factors.Statement); err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid statement, error: %v", err)
 				}
 			}
@@ -687,11 +690,12 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
 	}
 	activityCreate := &store.ActivityMessage{
-		CreatorUID:   principalID,
-		ContainerUID: issue.UID,
-		Type:         api.ActivityIssueCreate,
-		Level:        api.ActivityInfo,
-		Payload:      string(bytes),
+		CreatorUID:        principalID,
+		ResourceContainer: project.GetName(),
+		ContainerUID:      issue.UID,
+		Type:              api.ActivityIssueCreate,
+		Level:             api.ActivityInfo,
+		Payload:           string(bytes),
 	}
 	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 		Issue: issue,
@@ -711,6 +715,128 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 			"type": issue.Type,
 		},
 	})
+
+	return converted, nil
+}
+
+func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
+	}
+
+	if request.Issue.Plan == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "plan is required")
+	}
+
+	var planUID *int64
+	planID, err := common.GetPlanID(request.Issue.Plan)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get plan, error: %v", err)
+	}
+	if plan == nil {
+		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
+	}
+	planUID = &plan.UID
+	var rolloutUID *int
+	if request.Issue.Rollout != "" {
+		_, rolloutID, err := common.GetProjectIDRolloutID(request.Issue.Rollout)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		pipeline, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get rollout, error: %v", err)
+		}
+		if pipeline == nil {
+			return nil, status.Errorf(codes.NotFound, "rollout not found for id: %d", rolloutID)
+		}
+		rolloutUID = &pipeline.ID
+	}
+
+	var issueAssignee *store.UserMessage
+	if request.Issue.Assignee != "" {
+		assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		assignee, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get user by email %q, error: %v", assigneeEmail, err)
+		}
+		if assignee == nil {
+			return nil, status.Errorf(codes.NotFound, "assignee not found for email: %q", assigneeEmail)
+		}
+		issueAssignee = assignee
+	}
+
+	issueCreateMessage := &store.IssueMessage{
+		Project:     project,
+		PlanUID:     planUID,
+		PipelineUID: rolloutUID,
+		Title:       request.Issue.Title,
+		Status:      api.IssueOpen,
+		Type:        api.IssueDatabaseDataExport,
+		Description: request.Issue.Description,
+		Assignee:    issueAssignee,
+	}
+
+	issueCreateMessage.Payload = &storepb.IssuePayload{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: false,
+			ApprovalTemplates:   nil,
+			Approvers:           nil,
+		},
+	}
+
+	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
+	}
+	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+
+	createActivityPayload := api.ActivityIssueCreatePayload{
+		IssueName: issue.Title,
+	}
+	bytes, err := json.Marshal(createActivityPayload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
+	}
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:        principalID,
+		ResourceContainer: project.GetName(),
+		ContainerUID:      issue.UID,
+		Type:              api.ActivityIssueCreate,
+		Level:             api.ActivityInfo,
+		Payload:           string(bytes),
+	}
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+		Issue: issue,
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
+	}
+
+	converted, err := convertToIssue(ctx, s.store, issue)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
+	}
 
 	return converted, nil
 }
@@ -814,11 +940,12 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		}
 		// Post project IAM policy update activity.
 		if _, err := s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: issue.Project.UID,
-			Type:         api.ActivityProjectMemberCreate,
-			Level:        api.ActivityInfo,
-			Comment:      fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, payload.GrantRequest.Role),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      issue.Project.UID,
+			Type:              api.ActivityProjectMemberCreate,
+			Level:             api.ActivityInfo,
+			Comment:           fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, payload.GrantRequest.Role),
 		}, &activity.Metadata{}); err != nil {
 			slog.Warn("Failed to create project activity", log.BBError(err))
 		}
@@ -838,12 +965,13 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 			return err
 		}
 		create := &store.ActivityMessage{
-			CreatorUID:   principalID,
-			ContainerUID: issue.UID,
-			Type:         api.ActivityIssueCommentCreate,
-			Level:        api.ActivityInfo,
-			Comment:      request.Comment,
-			Payload:      string(activityPayload),
+			CreatorUID:        principalID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      issue.UID,
+			Type:              api.ActivityIssueCommentCreate,
+			Level:             api.ActivityInfo,
+			Comment:           request.Comment,
+			Payload:           string(activityPayload),
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 			return err
@@ -882,12 +1010,13 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		}
 
 		create := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: issue.UID,
-			Type:         api.ActivityIssueApprovalNotify,
-			Level:        api.ActivityInfo,
-			Comment:      "",
-			Payload:      string(activityPayload),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      issue.UID,
+			Type:              api.ActivityIssueApprovalNotify,
+			Level:             api.ActivityInfo,
+			Comment:           "",
+			Payload:           string(activityPayload),
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 			return err
@@ -906,12 +1035,13 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		// notify issue approved
 		if err := func() error {
 			create := &store.ActivityMessage{
-				CreatorUID:   api.SystemBotID,
-				ContainerUID: issue.UID,
-				Type:         api.ActivityNotifyIssueApproved,
-				Level:        api.ActivityInfo,
-				Comment:      "",
-				Payload:      "",
+				CreatorUID:        api.SystemBotID,
+				ResourceContainer: issue.Project.GetName(),
+				ContainerUID:      issue.UID,
+				Type:              api.ActivityNotifyIssueApproved,
+				Level:             api.ActivityInfo,
+				Comment:           "",
+				Payload:           "",
 			}
 			if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{
 				Issue: issue,
@@ -947,12 +1077,13 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 				return errors.Wrapf(err, "failed to marshal activity payload")
 			}
 			create := &store.ActivityMessage{
-				CreatorUID:   api.SystemBotID,
-				ContainerUID: *issue.PipelineUID,
-				Type:         api.ActivityNotifyPipelineRollout,
-				Level:        api.ActivityInfo,
-				Comment:      "",
-				Payload:      string(payload),
+				CreatorUID:        api.SystemBotID,
+				ResourceContainer: issue.Project.GetName(),
+				ContainerUID:      *issue.PipelineUID,
+				Type:              api.ActivityNotifyPipelineRollout,
+				Level:             api.ActivityInfo,
+				Comment:           "",
+				Payload:           string(payload),
 			}
 			if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 				return err
@@ -1074,12 +1205,13 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 			return err
 		}
 		create := &store.ActivityMessage{
-			CreatorUID:   principalID,
-			ContainerUID: issue.UID,
-			Type:         api.ActivityIssueCommentCreate,
-			Level:        api.ActivityInfo,
-			Comment:      request.Comment,
-			Payload:      string(activityPayload),
+			CreatorUID:        principalID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      issue.UID,
+			Type:              api.ActivityIssueCommentCreate,
+			Level:             api.ActivityInfo,
+			Comment:           request.Comment,
+			Payload:           string(activityPayload),
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 			return err
@@ -1173,12 +1305,13 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 			return err
 		}
 		create := &store.ActivityMessage{
-			CreatorUID:   principalID,
-			ContainerUID: issue.UID,
-			Type:         api.ActivityIssueCommentCreate,
-			Level:        api.ActivityInfo,
-			Comment:      request.Comment,
-			Payload:      string(activityPayload),
+			CreatorUID:        principalID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      issue.UID,
+			Type:              api.ActivityIssueCommentCreate,
+			Level:             api.ActivityInfo,
+			Comment:           request.Comment,
+			Payload:           string(activityPayload),
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 			return err
@@ -1274,11 +1407,12 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
 			}
 			activityCreates = append(activityCreates, &store.ActivityMessage{
-				CreatorUID:   user.ID,
-				ContainerUID: issue.UID,
-				Type:         api.ActivityIssueFieldUpdate,
-				Level:        api.ActivityInfo,
-				Payload:      string(activityPayload),
+				CreatorUID:        user.ID,
+				ResourceContainer: issue.Project.GetName(),
+				ContainerUID:      issue.UID,
+				Type:              api.ActivityIssueFieldUpdate,
+				Level:             api.ActivityInfo,
+				Payload:           string(activityPayload),
 			})
 
 		case "description":
@@ -1295,11 +1429,12 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
 			}
 			activityCreates = append(activityCreates, &store.ActivityMessage{
-				CreatorUID:   user.ID,
-				ContainerUID: issue.UID,
-				Type:         api.ActivityIssueFieldUpdate,
-				Level:        api.ActivityInfo,
-				Payload:      string(activityPayload),
+				CreatorUID:        user.ID,
+				ResourceContainer: issue.Project.GetName(),
+				ContainerUID:      issue.UID,
+				Type:              api.ActivityIssueFieldUpdate,
+				Level:             api.ActivityInfo,
+				Payload:           string(activityPayload),
 			})
 
 		case "subscribers":
@@ -1339,11 +1474,12 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 					return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
 				}
 				activityCreates = append(activityCreates, &store.ActivityMessage{
-					CreatorUID:   user.ID,
-					ContainerUID: issue.UID,
-					Type:         api.ActivityIssueFieldUpdate,
-					Level:        api.ActivityInfo,
-					Payload:      string(activityPayload),
+					CreatorUID:        user.ID,
+					ResourceContainer: issue.Project.GetName(),
+					ContainerUID:      issue.UID,
+					Type:              api.ActivityIssueFieldUpdate,
+					Level:             api.ActivityInfo,
+					Payload:           string(activityPayload),
 				})
 			} else {
 				assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
@@ -1371,11 +1507,12 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 					return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
 				}
 				activityCreates = append(activityCreates, &store.ActivityMessage{
-					CreatorUID:   user.ID,
-					ContainerUID: issue.UID,
-					Type:         api.ActivityIssueFieldUpdate,
-					Level:        api.ActivityInfo,
-					Payload:      string(activityPayload),
+					CreatorUID:        user.ID,
+					ResourceContainer: issue.Project.GetName(),
+					ContainerUID:      issue.UID,
+					Type:              api.ActivityIssueFieldUpdate,
+					Level:             api.ActivityInfo,
+					Payload:           string(activityPayload),
 				})
 			}
 		}
@@ -1505,12 +1642,13 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 				continue
 			}
 			activityCreate := &store.ActivityMessage{
-				CreatorUID:   user.ID,
-				ContainerUID: updatedIssue.UID,
-				Type:         api.ActivityIssueStatusUpdate,
-				Level:        api.ActivityInfo,
-				Comment:      request.Reason,
-				Payload:      string(payload),
+				CreatorUID:        user.ID,
+				ResourceContainer: updatedIssue.Project.GetName(),
+				ContainerUID:      updatedIssue.UID,
+				Type:              api.ActivityIssueStatusUpdate,
+				Level:             api.ActivityInfo,
+				Comment:           request.Reason,
+				Payload:           string(payload),
 			}
 			if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 				Issue: updatedIssue,
@@ -1561,11 +1699,12 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	activityCreate := &store.ActivityMessage{
-		CreatorUID:   principalID,
-		ContainerUID: issue.UID,
-		Type:         api.ActivityIssueCommentCreate,
-		Level:        api.ActivityInfo,
-		Comment:      request.IssueComment.Comment,
+		CreatorUID:        principalID,
+		ResourceContainer: issue.Project.GetName(),
+		ContainerUID:      issue.UID,
+		Type:              api.ActivityIssueCommentCreate,
+		Level:             api.ActivityInfo,
+		Comment:           request.IssueComment.Comment,
 	}
 
 	var payload api.ActivityIssueCommentCreatePayload
@@ -1637,9 +1776,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	}
 
 	update := &store.UpdateActivityMessage{
-		UID:        activityUID,
-		CreatorUID: &user.ID,
-		UpdaterUID: user.ID,
+		UID: activityUID,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
@@ -1906,6 +2043,8 @@ func convertToIssueType(t api.IssueType) v1pb.Issue_Type {
 		return v1pb.Issue_DATABASE_CHANGE
 	case api.IssueGrantRequest:
 		return v1pb.Issue_GRANT_REQUEST
+	case api.IssueDatabaseDataExport:
+		return v1pb.Issue_DATABASE_DATA_EXPORT
 	default:
 		return v1pb.Issue_TYPE_UNSPECIFIED
 	}

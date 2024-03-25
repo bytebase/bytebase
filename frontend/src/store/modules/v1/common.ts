@@ -12,7 +12,7 @@ export const sheetNamePrefix = "sheets/";
 export const worksheetNamePrefix = "worksheets/";
 export const databaseGroupNamePrefix = "databaseGroups/";
 export const schemaGroupNamePrefix = "schemaGroups/";
-export const externalVersionControlPrefix = "externalVersionControls/";
+export const vcsProviderPrefix = "vcsProviders/";
 export const logNamePrefix = "logs/";
 export const issueNamePrefix = "issues/";
 export const secretNamePrefix = "secrets/";
@@ -153,7 +153,7 @@ export const getProjectPathFromRepoName = (repoName: string): string => {
 };
 
 export const getVCSUid = (name: string): number => {
-  const tokens = getNameParentTokens(name, [externalVersionControlPrefix]);
+  const tokens = getNameParentTokens(name, [vcsProviderPrefix]);
   const vcsUid = Number(tokens[0] || UNKNOWN_ID);
   return vcsUid;
 };

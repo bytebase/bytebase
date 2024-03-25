@@ -77,6 +77,7 @@ func convertToPlanSpec(spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
 	v1Spec := &v1pb.Plan_Spec{
 		EarliestAllowedTime: spec.EarliestAllowedTime,
 		Id:                  spec.Id,
+		DependsOnSpecs:      spec.DependsOnSpecs,
 	}
 
 	switch v := spec.Config.(type) {
@@ -84,8 +85,8 @@ func convertToPlanSpec(spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
 		v1Spec.Config = convertToPlanSpecCreateDatabaseConfig(v)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		v1Spec.Config = convertToPlanSpecChangeDatabaseConfig(v)
-	case *storepb.PlanConfig_Spec_RestoreDatabaseConfig:
-		v1Spec.Config = convertToPlanSpecRestoreDatabaseConfig(v)
+	case *storepb.PlanConfig_Spec_ExportDataConfig:
+		v1Spec.Config = convertToPlanSpecExportDataConfig(v)
 	}
 
 	return v1Spec
@@ -102,30 +103,9 @@ func convertToPlanSpecCreateDatabaseConfig(config *storepb.PlanConfig_Spec_Creat
 			Collation:    c.Collation,
 			Cluster:      c.Cluster,
 			Owner:        c.Owner,
-			Backup:       c.Backup,
 			Environment:  c.Environment,
 			Labels:       c.Labels,
 		},
-	}
-}
-
-func convertToPlanCreateDatabaseConfig(c *storepb.PlanConfig_CreateDatabaseConfig) *v1pb.Plan_CreateDatabaseConfig {
-	// c.CreateDatabaseConfig is defined as optional in proto
-	// so we need to test if it's nil
-	if c == nil {
-		return nil
-	}
-	return &v1pb.Plan_CreateDatabaseConfig{
-		Target:       c.Target,
-		Database:     c.Database,
-		Table:        c.Table,
-		CharacterSet: c.CharacterSet,
-		Collation:    c.Collation,
-		Cluster:      c.Cluster,
-		Owner:        c.Owner,
-		Backup:       c.Backup,
-		Environment:  c.Environment,
-		Labels:       c.Labels,
 	}
 }
 
@@ -169,8 +149,6 @@ func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDataba
 		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE_SDL
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
 		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST
-	case storepb.PlanConfig_ChangeDatabaseConfig_BRANCH:
-		return v1pb.Plan_ChangeDatabaseConfig_BRANCH
 	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
 		return v1pb.Plan_ChangeDatabaseConfig_DATA
 	default:
@@ -178,26 +156,17 @@ func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDataba
 	}
 }
 
-func convertToPlanSpecRestoreDatabaseConfig(config *storepb.PlanConfig_Spec_RestoreDatabaseConfig) *v1pb.Plan_Spec_RestoreDatabaseConfig {
-	c := config.RestoreDatabaseConfig
-	v1Config := &v1pb.Plan_Spec_RestoreDatabaseConfig{
-		RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
-			Target: c.Target,
+func convertToPlanSpecExportDataConfig(config *storepb.PlanConfig_Spec_ExportDataConfig) *v1pb.Plan_Spec_ExportDataConfig {
+	c := config.ExportDataConfig
+	return &v1pb.Plan_Spec_ExportDataConfig{
+		ExportDataConfig: &v1pb.Plan_ExportDataConfig{
+			Target:   c.Target,
+			Sheet:    c.Sheet,
+			MaxRows:  c.MaxRows,
+			Format:   convertExportFormat(c.Format),
+			Password: c.Password,
 		},
 	}
-	switch source := c.Source.(type) {
-	case *storepb.PlanConfig_RestoreDatabaseConfig_Backup:
-		v1Config.RestoreDatabaseConfig.Source = &v1pb.Plan_RestoreDatabaseConfig_Backup{
-			Backup: source.Backup,
-		}
-	case *storepb.PlanConfig_RestoreDatabaseConfig_PointInTime:
-		v1Config.RestoreDatabaseConfig.Source = &v1pb.Plan_RestoreDatabaseConfig_PointInTime{
-			PointInTime: source.PointInTime,
-		}
-	}
-
-	v1Config.RestoreDatabaseConfig.CreateDatabaseConfig = convertToPlanCreateDatabaseConfig(c.CreateDatabaseConfig)
-	return v1Config
 }
 
 func convertPlanSteps(steps []*v1pb.Plan_Step) []*storepb.PlanConfig_Step {
@@ -226,6 +195,7 @@ func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 	storeSpec := &storepb.PlanConfig_Spec{
 		EarliestAllowedTime: spec.EarliestAllowedTime,
 		Id:                  spec.Id,
+		DependsOnSpecs:      spec.DependsOnSpecs,
 	}
 
 	switch v := spec.Config.(type) {
@@ -233,8 +203,8 @@ func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 		storeSpec.Config = convertPlanSpecCreateDatabaseConfig(v)
 	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 		storeSpec.Config = convertPlanSpecChangeDatabaseConfig(v)
-	case *v1pb.Plan_Spec_RestoreDatabaseConfig:
-		storeSpec.Config = convertPlanSpecRestoreDatabaseConfig(v)
+	case *v1pb.Plan_Spec_ExportDataConfig:
+		storeSpec.Config = convertPlanSpecExportDataConfig(v)
 	}
 	return storeSpec
 }
@@ -255,7 +225,6 @@ func convertPlanConfigCreateDatabaseConfig(c *v1pb.Plan_CreateDatabaseConfig) *s
 		Collation:    c.Collation,
 		Cluster:      c.Cluster,
 		Owner:        c.Owner,
-		Backup:       c.Backup,
 		Environment:  c.Environment,
 		Labels:       c.Labels,
 	}
@@ -282,29 +251,17 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 	}
 }
 
-func convertPlanSpecRestoreDatabaseConfig(config *v1pb.Plan_Spec_RestoreDatabaseConfig) *storepb.PlanConfig_Spec_RestoreDatabaseConfig {
-	c := config.RestoreDatabaseConfig
-	storeConfig := &storepb.PlanConfig_Spec_RestoreDatabaseConfig{
-		RestoreDatabaseConfig: &storepb.PlanConfig_RestoreDatabaseConfig{
-			Target: c.Target,
+func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *storepb.PlanConfig_Spec_ExportDataConfig {
+	c := config.ExportDataConfig
+	return &storepb.PlanConfig_Spec_ExportDataConfig{
+		ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
+			Target:   c.Target,
+			Sheet:    c.Sheet,
+			MaxRows:  c.MaxRows,
+			Format:   convertToExportFormat(c.Format),
+			Password: c.Password,
 		},
 	}
-	switch source := c.Source.(type) {
-	case *v1pb.Plan_RestoreDatabaseConfig_Backup:
-		storeConfig.RestoreDatabaseConfig.Source = &storepb.PlanConfig_RestoreDatabaseConfig_Backup{
-			Backup: source.Backup,
-		}
-	case *v1pb.Plan_RestoreDatabaseConfig_PointInTime:
-		storeConfig.RestoreDatabaseConfig.Source = &storepb.PlanConfig_RestoreDatabaseConfig_PointInTime{
-			PointInTime: source.PointInTime,
-		}
-	}
-	// c.CreateDatabaseConfig is defined as optional in proto
-	// so we need to test if it's nil
-	if c.CreateDatabaseConfig != nil {
-		storeConfig.RestoreDatabaseConfig.CreateDatabaseConfig = convertPlanConfigCreateDatabaseConfig(c.CreateDatabaseConfig)
-	}
-	return storeConfig
 }
 
 // convertDatabaseLabels converts the map[string]string labels to []*api.DatabaseLabel JSON string.
@@ -393,8 +350,6 @@ func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type 
 		return v1pb.PlanCheckRun_DATABASE_CONNECT
 	case store.PlanCheckDatabaseGhostSync:
 		return v1pb.PlanCheckRun_DATABASE_GHOST_SYNC
-	case store.PlanCheckDatabasePITRMySQL:
-		return v1pb.PlanCheckRun_DATABASE_PITR_MYSQL
 	}
 	return v1pb.PlanCheckRun_TYPE_UNSPECIFIED
 }
@@ -603,12 +558,8 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 		return convertToTaskFromSchemaUpdateGhostCutover(ctx, s, project, task)
 	case api.TaskDatabaseDataUpdate:
 		return convertToTaskFromDataUpdate(ctx, s, project, task)
-	case api.TaskDatabaseBackup:
-		return convertToTaskFromDatabaseBackup(ctx, s, project, task)
-	case api.TaskDatabaseRestorePITRRestore:
-		return convertToTaskFromDatabaseRestoreRestore(ctx, s, project, task)
-	case api.TaskDatabaseRestorePITRCutover:
-		return convertToTaskFromDatabaseRestoreCutOver(ctx, s, project, task)
+	case api.TaskDatabaseDataExport:
+		return convertToTaskFromDatabaseDataExport(ctx, s, project, task)
 	case api.TaskGeneral:
 		fallthrough
 	default:
@@ -850,30 +801,13 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	return v1pbTask, nil
 }
 
-func convertToTaskFromDatabaseBackup(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	if task.DatabaseID == nil {
 		return nil, errors.Errorf("database id is nil")
 	}
-	payload := &api.TaskDatabaseBackupPayload{}
+	payload := &api.TaskDatabaseDataExportPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
-	}
-	backup, err := s.GetBackupByUID(ctx, payload.BackupID)
-	if err != nil {
-		return nil, errors.Errorf("failed to get backup by uid: %v", err)
-	}
-	if backup == nil {
-		return nil, errors.Errorf("backup not found")
-	}
-	databaseBackup, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		UID:         &backup.DatabaseUID,
-		ShowDeleted: true,
-	})
-	if err != nil {
-		return nil, errors.Errorf("failed to get database: %v", err)
-	}
-	if databaseBackup == nil {
-		return nil, errors.Errorf("database not found")
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
 	if err != nil {
@@ -882,135 +816,27 @@ func convertToTaskFromDatabaseBackup(ctx context.Context, s *store.Store, projec
 	if database == nil {
 		return nil, errors.Errorf("database not found")
 	}
-	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
-		Title:          task.Name,
-		SpecId:         payload.SpecID,
-		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason:  payload.SkippedReason,
-		DependsOnTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Payload: &v1pb.Task_DatabaseBackup_{
-			DatabaseBackup: &v1pb.Task_DatabaseBackup{
-				Backup: fmt.Sprintf("%s%s/%s%s/%s%d", common.InstanceNamePrefix, databaseBackup.InstanceID, common.DatabaseIDPrefix, databaseBackup.DatabaseName, common.BackupPrefix, backup.UID),
-			},
+	targetDatabaseName := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
+	sheet := getResourceNameForSheet(project, payload.SheetID)
+	v1pbTaskPayload := v1pb.Task_DatabaseDataExport_{
+		DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
+			Target:   targetDatabaseName,
+			Sheet:    sheet,
+			MaxRows:  int32(payload.MaxRows),
+			Format:   convertExportFormat(payload.Format),
+			Password: &payload.Password,
 		},
 	}
-	return v1pbTask, nil
-}
-
-func convertToTaskFromDatabaseRestoreRestore(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseID == nil {
-		return nil, errors.Errorf("database id is nil")
-	}
-	payload := &api.TaskDatabasePITRRestorePayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
-	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database")
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found")
-	}
-	v1pbTaskPayload := v1pb.Task_DatabaseRestoreRestore_{
-		DatabaseRestoreRestore: &v1pb.Task_DatabaseRestoreRestore{},
-	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
-		Title:          task.Name,
-		SpecId:         payload.SpecID,
-		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason:  payload.SkippedReason,
-		DependsOnTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Payload:        nil,
+		Name:    fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
+		Uid:     fmt.Sprintf("%d", task.ID),
+		Title:   task.Name,
+		SpecId:  payload.SpecID,
+		Type:    convertToTaskType(task.Type),
+		Status:  convertToTaskStatus(task.LatestTaskRunStatus, false),
+		Target:  targetDatabaseName,
+		Payload: &v1pbTaskPayload,
 	}
-	if (payload.BackupID == nil) == (payload.PointInTimeTs == nil) {
-		return nil, errors.Errorf("payload.BackupID and payload.PointInTimeTs cannot be both nil or both not nil")
-	}
-	if (payload.TargetInstanceID == nil) != (payload.DatabaseName == nil) {
-		return nil, errors.Errorf("payload.TargetInstanceID and payload.DatabaseName must be both nil or both not nil")
-	}
-
-	if payload.TargetInstanceID != nil {
-		targetInstance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
-			UID: payload.TargetInstanceID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get target instance")
-		}
-		if targetInstance == nil {
-			return nil, errors.Errorf("target instance not found")
-		}
-		v1pbTaskPayload.DatabaseRestoreRestore.Target = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, targetInstance.ResourceID, common.DatabaseIDPrefix, *payload.DatabaseName)
-	}
-
-	if payload.BackupID != nil {
-		backup, err := s.GetBackupByUID(ctx, *payload.BackupID)
-		if err != nil {
-			return nil, errors.Errorf("failed to get backup by uid: %v", err)
-		}
-		if backup == nil {
-			return nil, errors.Errorf("backup not found")
-		}
-		databaseBackup, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			UID:         &backup.DatabaseUID,
-			ShowDeleted: true,
-		})
-		if err != nil {
-			return nil, errors.Errorf("failed to get database: %v", err)
-		}
-		if databaseBackup == nil {
-			return nil, errors.Errorf("database not found")
-		}
-		v1pbTaskPayload.DatabaseRestoreRestore.Source = &v1pb.Task_DatabaseRestoreRestore_Backup{
-			Backup: fmt.Sprintf("%s%s/%s%s/%s%d", common.InstanceNamePrefix, databaseBackup.InstanceID, common.DatabaseIDPrefix, databaseBackup.DatabaseName, common.BackupPrefix, backup.UID),
-		}
-	}
-	if payload.PointInTimeTs != nil {
-		v1pbTaskPayload.DatabaseRestoreRestore.Source = &v1pb.Task_DatabaseRestoreRestore_PointInTime{
-			PointInTime: timestamppb.New(time.Unix(*payload.PointInTimeTs, 0)),
-		}
-	}
-	v1pbTask.Payload = &v1pbTaskPayload
-
-	return v1pbTask, nil
-}
-
-func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseID == nil {
-		return nil, errors.Errorf("database id is nil")
-	}
-	payload := &api.TaskDatabasePITRCutoverPayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
-	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database")
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found")
-	}
-	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
-		Title:          task.Name,
-		SpecId:         payload.SpecID,
-		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason:  payload.SkippedReason,
-		DependsOnTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Payload:        nil,
-	}
-
 	return v1pbTask, nil
 }
 
@@ -1054,12 +880,8 @@ func convertToTaskType(taskType api.TaskType) v1pb.Task_Type {
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER
 	case api.TaskDatabaseDataUpdate:
 		return v1pb.Task_DATABASE_DATA_UPDATE
-	case api.TaskDatabaseBackup:
-		return v1pb.Task_DATABASE_BACKUP
-	case api.TaskDatabaseRestorePITRRestore:
-		return v1pb.Task_DATABASE_RESTORE_RESTORE
-	case api.TaskDatabaseRestorePITRCutover:
-		return v1pb.Task_DATABASE_RESTORE_CUTOVER
+	case api.TaskDatabaseDataExport:
+		return v1pb.Task_DATABASE_DATA_EXPORT
 	default:
 		return v1pb.Task_TYPE_UNSPECIFIED
 	}

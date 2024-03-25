@@ -36,23 +36,18 @@ export default { name: "RepositoryVCSProviderPanel" };
 </script>
 
 <script setup lang="ts">
-import { reactive, computed, watchEffect, onUnmounted, onMounted } from "vue";
-import isEmpty from "lodash-es/isEmpty";
-import { OAuthWindowEventPayload, openWindowForOAuth } from "@/types";
+import { reactive, computed, watchEffect } from "vue";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
-import {
-  ExternalVersionControl,
-  ExternalVersionControl_Type,
-} from "@/types/proto/v1/externalvs_service";
+import { useCurrentUserV1, useVCSV1Store } from "@/store";
+import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 
 interface LocalState {
-  selectedVCS?: ExternalVersionControl;
+  selectedVCS?: VCSProvider;
 }
 
 const emit = defineEmits<{
   (event: "next"): void;
-  (event: "set-vcs", payload: ExternalVersionControl): void;
+  (event: "set-vcs", payload: VCSProvider): void;
   (event: "set-code", payload: string): void;
 }>();
 
@@ -67,55 +62,17 @@ const prepareVCSList = () => {
 
 watchEffect(prepareVCSList);
 
-onMounted(() => {
-  window.addEventListener("bb.oauth.link-vcs-repository", eventListener, false);
-});
-onUnmounted(() => {
-  window.removeEventListener("bb.oauth.link-vcs-repository", eventListener);
-});
-
 const vcsList = computed(() => {
   return vcsV1Store.getVCSList();
 });
 
-const eventListener = (event: Event) => {
-  const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
-  if (isEmpty(payload.error)) {
-    emit("set-code", payload.code);
-    emit("next");
-  } else {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: payload.error,
-    });
-  }
-};
-
 const canManageVCSProvider = computed(() => {
-  return hasWorkspacePermissionV2(
-    currentUserV1.value,
-    "bb.externalVersionControls.list"
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.vcsProviders.list");
 });
 
-const selectVCS = (vcs: ExternalVersionControl) => {
+const selectVCS = (vcs: VCSProvider) => {
   state.selectedVCS = vcs;
   emit("set-vcs", vcs);
-
-  let authorizeUrl = `${vcs.url}/oauth/authorize`;
-  if (vcs.type === ExternalVersionControl_Type.GITHUB) {
-    authorizeUrl = `${vcs.url}/login/oauth/authorize`;
-  } else if (vcs.type === ExternalVersionControl_Type.BITBUCKET) {
-    authorizeUrl = `https://bitbucket.org/site/oauth2/authorize`;
-  } else if (vcs.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
-    authorizeUrl = "https://app.vssps.visualstudio.com/oauth2/authorize";
-  }
-  openWindowForOAuth(
-    authorizeUrl,
-    vcs.applicationId,
-    "bb.oauth.link-vcs-repository",
-    vcs.type
-  );
+  emit("next");
 };
 </script>

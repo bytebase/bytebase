@@ -137,7 +137,7 @@ func TestSensitiveData(t *testing.T) {
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
 	})
 	a.NoError(err)
@@ -152,7 +152,7 @@ func TestSensitiveData(t *testing.T) {
 
 	// Validate query syntax error.
 	_, err = ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
-		Name: instance.Name, ConnectionDatabase: databaseName, Statement: "SELECT hello TO world;",
+		Name: database.Name, Statement: "SELECT hello TO world;",
 	})
 	st := status.Convert(err)
 	a.Len(st.Details(), 1)
@@ -215,7 +215,7 @@ func TestSensitiveData(t *testing.T) {
 
 	// Query masked data.
 	queryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
-		Name: instance.Name, ConnectionDatabase: databaseName, Statement: queryTable,
+		Name: database.Name, Statement: queryTable,
 	})
 	a.NoError(err)
 	a.Equal(1, len(queryResp.Results))
@@ -223,7 +223,7 @@ func TestSensitiveData(t *testing.T) {
 	a.Equal("", diff)
 
 	// Query origin data.
-	singleSQLResults, err := ctl.adminQuery(ctx, instance, databaseName, queryTable)
+	singleSQLResults, err := ctl.adminQuery(ctx, database, queryTable)
 	a.NoError(err)
 	a.Len(singleSQLResults, 1)
 	result := singleSQLResults[0]

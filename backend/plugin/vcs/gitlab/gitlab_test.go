@@ -13,7 +13,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/internal/oauth"
 )
 
 func TestProvider_FetchCommitByID(t *testing.T) {
@@ -65,47 +64,6 @@ func TestProvider_FetchCommitByID(t *testing.T) {
 		ID:         "6104942438c14ec7bd21c6cd5bd995272b3faff6",
 		AuthorName: "randx",
 		CreatedTs:  1632117972,
-	}
-	assert.Equal(t, want, got)
-}
-
-func TestProvider_ExchangeOAuthToken(t *testing.T) {
-	p := newMockProvider(func(r *http.Request) (*http.Response, error) {
-		assert.Equal(t, "/oauth/token", r.URL.Path)
-		assert.Equal(t, "client_id=test_client_id&client_secret=test_client_secret&code=test_code&grant_type=authorization_code&redirect_uri=http%3A%2F%2Flocalhost%3A3000", r.URL.RawQuery)
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			// Example response taken from https://docs.gitlab.com/ee/api/oauth2.html#authorization-code-flow
-			Body: io.NopCloser(strings.NewReader(`
-{
- "access_token": "de6780bc506a0446309bd9362820ba8aed28aa506c71eedbe1c5c4f9dd350e54",
- "token_type": "bearer",
- "expires_in": 7200,
- "refresh_token": "8257e65c97202ed1726cf9571600918f3bffb2544b26e00a61df9897668c33a1",
- "created_at": 1607635748
-}
-`)),
-		}, nil
-	},
-	)
-
-	ctx := context.Background()
-	got, err := p.ExchangeOAuthToken(ctx, "",
-		&common.OAuthExchange{
-			ClientID:     "test_client_id",
-			ClientSecret: "test_client_secret",
-			Code:         "test_code",
-			RedirectURL:  "http://localhost:3000",
-		},
-	)
-	require.NoError(t, err)
-
-	want := &vcs.OAuthToken{
-		AccessToken:  "de6780bc506a0446309bd9362820ba8aed28aa506c71eedbe1c5c4f9dd350e54",
-		RefreshToken: "8257e65c97202ed1726cf9571600918f3bffb2544b26e00a61df9897668c33a1",
-		ExpiresIn:    7200,
-		CreatedAt:    1607635748,
-		ExpiresTs:    1607642948,
 	}
 	assert.Equal(t, want, got)
 }
@@ -422,61 +380,6 @@ func TestProvider_DeleteWebhook(t *testing.T) {
 	ctx := context.Background()
 	err := p.DeleteWebhook(ctx, &common.OauthContext{}, "", "1", "1")
 	require.NoError(t, err)
-}
-
-func TestOAuth_RefreshToken(t *testing.T) {
-	ctx := context.Background()
-	client := &http.Client{
-		Transport: &common.MockRoundTripper{
-			MockRoundTrip: func(r *http.Request) (*http.Response, error) {
-				token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-				if token == "expired" {
-					return &http.Response{
-						StatusCode: http.StatusBadRequest,
-						Body: io.NopCloser(strings.NewReader(`
-					{"error":"invalid_grant","error_description":"The provided authorization grant is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client."}
-					`)),
-					}, nil
-				}
-
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					// Example response taken from https://docs.gitlab.com/ee/api/oauth2.html#authorization-code-with-proof-key-for-code-exchange-pkce
-					Body: io.NopCloser(strings.NewReader(`
-{
- "access_token": "de6780bc506a0446309bd9362820ba8aed28aa506c71eedbe1c5c4f9dd350e54",
- "token_type": "bearer",
- "expires_in": 7200,
- "refresh_token": "8257e65c97202ed1726cf9571600918f3bffb2544b26e00a61df9897668c33a1",
- "created_at": 1607635748
-}
-`)),
-				}, nil
-			},
-		},
-	}
-	token := "expired"
-
-	calledRefresher := false
-	refresher := func(_, _ string, _ int64) error {
-		calledRefresher = true
-		return nil
-	}
-
-	_, _, _, err := oauth.Get(
-		ctx,
-		client,
-		"https://gitlab.example.com/api/v4/users/octocat",
-		&token,
-		tokenRefresher(
-			"https://gitlab.example.com",
-			oauthContext{},
-			refresher,
-		),
-	)
-	require.NoError(t, err)
-	assert.Equal(t, "de6780bc506a0446309bd9362820ba8aed28aa506c71eedbe1c5c4f9dd350e54", token)
-	assert.True(t, calledRefresher)
 }
 
 func TestProvider_GetBranch(t *testing.T) {

@@ -223,7 +223,6 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName,
 		v1pb.EnvironmentService_GetEnvironment_FullMethodName,
 		v1pb.EnvironmentService_ListEnvironments_FullMethodName,
-		v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName,
 		v1pb.SettingService_ListSettings_FullMethodName,
 		v1pb.SettingService_GetSetting_FullMethodName,
 		v1pb.SettingService_UpdateSetting_FullMethodName,
@@ -238,14 +237,13 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.IdentityProviderService_DeleteIdentityProvider_FullMethodName,
 		v1pb.IdentityProviderService_UndeleteIdentityProvider_FullMethodName,
 		v1pb.IdentityProviderService_TestIdentityProvider_FullMethodName,
-		v1pb.ExternalVersionControlService_ListExternalVersionControls_FullMethodName,
-		v1pb.ExternalVersionControlService_GetExternalVersionControl_FullMethodName,
-		v1pb.ExternalVersionControlService_CreateExternalVersionControl_FullMethodName,
-		v1pb.ExternalVersionControlService_ExchangeToken_FullMethodName,
-		v1pb.ExternalVersionControlService_UpdateExternalVersionControl_FullMethodName,
-		v1pb.ExternalVersionControlService_DeleteExternalVersionControl_FullMethodName,
-		v1pb.ExternalVersionControlService_SearchExternalVersionControlProjects_FullMethodName,
-		v1pb.ExternalVersionControlService_ListProjectGitOpsInfo_FullMethodName,
+		v1pb.VCSProviderService_ListVCSProviders_FullMethodName,
+		v1pb.VCSProviderService_GetVCSProvider_FullMethodName,
+		v1pb.VCSProviderService_CreateVCSProvider_FullMethodName,
+		v1pb.VCSProviderService_UpdateVCSProvider_FullMethodName,
+		v1pb.VCSProviderService_DeleteVCSProvider_FullMethodName,
+		v1pb.VCSProviderService_SearchVCSProviderProjects_FullMethodName,
+		v1pb.VCSProviderService_ListProjectGitOpsInfo_FullMethodName,
 		v1pb.RiskService_ListRisks_FullMethodName,
 		v1pb.RiskService_CreateRisk_FullMethodName,
 		v1pb.RiskService_UpdateRisk_FullMethodName,
@@ -267,10 +265,6 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.DatabaseService_GetDatabaseMetadata_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabaseMetadata_FullMethodName,
 		v1pb.DatabaseService_GetDatabaseSchema_FullMethodName,
-		v1pb.DatabaseService_GetBackupSetting_FullMethodName,
-		v1pb.DatabaseService_UpdateBackupSetting_FullMethodName,
-		v1pb.DatabaseService_CreateBackup_FullMethodName,
-		v1pb.DatabaseService_ListBackups_FullMethodName,
 		v1pb.DatabaseService_ListSecrets_FullMethodName,
 		v1pb.DatabaseService_UpdateSecret_FullMethodName,
 		v1pb.DatabaseService_DeleteSecret_FullMethodName,
@@ -316,7 +310,6 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.ProjectService_UpdateProjectGitOpsInfo_FullMethodName,
 		v1pb.ProjectService_UnsetProjectGitOpsInfo_FullMethodName,
 		v1pb.ProjectService_GetProjectGitOpsInfo_FullMethodName,
-		v1pb.ProjectService_SetupProjectSQLReviewCI_FullMethodName,
 
 		v1pb.ProjectService_GetDatabaseGroup_FullMethodName,
 		v1pb.ProjectService_CreateDatabaseGroup_FullMethodName,
@@ -517,8 +510,6 @@ func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any
 		projectGitopsInfos = append(projectGitopsInfos, r.GetProjectGitopsInfo().GetName())
 	case *v1pb.UnsetProjectGitOpsInfoRequest:
 		projectGitopsInfos = append(projectGitopsInfos, r.GetName())
-	case *v1pb.SetupSQLReviewCIRequest:
-		projectGitopsInfos = append(projectGitopsInfos, r.GetName())
 	case *v1pb.GetProjectGitOpsInfoRequest:
 		projectGitopsInfos = append(projectGitopsInfos, r.GetName())
 	case *v1pb.GetDatabaseGroupRequest:
@@ -652,22 +643,6 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 			return nil, errors.Wrapf(err, "failed to get databaseName from %q", r.GetName())
 		}
 		databaseNames = append(databaseNames, databaseName)
-	case *v1pb.GetBackupSettingRequest:
-		databaseName, err := common.TrimSuffix(r.GetName(), "/backupSetting")
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get databaseName from %q", r.GetName())
-		}
-		databaseNames = append(databaseNames, databaseName)
-	case *v1pb.UpdateBackupSettingRequest:
-		databaseName, err := common.TrimSuffix(r.GetSetting().GetName(), "/backupSetting")
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get databaseName from %q", r.GetSetting().GetName())
-		}
-		databaseNames = append(databaseNames, databaseName)
-	case *v1pb.CreateBackupRequest:
-		databaseNames = append(databaseNames, r.GetParent())
-	case *v1pb.ListBackupsRequest:
-		databaseNames = append(databaseNames, r.GetParent())
 	case *v1pb.ListSecretsRequest:
 		databaseNames = append(databaseNames, r.GetParent())
 	case *v1pb.UpdateSecretRequest:

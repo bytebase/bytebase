@@ -130,7 +130,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
 	})
 	a.NoError(err)
@@ -294,7 +294,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
 	})
 	a.NoError(err)
@@ -342,7 +342,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	countSQL := "SELECT count(*) FROM test WHERE 1=1;"
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
 	originQueryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
-		Name: instance.Name, ConnectionDatabase: databaseName, Statement: countSQL,
+		Name: database.Name, Statement: countSQL,
 	})
 	a.NoError(err)
 	a.Equal(1, len(originQueryResp.Results))
@@ -352,7 +352,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, dmlSQL, false /* wait */)
 
 	finalQueryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
-		Name: instance.Name, ConnectionDatabase: databaseName, Statement: countSQL,
+		Name: database.Name, Statement: countSQL,
 	})
 	a.NoError(err)
 	a.Equal(1, len(finalQueryResp.Results))

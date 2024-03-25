@@ -1339,7 +1339,36 @@
     "type-or-paste-credentials": "Escriba o pegue las CREDENCIALES",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "password-write-only": "SU_DB_PWD - solo escritura",
-    "secret-manager-tip": "También puede especificar un punto final de gestión de secreto externo",
+    "password-type": {
+      "password": "Contraseña",
+      "password-tip": "También puede especificar un punto final de gestión de secreto externo",
+      "external-secret": "Secreto externo (Vault)"
+    },
+    "external-secret": {
+      "vault-url": "Vault URL",
+      "vault-auth-type": {
+        "self": "Vault auth type",
+        "token": {
+          "self": "Simbólico",
+          "api-token": "Vault API token",
+          "tips": "Un token raíz sin TTL."
+        },
+        "app-role": {
+          "self": "App role",
+          "role-id": "Auth role id",
+          "secret-id": "Auth secret id",
+          "secret-id-plain-text": "Texto sin formato para identificación secreta de rol",
+          "secret-id-environment": "Nombre del entorno para la identificación secreta del rol",
+          "secret-plain-text": "Texto sin formato",
+          "secret-env-name": "Nombre del entorno",
+          "secret-tips": "Una identificación secreta desenvuelta sin TTL. Puede utilizar texto sin formato o colocarlo en el entorno o en el archivo local. {learn_more}"
+        }
+      },
+      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-tips": "Solo admite motor KV v2.",
+      "vault-secret-name": "Vault secret name",
+      "vault-key-name": "Vault key name for password"
+    },
     "test-connection": "Probar conexión",
     "ignore-and-create": "Ignorar y crear",
     "add-a-postgresql-sample-instance": "Agregue una instancia de muestra de PostgreSQL en su lugar",
@@ -1760,13 +1789,7 @@
     "file-path-template-description": "Bytebase solo observa la ruta del archivo que coincida con el patrón de plantilla en relación al directorio base.",
     "file-path-example-schema-migration": "Ejemplo de ruta de archivo para el tipo de migración de esquema",
     "file-path-example-data-migration": "Ejemplo de ruta de archivo para el tipo de migración de datos",
-    "schema-path-template": "Plantilla de ruta de esquema",
-    "schema-writeback-description": "Cuando se especifica, después de cada migración, Bytebase escribirá el último esquema en la ruta de esquema en relación al directorio base en la misma rama que el commit original que activó la migración. Deje en blanco si no desea que Bytebase haga esto.",
-    "schema-writeback-protected-branch": "Asegúrese de que la rama modificada no esté protegida o permita que el mantenedor del repositorio haga push a esa rama protegida.",
     "if-specified": "Si se especifica",
-    "schema-path-example": "Ejemplo de ruta de esquema",
-    "sheet-path-template": "Plantilla de ruta de hoja",
-    "sheet-path-template-description": "Bytebase solo observa archivos con nombres de ruta que coincidan con el patrón de plantilla en relación al directorio base. Los archivos coincidentes se sincronizarán con el editor de SQL para su uso allí.",
     "sql-review-ci": "Revisión de SQL CI",
     "sql-review-ci-enable": "Habilitar la revisión de SQL CI",
     "sql-review-ci-enable-gitlab": "Habilitar la revisión de SQL CI a través de GitLab CI",
@@ -2024,21 +2047,18 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase admite el flujo de trabajo de GitOps, donde los scripts de migración de la base de datos se almacenan en el sistema de control de versiones (VCS) y los scripts de migración recién creados activarán automáticamente el cambio de base de datos correspondiente. Los administrador de Bytebase administran todos los VCS aplicables aquí para que los propietarios de proyectos puedan vincular los proyectos con sus repositorios de Git desde estos VCS.",
-      "description-highlight": "Si desea habilitar el inicio de sesión de terceros a través de sus VCS configurados, configure en SSO.",
+      "description": "En el flujo de trabajo GitOps de Bytebase, los desarrolladores almacenan scripts de migración en VCS. Las solicitudes de extracción provocan revisiones SQL, y las fusionadas inician planes de migración. Los administradores configuran proveedores de VCS, mientras que los propietarios del proyecto establecen conexiones de VCS dentro de los proyectos.",
       "add-git-provider": {
         "self": "Agregar un proveedor de Git",
         "description": "Antes de que cualquier proyecto pueda habilitar el flujo de trabajo de GitOps, Bytebase primero debe integrarse con el sistema de control de versiones (VCS) correspondiente registrándose como una aplicación OAuth en ese VCS. A continuación se muestran los pasos para configurar esto, también puede seguir nuestra {guide}.",
         "gitlab-self-host": "GitLab autohospedado",
-        "gitlab-self-host-admin-requirement": "Debe ser un administrador de su instancia de GitLab elegida para configurar esto. De lo contrario, debe solicitar al administrador de su instancia de GitLab que registre Bytebase como una aplicación OAuth de instancia de GitLab y luego proporcionarle ese ID de aplicación y secreto para completar en el paso 'información de la aplicación OAuth'.",
-        "gitlab-com-admin-requirement": "Su cuenta debe tener acceso de administrador a cualquiera de los repositorios que se van a vincular. Por lo general, esta cuenta corresponde a un usuario de servicio dedicado en lugar de a un usuario humano.",
-        "github-self-host-ee": "Autohospedado de GitHub Enterprise Edition (EE)",
-        "github-com-admin-requirement": "Debe ser administrador de la organización de GitHub elegida para configurar esto. De lo contrario, debe solicitar al administrador de su organización de GitHub que registre Bytebase como una aplicación OAuth de organización de GitHub y luego proporcionarle ese ID de aplicación y secreto para completar en el paso 'información de la aplicación OAuth'.",
-        "bitbucket-admin-requirement": "Necesitas ser administrador de tu espacio de trabajo de Bitbucket elegido para configurar esto. De lo contrario, debes pedirle al administrador de tu espacio de trabajo de Bitbucket que registre Bytebase como una aplicación OAuth para todo el espacio de trabajo de Bitbucket, y luego proporcionarte la ID de la aplicación y la clave secreta para que las ingreses en el paso 'Información de la aplicación OAuth'.",
+        "gitlab-self-host-admin-requirement": "Debes ser administrador de la instancia de GitLab.",
+        "gitlab-com-admin-requirement": "Debes ser administrador de los proyectos o grupos.",
+        "github-self-host": "GitHub autohospedado",
+        "github-com-admin-requirement": "Debes ser administrador de la organización de GitHub.",
+        "bitbucket-admin-requirement": "Debes ser el administrador del espacio de trabajo de Bitbucket.",
         "azure-devops-service": "Servicio Azure DevOps",
-        "azure-admin-requirement": "Necesitas ser administrador de la organización de Azure DevOps que haya elegido para configurar esto. De lo contrario, debe pedirle al administrador del espacio de trabajo de Bitbucket que registre Bytebase como una aplicación de OAuth para toda la organización de Azure DevOps y luego proporcionarle el ID de la aplicación y el secreto del cliente para completar en el paso 'Información de la aplicación de OAuth'.",
-        "oauth-info-correct": "La información de OAuth verificada es correcta",
-        "check-oauth-info-match": "Por favor asegúrate de que la clave secreta coincida con la de tu instancia de GitLab de la aplicación.",
+        "azure-admin-requirement": "Debes ser administrador de la organización de Azure DevOps.",
         "add-success": "Proveedor de Git {vcs} agregado exitosamente",
         "choose": "Elige proveedor de Git",
         "basic-info": {
@@ -2052,38 +2072,15 @@
           "display-name": "Nombre para mostrar",
           "display-name-label": "Un nombre opcional para identificar entre diferentes configuraciones que utilizan el mismo proveedor de Git."
         },
-        "oauth-info": {
+        "access-token": {
           "self": "Información de aplicación OAuth",
-          "gitlab-self-host-register-oauth-application": "Registrar Bytebase como una aplicación OAuth para toda la instancia de GitLab alojada en sí misma.",
-          "gitlab-self-host-login-as-admin": "Inicie sesión como usuario Admin en la instancia de GitLab. La cuenta debe ser un Admin de toda la instancia de GitLab (tiene un icono de llave inglesa en la barra superior).",
-          "gitlab-self-host-visit-admin-page": "Vaya a la página de administrador haciendo clic en el icono de llave inglesa, luego vaya a la sección \"Aplicaciones\" y haga clic en el botón \"Nueva aplicación\".",
-          "gitlab-com-register-oauth-application": "Registrar Bytebase como una aplicación OAuth de usuario de GitLab.",
-          "gitlab-com-login": "Inicie sesión como la cuenta que desea que Bytebase actúe. Por lo general, esta cuenta corresponde a un usuario de servicio dedicado en lugar de un usuario humano.",
-          "azure-devops-login": "Inicie sesión con la cuenta con la que desee que actúe Bytebase. Por lo general, esta cuenta corresponde a un usuario de servicio dedicado en lugar de un usuario humano.",
-          "gitlab-com-visit-application-page": "Vaya a la página de Preferencias -> Aplicaciones. Puede acceder a ella a través de su foto de perfil en la esquina superior derecha.",
-          "azure-devops-visit-application-page": "Ir a la página de aplicaciones.",
-          "gitlab-paste-oauth-info": "Pegue la ID de la aplicación y la clave secreta de la aplicación recién creada en los campos a continuación.",
-          "azure-paste-oauth-info": "Pegue el ID de la aplicación y el secreto del cliente de la aplicación que acaba de crear en los campos a continuación.",
-          "github-register-oauth-application": "Registrar Bytebase como una aplicación OAuth de organización en GitHub.",
-          "github-login-as-admin": "Inicie sesión como usuario administrador de la organización en GitHub.com. La cuenta debe ser un administrador de la organización de GitHub (capaz de acceder a la página de Configuración de la organización).",
-          "github-visit-admin-page": "Vaya a la página de Configuración, luego vaya a la sección \"Configuración de desarrollador > Aplicaciones OAuth\" y haga clic en el botón \"Registrar una aplicación\".",
-          "github-paste-oauth-info": "Pegue el ID de cliente y el secreto de cliente de la aplicación recién creada en los campos a continuación.",
-          "bitbucket-register-oauth-application": "Registrar Bytebase como un consumidor OAuth de toda la organización de Bitbucket.",
-          "azure-register-oauth-application": "Registre Bytebase como consumidor de OAuth de toda la organización de Azure DevOps.",
-          "bitbucket-login-as-admin": "Inicie sesión como usuario administrador de la organización en Bitbucket.org. La cuenta debe ser un administrador de la organización de Bitbucket (capaz de acceder a la página de Configuración de la organización).",
-          "bitbucket-visit-admin-page": "Vaya a la página de Configuración, luego vaya a la sección \"APPS AND FEATURES > OAuth consumers\" y haga clic en el botón \"Add a consumer\".",
-          "bitbucket-paste-oauth-info": "Pegue la Clave y el Secreto del consumidor recién creado en los campos a continuación.",
-          "copy-homepage-url": "URL de la página de inicio copiada al portapapeles. Péguela en el campo correspondiente en el formulario de aplicación OAuth.",
-          "copy-redirect-uri": "URI de redireccionamiento copiado al portapapeles. Péguelo en el campo correspondiente en el formulario de aplicación OAuth.",
-          "direct-link": "Enlace directo",
-          "create-oauth-app": "Cree su aplicación OAuth de Bytebase con la siguiente información.",
-          "gitlab-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 64 caracteres",
-          "gitlab-secret-error": "El secreto debe ser una cadena alfanumérica de 64 caracteres",
-          "github-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 20 caracteres. Asegúrese de que sea una aplicación OAuth en lugar de una aplicación GitHub.",
-          "github-secret-error": "El secreto debe ser una cadena alfanumérica de 40 caracteres",
-          "bitbucket-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 18 caracteres",
-          "bitbucket-secret-error": "El secreto debe ser una cadena alfanumérica de 32 caracteres",
-          "github-enterprise-login-as-admin": "Inicia sesión en tu sitio GitHub Enterprise como administrador de la organización. Esta cuenta debe ser un administrador de organización de GitHub (con acceso a la página de configuración de la organización)."
+          "gitlab-project-access-token": "Genera un token de acceso al proyecto para administrar un solo proyecto.",
+          "gitlab-group-access-token": "Genera un token de acceso de grupo para administrar todos los proyectos dentro del grupo.",
+          "gitlab-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de mantenedor para el grupo o todos los proyectos que se deseen gestionar.",
+          "github-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de miembro para la organización o todos los proyectos que se deseen gestionar.",
+          "bitbucket-resource-access-token": "Genera un token de acceso para repositorios, proyectos o espacios de trabajo para gestionar recursos en diferentes niveles.",
+          "bitbucket-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con permisos de lectura y escritura para las organizaciones, proyectos o repositorios que se deseen gestionar.",
+          "azure-devops-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de miembro para la organización o todos los proyectos que se deseen gestionar."
         },
         "confirm": {
           "confirm-info": "Confirmar la información",
@@ -2557,14 +2554,6 @@
       "bb-feature-custom-approval": {
         "title": "Aprobación personalizada",
         "desc": "Configure el nivel de riesgo y el flujo de aprobación para diferentes tareas."
-      },
-      "bb-feature-vcs-schema-write-back": {
-        "title": "Escritura de esquema",
-        "desc": "Después de un cambio de esquema exitoso, la escritura de esquema permite a Bytebase escribir de nuevo la última instantánea completa del esquema en su repositorio de VCS."
-      },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "Sincronizar scripts SQL desde VCS",
-        "desc": "Sincronice los scripts SQL almacenados en VCS en la hoja de cálculo."
       },
       "bb-feature-vcs-sql-review": {
         "title": "Revisión de SQL en el flujo de trabajo de GitOps",
