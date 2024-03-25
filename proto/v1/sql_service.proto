@@ -6,9 +6,9 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
-import "google/protobuf/timestamp.proto";
 
 option go_package = "generated-go/v1";
 
@@ -21,9 +21,7 @@ service SQLService {
     };
   }
   rpc ListQueryHistory(ListQueryHistoryRequest) returns (ListQueryHistoryResponse) {
-    option (google.api.http) = {
-      get: "/v1/queryHistory"
-    };
+    option (google.api.http) = {get: "/v1/queryHistory"};
   }
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
