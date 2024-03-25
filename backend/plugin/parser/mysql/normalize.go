@@ -145,6 +145,16 @@ func NormalizeMySQLIdentifierList(ctx parser.IIdentifierListContext) []string {
 	return result
 }
 
+func NormalizeMySQLViewRef(ctx parser.IViewRefContext) (string, string) {
+	if ctx.QualifiedIdentifier() != nil {
+		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	}
+	if ctx.DotIdentifier() != nil {
+		return "", NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
+	}
+	return "", ""
+}
+
 // NormalizeMySQLViewName normalizes the given view name.
 func NormalizeMySQLViewName(ctx parser.IViewNameContext) (string, string) {
 	if ctx.QualifiedIdentifier() != nil {

@@ -1,0 +1,176 @@
+- description: Drop view in schema with multiple views
+  baseline: |-
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Temporary view structure for `v1`
+    --
+    CREATE VIEW `v1` AS SELECT
+      1 AS `id`;
+
+
+    --
+    -- Temporary view structure for `v2`
+    --
+    CREATE VIEW `v2` AS SELECT
+      1 AS `id + 1`;
+
+
+    --
+    -- Table structure for `t`
+    --
+    CREATE TABLE `t` (
+      `id` int DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    DROP VIEW IF EXISTS `v1`;
+    --
+    -- View structure for `v1`
+    --
+    CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `v1` AS select `t`.`id` AS `id` from `t`;
+
+    DROP VIEW IF EXISTS `v2`;
+    --
+    -- View structure for `v2`
+    --
+    CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `v2` AS select (`t`.`id` + 1) AS `id + 1` from `t`;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+  target: |-
+    {
+      "name": "test_view",
+      "schemas": [
+        {
+          "views": [
+            {
+              "name": "v1",
+              "comment": "VIEW",
+              "definition": "select `t`.`id` AS `id` from `t`"
+            }
+          ],
+          "tables": [
+            {
+              "name": "t",
+              "engine": "InnoDB",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "int",
+                  "nullable": true,
+                  "position": 1,
+                  "defaultNull": true
+                }
+              ],
+              "dataSize": "16384",
+              "collation": "utf8mb4_0900_ai_ci"
+            }
+          ]
+        }
+      ],
+      "collation": "utf8mb4_0900_ai_ci",
+      "characterSet": "utf8mb4"
+    }
+  result: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Temporary view structure for `v1`
+    --
+    CREATE VIEW `v1` AS SELECT
+      1 AS `id`;
+
+
+    --
+    -- Table structure for `t`
+    --
+    CREATE TABLE `t` (
+      `id` int DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    DROP VIEW IF EXISTS `v1`;
+    --
+    -- View structure for `v1`
+    --
+    CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `v1` AS select `t`.`id` AS `id` from `t`;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Drop all views
+  baseline: |-
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Temporary view structure for `v1`
+    --
+    CREATE VIEW `v1` AS SELECT
+      1 AS `id`;
+
+
+    --
+    -- Temporary view structure for `v2`
+    --
+    CREATE VIEW `v2` AS SELECT
+      1 AS `id + 1`;
+
+
+    --
+    -- Table structure for `t`
+    --
+    CREATE TABLE `t` (
+      `id` int DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    DROP VIEW IF EXISTS `v1`;
+    --
+    -- View structure for `v1`
+    --
+    CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `v1` AS select `t`.`id` AS `id` from `t`;
+
+    DROP VIEW IF EXISTS `v2`;
+    --
+    -- View structure for `v2`
+    --
+    CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `v2` AS select (`t`.`id` + 1) AS `id + 1` from `t`;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+  target: |-
+    {
+      "name": "test_view",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "engine": "InnoDB",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "int",
+                  "nullable": true,
+                  "position": 1,
+                  "defaultNull": true
+                }
+              ],
+              "dataSize": "16384",
+              "collation": "utf8mb4_0900_ai_ci"
+            }
+          ]
+        }
+      ],
+      "collation": "utf8mb4_0900_ai_ci",
+      "characterSet": "utf8mb4"
+    }
+  result: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `t`
+    --
+    CREATE TABLE `t` (
+      `id` int DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
