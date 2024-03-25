@@ -320,8 +320,8 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		statement,
 		database.DatabaseName,
 		schemaName,
-		s.buildGetDatabaseMetadataFunc(instance, database.DatabaseName),
-		s.buildListDatabaseNamesFunc(instance),
+		BuildGetDatabaseMetadataFunc(s.store, instance, database.DatabaseName),
+		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
 	if err != nil {
@@ -350,7 +350,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return nil, err
 	}
 
-	bytes, durationNs, exportErr := s.doExport(ctx, request, instance, database, spans)
+	bytes, durationNs, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, instance, database, spans)
 
 	if err := s.postExport(ctx, activity, durationNs, exportErr); err != nil {
 		return nil, err
@@ -360,7 +360,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return nil, status.Errorf(codes.Internal, exportErr.Error())
 	}
 
-	content, err := doEncrypt(bytes, request)
+	content, err := DoEncrypt(bytes, request)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -370,9 +370,9 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}, nil
 }
 
-// doExport does the export.
-func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]byte, int64, error) {
-	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, "" /* dataSourceID */)
+// DoExport does the export.
+func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfactory.DBFactory, licenseService enterprise.LicenseService, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]byte, int64, error) {
+	driver, err := dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, "" /* dataSourceID */)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -394,7 +394,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		ReadOnly:            true,
 		CurrentDatabase:     database.DatabaseName,
 		SensitiveSchemaInfo: nil,
-		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+		EnableSensitive:     licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
 	})
 	durationNs := time.Now().UnixNano() - start
 	if err != nil {
@@ -405,8 +405,9 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		result = result[len(result)-1:]
 	}
 
-	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
-		if err := s.maskResults(ctx, spans, result, instance, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
+	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
+		masker := NewQueryResultMasker(storeInstance)
+		if err := masker.MaskResults(ctx, spans, result, instance, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
 			return nil, durationNs, err
 		}
 	}
@@ -422,7 +423,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 			return nil, durationNs, err
 		}
 	case v1pb.ExportFormat_SQL:
-		resourceList, err := s.extractResourceList(ctx, instance.Engine, database.DatabaseName, request.Statement, instance)
+		resourceList, err := extractResourceList(ctx, storeInstance, instance.Engine, database.DatabaseName, request.Statement, instance)
 		if err != nil {
 			return nil, 0, status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
 		}
@@ -482,7 +483,7 @@ func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMes
 	return nil
 }
 
-func doEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
+func DoEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
 	if request.Password == "" {
 		return data, nil
 	}
@@ -979,8 +980,8 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		statement,
 		database.DatabaseName,
 		schemaName,
-		s.buildGetDatabaseMetadataFunc(instance, database.DatabaseName),
-		s.buildListDatabaseNamesFunc(instance),
+		BuildGetDatabaseMetadataFunc(s.store, instance, database.DatabaseName),
+		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
 	if err != nil {
@@ -1024,7 +1025,8 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if adviceStatus != advisor.Error {
 		results, durationNs, queryErr = s.doQuery(ctx, request, instance, database)
 		if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
-			if err := s.maskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
+			masker := NewQueryResultMasker(s.store)
+			if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
 				return nil, status.Errorf(codes.Internal, err.Error())
 			}
 		}
@@ -1148,219 +1150,7 @@ func (s *SQLService) postQuery(ctx context.Context, activity *store.ActivityMess
 	return nil
 }
 
-func (s *SQLService) getMasterForColumnResource(
-	ctx context.Context,
-	m *maskingLevelEvaluator,
-	instance *store.InstanceMessage,
-	sourceColumn base.ColumnResource,
-	maskingExceptionPolicyMap map[string]*storepb.MaskingExceptionPolicy,
-	action storepb.MaskingExceptionPolicy_MaskingException_Action,
-	currentPrincipal *store.UserMessage,
-) (masker.Masker, error) {
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instance.ResourceID,
-		DatabaseName: &sourceColumn.Database,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find database: %q", sourceColumn.Database)
-	}
-	if database == nil {
-		return masker.NewNoneMasker(), nil
-	}
-
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &database.ProjectID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find project: %q", database.ProjectID)
-	}
-	if project == nil {
-		return masker.NewNoneMasker(), nil
-	}
-
-	meta, config, err := s.getColumnForColumnResource(ctx, instance.ResourceID, &sourceColumn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database metadata for column resource: %q", sourceColumn.String())
-	}
-	// Span and metadata are not the same in real time, so we fall back to none masker.
-	if meta == nil {
-		return masker.NewNoneMasker(), nil
-	}
-
-	semanticTypeID := ""
-	if config != nil {
-		semanticTypeID = config.SemanticTypeId
-	}
-
-	maskingPolicy, err := s.store.GetMaskingPolicyByDatabaseUID(ctx, database.UID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get masking policy for database: %q", database.DatabaseName)
-	}
-	maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
-	if maskingPolicy != nil {
-		for _, maskData := range maskingPolicy.MaskData {
-			maskingPolicyMap[maskingPolicyKey{
-				schema: maskData.Schema,
-				table:  maskData.Table,
-				column: maskData.Column,
-			}] = maskData
-		}
-	}
-
-	var maskingExceptionPolicy *storepb.MaskingExceptionPolicy
-	// If we cannot find the maskingExceptionPolicy before, we need to find it from the database and record it in cache.
-
-	if _, ok := maskingExceptionPolicyMap[database.ProjectID]; !ok {
-		policy, err := s.store.GetMaskingExceptionPolicyByProjectUID(ctx, project.UID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find masking exception policy for project %q", project.ResourceID)
-		}
-		// It is safe if policy is nil.
-		maskingExceptionPolicyMap[database.ProjectID] = policy
-	}
-	maskingExceptionPolicy = maskingExceptionPolicyMap[database.ProjectID]
-
-	// Build the filtered maskingExceptionPolicy for current principal.
-	var maskingExceptionContainsCurrentPrincipal []*storepb.MaskingExceptionPolicy_MaskingException
-	if maskingExceptionPolicy != nil {
-		for _, maskingException := range maskingExceptionPolicy.MaskingExceptions {
-			if maskingException.Action != action {
-				continue
-			}
-			if maskingException.Member == currentPrincipal.Email {
-				maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
-			}
-		}
-	}
-
-	maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, semanticTypeID, meta.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
-	}
-	return getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel), nil
-}
-
-// getMaskersForQuerySpan returns the maskers for the query span.
-func (s *SQLService) getMaskersForQuerySpan(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, span *base.QuerySpan, action storepb.MaskingExceptionPolicy_MaskingException_Action) ([]masker.Masker, error) {
-	if span == nil {
-		return nil, nil
-	}
-	maskers := make([]masker.Masker, 0, len(span.Results))
-
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	currentPrincipal, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		ID: &principalID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find current principal")
-	}
-	if currentPrincipal == nil {
-		return nil, status.Errorf(codes.Internal, "current principal not found")
-	}
-
-	// Multiple databases may belong to the same project, to reduce the protojson unmarshal cost,
-	// we store the projectResourceID - maskingExceptionPolicy in a map.
-	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
-
-	for _, spanResult := range span.Results {
-		// Likes constant expression, we use the none masker.
-		if len(spanResult.SourceColumns) == 0 {
-			maskers = append(maskers, masker.NewNoneMasker())
-			continue
-		}
-
-		var effectiveMaskers []masker.Masker
-		for column := range spanResult.SourceColumns {
-			newMasker, err := s.getMasterForColumnResource(ctx, m, instance, column, maskingExceptionPolicyMap, action, currentPrincipal)
-			if err != nil {
-				return nil, err
-			}
-			if newMasker == nil {
-				continue
-			}
-			if _, ok := newMasker.(*masker.NoneMasker); ok {
-				continue
-			}
-			effectiveMaskers = append(effectiveMaskers, newMasker)
-		}
-
-		switch len(effectiveMaskers) {
-		case 0:
-			maskers = append(maskers, masker.NewNoneMasker())
-		case 1:
-			maskers = append(maskers, effectiveMaskers[0])
-		default:
-			// If there are more than one source columns, we fall back to the default full masker,
-			// because we don't know how the data be made up.
-			maskers = append(maskers, masker.NewDefaultFullMasker())
-		}
-	}
-	return maskers, nil
-}
-
-func (s *SQLService) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *base.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnConfig, error) {
-	if sourceColumn == nil {
-		return nil, nil, nil
-	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &sourceColumn.Database,
-	})
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to find database: %q", sourceColumn.Database)
-	}
-	if database == nil {
-		return nil, nil, nil
-	}
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to find database schema: %q", sourceColumn.Database)
-	}
-	if dbSchema == nil {
-		return nil, nil, nil
-	}
-
-	var columnMetadata *storepb.ColumnMetadata
-	metadata := dbSchema.GetDatabaseMetadata()
-	if metadata == nil {
-		return nil, nil, nil
-	}
-	schema := metadata.GetSchema(sourceColumn.Schema)
-	if schema == nil {
-		return nil, nil, nil
-	}
-	table := schema.GetTable(sourceColumn.Table)
-	if table == nil {
-		return nil, nil, nil
-	}
-	column := table.GetColumn(sourceColumn.Column)
-	if column == nil {
-		return nil, nil, nil
-	}
-	columnMetadata = column
-
-	var columnConfig *storepb.ColumnConfig
-	config := dbSchema.GetDatabaseConfig()
-	if config == nil {
-		return columnMetadata, nil, nil
-	}
-	schemaConfig := config.GetSchemaConfig(sourceColumn.Schema)
-	if schemaConfig == nil {
-		return columnMetadata, nil, nil
-	}
-	tableConfig := schemaConfig.GetTableConfig(sourceColumn.Table)
-	if tableConfig == nil {
-		return columnMetadata, nil, nil
-	}
-
-	columnConfig = tableConfig.GetColumnConfig(sourceColumn.Column)
-	return columnMetadata, columnConfig, nil
-}
-
-func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessage, connectionDatabase string) base.GetDatabaseMetadataFunc {
+func BuildGetDatabaseMetadataFunc(storeInstance *store.Store, instance *store.InstanceMessage, connectionDatabase string) base.GetDatabaseMetadataFunc {
 	if instance.Engine == storepb.Engine_ORACLE {
 		return func(ctx context.Context, schemaName string) (string, *model.DatabaseMetadata, error) {
 			// There are two modes for Oracle, schema-based and database-based management.
@@ -1372,7 +1162,7 @@ func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessag
 				databaseName = schemaName
 			}
 
-			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 				InstanceID:   &instance.ResourceID,
 				DatabaseName: &databaseName,
 			})
@@ -1382,7 +1172,7 @@ func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessag
 			if database == nil {
 				return "", nil, nil
 			}
-			databaseMetadata, err := s.store.GetDBSchema(ctx, database.UID)
+			databaseMetadata, err := storeInstance.GetDBSchema(ctx, database.UID)
 			if err != nil {
 				return "", nil, err
 			}
@@ -1393,7 +1183,7 @@ func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessag
 		}
 	}
 	return func(ctx context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
 			DatabaseName: &databaseName,
 		})
@@ -1403,7 +1193,7 @@ func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessag
 		if database == nil {
 			return "", nil, nil
 		}
-		databaseMetadata, err := s.store.GetDBSchema(ctx, database.UID)
+		databaseMetadata, err := storeInstance.GetDBSchema(ctx, database.UID)
 		if err != nil {
 			return "", nil, err
 		}
@@ -1414,9 +1204,9 @@ func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessag
 	}
 }
 
-func (s *SQLService) buildListDatabaseNamesFunc(instance *store.InstanceMessage) base.ListDatabaseNamesFunc {
+func BuildListDatabaseNamesFunc(storeInstance *store.Store, instance *store.InstanceMessage) base.ListDatabaseNamesFunc {
 	return func(ctx context.Context) ([]string, error) {
-		databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
 			InstanceID: &instance.ResourceID,
 		})
 		if err != nil {
@@ -1483,47 +1273,6 @@ func (s *SQLService) accessCheck(
 				return status.Errorf(codes.PermissionDenied, "permission denied to access resource: %q", column.String())
 			}
 		}
-	}
-
-	return nil
-}
-
-// maskResult masks the result in-place based on the dynamic masking policy, query-span, instance and action.
-func (s *SQLService) maskResults(ctx context.Context, spans []*base.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) error {
-	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find classification setting")
-	}
-
-	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find masking rule policy")
-	}
-
-	algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find masking algorithm setting")
-	}
-
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find semantic types setting")
-	}
-
-	m := newEmptyMaskingLevelEvaluator().
-		withMaskingRulePolicy(maskingRulePolicy).
-		withDataClassificationSetting(classificationSetting).
-		withMaskingAlgorithmSetting(algorithmSetting).
-		withSemanticTypeSetting(semanticTypesSetting)
-
-	// We expect the len(spans) == len(results), but to avoid NPE, we use the min(len(spans), len(results)) here.
-	loopBoundary := min(len(spans), len(results))
-	for i := 0; i < loopBoundary; i++ {
-		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], action)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get maskers for query span")
-		}
-		mask(maskers, results[i])
 	}
 
 	return nil
@@ -1887,7 +1636,7 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	return nil
 }
 
-func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Engine, databaseName string, statement string, instance *store.InstanceMessage) ([]base.SchemaResource, error) {
+func extractResourceList(ctx context.Context, storeInstance *store.Store, engine storepb.Engine, databaseName string, statement string, instance *store.InstanceMessage) ([]base.SchemaResource, error) {
 	switch engine {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		list, err := base.ExtractResourceList(engine, databaseName, "", statement)
@@ -1897,7 +1646,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 			return list, nil
 		}
 
-		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		databaseMessage, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instance.ResourceID,
 			DatabaseName:        &databaseName,
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -1913,7 +1662,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 			return nil, nil
 		}
 
-		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, databaseMessage.UID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
@@ -1922,7 +1671,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 		for _, resource := range list {
 			if resource.Database != dbSchema.GetMetadata().Name {
 				// MySQL allows cross-database query, we should check the corresponding database.
-				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &instance.ResourceID,
 					DatabaseName:        &resource.Database,
 					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -1933,7 +1682,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 				if resourceDB == nil {
 					continue
 				}
-				resourceDBSchema, err := s.store.GetDBSchema(ctx, resourceDB.UID)
+				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.UID)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
@@ -1959,7 +1708,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
 
-		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		databaseMessage, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instance.ResourceID,
 			DatabaseName:        &databaseName,
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -1971,7 +1720,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 			return nil, nil
 		}
 
-		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, databaseMessage.UID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
@@ -2012,7 +1761,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
 
-		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		databaseMessage, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instance.ResourceID,
 			DatabaseName:        &databaseName,
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -2024,7 +1773,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 			return nil, nil
 		}
 
-		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, databaseMessage.UID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
@@ -2036,7 +1785,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 					continue
 				}
 				// Schema tenant mode allows cross-database query, we should check the corresponding database.
-				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &instance.ResourceID,
 					DatabaseName:        &resource.Database,
 					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -2047,7 +1796,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 				if resourceDB == nil {
 					continue
 				}
-				resourceDBSchema, err := s.store.GetDBSchema(ctx, resourceDB.UID)
+				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.UID)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
@@ -2084,7 +1833,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
-		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		databaseMessage, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instance.ResourceID,
 			DatabaseName:        &databaseName,
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -2100,7 +1849,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 			return nil, nil
 		}
 
-		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, databaseMessage.UID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
@@ -2109,7 +1858,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 		for _, resource := range list {
 			if resource.Database != dbSchema.GetMetadata().Name {
 				// Snowflake allows cross-database query, we should check the corresponding database.
-				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &instance.ResourceID,
 					DatabaseName:        &resource.Database,
 					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -2120,7 +1869,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 				if resourceDB == nil {
 					continue
 				}
-				resourceDBSchema, err := s.store.GetDBSchema(ctx, resourceDB.UID)
+				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.UID)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
@@ -2154,7 +1903,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
-		databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		databaseMessage, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instance.ResourceID,
 			DatabaseName:        &databaseName,
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -2170,7 +1919,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 			return nil, nil
 		}
 
-		dbSchema, err := s.store.GetDBSchema(ctx, databaseMessage.UID)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, databaseMessage.UID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
@@ -2182,7 +1931,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 			}
 			if resource.Database != dbSchema.GetMetadata().Name {
 				// MSSQL allows cross-database query, we should check the corresponding database.
-				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &instance.ResourceID,
 					DatabaseName:        &resource.Database,
 					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -2193,7 +1942,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 				if resourceDB == nil {
 					continue
 				}
-				resourceDBSchema, err := s.store.GetDBSchema(ctx, resourceDB.UID)
+				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.UID)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
