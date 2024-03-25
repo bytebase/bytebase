@@ -281,3 +281,5 @@ ruleList:
     level: ERROR
     payload:
       number: 100000000
+  - type: statement.add-foreign-key-not-valid
+    level: WARNING

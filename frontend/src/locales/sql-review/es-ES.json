@@ -589,6 +589,10 @@
           "title": "Valor de umbral"
         }
       }
+    },
+    "statement-add-foreign-key-not-valid": {
+      "description": "Agregar claves externas debe verificar los datos existentes y bloquear la tabla. \nEsto bloquea la lectura y la escritura, lo que puede provocar la interrupción del negocio. \nSe recomienda agregar la opción \"NO VÁLIDO\" para validar datos nuevos y validar los datos existentes una vez completado el cambio. \nNivel de error de sugerencia: Advertencia",
+      "title": "Aplicar la opción \"NO VÁLIDO\" al agregar claves externas"
     }
   },
   "level": {
