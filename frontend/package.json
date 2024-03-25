@@ -148,7 +148,7 @@
     "ts-proto": "^1.165.1",
     "typescript": "5.4.3",
     "unplugin-icons": "0.18.5",
-    "unplugin-vue-components": "0.25.2",
+    "unplugin-vue-components": "0.26.0",
     "vite": "5.2.6",
     "vite-bundle-visualizer": "^1.0.1",
     "vitest": "1.4.0",
