@@ -196,17 +196,6 @@ export type ActivityProjectDatabaseTransferPayload = {
   databaseName: string;
 };
 
-export type ActivitySQLEditorQueryPayload = {
-  statement: string;
-  durationNs: number;
-  instanceId: InstanceId;
-  instanceName: string;
-  databaseId: DatabaseId;
-  databaseName: string;
-  error: string;
-  adviceList: Advice[];
-};
-
 export type ActionPayloadType =
   | ActivityIssueCreatePayload
   | ActivityIssueCommentCreatePayload
@@ -220,8 +209,7 @@ export type ActionPayloadType =
   | ActivityMemberRoleUpdatePayload
   | ActivityMemberActivateDeactivatePayload
   | ActivityProjectRepositoryPushPayload
-  | ActivityProjectDatabaseTransferPayload
-  | ActivitySQLEditorQueryPayload;
+  | ActivityProjectDatabaseTransferPayload;
 
 export interface FindActivityMessage {
   resource?: string;

@@ -60,7 +60,7 @@ func NewInstanceService(store *store.Store, licenseService enterprise.LicenseSer
 
 // GetInstance gets an instance.
 func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInstanceRequest) (*v1pb.Instance, error) {
-	instance, err := s.getInstanceMessage(ctx, request.Name)
+	instance, err := getInstanceMessage(ctx, s.store, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +292,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	instance, err := s.getInstanceMessage(ctx, request.Instance.Name)
+	instance, err := getInstanceMessage(ctx, s.store, request.Instance.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -364,7 +364,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 }
 
 func (s *InstanceService) syncSlowQueriesForInstance(ctx context.Context, instanceName string) (*emptypb.Empty, error) {
-	instance, err := s.getInstanceMessage(ctx, instanceName)
+	instance, err := getInstanceMessage(ctx, s.store, instanceName)
 	if err != nil {
 		return nil, err
 	}
@@ -529,7 +529,7 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 
 // DeleteInstance deletes an instance.
 func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.DeleteInstanceRequest) (*emptypb.Empty, error) {
-	instance, err := s.getInstanceMessage(ctx, request.Name)
+	instance, err := getInstanceMessage(ctx, s.store, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -577,7 +577,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 
 // UndeleteInstance undeletes an instance.
 func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.UndeleteInstanceRequest) (*v1pb.Instance, error) {
-	instance, err := s.getInstanceMessage(ctx, request.Name)
+	instance, err := getInstanceMessage(ctx, s.store, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -604,7 +604,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 
 // SyncInstance syncs the instance.
 func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncInstanceRequest) (*v1pb.SyncInstanceResponse, error) {
-	instance, err := s.getInstanceMessage(ctx, request.Name)
+	instance, err := getInstanceMessage(ctx, s.store, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -626,7 +626,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 // SyncInstance syncs the instance.
 func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.BatchSyncInstanceRequest) (*v1pb.BatchSyncInstanceResponse, error) {
 	for _, r := range request.Requests {
-		instance, err := s.getInstanceMessage(ctx, r.Name)
+		instance, err := getInstanceMessage(ctx, s.store, r.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -656,7 +656,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
 	}
 
-	instance, err := s.getInstanceMessage(ctx, request.Instance)
+	instance, err := getInstanceMessage(ctx, s.store, request.Instance)
 	if err != nil {
 		return nil, err
 	}
@@ -722,7 +722,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	instance, err := s.getInstanceMessage(ctx, request.Instance)
+	instance, err := getInstanceMessage(ctx, s.store, request.Instance)
 	if err != nil {
 		return nil, err
 	}
@@ -883,7 +883,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
 	}
 
-	instance, err := s.getInstanceMessage(ctx, request.Instance)
+	instance, err := getInstanceMessage(ctx, s.store, request.Instance)
 	if err != nil {
 		return nil, err
 	}
@@ -959,7 +959,7 @@ func (s *InstanceService) getProjectMessage(ctx context.Context, name string) (*
 	return project, nil
 }
 
-func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (*store.InstanceMessage, error) {
+func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {
 	instanceID, err := common.GetInstanceID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -973,7 +973,7 @@ func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (
 		find.ResourceID = &instanceID
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, find)
+	instance, err := stores.GetInstanceV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
