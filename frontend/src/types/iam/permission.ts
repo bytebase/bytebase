@@ -7,7 +7,6 @@ export type WorkspacePermission =
   | "bb.environments.update"
   | "bb.vcsProviders.create"
   | "bb.vcsProviders.delete"
-  | "bb.vcsProviders.exchangeToken"
   | "bb.vcsProviders.get"
   | "bb.vcsProviders.list"
   | "bb.vcsProviders.listProjects"
