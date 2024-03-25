@@ -156,7 +156,11 @@ func hasTableFullScan(res []any) (bool, string, error) {
 			continue
 		}
 		if row[4] == "index" {
-			if strings.Contains(row[11].(string), "Using where") || strings.Contains(row[11].(string), "Using index condition") {
+			extra, ok := row[11].(string)
+			if !ok {
+				return false, "", nil
+			}
+			if strings.Contains(extra, "Using where") || strings.Contains(extra, "Using index condition") {
 				continue
 			}
 			tables = append(tables, row[2].(string))
