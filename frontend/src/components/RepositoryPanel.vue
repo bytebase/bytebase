@@ -92,7 +92,9 @@
     :repository-config="state.repositoryConfig"
     :project="project"
     :schema-change-type="state.schemaChangeType"
-    @change-schema-change-type="(type: SchemaChange) => (state.schemaChangeType = type)"
+    @change-schema-change-type="
+      (type: SchemaChange) => (state.schemaChangeType = type)
+    "
     @change-repository="$emit('change-repository')"
   />
   <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">

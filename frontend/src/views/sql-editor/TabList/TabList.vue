@@ -20,7 +20,7 @@
         @scroll="recalculateScrollState"
       >
         <template
-          #item="{ element: id, index }: { element: string, index: number }"
+          #item="{ element: id, index }: { element: string; index: number }"
         >
           <TabItem
             :tab="tabStore.tabById(id)!"

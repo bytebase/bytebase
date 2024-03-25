@@ -253,8 +253,8 @@ const visibleOptions = computed(() => {
   return menuView.value === "scope"
     ? visibleScopeOptions.value
     : menuView.value === "value"
-    ? visibleValueOptions.value
-    : ([] as unknown[]);
+      ? visibleValueOptions.value
+      : ([] as unknown[]);
 });
 
 const showMenu = computed(() => {

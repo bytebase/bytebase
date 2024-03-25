@@ -158,7 +158,7 @@ watch(
   (args) => {
     const [databaseList, selectedUidList] = args as [
       ComposedDatabase[],
-      string[]
+      string[],
     ];
     for (const uid of selectedUidList) {
       const database = databaseList.find((db) => db.uid === uid);

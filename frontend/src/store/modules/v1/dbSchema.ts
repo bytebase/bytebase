@@ -15,12 +15,12 @@ const VIEW_BASIC = DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC;
 
 type DatabaseMetadataCacheKey = [
   string /* database metadata resource name */,
-  view: DatabaseMetadataView
+  view: DatabaseMetadataView,
 ];
 type TableMetadataCacheKey = [
   string /* database metadata resource name */,
   string /* schema */,
-  string /* table */
+  string /* table */,
 ];
 
 export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
@@ -56,7 +56,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     view?: DatabaseMetadataView
   ): [
     Promise<DatabaseMetadata> | undefined,
-    DatabaseMetadataView | undefined
+    DatabaseMetadataView | undefined,
   ] => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
     if (view === undefined) {

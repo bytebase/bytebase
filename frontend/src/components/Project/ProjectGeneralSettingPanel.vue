@@ -42,7 +42,7 @@
             v-model:value="state.key"
             :disabled="!allowEdit"
             required
-            @update:value="(val: string) => state.key = val.toUpperCase()"
+            @update:value="(val: string) => (state.key = val.toUpperCase())"
           />
         </dd>
       </dl>

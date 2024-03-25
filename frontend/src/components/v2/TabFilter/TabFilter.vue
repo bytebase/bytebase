@@ -7,7 +7,10 @@
         :options="items"
         :value="value"
         :consistent-menu-width="false"
-        @update:value="(value: ValueType, option: TabFilterItem<ValueType>) => $emit('update:value', value, option)"
+        @update:value="
+          (value: ValueType, option: TabFilterItem<ValueType>) =>
+            $emit('update:value', value, option)
+        "
       />
     </div>
     <div

@@ -108,32 +108,35 @@ const getFlattenProjectV1Routes = (
   name: string;
   permissions: ProjectPermission[];
 }[] => {
-  return routes.reduce((list, projectV1Route) => {
-    const requiredProjectPermissionListFunc =
-      projectV1Route.meta?.requiredProjectPermissionList;
-    let requiredPermissionList = requiredProjectPermissionListFunc
-      ? requiredProjectPermissionListFunc()
-      : [];
-    if (requiredPermissionList.length === 0) {
-      requiredPermissionList = permissions;
-    }
+  return routes.reduce(
+    (list, projectV1Route) => {
+      const requiredProjectPermissionListFunc =
+        projectV1Route.meta?.requiredProjectPermissionList;
+      let requiredPermissionList = requiredProjectPermissionListFunc
+        ? requiredProjectPermissionListFunc()
+        : [];
+      if (requiredPermissionList.length === 0) {
+        requiredPermissionList = permissions;
+      }
 
-    if (projectV1Route.name && projectV1Route.name.toString() !== "") {
-      list.push({
-        name: projectV1Route.name.toString(),
-        permissions: requiredPermissionList,
-      });
-    }
-    if (projectV1Route.children) {
-      list.push(
-        ...getFlattenProjectV1Routes(
-          projectV1Route.children,
-          requiredPermissionList
-        )
-      );
-    }
-    return list;
-  }, [] as { name: string; permissions: ProjectPermission[] }[]);
+      if (projectV1Route.name && projectV1Route.name.toString() !== "") {
+        list.push({
+          name: projectV1Route.name.toString(),
+          permissions: requiredPermissionList,
+        });
+      }
+      if (projectV1Route.children) {
+        list.push(
+          ...getFlattenProjectV1Routes(
+            projectV1Route.children,
+            requiredPermissionList
+          )
+        );
+      }
+      return list;
+    },
+    [] as { name: string; permissions: ProjectPermission[] }[]
+  );
 };
 
 const flattenProjectV1Routes = computed(() => {

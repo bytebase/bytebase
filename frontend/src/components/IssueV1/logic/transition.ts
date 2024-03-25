@@ -89,7 +89,10 @@ export const calcApplicableIssueStatusTransitionList = (
 };
 
 export function isApplicableTransition<
-  T extends IssueStatusTransition | TaskStatusTransition | StageStatusTransition
+  T extends
+    | IssueStatusTransition
+    | TaskStatusTransition
+    | StageStatusTransition,
 >(target: T, list: T[]): boolean {
   return (
     list.findIndex((applicable) => {

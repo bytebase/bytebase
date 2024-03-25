@@ -90,8 +90,8 @@ const searchBoxPlaceholder = computed(() => {
   return currentTab.value?.type === SchemaEditorTabType.TabForDatabase
     ? t("schema-editor.search-table")
     : currentTab.value?.type === SchemaEditorTabType.TabForTable
-    ? t("schema-editor.search-column")
-    : "";
+      ? t("schema-editor.search-column")
+      : "";
 });
 
 const handleSearchBoxInput = (value: string) => {

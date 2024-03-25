@@ -53,7 +53,7 @@
           ref="targetDatabaseViewRef"
           :project-id="projectId!"
           :source-schema-type="state.sourceSchemaType"
-          :database-source-schema="(changeHistorySourceSchemaState as any)"
+          :database-source-schema="changeHistorySourceSchemaState as any"
           :raw-sql-state="rawSQLState"
         />
       </template>

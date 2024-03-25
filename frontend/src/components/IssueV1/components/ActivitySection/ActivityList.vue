@@ -41,7 +41,7 @@
             :content="item.activity.comment"
             :issue-list="issueList"
             :project="issue.projectEntity"
-            @change="(val: string) => state.editComment = val"
+            @change="(val: string) => (state.editComment = val)"
             @submit="doUpdateComment"
             @cancel="cancelEditComment"
           />
@@ -89,7 +89,7 @@
             :content="state.newComment"
             :issue-list="issueList"
             :project="issue.projectEntity"
-            @change="(val: string) => state.newComment = val"
+            @change="(val: string) => (state.newComment = val)"
             @submit="doCreateComment(state.newComment)"
           />
           <div class="my-4 flex items-center justify-between">

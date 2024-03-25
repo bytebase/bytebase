@@ -10,7 +10,7 @@
       v-if="ready && !contentRef && placeholder"
       class="absolute pointer-events-none font-mono text-control-placeholder"
       style="
-        font-family: 'Droid Sans Mono', monospace;
+        font-family: &quot;Droid Sans Mono&quot;, monospace;
         font-size: 14px;
         left: 52px;
         top: 8px;

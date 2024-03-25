@@ -333,8 +333,8 @@ const plans = computed((): LocalPlan[] => {
       plan.type === PlanType.TEAM
         ? t("subscription.price-unit-for-team")
         : plan.type === PlanType.ENTERPRISE
-        ? ""
-        : t("subscription.per-month"),
+          ? ""
+          : t("subscription.per-month"),
     // only support free trial for enterprise in console.
     canTrial: plan.type === PlanType.ENTERPRISE && plan.trialDays > 0,
   }));

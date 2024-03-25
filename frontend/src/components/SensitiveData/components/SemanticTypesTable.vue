@@ -4,9 +4,7 @@
     :data-source="semanticItemList"
     :row-clickable="rowClickable"
     class="border compact"
-    @click-row="
-      (item: SemanticItem) => $emit('select', item.item.id)
-    "
+    @click-row="(item: SemanticItem) => $emit('select', item.item.id)"
   >
     <template #item="{ item, row }: SemanticItemRow">
       <div class="bb-grid-cell">
@@ -21,7 +19,9 @@
           :placeholder="
             $t('settings.sensitive-data.semantic-types.table.semantic-type')
           "
-          @input="(val: string) => onInput(row, (data) => data.item.title = val)"
+          @input="
+            (val: string) => onInput(row, (data) => (data.item.title = val))
+          "
         />
       </div>
       <div class="bb-grid-cell">
@@ -36,7 +36,10 @@
           :placeholder="
             $t('settings.sensitive-data.semantic-types.table.description')
           "
-          @input="(val: string) => onInput(row, (data) => data.item.description = val)"
+          @input="
+            (val: string) =>
+              onInput(row, (data) => (data.item.description = val))
+          "
         />
       </div>
       <div class="bb-grid-cell">
@@ -52,7 +55,12 @@
           :options="algorithmList"
           :consistent-menu-width="false"
           :placeholder="$t('settings.sensitive-data.algorithms.default')"
-          :fallback-option="(_: string) => ({ label: $t('settings.sensitive-data.algorithms.default'), value: '' })"
+          :fallback-option="
+            (_: string) => ({
+              label: $t('settings.sensitive-data.algorithms.default'),
+              value: '',
+            })
+          "
           clearable
           size="small"
           style="min-width: 7rem; width: auto; overflow-x: hidden"
@@ -74,7 +82,12 @@
           :options="algorithmList"
           :consistent-menu-width="false"
           :placeholder="$t('settings.sensitive-data.algorithms.default')"
-          :fallback-option="(_: string) => ({ label: $t('settings.sensitive-data.algorithms.default'), value: '' })"
+          :fallback-option="
+            (_: string) => ({
+              label: $t('settings.sensitive-data.algorithms.default'),
+              value: '',
+            })
+          "
           clearable
           size="small"
           style="min-width: 7rem; width: auto; overflow-x: hidden"

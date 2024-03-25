@@ -302,16 +302,19 @@ interface RuleCategory {
 export const convertToCategoryList = (
   ruleList: RuleTemplate[]
 ): RuleCategory[] => {
-  const dict = ruleList.reduce((dict, rule) => {
-    if (!dict[rule.category]) {
-      dict[rule.category] = {
-        id: rule.category,
-        ruleList: [],
-      };
-    }
-    dict[rule.category].ruleList.push(rule);
-    return dict;
-  }, {} as { [key: string]: RuleCategory });
+  const dict = ruleList.reduce(
+    (dict, rule) => {
+      if (!dict[rule.category]) {
+        dict[rule.category] = {
+          id: rule.category,
+          ruleList: [],
+        };
+      }
+      dict[rule.category].ruleList.push(rule);
+      return dict;
+    },
+    {} as { [key: string]: RuleCategory }
+  );
 
   return Object.values(dict);
 };

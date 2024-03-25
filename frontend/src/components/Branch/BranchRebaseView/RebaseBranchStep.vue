@@ -69,6 +69,7 @@ import {
 import SchemaEditorLite from "@/components/SchemaEditorLite";
 import { useDatabaseV1Store } from "@/store";
 import { ComposedProject } from "@/types";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { RebaseBranchValidationState } from "./types";
 

@@ -37,7 +37,9 @@
         :classification-config-id="project.dataClassificationConfigId"
         :disable-change-table="disableChangeTable"
         :allow-reorder-columns="allowReorderColumns"
-        :filter-column="(column: Column) => column.name.includes(props.searchPattern.trim())"
+        :filter-column="
+          (column: Column) => column.name.includes(props.searchPattern.trim())
+        "
         :disable-alter-column="disableAlterColumn"
         :get-referenced-foreign-key-name="getReferencedForeignKeyName"
         :get-column-item-computed-class-list="getColumnItemComputedClassList"

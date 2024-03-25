@@ -37,9 +37,8 @@ const gotoSQLEditor = async () => {
   ) {
     const databaseResourceName = conditionExpression.databaseResources[0]
       .databaseName as string;
-    const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
-      databaseResourceName
-    );
+    const db =
+      await useDatabaseV1Store().getOrFetchDatabaseByName(databaseResourceName);
     if (db.uid !== String(UNKNOWN_ID)) {
       const url = router.resolve({
         name: SQL_EDITOR_DATABASE_MODULE,

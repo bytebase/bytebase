@@ -12,7 +12,7 @@ export const NumberFactorList = [
   "expiration_days",
   "export_rows",
 ] as const;
-export type NumberFactor = typeof NumberFactorList[number];
+export type NumberFactor = (typeof NumberFactorList)[number];
 
 export const StringFactorList = [
   // Risk related factors
@@ -44,13 +44,13 @@ export const StringFactorList = [
   "classification_level",
   "column_name",
 ] as const;
-export type StringFactor = typeof StringFactorList[number];
+export type StringFactor = (typeof StringFactorList)[number];
 
 export const TimestampFactorList = ["request.time"];
-export type TimestampFactor = typeof TimestampFactorList[number];
+export type TimestampFactor = (typeof TimestampFactorList)[number];
 
 export const HighLevelFactorList = ["level", "source"] as const;
-export type HighLevelFactor = typeof HighLevelFactorList[number];
+export type HighLevelFactor = (typeof HighLevelFactorList)[number];
 
 export type Factor =
   | NumberFactor

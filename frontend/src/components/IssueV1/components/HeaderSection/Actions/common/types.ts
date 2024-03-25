@@ -12,10 +12,10 @@ export type ExtraAction<T extends "ISSUE" | "TASK" | "TASK-BATCH"> = {
   target: T extends "ISSUE"
     ? ComposedIssue
     : T extends "TASK"
-    ? Task
-    : T extends "TASK-BATCH"
-    ? Task[]
-    : unknown;
+      ? Task
+      : T extends "TASK-BATCH"
+        ? Task[]
+        : unknown;
 };
 
 export type ExtraActionOption = DropdownOption &

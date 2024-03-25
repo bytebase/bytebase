@@ -40,9 +40,8 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
   ) => {
     const { parent } = params;
     if (!parent) throw new Error('"parent" field is required');
-    const { changeHistories } = await databaseServiceClient.listChangeHistories(
-      params
-    );
+    const { changeHistories } =
+      await databaseServiceClient.listChangeHistories(params);
     await upsertChangeHistoryListMap(parent, changeHistories);
     return changeHistories;
   };

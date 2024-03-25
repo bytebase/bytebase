@@ -49,10 +49,10 @@ const riskLevelFilterItemList = computed(() => {
         level === PresetRiskLevel.HIGH
           ? "CRITICAL"
           : level === PresetRiskLevel.MODERATE
-          ? "WARN"
-          : level === PresetRiskLevel.LOW
-          ? "INFO"
-          : "DISABLED",
+            ? "WARN"
+            : level === PresetRiskLevel.LOW
+              ? "INFO"
+              : "DISABLED",
     };
   });
 });

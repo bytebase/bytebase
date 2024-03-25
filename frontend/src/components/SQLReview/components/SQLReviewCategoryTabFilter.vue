@@ -3,7 +3,7 @@
     :value="state.selectedTab"
     :items="tabItemList"
     @update:value="
-    (val: string) => {
+      (val: string) => {
         state.selectedTab = val;
         $emit('update:value', val == 'all' ? undefined : state.selectedTab);
       }

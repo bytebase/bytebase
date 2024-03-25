@@ -7,12 +7,12 @@ export const UIIssueFilterScopeIdList = [
   "approval",
   "releaser",
 ] as const;
-type UIIssueFilterScopeId = typeof UIIssueFilterScopeIdList[number];
+type UIIssueFilterScopeId = (typeof UIIssueFilterScopeIdList)[number];
 export const DatabaseFilterScopeIdList = ["project-assigned"] as const;
-type DatabaseFilterScopeId = typeof DatabaseFilterScopeIdList[number];
+type DatabaseFilterScopeId = (typeof DatabaseFilterScopeIdList)[number];
 
 export const CommonFilterScopeIdList = ["environment", "instance"] as const;
-type CommonFilterScopeId = typeof CommonFilterScopeIdList[number];
+type CommonFilterScopeId = (typeof CommonFilterScopeIdList)[number];
 
 export const SearchScopeIdList = [
   "project",
@@ -27,7 +27,7 @@ export const SearchScopeIdList = [
 ] as const;
 
 export type SearchScopeId =
-  | typeof SearchScopeIdList[number]
+  | (typeof SearchScopeIdList)[number]
   | UIIssueFilterScopeId
   | DatabaseFilterScopeId
   | CommonFilterScopeId;
@@ -115,7 +115,7 @@ export const getTsRangeFromSearchParams = (
   const parts = scope.value.split(",");
   if (parts.length !== 2) return undefined;
   const range = [parseInt(parts[0], 10), parseInt(parts[1], 10)];
-  return range;
+  return range as [number, number];
 };
 
 /**

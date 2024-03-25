@@ -23,7 +23,7 @@ export const EngineTypeList = [
   "RISINGWAVE",
 ] as const;
 
-export type EngineType = typeof EngineTypeList[number];
+export type EngineType = (typeof EngineTypeList)[number];
 
 export function convertEngineType(type: EngineType): Engine {
   switch (type) {
