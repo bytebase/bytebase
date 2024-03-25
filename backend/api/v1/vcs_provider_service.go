@@ -70,17 +70,9 @@ func (s *VCSProviderService) UpdateVCSProvider(ctx context.Context, request *v1p
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	vcsProviderUID, err := common.GetVCSProviderID(request.VcsProvider.Name)
+	vcsProvider, err := s.getVCS(ctx, request.VcsProvider.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	vcsProvider, err := s.store.GetVCSProviderV2(ctx, vcsProviderUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to retrieve vcs provider: %v", err)
-	}
-	if vcsProvider == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs provider not found: %v", err)
+		return nil, err
 	}
 
 	update := &store.UpdateVCSProviderMessage{}
@@ -103,7 +95,7 @@ func (s *VCSProviderService) UpdateVCSProvider(ctx context.Context, request *v1p
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	vcsProvider, err = s.store.UpdateVCSProviderV2(ctx, principalID, vcsProviderUID, update)
+	vcsProvider, err = s.store.UpdateVCSProviderV2(ctx, principalID, vcsProvider.ID, update)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -112,20 +104,12 @@ func (s *VCSProviderService) UpdateVCSProvider(ctx context.Context, request *v1p
 
 // DeleteVCSProvider deletes an existing vcs provider.
 func (s *VCSProviderService) DeleteVCSProvider(ctx context.Context, request *v1pb.DeleteVCSProviderRequest) (*emptypb.Empty, error) {
-	vcsProviderUID, err := common.GetVCSProviderID(request.Name)
+	vcsProvider, err := s.getVCS(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
-	vcsProvider, err := s.store.GetVCSProviderV2(ctx, vcsProviderUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to retrieve vcs provider: %v", err)
-	}
-	if vcsProvider == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs provider not found: %v", err)
-	}
-
-	if err := s.store.DeleteVCSProviderV2(ctx, vcsProviderUID); err != nil {
+	if err := s.store.DeleteVCSProviderV2(ctx, vcsProvider.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to delete vcs provider: %v", err)
 	}
 	return &emptypb.Empty{}, nil
@@ -133,17 +117,9 @@ func (s *VCSProviderService) DeleteVCSProvider(ctx context.Context, request *v1p
 
 // SearchVCSProviderProjects searches vcs provider projects, for example, GitHub repository.
 func (s *VCSProviderService) SearchVCSProviderProjects(ctx context.Context, request *v1pb.SearchVCSProviderProjectsRequest) (*v1pb.SearchVCSProviderProjectsResponse, error) {
-	vcsProviderUID, err := common.GetVCSProviderID(request.Name)
+	vcsProvider, err := s.getVCS(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	vcsProvider, err := s.store.GetVCSProviderV2(ctx, vcsProviderUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to retrieve vcs provider: %v", err)
-	}
-	if vcsProvider == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs provider not found: %v", err)
+		return nil, err
 	}
 
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
@@ -182,13 +158,12 @@ func (s *VCSProviderService) SearchVCSProviderProjects(ctx context.Context, requ
 
 // ListProjectGitOpsInfo lists GitOps info of a project.
 func (s *VCSProviderService) ListProjectGitOpsInfo(ctx context.Context, request *v1pb.ListProjectGitOpsInfoRequest) (*v1pb.ListProjectGitOpsInfoResponse, error) {
-	vcsProviderUID, err := common.GetVCSProviderID(request.Name)
+	vcs, err := s.getVCS(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
-
 	repoList, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{
-		VCSUID: &vcsProviderUID,
+		VCSUID: &vcs.ID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to fetch external repository list: %v", err)
@@ -203,19 +178,25 @@ func (s *VCSProviderService) ListProjectGitOpsInfo(ctx context.Context, request 
 }
 
 func (s *VCSProviderService) getVCS(ctx context.Context, name string) (*store.VCSProviderMessage, error) {
-	vcsProviderUID, err := common.GetVCSProviderID(name)
+	vcsResourceID, err := common.GetVCSProviderID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	vcsResourceUID, isNumber := isNumber(vcsResourceID)
+	find := &store.FindVCSProviderMessage{}
+	if isNumber {
+		find.ID = &vcsResourceUID
+	} else {
+		find.ResourceID = &vcsResourceID
+	}
 
-	vcsProvider, err := s.store.GetVCSProviderV2(ctx, vcsProviderUID)
+	vcsProvider, err := s.store.GetVCSProviderV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to retrieve vcs provider: %v", err)
 	}
 	if vcsProvider == nil {
 		return nil, status.Errorf(codes.NotFound, "vcs provider not found: %v", err)
 	}
-
 	return vcsProvider, nil
 }
 

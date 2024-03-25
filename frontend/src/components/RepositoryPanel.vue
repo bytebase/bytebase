@@ -134,7 +134,6 @@ import {
   useProjectV1Store,
   useRepositoryV1Store,
 } from "@/store";
-import { getVCSUid } from "@/store/modules/v1/common";
 import { Project, SchemaChange } from "@/types/proto/v1/project_service";
 import {
   ProjectGitOpsInfo,
@@ -274,7 +273,7 @@ const doUpdate = async () => {
 
   const repositoryPatch: Partial<ProjectGitOpsInfo> = {};
 
-  repositoryPatch.vcsUid = `${getVCSUid(props.vcs.name)}`;
+  repositoryPatch.vcs = props.vcs.name;
 
   if (props.repository.branchFilter != state.repositoryConfig.branchFilter) {
     repositoryPatch.branchFilter = state.repositoryConfig.branchFilter;
