@@ -152,7 +152,7 @@
     "vite": "5.2.6",
     "vite-bundle-visualizer": "^1.0.1",
     "vitest": "1.4.0",
-    "vue-i18n": "9.9.1",
+    "vue-i18n": "9.10.2",
     "vue-router": "4.3.0",
     "vue-tsc": "2.0.7",
     "ws": "^8.15.1"
