@@ -28,6 +28,31 @@
       </div>
     </div>
     <div>
+      <div class="mt-4 textlabel">
+        {{ $t("gitops.setting.add-git-provider.basic-info.display-name") }}
+      </div>
+      <p class="mt-1 textinfolabel">
+        {{
+          $t("gitops.setting.add-git-provider.basic-info.display-name-label")
+        }}
+      </p>
+      <BBTextField
+        v-model:value="config.name"
+        class="mt-2 w-full"
+        :placeholder="namePlaceholder"
+      />
+      <div>
+        <ResourceIdField
+          ref="resourceIdField"
+          v-model:value="config.resourceId"
+          class="max-w-full flex-nowrap"
+          resource-type="vcsProvider"
+          :resource-title="config.name"
+          :validate="validateResourceId"
+        />
+      </div>
+    </div>
+    <div>
       <div class="mt-6 pt-6 border-t border-block-border textlabel">
         {{ instanceUrlLabel }} <span class="text-red-600">*</span>
       </div>
@@ -50,21 +75,6 @@
           $t("gitops.setting.add-git-provider.basic-info.instance-url-error")
         }}
       </p>
-    </div>
-    <div>
-      <div class="mt-4 textlabel">
-        {{ $t("gitops.setting.add-git-provider.basic-info.display-name") }}
-      </div>
-      <p class="mt-1 textinfolabel">
-        {{
-          $t("gitops.setting.add-git-provider.basic-info.display-name-label")
-        }}
-      </p>
-      <BBTextField
-        v-model:value="config.name"
-        class="mt-2 w-full"
-        :placeholder="namePlaceholder"
-      />
     </div>
     <div>
       <div class="mt-4 textlabel">
@@ -158,11 +168,17 @@
 <script lang="ts" setup>
 import isEmpty from "lodash-es/isEmpty";
 import { NRadio, NRadioGroup } from "naive-ui";
-import { computed, onUnmounted, reactive } from "vue";
+import { Status } from "nice-grpc-common";
+import { computed, onUnmounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { useVCSV1Store } from "@/store";
+import { vcsProviderPrefix } from "@/store/modules/v1/common";
 import { TEXT_VALIDATION_DELAY, VCSConfig } from "@/types";
+import { ResourceId, ValidatedMessage } from "@/types";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { isUrl } from "@/utils";
+import { getErrorCode } from "@/utils/grpcweb";
 import { vcsListByUIType } from "./utils";
 
 interface LocalState {
@@ -179,6 +195,9 @@ const state = reactive<LocalState>({
   showUrlError:
     !isEmpty(props.config.instanceUrl) && !isUrl(props.config.instanceUrl),
 });
+const vcsV1Store = useVCSV1Store();
+
+const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
 onUnmounted(() => {
   if (state.urlValidationTimer) {
@@ -327,5 +346,35 @@ const changeUIType = () => {
 const changeAccessToken = (value: string) => {
   // eslint-disable-next-line vue/no-mutating-props
   props.config.accessToken = value;
+};
+
+const validateResourceId = async (
+  resourceId: ResourceId
+): Promise<ValidatedMessage[]> => {
+  if (!resourceId) {
+    return [];
+  }
+
+  try {
+    const instance = await vcsV1Store.fetchVCSByName(
+      vcsProviderPrefix + resourceId,
+      true /* silent */
+    );
+    if (instance) {
+      return [
+        {
+          type: "error",
+          message: t("resource-id.validation.duplicated", {
+            resource: t("resource.instance"),
+          }),
+        },
+      ];
+    }
+  } catch (error) {
+    if (getErrorCode(error) !== Status.NOT_FOUND) {
+      throw error;
+    }
+  }
+  return [];
 };
 </script>
