@@ -381,7 +381,7 @@ devDependencies:
     version: 3.3.6
   ts-proto:
     specifier: ^1.165.1
-    version: 1.165.1
+    version: 1.169.1
   typescript:
     specifier: 5.4.3
     version: 5.4.3
@@ -749,7 +749,7 @@ packages:
     resolution: {integrity: sha512-Bkf2q8lMB0AFpX0NFEqSbx1OkTHf0f+0j82mkw+ZpzBnkk7e9Ql0891vlfgi+kHwOk8tQjiQHpqh4LaSa0fKEA==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/code-frame': 7.24.2
+      '@babel/code-frame': 7.23.5
       '@babel/parser': 7.24.0
       '@babel/types': 7.24.0
     dev: true
@@ -776,7 +776,7 @@ packages:
     resolution: {integrity: sha512-HfuJlI8qq3dEDmNU5ChzzpZRWq+oxCZQyMzIMEqLho+AQnhMnKQUzH6ydo3RBl/YjPCuk68Y6s0Gx0AeyULiWw==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/code-frame': 7.24.2
+      '@babel/code-frame': 7.23.5
       '@babel/generator': 7.23.6
       '@babel/helper-environment-visitor': 7.22.20
       '@babel/helper-function-name': 7.23.0
@@ -6620,8 +6620,8 @@ packages:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
     dev: true
 
-  /ts-poet@6.6.0:
-    resolution: {integrity: sha512-4vEH/wkhcjRPFOdBwIh9ItO6jOoumVLRF4aABDX5JSNEubSqwOulihxQPqai+OkuygJm3WYMInxXQX4QwVNMuw==}
+  /ts-poet@6.7.0:
+    resolution: {integrity: sha512-A0wvFtpkTCWPw7ftTIwbEH+L+7ul4CU0x3jXKQ+kCnmEQIAOwhpUaBmcAYKxZCxHae9/MUl4LbyTqw25BpzW5Q==}
     dependencies:
       dprint-node: 1.0.8
     dev: true
@@ -6633,13 +6633,13 @@ packages:
       protobufjs: 7.2.6
     dev: true
 
-  /ts-proto@1.165.1:
-    resolution: {integrity: sha512-tn/sj9i31Q4d3/HtN2PFMU/OQwrBYP2cfhYo75cPpO2ks7unFxf1/oMdIt/2woCcOwRclxruGCrs7Ljdl9BPkw==}
+  /ts-proto@1.169.1:
+    resolution: {integrity: sha512-MHdllDrtFCabxvIyUqze7/4vSh55SEgwirpthGVUGt3pMqIpmmrDyBv0vDk/RCjBxm0/LIWVMnXlOjBxYaE1rA==}
     hasBin: true
     dependencies:
       case-anything: 2.1.13
       protobufjs: 7.2.6
-      ts-poet: 6.6.0
+      ts-poet: 6.7.0
       ts-proto-descriptors: 1.15.0
     dev: true
 
