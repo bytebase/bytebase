@@ -30,13 +30,26 @@ func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadat
 	}
 
 	listener := &mysqlDesignSchemaGenerator{
-		lastTokenIndex: 0,
-		to:             toState,
-		desired:        to,
+		lastTokenIndex:   0,
+		to:               toState,
+		desired:          to,
+		hasTemporaryView: false,
 	}
 
-	for _, stmt := range list {
+	finalViewTailGetter := &finalViewTailGetter{
+		finalViewTails:          make(map[string]mysql.IViewTailContext),
+		finalViewStatementIndex: make(map[string]int),
+	}
+	for i, stmt := range list {
+		finalViewTailGetter.currentStatementIndex = i
+		antlr.ParseTreeWalkerDefault.Walk(finalViewTailGetter, stmt.Tree)
+	}
+	listener.finalViewTail = finalViewTailGetter.finalViewTails
+	listener.finalViewStatementIndex = finalViewTailGetter.finalViewStatementIndex
+
+	for i, stmt := range list {
 		listener.lastTokenIndex = 0
+		listener.currentStatementIndex = i
 		antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
 		if listener.err != nil {
 			break
@@ -62,6 +75,10 @@ func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadat
 		return "", err
 	}
 
+	if err := writeRemainingViews(&listener.result, to, toState); err != nil {
+		return "", err
+	}
+
 	s := listener.result.String()
 	if !strings.HasSuffix(s, "\n") {
 		// The last statement of the result is SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
@@ -81,12 +98,46 @@ func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadat
 	return result, nil
 }
 
+type finalViewTailGetter struct {
+	*mysql.BaseMySQLParserListener
+	currentStatementIndex int
+
+	finalViewTails          map[string]mysql.IViewTailContext
+	finalViewStatementIndex map[string]int
+}
+
+func (g *finalViewTailGetter) EnterCreateView(ctx *mysql.CreateViewContext) {
+	p := ctx.GetParent()
+	if _, ok := p.(*mysql.CreateStatementContext); !ok {
+		return
+	}
+	pp := p.GetParent()
+	if _, ok := pp.(*mysql.SimpleStatementContext); !ok {
+		return
+	}
+	ppp := pp.GetParent()
+	if _, ok := ppp.(*mysql.QueryContext); !ok {
+		return
+	}
+
+	_, viewName := mysqlparser.NormalizeMySQLViewName(ctx.ViewName())
+
+	g.finalViewTails[viewName] = ctx.ViewTail()
+	g.finalViewStatementIndex[viewName] = g.currentStatementIndex
+}
+
 type mysqlDesignSchemaGenerator struct {
 	*mysql.BaseMySQLParserListener
+
+	currentStatementIndex   int
+	finalViewTail           map[string]mysql.IViewTailContext
+	finalViewStatementIndex map[string]int
+	hasTemporaryView        bool
 
 	to                  *databaseState
 	result              strings.Builder
 	currentTable        *tableState
+	firstTable          bool
 	firstElementInTable bool
 	columnDefine        strings.Builder
 	tableConstraints    strings.Builder
@@ -97,6 +148,87 @@ type mysqlDesignSchemaGenerator struct {
 	tableOptionTokenIndex int
 
 	desired *storepb.DatabaseSchemaMetadata
+}
+
+func (g *mysqlDesignSchemaGenerator) EnterCreateView(ctx *mysql.CreateViewContext) {
+	if g.err != nil {
+		return
+	}
+
+	p := ctx.GetParent()
+	pCtx, ok := p.(*mysql.CreateStatementContext)
+	if !ok {
+		return
+	}
+	pp := p.GetParent()
+	if _, ok := pp.(*mysql.SimpleStatementContext); !ok {
+		return
+	}
+	ppp := pp.GetParent()
+	if _, ok := ppp.(*mysql.QueryContext); !ok {
+		return
+	}
+
+	_, viewName := mysqlparser.NormalizeMySQLViewName(pCtx.CreateView().ViewName())
+	schema, ok := g.to.schemas[""]
+	if !ok || schema == nil {
+		return
+	}
+
+	schema.handledViews[viewName] = true
+	// Our dump of MySQL contains the pseudo view definition at the top, the following strategies
+	// describe how we handle the view definition:
+	// 1. If the view is not found in the desired schema, we drop the view definition.
+	// 2. If the view can be found in the desired schema, we compare the final view definition with the desired view definition,
+	// if they are the same, we keep the view definition, otherwise, we should drop the pseudo/final view definition and write the desired view definition.
+	if viewDef, ok := schema.views[viewName]; !ok {
+		// Drop the dropped view definition.
+		g.lastTokenIndex = skipAfterSemicolon(pCtx, pCtx.GetParser())
+	} else {
+		if viewTail, ok := g.finalViewTail[viewName]; ok {
+			// Compare the final view definition with the desired view definition.
+			buf := &strings.Builder{}
+			if err := viewDef.toString(buf); err != nil {
+				g.err = err
+				return
+			}
+			equal, err := mysqlparser.IsViewTailEqualViewStmt(viewTail, buf.String())
+			if err != nil {
+				g.err = err
+				return
+			}
+			if equal {
+				// View do not change, keep the view definition, both for pseudo and final view definition.
+				if _, err := g.result.WriteString(pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: g.lastTokenIndex,
+					Stop:  pCtx.GetStop().GetTokenIndex(),
+				})); err != nil {
+					g.err = err
+					return
+				}
+				g.lastTokenIndex = pCtx.GetStop().GetTokenIndex() + 1
+				g.hasTemporaryView = true
+			} else {
+				// Drop the pseudo view definition.
+				if g.currentStatementIndex != g.finalViewStatementIndex[viewName] {
+					g.lastTokenIndex = skipAfterSemicolon(pCtx, pCtx.GetParser())
+				} else {
+					if _, err := g.result.WriteString(pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+						Start: g.lastTokenIndex,
+						Stop:  pCtx.CreateView().ViewTail().ViewSelect().GetStart().GetTokenIndex() - 1,
+					})); err != nil {
+						g.err = err
+						return
+					}
+					if _, err := g.result.WriteString(viewDef.definition); err != nil {
+						g.err = err
+						return
+					}
+					g.lastTokenIndex = pCtx.GetStop().GetTokenIndex() + 1
+				}
+			}
+		}
+	}
 }
 
 // EnterCreateTable is called when production createTable is entered.
@@ -119,6 +251,13 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableCont
 	if !ok {
 		g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
 		return
+	}
+
+	if !g.firstTable {
+		g.firstTable = true
+		if !g.hasTemporaryView {
+			g.lastTokenIndex = skipPrefixSpace(0, ctx.GetParser(), 1)
+		}
 	}
 
 	if _, err := g.result.WriteString(
@@ -944,7 +1083,7 @@ func normalizeOnUpdate(s string) string {
 //
 // mysqldump generate drop view if exists statement after all create table statement.
 // To provide the better ux, we generate the new tables before the drop view statement.
-func (g *mysqlDesignSchemaGenerator) EnterDropView(*mysql.DropViewContext) {
+func (g *mysqlDesignSchemaGenerator) EnterDropView(ctx *mysql.DropViewContext) {
 	if g.err != nil {
 		return
 	}
@@ -952,6 +1091,27 @@ func (g *mysqlDesignSchemaGenerator) EnterDropView(*mysql.DropViewContext) {
 	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
 		g.err = err
 		return
+	}
+
+	p := ctx.GetParent()
+	pctx, ok := p.(*mysql.DropStatementContext)
+	if !ok {
+		return
+	}
+
+	viewRefs := ctx.ViewRefList().AllViewRef()
+	if len(viewRefs) != 1 {
+		g.err = errors.New("Expecting one view reference")
+	}
+	viewRef := viewRefs[0]
+
+	_, viewName := mysqlparser.NormalizeMySQLViewRef(viewRef)
+	schema, ok := g.to.schemas[""]
+	if !ok || schema == nil {
+		return
+	}
+	if _, ok := schema.views[viewName]; !ok {
+		g.lastTokenIndex = skipAfterSemicolon(pctx, pctx.GetParser())
 	}
 }
 
@@ -961,6 +1121,11 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateProcedure(*mysql.CreateProcedure
 	}
 
 	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
+
+	if err := writeRemainingViews(&g.result, g.desired, g.to); err != nil {
 		g.err = err
 		return
 	}
@@ -975,6 +1140,11 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateFunction(*mysql.CreateFunctionCo
 		g.err = err
 		return
 	}
+
+	if err := writeRemainingViews(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
 }
 
 func (g *mysqlDesignSchemaGenerator) EnterCreateEvent(*mysql.CreateEventContext) {
@@ -986,6 +1156,11 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateEvent(*mysql.CreateEventContext)
 		g.err = err
 		return
 	}
+
+	if err := writeRemainingViews(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
 }
 
 func (g *mysqlDesignSchemaGenerator) EnterCreateTriggers(*mysql.CreateTriggerContext) {
@@ -994,6 +1169,11 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTriggers(*mysql.CreateTriggerCon
 	}
 
 	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
+
+	if err := writeRemainingViews(&g.result, g.desired, g.to); err != nil {
 		g.err = err
 		return
 	}
@@ -1015,6 +1195,11 @@ func (g *mysqlDesignSchemaGenerator) EnterSetStatement(ctx *mysql.SetStatementCo
 	}
 
 	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
+
+	if err := writeRemainingViews(&g.result, g.desired, g.to); err != nil {
 		g.err = err
 		return
 	}
@@ -1064,6 +1249,58 @@ func writeRemainingTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata,
 	return nil
 }
 
+func writeRemainingViews(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *databaseState) error {
+	firstView := true
+	// Follow the order of the input schemas.
+	for _, schema := range to.Schemas {
+		schemaState, ok := state.schemas[schema.Name]
+		if !ok {
+			continue
+		}
+		// Follow the order of the input views.
+		for idx, view := range schema.Views {
+			_, handled := schemaState.handledViews[view.Name]
+			if handled {
+				continue
+			}
+			view, ok := schemaState.views[view.Name]
+			if !ok {
+				continue
+			}
+			if firstView {
+				firstView = false
+				if _, err := w.WriteString("\n"); err != nil {
+					return err
+				}
+			}
+			if _, err := w.WriteString(getViewAnnouncement(view.name)); err != nil {
+				return err
+			}
+
+			// Avoid new line.
+			buf := &strings.Builder{}
+			if err := view.toString(buf); err != nil {
+				return err
+			}
+			if idx == len(schema.Tables)-1 && buf.String()[len(buf.String())-1] == '\n' {
+				if _, err := w.WriteString(buf.String()[:len(buf.String())-1]); err != nil {
+					return err
+				}
+			} else {
+				if _, err := w.WriteString(buf.String()); err != nil {
+					return err
+				}
+			}
+			delete(schemaState.views, view.name)
+		}
+	}
+	return nil
+}
+
+func getViewAnnouncement(name string) string {
+	return fmt.Sprintf("\nDROP VIEW IF EXISTS `%s`;\n--\n-- View structure for `%s`\n--\n", name, name)
+}
+
 func getTableAnnouncement(name string) string {
 	return fmt.Sprintf("\n--\n-- Table structure for `%s`\n--\n", name)
 }
@@ -1094,4 +1331,39 @@ func getDataTypePlainText(typeCtx mysql.IDataTypeContext) string {
 		Start: begin,
 		Stop:  end,
 	})
+}
+
+// skipPrefixSpace skips the space tokens until the first non-space token, if specify `keep`, it will keep at most `keep` continuous space before the first non-space token.
+func skipPrefixSpace(start int, parser antlr.Parser, keep uint8) int {
+	end := parser.GetTokenStream().Size() - 1
+	previous := make([]int, 0, keep)
+	for i := start; i <= end; i++ {
+		if parser.GetTokenStream().Get(i).GetChannel() == antlr.TokenHiddenChannel && len(strings.TrimSpace(parser.GetTokenStream().Get(i).GetText())) == 0 {
+			// If the queue is full, pop the first element.
+			if len(previous) == int(keep) && keep != 0 {
+				previous = previous[1:]
+			}
+			if keep != 0 {
+				previous = append(previous, i)
+			}
+			continue
+		}
+		// If the queue has any element, return the first element.
+		if len(previous) > 0 {
+			return previous[0]
+		}
+		return i
+	}
+	return end + 1
+}
+
+func skipAfterSemicolon(ctx antlr.ParserRuleContext, parser antlr.Parser) int {
+	begin := ctx.GetStop().GetTokenIndex() + 1
+	end := parser.GetTokenStream().Size() - 1
+	for i := begin; i <= end; i++ {
+		if parser.GetTokenStream().Get(i).GetChannel() == antlr.TokenDefaultChannel && parser.GetTokenStream().Get(i).GetText() == ";" {
+			return i + 1
+		}
+	}
+	return end + 1
 }
