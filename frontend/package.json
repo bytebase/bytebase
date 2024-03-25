@@ -115,7 +115,7 @@
     "@types/qs": "6.9.14",
     "@types/scrollparent": "^2.0.3",
     "@types/semver": "7.5.8",
-    "@types/slug": "5.0.7",
+    "@types/slug": "5.0.8",
     "@types/splitpanes": "2.2.6",
     "@types/uuid": "9.0.8",
     "@types/vscode": "1.85.0",
