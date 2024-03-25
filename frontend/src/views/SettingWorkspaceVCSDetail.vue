@@ -72,7 +72,7 @@
         </div>
       </template>
       <div class="space-x-3">
-        <NButton @click.prevent="cancel">
+        <NButton v-if="allowUpdate" @click.prevent="cancel">
           {{ $t("common.cancel") }}
         </NButton>
         <NButton
@@ -147,8 +147,13 @@ const vcsWithUIType = computed(() => {
   return vcsListByUIType.value.find((data) => data.uiType === vcsUIType.value);
 });
 
+const resetState = () => {
+  state.title = vcs.value?.title ?? "";
+  state.accessToken = "";
+};
+
 const state = reactive<LocalState>({
-  title: vcs.value?.title ?? "",
+  title: "",
   accessToken: "",
 });
 
@@ -162,6 +167,7 @@ const hasDeleteVCSPermission = computed(() => {
 
 watchEffect(async () => {
   const vcs = await vcsV1Store.fetchVCSByUid(uidFromSlug(props.vcsSlug));
+  resetState();
   if (vcs) {
     if (
       !hasWorkspacePermissionV2(
@@ -184,7 +190,6 @@ const repositoryList = computed(() => {
   return repositoryV1Store.getRepositoryListByVCS(vcs.value?.name ?? "");
 });
 
-// TODO(d): existing bug, fix on mount.
 const allowUpdate = computed(() => {
   return (
     (state.title != vcs.value?.title || !isEmpty(state.accessToken)) &&
@@ -219,9 +224,7 @@ const doUpdate = () => {
 };
 
 const cancel = () => {
-  router.push({
-    name: WORKSPACE_ROUTE_GITOPS,
-  });
+  resetState();
 };
 
 const deleteVCS = () => {
