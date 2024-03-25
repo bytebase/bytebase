@@ -10,7 +10,6 @@ import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
 import { Principal } from "./principal";
 import { Project, ProjectMember } from "./project";
 import { SQLReviewPolicy } from "./sqlReview";
-import { VCS } from "./vcs";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -70,7 +69,6 @@ export type ResourceType =
   | "TASK_PROGRESS"
   | "TASK"
   | "ACTIVITY"
-  | "VCS"
   | "REPOSITORY"
   | "ANOMALY"
   | "DEPLOYMENT_CONFIG"
@@ -91,7 +89,6 @@ interface ResourceMaker {
   (type: "STAGE"): Stage;
   (type: "TASK_PROGRESS"): TaskProgress;
   (type: "TASK"): Task;
-  (type: "VCS"): VCS;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
 }
 
@@ -189,7 +186,6 @@ const makeUnknown = (type: ResourceType) => {
       sshUser: "",
       sshPassword: "",
       sshPrivateKey: "",
-      authenticationPrivateKey: "",
     },
     // UI-only fields
     updateSsl: false,
@@ -254,17 +250,6 @@ const makeUnknown = (type: ResourceType) => {
     progress: { ...UNKNOWN_TASK_PROGRESS },
   };
 
-  const UNKNOWN_VCS: VCS = {
-    id: UNKNOWN_ID,
-    name: "",
-    type: "GITLAB",
-    uiType: "GITLAB_SELF_HOST",
-    instanceUrl: "",
-    apiUrl: "",
-    applicationId: "",
-    secret: "",
-  };
-
   const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
     id: UNKNOWN_ID,
     enforce: false,
@@ -298,8 +283,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_TASK_PROGRESS;
     case "TASK":
       return UNKNOWN_TASK;
-    case "VCS":
-      return UNKNOWN_VCS;
     case "SQL_REVIEW":
       return UNKNOWN_SQL_REVIEW_POLICY;
   }
@@ -401,7 +384,6 @@ const makeEmpty = (type: ResourceType) => {
       sshUser: "",
       sshPassword: "",
       sshPrivateKey: "",
-      authenticationPrivateKey: "",
     },
     // UI-only fields
     updateSsl: false,
@@ -466,17 +448,6 @@ const makeEmpty = (type: ResourceType) => {
     progress: { ...EMPTY_TASK_PROGRESS },
   };
 
-  const EMPTY_VCS: VCS = {
-    id: EMPTY_ID,
-    name: "",
-    type: "GITLAB",
-    uiType: "GITLAB_SELF_HOST",
-    instanceUrl: "",
-    apiUrl: "",
-    applicationId: "",
-    secret: "",
-  };
-
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -502,8 +473,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_TASK_PROGRESS;
     case "TASK":
       return EMPTY_TASK;
-    case "VCS":
-      return EMPTY_VCS;
   }
 };
 
