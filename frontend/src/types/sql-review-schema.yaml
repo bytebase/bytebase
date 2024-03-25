@@ -830,3 +830,7 @@ ruleList:
         payload:
           type: NUMBER
           default: 100000000
+  - type: statement.add-foreign-key-not-valid
+    category: STATEMENT
+    engineList:
+      - POSTGRES
