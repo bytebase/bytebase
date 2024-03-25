@@ -222,10 +222,10 @@ devDependencies:
     version: 1.8.0
   '@tailwindcss/forms':
     specifier: 0.5.7
-    version: 0.5.7(tailwindcss@3.3.6)
+    version: 0.5.7(tailwindcss@3.4.1)
   '@tailwindcss/typography':
     specifier: 0.5.10
-    version: 0.5.10(tailwindcss@3.3.6)
+    version: 0.5.10(tailwindcss@3.4.1)
   '@trivago/prettier-plugin-sort-imports':
     specifier: ^4.3.0
     version: 4.3.0(@vue/compiler-sfc@3.4.21)(prettier@3.2.5)
@@ -377,8 +377,8 @@ devDependencies:
     specifier: 4.13.0
     version: 4.13.0
   tailwindcss:
-    specifier: 3.3.6
-    version: 3.3.6
+    specifier: 3.4.1
+    version: 3.4.1
   ts-proto:
     specifier: ^1.165.1
     version: 1.169.1
@@ -1763,16 +1763,16 @@ packages:
       clipboard: 2.0.11
     dev: false
 
-  /@tailwindcss/forms@0.5.7(tailwindcss@3.3.6):
+  /@tailwindcss/forms@0.5.7(tailwindcss@3.4.1):
     resolution: {integrity: sha512-QE7X69iQI+ZXwldE+rzasvbJiyV/ju1FGHH0Qn2W3FKbuYtqp8LKcy6iSw79fVUT5/Vvf+0XgLCeYVG+UV6hOw==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || >= 3.0.0-alpha.1'
     dependencies:
       mini-svg-data-uri: 1.4.4
-      tailwindcss: 3.3.6
+      tailwindcss: 3.4.1
     dev: true
 
-  /@tailwindcss/typography@0.5.10(tailwindcss@3.3.6):
+  /@tailwindcss/typography@0.5.10(tailwindcss@3.4.1):
     resolution: {integrity: sha512-Pe8BuPJQJd3FfRnm6H0ulKIGoMEQS+Vq01R6M5aCrFB/ccR/shT+0kXLjouGC1gFLm9hopTFN+DMP0pfwRWzPw==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders'
@@ -1781,7 +1781,7 @@ packages:
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
-      tailwindcss: 3.3.6
+      tailwindcss: 3.4.1
     dev: true
 
   /@tanstack/table-core@8.11.8:
@@ -5604,19 +5604,11 @@ packages:
       postcss: ^8.2.14
     dependencies:
       postcss: 8.4.38
-      postcss-selector-parser: 6.0.13
+      postcss-selector-parser: 6.0.16
     dev: true
 
   /postcss-selector-parser@6.0.10:
     resolution: {integrity: sha512-IQ7TZdoaqbT+LCpShg46jnZVlhWD2w6iQYAcYXfHARZ7X1t/UGhhceQDs5X0cGqKvYlHNOuv7Oa1xmb0oQuA3w==}
-    engines: {node: '>=4'}
-    dependencies:
-      cssesc: 3.0.0
-      util-deprecate: 1.0.2
-    dev: true
-
-  /postcss-selector-parser@6.0.13:
-    resolution: {integrity: sha512-EaV1Gl4mUEV4ddhDnv/xtj7sxwrwxdetHdWUGnT4VJQf+4d05v6lHYZr8N573k5Z0BViss7BDhfWtKS3+sfAqQ==}
     engines: {node: '>=4'}
     dependencies:
       cssesc: 3.0.0
@@ -6306,7 +6298,7 @@ packages:
     engines: {node: '>=8'}
     hasBin: true
     dependencies:
-      '@jridgewell/gen-mapping': 0.3.3
+      '@jridgewell/gen-mapping': 0.3.5
       commander: 4.1.1
       glob: 7.1.6
       lines-and-columns: 1.2.4
@@ -6348,8 +6340,8 @@ packages:
       tslib: 2.6.2
     dev: true
 
-  /tailwindcss@3.3.6:
-    resolution: {integrity: sha512-AKjF7qbbLvLaPieoKeTjG1+FyNZT6KaJMJPFeQyLfIp7l82ggH1fbHJSsYIvnbTFQOlkh+gBYpyby5GT1LIdLw==}
+  /tailwindcss@3.4.1:
+    resolution: {integrity: sha512-qAYmXRfk3ENzuPBakNK0SRrUDipP8NQnEY6772uDhflcQz5EhRdD7JNZxyrFHVQNCwULPBn6FNPp9brpO7ctcA==}
     engines: {node: '>=14.0.0'}
     hasBin: true
     dependencies:
@@ -6372,7 +6364,7 @@ packages:
       postcss-js: 4.0.1(postcss@8.4.38)
       postcss-load-config: 4.0.2(postcss@8.4.38)
       postcss-nested: 6.0.1(postcss@8.4.38)
-      postcss-selector-parser: 6.0.13
+      postcss-selector-parser: 6.0.16
       resolve: 1.22.8
       sucrase: 3.34.0
     transitivePeerDependencies:
