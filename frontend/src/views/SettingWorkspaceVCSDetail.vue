@@ -117,12 +117,7 @@ import {
 } from "@/store";
 import { VCSUIType } from "@/types";
 import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
-import {
-  idFromSlug,
-  uidFromSlug,
-  getVCSUIType,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+import { getVCSUIType, hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   title: string;
@@ -130,7 +125,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  vcsSlug: string;
+  vcsResourceId: string;
 }>();
 
 const router = useRouter();
@@ -139,7 +134,7 @@ const vcsV1Store = useVCSV1Store();
 const repositoryV1Store = useRepositoryV1Store();
 
 const vcs = computed((): VCSProvider | undefined => {
-  return vcsV1Store.getVCSByUid(idFromSlug(props.vcsSlug));
+  return vcsV1Store.getVCSById(props.vcsResourceId);
 });
 
 const vcsUIType = computed((): VCSUIType => {
@@ -172,7 +167,7 @@ const hasDeleteVCSPermission = computed(() => {
 });
 
 watchEffect(async () => {
-  const vcs = await vcsV1Store.fetchVCSByUid(uidFromSlug(props.vcsSlug));
+  const vcs = await vcsV1Store.fetchVCSById(props.vcsResourceId);
   resetState();
   if (vcs) {
     if (

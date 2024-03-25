@@ -454,7 +454,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		return s.createProjectGitOpsInfo(ctx, request, project)
 	}
 
-	vcs, err := s.store.GetVCSProviderV2(ctx, &store.FindVCSProviderMessage{ResourceID: &repo.VCSResourceID})
+	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &repo.VCSResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get vcs provider, error %v", err.Error())
 	}
@@ -558,7 +558,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 		return nil, err
 	}
 
-	vcs, err := s.store.GetVCSProviderV2(ctx, &store.FindVCSProviderMessage{ResourceID: &repo.VCSResourceID})
+	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &repo.VCSResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
@@ -981,7 +981,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 	} else {
 		find.ResourceID = &vcsResourceID
 	}
-	vcs, err := s.store.GetVCSProviderV2(ctx, find)
+	vcs, err := s.store.GetVCSProvider(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
