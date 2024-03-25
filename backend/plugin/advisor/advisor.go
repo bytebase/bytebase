@@ -412,6 +412,9 @@ const (
 	// PostgreSQLDisallowAddNotNull is an advisor type for PostgreSQl to disallow add not null.
 	PostgreSQLDisallowAddNotNull Type = "bb.plugin.advisor.postgresql.statement.disallow-add-not-null"
 
+	// PostgreSQLNonTransactional is an advisor type for PostgreSQL to disallow non-transactional statements.
+	PostgreSQLNonTransactional Type = "bb.plugin.advisor.postgresql.statement.non-transactional"
+
 	// PostgreSQLTableDropNamingConvention is an advisor type for PostgreSQL table drop with naming convention.
 	PostgreSQLTableDropNamingConvention Type = "bb.plugin.advisor.postgresql.table.drop-naming-convention"
 
