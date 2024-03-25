@@ -351,6 +351,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleIndexNoDuplicateColumn,
 		SchemaRuleIndexPKTypeLimit,
 		SchemaRuleStatementDisallowAddColumnWithDefault,
+		SchemaRuleStatementNonTransactional,
 		SchemaRuleCreateIndexConcurrently,
 		SchemaRuleStatementAddCheckNotValid,
 		SchemaRuleStatementAddFKNotValid,

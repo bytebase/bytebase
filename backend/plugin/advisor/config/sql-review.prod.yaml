@@ -283,3 +283,5 @@ ruleList:
       number: 100000000
   - type: statement.add-foreign-key-not-valid
     level: WARNING
+  - type: statement.non-transactional
+    level: WARNING
