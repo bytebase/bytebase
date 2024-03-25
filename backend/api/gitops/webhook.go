@@ -12,9 +12,8 @@ import (
 	"log/slog"
 	"net/http"
 	"net/mail"
-	"net/url"
-	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,13 +21,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -45,15 +42,10 @@ import (
 )
 
 const (
-	// sqlReviewDocs is the URL for SQL review doc.
-	sqlReviewDocs = "https://www.bytebase.com/docs/reference/error-code/advisor"
-
 	// issueNameTemplate should be consistent with UI issue names generated from the frontend except for the timestamp.
 	// Because we cannot get the correct timezone of the client here.
-	// Example: "[db-5] Alter schema: add an email column".
-	issueNameTemplate      = "[%s] %s: %s"
-	sdlIssueNameTemplate   = "[%s] %s"
-	batchIssueNameTemplate = "%s: %s"
+	// Example: "Alter schema: add an email column".
+	issueNameTemplate = "%s: %s"
 )
 
 func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
@@ -799,7 +791,6 @@ func filterFilesByCommitsDiff(
 type fileInfo struct {
 	item          vcs.DistinctFileItem
 	migrationInfo *db.MigrationInfo
-	fType         fileType
 	repoInfo      *repoInfo
 }
 
@@ -820,7 +811,7 @@ func groupFileInfoByRepo(distinctFileList []vcs.DistinctFileItem, repoInfoList [
 	repoID2FileItemList := make(map[int][]fileInfo)
 	for _, item := range distinctFileList {
 		slog.Debug("Processing file", slog.String("file", item.FileName), slog.String("commit", item.Commit.ID))
-		migrationInfo, fType, repoInfo, err := getFileInfo(item, repoInfoList)
+		migrationInfo, repoInfo, err := getFileInfo(item, repoInfoList)
 		if err != nil {
 			slog.Warn("Failed to get file info for the ignored repository file",
 				slog.String("file", item.FileName),
@@ -831,98 +822,64 @@ func groupFileInfoByRepo(distinctFileList []vcs.DistinctFileItem, repoInfoList [
 		repoID2FileItemList[repoInfo.repository.UID] = append(repoID2FileItemList[repoInfo.repository.UID], fileInfo{
 			item:          item,
 			migrationInfo: migrationInfo,
-			fType:         fType,
 			repoInfo:      repoInfo,
 		})
 	}
 	return repoID2FileItemList
 }
 
-type fileType int
-
-const (
-	fileTypeUnknown fileType = iota
-	fileTypeMigration
-	fileTypeSchema
-)
-
 // getFileInfo processes the file item against the candidate list of
 // repositories and returns the parsed migration information, file change type
 // and a single matched repository. It returns an error when none or multiple
 // repositories are matched.
-func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.MigrationInfo, fileType, *repoInfo, error) {
+func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.MigrationInfo, *repoInfo, error) {
 	var migrationInfo *db.MigrationInfo
-	var fType fileType
 	var fileRepositoryList []*repoInfo
 	for _, repoInfo := range repoInfoList {
-		if !strings.HasPrefix(fileItem.FileName, repoInfo.repository.BaseDirectory) {
-			slog.Debug("Ignored file outside the base directory",
-				slog.String("file", fileItem.FileName),
-				slog.String("base_directory", repoInfo.repository.BaseDirectory),
-			)
+		if filepath.Dir(fileItem.FileName) != repoInfo.repository.BaseDirectory {
 			continue
 		}
-
-		// NOTE: We do not want to use filepath.Join here because we always need "/" as the path separator.
-		filePathTemplate := path.Join(repoInfo.repository.BaseDirectory, repoInfo.repository.FilePathTemplate)
-		allowOmitDatabaseName := false
-		if repoInfo.project.TenantMode == api.TenantModeTenant {
-			allowOmitDatabaseName = true
-			// If the committed file is a YAML file, then the user may have opted-in
-			// advanced mode, we need to alter the FilePathTemplate to match ".yml" instead
-			// of ".sql".
-			if fileItem.IsYAML {
-				filePathTemplate = strings.Replace(filePathTemplate, ".sql", ".yml", 1)
-			}
-		}
-
-		mi, err := db.ParseMigrationInfo(fileItem.FileName, filePathTemplate, allowOmitDatabaseName)
-		if err != nil {
-			slog.Error("Failed to parse migration file info",
-				slog.String("project", repoInfo.repository.ProjectResourceID),
-				slog.String("file", fileItem.FileName),
-				log.BBError(err),
-			)
+		filename := filepath.Base(fileItem.FileName)
+		if filepath.Ext(filename) != ".sql" {
 			continue
 		}
-		if mi != nil {
-			if fileItem.IsYAML && mi.Type != db.Data {
-				return nil, fileTypeUnknown, nil, errors.New("only DML is allowed for YAML files in a tenant project")
-			}
-
-			migrationInfo = mi
-			fType = fileTypeMigration
-			fileRepositoryList = append(fileRepositoryList, repoInfo)
+		filename = strings.TrimSuffix(filename, filepath.Ext(filename))
+		re := regexp.MustCompile(`^[0-9]+`)
+		matches := re.FindAllString(filename, -1)
+		if len(matches) == 0 {
 			continue
 		}
-
-		si, err := db.ParseSchemaFileInfo(repoInfo.repository.BaseDirectory, repoInfo.repository.SchemaPathTemplate, fileItem.FileName)
-		if err != nil {
-			slog.Debug("Failed to parse schema file info",
-				slog.String("file", fileItem.FileName),
-				log.BBError(err),
-			)
-			continue
+		version := matches[0]
+		description := strings.TrimPrefix(filename, version)
+		description = strings.TrimLeft(description, "_#")
+		migrationType := db.Migrate
+		if strings.Contains(description, "dml") || strings.Contains(description, "data") {
+			migrationType = db.Data
 		}
-		if si != nil {
-			migrationInfo = si
-			fType = fileTypeSchema
-			fileRepositoryList = append(fileRepositoryList, repoInfo)
-			continue
+		description = strings.TrimPrefix(description, "ddl")
+		description = strings.TrimPrefix(description, "dml")
+		description = strings.TrimPrefix(description, "migrate")
+		description = strings.TrimPrefix(description, "data")
+		description = strings.TrimLeft(description, "_#")
+		migrationInfo = &db.MigrationInfo{
+			Version:     model.Version{Version: version},
+			Type:        migrationType,
+			Description: description,
 		}
+		fileRepositoryList = append(fileRepositoryList, repoInfo)
 	}
 
 	switch len(fileRepositoryList) {
 	case 0:
-		return nil, fileTypeUnknown, nil, errors.Errorf("file change is not associated with any project")
+		return nil, nil, errors.Errorf("file change is not associated with any project")
 	case 1:
-		return migrationInfo, fType, fileRepositoryList[0], nil
+		return migrationInfo, fileRepositoryList[0], nil
 	default:
 		var projectList []string
 		for _, repoInfo := range fileRepositoryList {
 			projectList = append(projectList, repoInfo.project.Title)
 		}
-		return nil, fileTypeUnknown, nil, errors.Errorf("file change should be associated with exactly one project but found %s", strings.Join(projectList, ", "))
+		return nil, nil, errors.Errorf("file change should be associated with exactly one project but found %s", strings.Join(projectList, ", "))
 	}
 }
 
@@ -933,13 +890,6 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.M
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
 func (s *Service) processFilesInProject(ctx context.Context, oauthContext *common.OauthContext, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*store.ActivityMessage, *echo.HTTPError) {
-	if repoInfo.project.TenantMode == api.TenantModeTenant {
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
-			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
-		}
-		return s.processFilesInBatchProject(ctx, oauthContext, pushEvent, repoInfo, fileInfoList)
-	}
-
 	var migrationDetailList []*migrationDetail
 	var activityCreateList []*store.ActivityMessage
 	var createdIssueList []string
@@ -947,21 +897,12 @@ func (s *Service) processFilesInProject(ctx context.Context, oauthContext *commo
 
 	creatorID := s.getIssueCreatorID(ctx, pushEvent.CommitList[0].AuthorEmail)
 	for _, fileInfo := range fileInfoList {
-		if fileInfo.fType == fileTypeSchema {
-			slog.Debug("Ignored schema file for non-SDL project", slog.String("fileName", fileInfo.item.FileName), slog.String("type", string(fileInfo.item.ItemType)))
-		} else { // fileInfo.fType == fileTypeMigration
-			// This is a migration-based DDL or DML file and we would allow it for both DDL and SDL schema change type project.
-			// For DDL schema change type project, this is expected.
-			// For SDL schema change type project, we allow it because:
-			// 1) DML is always migration-based.
-			// 2) We may have a limitation in SDL implementation.
-			// 3) User just wants to break the glass.
-			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, oauthContext, repoInfo, pushEvent, fileInfo)
-			activityCreateList = append(activityCreateList, activityCreateListForFile...)
-			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
-			if len(migrationDetailListForFile) != 0 {
-				fileNameList = append(fileNameList, strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
-			}
+		// This is a migration-based DDL or DML file.
+		migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, oauthContext, repoInfo, pushEvent, fileInfo)
+		activityCreateList = append(activityCreateList, activityCreateListForFile...)
+		migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
+		if len(migrationDetailListForFile) != 0 {
+			fileNameList = append(fileNameList, strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
 		}
 	}
 
@@ -977,48 +918,13 @@ func (s *Service) processFilesInProject(ctx context.Context, oauthContext *commo
 			break
 		}
 	}
-	// The files are grouped by database names before calling this function, so they have the same database name here.
-	databaseName := fileInfoList[0].migrationInfo.Database
 	description := strings.ReplaceAll(fileInfoList[0].migrationInfo.Description, "_", " ")
-	issueName := fmt.Sprintf(issueNameTemplate, databaseName, migrateType, description)
+	issueName := fmt.Sprintf(issueNameTemplate, migrateType, description)
 	issueDescription := fmt.Sprintf("By VCS files:\n\n%s\n", strings.Join(fileNameList, "\n"))
 	if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailList); err != nil {
 		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s, error %v", issueName, err)).SetInternal(err)
 	}
 	createdIssueList = append(createdIssueList, issueName)
-
-	return fmt.Sprintf("Created issue %q from push event", strings.Join(createdIssueList, ",")), true, activityCreateList, nil
-}
-
-// processFilesInBatchProject creates issues for a batch project.
-func (s *Service) processFilesInBatchProject(ctx context.Context, oauthContext *common.OauthContext, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*store.ActivityMessage, *echo.HTTPError) {
-	var activityCreateList []*store.ActivityMessage
-	var createdIssueList []string
-
-	creatorID := s.getIssueCreatorID(ctx, pushEvent.CommitList[0].AuthorEmail)
-	for _, fileInfo := range fileInfoList {
-		if fileInfo.fType == fileTypeSchema {
-			slog.Debug("Ignored schema file for non-SDL project", slog.String("fileName", fileInfo.item.FileName), slog.String("type", string(fileInfo.item.ItemType)))
-		} else { // fileInfo.fType == fileTypeMigration
-			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, oauthContext, repoInfo, pushEvent, fileInfo)
-			if len(migrationDetailListForFile) != 1 {
-				slog.Error("Unexpected number of file number")
-			}
-			migrationDetail := migrationDetailListForFile[0]
-			activityCreateList = append(activityCreateList, activityCreateListForFile...)
-			migrateType := "Change data"
-			if migrationDetail.migrationType == db.Migrate {
-				migrateType = "Alter schema"
-			}
-			description := strings.ReplaceAll(fileInfoList[0].migrationInfo.Description, "_", " ")
-			issueName := fmt.Sprintf(batchIssueNameTemplate, migrateType, description)
-			issueDescription := fmt.Sprintf("By VCS file: %s\n", fileInfo.item.FileName)
-			if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailListForFile); err != nil {
-				return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s, error %v", issueName, err)).SetInternal(err)
-			}
-			createdIssueList = append(createdIssueList, issueName)
-		}
-	}
 
 	return fmt.Sprintf("Created issue %q from push event", strings.Join(createdIssueList, ",")), true, activityCreateList, nil
 }
@@ -1050,77 +956,56 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 	}
 
 	var steps []*v1pb.Plan_Step
-	if len(migrationDetailList) == 1 && migrationDetailList[0].databaseID == 0 {
-		migrationDetail := migrationDetailList[0]
-		changeType := getChangeType(migrationDetail.migrationType)
-		steps = []*v1pb.Plan_Step{
-			{
-				Specs: []*v1pb.Plan_Spec{
-					{
-						Id: uuid.NewString(),
-						Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-							ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-								Type:          changeType,
-								Target:        fmt.Sprintf("projects/%s/deploymentConfigs/default", project.ResourceID),
-								Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.sheetID),
-								SchemaVersion: migrationDetail.schemaVersion.Version,
-							},
-						},
-					},
-				},
-			},
+
+	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	if err != nil {
+		return err
+	}
+	orderIndex := make(map[int32]int)
+	for i, environment := range environments {
+		orderIndex[environment.Order] = i
+	}
+	allSteps := make([]*v1pb.Plan_Step, len(environments))
+	for _, migrationDetail := range migrationDetailList {
+		if migrationDetail.databaseID == 0 {
+			// TODO(d): should never reach this.
+			return errors.Errorf("tenant database is not supported yet")
 		}
-	} else {
-		environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &migrationDetail.databaseID})
 		if err != nil {
 			return err
 		}
-		orderIndex := make(map[int32]int)
-		for i, environment := range environments {
-			orderIndex[environment.Order] = i
+		if database == nil {
+			return errors.Errorf("database %d not found", migrationDetail.databaseID)
 		}
-		allSteps := make([]*v1pb.Plan_Step, len(environments))
-		for _, migrationDetail := range migrationDetailList {
-			if migrationDetail.databaseID == 0 {
-				// TODO(d): should never reach this.
-				return errors.Errorf("tenant database is not supported yet")
-			}
-			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &migrationDetail.databaseID})
-			if err != nil {
-				return err
-			}
-			if database == nil {
-				return errors.Errorf("database %d not found", migrationDetail.databaseID)
-			}
-			environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
-			if err != nil {
-				return err
-			}
-			if environment == nil {
-				return errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
-			}
+		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+		if err != nil {
+			return err
+		}
+		if environment == nil {
+			return errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
+		}
 
-			step := allSteps[orderIndex[environment.Order]]
-			if step == nil {
-				allSteps[orderIndex[environment.Order]] = &v1pb.Plan_Step{}
-				step = allSteps[orderIndex[environment.Order]]
-			}
-			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
-				Id: uuid.NewString(),
-				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Type:          getChangeType(migrationDetail.migrationType),
-						Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
-						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.sheetID),
-						SchemaVersion: migrationDetail.schemaVersion.Version,
-					},
-				},
-			})
+		step := allSteps[orderIndex[environment.Order]]
+		if step == nil {
+			allSteps[orderIndex[environment.Order]] = &v1pb.Plan_Step{}
+			step = allSteps[orderIndex[environment.Order]]
 		}
-		for _, step := range allSteps {
-			if step != nil && len(step.Specs) > 0 {
-				steps = append(steps, step)
-			}
+		step.Specs = append(step.Specs, &v1pb.Plan_Spec{
+			Id: uuid.NewString(),
+			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+					Type:          getChangeType(migrationDetail.migrationType),
+					Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
+					Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.sheetID),
+					SchemaVersion: migrationDetail.schemaVersion.Version,
+				},
+			},
+		})
+	}
+	for _, step := range allSteps {
+		if step != nil && len(step.Specs) > 0 {
+			steps = append(steps, step)
 		}
 	}
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
@@ -1221,10 +1106,7 @@ func (s *Service) getIssueCreatorID(ctx context.Context, email string) int {
 	return creatorID
 }
 
-// findProjectDatabases finds the list of databases with given name in the
-// project. If the environmentResourceID is not empty, it will be used as a filter condition
-// for the result list.
-func (s *Service) findProjectDatabases(ctx context.Context, projectID int, dbName, environmentResourceID string) ([]*store.DatabaseMessage, error) {
+func (s *Service) findProjectDatabases(ctx context.Context, projectID int) ([]*store.DatabaseMessage, error) {
 	// Retrieve the current schema from the database
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
 	if err != nil {
@@ -1236,67 +1118,15 @@ func (s *Service) findProjectDatabases(ctx context.Context, projectID int, dbNam
 	// The database name for PostgreSQL, Oracle, Snowflake and some databases are case sensitive.
 	// But the database name for MySQL, TiDB and other databases are case insensitive.
 	// So we should find databases by case-insensitive and double-check for case sensitive database engines.
-	caseInsensitiveDatabases, err := s.store.ListDatabases(ctx,
+	databases, err := s.store.ListDatabases(ctx,
 		&store.FindDatabaseMessage{
-			ProjectID:           &project.ResourceID,
-			DatabaseName:        &dbName,
-			IgnoreCaseSensitive: true,
+			ProjectID: &project.ResourceID,
 		},
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "find database")
 	}
-	var foundDatabases []*store.DatabaseMessage
-	for _, database := range caseInsensitiveDatabases {
-		database := database
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-		if err != nil {
-			return nil, errors.Wrap(err, "find instance")
-		}
-		if store.IgnoreDatabaseAndTableCaseSensitive(instance) || database.DatabaseName == dbName {
-			foundDatabases = append(foundDatabases, database)
-		}
-	}
-	if len(foundDatabases) == 0 {
-		return nil, errors.Errorf("project %d does not have database %q", projectID, dbName)
-	}
-
-	// We support 3 patterns on how to organize the schema files.
-	// Pattern 1: 	The database name is the same across all environments. Each environment will have its own directory, so the
-	//              schema file looks like "dev/v1##db1", "staging/v1##db1".
-	//
-	// Pattern 2: 	Like 1, the database name is the same across all environments. All environment shares the same schema file,
-	//              say v1##db1, when a new file is added like v2##db1##add_column, we will create a multi stage pipeline where
-	//              each stage corresponds to an environment.
-	//
-	// Pattern 3:  	The database name is different among different environments. In such case, the database name alone is enough
-	//             	to identify ambiguity.
-
-	// Further filter by environment name if applicable.
-	var filteredDatabases []*store.DatabaseMessage
-	if environmentResourceID != "" {
-		for _, database := range foundDatabases {
-			// Environment resource ID comparison is case-sensitive.
-			if database.EffectiveEnvironmentID == environmentResourceID {
-				filteredDatabases = append(filteredDatabases, database)
-			}
-		}
-		if len(filteredDatabases) == 0 {
-			return nil, errors.Errorf("project %d does not have database %q with environment id %q", projectID, dbName, environmentResourceID)
-		}
-	} else {
-		filteredDatabases = foundDatabases
-	}
-
-	// In case there are databases with identical name in a project for the same environment.
-	marked := make(map[string]bool)
-	for _, database := range filteredDatabases {
-		if _, ok := marked[database.EffectiveEnvironmentID]; ok {
-			return nil, errors.Errorf("project %d has multiple databases %q for environment %q", projectID, dbName, environmentResourceID)
-		}
-		marked[database.EffectiveEnvironmentID] = true
-	}
-	return filteredDatabases, nil
+	return databases, nil
 }
 
 // getIgnoredFileActivityCreate get a warning project activityCreate for the ignored file with given error.
@@ -1389,85 +1219,8 @@ func (s *Service) prepareIssueFromFile(
 			PushEvent: utils.ConvertVcsPushEvent(&pushEvent),
 		},
 	}
-	if repoInfo.project.TenantMode == api.TenantModeTenant {
-		// A non-YAML file means the whole file content is the SQL statement
-		if !fileInfo.item.IsYAML {
-			sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
-				CreatorID:  api.SystemBotID,
-				ProjectUID: repoInfo.project.UID,
-				Title:      fileInfo.item.FileName,
-				Statement:  content,
-				Payload:    sheetPayload,
-			})
-			if err != nil {
-				activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
-				return nil, []*store.ActivityMessage{activityCreate}
-			}
 
-			return []*migrationDetail{
-				{
-					migrationType: fileInfo.migrationInfo.Type,
-					sheetID:       sheet.UID,
-					schemaVersion: model.Version{Version: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix())},
-				},
-			}, nil
-		}
-
-		var migrationFile MigrationFileYAML
-		err = yaml.Unmarshal([]byte(content), &migrationFile)
-		if err != nil {
-			return nil, []*store.ActivityMessage{
-				getIgnoredFileActivityCreate(
-					repoInfo.project,
-					pushEvent,
-					fileInfo.item.FileName,
-					errors.Wrap(err, "Failed to parse file content as YAML"),
-				),
-			}
-		}
-
-		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
-			CreatorID:  api.SystemBotID,
-			ProjectUID: repoInfo.project.UID,
-			Title:      fileInfo.item.FileName,
-			Statement:  migrationFile.Statement,
-			Payload:    sheetPayload,
-		})
-		if err != nil {
-			activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to create a sheet"))
-			return nil, []*store.ActivityMessage{activityCreate}
-		}
-
-		var migrationDetailList []*migrationDetail
-		for _, database := range migrationFile.Databases {
-			dbList, err := s.findProjectDatabases(ctx, repoInfo.project.UID, database.Name, "")
-			if err != nil {
-				return nil, []*store.ActivityMessage{
-					getIgnoredFileActivityCreate(
-						repoInfo.project,
-						pushEvent,
-						fileInfo.item.FileName,
-						errors.Wrapf(err, "Failed to find project database %q", database.Name),
-					),
-				}
-			}
-
-			for _, db := range dbList {
-				migrationDetailList = append(migrationDetailList,
-					&migrationDetail{
-						migrationType: fileInfo.migrationInfo.Type,
-						databaseID:    db.UID,
-						sheetID:       sheet.UID,
-						schemaVersion: model.Version{Version: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix())},
-					},
-				)
-			}
-		}
-		return migrationDetailList, nil
-	}
-
-	// TODO(dragonly): handle modified file for tenant mode.
-	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID, fileInfo.migrationInfo.Database, fileInfo.migrationInfo.Environment)
+	databases, err := s.findProjectDatabases(ctx, repoInfo.project.UID)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repoInfo.project, pushEvent, fileInfo.item.FileName, errors.Wrap(err, "Failed to find project databases"))
 		return nil, []*store.ActivityMessage{activityCreate}
@@ -1659,155 +1412,6 @@ func patchTask(ctx context.Context, stores *store.Store, activityManager *activi
 	return nil
 }
 
-// convertSQLAdviceToGitLabCIResult will convert SQL advice map to GitLab test output format.
-// GitLab test report: https://docs.gitlab.com/ee/ci/testing/unit_test_reports.html
-// junit XML format: https://llg.cubic.org/docs/junit/
-func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *api.VCSSQLReviewResult {
-	testsuiteList := []string{}
-	status := advisor.Success
-
-	fileList := getSQLAdviceFileList(adviceMap)
-	for _, filePath := range fileList {
-		adviceList := adviceMap[filePath]
-		testcaseList := []string{}
-		pathes := strings.Split(filePath, "/")
-		filename := pathes[len(pathes)-1]
-
-		errorCount := 0
-		failureCount := 0
-		for _, advice := range adviceList {
-			if advice.Code == 0 {
-				continue
-			}
-
-			line := advice.Line
-			if line <= 0 {
-				line = 1
-			}
-
-			if advice.Status == advisor.Error {
-				status = advice.Status
-				errorCount++
-			} else if advice.Status == advisor.Warn {
-				failureCount++
-				if status != advisor.Error {
-					status = advice.Status
-				}
-			}
-
-			content := fmt.Sprintf("Error: %s.\nPlease check the docs at %s#%d",
-				advice.Content,
-				sqlReviewDocs,
-				advice.Code,
-			)
-
-			testcase := fmt.Sprintf(
-				"<testcase name=\"%s\" classname=\"%s\" file=\"%s#L%d\">\n<failure>\n%s\n</failure>\n</testcase>",
-				fmt.Sprintf("[%s] %s#L%d: %s", advice.Status, filename, line, advice.Title),
-				filePath,
-				filePath,
-				line,
-				content,
-			)
-
-			testcaseList = append(testcaseList, testcase)
-		}
-
-		if len(testcaseList) > 0 {
-			testsuiteList = append(
-				testsuiteList,
-				fmt.Sprintf("<testsuite errors=\"%d\" failures=\"%d\" tests=\"%d\" name=\"%s\">\n%s\n</testsuite>", errorCount, failureCount, len(adviceList), filePath, strings.Join(testcaseList, "\n")),
-			)
-		}
-	}
-
-	return &api.VCSSQLReviewResult{
-		Status: status,
-		Content: []string{
-			fmt.Sprintf(
-				"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites name=\"SQL Review\">\n%s\n</testsuites>",
-				strings.Join(testsuiteList, "\n"),
-			),
-		},
-	}
-}
-
-// convertSQLAdviceToGitHubActionResult will convert SQL advice map to GitHub action output format.
-// GitHub action output message: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions
-func convertSQLAdviceToGitHubActionResult(adviceMap map[string][]advisor.Advice) *api.VCSSQLReviewResult {
-	messageList := []string{}
-	status := advisor.Success
-
-	fileList := getSQLAdviceFileList(adviceMap)
-	for _, filePath := range fileList {
-		adviceList := adviceMap[filePath]
-		for _, advice := range adviceList {
-			if advice.Code == 0 || advice.Status == advisor.Success {
-				continue
-			}
-
-			line := advice.Line
-			if line <= 0 {
-				line = 1
-			}
-
-			prefix := ""
-			if advice.Status == advisor.Error {
-				prefix = "error"
-				status = advice.Status
-			} else {
-				prefix = "warning"
-				if status != advisor.Error {
-					status = advice.Status
-				}
-			}
-
-			msg := fmt.Sprintf(
-				"::%s file=%s,line=%d,col=1,endColumn=2,title=%s (%d)::%s\nDoc: %s#%d",
-				prefix,
-				filePath,
-				line,
-				advice.Title,
-				advice.Code,
-				advice.Content,
-				sqlReviewDocs,
-				advice.Code,
-			)
-			// To indent the output message in action
-			messageList = append(messageList, strings.ReplaceAll(msg, "\n", "%0A"))
-		}
-	}
-	return &api.VCSSQLReviewResult{
-		Status:  status,
-		Content: messageList,
-	}
-}
-
-func getSQLAdviceFileList(adviceMap map[string][]advisor.Advice) []string {
-	fileList := []string{}
-	fileToErrorCount := map[string]int{}
-	for filePath, adviceList := range adviceMap {
-		fileList = append(fileList, filePath)
-
-		errorCount := 0
-		for _, advice := range adviceList {
-			if advice.Status == advisor.Error {
-				errorCount++
-			}
-		}
-		fileToErrorCount[filePath] = errorCount
-	}
-	sort.Strings(fileList)
-	sort.Slice(fileList, func(i int, j int) bool {
-		if fileToErrorCount[fileList[i]] == fileToErrorCount[fileList[j]] {
-			return i < j
-		}
-		return fileToErrorCount[fileList[i]] > fileToErrorCount[fileList[j]]
-	})
-
-	return fileList
-}
-
 func filterAzureBytebaseCommit(list []azure.ServiceHookCodePushEventResourceCommit) []azure.ServiceHookCodePushEventResourceCommit {
 	var result []azure.ServiceHookCodePushEventResourceCommit
 	for _, commit := range list {
@@ -1851,22 +1455,4 @@ func filterBitbucketBytebaseCommit(list []bitbucket.WebhookCommit) []bitbucket.W
 		result = append(result, commit)
 	}
 	return result
-}
-
-// extractDBTypeFromJDBCConnectionString will extract the DB type from JDBC connection string. Only support MySQL and Postgres for now.
-// It will return UnknownType if the DB type is not supported, and returns error if cannot parse the JDBC connection string.
-func extractDBTypeFromJDBCConnectionString(jdbcURL string) (storepb.Engine, error) {
-	trimmed := strings.TrimPrefix(strings.TrimSpace(jdbcURL), "jdbc:")
-	u, err := url.Parse(trimmed)
-	if err != nil {
-		return storepb.Engine_ENGINE_UNSPECIFIED, err
-	}
-
-	switch {
-	case strings.HasPrefix(u.Scheme, "mysql"):
-		return storepb.Engine_MYSQL, nil
-	case strings.HasPrefix(u.Scheme, "postgresql"):
-		return storepb.Engine_POSTGRES, nil
-	}
-	return storepb.Engine_ENGINE_UNSPECIFIED, nil
 }
