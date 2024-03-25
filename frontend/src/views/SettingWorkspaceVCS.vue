@@ -2,11 +2,6 @@
   <div class="space-y-4">
     <div class="textinfolabel">
       {{ $t("gitops.setting.description") }}
-      <a
-        class="text-accent hover:opacity-80"
-        href="https://www.bytebase.com/docs/administration/sso/overview?source=console"
-        >{{ $t("gitops.setting.description-highlight") }}</a
-      >
     </div>
     <div v-if="vcsList.length > 0" class="flex justify-end">
       <NButton

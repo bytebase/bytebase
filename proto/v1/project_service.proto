@@ -125,13 +125,6 @@ service ProjectService {
     option (google.api.method_signature) = "name";
   }
 
-  rpc SetupProjectSQLReviewCI(SetupSQLReviewCIRequest) returns (SetupSQLReviewCIResponse) {
-    option (google.api.http) = {
-      patch: "/v1/{name=projects/*/gitOpsInfo}:setupSQLReviewCI"
-      body: "*"
-    };
-  }
-
   rpc GetProjectGitOpsInfo(GetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
     option (google.api.http) = {get: "/v1/{name=projects/*/gitOpsInfo}"};
   }
@@ -352,17 +345,6 @@ message GetProjectGitOpsInfoRequest {
   // The name of the GitOps info.
   // Format: projects/{project}/gitOpsInfo
   string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message SetupSQLReviewCIRequest {
-  // The name of the GitOps info.
-  // Format: projects/{project}/gitOpsInfo
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message SetupSQLReviewCIResponse {
-  // The CI setup PR URL for the repository.
-  string pull_request_url = 1;
 }
 
 message Project {
