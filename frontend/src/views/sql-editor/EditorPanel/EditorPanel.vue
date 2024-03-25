@@ -18,19 +18,19 @@
           </template>
         </Suspense>
       </template>
-
-      <Suspense>
-        <AIChatToSQL
-          v-if="tab && !isDisconnected && showAIChatBox"
-          :allow-config="pageMode === 'BUNDLED'"
-          @apply-statement="handleApplyStatement"
-        />
-      </Suspense>
-
-      <ExecutingHintModal />
-
-      <SaveSheetModal />
     </template>
+
+    <Suspense>
+      <AIChatToSQL
+        v-if="tab && !isDisconnected && showAIChatBox"
+        :allow-config="pageMode === 'BUNDLED'"
+        @apply-statement="handleApplyStatement"
+      />
+    </Suspense>
+
+    <ExecutingHintModal />
+
+    <SaveSheetModal />
   </div>
 </template>
 
