@@ -357,14 +357,13 @@ func (s *Store) UpdateActivityV2(ctx context.Context, update *UpdateActivityMess
 
 	var activity ActivityMessage
 	var protoPayload string
-	var resourceContainer sql.NullString
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&activity.UID,
 		&activity.CreatorUID,
 		&activity.UpdaterUID,
 		&activity.CreatedTs,
 		&activity.UpdatedTs,
-		&resourceContainer,
+		&activity.ResourceContainer,
 		&activity.ContainerUID,
 		&activity.Type,
 		&activity.Level,
@@ -375,9 +374,6 @@ func (s *Store) UpdateActivityV2(ctx context.Context, update *UpdateActivityMess
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot found activity with id: %d", update.UID)}
 		}
 		return nil, err
-	}
-	if resourceContainer.Valid {
-		activity.ResourceContainer = resourceContainer.String
 	}
 	if activity.Payload, err = convertProtoPayloadToAPIPayload(activity.Type, protoPayload); err != nil {
 		return nil, err
@@ -518,7 +514,6 @@ func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) 
 	var activityList []*ActivityMessage
 	for rows.Next() {
 		var activity ActivityMessage
-		var resourceContainer sql.NullString
 		var protoPayload string
 		if err := rows.Scan(
 			&activity.UID,
@@ -526,7 +521,7 @@ func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) 
 			&activity.UpdaterUID,
 			&activity.CreatedTs,
 			&activity.UpdatedTs,
-			&resourceContainer,
+			&activity.ResourceContainer,
 			&activity.ContainerUID,
 			&activity.Type,
 			&activity.Level,
@@ -537,9 +532,6 @@ func listActivityImplV2(ctx context.Context, tx *Tx, find *FindActivityMessage) 
 		}
 		if protoPayload == "" {
 			protoPayload = "{}"
-		}
-		if resourceContainer.Valid {
-			activity.ResourceContainer = resourceContainer.String
 		}
 		if activity.Payload, err = convertProtoPayloadToAPIPayload(activity.Type, protoPayload); err != nil {
 			return nil, err
