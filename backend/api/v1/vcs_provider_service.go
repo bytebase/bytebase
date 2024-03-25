@@ -56,6 +56,8 @@ func (s *VCSProviderService) CreateVCSProvider(ctx context.Context, request *v1p
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
+	// TODO(d): pass in the resource ID from API.
+	vcsProvider.ResourceID = strings.ToLower(string(vcsProvider.Type))
 	storeVCSProvider, err := s.store.CreateVCSProviderV2(ctx, principalID, vcsProvider)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create vcs provider: %v", err)
