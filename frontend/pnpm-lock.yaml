@@ -100,7 +100,7 @@ dependencies:
     version: 6.3.4
   maz-ui:
     specifier: ^3.32.1
-    version: 3.32.1(dayjs@1.11.10)(libphonenumber-js@1.10.58)(typescript@5.4.3)(unplugin-vue-components@0.25.2)(vue-router@4.3.0)(vue@3.4.21)
+    version: 3.32.1(dayjs@1.11.10)(libphonenumber-js@1.10.58)(typescript@5.4.3)(unplugin-vue-components@0.26.0)(vue-router@4.3.0)(vue@3.4.21)
   monaco-editor:
     specifier: 0.45.0
     version: 0.45.0
@@ -389,8 +389,8 @@ devDependencies:
     specifier: 0.18.5
     version: 0.18.5(@vue/compiler-sfc@3.4.21)
   unplugin-vue-components:
-    specifier: 0.25.2
-    version: 0.25.2(rollup@4.13.0)(vue@3.4.21)
+    specifier: 0.26.0
+    version: 0.26.0(rollup@4.13.0)(vue@3.4.21)
   vite:
     specifier: 5.2.6
     version: 5.2.6(@types/node@20.11.29)
@@ -2671,12 +2671,12 @@ packages:
     resolution: {integrity: sha512-nc0Axzp/0FILLEVsm4fNwLCwMttvhEI263QtVPQcbpfZZ3ts0hLsZGOpE6czNlid7CJ9MlyH8reXkpsf3YUY4w==}
     engines: {node: '>=0.4.0'}
     hasBin: true
+    dev: true
 
   /acorn@8.11.3:
     resolution: {integrity: sha512-Y9rRfJG5jcKOE0CLisYbojUjIrIEE7AGMzA/Sm4BslANhbS+cDMpgBdcPT91oJ7OuJ9hYJBx59RjbhxVnrF8Xg==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-    dev: true
 
   /agent-base@7.1.0:
     resolution: {integrity: sha512-o/zjMZRhJxny7OyEF+Op8X+efiELC7k7yOjMzgfzVqOzXqkBkWI79YoTdOtsuWd5BWhAGAuOY/Xa6xpiaWXiNg==}
@@ -4875,12 +4875,6 @@ packages:
       vue: 3.4.21(typescript@5.4.3)
     dev: false
 
-  /magic-string@0.30.5:
-    resolution: {integrity: sha512-7xlpfBaQaP/T6Vh8MO/EqXSW5En6INHEvEXQiuff7Gku0PWjU3uf6w/j9o7O+SpB5fOAkrI5HeoNgwjEO0pFsA==}
-    engines: {node: '>=12'}
-    dependencies:
-      '@jridgewell/sourcemap-codec': 1.4.15
-
   /magic-string@0.30.7:
     resolution: {integrity: sha512-8vBuFF/I/+OSLRmdf2wwFCJCz+nSn0m6DPvGH1fS/KiQoSaR+sETbov0eIk9KhEKy8CYqIkIAnbohxT/4H0kuA==}
     engines: {node: '>=12'}
@@ -4906,7 +4900,7 @@ packages:
       remove-accents: 0.5.0
     dev: false
 
-  /maz-ui@3.32.1(dayjs@1.11.10)(libphonenumber-js@1.10.58)(typescript@5.4.3)(unplugin-vue-components@0.25.2)(vue-router@4.3.0)(vue@3.4.21):
+  /maz-ui@3.32.1(dayjs@1.11.10)(libphonenumber-js@1.10.58)(typescript@5.4.3)(unplugin-vue-components@0.26.0)(vue-router@4.3.0)(vue@3.4.21):
     resolution: {integrity: sha512-wauiMLZO/bIzyTachZk4yQLT1JXkuv4aTXfED6TUai4/miNF/m15NX4Iu24lMVju0J00hPA/Z3BtEsc9jBN5Xw==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
     hasBin: true
@@ -4944,7 +4938,7 @@ packages:
       '@mazui/cli': 3.36.3(typescript@5.4.3)
       dayjs: 1.11.10
       libphonenumber-js: 1.10.58
-      unplugin-vue-components: 0.25.2(rollup@4.13.0)(vue@3.4.21)
+      unplugin-vue-components: 0.26.0(rollup@4.13.0)(vue@3.4.21)
       vue: 3.4.21(typescript@5.4.3)
       vue-router: 4.3.0(vue@3.4.21)
     transitivePeerDependencies:
@@ -6585,8 +6579,8 @@ packages:
       - supports-color
     dev: true
 
-  /unplugin-vue-components@0.25.2(rollup@4.13.0)(vue@3.4.21):
-    resolution: {integrity: sha512-OVmLFqILH6w+eM8fyt/d/eoJT9A6WO51NZLf1vC5c1FZ4rmq2bbGxTy8WP2Jm7xwFdukaIdv819+UI7RClPyCA==}
+  /unplugin-vue-components@0.26.0(rollup@4.13.0)(vue@3.4.21):
+    resolution: {integrity: sha512-s7IdPDlnOvPamjunVxw8kNgKNK8A5KM1YpK5j/p97jEKTjlPNrA0nZBiSfAKKlK1gWZuyWXlKL5dk3EDw874LQ==}
     engines: {node: '>=14'}
     peerDependencies:
       '@babel/parser': ^7.15.8
@@ -6604,10 +6598,10 @@ packages:
       debug: 4.3.4
       fast-glob: 3.3.2
       local-pkg: 0.4.3
-      magic-string: 0.30.5
+      magic-string: 0.30.7
       minimatch: 9.0.3
       resolve: 1.22.8
-      unplugin: 1.5.1
+      unplugin: 1.7.1
       vue: 3.4.21(typescript@5.4.3)
     transitivePeerDependencies:
       - rollup
@@ -6620,6 +6614,7 @@ packages:
       chokidar: 3.5.3
       webpack-sources: 3.2.3
       webpack-virtual-modules: 0.6.1
+    dev: true
 
   /unplugin@1.7.1:
     resolution: {integrity: sha512-JqzORDAPxxs8ErLV4x+LL7bk5pk3YlcWqpSNsIkAZj972KzFZLClc/ekppahKkOczGkwIG6ElFgdOgOlK4tXZw==}
@@ -6628,7 +6623,6 @@ packages:
       chokidar: 3.5.3
       webpack-sources: 3.2.3
       webpack-virtual-modules: 0.6.1
-    dev: true
 
   /update-browserslist-db@1.0.13(browserslist@4.22.2):
     resolution: {integrity: sha512-xebP81SNcPuNpPP3uzeW1NYXxI3rxyJzF3pD6sH4jE7o/IX+WtSpwnVU+qIsDPyk0d3hmFQ7mjqc6AtV604hbg==}
