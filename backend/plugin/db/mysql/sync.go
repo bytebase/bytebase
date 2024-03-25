@@ -54,6 +54,8 @@ var (
 		}
 		return strings.Join(l, ", ")
 	}()
+
+	viewDefMatcher = regexp.MustCompile("CREATE ALGORITHM=(UNDEFINED|MERGE|TEMPTABLE) DEFINER=`([^`]+)`@`([^`]+)` SQL SECURITY DEFINER VIEW `([^`]+)` AS (?P<def>.+)")
 )
 
 // SyncInstance syncs the instance.
@@ -310,6 +312,13 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err := viewRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
+	for key := range viewMap {
+		def, err := driver.reconcileViewDefinition(ctx, driver.databaseName, key.Table)
+		if err != nil {
+			return nil, err
+		}
+		viewMap[key].Definition = def
+	}
 
 	// Query foreign key info.
 	foreignKeysMap, err := driver.getForeignKeyList(ctx, driver.databaseName)
@@ -481,6 +490,36 @@ func isCurrentTimestampLike(s string) bool {
 		return true
 	}
 	return false
+}
+
+func (driver *Driver) reconcileViewDefinition(ctx context.Context, databaseName, viewName string) (string, error) {
+	query := fmt.Sprintf("SHOW CREATE VIEW `%s`.`%s`", databaseName, viewName)
+	viewDefRows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	defer viewDefRows.Close()
+	for viewDefRows.Next() {
+		var createStmt, unused string
+		if err := viewDefRows.Scan(&unused, &createStmt, &unused, &unused); err != nil {
+			return "", err
+		}
+		viewDefMatching := viewDefMatcher.FindStringSubmatch(createStmt)
+		if len(viewDefMatching) == 0 {
+			slog.Warn("failed to match view definition", slog.String("query", query), slog.String("createStmt", createStmt))
+		}
+		// Get the def group
+		for i, name := range viewDefMatcher.SubexpNames() {
+			if name == "def" {
+				return viewDefMatching[i], nil
+			}
+		}
+	}
+	if err := viewDefRows.Err(); err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+
+	return "", nil
 }
 
 func (driver *Driver) listPartitionTables(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
