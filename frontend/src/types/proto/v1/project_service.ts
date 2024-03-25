@@ -5,8 +5,8 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
 import { State, stateFromJSON, stateToJSON } from "./common";
-import { ProjectGitOpsInfo } from "./externalvs_service";
 import { IamPolicy } from "./iam_policy";
+import { ProjectGitOpsInfo } from "./vcs_provider_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -477,7 +477,7 @@ export interface UpdateDeploymentConfigRequest {
 }
 
 export interface UpdateProjectGitOpsInfoRequest {
-  /** The binding for the project and external version control. */
+  /** The binding for the project and vcs provider. */
   projectGitopsInfo:
     | ProjectGitOpsInfo
     | undefined;
@@ -503,19 +503,6 @@ export interface GetProjectGitOpsInfoRequest {
    * Format: projects/{project}/gitOpsInfo
    */
   name: string;
-}
-
-export interface SetupSQLReviewCIRequest {
-  /**
-   * The name of the GitOps info.
-   * Format: projects/{project}/gitOpsInfo
-   */
-  name: string;
-}
-
-export interface SetupSQLReviewCIResponse {
-  /** The CI setup PR URL for the repository. */
-  pullRequestUrl: string;
 }
 
 export interface Project {
@@ -777,11 +764,6 @@ export enum Activity_Type {
    * TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
    */
   TYPE_SQL_EDITOR_QUERY = 19,
-  /**
-   * TYPE_DATABASE_RECOVERY_PITR_DONE - Database related activity types.
-   * TYPE_DATABASE_RECOVERY_PITR_DONE represents the database recovery to a point in time is done.
-   */
-  TYPE_DATABASE_RECOVERY_PITR_DONE = 20,
   UNRECOGNIZED = -1,
 }
 
@@ -856,9 +838,6 @@ export function activity_TypeFromJSON(object: any): Activity_Type {
     case 19:
     case "TYPE_SQL_EDITOR_QUERY":
       return Activity_Type.TYPE_SQL_EDITOR_QUERY;
-    case 20:
-    case "TYPE_DATABASE_RECOVERY_PITR_DONE":
-      return Activity_Type.TYPE_DATABASE_RECOVERY_PITR_DONE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -914,8 +893,6 @@ export function activity_TypeToJSON(object: Activity_Type): string {
       return "TYPE_PROJECT_MEMBER_DELETE";
     case Activity_Type.TYPE_SQL_EDITOR_QUERY:
       return "TYPE_SQL_EDITOR_QUERY";
-    case Activity_Type.TYPE_DATABASE_RECOVERY_PITR_DONE:
-      return "TYPE_DATABASE_RECOVERY_PITR_DONE";
     case Activity_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -2556,120 +2533,6 @@ export const GetProjectGitOpsInfoRequest = {
   fromPartial(object: DeepPartial<GetProjectGitOpsInfoRequest>): GetProjectGitOpsInfoRequest {
     const message = createBaseGetProjectGitOpsInfoRequest();
     message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseSetupSQLReviewCIRequest(): SetupSQLReviewCIRequest {
-  return { name: "" };
-}
-
-export const SetupSQLReviewCIRequest = {
-  encode(message: SetupSQLReviewCIRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SetupSQLReviewCIRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetupSQLReviewCIRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SetupSQLReviewCIRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
-  toJSON(message: SetupSQLReviewCIRequest): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SetupSQLReviewCIRequest>): SetupSQLReviewCIRequest {
-    return SetupSQLReviewCIRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SetupSQLReviewCIRequest>): SetupSQLReviewCIRequest {
-    const message = createBaseSetupSQLReviewCIRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseSetupSQLReviewCIResponse(): SetupSQLReviewCIResponse {
-  return { pullRequestUrl: "" };
-}
-
-export const SetupSQLReviewCIResponse = {
-  encode(message: SetupSQLReviewCIResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.pullRequestUrl !== "") {
-      writer.uint32(10).string(message.pullRequestUrl);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SetupSQLReviewCIResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetupSQLReviewCIResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.pullRequestUrl = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SetupSQLReviewCIResponse {
-    return { pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "" };
-  },
-
-  toJSON(message: SetupSQLReviewCIResponse): unknown {
-    const obj: any = {};
-    if (message.pullRequestUrl !== "") {
-      obj.pullRequestUrl = message.pullRequestUrl;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SetupSQLReviewCIResponse>): SetupSQLReviewCIResponse {
-    return SetupSQLReviewCIResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SetupSQLReviewCIResponse>): SetupSQLReviewCIResponse {
-    const message = createBaseSetupSQLReviewCIResponse();
-    message.pullRequestUrl = object.pullRequestUrl ?? "";
     return message;
   },
 };
@@ -6532,76 +6395,6 @@ export const ProjectServiceDefinition = {
               102,
               111,
               125,
-            ]),
-          ],
-        },
-      },
-    },
-    setupProjectSQLReviewCI: {
-      name: "SetupProjectSQLReviewCI",
-      requestType: SetupSQLReviewCIRequest,
-      requestStream: false,
-      responseType: SetupSQLReviewCIResponse,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              54,
-              58,
-              1,
-              42,
-              50,
-              49,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              103,
-              105,
-              116,
-              79,
-              112,
-              115,
-              73,
-              110,
-              102,
-              111,
-              125,
-              58,
-              115,
-              101,
-              116,
-              117,
-              112,
-              83,
-              81,
-              76,
-              82,
-              101,
-              118,
-              105,
-              101,
-              119,
-              67,
-              73,
             ]),
           ],
         },

@@ -399,8 +399,6 @@ CREATE TABLE db (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
     environment_id INTEGER REFERENCES environment (id),
-    -- If db is restored from a backup, then we will record that backup id. We can thus trace up to the original db.
-    source_backup_id INTEGER,
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
     schema_version TEXT NOT NULL,
@@ -480,68 +478,6 @@ CREATE TRIGGER update_data_source_updated_ts
 BEFORE
 UPDATE
     ON data_source FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
--- backup stores the backups for a particular database.
-CREATE TABLE backup (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    database_id INTEGER NOT NULL REFERENCES db (id),
-    name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('PENDING_CREATE', 'DONE', 'FAILED')),
-    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC', 'PITR')),
-    storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL', 'S3', 'GCS', 'OSS')),
-    migration_history_version TEXT NOT NULL,
-    path TEXT NOT NULL,
-    comment TEXT NOT NULL DEFAULT '',
-    payload JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_backup_database_id ON backup(database_id);
-
-CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON backup(database_id, name);
-
-ALTER SEQUENCE backup_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_backup_updated_ts
-BEFORE
-UPDATE
-    ON backup FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
--- backup_setting stores the backup settings for a particular database.
--- This is a strict version of cron expression using UTC timezone uniformly.
-CREATE TABLE backup_setting (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    database_id INTEGER NOT NULL REFERENCES db (id),
-    -- enable automatic backup schedule.
-    enabled BOOLEAN NOT NULL,
-    hour INTEGER NOT NULL CHECK (hour >= 0 AND hour <= 23),
-    -- day_of_week can be -1 which is wildcard (daily automatic backup).
-    day_of_week INTEGER NOT NULL CHECK (day_of_week >= -1 AND day_of_week <= 6),
-    -- retention_period_ts == 0 means unset retention period and we do not delete any data.
-    retention_period_ts INTEGER NOT NULL DEFAULT 0 CHECK (retention_period_ts >= 0),
-    -- hook_url is the callback url to be requested after a successful backup.
-    hook_url TEXT NOT NULL
-);
-
-CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON backup_setting(database_id);
-
-ALTER SEQUENCE backup_setting_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_backup_setting_updated_ts
-BEFORE
-UPDATE
-    ON backup_setting FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 -----------------------
@@ -848,12 +784,15 @@ CREATE TABLE activity (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    resource_container TEXT,
     container_id INTEGER NOT NULL CHECK (container_id > 0),
     type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
     level TEXT NOT NULL CHECK (level IN ('INFO', 'WARN', 'ERROR')),
     comment TEXT NOT NULL DEFAULT '',
     payload JSONB NOT NULL DEFAULT '{}'
 );
+
+CREATE INDEX idx_activity_resource_container ON activity(resource_container);
 
 CREATE INDEX idx_activity_container_id ON activity(container_id);
 
@@ -918,9 +857,7 @@ CREATE TABLE vcs (
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS')),
     instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
-    api_url TEXT NOT NULL CHECK ((api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/')),
-    application_id TEXT NOT NULL,
-    secret TEXT NOT NULL
+    access_token TEXT NOT NULL DEFAULT ''
 );
 
 ALTER SEQUENCE vcs_id_seq RESTART WITH 101;
@@ -959,15 +896,9 @@ CREATE TABLE repository (
     base_directory TEXT NOT NULL DEFAULT '',
     -- The file path template for matching the committed migration script.
     file_path_template TEXT NOT NULL DEFAULT '',
-    -- If enable the SQL review CI in VCS repository.
-    enable_sql_review_ci BOOLEAN NOT NULL DEFAULT false,
-    -- If enabled, create an issue on commits.
-    enable_cd BOOLEAN NOT NULL DEFAULT false,
     -- The file path template for storing the latest schema auto-generated by Bytebase after migration.
     -- If empty, then Bytebase won't auto generate it.
     schema_path_template TEXT NOT NULL DEFAULT '',
-    -- The file path template to match the script file for sheet.
-    sheet_path_template TEXT NOT NULL DEFAULT '',
     -- Repository id from the corresponding VCS provider.
     -- For GitLab, this is the project id. e.g. 123
     external_id TEXT NOT NULL,
@@ -979,11 +910,7 @@ CREATE TABLE repository (
     -- Identify the target repository receiving the webhook event. This is a random string.
     webhook_endpoint_id TEXT NOT NULL,
     -- For GitLab, webhook request contains this in the 'X-Gitlab-Token" header and we compare it with the one stored in db to validate it sends to the expected endpoint.
-    webhook_secret_token TEXT NOT NULL,
-    -- access_token, expires_ts, refresh_token belongs to the user linking the project to the VCS repository.
-    access_token TEXT NOT NULL,
-    expires_ts BIGINT NOT NULL,
-    refresh_token TEXT NOT NULL
+    webhook_secret_token TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_repository_unique_project_id ON repository(project_id);

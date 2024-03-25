@@ -23,7 +23,6 @@ export function isDatabaseRelatedIssueType(issueType: IssueType): boolean {
     "bb.issue.database.data.update",
     "bb.issue.database.rollback",
     "bb.issue.database.schema.update.ghost",
-    "bb.issue.database.restore.pitr",
   ].includes(issueType);
 }
 

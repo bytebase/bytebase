@@ -1790,13 +1790,7 @@
     "file-path-template-description": "Bytebase chỉ quan sát tên đường dẫn tệp khớp với mẫu mẫu liên quan đến thư mục cơ sở.",
     "file-path-example-schema-migration": "Ví dụ về đường dẫn tệp cho kiểu di chuyển lược đồ",
     "file-path-example-data-migration": "Ví dụ về đường dẫn tệp cho loại di chuyển dữ liệu",
-    "schema-path-template": "Mẫu đường dẫn lược đồ",
-    "schema-writeback-description": "Khi được chỉ định, sau mỗi lần di chuyển, Bytebase sẽ ghi lược đồ mới nhất vào đường dẫn lược đồ tương ứng với thư mục cơ sở trong cùng nhánh với cam kết ban đầu kích hoạt quá trình di chuyển. Để trống nếu bạn không muốn Bytebase thực hiện việc này.",
-    "schema-writeback-protected-branch": "Đảm bảo nhánh đã thay đổi không được bảo vệ hoặc cho phép người bảo trì kho lưu trữ đẩy tới nhánh được bảo vệ đó.",
     "if-specified": "Nếu được chỉ định",
-    "schema-path-example": "Ví dụ về đường dẫn lược đồ",
-    "sheet-path-template": "Mẫu đường dẫn trang tính",
-    "sheet-path-template-description": "Bytebase chỉ quan sát các tệp có tên đường dẫn khớp với mẫu mẫu liên quan đến thư mục cơ sở. Các tệp phù hợp sẽ được đồng bộ hóa với SQL Editor để sử dụng ở đó.",
     "sql-review-ci": "CI đánh giá SQL",
     "sql-review-ci-enable": "Bật CI đánh giá SQL",
     "sql-review-ci-enable-gitlab": "Kích hoạt CI đánh giá SQL thông qua GitLab CI",
@@ -2053,21 +2047,18 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase hỗ trợ quy trình làm việc GitOps trong đó các tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong hệ thống kiểm soát phiên bản (VCS) và các tập lệnh di chuyển mới được tạo sẽ tự động kích hoạt thay đổi cơ sở dữ liệu tương ứng. Quản trị viên Bytebase quản lý tất cả các VCS hiện hành tại đây để chủ dự án có thể liên kết các dự án với kho Git của họ từ các VCS này.",
-      "description-highlight": "Nếu bạn muốn cho phép đăng nhập bên thứ ba thông qua các VCS đã định cấu hình của mình, vui lòng định cấu hình nó trong SSO.",
+      "description": "Trong luồng làm việc GitOps của Bytebase, các nhà phát triển lưu trữ các tập lệnh di chuyển trong VCS. Các yêu cầu kéo gợi nhớ xem xét SQL, và các yêu cầu được hợp nhất khởi động kế hoạch di chuyển. Người quản trị cấu hình các nhà cung cấp VCS, trong khi chủ dự án thiết lập kết nối VCS trong các dự án.",
       "add-git-provider": {
         "self": "Thêm nhà cung cấp Git",
         "description": "Trước khi bất kỳ dự án nào có thể kích hoạt quy trình làm việc GitOps, trước tiên Bytebase cần tích hợp với hệ thống kiểm soát phiên bản (VCS) tương ứng bằng cách đăng ký làm ứng dụng OAuth trong VCS đó. Dưới đây là các bước để định cấu hình tính năng này, bạn cũng có thể làm theo {guide} của chúng tôi.",
         "gitlab-self-host": "GitLab tự lưu trữ",
-        "gitlab-self-host-admin-requirement": "Bạn cần phải là Quản trị viên của phiên bản GitLab đã chọn để định cấu hình phiên bản này. Nếu không, bạn cần yêu cầu Quản trị viên phiên bản GitLab của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn phiên bản GitLab, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
-        "gitlab-com-admin-requirement": "Tài khoản của bạn cần có quyền truy cập Quản trị viên vào bất kỳ kho lưu trữ nào để được liên kết. Thông thường tài khoản này tương ứng với người dùng dịch vụ chuyên dụng thay vì người dùng con người.",
-        "github-self-host-ee": "Phiên bản doanh nghiệp tự lưu trữ GitHub (EE)",
-        "github-com-admin-requirement": "Bạn cần phải là quản trị viên của tổ chức GitHub đã chọn để định cấu hình tổ chức này. Nếu không, bạn cần yêu cầu quản trị viên tổ chức GitHub của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn tổ chức GitHub, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
+        "gitlab-self-host-admin-requirement": "Bạn phải là một quản trị viên của GitLab để có thể thực hiện điều này.",
+        "gitlab-com-admin-requirement": "Bạn phải là quản trị viên của các dự án hoặc nhóm.",
+        "github-self-host": "GitHub tự lưu trữ",
+        "github-com-admin-requirement": "TBạn phải là quản trị viên của tổ chức GitHub.",
         "bitbucket-admin-requirement": "Bạn cần phải là quản trị viên của không gian làm việc Bitbucket đã chọn để định cấu hình điều này. Nếu không, bạn cần yêu cầu quản trị viên không gian làm việc Bitbucket của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn không gian làm việc Bitbucket, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
         "azure-devops-service": "Dịch vụ Azure DevOps",
-        "azure-admin-requirement": "Bạn cần phải là quản trị viên của tổ chức Azure DevOps đã chọn để đặt cấu hình này. Nếu không, bạn cần yêu cầu quản trị viên không gian làm việc Bitbucket của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn tổ chức Azure DevOps, sau đó cung cấp cho bạn ID ứng dụng và Bí mật ứng dụng khách đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
-        "oauth-info-correct": "Thông tin OAuth đã được xác minh là chính xác",
-        "check-oauth-info-match": "Vui lòng đảm bảo Bí mật khớp với bí mật từ Ứng dụng phiên bản GitLab của bạn.",
+        "azure-admin-requirement": "TBạn phải là quản trị viên của tổ chức Azure DevOps.",
         "add-success": "Đã thêm thành công nhà cung cấp Git {vcs}",
         "choose": "Chọn nhà cung cấp Git",
         "basic-info": {
@@ -2081,38 +2072,15 @@
           "display-name": "Tên hiển thị",
           "display-name-label": "Tên hiển thị tùy chọn để giúp xác định giữa các cấu hình khác nhau bằng cách sử dụng cùng một nhà cung cấp Git."
         },
-        "oauth-info": {
+        "access-token": {
           "self": "Thông tin ứng dụng OAuth",
-          "gitlab-self-host-register-oauth-application": "Đăng ký Bytebase dưới dạng ứng dụng OAuth trên toàn phiên bản GitLab.",
-          "gitlab-self-host-login-as-admin": "Đăng nhập với tư cách người dùng Quản trị viên vào phiên bản GitLab. Tài khoản phải là Quản trị viên của toàn bộ phiên bản GitLab (tài khoản có biểu tượng cờ lê ở thanh trên cùng).",
-          "gitlab-self-host-visit-admin-page": "Đi tới trang Quản trị bằng cách nhấp vào biểu tượng cờ lê, sau đó điều hướng đến phần \"Ứng dụng\" và nhấp vào nút \"Ứng dụng mới\".",
-          "gitlab-com-register-oauth-application": "Đăng ký Bytebase làm ứng dụng OAuth của người dùng GitLab.",
-          "gitlab-com-login": "Đăng nhập bằng bất kỳ tài khoản nào bạn muốn Bytebase hoạt động. Thông thường tài khoản này tương ứng với người dùng dịch vụ chuyên dụng thay vì người dùng con người.",
-          "azure-devops-login": "Đăng nhập bằng bất kỳ tài khoản nào bạn muốn Bytebase hoạt động. Thông thường tài khoản này tương ứng với người dùng dịch vụ chuyên dụng thay vì người dùng con người.",
-          "gitlab-com-visit-application-page": "Chuyển đến trang Tùy chọn -> Ứng dụng. Bạn có thể tiếp cận nó thông qua ảnh hồ sơ của bạn ở góc trên bên phải.",
-          "azure-devops-visit-application-page": "Đi đến trang ứng dụng.",
-          "gitlab-paste-oauth-info": "Dán ID ứng dụng và Bí mật từ ứng dụng vừa tạo vào các trường bên dưới.",
-          "azure-paste-oauth-info": "Dán ID ứng dụng và Bí mật ứng dụng khách từ ứng dụng vừa tạo vào các trường bên dưới.",
-          "github-register-oauth-application": "Đăng ký Bytebase dưới dạng ứng dụng OAuth trên toàn tổ chức GitHub.",
-          "github-login-as-admin": "Đăng nhập với tư cách là người dùng quản trị viên tổ chức vào GitHub.com. Tài khoản phải là quản trị viên tổ chức của tổ chức GitHub (có thể truy cập trang Cài đặt của tổ chức).",
-          "github-visit-admin-page": "Đi tới trang Cài đặt, sau đó điều hướng đến phần \"Cài đặt dành cho nhà phát triển > Ứng dụng OAuth\" và nhấp vào nút \"Đăng ký ứng dụng\".",
-          "github-paste-oauth-info": "Dán ID khách hàng và Bí mật khách hàng từ ứng dụng vừa tạo vào các trường bên dưới.",
-          "github-enterprise-login-as-admin": "Đăng nhập với tư cách người dùng quản trị tổ chức vào trang GitHub Enterprise được lưu trữ của bạn. Tài khoản phải là quản trị viên tổ chức của tổ chức GitHub (có thể truy cập trang Cài đặt của tổ chức).",
-          "bitbucket-register-oauth-application": "Đăng ký Bytebase với tư cách là người tiêu dùng OAuth trên toàn không gian làm việc của Bitbucket.",
-          "azure-register-oauth-application": "Đăng ký Bytebase với tư cách là người tiêu dùng OAuth trên toàn tổ chức Azure DevOps.",
-          "bitbucket-login-as-admin": "Đăng nhập với tư cách người dùng quản trị không gian làm việc vào Bitbucket.org. Tài khoản phải là quản trị viên không gian làm việc của không gian làm việc Bitbucket (có thể truy cập trang Cài đặt không gian làm việc).",
-          "bitbucket-visit-admin-page": "Chuyển đến trang Cài đặt, sau đó điều hướng đến phần \"ỨNG DỤNG VÀ TÍNH NĂNG > Người tiêu dùng OAuth\" và nhấp vào nút \"Thêm người tiêu dùng\".",
-          "bitbucket-paste-oauth-info": "Dán Khóa và Bí mật từ người tiêu dùng vừa tạo vào các trường bên dưới.",
-          "copy-homepage-url": "Đã sao chép URL trang chủ vào khay nhớ tạm. Dán vào trường tương ứng trên mẫu đơn đăng ký OAuth.",
-          "copy-redirect-uri": "URI chuyển hướng được sao chép vào clipboard. Dán vào trường tương ứng trên mẫu đơn đăng ký OAuth.",
-          "direct-link": "Đương dân trực tiêp",
-          "create-oauth-app": "Tạo ứng dụng Bytebase OAuth của bạn với thông tin sau.",
-          "gitlab-application-id-error": "ID ứng dụng phải là chuỗi chữ và số gồm 64 ký tự",
-          "gitlab-secret-error": "Bí mật phải là chuỗi chữ và số gồm 64 ký tự",
-          "github-application-id-error": "ID ứng dụng phải là chuỗi gồm 20 ký tự chữ và số. Vui lòng đảm bảo rằng đó là Ứng dụng OAuth thay vì Ứng dụng GitHub.",
-          "github-secret-error": "Bí mật phải là chuỗi chữ và số gồm 40 ký tự",
-          "bitbucket-application-id-error": "ID ứng dụng phải là chuỗi chữ và số gồm 18 ký tự",
-          "bitbucket-secret-error": "Bí mật phải là chuỗi chữ và số gồm 32 ký tự"
+          "gitlab-project-access-token": "Tạo một mã thông báo truy cập dự án để quản lý một dự án duy nhất.",
+          "gitlab-group-access-token": "Tạo một mã truy cập nhóm để quản lý tất cả các dự án trong nhóm.",
+          "gitlab-personal-access-token": "Tạo một người dùng dịch vụ riêng và tạo một mã thông bảo cá nhân với vai trò người quản lý cho nhóm hoặc tất cả các dự án cần quản lý.",
+          "github-personal-access-token": "Tạo một người dùng dịch vụ riêng và tạo một mã thông báo truy cập cá nhân với vai trò thành viên cho tổ chức hoặc tất cả các dự án cần quản lý.",
+          "bitbucket-resource-access-token": "Tạo một mã truy cập cho các kho lưu trữ, dự án hoặc không gian làm việc để quản lý tài nguyên ở các cấp độ khác nhau.",
+          "bitbucket-personal-access-token": "Tạo một người dùng dịch vụ riêng và tạo một mã thông báo truy cập cá nhân với quyền đọc và ghi cho các tổ chức, dự án hoặc kho lưu trữ cần được quản lý.",
+          "azure-devops-personal-access-token": "Tạo một người dùng dịch vụ riêng và tạo một mã thông báo truy cập cá nhân với vai trò thành viên cho tổ chức hoặc tất cả các dự án cần quản lý."
         },
         "confirm": {
           "confirm-info": "Xác nhận thông tin",
@@ -2586,14 +2554,6 @@
       "bb-feature-custom-approval": {
         "title": "Phê duyệt tùy chỉnh",
         "desc": "Định cấu hình mức độ rủi ro và luồng phê duyệt cho các nhiệm vụ khác nhau."
-      },
-      "bb-feature-vcs-schema-write-back": {
-        "title": "Viết lại lược đồ",
-        "desc": "Sau khi thay đổi lược đồ thành công, việc ghi lại lược đồ cho phép Bytebase ghi lại ảnh chụp nhanh lược đồ đầy đủ mới nhất vào kho lưu trữ VCS của bạn."
-      },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "Đồng bộ hóa tập lệnh SQL từ VCS",
-        "desc": "Đồng bộ hóa các tập lệnh SQL được lưu trữ trong VCS sang Trang tính."
       },
       "bb-feature-vcs-sql-review": {
         "title": "Đánh giá SQL trong quy trình làm việc GitOps",

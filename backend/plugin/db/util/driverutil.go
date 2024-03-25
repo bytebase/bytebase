@@ -21,138 +21,43 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+var noneMasker = masker.NewNoneMasker()
+
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
 	return errors.Wrapf(err, "failed to execute query %q", query)
 }
 
-// QueryV2 is a copy of Query, but do not mask the data(use none masker).
-func QueryV2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, statement)
-	if err != nil {
-		return nil, FormatErrorWithQuery(err, statement)
-	}
-	defer rows.Close()
-
-	columnNames, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-
-	var fieldMasker []masker.Masker
-	noneMasker := masker.NewNoneMasker()
-	for range columnNames {
-		fieldMasker = append(fieldMasker, noneMasker)
-	}
-
-	columnTypes, err := rows.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
-
-	var columnTypeNames []string
-	for _, v := range columnTypes {
-		// DatabaseTypeName returns the database system name of the column type.
-		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
-		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
-	}
-
-	data, err := readRows(rows, columnTypeNames, fieldMasker)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return &v1pb.QueryResult{
-		ColumnNames:     columnNames,
-		ColumnTypeNames: columnTypeNames,
-		Rows:            data,
-	}, nil
-}
-
 // Query will execute a readonly / SELECT query.
 func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, statement)
-	if err != nil {
-		return nil, FormatErrorWithQuery(err, statement)
-	}
-	defer rows.Close()
-
-	columnNames, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-
 	// TODO(d): use a Redshift extraction for shared database.
 	if dbType == storepb.Engine_REDSHIFT && queryContext.ShareDB {
 		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
 	}
-	fieldList, err := base.ExtractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract sensitive fields: %q", statement)
-	}
-	if len(fieldList) != 0 && len(fieldList) != len(columnNames) {
-		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
-	}
 
-	var fieldMasker []masker.Masker
-	var fieldMaskInfo []bool
-	var fieldSensitiveInfo []bool
-	noneMasker := masker.NewNoneMasker()
-	for i := range columnNames {
-		var masker masker.Masker = noneMasker
-		if len(fieldList) > i && queryContext.EnableSensitive {
-			masker = fieldList[i].MaskingAttributes.Masker
-		}
-		sensitive := !masker.Equal(noneMasker)
-		fieldSensitiveInfo = append(fieldSensitiveInfo, sensitive)
-		fieldMasker = append(fieldMasker, masker)
-		fieldMaskInfo = append(fieldMaskInfo, sensitive && queryContext.EnableSensitive)
-	}
-
-	columnTypes, err := rows.ColumnTypes()
+	startTime := time.Now()
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
 	if err != nil {
 		return nil, err
 	}
+	defer tx.Rollback()
 
-	var columnTypeNames []string
-	for _, v := range columnTypes {
-		// DatabaseTypeName returns the database system name of the column type.
-		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
-		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
-	}
-
-	data, err := readRows(rows, columnTypeNames, fieldMasker)
+	rows, err := tx.QueryContext(ctx, statement)
 	if err != nil {
-		return nil, err
+		return nil, FormatErrorWithQuery(err, statement)
 	}
+	defer rows.Close()
 
-	if err := rows.Err(); err != nil {
-		return nil, err
+	result, err := rowsToQueryResult(rows)
+	if err != nil {
+		// nolint
+		return &v1pb.QueryResult{
+			Error: err.Error(),
+		}, nil
 	}
-
-	return &v1pb.QueryResult{
-		ColumnNames:     columnNames,
-		ColumnTypeNames: columnTypeNames,
-		Rows:            data,
-		Masked:          fieldMaskInfo,
-		Sensitive:       fieldSensitiveInfo,
-	}, nil
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
+	return result, nil
 }
 
 // RunStatement runs a SQL statement in a given connection.
@@ -240,16 +145,13 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	}
 
 	var columnTypeNames []string
-	var maskers []masker.Masker
 	for _, v := range columnTypes {
 		// DatabaseTypeName returns the database system name of the column type.
 		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
-		// We use none masker for admin query.
-		maskers = append(maskers, masker.NewNoneMasker())
 	}
 
-	data, err := readRows(rows, columnTypeNames, maskers)
+	data, err := readRows(rows, columnTypeNames)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +167,7 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	}, nil
 }
 
-func readRows(rows *sql.Rows, columnTypeNames []string, fieldMasker []masker.Masker) ([]*v1pb.QueryRow, error) {
+func readRows(rows *sql.Rows, columnTypeNames []string) ([]*v1pb.QueryRow, error) {
 	var data []*v1pb.QueryRow
 	if len(columnTypeNames) == 0 {
 		// No rows.
@@ -301,7 +203,7 @@ func readRows(rows *sql.Rows, columnTypeNames []string, fieldMasker []masker.Mas
 
 		var rowData v1pb.QueryRow
 		for i := range columnTypeNames {
-			rowData.Values = append(rowData.Values, fieldMasker[i].Mask(&masker.MaskData{
+			rowData.Values = append(rowData.Values, noneMasker.Mask(&masker.MaskData{
 				Data:      scanArgs[i],
 				WantBytes: wantBytesValue[i],
 			}))

@@ -431,3 +431,27 @@ func generateEtag(body []byte) string {
 	etag := fmt.Sprintf("%x", hash)
 	return etag
 }
+
+func convertExportFormat(format storepb.ExportFormat) v1pb.ExportFormat {
+	switch format {
+	case storepb.ExportFormat_CSV:
+		return v1pb.ExportFormat_CSV
+	case storepb.ExportFormat_JSON:
+		return v1pb.ExportFormat_JSON
+	case storepb.ExportFormat_SQL:
+		return v1pb.ExportFormat_SQL
+	}
+	return v1pb.ExportFormat_FORMAT_UNSPECIFIED
+}
+
+func convertToExportFormat(format v1pb.ExportFormat) storepb.ExportFormat {
+	switch format {
+	case v1pb.ExportFormat_CSV:
+		return storepb.ExportFormat_CSV
+	case v1pb.ExportFormat_JSON:
+		return storepb.ExportFormat_JSON
+	case v1pb.ExportFormat_SQL:
+		return storepb.ExportFormat_SQL
+	}
+	return storepb.ExportFormat_FORMAT_UNSPECIFIED
+}

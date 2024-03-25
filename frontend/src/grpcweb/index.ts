@@ -13,7 +13,6 @@ import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_service";
-import { ExternalVersionControlServiceDefinition } from "@/types/proto/v1/externalvs_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
 import { InstanceRoleServiceDefinition } from "@/types/proto/v1/instance_role_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
@@ -28,6 +27,7 @@ import { SettingServiceDefinition } from "@/types/proto/v1/setting_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
 import { SubscriptionServiceDefinition } from "@/types/proto/v1/subscription_service";
+import { VCSProviderServiceDefinition } from "@/types/proto/v1/vcs_provider_service";
 import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
 import {
   authInterceptorMiddleware,
@@ -163,8 +163,8 @@ export const actuatorServiceClient = clientFactory.create(
   channel
 );
 
-export const externalVersionControlServiceClient = clientFactory.create(
-  ExternalVersionControlServiceDefinition,
+export const vcsProviderServiceClient = clientFactory.create(
+  VCSProviderServiceDefinition,
   channel
 );
 

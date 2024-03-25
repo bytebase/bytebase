@@ -73,5 +73,4 @@ export const TaskTypeListWithStatement: Task_Type[] = [
 
 export const TaskTypeListWithProgress: Task_Type[] = [
   Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
-  Task_Type.DATABASE_RESTORE_RESTORE,
 ];

@@ -466,8 +466,8 @@
       "description": "为了获得最佳性能和数据完整性，请避免在同一个脚本中混合使用 DDL 和 DML 语句。"
     },
     "statement-prior-backup-check": {
-      "title": "在数据更改前检查先前的备份",
-    "description": "此规则将检查是否可以在数据更改前创建备份。更多详细信息，包含备份目标数据库存在并禁止DDL语句。"
+      "title": "检查能否预前备份数据",
+      "description": "此规则将检查是否可以在数据更改前创建备份。该规则要求备份目标数据库存在且不存在DDL语句。"
     },
     "schema-backward-compatibility": {
       "title": "检查应用向后兼容性",

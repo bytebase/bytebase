@@ -70,8 +70,8 @@ import { reactive, watch } from "vue";
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useRepositoryV1Store, useVCSV1Store } from "@/store";
-import { ExternalVersionControl } from "@/types/proto/v1/externalvs_service";
 import { Project, Workflow } from "@/types/proto/v1/project_service";
+import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 
 interface LocalState {
   workflowType: Workflow;
@@ -144,7 +144,7 @@ const repository = computed(() => {
 const vcs = computed(() => {
   return (
     vcsV1Store.getVCSByUid(repository.value?.vcsUid ?? "") ??
-    ({} as ExternalVersionControl)
+    ({} as VCSProvider)
   );
 });
 

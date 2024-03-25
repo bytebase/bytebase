@@ -3,7 +3,6 @@ export * from "./actuator";
 export * from "./anomaly";
 export * from "./auditLog";
 export * from "./auth";
-export * from "./backup";
 export * from "./common";
 export * from "./const";
 export * from "./database";

@@ -1,4 +1,4 @@
-import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
+import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { VCSId } from "./id";
 
 // Backend uses the same ENUM for GitLab/GitHub SaaS and self-hosted. Because they are based on the
@@ -15,12 +15,11 @@ export type VCSUIType =
   | "AZURE_DEVOPS";
 
 export interface VCSConfig {
-  type: ExternalVersionControl_Type;
+  type: VCSProvider_Type;
   uiType: VCSUIType;
   name: string;
   instanceUrl: string;
-  applicationId: string;
-  secret: string;
+  accessToken: string;
 }
 
 export type VCS = {
@@ -32,8 +31,7 @@ export type VCS = {
   uiType: VCSUIType;
   instanceUrl: string;
   apiUrl: string;
-  applicationId: string;
-  secret: string;
+  accessToken: string;
 };
 
 export type VCSFileCommit = {
@@ -68,20 +66,3 @@ export type VCSPushEvent = {
   fileCommit: VCSFileCommit;
   commits: VCSCommit[];
 };
-
-export function isValidVCSApplicationIdOrSecret(
-  vcsType: ExternalVersionControl_Type,
-  str: string
-): boolean {
-  if (vcsType == ExternalVersionControl_Type.GITLAB) {
-    return /^(.{1,}-){0,1}[a-zA-Z0-9_]{64}$/.test(str);
-  } else if (vcsType == ExternalVersionControl_Type.GITHUB) {
-    return /^[a-zA-Z0-9_]{20}$|^[a-zA-Z0-9_]{40}$/.test(str);
-  } else if (vcsType == ExternalVersionControl_Type.BITBUCKET) {
-    return /^[a-zA-Z0-9_]{18}$|^[a-zA-Z0-9_]{32}$/.test(str);
-  } else if (vcsType == ExternalVersionControl_Type.AZURE_DEVOPS) {
-    // TODO: Azure App id is uuid but the secret is random string. We may need to distinguish them.
-    return /^[a-zA-Z0-9-_.]{1,}$/.test(str);
-  }
-  return false;
-}

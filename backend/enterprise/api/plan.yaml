@@ -203,7 +203,6 @@ planList:
       - sql-check-anomaly-detection
       - backup-policy
       - online-schema-migration
-      - pitr
   - type: 2
     title: enterprise
     trialDays: 14

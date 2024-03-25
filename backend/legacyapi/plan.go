@@ -129,17 +129,11 @@ const (
 
 	// VCS Integration.
 
-	// FeatureVCSSchemaWriteBack allows user to enable the latest schema write-back in VCS workflow.
-	FeatureVCSSchemaWriteBack FeatureType = "bb.feature.vcs-schema-write-back"
-	// FeatureVCSSheetSync allows to sync sheets from the VCS in VCS workflow.
-	FeatureVCSSheetSync FeatureType = "bb.feature.vcs-sheet-sync"
 	// FeatureVCSSQLReviewWorkflow allows user to enable the SQL review CI in VCS workflow.
 	FeatureVCSSQLReviewWorkflow FeatureType = "bb.feature.vcs-sql-review"
 
 	// Database management.
 
-	// FeaturePITR allows user to perform point-in-time recovery for databases.
-	FeaturePITR FeatureType = "bb.feature.pitr"
 	// FeatureReadReplicaConnection allows user to set a read replica connection
 	// including host and port to data source.
 	FeatureReadReplicaConnection FeatureType = "bb.feature.read-replica-connection"
@@ -159,11 +153,6 @@ const (
 	// e.g. One can configure to NOT require approval for dev environment while require
 	//      manual approval for production.
 	FeatureApprovalPolicy FeatureType = "bb.feature.approval-policy"
-	// FeatureBackupPolicy allows user to specify backup policy for the environment
-	//
-	// e.g. One can configure to NOT require backup for dev environment while require
-	//      weekly backup for staging and daily backup for production.
-	FeatureBackupPolicy FeatureType = "bb.feature.backup-policy"
 	// FeatureEnvironmentTierPolicy allows user to set the tier of an environment.
 	//
 	// e.g. set the tier to "PROTECTED" for the production environment.
@@ -249,15 +238,9 @@ func (e FeatureType) Name() string {
 	case FeatureSchemaTemplate:
 		return "Schema template"
 	// VCS Integration
-	case FeatureVCSSchemaWriteBack:
-		return "Schema write-back"
-	case FeatureVCSSheetSync:
-		return "Sync sheets from VCS"
 	case FeatureVCSSQLReviewWorkflow:
 		return "VCS SQL review workflow"
 	// Database management
-	case FeaturePITR:
-		return "Point-in-time Recovery"
 	case FeatureReadReplicaConnection:
 		return "Read replica connection"
 	case FeatureInstanceSSHConnection:
@@ -271,8 +254,6 @@ func (e FeatureType) Name() string {
 	// Policy Control
 	case FeatureApprovalPolicy:
 		return "Approval policy"
-	case FeatureBackupPolicy:
-		return "Backup policy"
 	case FeatureEnvironmentTierPolicy:
 		return "Environment tier"
 	case FeatureSensitiveData:
@@ -341,11 +322,8 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureDatabaseGrouping: {false, false, true},
 	FeatureSchemaTemplate:   {false, false, true},
 	// VCS Integration
-	FeatureVCSSchemaWriteBack:   {false, true, true},
-	FeatureVCSSheetSync:         {false, true, true},
 	FeatureVCSSQLReviewWorkflow: {true, true, true},
 	// Database management
-	FeaturePITR:                       {false, true, true},
 	FeatureReadReplicaConnection:      {false, false, true},
 	FeatureInstanceSSHConnection:      {false, false, true},
 	FeatureCustomInstanceScanInterval: {false, false, true},
@@ -353,7 +331,6 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureIndexAdvisor:               {false, false, true},
 	// Policy Control
 	FeatureApprovalPolicy:        {false, true, true},
-	FeatureBackupPolicy:          {false, true, true},
 	FeatureEnvironmentTierPolicy: {false, false, true},
 	FeatureSensitiveData:         {false, false, true},
 	FeatureAccessControl:         {false, false, true},
@@ -377,11 +354,9 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	FeatureTaskScheduleTime: true,
 	FeatureOnlineMigration:  true,
 	// VCS Integration
-	FeatureVCSSchemaWriteBack:   true,
 	FeatureVCSSQLReviewWorkflow: true,
 	FeatureMybatisSQLReview:     true,
 	// Database management
-	FeaturePITR:                       true,
 	FeatureReadReplicaConnection:      true,
 	FeatureInstanceSSHConnection:      true,
 	FeatureCustomInstanceScanInterval: true,

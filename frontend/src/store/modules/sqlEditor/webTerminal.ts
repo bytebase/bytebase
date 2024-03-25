@@ -9,7 +9,6 @@ import {
   SQLResultSetV1,
   StreamingQueryController,
   SQLEditorTab,
-  UNKNOWN_ID,
   WebTerminalQueryItemV1,
   WebTerminalQueryState,
   SQLEditorQueryParams,
@@ -24,7 +23,7 @@ import {
   extractGrpcErrorMessage,
   getErrorCode as extractGrpcStatusCode,
 } from "@/utils/grpcweb";
-import { useDatabaseV1Store, useInstanceV1Store } from "../v1";
+import { useDatabaseV1Store } from "../v1";
 
 const ENDPOINT = "/v1:adminExecute";
 const SIG_ABORT = 3000 + Status.ABORTED;
@@ -295,12 +294,9 @@ const mapRequest = (
 ): AdminExecuteRequest => {
   const { connection, statement, explain } = params;
 
-  const instance = useInstanceV1Store().getInstanceByName(connection.instance);
   const database = useDatabaseV1Store().getDatabaseByName(connection.database);
   const request = AdminExecuteRequest.fromJSON({
-    name: instance.name,
-    connectionDatabase:
-      database.uid === String(UNKNOWN_ID) ? "" : database.databaseName,
+    name: database.name,
     statement: explain ? `EXPLAIN ${statement}` : statement,
   });
   return request;

@@ -58,7 +58,7 @@ type columnNoNullChecker struct {
 	catalog    *catalog.Finder
 }
 
-func (checker columnNoNullChecker) generateAdvice() []advisor.Advice {
+func (checker *columnNoNullChecker) generateAdvice() []advisor.Advice {
 	var columnList []columnName
 	for _, column := range checker.columnSet {
 		columnList = append(columnList, column)

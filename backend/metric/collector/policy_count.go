@@ -54,15 +54,7 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 			rowStatus = api.Archived
 		}
 
-		switch policy.Type {
-		case api.PolicyTypeBackupPlan:
-			payload, err := api.UnmarshalBackupPlanPolicy(policy.Payload)
-			if err != nil {
-				continue
-			}
-			value = string(payload.Schedule)
-			key = fmt.Sprintf("%s_%s_%s_%s", policy.Type, environment.Title, value, rowStatus)
-		case api.PolicyTypeSQLReview:
+		if policy.Type == api.PolicyTypeSQLReview {
 			key = fmt.Sprintf("%s_%s_%s", policy.Type, environment.Title, rowStatus)
 			// SQL review policy don't need to set the value.
 			value = ""

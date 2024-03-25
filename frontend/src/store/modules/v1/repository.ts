@@ -1,12 +1,9 @@
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import {
-  projectServiceClient,
-  externalVersionControlServiceClient,
-} from "@/grpcweb";
+import { projectServiceClient, vcsProviderServiceClient } from "@/grpcweb";
 import { ComposedRepository } from "@/types";
-import { ProjectGitOpsInfo } from "@/types/proto/v1/externalvs_service";
+import { ProjectGitOpsInfo } from "@/types/proto/v1/vcs_provider_service";
 import { getProjectPathFromRepoName } from "./common";
 import { useProjectV1Store } from "./project";
 
@@ -83,20 +80,12 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
     repositoryMapByProject.delete(project);
   };
 
-  const setupSQLReviewCI = async (project: string): Promise<string> => {
-    const resp = await projectServiceClient.setupProjectSQLReviewCI({
-      name: project + "/gitOpsInfo",
-    });
-    return resp.pullRequestUrl;
-  };
-
   const fetchRepositoryListByVCS = async (
     vcsName: string
   ): Promise<ProjectGitOpsInfo[]> => {
-    const resp =
-      await externalVersionControlServiceClient.listProjectGitOpsInfo({
-        name: vcsName,
-      });
+    const resp = await vcsProviderServiceClient.listProjectGitOpsInfo({
+      name: vcsName,
+    });
 
     const projectV1Store = useProjectV1Store();
     const repoList: ComposedRepository[] = await Promise.all(
@@ -120,7 +109,6 @@ export const useRepositoryV1Store = defineStore("repository_v1", () => {
   };
 
   return {
-    setupSQLReviewCI,
     upsertRepository,
     deleteRepository,
     getRepositoryByProject,
@@ -162,18 +150,6 @@ const getUpdateMaskForRepository = (
     !isEqual(origin.schemaPathTemplate, update.schemaPathTemplate)
   ) {
     updateMask.push("schema_path_template");
-  }
-  if (
-    !isUndefined(update.sheetPathTemplate) &&
-    !isEqual(origin.sheetPathTemplate, update.sheetPathTemplate)
-  ) {
-    updateMask.push("sheet_path_template");
-  }
-  if (
-    !isUndefined(update.enableSqlReviewCi) &&
-    !isEqual(origin.enableSqlReviewCi, update.enableSqlReviewCi)
-  ) {
-    updateMask.push("enable_sql_review_ci");
   }
   return updateMask;
 };

@@ -26,8 +26,6 @@ export type DatabaseDetailContext = {
   allowTransferDatabase: Ref<boolean>;
   allowListBackup: Ref<boolean>;
   allowCreateBackup: Ref<boolean>;
-  allowGetBackupSetting: Ref<boolean>;
-  allowUpdateBackupSetting: Ref<boolean>;
   allowGetSchema: Ref<boolean>;
   allowChangeData: Ref<boolean>;
   allowAlterSchema: Ref<boolean>;
@@ -90,16 +88,6 @@ export const provideDatabaseDetailContext = (
       checkPermission("bb.backups.create") &&
       instanceV1HasBackupRestore(database.value.instanceEntity)
   );
-  const allowGetBackupSetting = computed(
-    () =>
-      checkPermission("bb.databases.getBackupSetting") &&
-      instanceV1HasBackupRestore(database.value.instanceEntity)
-  );
-  const allowUpdateBackupSetting = computed(
-    () =>
-      checkPermission("bb.databases.updateBackupSetting") &&
-      instanceV1HasBackupRestore(database.value.instanceEntity)
-  );
 
   const allowGetSchema = computed(() =>
     checkPermission("bb.databases.getSchema")
@@ -146,8 +134,6 @@ export const provideDatabaseDetailContext = (
     allowTransferDatabase,
     allowListBackup,
     allowCreateBackup,
-    allowGetBackupSetting,
-    allowUpdateBackupSetting,
     allowGetSchema,
     allowChangeData,
     allowAlterSchema,

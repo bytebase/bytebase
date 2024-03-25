@@ -289,12 +289,13 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 			return err
 		}
 		create := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: issue.UID,
-			Type:         api.ActivityIssueCommentCreate,
-			Level:        api.ActivityInfo,
-			Comment:      "",
-			Payload:      string(activityPayload),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      issue.UID,
+			Type:              api.ActivityIssueCommentCreate,
+			Level:             api.ActivityInfo,
+			Comment:           "",
+			Payload:           string(activityPayload),
 		}
 		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 			return err
@@ -333,12 +334,13 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 		}
 
 		create := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: issue.UID,
-			Type:         api.ActivityIssueApprovalNotify,
-			Level:        api.ActivityInfo,
-			Comment:      "",
-			Payload:      string(activityPayload),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      issue.UID,
+			Type:              api.ActivityIssueApprovalNotify,
+			Level:             api.ActivityInfo,
+			Comment:           "",
+			Payload:           string(activityPayload),
 		}
 		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 			return err
@@ -435,12 +437,13 @@ func (r *Runner) RejectExternalApprovalNode(ctx context.Context, issueUID int) e
 			return err
 		}
 		create := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: issue.UID,
-			Type:         api.ActivityIssueCommentCreate,
-			Level:        api.ActivityInfo,
-			Comment:      "",
-			Payload:      string(activityPayload),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      issue.UID,
+			Type:              api.ActivityIssueCommentCreate,
+			Level:             api.ActivityInfo,
+			Comment:           "",
+			Payload:           string(activityPayload),
 		}
 		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{}); err != nil {
 			return err

@@ -13,6 +13,11 @@ func TestPLSQLParser(t *testing.T) {
 		errorMessage string
 	}{
 		{
+			statement: `
+			SELECT q'\This is String\' FROM DUAL;
+			`,
+		},
+		{
 			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
 		},
 		{

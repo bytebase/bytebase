@@ -47,3 +47,11 @@ enum MaskingLevel {
   PARTIAL = 2;
   FULL = 3;
 }
+
+enum ExportFormat {
+  FORMAT_UNSPECIFIED = 0;
+  CSV = 1;
+  JSON = 2;
+  SQL = 3;
+  XLSX = 4;
+}

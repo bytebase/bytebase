@@ -1790,13 +1790,7 @@
     "file-path-template-description": "Bytebase only observes the file path name matching the template pattern relative to the base directory.",
     "file-path-example-schema-migration": "File path example for schema migration type",
     "file-path-example-data-migration": "File path example for data migration type",
-    "schema-path-template": "Schema path template",
-    "schema-writeback-description": "When specified, after each migration, Bytebase will write the latest schema to the schema path relative to the base directory in the same branch as the original commit triggering the migration. Leave empty if you don't want Bytebase to do this.",
-    "schema-writeback-protected-branch": "Make sure the changed branch is not protected or allow repository maintainer to push to that protected branch.",
     "if-specified": "If specified",
-    "schema-path-example": "Schema path example",
-    "sheet-path-template": "Sheet path template",
-    "sheet-path-template-description": "Bytebase only observes files with pathnames matching the template pattern relative to the base directory. The matched files will be synchronized to the SQL Editor for usage there.",
     "sql-review-ci": "SQL Review CI",
     "sql-review-ci-enable": "Enable SQL Review CI",
     "sql-review-ci-enable-gitlab": "Enable SQL Review CI via GitLab CI",
@@ -2053,21 +2047,18 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase supports GitOps workflow where database migration scripts are stored in the version control system (VCS), and newly created migration scripts will automatically trigger the corresponding database change. Bytebase admins manage all the applicable VCSs here, so that project owners can link the projects with their Git repositories from these VCSs.",
-      "description-highlight": "If you want to enable third party login via your configured VCSs, please configure it in SSO.",
+      "description": "In Bytebase's GitOps workflow, developers store migration scripts in VCS. Pull requests prompt SQL reviews, and merged ones initiate migration plans. Administrators configure VCS providers, while project owners establish VCS connections within projects.",
       "add-git-provider": {
         "self": "Add a Git provider",
         "description": "Before any project can enable GitOps workflow, Bytebase first needs to integrate with the corresponding version control system (VCS) by registering as an OAuth application in that VCS. Below are the steps to configure this, you can also follow our {guide}.",
         "gitlab-self-host": "GitLab Self-Hosted",
-        "gitlab-self-host-admin-requirement": "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a GitLab instance-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
-        "gitlab-com-admin-requirement": "Your account needs to have Admin access to any of the repositories to be linked. Usually this account corresponds to a dedicated service user instead of a human user.",
-        "github-self-host-ee": "GitHub Self-Hosted Enterprise Edition (EE)",
-        "github-com-admin-requirement": "You need to be an admin of your chosen GitHub organization to configure this. Otherwise, you need to ask your GitHub organization admin to register Bytebase as a GitHub organization-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
-        "bitbucket-admin-requirement": "You need to be an admin of your chosen Bitbucket workspace to configure this. Otherwise, you need to ask your Bitbucket workspace admin to register Bytebase as a Bitbucket workspace-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
+        "gitlab-self-host-admin-requirement": "You must be the administrator of the GitLab instance.",
+        "gitlab-com-admin-requirement": "You must be the administrator of the projects or groups.",
+        "github-self-host": "GitHub Self-Hosted",
+        "github-com-admin-requirement": "You must be the administrator of the GitHub organization.",
+        "bitbucket-admin-requirement": "You must be the administrator of the Bitbucket workspace.",
         "azure-devops-service": "Azure DevOps Service",
-        "azure-admin-requirement": "You need to be an admin of your chosen Azure DevOps organization to configure this. Otherwise, you need to ask your Bitbucket workspace admin to register Bytebase as a Azure DevOps organization-wide OAuth application, then provide you that Application ID and Client Secret to fill at the 'OAuth application info' step.",
-        "oauth-info-correct": "Verified OAuth info is correct",
-        "check-oauth-info-match": "Please make sure Secret matches the one from your GitLab instance Application.",
+        "azure-admin-requirement": "You must be the administrator of the Azure DevOps organization.",
         "add-success": "Successfully added Git provider {vcs}",
         "choose": "Choose Git provider",
         "basic-info": {
@@ -2081,38 +2072,15 @@
           "display-name": "Display name",
           "display-name-label": "An optional display name to help identifying among different configs using the same Git provider."
         },
-        "oauth-info": {
+        "access-token": {
           "self": "OAuth application info",
-          "gitlab-self-host-register-oauth-application": "Register Bytebase as a GitLab instance-wide OAuth application.",
-          "gitlab-self-host-login-as-admin": "Log in as an Admin user to the GitLab instance. The account must be an Admin of the entire GitLab instance (it has a wrench icon on the top bar).",
-          "gitlab-self-host-visit-admin-page": "Go to the Admin page by clicking the wrench icon, then navigate to \"Applications\" section and click \"New application\" button.",
-          "gitlab-com-register-oauth-application": "Register Bytebase as a GitLab user OAuth application.",
-          "gitlab-com-login": "Log in as whichever account you want Bytebase to act as. Usually this account corresponds to a dedicated service user instead of a human user.",
-          "azure-devops-login": "Log in as whichever account you want Bytebase to act as. Usually this account corresponds to a dedicated service user instead of a human user.",
-          "gitlab-com-visit-application-page": "Go to Preferences -> Applications page. You can reach it through your profile picture on the top right corner.",
-          "azure-devops-visit-application-page": "Go to the applications page.",
-          "gitlab-paste-oauth-info": "Paste the Application ID and Secret from that just created application into fields below.",
-          "azure-paste-oauth-info": "Paste the Application ID and Client Secret from that just created application into fields below.",
-          "github-register-oauth-application": "Register Bytebase as a GitHub organization-wide OAuth application.",
-          "github-login-as-admin": "Log in as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
-          "github-visit-admin-page": "Go to the Settings page, then navigate to \"Developer settings > OAuth Apps\" section and click \"Register an application\" button.",
-          "github-paste-oauth-info": "Paste the Client ID and Client secret from that just created application into fields below.",
-          "github-enterprise-login-as-admin": "Log in as an organization admin user to your hosted GitHub Enterprise site. The account must be an organization admin of the GitHub organization (able to access the organization Settings page).",
-          "bitbucket-register-oauth-application": "Register Bytebase as a Bitbucket workspace-wide OAuth consumer.",
-          "azure-register-oauth-application": "Register Bytebase as a Azure DevOps organization-wide OAuth consumer.",
-          "bitbucket-login-as-admin": "Log in as an workspace admin user to the Bitbucket.org. The account must be an workspace admin of the Bitbucket workspace (able to access the workspace Settings page).",
-          "bitbucket-visit-admin-page": "Go to the Settings page, then navigate to \"APPS AND FEATURES > OAuth consumers\" section and click \"Add a consumer\" button.",
-          "bitbucket-paste-oauth-info": "Paste the Key and Secret from that just created consumer into fields below.",
-          "copy-homepage-url": "Homepage URL copied to clipboard. Paste to the corresponding field on the OAuth application form.",
-          "copy-redirect-uri": "Redirect URI copied to clipboard. Paste to the corresponding field on the OAuth application form.",
-          "direct-link": "Direct link",
-          "create-oauth-app": "Create your Bytebase OAuth application with the following info.",
-          "gitlab-application-id-error": "Application ID must be a 64-character alphanumeric string",
-          "gitlab-secret-error": "Secret must be a 64-character alphanumeric string",
-          "github-application-id-error": "Application ID must be a 20-character alphanumeric string. Please make sure it is a OAuth App instead of a GitHub App.",
-          "github-secret-error": "Secret must be a 40-character alphanumeric string",
-          "bitbucket-application-id-error": "Application ID must be a 18-character alphanumeric string",
-          "bitbucket-secret-error": "Secret must be a 32-character alphanumeric string"
+          "gitlab-project-access-token": "Generate a project access token for managing a single project.",
+          "gitlab-group-access-token": "Generate a group access token to manage all projects within the group.",
+          "gitlab-personal-access-token": "Create a dedicated service user and generate a personal access token with the maintainer role for the group or all projects to be managed.",
+          "github-personal-access-token": "Create a dedicated service user and generate a personal access token with the member role for the organization or all projects to be managed.",
+          "bitbucket-resource-access-token": "Generate an access token for repositories, projects, or workspaces to manage resources at different levels.",
+          "bitbucket-personal-access-token": "Create a dedicated service user and generate a personal access token with read and write permissions for the organizations, projects, or repositories to be managed.",
+          "azure-devops-personal-access-token": "Create a dedicated service user and generate a personal access token with the member role for the organization or all projects to be managed."
         },
         "confirm": {
           "confirm-info": "Confirm the info",
@@ -2586,14 +2554,6 @@
       "bb-feature-custom-approval": {
         "title": "Custom approval",
         "desc": "Configure risk level and approval flow for different tasks."
-      },
-      "bb-feature-vcs-schema-write-back": {
-        "title": "Schema write-back",
-        "desc": "After a successful schema change, schema write-back enables Bytebase to write back the latest full schema snapshot to your VCS repository."
-      },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "Synchronize SQL scripts from VCS",
-        "desc": "Synchronize SQL scripts stored in VCS to Sheet."
       },
       "bb-feature-vcs-sql-review": {
         "title": "SQL Review in GitOps workflow",

@@ -40,18 +40,17 @@ export default { name: "RepositorySelectionPanel" };
 </script>
 
 <script setup lang="ts">
-import { reactive, computed, onMounted, nextTick } from "vue";
+import { reactive, computed, onMounted } from "vue";
 import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "@/types";
 import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
 import {
-  OAuthToken,
-  ExternalVersionControl_Type,
-  SearchExternalVersionControlProjectsResponse_Project,
-} from "@/types/proto/v1/externalvs_service";
+  VCSProvider_Type,
+  SearchVCSProviderProjectsResponse_Project,
+} from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
-  repositoryList: SearchExternalVersionControlProjectsResponse_Project[];
+  repositoryList: SearchVCSProviderProjectsResponse_Project[];
   searchText: string;
 }
 
@@ -59,7 +58,6 @@ const props = defineProps<{ config: ProjectRepositoryConfig }>();
 
 const emit = defineEmits<{
   (event: "next"): void;
-  (event: "set-token", payload: OAuthToken): void;
   (event: "set-repository", payload: ExternalRepositoryInfo): void;
 }>();
 
@@ -75,24 +73,14 @@ onMounted(() => {
 });
 
 const prepareRepositoryList = () => {
-  vcsV1Store
-    .exchangeToken({
-      vcsName: props.config.vcs.name,
-      code: props.config.code,
-    })
-    .then((token: OAuthToken) => {
-      emit("set-token", token);
-      nextTick(() => {
-        refreshRepositoryList();
-      });
-    });
+  refreshRepositoryList();
 };
 
 const refreshRepositoryList = async () => {
   if (
     !hasWorkspacePermissionV2(
       currentUser.value,
-      "bb.externalVersionControls.searchProjects"
+      "bb.vcsProviders.searchProjects"
     )
   ) {
     pushNotification({
@@ -104,9 +92,7 @@ const refreshRepositoryList = async () => {
   }
 
   const projects = await vcsV1Store.listVCSExternalProjects(
-    props.config.vcs.name,
-    props.config.token.accessToken,
-    props.config.token.refreshToken
+    props.config.vcs.name
   );
   state.repositoryList = projects;
 };
@@ -116,29 +102,27 @@ const repositoryList = computed(() => {
     return state.repositoryList;
   }
   return state.repositoryList.filter(
-    (repository: SearchExternalVersionControlProjectsResponse_Project) => {
+    (repository: SearchVCSProviderProjectsResponse_Project) => {
       return repository.fullpath.toLowerCase().includes(state.searchText);
     }
   );
 });
 
 const attentionText = computed((): string => {
-  if (props.config.vcs.type === ExternalVersionControl_Type.GITLAB) {
+  if (props.config.vcs.type === VCSProvider_Type.GITLAB) {
     return "repository.select-repository-attention-gitlab";
-  } else if (props.config.vcs.type === ExternalVersionControl_Type.GITHUB) {
+  } else if (props.config.vcs.type === VCSProvider_Type.GITHUB) {
     return "repository.select-repository-attention-github";
-  } else if (props.config.vcs.type === ExternalVersionControl_Type.BITBUCKET) {
+  } else if (props.config.vcs.type === VCSProvider_Type.BITBUCKET) {
     return "repository.select-repository-attention-bitbucket";
-  } else if (
-    props.config.vcs.type === ExternalVersionControl_Type.AZURE_DEVOPS
-  ) {
+  } else if (props.config.vcs.type === VCSProvider_Type.AZURE_DEVOPS) {
     return "repository.select-repository-attention-azure-devops";
   }
   return "";
 });
 
 const selectRepository = (
-  repository: SearchExternalVersionControlProjectsResponse_Project
+  repository: SearchVCSProviderProjectsResponse_Project
 ) => {
   emit("set-repository", {
     externalId: repository.id,

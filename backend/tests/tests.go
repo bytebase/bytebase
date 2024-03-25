@@ -170,7 +170,7 @@ type controller struct {
 	instanceServiceClient     v1pb.InstanceServiceClient
 	databaseServiceClient     v1pb.DatabaseServiceClient
 	sheetServiceClient        v1pb.SheetServiceClient
-	evcsClient                v1pb.ExternalVersionControlServiceClient
+	evcsClient                v1pb.VCSProviderServiceClient
 	sqlServiceClient          v1pb.SQLServiceClient
 	subscriptionServiceClient v1pb.SubscriptionServiceClient
 	actuatorServiceClient     v1pb.ActuatorServiceClient
@@ -429,7 +429,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.instanceServiceClient = v1pb.NewInstanceServiceClient(ctl.grpcConn)
 	ctl.databaseServiceClient = v1pb.NewDatabaseServiceClient(ctl.grpcConn)
 	ctl.sheetServiceClient = v1pb.NewSheetServiceClient(ctl.grpcConn)
-	ctl.evcsClient = v1pb.NewExternalVersionControlServiceClient(ctl.grpcConn)
+	ctl.evcsClient = v1pb.NewVCSProviderServiceClient(ctl.grpcConn)
 	ctl.sqlServiceClient = v1pb.NewSQLServiceClient(ctl.grpcConn)
 	ctl.subscriptionServiceClient = v1pb.NewSubscriptionServiceClient(ctl.grpcConn)
 	ctl.actuatorServiceClient = v1pb.NewActuatorServiceClient(ctl.grpcConn)

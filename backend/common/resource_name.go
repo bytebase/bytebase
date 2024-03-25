@@ -11,41 +11,41 @@ import (
 
 // nolint:revive
 const (
-	ProjectNamePrefix            = "projects/"
-	EnvironmentNamePrefix        = "environments/"
-	InstanceNamePrefix           = "instances/"
-	PolicyNamePrefix             = "policies/"
-	DatabaseIDPrefix             = "databases/"
-	InstanceRolePrefix           = "roles/"
-	UserNamePrefix               = "users/"
-	IdentityProviderNamePrefix   = "idps/"
-	SettingNamePrefix            = "settings/"
-	BackupPrefix                 = "backups/"
-	ExternalVersionControlPrefix = "externalVersionControls/"
-	RiskPrefix                   = "risks/"
-	IssuePrefix                  = "issues/"
-	RolloutPrefix                = "rollouts/"
-	StagePrefix                  = "stages/"
-	TaskPrefix                   = "tasks/"
-	TaskRunPrefix                = "taskRuns/"
-	PlanPrefix                   = "plans/"
-	PlanCheckRunPrefix           = "planCheckRuns/"
-	RolePrefix                   = "roles/"
-	SecretNamePrefix             = "secrets/"
-	WebhookIDPrefix              = "webhooks/"
-	SheetIDPrefix                = "sheets/"
-	WorksheetIDPrefix            = "worksheets/"
-	DatabaseGroupNamePrefix      = "databaseGroups/"
-	SchemaGroupNamePrefix        = "schemaGroups/"
-	SchemaNamePrefix             = "schemas/"
-	TableNamePrefix              = "tables/"
-	ChangeHistoryPrefix          = "changeHistories/"
-	IssueNamePrefix              = "issues/"
-	PipelineNamePrefix           = "pipelines/"
-	LogNamePrefix                = "logs/"
-	BranchPrefix                 = "branches/"
-	DeploymentConfigPrefix       = "deploymentConfigs/"
-	ChangelistsPrefix            = "changelists/"
+	ProjectNamePrefix          = "projects/"
+	EnvironmentNamePrefix      = "environments/"
+	InstanceNamePrefix         = "instances/"
+	PolicyNamePrefix           = "policies/"
+	DatabaseIDPrefix           = "databases/"
+	InstanceRolePrefix         = "roles/"
+	UserNamePrefix             = "users/"
+	IdentityProviderNamePrefix = "idps/"
+	SettingNamePrefix          = "settings/"
+	BackupPrefix               = "backups/"
+	VCSProviderPrefix          = "vcsProviders/"
+	RiskPrefix                 = "risks/"
+	IssuePrefix                = "issues/"
+	RolloutPrefix              = "rollouts/"
+	StagePrefix                = "stages/"
+	TaskPrefix                 = "tasks/"
+	TaskRunPrefix              = "taskRuns/"
+	PlanPrefix                 = "plans/"
+	PlanCheckRunPrefix         = "planCheckRuns/"
+	RolePrefix                 = "roles/"
+	SecretNamePrefix           = "secrets/"
+	WebhookIDPrefix            = "webhooks/"
+	SheetIDPrefix              = "sheets/"
+	WorksheetIDPrefix          = "worksheets/"
+	DatabaseGroupNamePrefix    = "databaseGroups/"
+	SchemaGroupNamePrefix      = "schemaGroups/"
+	SchemaNamePrefix           = "schemas/"
+	TableNamePrefix            = "tables/"
+	ChangeHistoryPrefix        = "changeHistories/"
+	IssueNamePrefix            = "issues/"
+	PipelineNamePrefix         = "pipelines/"
+	LogNamePrefix              = "logs/"
+	BranchPrefix               = "branches/"
+	DeploymentConfigPrefix     = "deploymentConfigs/"
+	ChangelistsPrefix          = "changelists/"
 
 	BackupSettingSuffix   = "/backupSetting"
 	SchemaSuffix          = "/schema"
@@ -249,9 +249,9 @@ func GetIdentityProviderID(name string) (string, error) {
 	return tokens[0], nil
 }
 
-// GetExternalVersionControlID returns the external version control ID from a resource name.
-func GetExternalVersionControlID(name string) (int, error) {
-	return GetUIDFromName(name, ExternalVersionControlPrefix)
+// GetVCSProviderID returns the external version control ID from a resource name.
+func GetVCSProviderID(name string) (int, error) {
+	return GetUIDFromName(name, VCSProviderPrefix)
 }
 
 // GetRiskID returns the risk ID from a resource name.
