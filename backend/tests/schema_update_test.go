@@ -314,7 +314,7 @@ func TestSimpleVCS(t *testing.T) {
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-					VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
+					Vcs:                evcs.Name,
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -664,7 +664,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-					VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
+					Vcs:                evcs.Name,
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -1101,7 +1101,7 @@ func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-					VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
+					Vcs:                evcs.Name,
 					Title:              "Test Repository",
 					FullPath:           repoFullPath,
 					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, repoFullPath),
@@ -1322,7 +1322,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 					_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 						ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 							Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-							VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
+							Vcs:                evcs.Name,
 							Title:              "Test Repository",
 							FullPath:           vcsTest.repoFullPath,
 							WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, vcsTest.repoFullPath),
@@ -1842,7 +1842,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
-					VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
+					Vcs:                evcs.Name,
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),

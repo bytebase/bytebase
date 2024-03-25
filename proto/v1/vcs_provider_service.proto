@@ -163,8 +163,8 @@ message ProjectGitOpsInfo {
   // Format: projects/{project}/gitOpsInfo
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The uid for related VCS.
-  string vcs_uid = 2;
+  // The name of the VCS.
+  string vcs = 2;
 
   // The title of the repository. For axample: sample.
   string title = 3;
