@@ -128,6 +128,8 @@ const (
 	SchemaRuleStatementDisallowMixDDLDML = "statement.disallow-mix-ddl-dml"
 	// SchemaRuleStatementPriorBackupCheck checks for prior backup.
 	SchemaRuleStatementPriorBackupCheck = "statement.prior-backup-check"
+	// SchemaRuleStatementNonTransactional checks for non-transactional statements.
+	SchemaRuleStatementNonTransactional = "statement.non-transactional"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -1627,6 +1629,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleOnlineMigration:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLOnlineMigration, nil
+		}
+	case SchemaRuleStatementNonTransactional:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLNonTransactional, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

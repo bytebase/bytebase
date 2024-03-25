@@ -834,3 +834,7 @@ ruleList:
     category: STATEMENT
     engineList:
       - POSTGRES
+  - type: statement.non-transactional
+    category: STATEMENT
+    engineList:
+      - POSTGRES
