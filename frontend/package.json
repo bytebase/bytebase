@@ -26,7 +26,7 @@
     "@tanstack/vue-table": "8.11.8",
     "@vueuse/core": "10.7.2",
     "abort-controller-x": "^0.4.3",
-    "axios": "1.6.7",
+    "axios": "1.6.8",
     "bootstrap": "5.3.3",
     "canvas-confetti": "1.9.2",
     "d3-shape": "^3.2.0",
