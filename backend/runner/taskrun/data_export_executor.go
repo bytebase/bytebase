@@ -130,10 +130,19 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to encrypt data")
 	}
-	// TODO(steven): Save the encrypted bytes to db.
-	_ = encryptedBytes
+
+	exportArchive, err := exec.store.CreateExportArchive(ctx, &store.ExportArchiveMessage{
+		Bytes: encryptedBytes,
+		Payload: &storepb.ExportArchivePayload{
+			FileFormat: payload.Format,
+		},
+	})
+	if err != nil {
+		return true, nil, errors.Wrap(err, "failed to create export archive")
+	}
 
 	return true, &api.TaskRunResultPayload{
-		Detail: fmt.Sprintf("Exported successfully in %v", time.Duration(durationNs).String()),
+		Detail:           fmt.Sprintf("Exported successfully in %v", time.Duration(durationNs).String()),
+		ExportArchiveUID: exportArchive.UID,
 	}, nil
 }
