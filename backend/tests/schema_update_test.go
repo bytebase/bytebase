@@ -413,10 +413,10 @@ func TestSimpleVCS(t *testing.T) {
 				a.NotEqual(history.Version, "")
 			}
 
-			a.Equal("0004", histories[1].Version)
-			a.Equal("0003", histories[2].Version)
-			a.Equal("0002", histories[3].Version)
-			a.Equal("0001", histories[4].Version)
+			a.Equal("0004-dml", histories[1].Version)
+			a.Equal("0003-ddl", histories[2].Version)
+			a.Equal("0002-ddl", histories[3].Version)
+			a.Equal("0001-ddl", histories[4].Version)
 		})
 	}
 }
