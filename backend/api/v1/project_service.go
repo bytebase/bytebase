@@ -173,15 +173,9 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			patch.Title = &request.Project.Title
 		case "key":
 			patch.Key = &request.Project.Key
-		case "workflow":
-			workflow := convertToProjectWorkflowType(request.Project.Workflow)
-			patch.Workflow = &workflow
 		case "tenant_mode":
 			tenantMode := convertToProjectTenantMode(request.Project.TenantMode)
 			patch.TenantMode = &tenantMode
-		case "schema_change":
-			schemaChange := convertToProjectSchemaChangeType(request.Project.SchemaChange)
-			patch.SchemaChangeType = &schemaChange
 		case "data_classification_config_id":
 			setting, err := s.store.GetDataClassificationSetting(ctx)
 			if err != nil {
@@ -566,11 +560,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSUID)
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	if err := s.store.DeleteRepositoryV2(ctx, repo.ProjectResourceID, principalID); err != nil {
+	if err := s.store.DeleteRepositoryV2(ctx, repo.ProjectResourceID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete repository with error: %v", err.Error())
 	}
 
@@ -2197,22 +2187,10 @@ func convertProjectRole(role string) (api.Role, error) {
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
-	workflow := v1pb.Workflow_WORKFLOW_UNSPECIFIED
-	switch projectMessage.Workflow {
-	case api.UIWorkflow:
-		workflow = v1pb.Workflow_UI
-	case api.VCSWorkflow:
+	workflow := v1pb.Workflow_UI
+	if projectMessage.VCSConnectorsCount > 0 {
 		workflow = v1pb.Workflow_VCS
 	}
-
-	visibility := v1pb.Visibility_VISIBILITY_UNSPECIFIED
-	switch projectMessage.Visibility {
-	case api.Private:
-		visibility = v1pb.Visibility_VISIBILITY_PRIVATE
-	case api.Public:
-		visibility = v1pb.Visibility_VISIBILITY_PUBLIC
-	}
-
 	tenantMode := v1pb.TenantMode_TENANT_MODE_UNSPECIFIED
 	switch projectMessage.TenantMode {
 	case api.TenantModeDisabled:
@@ -2220,15 +2198,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	case api.TenantModeTenant:
 		tenantMode = v1pb.TenantMode_TENANT_MODE_ENABLED
 	}
-
-	schemaChange := v1pb.SchemaChange_SCHEMA_CHANGE_UNSPECIFIED
-	switch projectMessage.SchemaChangeType {
-	case api.ProjectSchemaChangeTypeDDL:
-		schemaChange = v1pb.SchemaChange_DDL
-	case api.ProjectSchemaChangeTypeSDL:
-		schemaChange = v1pb.SchemaChange_SDL
-	}
-
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
@@ -2247,35 +2216,9 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Title:                      projectMessage.Title,
 		Key:                        projectMessage.Key,
 		Workflow:                   workflow,
-		Visibility:                 visibility,
 		TenantMode:                 tenantMode,
-		SchemaChange:               schemaChange,
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
-	}
-}
-
-func convertToProjectWorkflowType(workflow v1pb.Workflow) api.ProjectWorkflowType {
-	switch workflow {
-	case v1pb.Workflow_UI:
-		return api.UIWorkflow
-	case v1pb.Workflow_VCS:
-		return api.VCSWorkflow
-	default:
-		// Default is UI workflow.
-		return api.UIWorkflow
-	}
-}
-
-func convertToProjectVisibility(visibility v1pb.Visibility) api.ProjectVisibility {
-	switch visibility {
-	case v1pb.Visibility_VISIBILITY_PRIVATE:
-		return api.Private
-	case v1pb.Visibility_VISIBILITY_PUBLIC:
-		return api.Public
-	default:
-		// Default is public.
-		return api.Public
 	}
 }
 
@@ -2290,31 +2233,13 @@ func convertToProjectTenantMode(tenantMode v1pb.TenantMode) api.ProjectTenantMod
 	}
 }
 
-func convertToProjectSchemaChangeType(schemaChange v1pb.SchemaChange) api.ProjectSchemaChangeType {
-	switch schemaChange {
-	case v1pb.SchemaChange_DDL:
-		return api.ProjectSchemaChangeTypeDDL
-	case v1pb.SchemaChange_SDL:
-		return api.ProjectSchemaChangeTypeSDL
-	default:
-		return api.ProjectSchemaChangeTypeDDL
-	}
-}
-
 func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.ProjectMessage, error) {
-	workflow := convertToProjectWorkflowType(project.Workflow)
-	visibility := convertToProjectVisibility(project.Visibility)
 	tenantMode := convertToProjectTenantMode(project.TenantMode)
-	schemaChange := convertToProjectSchemaChangeType(project.SchemaChange)
-
 	return &store.ProjectMessage{
-		ResourceID:       resourceID,
-		Title:            project.Title,
-		Key:              project.Key,
-		Workflow:         workflow,
-		Visibility:       visibility,
-		TenantMode:       tenantMode,
-		SchemaChangeType: schemaChange,
+		ResourceID: resourceID,
+		Title:      project.Title,
+		Key:        project.Key,
+		TenantMode: tenantMode,
 	}, nil
 }
 

@@ -38,30 +38,21 @@
         />
       </template>
       <template #2>
-        <RepositoryConfigPanel
-          :config="state.config"
-          :project="project"
-          @change-schema-change-type="setSchemaChangeType"
-        />
+        <RepositoryConfigPanel :config="state.config" :project="project" />
       </template>
     </StepTab>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
 import { PROJECT_V1_ROUTE_GITOPS } from "@/router/dashboard/projectV1";
-import { useRepositoryV1Store, useProjectV1Store } from "@/store";
-import {
-  Project,
-  TenantMode,
-  SchemaChange,
-} from "@/types/proto/v1/project_service";
+import { useRepositoryV1Store } from "@/store";
+import { Project, TenantMode } from "@/types/proto/v1/project_service";
 import {
   ProjectGitOpsInfo,
   VCSProvider,
@@ -112,7 +103,6 @@ const { t } = useI18n();
 
 const router = useRouter();
 const repositoryV1Store = useRepositoryV1Store();
-const projectV1Store = useProjectV1Store();
 
 const stepList = [
   { title: t("repository.choose-git-provider"), hideNext: true },
@@ -144,7 +134,6 @@ const state = reactive<LocalState>({
         ? DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE
         : DEFAULT_SCHEMA_PATH_TEMPLATE,
     },
-    schemaChangeType: props.project.schemaChange,
   },
   currentStep: CHOOSE_PROVIDER_STEP,
   showFeatureModal: false,
@@ -200,16 +189,6 @@ const tryFinishSetup = async () => {
       repositoryCreate
     );
 
-    // Update project schemaChangeType field.
-    if (state.config.schemaChangeType !== props.project.schemaChange) {
-      const projectPatch = cloneDeep(props.project);
-      projectPatch.schemaChange = state.config.schemaChangeType;
-      await projectV1Store.updateProject(projectPatch, ["schema_change"]);
-    } else {
-      // refresh project
-      await projectV1Store.fetchProjectByName(props.project.name);
-    }
-
     emit("finish");
   };
 
@@ -243,9 +222,5 @@ const setVCS = (vcs: VCSProvider) => {
 
 const setRepository = (repository: ExternalRepositoryInfo) => {
   state.config.repositoryInfo = repository;
-};
-
-const setSchemaChangeType = (schemaChange: SchemaChange) => {
-  state.config.schemaChangeType = schemaChange;
 };
 </script>

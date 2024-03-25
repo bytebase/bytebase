@@ -413,11 +413,8 @@
     - [OperatorType](#bytebase-v1-OperatorType)
     - [ProtectionRule.BranchSource](#bytebase-v1-ProtectionRule-BranchSource)
     - [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target)
-    - [SchemaChange](#bytebase-v1-SchemaChange)
     - [SchemaGroupView](#bytebase-v1-SchemaGroupView)
-    - [SchemaVersion](#bytebase-v1-SchemaVersion)
     - [TenantMode](#bytebase-v1-TenantMode)
-    - [Visibility](#bytebase-v1-Visibility)
     - [Webhook.Type](#bytebase-v1-Webhook-Type)
     - [Workflow](#bytebase-v1-Workflow)
   
@@ -6375,9 +6372,7 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | title | [string](#string) |  | The title or name of a project. It&#39;s not unique within the workspace. |
 | key | [string](#string) |  | The key is a short and upper-case identifier for a project. It&#39;s unique within the workspace. |
 | workflow | [Workflow](#bytebase-v1-Workflow) |  |  |
-| visibility | [Visibility](#bytebase-v1-Visibility) |  |  |
 | tenant_mode | [TenantMode](#bytebase-v1-TenantMode) |  |  |
-| schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 | data_classification_config_id | [string](#string) |  |  |
 
@@ -6842,19 +6837,6 @@ The type of target.
 
 
 
-<a name="bytebase-v1-SchemaChange"></a>
-
-### SchemaChange
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SCHEMA_CHANGE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| SDL | 2 |  |
-
-
-
 <a name="bytebase-v1-SchemaGroupView"></a>
 
 ### SchemaGroupView
@@ -6868,19 +6850,6 @@ The type of target.
 
 
 
-<a name="bytebase-v1-SchemaVersion"></a>
-
-### SchemaVersion
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SCHEMA_VERSION_UNSPECIFIED | 0 |  |
-| TIMESTAMP | 1 |  |
-| SEMANTIC | 2 |  |
-
-
-
 <a name="bytebase-v1-TenantMode"></a>
 
 ### TenantMode
@@ -6891,19 +6860,6 @@ The type of target.
 | TENANT_MODE_UNSPECIFIED | 0 |  |
 | TENANT_MODE_DISABLED | 1 |  |
 | TENANT_MODE_ENABLED | 2 |  |
-
-
-
-<a name="bytebase-v1-Visibility"></a>
-
-### Visibility
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| VISIBILITY_UNSPECIFIED | 0 |  |
-| VISIBILITY_PUBLIC | 1 |  |
-| VISIBILITY_PRIVATE | 2 |  |
 
 
 

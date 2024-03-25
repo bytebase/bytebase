@@ -12,73 +12,40 @@
     />
   </div>
   <div class="mt-2 textinfolabel">
-    <template v-if="isProjectSchemaChangeTypeDDL">
-      <i18n-t keypath="repository.gitops-description-file-path">
-        <template #fullPath>
-          <a class="normal-link" :href="repository.webUrl" target="_blank">
-            {{ repositoryFormattedFullPath }}
-          </a>
-        </template>
-        <template #fullPathTemplate>
-          <span class="font-medium text-main"
-            >{{ state.repositoryConfig.baseDirectory }}/{{
-              state.repositoryConfig.filePathTemplate
-            }}</span
-          >
-        </template>
-      </i18n-t>
-      <span>&nbsp;</span>
-      <i18n-t keypath="repository.gitops-description-branch">
-        <template #branch>
-          <span class="font-medium text-main">
-            <template v-if="state.repositoryConfig.branchFilter">
-              {{ state.repositoryConfig.branchFilter }}
-            </template>
-            <template v-else>
-              {{ $t("common.default") }}
-            </template>
-          </span>
-        </template>
-      </i18n-t>
-      <template v-if="state.repositoryConfig.schemaPathTemplate">
-        <span>&nbsp;</span>
-        <i18n-t keypath="repository.gitops-description-description-schema-path">
-          <template #schemaPathTemplate>
-            <span class="font-medium text-main">{{
-              state.repositoryConfig.schemaPathTemplate
-            }}</span>
-          </template>
-        </i18n-t>
+    <i18n-t keypath="repository.gitops-description-file-path">
+      <template #fullPath>
+        <a class="normal-link" :href="repository.webUrl" target="_blank">
+          {{ repositoryFormattedFullPath }}
+        </a>
       </template>
-    </template>
-    <template v-if="isProjectSchemaChangeTypeSDL">
-      <i18n-t keypath="repository.gitops-description-sdl">
-        <template #fullPath>
-          <a class="normal-link" :href="repository.webUrl" target="_blank">
-            {{ repositoryFormattedFullPath }}
-          </a>
-        </template>
-        <template #branch>
-          <span class="font-medium text-main">
-            <template v-if="state.repositoryConfig.branchFilter">
-              {{ state.repositoryConfig.branchFilter }}
-            </template>
-            <template v-else>
-              {{ $t("common.default") }}
-            </template>
-          </span>
-        </template>
-        <template #filePathTemplate>
-          <span class="font-medium text-main">
-            {{ state.repositoryConfig.baseDirectory }}/{{
-              state.repositoryConfig.filePathTemplate
-            }}
-          </span>
-        </template>
+      <template #fullPathTemplate>
+        <span class="font-medium text-main"
+          >{{ state.repositoryConfig.baseDirectory }}/{{
+            state.repositoryConfig.filePathTemplate
+          }}</span
+        >
+      </template>
+    </i18n-t>
+    <span>&nbsp;</span>
+    <i18n-t keypath="repository.gitops-description-branch">
+      <template #branch>
+        <span class="font-medium text-main">
+          <template v-if="state.repositoryConfig.branchFilter">
+            {{ state.repositoryConfig.branchFilter }}
+          </template>
+          <template v-else>
+            {{ $t("common.default") }}
+          </template>
+        </span>
+      </template>
+    </i18n-t>
+    <template v-if="state.repositoryConfig.schemaPathTemplate">
+      <span>&nbsp;</span>
+      <i18n-t keypath="repository.gitops-description-description-schema-path">
         <template #schemaPathTemplate>
-          <span class="font-medium text-main">
-            {{ state.repositoryConfig.schemaPathTemplate }}
-          </span>
+          <span class="font-medium text-main">{{
+            state.repositoryConfig.schemaPathTemplate
+          }}</span>
         </template>
       </i18n-t>
     </template>
@@ -91,10 +58,6 @@
     :repository-info="repositoryInfo"
     :repository-config="state.repositoryConfig"
     :project="project"
-    :schema-change-type="state.schemaChangeType"
-    @change-schema-change-type="
-      (type: SchemaChange) => (state.schemaChangeType = type)
-    "
     @change-repository="$emit('change-repository')"
   />
   <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">
@@ -125,7 +88,6 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import isEmpty from "lodash-es/isEmpty";
 import { computed, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -134,7 +96,7 @@ import {
   useProjectV1Store,
   useRepositoryV1Store,
 } from "@/store";
-import { Project, SchemaChange } from "@/types/proto/v1/project_service";
+import { Project } from "@/types/proto/v1/project_service";
 import {
   ProjectGitOpsInfo,
   VCSProvider,
@@ -144,7 +106,6 @@ import { ExternalRepositoryInfo, RepositoryConfig } from "../types";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
-  schemaChangeType: SchemaChange;
   showFeatureModal: boolean;
   processing: boolean;
 }
@@ -183,7 +144,6 @@ const state = reactive<LocalState>({
     filePathTemplate: props.repository.filePathTemplate,
     schemaPathTemplate: props.repository.schemaPathTemplate,
   },
-  schemaChangeType: props.project.schemaChange,
   showFeatureModal: false,
   processing: false,
 });
@@ -220,14 +180,6 @@ const repositoryInfo = computed((): ExternalRepositoryInfo => {
   };
 });
 
-const isProjectSchemaChangeTypeDDL = computed(() => {
-  return state.schemaChangeType === SchemaChange.DDL;
-});
-
-const isProjectSchemaChangeTypeSDL = computed(() => {
-  return state.schemaChangeType === SchemaChange.SDL;
-});
-
 const allowUpdate = computed(() => {
   return (
     !state.processing &&
@@ -238,8 +190,7 @@ const allowUpdate = computed(() => {
       props.repository.filePathTemplate !==
         state.repositoryConfig.filePathTemplate ||
       props.repository.schemaPathTemplate !==
-        state.repositoryConfig.schemaPathTemplate ||
-      props.project.schemaChange !== state.schemaChangeType)
+        state.repositoryConfig.schemaPathTemplate)
   );
 });
 
@@ -299,12 +250,6 @@ const doUpdate = async () => {
       props.project.name,
       repositoryPatch
     );
-    // Update project schemaChangeType field firstly.
-    if (state.schemaChangeType !== props.project.schemaChange) {
-      const projectPatch = cloneDeep(props.project);
-      projectPatch.schemaChange = state.schemaChangeType;
-      await projectV1Store.updateProject(projectPatch, ["schema_change"]);
-    }
 
     pushNotification({
       module: "bytebase",
