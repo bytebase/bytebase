@@ -5,7 +5,7 @@
       <div v-for="(item, i) in filteredSidebarList" :key="i">
         <router-link
           v-if="item.type === 'route'"
-          :to="{ path: item.path ?? '', name: item.name ?? '' }"
+          :to="{ path: item.path, name: item.name }"
           :class="[parentRouteClass, getItemClass(item)]"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
@@ -54,7 +54,7 @@
             </a>
             <router-link
               v-else-if="child.type === 'route'"
-              :to="{ path: child.path ?? '', name: child.name ?? '' }"
+              :to="{ path: child.path, name: child.name }"
               :class="[childRouteClass, getItemClass(child)]"
             >
               {{ child.title }}

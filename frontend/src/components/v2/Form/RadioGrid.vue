@@ -21,7 +21,7 @@
         />
         <slot
           name="item"
-          :option="(option as RadioGridOption<any>)"
+          :option="option as RadioGridOption<any>"
           :index="index"
         />
       </div>

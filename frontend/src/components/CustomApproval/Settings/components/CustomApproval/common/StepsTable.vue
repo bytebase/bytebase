@@ -5,7 +5,7 @@
     :row-clickable="false"
     class="border"
   >
-    <template #item="{ item: step, row }: { item: ApprovalStep, row: number }">
+    <template #item="{ item: step, row }: { item: ApprovalStep; row: number }">
       <div class="bb-grid-cell justify-center text-center !pl-2">
         {{ row + 1 }}
       </div>

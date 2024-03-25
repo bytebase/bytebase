@@ -208,9 +208,8 @@ const hasPermission = computed(() => {
 
 const reviewPolicy = computedAsync(async () => {
   const environmentUID = idFromSlug(props.sqlReviewPolicySlug);
-  const policy = await store.getOrFetchReviewPolicyByEnvironmentUID(
-    environmentUID
-  );
+  const policy =
+    await store.getOrFetchReviewPolicyByEnvironmentUID(environmentUID);
   return policy ?? unknown("SQL_REVIEW");
 }, unknown("SQL_REVIEW"));
 

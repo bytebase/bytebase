@@ -51,19 +51,22 @@ export const useLegacyAutoComplete = async (
     }
     return "instance";
   });
-  const metadata = computedAsync(() => {
-    if (database.value.uid === String(UNKNOWN_ID)) {
-      return DatabaseMetadata.fromPartial({
-        name: `${database.value.name}/metadata`,
-      });
-    }
+  const metadata = computedAsync(
+    () => {
+      if (database.value.uid === String(UNKNOWN_ID)) {
+        return DatabaseMetadata.fromPartial({
+          name: `${database.value.name}/metadata`,
+        });
+      }
 
-    return useDBSchemaV1Store().getOrFetchDatabaseMetadata({
-      database: database.value.name,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
-      skipCache: false,
-    });
-  }, DatabaseMetadata.fromPartial({ name: unknownDatabase().name }));
+      return useDBSchemaV1Store().getOrFetchDatabaseMetadata({
+        database: database.value.name,
+        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+        skipCache: false,
+      });
+    },
+    DatabaseMetadata.fromPartial({ name: unknownDatabase().name })
+  );
 
   watch(
     dialect,

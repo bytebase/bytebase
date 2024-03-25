@@ -29,9 +29,8 @@ export const composeIssue = async (
   const me = useCurrentUserV1();
 
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
-  const projectEntity = await useProjectV1Store().getOrFetchProjectByName(
-    project
-  );
+  const projectEntity =
+    await useProjectV1Store().getOrFetchProjectByName(project);
 
   const creatorEntity =
     userStore.getUserByEmail(extractUserResourceName(rawIssue.creator)) ??

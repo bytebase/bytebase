@@ -1,6 +1,6 @@
 <template>
   <Suspense>
-    <DiffEditor ref="diffEditorRef" v-bind="($attrs as any)" />
+    <DiffEditor ref="diffEditorRef" v-bind="$attrs as any" />
     <template #fallback>
       <div ref="spinnerWrapperElRef" :class="classes">
         <BBSpin />

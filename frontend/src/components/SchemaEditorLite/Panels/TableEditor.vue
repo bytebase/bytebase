@@ -83,7 +83,10 @@
         :disable-change-table="disableChangeTable"
         :allow-change-primary-keys="allowChangePrimaryKeys"
         :allow-reorder-columns="allowReorderColumns"
-        :filter-column="(column: ColumnMetadata) => column.name.includes(props.searchPattern.trim())"
+        :filter-column="
+          (column: ColumnMetadata) =>
+            column.name.includes(props.searchPattern.trim())
+        "
         :disable-alter-column="disableAlterColumn"
         :get-column-item-computed-class-list="getColumnItemComputedClassList"
         @drop="handleDropColumn"

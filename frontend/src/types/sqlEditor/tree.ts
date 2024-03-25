@@ -86,28 +86,28 @@ export type SQLEditorTreeNodeTarget<T extends SQLEditorTreeNodeType = any> =
   T extends "project"
     ? ComposedProject
     : T extends "instance"
-    ? ComposedInstance
-    : T extends "environment"
-    ? Environment
-    : T extends "database"
-    ? ComposedDatabase
-    : T extends "schema"
-    ? RichSchemaMetadata
-    : T extends "table"
-    ? RichTableMetadata
-    : T extends "external-table"
-    ? RichExternalTableMetadata
-    : T extends "partition-table"
-    ? RichPartitionTableMetadata
-    : T extends "view"
-    ? RichViewMetadata
-    : T extends "label"
-    ? LabelTarget
-    : T extends "expandable-text"
-    ? TextTarget<true>
-    : T extends "dummy"
-    ? DummyTarget
-    : never;
+      ? ComposedInstance
+      : T extends "environment"
+        ? Environment
+        : T extends "database"
+          ? ComposedDatabase
+          : T extends "schema"
+            ? RichSchemaMetadata
+            : T extends "table"
+              ? RichTableMetadata
+              : T extends "external-table"
+                ? RichExternalTableMetadata
+                : T extends "partition-table"
+                  ? RichPartitionTableMetadata
+                  : T extends "view"
+                    ? RichViewMetadata
+                    : T extends "label"
+                      ? LabelTarget
+                      : T extends "expandable-text"
+                        ? TextTarget<true>
+                        : T extends "dummy"
+                          ? DummyTarget
+                          : never;
 
 export type SQLEditorTreeState = "UNSET" | "LOADING" | "READY";
 

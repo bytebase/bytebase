@@ -84,18 +84,21 @@ const emit = defineEmits<{
 }>();
 
 const engineList = computed((): EngineTypeStats[] => {
-  const tmp = props.ruleList.reduce((dict, rule) => {
-    for (const engine of rule.engineList) {
-      if (!dict[engine]) {
-        dict[engine] = {
-          engine: engine,
-          count: 0,
-        };
+  const tmp = props.ruleList.reduce(
+    (dict, rule) => {
+      for (const engine of rule.engineList) {
+        if (!dict[engine]) {
+          dict[engine] = {
+            engine: engine,
+            count: 0,
+          };
+        }
+        dict[engine].count += 1;
       }
-      dict[engine].count += 1;
-    }
-    return dict;
-  }, {} as { [id: string]: EngineTypeStats });
+      return dict;
+    },
+    {} as { [id: string]: EngineTypeStats }
+  );
   return Object.values(tmp);
 });
 

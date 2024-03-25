@@ -19,4 +19,4 @@ export const Changelist_Change_Source_List = [
 ] as const;
 
 export type Changelist_Change_Source =
-  typeof Changelist_Change_Source_List[number];
+  (typeof Changelist_Change_Source_List)[number];

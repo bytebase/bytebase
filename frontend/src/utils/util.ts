@@ -262,7 +262,7 @@ const MODIFIERS = [
   "opt_or_alt",
   "shift",
 ] as const;
-export type ModifierKey = typeof MODIFIERS[number];
+export type ModifierKey = (typeof MODIFIERS)[number];
 
 export const modifierKeyText = (mod: ModifierKey) => {
   const isMac = navigator.userAgent.search("Mac") !== -1;

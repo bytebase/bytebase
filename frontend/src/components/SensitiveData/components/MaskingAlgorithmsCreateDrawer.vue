@@ -488,8 +488,8 @@ const removeSlice = (i: number) => {
   state.rangeMask.slices.splice(i, 1);
 };
 
-const onSliceStartChange = (index: number, val: number) => {
-  if (Number.isNaN(val)) {
+const onSliceStartChange = (index: number, val: number | null) => {
+  if (val === null || Number.isNaN(val)) {
     return;
   }
   const slice = state.rangeMask.slices[index];
@@ -499,8 +499,8 @@ const onSliceStartChange = (index: number, val: number) => {
   }
 };
 
-const onSliceEndChange = (index: number, val: number) => {
-  if (Number.isNaN(val)) {
+const onSliceEndChange = (index: number, val: number | null) => {
+  if (val === null || Number.isNaN(val)) {
     return;
   }
   const slice = state.rangeMask.slices[index];

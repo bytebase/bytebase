@@ -41,7 +41,7 @@ const emit = defineEmits<{
   (event: "change", data: string): void;
   (event: "keyup", e: KeyboardEvent): void;
   (event: "keydown", e: KeyboardEvent): void;
-  (event: "mouseup", e: KeyboardEvent): void;
+  (event: "mouseup", e: MouseEvent): void;
 }>();
 
 const state = reactive<{ data: string; width: number }>({

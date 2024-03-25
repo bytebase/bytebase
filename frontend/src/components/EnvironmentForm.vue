@@ -47,9 +47,13 @@
             :checked="state.environmentTier === EnvironmentTier.PROTECTED"
             :disabled="!allowEdit"
             style="--n-label-padding: 0 0 0 1rem"
-            @update:checked="(on: boolean) => {
-                state.environmentTier = on ? EnvironmentTier.PROTECTED : EnvironmentTier.UNPROTECTED
-              }"
+            @update:checked="
+              (on: boolean) => {
+                state.environmentTier = on
+                  ? EnvironmentTier.PROTECTED
+                  : EnvironmentTier.UNPROTECTED;
+              }
+            "
           >
             {{ $t("policy.environment-tier.mark-env-as-production") }}
           </NCheckbox>
@@ -146,8 +150,9 @@
             :button-text="$t('environment.archive')"
             :ok-text="$t('common.archive')"
             :confirm-title="
-            $t('environment.archive') + ` '${(state.environment as Environment).title}'?`
-          "
+              $t('environment.archive') +
+              ` '${(state.environment as Environment).title}'?`
+            "
             :confirm-description="$t('environment.archive-info')"
             :require-confirm="true"
             @confirm="archiveEnvironment"
@@ -162,8 +167,9 @@
             :button-text="$t('environment.restore')"
             :ok-text="$t('common.restore')"
             :confirm-title="
-            $t('environment.restore') + ` '${(state.environment as Environment).title}'?`
-          "
+              $t('environment.restore') +
+              ` '${(state.environment as Environment).title}'?`
+            "
             :confirm-description="''"
             :require-confirm="true"
             @confirm="restoreEnvironment"

@@ -41,7 +41,9 @@
           <div class="flex-1">
             <TableCell
               :table="table"
-              :value="row.getVisibleCells()[header.index].getValue() as RowValue"
+              :value="
+                row.getVisibleCells()[header.index].getValue() as RowValue
+              "
               :keyword="keyword"
               :set-index="setIndex"
               :row-index="offset + rowIndex"

@@ -12,7 +12,7 @@
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useSchemaEditorContext } from "../../context";
-import { TreeNodeForTable } from "../types";
+import type { TreeNodeForTable } from "../common";
 
 const props = defineProps<{
   node: TreeNodeForTable;

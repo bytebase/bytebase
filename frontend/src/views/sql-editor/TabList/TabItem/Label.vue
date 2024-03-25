@@ -19,7 +19,7 @@
       type="text"
       class="edit"
       @blur="confirmEdit"
-      @keyup.enter="e => (e.target as HTMLInputElement).blur()"
+      @keyup.enter="(e) => (e.target as HTMLInputElement).blur()"
       @keyup.esc="cancelEdit"
     />
   </div>

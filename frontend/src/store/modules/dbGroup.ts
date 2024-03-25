@@ -132,9 +132,8 @@ export const useDBGroupStore = defineStore("db-group", () => {
       parent: `${projectNamePrefix}-`,
     });
     const composedList = [];
-    const composeDatabaseGroups = await batchComposeDatabaseGroup(
-      databaseGroups
-    );
+    const composeDatabaseGroups =
+      await batchComposeDatabaseGroup(databaseGroups);
     for (const composedData of composeDatabaseGroups) {
       dbGroupMapByName.value.set(composedData.name, composedData);
       composedList.push(composedData);
@@ -174,9 +173,8 @@ export const useDBGroupStore = defineStore("db-group", () => {
       parent: projectName,
     });
     const composedList = [];
-    const composeDatabaseGroups = await batchComposeDatabaseGroup(
-      databaseGroups
-    );
+    const composeDatabaseGroups =
+      await batchComposeDatabaseGroup(databaseGroups);
     for (const composedData of composeDatabaseGroups) {
       dbGroupMapByName.value.set(composedData.name, composedData);
       composedList.push(composedData);

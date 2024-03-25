@@ -1,6 +1,6 @@
 <template>
   <Suspense>
-    <MonacoEditor v-bind="($attrs as any)" />
+    <MonacoEditor v-bind="$attrs as any" />
     <template #fallback>
       <div ref="spinnerWrapperElRef" :class="classes">
         <BBSpin />
