@@ -61,7 +61,7 @@
     "node-sql-parser": "4.18.0",
     "normalize-wheel": "^1.0.1",
     "papaparse": "5.4.1",
-    "pev2": "1.8.0",
+    "pev2": "1.10.0",
     "pinia": "2.1.7",
     "pouchdb": "^8.0.1",
     "pouchdb-find": "^8.0.1",
