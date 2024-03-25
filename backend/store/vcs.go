@@ -46,9 +46,11 @@ type FindVCSProviderMessage struct {
 }
 
 // GetVCSProviderV2 gets an VCS provider by ID.
-func (s *Store) GetVCSProviderV2(ctx context.Context, id int) (*VCSProviderMessage, error) {
-	if v, ok := s.vcsIDCache.Get(id); ok {
-		return v, nil
+func (s *Store) GetVCSProviderV2(ctx context.Context, find *FindVCSProviderMessage) (*VCSProviderMessage, error) {
+	if find.ID != nil {
+		if v, ok := s.vcsIDCache.Get(*find.ID); ok {
+			return v, nil
+		}
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -57,7 +59,7 @@ func (s *Store) GetVCSProviderV2(ctx context.Context, id int) (*VCSProviderMessa
 	}
 	defer tx.Rollback()
 
-	vcsProviders, err := s.findVCSProvidersImplV2(ctx, tx, &FindVCSProviderMessage{ID: &id})
+	vcsProviders, err := s.findVCSProvidersImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +69,7 @@ func (s *Store) GetVCSProviderV2(ctx context.Context, id int) (*VCSProviderMessa
 	if len(vcsProviders) == 0 {
 		return nil, nil
 	} else if len(vcsProviders) > 1 {
-		return nil, errors.Errorf("expected 1 VCS provider with id %d, got %d", id, len(vcsProviders))
+		return nil, errors.Errorf("expected 1 VCS provider with find %+v, got %d", find, len(vcsProviders))
 	}
 
 	vcs := vcsProviders[0]

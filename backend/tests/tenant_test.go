@@ -316,7 +316,7 @@ func TestTenantVCS(t *testing.T) {
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
-					VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
+					Vcs:                evcs.Name,
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
@@ -626,7 +626,7 @@ func TestTenantVCS_YAML(t *testing.T) {
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
 					Name:               fmt.Sprintf("%s/gitOpsInfo", project.Name),
-					VcsUid:             strings.TrimPrefix(evcs.Name, "vcsProviders/"),
+					Vcs:                evcs.Name,
 					Title:              "Test Repository",
 					FullPath:           test.repositoryFullPath,
 					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),

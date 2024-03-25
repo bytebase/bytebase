@@ -16,6 +16,7 @@ import (
 type RepositoryMessage struct {
 	// Related fields
 	VCSUID            int
+	VCSResourceID     string
 	ProjectResourceID string
 	ResourceID        string
 
@@ -42,6 +43,7 @@ type FindRepositoryMessage struct {
 	UID               *int
 	WebURL            *string
 	VCSUID            *int
+	VCSResourceID     *string
 	ProjectResourceID *string
 	ResourceID        *string
 	WebhookEndpointID *string
@@ -254,6 +256,7 @@ func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *Repo
 		}
 		return nil, err
 	}
+	repository.VCSResourceID = create.VCSResourceID
 	return &repository, nil
 }
 
@@ -265,6 +268,9 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 	}
 	if v := find.VCSUID; v != nil {
 		where, args = append(where, fmt.Sprintf("vcs_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.VCSResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("vcs.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
@@ -283,6 +289,7 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 		SELECT
 			repository.id AS id,
 			vcs_id,
+			vcs.resource_id,
 			project.resource_id AS project_resource_id,
 			repository.resource_id,
 			repository.name AS name,
@@ -299,6 +306,7 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 			webhook_secret_token
 		FROM repository
 		LEFT JOIN project ON project.id = repository.project_id
+		LEFT JOIN vcs ON vcs.id = repository.vcs_id
 		WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
@@ -314,6 +322,7 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 		if err := rows.Scan(
 			&repository.UID,
 			&repository.VCSUID,
+			&repository.VCSResourceID,
 			&repository.ProjectResourceID,
 			&repository.ResourceID,
 			&repository.Title,
@@ -378,11 +387,12 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 	if err := tx.QueryRowContext(ctx, `
 		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
-		FROM project
-		WHERE project.id = repository.project_id AND `+strings.Join(where, " AND ")+`
+		FROM project, vcs
+		WHERE project.id = repository.project_id AND vcs.id = repository.vcs_id AND `+strings.Join(where, " AND ")+`
 		RETURNING
 			repository.id AS id,
 			vcs_id,
+			vcs.resource_id,
 			project.resource_id AS project_resource_id,
 			repository.resource_id,
 			repository.name AS name,
@@ -402,6 +412,7 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 	).Scan(
 		&repository.UID,
 		&repository.VCSUID,
+		&repository.VCSResourceID,
 		&repository.ProjectResourceID,
 		&repository.ResourceID,
 		&repository.Title,

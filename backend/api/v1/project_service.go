@@ -454,6 +454,14 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		return s.createProjectGitOpsInfo(ctx, request, project)
 	}
 
+	vcs, err := s.store.GetVCSProviderV2(ctx, &store.FindVCSProviderMessage{ResourceID: &repo.VCSResourceID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get vcs provider, error %v", err.Error())
+	}
+	if vcs == nil {
+		return nil, status.Errorf(codes.NotFound, "VCS provider not found")
+	}
+
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set to update gitops")
 	}
@@ -467,20 +475,9 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		case "branch_filter":
 			patch.BranchFilter = &request.ProjectGitopsInfo.BranchFilter
 		case "base_directory":
-			intVCSUID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid vcs uid: %s", request.ProjectGitopsInfo.VcsUid)
-			}
-			storeVCS, err := s.store.GetVCSProviderV2(ctx, intVCSUID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
-			}
-			if storeVCS == nil {
-				return nil, status.Errorf(codes.NotFound, "vcs %d not found", intVCSUID)
-			}
 			baseDir := request.ProjectGitopsInfo.BaseDirectory
 			// Azure DevOps base directory should start with /.
-			if storeVCS.Type == vcsplugin.AzureDevOps {
+			if vcs.Type == vcsplugin.AzureDevOps {
 				if !strings.HasPrefix(baseDir, "/") {
 					baseDir = "/" + request.ProjectGitopsInfo.BaseDirectory
 				}
@@ -505,15 +502,6 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		if *v == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
 		}
-
-		vcs, err := s.store.GetVCSProviderV2(ctx, repo.VCSUID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
-		}
-		if vcs == nil {
-			return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSUID)
-		}
-
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
 		if !strings.Contains(*v, "*") {
 			notFound, err := isBranchNotFound(
@@ -570,7 +558,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 		return nil, err
 	}
 
-	vcs, err := s.store.GetVCSProviderV2(ctx, repo.VCSUID)
+	vcs, err := s.store.GetVCSProviderV2(ctx, &store.FindVCSProviderMessage{ResourceID: &repo.VCSResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
@@ -982,21 +970,28 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
-	intVCSUID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
+	vcsResourceID, err := common.GetVCSProviderID(request.ProjectGitopsInfo.Vcs)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs uid: %s", request.ProjectGitopsInfo.VcsUid)
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	storeVCS, err := s.store.GetVCSProviderV2(ctx, intVCSUID)
+	vcsResourceUID, isNumber := isNumber(vcsResourceID)
+	find := &store.FindVCSProviderMessage{}
+	if isNumber {
+		find.ID = &vcsResourceUID
+	} else {
+		find.ResourceID = &vcsResourceID
+	}
+	vcs, err := s.store.GetVCSProviderV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
-	if storeVCS == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs %d not found", intVCSUID)
+	if vcs == nil {
+		return nil, status.Errorf(codes.NotFound, "vcs %s not found", vcsResourceID)
 	}
 
 	baseDir := request.ProjectGitopsInfo.BaseDirectory
 	// Azure DevOps base directory should start with /.
-	if storeVCS.Type == vcsplugin.AzureDevOps {
+	if vcs.Type == vcsplugin.AzureDevOps {
 		if !strings.HasPrefix(baseDir, "/") {
 			baseDir = "/" + request.ProjectGitopsInfo.BaseDirectory
 		}
@@ -1004,13 +999,9 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		baseDir = strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
 	}
 
-	vcsID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs id: %s", request.ProjectGitopsInfo.VcsUid)
-	}
-
 	repositoryCreate := &store.RepositoryMessage{
-		VCSUID:            int(vcsID),
+		VCSUID:            vcs.ID,
+		VCSResourceID:     vcs.ResourceID,
 		ProjectResourceID: project.ResourceID,
 		// TODO(d): pass in the resource ID from API.
 		ResourceID:         "default",
@@ -1041,14 +1032,6 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 
 	if err := api.ValidateRepositorySchemaPathTemplate(repositoryCreate.SchemaPathTemplate, project.TenantMode); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid schema_path_template: %s", err.Error())
-	}
-
-	vcs, err := s.store.GetVCSProviderV2(ctx, repositoryCreate.VCSUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
-	}
-	if vcs == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repositoryCreate.VCSUID)
 	}
 
 	// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
@@ -2559,7 +2542,7 @@ func validateMember(member string) error {
 func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.ProjectGitOpsInfo {
 	return &v1pb.ProjectGitOpsInfo{
 		Name:               fmt.Sprintf("%s%s/gitOpsInfo", common.ProjectNamePrefix, repository.ProjectResourceID),
-		VcsUid:             fmt.Sprintf("%d", repository.VCSUID),
+		Vcs:                fmt.Sprintf("%s%s", common.VCSProviderPrefix, repository.VCSResourceID),
 		Title:              repository.Title,
 		FullPath:           repository.FullPath,
 		WebUrl:             repository.WebURL,
