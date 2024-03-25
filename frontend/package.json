@@ -110,7 +110,7 @@
     "@types/papaparse": "5.3.14",
     "@types/pouchdb": "^6.4.2",
     "@types/pouchdb-find": "^7.3.3",
-    "@types/prettier": "2.7.1",
+    "@types/prettier": "3.0.0",
     "@types/qrcode": "^1.5.5",
     "@types/qs": "6.9.14",
     "@types/scrollparent": "^2.0.3",
