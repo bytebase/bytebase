@@ -67,8 +67,8 @@ var defaultResourceActionTypeMap = map[string][]api.ActivityType{
 	},
 }
 
-// ListLogs lists the logs.
-func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsRequest) (*v1pb.ListLogsResponse, error) {
+// SearchLogs search the logs.
+func (s *LoggingService) SearchLogs(ctx context.Context, request *v1pb.SearchLogsRequest) (*v1pb.SearchLogsResponse, error) {
 	var pageToken storepb.PageToken
 	if request.PageToken != "" {
 		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
@@ -113,7 +113,7 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 		}
 	}
 
-	resp := &v1pb.ListLogsResponse{
+	resp := &v1pb.SearchLogsResponse{
 		NextPageToken: nextPageToken,
 	}
 	for _, activity := range activityList {

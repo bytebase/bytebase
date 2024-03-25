@@ -3,6 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
+import { Timestamp } from "../google/protobuf/timestamp";
 import { Engine, engineFromJSON, engineToJSON, ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
 import { DatabaseMetadata } from "./database_service";
 
@@ -309,6 +310,69 @@ export interface StringifyMetadataRequest {
 
 export interface StringifyMetadataResponse {
   schema: string;
+}
+
+export interface ListQueryHistoryRequest {
+  /**
+   * The name is the instance name to execute the query against.
+   * Format: instances/{instance}/databases/{databaseName}
+   */
+  name: string;
+  /**
+   * filter is the filter to apply on the list histories request,
+   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+   * The field only support in filter:
+   * - creator, example:
+   *    - creator = "users/{email}"
+   * - create_time, example:
+   *    - create_time <= "2022-01-01T12:00:00.000Z"
+   *    - create_time >= "2022-01-01T12:00:00.000Z"
+   */
+  filter: string;
+  /**
+   * The order by of the history.
+   * Only support order by create_time.
+   * For example:
+   *  - order_by = "create_time asc"
+   *  - order_by = "create_time desc"
+   */
+  orderBy: string;
+  /**
+   * Not used. The maximum number of histories to return.
+   * The service may return fewer than this value.
+   * If unspecified, at most 100 history entries will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * Not used. A page token, received from a previous `ListQueryHistory` call.
+   * Provide this to retrieve the subsequent page.
+   */
+  pageToken: string;
+}
+
+export interface ListQueryHistoryResponse {
+  /** The list of history. */
+  queryHistories: QueryHistory[];
+  /**
+   * A token to retrieve next page of history.
+   * Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method
+   * to retrieve the next page of history.
+   */
+  nextPageToken: string;
+}
+
+export interface QueryHistory {
+  /**
+   * The name for the query history.
+   * Format: instances/{instance}/databases/{databaseName}/queryHistories/{uid}
+   */
+  name: string;
+  creator: string;
+  createTime: Date | undefined;
+  statement: string;
+  error?: string | undefined;
+  duration: Duration | undefined;
 }
 
 function createBaseDifferPreviewRequest(): DifferPreviewRequest {
@@ -2287,6 +2351,337 @@ export const StringifyMetadataResponse = {
   },
 };
 
+function createBaseListQueryHistoryRequest(): ListQueryHistoryRequest {
+  return { name: "", filter: "", orderBy: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListQueryHistoryRequest = {
+  encode(message: ListQueryHistoryRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.filter !== "") {
+      writer.uint32(18).string(message.filter);
+    }
+    if (message.orderBy !== "") {
+      writer.uint32(26).string(message.orderBy);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(32).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(42).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListQueryHistoryRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListQueryHistoryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.orderBy = reader.string();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListQueryHistoryRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      orderBy: isSet(object.orderBy) ? globalThis.String(object.orderBy) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListQueryHistoryRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.orderBy !== "") {
+      obj.orderBy = message.orderBy;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListQueryHistoryRequest>): ListQueryHistoryRequest {
+    return ListQueryHistoryRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListQueryHistoryRequest>): ListQueryHistoryRequest {
+    const message = createBaseListQueryHistoryRequest();
+    message.name = object.name ?? "";
+    message.filter = object.filter ?? "";
+    message.orderBy = object.orderBy ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListQueryHistoryResponse(): ListQueryHistoryResponse {
+  return { queryHistories: [], nextPageToken: "" };
+}
+
+export const ListQueryHistoryResponse = {
+  encode(message: ListQueryHistoryResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.queryHistories) {
+      QueryHistory.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListQueryHistoryResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListQueryHistoryResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.queryHistories.push(QueryHistory.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListQueryHistoryResponse {
+    return {
+      queryHistories: globalThis.Array.isArray(object?.queryHistories)
+        ? object.queryHistories.map((e: any) => QueryHistory.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListQueryHistoryResponse): unknown {
+    const obj: any = {};
+    if (message.queryHistories?.length) {
+      obj.queryHistories = message.queryHistories.map((e) => QueryHistory.toJSON(e));
+    }
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListQueryHistoryResponse>): ListQueryHistoryResponse {
+    return ListQueryHistoryResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListQueryHistoryResponse>): ListQueryHistoryResponse {
+    const message = createBaseListQueryHistoryResponse();
+    message.queryHistories = object.queryHistories?.map((e) => QueryHistory.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseQueryHistory(): QueryHistory {
+  return { name: "", creator: "", createTime: undefined, statement: "", error: undefined, duration: undefined };
+}
+
+export const QueryHistory = {
+  encode(message: QueryHistory, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.creator !== "") {
+      writer.uint32(18).string(message.creator);
+    }
+    if (message.createTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.statement !== "") {
+      writer.uint32(34).string(message.statement);
+    }
+    if (message.error !== undefined) {
+      writer.uint32(42).string(message.error);
+    }
+    if (message.duration !== undefined) {
+      Duration.encode(message.duration, writer.uint32(50).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): QueryHistory {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryHistory();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.duration = Duration.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryHistory {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      error: isSet(object.error) ? globalThis.String(object.error) : undefined,
+      duration: isSet(object.duration) ? Duration.fromJSON(object.duration) : undefined,
+    };
+  },
+
+  toJSON(message: QueryHistory): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    if (message.error !== undefined) {
+      obj.error = message.error;
+    }
+    if (message.duration !== undefined) {
+      obj.duration = Duration.toJSON(message.duration);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<QueryHistory>): QueryHistory {
+    return QueryHistory.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<QueryHistory>): QueryHistory {
+    const message = createBaseQueryHistory();
+    message.name = object.name ?? "";
+    message.creator = object.creator ?? "";
+    message.createTime = object.createTime ?? undefined;
+    message.statement = object.statement ?? "";
+    message.error = object.error ?? undefined;
+    message.duration = (object.duration !== undefined && object.duration !== null)
+      ? Duration.fromPartial(object.duration)
+      : undefined;
+    return message;
+  },
+};
+
 export type SQLServiceDefinition = typeof SQLServiceDefinition;
 export const SQLServiceDefinition = {
   name: "SQLService",
@@ -2378,6 +2773,110 @@ export const SQLServiceDefinition = {
               113,
               117,
               101,
+              114,
+              121,
+            ]),
+          ],
+        },
+      },
+    },
+    listQueryHistory: {
+      name: "ListQueryHistory",
+      requestType: ListQueryHistoryRequest,
+      requestStream: false,
+      responseType: ListQueryHistoryResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              88,
+              90,
+              37,
+              18,
+              35,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              113,
+              117,
+              101,
+              114,
+              121,
+              72,
+              105,
+              115,
+              116,
+              111,
+              114,
+              121,
+              18,
+              47,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              113,
+              117,
+              101,
+              114,
+              121,
+              72,
+              105,
+              115,
+              116,
+              111,
               114,
               121,
             ]),
@@ -2701,6 +3200,32 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = numberToLong(date.getTime() / 1_000);
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof globalThis.Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new globalThis.Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
