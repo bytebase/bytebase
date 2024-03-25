@@ -279,6 +279,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseDataExport, taskrun.NewDataExportExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 
