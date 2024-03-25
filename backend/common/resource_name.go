@@ -249,9 +249,13 @@ func GetIdentityProviderID(name string) (string, error) {
 	return tokens[0], nil
 }
 
-// GetVCSProviderID returns the external version control ID from a resource name.
-func GetVCSProviderID(name string) (int, error) {
-	return GetUIDFromName(name, VCSProviderPrefix)
+// GetVCSProviderID returns the VCS provider ID from a resource name.
+func GetVCSProviderID(name string) (string, error) {
+	tokens, err := GetNameParentTokens(name, VCSProviderPrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
 }
 
 // GetRiskID returns the risk ID from a resource name.

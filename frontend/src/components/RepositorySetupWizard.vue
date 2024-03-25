@@ -57,7 +57,6 @@ import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
 import { PROJECT_V1_ROUTE_GITOPS } from "@/router/dashboard/projectV1";
 import { useRepositoryV1Store, useProjectV1Store } from "@/store";
-import { getVCSUid } from "@/store/modules/v1/common";
 import {
   Project,
   TenantMode,
@@ -186,7 +185,7 @@ const tryFinishSetup = async () => {
     }
 
     const repositoryCreate: Partial<ProjectGitOpsInfo> = {
-      vcsUid: `${getVCSUid(state.config.vcs.name)}`,
+      vcs: state.config.vcs.name,
       title: state.config.repositoryInfo.name,
       fullPath: state.config.repositoryInfo.fullPath,
       webUrl: state.config.repositoryInfo.webUrl,

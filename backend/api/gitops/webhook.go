@@ -589,7 +589,7 @@ func (s *Service) filterRepository(ctx context.Context, webhookEndpointID string
 			)
 			continue
 		}
-		externalVCS, err := s.store.GetVCSProviderV2(ctx, repo.VCSUID)
+		externalVCS, err := s.store.GetVCSProviderV2(ctx, &store.FindVCSProviderMessage{ID: &repo.VCSUID})
 		if err != nil {
 			slog.Error("failed to find the vcs",
 				slog.Int("vcs_uid", repo.VCSUID),
@@ -1368,7 +1368,7 @@ func (s *Service) readFileContent(ctx context.Context, oauthContext *common.Oaut
 	}
 
 	repo := repos[0]
-	externalVCS, err := s.store.GetVCSProviderV2(ctx, repo.VCSUID)
+	externalVCS, err := s.store.GetVCSProviderV2(ctx, &store.FindVCSProviderMessage{ID: &repo.VCSUID})
 	if err != nil {
 		return "", err
 	}

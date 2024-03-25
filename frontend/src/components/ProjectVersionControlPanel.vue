@@ -122,7 +122,7 @@ watch(
       true /* silent */
     );
     if (repo) {
-      await vcsV1Store.fetchVCSByUid(repo.vcsUid);
+      await vcsV1Store.fetchVCSByName(repo.vcs);
     }
   },
   {
@@ -143,7 +143,7 @@ const repository = computed(() => {
 
 const vcs = computed(() => {
   return (
-    vcsV1Store.getVCSByUid(repository.value?.vcsUid ?? "") ??
+    vcsV1Store.fetchVCSByName(repository.value?.vcs ?? "") ??
     ({} as VCSProvider)
   );
 });

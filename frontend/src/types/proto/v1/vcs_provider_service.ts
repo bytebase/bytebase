@@ -174,8 +174,8 @@ export interface ProjectGitOpsInfo {
    * Format: projects/{project}/gitOpsInfo
    */
   name: string;
-  /** The uid for related VCS. */
-  vcsUid: string;
+  /** The name of the VCS. */
+  vcs: string;
   /** The title of the repository. For axample: sample. */
   title: string;
   /** The full_path of the repository. For example: bytebase/sample. */
@@ -1068,7 +1068,7 @@ export const VCSProvider = {
 function createBaseProjectGitOpsInfo(): ProjectGitOpsInfo {
   return {
     name: "",
-    vcsUid: "",
+    vcs: "",
     title: "",
     fullPath: "",
     webUrl: "",
@@ -1086,8 +1086,8 @@ export const ProjectGitOpsInfo = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.vcsUid !== "") {
-      writer.uint32(18).string(message.vcsUid);
+    if (message.vcs !== "") {
+      writer.uint32(18).string(message.vcs);
     }
     if (message.title !== "") {
       writer.uint32(26).string(message.title);
@@ -1138,7 +1138,7 @@ export const ProjectGitOpsInfo = {
             break;
           }
 
-          message.vcsUid = reader.string();
+          message.vcs = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -1215,7 +1215,7 @@ export const ProjectGitOpsInfo = {
   fromJSON(object: any): ProjectGitOpsInfo {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      vcsUid: isSet(object.vcsUid) ? globalThis.String(object.vcsUid) : "",
+      vcs: isSet(object.vcs) ? globalThis.String(object.vcs) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       fullPath: isSet(object.fullPath) ? globalThis.String(object.fullPath) : "",
       webUrl: isSet(object.webUrl) ? globalThis.String(object.webUrl) : "",
@@ -1233,8 +1233,8 @@ export const ProjectGitOpsInfo = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.vcsUid !== "") {
-      obj.vcsUid = message.vcsUid;
+    if (message.vcs !== "") {
+      obj.vcs = message.vcs;
     }
     if (message.title !== "") {
       obj.title = message.title;
@@ -1272,7 +1272,7 @@ export const ProjectGitOpsInfo = {
   fromPartial(object: DeepPartial<ProjectGitOpsInfo>): ProjectGitOpsInfo {
     const message = createBaseProjectGitOpsInfo();
     message.name = object.name ?? "";
-    message.vcsUid = object.vcsUid ?? "";
+    message.vcs = object.vcs ?? "";
     message.title = object.title ?? "";
     message.fullPath = object.fullPath ?? "";
     message.webUrl = object.webUrl ?? "";
