@@ -171,8 +171,8 @@ const activeUserList = computed(() => {
         user.userType === UserType.SYSTEM_BOT
           ? 0
           : user.userType === UserType.SERVICE_ACCOUNT
-          ? 1
-          : 2,
+            ? 1
+            : 2,
       (user) => user.roles.includes(PresetRoleType.WORKSPACE_ADMIN),
       (user) => user.roles.includes(PresetRoleType.WORKSPACE_DBA),
     ],

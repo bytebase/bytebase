@@ -1,8 +1,7 @@
 import Emittery from "emittery";
-import { ComputedRef, Ref } from "vue";
-import { SQLEditorQueryParams } from "../sqlEditor";
-import { SQLEditorTab } from "../sqlEditorTab";
-import { SQLResultSetV1 } from "./sql";
+import type { ComputedRef, Ref } from "vue";
+import type { SQLEditorQueryParams, SQLEditorTab } from "../sqlEditor";
+import type { SQLResultSetV1 } from "./sql";
 
 /**
  * Model

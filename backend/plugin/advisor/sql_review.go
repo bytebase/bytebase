@@ -93,6 +93,9 @@ const (
 	SchemaRuleStatementDisallowAddColumnWithDefault = "statement.disallow-add-column-with-default"
 	// SchemaRuleStatementAddCheckNotValid require add check constraints not valid.
 	SchemaRuleStatementAddCheckNotValid = "statement.add-check-not-valid"
+	// SchemaRuleStatementAddFKNotValid require add foreign key not valid.
+	SchemaRuleStatementAddFKNotValid = "statement.add-foreign-key-not-valid"
+
 	// SchemaRuleStatementDisallowAddNotNull disallow to add NOT NULL.
 	SchemaRuleStatementDisallowAddNotNull = "statement.disallow-add-not-null"
 	// SchemaRuleStatementDisallowAddColumn disallow to add column.
@@ -125,6 +128,8 @@ const (
 	SchemaRuleStatementDisallowMixDDLDML = "statement.disallow-mix-ddl-dml"
 	// SchemaRuleStatementPriorBackupCheck checks for prior backup.
 	SchemaRuleStatementPriorBackupCheck = "statement.prior-backup-check"
+	// SchemaRuleStatementNonTransactional checks for non-transactional statements.
+	SchemaRuleStatementNonTransactional = "statement.non-transactional"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -1544,6 +1549,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLAddCheckNotValid, nil
 		}
+	case SchemaRuleStatementAddFKNotValid:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLAddFKNotValid, nil
+		}
 	case SchemaRuleStatementDisallowAddNotNull:
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLDisallowAddNotNull, nil
@@ -1620,6 +1629,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleOnlineMigration:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLOnlineMigration, nil
+		}
+	case SchemaRuleStatementNonTransactional:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLNonTransactional, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

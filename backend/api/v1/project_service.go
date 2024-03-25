@@ -1010,8 +1010,10 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 	}
 
 	repositoryCreate := &store.RepositoryMessage{
-		VCSUID:             int(vcsID),
-		ProjectResourceID:  project.ResourceID,
+		VCSUID:            int(vcsID),
+		ProjectResourceID: project.ResourceID,
+		// TODO(d): pass in the resource ID from API.
+		ResourceID:         "default",
 		WebhookURLHost:     setting.ExternalUrl,
 		Title:              request.ProjectGitopsInfo.Title,
 		FullPath:           request.ProjectGitopsInfo.FullPath,

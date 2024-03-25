@@ -19,7 +19,7 @@ export const extensionNameOfLanguage = (lang: Language) => {
 };
 
 export const useEditorContextKey = <
-  T extends string | number | boolean | null | undefined
+  T extends string | number | boolean | null | undefined,
 >(
   editor: IStandaloneCodeEditor,
   key: string,

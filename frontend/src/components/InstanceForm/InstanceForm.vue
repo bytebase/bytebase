@@ -273,7 +273,7 @@
         <div class="w-full flex justify-between items-center">
           <InstanceArchiveRestoreButton
             v-if="!isCreating && instance"
-            :instance="(instance as ComposedInstance)"
+            :instance="instance as ComposedInstance"
           />
           <NButton
             v-if="allowEdit"
@@ -772,9 +772,8 @@ const doCreate = async () => {
   state.isRequesting = true;
   try {
     await useGracefulRequest(async () => {
-      const createdInstance = await instanceV1Store.createInstance(
-        instanceCreate
-      );
+      const createdInstance =
+        await instanceV1Store.createInstance(instanceCreate);
       router.push(`/${createdInstance.name}`);
       pushNotification({
         module: "bytebase",

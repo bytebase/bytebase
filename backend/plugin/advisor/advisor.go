@@ -403,11 +403,17 @@ const (
 	// PostgreSQLAddCheckNotValid is an advisor type for PostgreSQL to add check not valid.
 	PostgreSQLAddCheckNotValid Type = "bb.plugin.advisor.postgresql.statement.add-check-not-valid"
 
+	// PostgreSQLAddFKNotValid is a PostgreSQL advisor type requiring add foreign key not valid.
+	PostgreSQLAddFKNotValid Type = "bb.plugin.advisor.postgresql.statement.add-foreign-key-not-valid"
+
 	// PostgreSQLDisallowAddColumnWithDefault is an advisor type for PostgreSQL to disallow add column with default.
 	PostgreSQLDisallowAddColumnWithDefault Type = "bb.plugin.advisor.postgresql.statement.disallow-add-column-with-default"
 
 	// PostgreSQLDisallowAddNotNull is an advisor type for PostgreSQl to disallow add not null.
 	PostgreSQLDisallowAddNotNull Type = "bb.plugin.advisor.postgresql.statement.disallow-add-not-null"
+
+	// PostgreSQLNonTransactional is an advisor type for PostgreSQL to disallow non-transactional statements.
+	PostgreSQLNonTransactional Type = "bb.plugin.advisor.postgresql.statement.non-transactional"
 
 	// PostgreSQLTableDropNamingConvention is an advisor type for PostgreSQL table drop with naming convention.
 	PostgreSQLTableDropNamingConvention Type = "bb.plugin.advisor.postgresql.table.drop-naming-convention"

@@ -299,7 +299,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		if isIgnoredStatement(singleSQL.Text) {
 			continue
 		}
-		if isNonTransactionStatement(singleSQL.Text) {
+		if IsNonTransactionStatement(singleSQL.Text) {
 			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
 			continue
 		}
@@ -483,7 +483,7 @@ func isSetRoleStatement(stmt string) bool {
 	return len(setRoleReg.FindString(stmt)) > 0
 }
 
-func isNonTransactionStatement(stmt string) bool {
+func IsNonTransactionStatement(stmt string) bool {
 	if len(dropDatabaseReg.FindString(stmt)) > 0 {
 		return true
 	}

@@ -241,18 +241,6 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       this.setSubscription(subscription);
       return subscription;
     },
-    async trialSubscription(planType: PlanType) {
-      const subscription = await subscriptionServiceClient.trialSubscription({
-        trial: {
-          plan: planType,
-          days: this.trialingDays,
-          // Instance license count.
-          instanceCount: 10,
-        },
-      });
-      this.setSubscription(subscription);
-      return subscription;
-    },
     async fetchFeatureMatrix() {
       try {
         const featureMatrix = await subscriptionServiceClient.getFeatureMatrix(

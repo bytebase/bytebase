@@ -1,7 +1,7 @@
 <template>
   <CommonSidebar
     :key="'setting'"
-    :item-list="(settingSidebarItemList as SidebarItem[])"
+    :item-list="settingSidebarItemList as SidebarItem[]"
     :get-item-class="getItemClass"
     @select="onSelect"
   />

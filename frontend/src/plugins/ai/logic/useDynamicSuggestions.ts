@@ -48,7 +48,7 @@ export const useDynamicSuggestions = () => {
       presence_penalty: 0.0,
     };
     const axios = new Axios({
-      timeout: 20 * 1000,
+      timeout: 300 * 1000,
       responseType: "json",
     });
     const headers = {

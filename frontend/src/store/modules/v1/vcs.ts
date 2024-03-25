@@ -3,10 +3,7 @@ import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { vcsProviderServiceClient } from "@/grpcweb";
 import { VCSId } from "@/types";
-import {
-  VCSProvider,
-  VCSProvider_Type,
-} from "@/types/proto/v1/vcs_provider_service";
+import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { vcsProviderPrefix } from "./common";
 
 export const useVCSV1Store = defineStore("vcs_v1", () => {
@@ -80,35 +77,6 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
     return resp;
   };
 
-  const exchangeToken = async ({
-    vcsName,
-    vcsType,
-    instanceUrl,
-    clientId,
-    clientSecret,
-    code,
-  }: {
-    vcsName?: string;
-    vcsType?: VCSProvider_Type;
-    instanceUrl?: string;
-    clientId?: string;
-    clientSecret?: string;
-    code: string;
-  }) => {
-    const oauthToken = await vcsProviderServiceClient.exchangeToken({
-      exchangeToken: {
-        name: vcsName ?? `${vcsProviderPrefix}-`,
-        code,
-        type: vcsType,
-        instanceUrl,
-        clientId,
-        clientSecret,
-      },
-    });
-
-    return oauthToken;
-  };
-
   return {
     listVCSExternalProjects,
     getVCSByUid,
@@ -119,7 +87,6 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
     deleteVCS,
     createVCS,
     updateVCS,
-    exchangeToken,
   };
 });
 

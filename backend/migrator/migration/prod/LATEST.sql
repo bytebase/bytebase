@@ -784,7 +784,7 @@ CREATE TABLE activity (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    resource_container TEXT,
+    resource_container TEXT NOT NULL DEFAULT '',
     container_id INTEGER NOT NULL CHECK (container_id > 0),
     type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
     level TEXT NOT NULL CHECK (level IN ('INFO', 'WARN', 'ERROR')),
@@ -854,11 +854,14 @@ CREATE TABLE vcs (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    resource_id TEXT NOT NULL,
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS')),
     instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
     access_token TEXT NOT NULL DEFAULT ''
 );
+
+CREATE UNIQUE INDEX idx_vcs_unique_resource_id ON vcs(resource_id);
 
 ALTER SEQUENCE vcs_id_seq RESTART WITH 101;
 
@@ -880,6 +883,7 @@ CREATE TABLE repository (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     vcs_id INTEGER NOT NULL REFERENCES vcs (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
+    resource_id TEXT NOT NULL,
     -- Name from the corresponding VCS provider.
     -- For GitLab, this is the project name. e.g. project 1
     name TEXT NOT NULL,
@@ -913,7 +917,7 @@ CREATE TABLE repository (
     webhook_secret_token TEXT NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_repository_unique_project_id ON repository(project_id);
+CREATE UNIQUE INDEX idx_repository_unique_project_id_resource_id ON repository(project_id, resource_id);
 
 ALTER SEQUENCE repository_id_seq RESTART WITH 101;
 
@@ -1227,3 +1231,10 @@ BEFORE
 UPDATE
     ON branch FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
+
+CREATE TABLE export_archive (
+  id SERIAL PRIMARY KEY,
+  created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+  bytes BYTEA,
+  payload JSONB NOT NULL DEFAULT '{}'
+);

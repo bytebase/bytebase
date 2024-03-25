@@ -527,9 +527,8 @@ export const prepareDatabaseList = async (
     // It's horrible to fetchDatabaseByUID one-by-one when query.databaseList
     // is big (100+ sometimes)
     // So we are fetching databaseList by project since that's better cached.
-    const project = await useProjectV1Store().getOrFetchProjectByUID(
-      projectUID
-    );
+    const project =
+      await useProjectV1Store().getOrFetchProjectByUID(projectUID);
     await prepareDatabaseListByProject(project.name);
   } else {
     // Otherwise, we don't have the projectUID (very rare to see, theoretically)

@@ -53,6 +53,8 @@ const (
 	StatementJoinColumnAttrsNotMatch          Code = 226
 	StatementDisallowMixDDLDML                Code = 227
 	StatementPriorBackupCheck                 Code = 228
+	StatementAddFKWithValidation              Code = 229
+	StatementNonTransactional                 Code = 230
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.

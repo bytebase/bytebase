@@ -50,12 +50,12 @@ const localeLabel =
   locale.value === "zh-CN" || locale.value === "zh"
     ? "简体中文"
     : locale.value === "es-ES" || locale.value === "es"
-    ? "Español"
-    : locale.value === "ja-JP" || locale.value === "ja"
-    ? "日本語"
-    : locale.value === "vi-VN" || locale.value === "vi"
-    ? "Tiếng Việt"
-    : "English";
+      ? "Español"
+      : locale.value === "ja-JP" || locale.value === "ja"
+        ? "日本語"
+        : locale.value === "vi-VN" || locale.value === "vi"
+          ? "Tiếng Việt"
+          : "English";
 const selectedLanguage = ref(localeLabel);
 const year = new Date().getFullYear();
 

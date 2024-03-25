@@ -1,5 +1,4 @@
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
-import { VCSId } from "./id";
 
 // Backend uses the same ENUM for GitLab/GitHub SaaS and self-hosted. Because they are based on the
 // same codebase.
@@ -21,18 +20,6 @@ export interface VCSConfig {
   instanceUrl: string;
   accessToken: string;
 }
-
-export type VCS = {
-  id: VCSId;
-
-  // Domain specific fields
-  name: string;
-  type: VCSType;
-  uiType: VCSUIType;
-  instanceUrl: string;
-  apiUrl: string;
-  accessToken: string;
-};
 
 export type VCSFileCommit = {
   id: string;

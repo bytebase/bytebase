@@ -788,9 +788,9 @@ const handleExpandedKeysChange = (expandedKeys: string[]) => {
   @apply !flex;
 }
 .schema-editor-tree
-  :deep(.n-tree-node-wrapper
-    .n-tree-node--selected
-    .n-tree-node-content__suffix) {
+  :deep(
+    .n-tree-node-wrapper .n-tree-node--selected .n-tree-node-content__suffix
+  ) {
   @apply !flex;
 }
 

@@ -31,13 +31,20 @@
         :show-placeholder="true"
         :custom-click="isStandaloneMode"
         :database-list="filteredDatabaseList"
-        @select-database="(db: ComposedDatabase) =>
-                  toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))"
+        @select-database="
+          (db: ComposedDatabase) =>
+            toggleDatabasesSelection(
+              [db as ComposedDatabase],
+              !isDatabaseSelected(db)
+            )
+        "
       >
         <template #selection-all="{ databaseList: selectedDatabaseList }">
           <NCheckbox
             v-if="selectedDatabaseList.length > 0"
-            v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
+            v-bind="
+              getAllSelectionState(selectedDatabaseList as ComposedDatabase[])
+            "
             @update:checked="
               toggleDatabasesSelection(
                 selectedDatabaseList as ComposedDatabase[],

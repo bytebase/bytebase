@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
 
@@ -18,6 +19,9 @@ service SQLService {
       additional_bindings {post: "/v1/{name=instances/*}:query"}
       body: "*"
     };
+  }
+  rpc ListQueryHistories(ListQueryHistoriesRequest) returns (ListQueryHistoriesResponse) {
+    option (google.api.http) = {get: "/v1/queryHistories"};
   }
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
@@ -297,4 +301,53 @@ message StringifyMetadataRequest {
 
 message StringifyMetadataResponse {
   string schema = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message ListQueryHistoriesRequest {
+  // Not used. The maximum number of histories to return.
+  // The service may return fewer than this value.
+  // If unspecified, at most 100 history entries will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // Not used. A page token, received from a previous `ListQueryHistory` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 2;
+
+  // filter is the filter to apply on the search query history,
+  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+  // Only support filter by database for now.
+  // For example:
+  // database = "instances/{instance}/databases/{database}"
+  string filter = 3;
+}
+
+message ListQueryHistoriesResponse {
+  // The list of history.
+  repeated QueryHistory query_histories = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // A token to retrieve next page of history.
+  // Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method
+  // to retrieve the next page of history.
+  string next_page_token = 2;
+}
+
+message QueryHistory {
+  // The name for the query history.
+  // Format: queryHistories/{uid}
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The database name to execute the query.
+  // Format: instances/{instance}/databases/{databaseName}
+  string database = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string statement = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  optional string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Duration duration = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
