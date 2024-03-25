@@ -88,7 +88,7 @@
     "vueuc": "0.4.58"
   },
   "devDependencies": {
-    "@iconify/json": "2.2.188",
+    "@iconify/json": "2.2.195",
     "@intlify/unplugin-vue-i18n": "1.6.0",
     "@rollup/plugin-yaml": "4.1.2",
     "@rushstack/eslint-patch": "1.8.0",
