@@ -1,0 +1,14 @@
+{
+Transfer (index_topic_1 Address from, index_topic_2 Address to, uint128_value)
+   [ 
+	index_topic_1
+"0x28c6c06298d514db089934071355e5743bf21d60"
+ index_topic_2
+"0xC872Dae9480A3583D46dd9570da0E825B95E117a"
+:"string"
+"token_Usdt"
+"Erc-20"
+"uint128_value"
+ ="100000" ]
+true
+}
