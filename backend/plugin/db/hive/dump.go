@@ -333,8 +333,8 @@ func formatColumn(builder *strings.Builder, columnNames []string) {
 func formatKVPair(builder *strings.Builder, kvMap map[string]string) {
 	_, _ = builder.WriteString("(\n")
 	index := 0
-	for k, v := range kvMap {
-		_, _ = builder.WriteString(fmt.Sprintf("  '%s' = '%s'", k, v))
+	for key, value := range kvMap {
+		_, _ = builder.WriteString(fmt.Sprintf("  '%s' = '%s'", key, value))
 		if index != len(kvMap)-1 {
 			_, _ = builder.WriteString(",\n")
 		}
