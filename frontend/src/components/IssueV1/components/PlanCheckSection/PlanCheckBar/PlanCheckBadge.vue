@@ -150,7 +150,6 @@ const PlanCheckRunTypeNameDict = new Map<PlanCheckRun_Type, string>([
   [PlanCheckRun_Type.DATABASE_STATEMENT_TYPE, "task.check-type.statement-type"],
   [PlanCheckRun_Type.DATABASE_CONNECT, "task.check-type.connection"],
   [PlanCheckRun_Type.DATABASE_GHOST_SYNC, "task.check-type.ghost-sync"],
-  [PlanCheckRun_Type.DATABASE_PITR_MYSQL, "task.check-type.pitr"],
   [
     PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT,
     "task.check-type.summary-report",

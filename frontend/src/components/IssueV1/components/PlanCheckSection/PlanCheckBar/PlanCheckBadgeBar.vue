@@ -47,7 +47,6 @@ const planCheckRunsGroupByType = computed(() => {
 });
 
 const PlanCheckTypeOrderList: PlanCheckRun_Type[] = [
-  PlanCheckRun_Type.DATABASE_PITR_MYSQL,
   PlanCheckRun_Type.DATABASE_GHOST_SYNC,
   PlanCheckRun_Type.DATABASE_STATEMENT_COMPATIBILITY,
   PlanCheckRun_Type.DATABASE_STATEMENT_TYPE,

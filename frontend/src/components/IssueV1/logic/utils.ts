@@ -30,11 +30,7 @@ import {
 import { IssueContext } from "./context";
 
 export const databaseForTask = (issue: ComposedIssue, task: Task) => {
-  if (
-    task.type === Task_Type.DATABASE_CREATE ||
-    task.type === Task_Type.DATABASE_RESTORE_RESTORE ||
-    task.type === Task_Type.DATABASE_RESTORE_CUTOVER
-  ) {
+  if (task.type === Task_Type.DATABASE_CREATE) {
     // The database is not created yet.
     // extract database info from the task's and payload's properties.
     return extractCoreDatabaseInfoFromDatabaseCreateTask(
@@ -45,7 +41,6 @@ export const databaseForTask = (issue: ComposedIssue, task: Task) => {
     if (
       task.databaseDataUpdate ||
       task.databaseSchemaUpdate ||
-      task.databaseRestoreRestore ||
       task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER ||
       task.type === Task_Type.DATABASE_SCHEMA_BASELINE
     ) {
@@ -104,20 +99,6 @@ const extractCoreDatabaseInfoFromDatabaseCreateTask = (
   if (task.databaseCreate) {
     const databaseName = task.databaseCreate.database;
     const instance = task.target;
-    return coreDatabaseInfo(instance, databaseName);
-  }
-  if (task.databaseRestoreRestore) {
-    const db = extractDatabaseResourceName(
-      task.databaseRestoreRestore.target || task.target
-    );
-    const databaseName = db.database;
-    const instance = `instances/${db.instance}`;
-    return coreDatabaseInfo(instance, databaseName);
-  }
-  if (task.type === Task_Type.DATABASE_RESTORE_CUTOVER) {
-    const db = extractDatabaseResourceName(task.target);
-    const databaseName = db.database;
-    const instance = `instances/${db.instance}`;
     return coreDatabaseInfo(instance, databaseName);
   }
 
