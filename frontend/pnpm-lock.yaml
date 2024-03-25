@@ -30,8 +30,8 @@ dependencies:
     specifier: 1.6.7
     version: 1.6.7
   bootstrap:
-    specifier: 5.3.2
-    version: 5.3.2(@popperjs/core@2.11.8)
+    specifier: 5.3.3
+    version: 5.3.3(@popperjs/core@2.11.8)
   canvas-confetti:
     specifier: 1.9.2
     version: 1.9.2
@@ -2937,8 +2937,8 @@ packages:
       popper.js: 1.16.1
     dev: false
 
-  /bootstrap@5.3.2(@popperjs/core@2.11.8):
-    resolution: {integrity: sha512-D32nmNWiQHo94BKHLmOrdjlL05q1c8oxbtBphQFb9Z5to6eGRDCm0QgeaZ4zFBHzfg2++rqa2JkqCcxDy0sH0g==}
+  /bootstrap@5.3.3(@popperjs/core@2.11.8):
+    resolution: {integrity: sha512-8HLCdWgyoMguSO9o+aH+iuZ+aht+mzW0u3HIMzVu7Srrpv7EBBxTnrFlSCskwdY1+EOFQSm7uMJhNQHkdPcmjg==}
     peerDependencies:
       '@popperjs/core': ^2.11.8
     dependencies:
