@@ -36,7 +36,6 @@ roles:
       - bb.environments.update
       - bb.vcsProviders.create
       - bb.vcsProviders.delete
-      - bb.vcsProviders.exchangeToken
       - bb.vcsProviders.get
       - bb.vcsProviders.list
       - bb.vcsProviders.listProjects
@@ -133,7 +132,6 @@ roles:
       - bb.environments.update
       - bb.vcsProviders.create
       - bb.vcsProviders.delete
-      - bb.vcsProviders.exchangeToken
       - bb.vcsProviders.get
       - bb.vcsProviders.list
       - bb.vcsProviders.listProjects
@@ -197,7 +195,6 @@ roles:
     permissions:
       - bb.environments.get
       - bb.environments.list
-      - bb.vcsProviders.exchangeToken
       - bb.vcsProviders.get
       - bb.vcsProviders.list
       - bb.vcsProviders.searchProjects

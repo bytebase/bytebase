@@ -12,7 +12,6 @@ const (
 	PermissionEnvironmentsUpdate         Permission = "bb.environments.update"
 	PermissionVCSProvidersCreate         Permission = "bb.vcsProviders.create"
 	PermissionVCSProvidersDelete         Permission = "bb.vcsProviders.delete"
-	PermissionVCSProvidersExchangeToken  Permission = "bb.vcsProviders.exchangeToken"
 	PermissionVCSProvidersGet            Permission = "bb.vcsProviders.get"
 	PermissionVCSProvidersList           Permission = "bb.vcsProviders.list"
 	PermissionVCSProvidersListProjects   Permission = "bb.vcsProviders.listProjects"
@@ -146,7 +145,6 @@ func PermissionExist(p Permission) bool {
 		PermissionEnvironmentsUpdate,
 		PermissionVCSProvidersCreate,
 		PermissionVCSProvidersDelete,
-		PermissionVCSProvidersExchangeToken,
 		PermissionVCSProvidersGet,
 		PermissionVCSProvidersList,
 		PermissionVCSProvidersListProjects,
@@ -243,7 +241,6 @@ func GetPermissionLevel(permission Permission) PermissionLevel {
 		PermissionEnvironmentsUpdate,
 		PermissionVCSProvidersCreate,
 		PermissionVCSProvidersDelete,
-		PermissionVCSProvidersExchangeToken,
 		PermissionVCSProvidersGet,
 		PermissionVCSProvidersList,
 		PermissionVCSProvidersListProjects,
