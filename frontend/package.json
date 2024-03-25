@@ -130,7 +130,7 @@
     "@vue/test-utils": "2.4.5",
     "@vue/tsconfig": "0.5.1",
     "autoprefixer": "10.4.19",
-    "code-inspector-plugin": "^0.9.2",
+    "code-inspector-plugin": "^0.10.0",
     "eslint": "8.57.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-prettier": "5.1.3",
