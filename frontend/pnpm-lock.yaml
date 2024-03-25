@@ -118,7 +118,7 @@ dependencies:
     version: 2.0.2
   nice-grpc-error-details:
     specifier: ^0.2.4
-    version: 0.2.4
+    version: 0.2.5
   nice-grpc-web:
     specifier: ^3.3.2
     version: 3.3.3(ws@8.16.0)
@@ -5134,8 +5134,8 @@ packages:
       ts-error: 1.0.6
     dev: false
 
-  /nice-grpc-error-details@0.2.4:
-    resolution: {integrity: sha512-7n6iLdrWhnSnpzTQiFUvZm48vSCskVHbdEoR9F9GUShW+bPYWDKSTBbgaAvh9CwNlkHajfBMeqbUu+oRGsiGNA==}
+  /nice-grpc-error-details@0.2.5:
+    resolution: {integrity: sha512-MUK3TOjfYRCzHRHen5YA6IlS1AZzUQtB9bWtZJE3WLj/aeyAimzry9hiLNzQSrbO8tposnmSDTOgnmasP6zzAQ==}
     dependencies:
       long: 5.2.3
       nice-grpc-common: 2.0.2
