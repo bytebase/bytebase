@@ -72,11 +72,7 @@
 import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
-import {
-  databaseForTask,
-  stageForTask,
-  useIssueContext,
-} from "@/components/IssueV1/logic";
+import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
 import { useDatabaseV1Store, usePageMode } from "@/store";
 import { UNKNOWN_ID } from "@/types";
@@ -109,34 +105,6 @@ const databaseCreationStatus = computed((): DatabaseCreationStatus => {
     else return "PENDING_CREATE";
   }
 
-  // For database restore target, find its related database create task
-  // and check its status.
-  if (
-    task.type === Task_Type.DATABASE_RESTORE_RESTORE &&
-    task.databaseRestoreRestore
-  ) {
-    const targetDatabase = task.databaseRestoreRestore.target || task.target;
-    if (
-      useDatabaseV1Store().getDatabaseByName(targetDatabase).uid !==
-      String(UNKNOWN_ID)
-    ) {
-      return "EXISTED";
-    }
-
-    if (!targetDatabase) return "PENDING_CREATE";
-    const stage = stageForTask(issue.value, selectedTask.value);
-    if (!stage) return "PENDING_CREATE";
-
-    const targetDatabaseCreateTask = stage.tasks.find((t) => {
-      return (
-        t.type === Task_Type.DATABASE_CREATE &&
-        t.databaseCreate &&
-        `${t.target}/databases/${t.databaseCreate.database}` === targetDatabase
-      );
-    });
-    if (targetDatabaseCreateTask?.status === Task_Status.DONE) return "CREATED";
-    return "PENDING_CREATE";
-  }
   return "EXISTED";
 });
 

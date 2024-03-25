@@ -141,16 +141,10 @@ export const isTaskV1TriggeredByVCS = (
 
 export const semanticTaskType = (type: Task_Type) => {
   switch (type) {
-    case Task_Type.DATABASE_BACKUP:
-      return t("common.backup");
     case Task_Type.DATABASE_CREATE:
       return t("db.create");
     case Task_Type.DATABASE_DATA_UPDATE:
       return "DML";
-    case Task_Type.DATABASE_RESTORE_RESTORE:
-      return `PITR ${t("common.restore")}`;
-    case Task_Type.DATABASE_RESTORE_CUTOVER:
-      return `PITR ${t("common.cutover")}`;
     case Task_Type.DATABASE_SCHEMA_BASELINE:
       return t("common.baseline");
     case Task_Type.DATABASE_SCHEMA_UPDATE:

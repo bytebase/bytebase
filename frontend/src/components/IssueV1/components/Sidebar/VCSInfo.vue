@@ -66,7 +66,7 @@ const commit = computed(() => {
   // Use commits[0] for new format
   // Use fileCommit for legacy data (if possible)
   // Use undefined otherwise
-  return head(pushEvent.value?.commits) ?? pushEvent.value?.fileCommit;
+  return head(pushEvent.value?.commits);
 });
 
 const vcsBranch = computed((): string => {
