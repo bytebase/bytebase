@@ -60,14 +60,18 @@ func (s *databaseState) convertToDatabaseMetadata() *storepb.DatabaseSchemaMetad
 }
 
 type schemaState struct {
-	id     int
-	name   string
-	tables map[string]*tableState
+	id           int
+	name         string
+	tables       map[string]*tableState
+	views        map[string]*viewState
+	handledViews map[string]bool
 }
 
 func newSchemaState() *schemaState {
 	return &schemaState{
-		tables: make(map[string]*tableState),
+		tables:       make(map[string]*tableState),
+		views:        make(map[string]*viewState),
+		handledViews: make(map[string]bool),
 	}
 }
 
@@ -76,6 +80,9 @@ func convertToSchemaState(schema *storepb.SchemaMetadata) *schemaState {
 	state.name = schema.Name
 	for i, table := range schema.Tables {
 		state.tables[table.Name] = convertToTableState(i, table)
+	}
+	for i, view := range schema.Views {
+		state.views[view.Name] = convertToViewState(i, view)
 	}
 	return state
 }
@@ -92,11 +99,16 @@ func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
 	for _, table := range tableStates {
 		tables = append(tables, table.convertToTableMetadata())
 	}
+	var views []*storepb.ViewMetadata
+	for _, view := range s.views {
+		views = append(views, view.convertToViewMetadata())
+	}
+
 	return &storepb.SchemaMetadata{
 		Name:   s.name,
 		Tables: tables,
+		Views:  views,
 		// Unsupported, for tests only.
-		Views:             []*storepb.ViewMetadata{},
 		Functions:         []*storepb.FunctionMetadata{},
 		Streams:           []*storepb.StreamMetadata{},
 		Tasks:             []*storepb.TaskMetadata{},
@@ -376,6 +388,38 @@ func (f *foreignKeyState) toString(buf io.StringWriter) error {
 		}
 	}
 	if _, err := buf.WriteString(")"); err != nil {
+		return err
+	}
+	return nil
+}
+
+type viewState struct {
+	id         int
+	name       string
+	definition string
+}
+
+func (v *viewState) convertToViewMetadata() *storepb.ViewMetadata {
+	return &storepb.ViewMetadata{
+		Name:       v.name,
+		Definition: v.definition,
+	}
+}
+
+func convertToViewState(id int, view *storepb.ViewMetadata) *viewState {
+	return &viewState{
+		id:         id,
+		name:       view.Name,
+		definition: view.Definition,
+	}
+}
+
+func (v *viewState) toString(buf io.StringWriter) error {
+	stmt := fmt.Sprintf("CREATE VIEW `%s` AS %s", v.name, v.definition)
+	if !strings.HasSuffix(stmt, ";") {
+		stmt += ";"
+	}
+	if _, err := buf.WriteString(stmt); err != nil {
 		return err
 	}
 	return nil
