@@ -10,7 +10,7 @@
         #item="{
           item: { environment, review },
         }: {
-          item: EnvironmentReviewPolicy,
+          item: EnvironmentReviewPolicy;
         }"
       >
         <div class="bb-grid-cell">

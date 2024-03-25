@@ -27,8 +27,13 @@
         :show-placeholder="true"
         :show-selection-column="true"
         :custom-click="isStandaloneMode"
-        @select-database="(db: ComposedDatabase) =>
-                  toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))"
+        @select-database="
+          (db: ComposedDatabase) =>
+            toggleDatabasesSelection(
+              [db as ComposedDatabase],
+              !isDatabaseSelected(db)
+            )
+        "
       >
         <template #selection-all="{ databaseList }">
           <NCheckbox

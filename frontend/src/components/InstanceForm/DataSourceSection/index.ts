@@ -1,3 +1,3 @@
-import DataSourceSection from "DataSourceSection.vue";
+import DataSourceSection from "./DataSourceSection.vue";
 
 export default DataSourceSection;

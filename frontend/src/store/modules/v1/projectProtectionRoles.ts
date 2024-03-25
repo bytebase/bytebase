@@ -10,7 +10,7 @@ import {
 import { protectionRulesSuffix } from "./common";
 
 type ProjectProtectionRuleCacheKey = [
-  string /* project protection rules resource name */
+  string /* project protection rules resource name */,
 ];
 
 export const useProjectProtectionRulesStore = defineStore(

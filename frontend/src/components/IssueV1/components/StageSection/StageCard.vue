@@ -23,7 +23,7 @@
         <div class="whitespace-no-wrap with-underline">
           {{ $t("common.tasks") }}
         </div>
-        <StageSummary :stage="(stage as Stage)" />
+        <StageSummary :stage="stage as Stage" />
       </div>
     </div>
 

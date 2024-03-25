@@ -34,8 +34,14 @@
       :readonly="readonly"
       :template-list="filteredTemplateList"
       class="flex-1"
-      @view="(template: SchemaTemplateSetting_FieldTemplate) => $emit('view', template)"
-      @apply="(template: SchemaTemplateSetting_FieldTemplate) => $emit('apply', template)"
+      @view="
+        (template: SchemaTemplateSetting_FieldTemplate) =>
+          $emit('view', template)
+      "
+      @apply="
+        (template: SchemaTemplateSetting_FieldTemplate) =>
+          $emit('apply', template)
+      "
     />
   </div>
 </template>

@@ -41,7 +41,7 @@
     />
 
     <DatabaseHoverPanel
-      :database="(hoverNode?.meta.target as ComposedDatabase|undefined)"
+      :database="hoverNode?.meta.target as ComposedDatabase"
       :x="hoverPanelPosition.x"
       :y="hoverPanelPosition.y"
       class="ml-3"
@@ -58,7 +58,12 @@
 <script lang="ts" setup>
 import { useElementSize, useMounted, useClipboard } from "@vueuse/core";
 import { head } from "lodash-es";
-import { NTree, NDropdown, DropdownOption, TreeOption } from "naive-ui";
+import {
+  NTree,
+  NDropdown,
+  type DropdownOption,
+  type TreeOption,
+} from "naive-ui";
 import { storeToRefs } from "pinia";
 import { ref, computed, nextTick, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
@@ -80,7 +85,7 @@ import {
   idForSQLEditorTreeNodeTarget,
   useConnectionOfCurrentSQLEditorTab,
 } from "@/store";
-import {
+import type {
   ComposedDatabase,
   ComposedInstance,
   CoreSQLEditorTab,
@@ -89,12 +94,12 @@ import {
   SQLEditorTreeNode,
   SQLEditorTreeNodeTarget,
   SQLEditorTreeNodeType,
-  UNKNOWN_ID,
 } from "@/types";
 import {
   ConnectableTreeNodeTypes,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   ExpandableTreeNodeTypes,
+  UNKNOWN_ID,
   instanceOfSQLEditorTreeNode,
   isConnectableSQLEditorTreeNode,
   languageOfEngineV1,
@@ -513,8 +518,8 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
     type === "table"
       ? (target as SQLEditorTreeNodeTarget<"table">).table.name
       : type === "view"
-      ? (target as SQLEditorTreeNodeTarget<"view">).view.name
-      : "";
+        ? (target as SQLEditorTreeNodeTarget<"view">).view.name
+        : "";
   if (!tableOrViewName) {
     return;
   }

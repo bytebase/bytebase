@@ -57,7 +57,7 @@ const dataMaskingTabList = [
   "masking-algorithms",
   "classification",
 ] as const;
-type DataMaskingTab = typeof dataMaskingTabList[number];
+type DataMaskingTab = (typeof dataMaskingTabList)[number];
 const isDataMaskingTab = (tab: any): tab is DataMaskingTab =>
   dataMaskingTabList.includes(tab);
 

@@ -71,5 +71,5 @@ export const SQLTypeList = {
   DML: uniq([...mysqlSQLTypeList.DML, ...pgSQLTypeList.DML].sort()),
 } as const;
 
-export type SQLTypeDDL = typeof SQLTypeList.DDL[number];
-export type SQLTypeDML = typeof SQLTypeList.DML[number];
+export type SQLTypeDDL = (typeof SQLTypeList.DDL)[number];
+export type SQLTypeDML = (typeof SQLTypeList.DML)[number];

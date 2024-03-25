@@ -131,10 +131,10 @@ const descriptionText = computed(() => {
   const startTrial = subscriptionStore.canUpgradeTrial
     ? t("subscription.upgrade-trial")
     : subscriptionStore.isTrialing
-    ? ""
-    : t("subscription.trial-for-days", {
-        days: subscriptionStore.trialingDays,
-      });
+      ? ""
+      : t("subscription.trial-for-days", {
+          days: subscriptionStore.trialingDays,
+        });
   if (!Array.isArray(subscriptionStore.featureMatrix.get(props.feature))) {
     return `${description}\n${startTrial}`;
   }

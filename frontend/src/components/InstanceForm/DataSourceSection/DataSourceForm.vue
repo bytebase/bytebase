@@ -132,10 +132,12 @@
             class="mt-1 w-full"
             :disabled="!allowEdit"
             :placeholder="secretInputPlaceholder"
-            @update:value="(val: string) => {
-              const ds = dataSource;
-              ds.externalSecret!.token = val;
-            }"
+            @update:value="
+              (val: string) => {
+                const ds = dataSource;
+                ds.externalSecret!.token = val;
+              }
+            "
           />
         </div>
         <div v-else-if="dataSource.externalSecret.appRole" class="space-y-4">
@@ -155,10 +157,12 @@
               :placeholder="`${$t(
                 'instance.external-secret.vault-auth-type.app-role.role-id'
               )} - ${$t('common.write-only')}`"
-              @update:value="(val: string) => {
-                const ds = dataSource;
-                ds.externalSecret!.appRole!.roleId = val;
-              }"
+              @update:value="
+                (val: string) => {
+                  const ds = dataSource;
+                  ds.externalSecret!.appRole!.roleId = val;
+                }
+              "
             />
           </div>
           <div class="sm:col-span-2 sm:col-start-1">
@@ -215,10 +219,12 @@
               class="mt-1 w-full"
               :disabled="!allowEdit"
               :placeholder="secretInputPlaceholder"
-              @update:value="(val: string) => {
-                const ds = dataSource;
-                ds.externalSecret!.appRole!.secretId = val;
-              }"
+              @update:value="
+                (val: string) => {
+                  const ds = dataSource;
+                  ds.externalSecret!.appRole!.secretId = val;
+                }
+              "
             />
           </div>
         </div>

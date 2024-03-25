@@ -59,7 +59,7 @@ import {
   getProjectNameAndDatabaseGroupName,
   getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
 } from "@/store/modules/v1/common";
-import {
+import type {
   ComposedDatabaseGroup,
   ComposedProject,
   ComposedSchemaGroup,
@@ -70,7 +70,7 @@ import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
 import { batchConvertParsedExprToCELString } from "@/utils";
 import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 import DatabaseGroupForm from "./DatabaseGroupForm.vue";
-import { ResourceType } from "./common/ExprEditor/context";
+import type { ResourceType } from "./utils";
 
 const props = defineProps<{
   show: boolean;

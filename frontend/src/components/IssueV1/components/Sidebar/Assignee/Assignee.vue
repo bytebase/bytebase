@@ -168,8 +168,8 @@ const mapUserOptions = (users: User[]) => {
   const phase = isCreating.value
     ? "PREVIEW"
     : reviewContext.done.value
-    ? "CD"
-    : "CI";
+      ? "CD"
+      : "CI";
   const added = new Set<string>(); // by user.name
   const groups: SelectGroupOption[] = [];
   const mapUserOption = (user: User) => ({
