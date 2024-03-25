@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message ExportArchivePayload {
+  // The exported file type. e.g. JSON, CSV, SQL
+  string file_type = 1;
+}
