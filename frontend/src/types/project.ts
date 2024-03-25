@@ -1,4 +1,3 @@
-import { SchemaChange } from "@/types/proto/v1/project_service";
 import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { RowStatus } from "./common";
 import { ProjectId } from "./id";
@@ -7,11 +6,7 @@ import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
 
 export type ProjectWorkflowType = "UI" | "VCS";
 
-export type ProjectVisibility = "PUBLIC" | "PRIVATE";
-
 export type ProjectTenantMode = "DISABLED" | "TENANT";
-
-export type SchemaChangeType = "DDL" | "SDL";
 
 // Project
 export type Project = {
@@ -26,9 +21,7 @@ export type Project = {
   // to do various access check.
   memberList: ProjectMember[];
   workflowType: ProjectWorkflowType;
-  visibility: ProjectVisibility;
   tenantMode: ProjectTenantMode;
-  schemaChangeType: SchemaChangeType;
 };
 
 // Project Member
@@ -48,5 +41,4 @@ export type ProjectRepositoryConfig = {
   code: string;
   repositoryInfo: ExternalRepositoryInfo;
   repositoryConfig: RepositoryConfig;
-  schemaChangeType: SchemaChange;
 };

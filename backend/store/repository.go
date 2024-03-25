@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // RepositoryMessage is the message for a repository.
@@ -64,13 +63,18 @@ type PatchRepositoryMessage struct {
 
 // CreateRepositoryV2 creates the repository.
 func (s *Store) CreateRepositoryV2(ctx context.Context, create *RepositoryMessage, creatorUID int) (*RepositoryMessage, error) {
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectResourceID})
+	if err != nil {
+		return nil, err
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	repository, err := s.createRepositoryImplV2(ctx, tx, create, creatorUID)
+	repository, err := createRepositoryImplV2(ctx, tx, project, create, creatorUID)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +84,6 @@ func (s *Store) CreateRepositoryV2(ctx context.Context, create *RepositoryMessag
 	}
 
 	s.removeProjectCache(create.ProjectResourceID)
-
 	return repository, nil
 }
 
@@ -151,14 +154,19 @@ func (s *Store) PatchRepositoryV2(ctx context.Context, patch *PatchRepositoryMes
 }
 
 // DeleteRepositoryV2 deletes an existing repository by ID.
-func (s *Store) DeleteRepositoryV2(ctx context.Context, projectResourceID string, deleterID int) error {
+func (s *Store) DeleteRepositoryV2(ctx context.Context, projectResourceID string) error {
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &projectResourceID})
+	if err != nil {
+		return err
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if err := s.deleteRepositoryImplV2(ctx, tx, projectResourceID, deleterID); err != nil {
+	if err := deleteAllRepositoryImplV2(ctx, tx, project); err != nil {
 		return err
 	}
 
@@ -167,28 +175,11 @@ func (s *Store) DeleteRepositoryV2(ctx context.Context, projectResourceID string
 	}
 
 	s.removeProjectCache(projectResourceID)
-
 	return nil
 }
 
 // createRepositoryImplV2 creates a new repository.
-func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *RepositoryMessage, creatorID int) (*RepositoryMessage, error) {
-	// Updates the project workflow_type to "VCS"
-	// TODO(d): ideally, we should not update project fields on repository changes.
-	workflowType := api.VCSWorkflow
-	update := &UpdateProjectMessage{
-		UpdaterID:  creatorID,
-		ResourceID: create.ProjectResourceID,
-		Workflow:   &workflowType,
-	}
-	project, err := s.updateProjectImplV2(ctx, tx, update)
-	if err != nil {
-		return nil, err
-	}
-	if project == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot found project %s", create.ProjectResourceID)}
-	}
-
+func createRepositoryImplV2(ctx context.Context, tx *Tx, project *ProjectMessage, create *RepositoryMessage, creatorID int) (*RepositoryMessage, error) {
 	repository := RepositoryMessage{
 		ProjectResourceID: project.ResourceID,
 	}
@@ -436,24 +427,8 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 	return &repository, nil
 }
 
-// deleteRepositoryImplV2 permanently deletes a repository by ID.
-func (s *Store) deleteRepositoryImplV2(ctx context.Context, tx *Tx, projectResourceID string, deleterID int) error {
-	// Updates the project workflow_type to "UI"
-	// TODO(d): ideally, we should not update project fields on repository changes.
-	workflowType := api.UIWorkflow
-	update := &UpdateProjectMessage{
-		UpdaterID:  deleterID,
-		ResourceID: projectResourceID,
-		Workflow:   &workflowType,
-	}
-	project, err := s.updateProjectImplV2(ctx, tx, update)
-	if err != nil {
-		return err
-	}
-	if project == nil {
-		return &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot found project %s", projectResourceID)}
-	}
-
+// deleteAllRepositoryImplV2 permanently deletes a repository by ID.
+func deleteAllRepositoryImplV2(ctx context.Context, tx *Tx, project *ProjectMessage) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = $1`, project.UID); err != nil {
 		return err
 	}

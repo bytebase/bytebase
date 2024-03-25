@@ -49,45 +49,6 @@ export function workflowToJSON(object: Workflow): string {
   }
 }
 
-export enum Visibility {
-  VISIBILITY_UNSPECIFIED = 0,
-  VISIBILITY_PUBLIC = 1,
-  VISIBILITY_PRIVATE = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function visibilityFromJSON(object: any): Visibility {
-  switch (object) {
-    case 0:
-    case "VISIBILITY_UNSPECIFIED":
-      return Visibility.VISIBILITY_UNSPECIFIED;
-    case 1:
-    case "VISIBILITY_PUBLIC":
-      return Visibility.VISIBILITY_PUBLIC;
-    case 2:
-    case "VISIBILITY_PRIVATE":
-      return Visibility.VISIBILITY_PRIVATE;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Visibility.UNRECOGNIZED;
-  }
-}
-
-export function visibilityToJSON(object: Visibility): string {
-  switch (object) {
-    case Visibility.VISIBILITY_UNSPECIFIED:
-      return "VISIBILITY_UNSPECIFIED";
-    case Visibility.VISIBILITY_PUBLIC:
-      return "VISIBILITY_PUBLIC";
-    case Visibility.VISIBILITY_PRIVATE:
-      return "VISIBILITY_PRIVATE";
-    case Visibility.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export enum TenantMode {
   TENANT_MODE_UNSPECIFIED = 0,
   TENANT_MODE_DISABLED = 1,
@@ -122,84 +83,6 @@ export function tenantModeToJSON(object: TenantMode): string {
     case TenantMode.TENANT_MODE_ENABLED:
       return "TENANT_MODE_ENABLED";
     case TenantMode.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum SchemaVersion {
-  SCHEMA_VERSION_UNSPECIFIED = 0,
-  TIMESTAMP = 1,
-  SEMANTIC = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function schemaVersionFromJSON(object: any): SchemaVersion {
-  switch (object) {
-    case 0:
-    case "SCHEMA_VERSION_UNSPECIFIED":
-      return SchemaVersion.SCHEMA_VERSION_UNSPECIFIED;
-    case 1:
-    case "TIMESTAMP":
-      return SchemaVersion.TIMESTAMP;
-    case 2:
-    case "SEMANTIC":
-      return SchemaVersion.SEMANTIC;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return SchemaVersion.UNRECOGNIZED;
-  }
-}
-
-export function schemaVersionToJSON(object: SchemaVersion): string {
-  switch (object) {
-    case SchemaVersion.SCHEMA_VERSION_UNSPECIFIED:
-      return "SCHEMA_VERSION_UNSPECIFIED";
-    case SchemaVersion.TIMESTAMP:
-      return "TIMESTAMP";
-    case SchemaVersion.SEMANTIC:
-      return "SEMANTIC";
-    case SchemaVersion.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum SchemaChange {
-  SCHEMA_CHANGE_UNSPECIFIED = 0,
-  DDL = 1,
-  SDL = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function schemaChangeFromJSON(object: any): SchemaChange {
-  switch (object) {
-    case 0:
-    case "SCHEMA_CHANGE_UNSPECIFIED":
-      return SchemaChange.SCHEMA_CHANGE_UNSPECIFIED;
-    case 1:
-    case "DDL":
-      return SchemaChange.DDL;
-    case 2:
-    case "SDL":
-      return SchemaChange.SDL;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return SchemaChange.UNRECOGNIZED;
-  }
-}
-
-export function schemaChangeToJSON(object: SchemaChange): string {
-  switch (object) {
-    case SchemaChange.SCHEMA_CHANGE_UNSPECIFIED:
-      return "SCHEMA_CHANGE_UNSPECIFIED";
-    case SchemaChange.DDL:
-      return "DDL";
-    case SchemaChange.SDL:
-      return "SDL";
-    case SchemaChange.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -519,9 +402,7 @@ export interface Project {
   /** The key is a short and upper-case identifier for a project. It's unique within the workspace. */
   key: string;
   workflow: Workflow;
-  visibility: Visibility;
   tenantMode: TenantMode;
-  schemaChange: SchemaChange;
   webhooks: Webhook[];
   dataClassificationConfigId: string;
 }
@@ -2545,9 +2426,7 @@ function createBaseProject(): Project {
     title: "",
     key: "",
     workflow: 0,
-    visibility: 0,
     tenantMode: 0,
-    schemaChange: 0,
     webhooks: [],
     dataClassificationConfigId: "",
   };
@@ -2573,14 +2452,8 @@ export const Project = {
     if (message.workflow !== 0) {
       writer.uint32(48).int32(message.workflow);
     }
-    if (message.visibility !== 0) {
-      writer.uint32(56).int32(message.visibility);
-    }
     if (message.tenantMode !== 0) {
       writer.uint32(64).int32(message.tenantMode);
-    }
-    if (message.schemaChange !== 0) {
-      writer.uint32(80).int32(message.schemaChange);
     }
     for (const v of message.webhooks) {
       Webhook.encode(v!, writer.uint32(90).fork()).ldelim();
@@ -2640,26 +2513,12 @@ export const Project = {
 
           message.workflow = reader.int32() as any;
           continue;
-        case 7:
-          if (tag !== 56) {
-            break;
-          }
-
-          message.visibility = reader.int32() as any;
-          continue;
         case 8:
           if (tag !== 64) {
             break;
           }
 
           message.tenantMode = reader.int32() as any;
-          continue;
-        case 10:
-          if (tag !== 80) {
-            break;
-          }
-
-          message.schemaChange = reader.int32() as any;
           continue;
         case 11:
           if (tag !== 90) {
@@ -2692,9 +2551,7 @@ export const Project = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       key: isSet(object.key) ? globalThis.String(object.key) : "",
       workflow: isSet(object.workflow) ? workflowFromJSON(object.workflow) : 0,
-      visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       tenantMode: isSet(object.tenantMode) ? tenantModeFromJSON(object.tenantMode) : 0,
-      schemaChange: isSet(object.schemaChange) ? schemaChangeFromJSON(object.schemaChange) : 0,
       webhooks: globalThis.Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
       dataClassificationConfigId: isSet(object.dataClassificationConfigId)
         ? globalThis.String(object.dataClassificationConfigId)
@@ -2722,14 +2579,8 @@ export const Project = {
     if (message.workflow !== 0) {
       obj.workflow = workflowToJSON(message.workflow);
     }
-    if (message.visibility !== 0) {
-      obj.visibility = visibilityToJSON(message.visibility);
-    }
     if (message.tenantMode !== 0) {
       obj.tenantMode = tenantModeToJSON(message.tenantMode);
-    }
-    if (message.schemaChange !== 0) {
-      obj.schemaChange = schemaChangeToJSON(message.schemaChange);
     }
     if (message.webhooks?.length) {
       obj.webhooks = message.webhooks.map((e) => Webhook.toJSON(e));
@@ -2751,9 +2602,7 @@ export const Project = {
     message.title = object.title ?? "";
     message.key = object.key ?? "";
     message.workflow = object.workflow ?? 0;
-    message.visibility = object.visibility ?? 0;
     message.tenantMode = object.tenantMode ?? 0;
-    message.schemaChange = object.schemaChange ?? 0;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
     message.dataClassificationConfigId = object.dataClassificationConfigId ?? "";
     return message;

@@ -365,11 +365,7 @@ message Project {
 
   Workflow workflow = 6;
 
-  Visibility visibility = 7;
-
   TenantMode tenant_mode = 8;
-
-  SchemaChange schema_change = 10;
 
   repeated Webhook webhooks = 11;
 
@@ -382,28 +378,10 @@ enum Workflow {
   VCS = 2;
 }
 
-enum Visibility {
-  VISIBILITY_UNSPECIFIED = 0;
-  VISIBILITY_PUBLIC = 1;
-  VISIBILITY_PRIVATE = 2;
-}
-
 enum TenantMode {
   TENANT_MODE_UNSPECIFIED = 0;
   TENANT_MODE_DISABLED = 1;
   TENANT_MODE_ENABLED = 2;
-}
-
-enum SchemaVersion {
-  SCHEMA_VERSION_UNSPECIFIED = 0;
-  TIMESTAMP = 1;
-  SEMANTIC = 2;
-}
-
-enum SchemaChange {
-  SCHEMA_CHANGE_UNSPECIFIED = 0;
-  DDL = 1;
-  SDL = 2;
 }
 
 message AddWebhookRequest {
