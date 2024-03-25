@@ -20,8 +20,8 @@ service SQLService {
       body: "*"
     };
   }
-  rpc ListQueryHistory(ListQueryHistoryRequest) returns (ListQueryHistoryResponse) {
-    option (google.api.http) = {get: "/v1/queryHistory"};
+  rpc ListQueryHistories(ListQueryHistoriesRequest) returns (ListQueryHistoriesResponse) {
+    option (google.api.http) = {get: "/v1/queryHistories"};
   }
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
@@ -303,30 +303,26 @@ message StringifyMetadataResponse {
   string schema = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-message ListQueryHistoryRequest {
-  // The name is the instance name to execute the query against.
-  // Format: instances/{instance}/databases/{databaseName}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-
+message ListQueryHistoriesRequest {
   // Not used. The maximum number of histories to return.
   // The service may return fewer than this value.
   // If unspecified, at most 100 history entries will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 2;
+  int32 page_size = 1;
 
   // Not used. A page token, received from a previous `ListQueryHistory` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 3;
+  string page_token = 2;
 
   // filter is the filter to apply on the search query history,
   // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
   // Only support filter by database for now.
   // For example:
   // database = "instances/{instance}/databases/{database}"
-  string filter = 4;
+  string filter = 3;
 }
 
-message ListQueryHistoryResponse {
+message ListQueryHistoriesResponse {
   // The list of history.
   repeated QueryHistory query_histories = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 

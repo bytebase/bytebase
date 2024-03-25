@@ -2414,11 +2414,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListQueryHistoryRequest"><span class="badge">M</span>ListQueryHistoryRequest</a>
+                  <a href="#bytebase.v1.ListQueryHistoriesRequest"><span class="badge">M</span>ListQueryHistoriesRequest</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListQueryHistoryResponse"><span class="badge">M</span>ListQueryHistoryResponse</a>
+                  <a href="#bytebase.v1.ListQueryHistoriesResponse"><span class="badge">M</span>ListQueryHistoriesResponse</a>
                 </li>
               
                 <li>
@@ -25871,7 +25871,7 @@ The exported data is not masked. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListQueryHistoryRequest">ListQueryHistoryRequest</h3>
+        <h3 id="bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</h3>
         <p></p>
 
         
@@ -25880,14 +25880,6 @@ The exported data is not masked. </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name is the instance name to execute the query against.
-Format: instances/{instance}/databases/{databaseName} </p></td>
-                </tr>
               
                 <tr>
                   <td>page_size</td>
@@ -25925,7 +25917,7 @@ database = &#34;instances/{instance}/databases/{database}&#34; </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListQueryHistoryResponse">ListQueryHistoryResponse</h3>
+        <h3 id="bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</h3>
         <p></p>
 
         
@@ -26604,9 +26596,9 @@ The types come from the Golang SQL driver. </p></td>
               </tr>
             
               <tr>
-                <td>ListQueryHistory</td>
-                <td><a href="#bytebase.v1.ListQueryHistoryRequest">ListQueryHistoryRequest</a></td>
-                <td><a href="#bytebase.v1.ListQueryHistoryResponse">ListQueryHistoryResponse</a></td>
+                <td>ListQueryHistories</td>
+                <td><a href="#bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</a></td>
+                <td><a href="#bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</a></td>
                 <td><p></p></td>
               </tr>
             
@@ -26697,9 +26689,9 @@ The types come from the Golang SQL driver. </p></td>
               
               
               <tr>
-                <td>ListQueryHistory</td>
+                <td>ListQueryHistories</td>
                 <td>GET</td>
-                <td>/v1/queryHistory</td>
+                <td>/v1/queryHistories</td>
                 <td></td>
               </tr>
               

@@ -312,12 +312,7 @@ export interface StringifyMetadataResponse {
   schema: string;
 }
 
-export interface ListQueryHistoryRequest {
-  /**
-   * The name is the instance name to execute the query against.
-   * Format: instances/{instance}/databases/{databaseName}
-   */
-  name: string;
+export interface ListQueryHistoriesRequest {
   /**
    * Not used. The maximum number of histories to return.
    * The service may return fewer than this value.
@@ -340,7 +335,7 @@ export interface ListQueryHistoryRequest {
   filter: string;
 }
 
-export interface ListQueryHistoryResponse {
+export interface ListQueryHistoriesResponse {
   /** The list of history. */
   queryHistories: QueryHistory[];
   /**
@@ -2345,57 +2340,47 @@ export const StringifyMetadataResponse = {
   },
 };
 
-function createBaseListQueryHistoryRequest(): ListQueryHistoryRequest {
-  return { name: "", pageSize: 0, pageToken: "", filter: "" };
+function createBaseListQueryHistoriesRequest(): ListQueryHistoriesRequest {
+  return { pageSize: 0, pageToken: "", filter: "" };
 }
 
-export const ListQueryHistoryRequest = {
-  encode(message: ListQueryHistoryRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
+export const ListQueryHistoriesRequest = {
+  encode(message: ListQueryHistoriesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
+      writer.uint32(8).int32(message.pageSize);
     }
     if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
+      writer.uint32(18).string(message.pageToken);
     }
     if (message.filter !== "") {
-      writer.uint32(34).string(message.filter);
+      writer.uint32(26).string(message.filter);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListQueryHistoryRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListQueryHistoriesRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListQueryHistoryRequest();
+    const message = createBaseListQueryHistoriesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
+          if (tag !== 8) {
             break;
           }
 
           message.pageSize = reader.int32();
           continue;
-        case 3:
-          if (tag !== 26) {
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
           message.pageToken = reader.string();
           continue;
-        case 4:
-          if (tag !== 34) {
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
@@ -2410,20 +2395,16 @@ export const ListQueryHistoryRequest = {
     return message;
   },
 
-  fromJSON(object: any): ListQueryHistoryRequest {
+  fromJSON(object: any): ListQueryHistoriesRequest {
     return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
     };
   },
 
-  toJSON(message: ListQueryHistoryRequest): unknown {
+  toJSON(message: ListQueryHistoriesRequest): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
     if (message.pageSize !== 0) {
       obj.pageSize = Math.round(message.pageSize);
     }
@@ -2436,12 +2417,11 @@ export const ListQueryHistoryRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListQueryHistoryRequest>): ListQueryHistoryRequest {
-    return ListQueryHistoryRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListQueryHistoriesRequest>): ListQueryHistoriesRequest {
+    return ListQueryHistoriesRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<ListQueryHistoryRequest>): ListQueryHistoryRequest {
-    const message = createBaseListQueryHistoryRequest();
-    message.name = object.name ?? "";
+  fromPartial(object: DeepPartial<ListQueryHistoriesRequest>): ListQueryHistoriesRequest {
+    const message = createBaseListQueryHistoriesRequest();
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.filter = object.filter ?? "";
@@ -2449,12 +2429,12 @@ export const ListQueryHistoryRequest = {
   },
 };
 
-function createBaseListQueryHistoryResponse(): ListQueryHistoryResponse {
+function createBaseListQueryHistoriesResponse(): ListQueryHistoriesResponse {
   return { queryHistories: [], nextPageToken: "" };
 }
 
-export const ListQueryHistoryResponse = {
-  encode(message: ListQueryHistoryResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListQueryHistoriesResponse = {
+  encode(message: ListQueryHistoriesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.queryHistories) {
       QueryHistory.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -2464,10 +2444,10 @@ export const ListQueryHistoryResponse = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListQueryHistoryResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListQueryHistoriesResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListQueryHistoryResponse();
+    const message = createBaseListQueryHistoriesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2494,7 +2474,7 @@ export const ListQueryHistoryResponse = {
     return message;
   },
 
-  fromJSON(object: any): ListQueryHistoryResponse {
+  fromJSON(object: any): ListQueryHistoriesResponse {
     return {
       queryHistories: globalThis.Array.isArray(object?.queryHistories)
         ? object.queryHistories.map((e: any) => QueryHistory.fromJSON(e))
@@ -2503,7 +2483,7 @@ export const ListQueryHistoryResponse = {
     };
   },
 
-  toJSON(message: ListQueryHistoryResponse): unknown {
+  toJSON(message: ListQueryHistoriesResponse): unknown {
     const obj: any = {};
     if (message.queryHistories?.length) {
       obj.queryHistories = message.queryHistories.map((e) => QueryHistory.toJSON(e));
@@ -2514,11 +2494,11 @@ export const ListQueryHistoryResponse = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListQueryHistoryResponse>): ListQueryHistoryResponse {
-    return ListQueryHistoryResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListQueryHistoriesResponse>): ListQueryHistoriesResponse {
+    return ListQueryHistoriesResponse.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<ListQueryHistoryResponse>): ListQueryHistoryResponse {
-    const message = createBaseListQueryHistoryResponse();
+  fromPartial(object: DeepPartial<ListQueryHistoriesResponse>): ListQueryHistoriesResponse {
+    const message = createBaseListQueryHistoriesResponse();
     message.queryHistories = object.queryHistories?.map((e) => QueryHistory.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
@@ -2782,16 +2762,38 @@ export const SQLServiceDefinition = {
         },
       },
     },
-    listQueryHistory: {
-      name: "ListQueryHistory",
-      requestType: ListQueryHistoryRequest,
+    listQueryHistories: {
+      name: "ListQueryHistories",
+      requestType: ListQueryHistoriesRequest,
       requestStream: false,
-      responseType: ListQueryHistoryResponse,
+      responseType: ListQueryHistoriesResponse,
       responseStream: false,
       options: {
         _unknownFields: {
           578365826: [
-            new Uint8Array([18, 18, 16, 47, 118, 49, 47, 113, 117, 101, 114, 121, 72, 105, 115, 116, 111, 114, 121]),
+            new Uint8Array([
+              20,
+              18,
+              18,
+              47,
+              118,
+              49,
+              47,
+              113,
+              117,
+              101,
+              114,
+              121,
+              72,
+              105,
+              115,
+              116,
+              111,
+              114,
+              105,
+              101,
+              115,
+            ]),
           ],
         },
       },

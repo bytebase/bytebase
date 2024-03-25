@@ -584,8 +584,8 @@
     - [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
-    - [ListQueryHistoryRequest](#bytebase-v1-ListQueryHistoryRequest)
-    - [ListQueryHistoryResponse](#bytebase-v1-ListQueryHistoryResponse)
+    - [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest)
+    - [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse)
     - [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest)
     - [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse)
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
@@ -9399,15 +9399,14 @@ Type of the SheetPayload.
 
 
 
-<a name="bytebase-v1-ListQueryHistoryRequest"></a>
+<a name="bytebase-v1-ListQueryHistoriesRequest"></a>
 
-### ListQueryHistoryRequest
+### ListQueryHistoriesRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
 | page_size | [int32](#int32) |  | Not used. The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 100 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
 | filter | [string](#string) |  | filter is the filter to apply on the search query history, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Only support filter by database for now. For example: database = &#34;instances/{instance}/databases/{database}&#34; |
@@ -9417,9 +9416,9 @@ Type of the SheetPayload.
 
 
 
-<a name="bytebase-v1-ListQueryHistoryResponse"></a>
+<a name="bytebase-v1-ListQueryHistoriesResponse"></a>
 
-### ListQueryHistoryResponse
+### ListQueryHistoriesResponse
 
 
 
@@ -9689,7 +9688,7 @@ Type of the SheetPayload.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
-| ListQueryHistory | [ListQueryHistoryRequest](#bytebase-v1-ListQueryHistoryRequest) | [ListQueryHistoryResponse](#bytebase-v1-ListQueryHistoryResponse) |  |
+| ListQueryHistories | [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest) | [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse) |  |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
 | DifferPreview | [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest) | [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse) |  |
