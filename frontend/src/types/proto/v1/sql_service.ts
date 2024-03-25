@@ -330,6 +330,14 @@ export interface ListQueryHistoryRequest {
    * Provide this to retrieve the subsequent page.
    */
   pageToken: string;
+  /**
+   * filter is the filter to apply on the search query history,
+   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+   * Only support filter by database for now.
+   * For example:
+   * database = "instances/{instance}/databases/{database}"
+   */
+  filter: string;
 }
 
 export interface ListQueryHistoryResponse {
@@ -2338,7 +2346,7 @@ export const StringifyMetadataResponse = {
 };
 
 function createBaseListQueryHistoryRequest(): ListQueryHistoryRequest {
-  return { name: "", pageSize: 0, pageToken: "" };
+  return { name: "", pageSize: 0, pageToken: "", filter: "" };
 }
 
 export const ListQueryHistoryRequest = {
@@ -2351,6 +2359,9 @@ export const ListQueryHistoryRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
+    }
+    if (message.filter !== "") {
+      writer.uint32(34).string(message.filter);
     }
     return writer;
   },
@@ -2383,6 +2394,13 @@ export const ListQueryHistoryRequest = {
 
           message.pageToken = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2397,6 +2415,7 @@ export const ListQueryHistoryRequest = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
     };
   },
 
@@ -2411,6 +2430,9 @@ export const ListQueryHistoryRequest = {
     if (message.pageToken !== "") {
       obj.pageToken = message.pageToken;
     }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
     return obj;
   },
 
@@ -2422,6 +2444,7 @@ export const ListQueryHistoryRequest = {
     message.name = object.name ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.filter = object.filter ?? "";
     return message;
   },
 };
@@ -2768,97 +2791,7 @@ export const SQLServiceDefinition = {
       options: {
         _unknownFields: {
           578365826: [
-            new Uint8Array([
-              88,
-              90,
-              37,
-              18,
-              35,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-              47,
-              42,
-              125,
-              47,
-              113,
-              117,
-              101,
-              114,
-              121,
-              72,
-              105,
-              115,
-              116,
-              111,
-              114,
-              121,
-              18,
-              47,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-              47,
-              42,
-              47,
-              100,
-              97,
-              116,
-              97,
-              98,
-              97,
-              115,
-              101,
-              115,
-              47,
-              42,
-              125,
-              47,
-              113,
-              117,
-              101,
-              114,
-              121,
-              72,
-              105,
-              115,
-              116,
-              111,
-              114,
-              121,
-            ]),
+            new Uint8Array([18, 18, 16, 47, 118, 49, 47, 113, 117, 101, 114, 121, 72, 105, 115, 116, 111, 114, 121]),
           ],
         },
       },

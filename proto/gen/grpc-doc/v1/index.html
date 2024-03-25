@@ -25907,6 +25907,17 @@ The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
 Provide this to retrieve the subsequent page. </p></td>
                 </tr>
               
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>filter is the filter to apply on the search query history,
+follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+Only support filter by database for now.
+For example:
+database = &#34;instances/{instance}/databases/{database}&#34; </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -26688,14 +26699,7 @@ The types come from the Golang SQL driver. </p></td>
               <tr>
                 <td>ListQueryHistory</td>
                 <td>GET</td>
-                <td>/v1/{name=instances/*/databases/*}/queryHistory</td>
-                <td></td>
-              </tr>
-              
-              <tr>
-                <td>ListQueryHistory</td>
-                <td>GET</td>
-                <td>/v1/{name=instances/*}/queryHistory</td>
+                <td>/v1/queryHistory</td>
                 <td></td>
               </tr>
               

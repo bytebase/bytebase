@@ -9410,6 +9410,7 @@ Type of the SheetPayload.
 | name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
 | page_size | [int32](#int32) |  | Not used. The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 100 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
+| filter | [string](#string) |  | filter is the filter to apply on the search query history, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Only support filter by database for now. For example: database = &#34;instances/{instance}/databases/{database}&#34; |
 
 
 

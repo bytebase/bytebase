@@ -22,8 +22,7 @@ service SQLService {
   }
   rpc ListQueryHistory(ListQueryHistoryRequest) returns (ListQueryHistoryResponse) {
     option (google.api.http) = {
-      get: "/v1/{name=instances/*/databases/*}/queryHistory"
-      additional_bindings {get: "/v1/{name=instances/*}/queryHistory"}
+      get: "/v1/queryHistory"
     };
   }
   rpc Export(ExportRequest) returns (ExportResponse) {
@@ -320,6 +319,13 @@ message ListQueryHistoryRequest {
   // Not used. A page token, received from a previous `ListQueryHistory` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 3;
+
+  // filter is the filter to apply on the search query history,
+  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+  // Only support filter by database for now.
+  // For example:
+  // database = "instances/{instance}/databases/{database}"
+  string filter = 4;
 }
 
 message ListQueryHistoryResponse {
