@@ -16,8 +16,6 @@ import (
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
@@ -172,108 +170,6 @@ func TestSimpleVCS(t *testing.T) {
 				}
 			},
 		},
-		{
-			name:               "GitHub",
-			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            v1pb.VCSProvider_GITHUB,
-			externalID:         "octocat/Hello-World",
-			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) any {
-				var commits []github.WebhookCommit
-				for i := range added {
-					commits = append(commits, github.WebhookCommit{
-						ID:        "fake_github_commit_id",
-						Distinct:  true,
-						Message:   "Fake GitHub commit message",
-						Timestamp: time.Now(),
-						URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
-						Author: github.WebhookCommitAuthor{
-							Name:  "fake_github_author",
-							Email: "fake_github_author@localhost",
-						},
-						Added:    added[i],
-						Modified: modified[i],
-					})
-				}
-				return github.WebhookPushEvent{
-					Ref:    "refs/heads/feature/foo",
-					Before: beforeSHA,
-					After:  afterSHA,
-					Repository: github.WebhookRepository{
-						ID:       211,
-						FullName: "octocat/Hello-World",
-						HTMLURL:  "https://github.com/octocat/Hello-World",
-					},
-					Sender: github.WebhookSender{
-						Login: "fake_github_author",
-					},
-					Commits: commits,
-				}
-			},
-		},
-		{
-			name:               "Bitbucket",
-			vcsProviderCreator: fake.NewBitbucket,
-			vcsType:            v1pb.VCSProvider_BITBUCKET,
-			externalID:         "octocat/Hello-World",
-			repositoryFullPath: "octocat/Hello-World",
-			newWebhookPushEvent: func(added, _ [][]string, beforeSHA, afterSHA string) any {
-				var commits []bitbucket.WebhookCommit
-				for range added {
-					commits = append(commits, bitbucket.WebhookCommit{
-						Hash: afterSHA,
-						Date: time.Now(),
-						Author: bitbucket.Author{
-							Raw: "fake_bitbucket_author <fake_bitbucket_author@localhost>",
-							User: bitbucket.User{
-								Nickname: "fake_bitbucket_author",
-							},
-						},
-						Message: "Fake Bitbucket commit message",
-						Links: bitbucket.Links{
-							HTML: bitbucket.Link{
-								Href: "https://bitbucket.org/octocat/Hello-World/commits/fake_github_commit_id",
-							},
-						},
-						Parents: []bitbucket.Target{
-							{Hash: beforeSHA},
-						},
-					})
-				}
-				return bitbucket.WebhookPushEvent{
-					Push: bitbucket.WebhookPush{
-						Changes: []bitbucket.WebhookPushChange{
-							{
-								Old: bitbucket.Branch{
-									Name: "feature/foo",
-									Target: bitbucket.Target{
-										Hash: beforeSHA,
-									},
-								},
-								New: bitbucket.Branch{
-									Name: "feature/foo",
-									Target: bitbucket.Target{
-										Hash: afterSHA,
-									},
-								},
-								Commits: commits,
-							},
-						},
-					},
-					Repository: bitbucket.Repository{
-						FullName: "octocat/Hello-World",
-						Links: bitbucket.Links{
-							HTML: bitbucket.Link{
-								Href: "https://bitbuket.org/octocat/Hello-World",
-							},
-						},
-					},
-					Actor: bitbucket.User{
-						Nickname: "fake_bitbucket_author",
-					},
-				}
-			},
-		},
 	}
 	for _, test := range tests {
 		// Fix the problem that closure in a for loop will always use the last element.
@@ -356,19 +252,19 @@ func TestSimpleVCS(t *testing.T) {
 
 			// Simulate Git commits for schema update.
 			// We create multiple commits in one push event to test for the behavior of creating one issue per database.
-			gitFile3 := "bbtest/prod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql"
+			gitFile3 := "bbtest/0003##migrate##create_table_book3.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile3: migrationStatement3})
 			a.NoError(err)
-			gitFile2 := "bbtest/prod/testVCSSchemaUpdate##ver2##migrate##新建create_table_book2.sql"
+			gitFile2 := "bbtest/0002##migrate##新建create_table_book2.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile2: migrationStatement2})
 			a.NoError(err)
-			gitFile1 := "bbtest/prod/testVCSSchemaUpdate##ver1##migrate##😊create_table_book.sql"
+			gitFile1 := "bbtest/0001##migrate##😊create_table_book.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile1: migrationStatement})
 			a.NoError(err)
 			// This file is merged from other branch and included in this push event's commits.
 			// But it is already merged into the main branch and the commits diff does not contain it.
 			// So this file should be excluded when generating the issue.
-			gitFileMergeFromOtherBranch := "bbtest/prod/testVCSSchemaUpdate##ver0##migrate##merge_from_other_branch.sql"
+			gitFileMergeFromOtherBranch := "bbtest/0000##migrate##merge_from_other_branch.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFileMergeFromOtherBranch: "SELECT 1;"})
 			a.NoError(err)
 			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "1", "2", []vcs.FileDiff{
@@ -388,8 +284,8 @@ func TestSimpleVCS(t *testing.T) {
 			a.NoError(err)
 			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
-			a.Equal("[testVCSSchemaUpdate] Alter schema: 😊create table book", issue.Title)
-			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver1##migrate##😊create_table_book.sql\nprod/testVCSSchemaUpdate##ver2##migrate##新建create_table_book2.sql\nprod/testVCSSchemaUpdate##ver3##migrate##create_table_book3.sql\n", issue.Description)
+			a.Equal("Alter schema: 😊create table book", issue.Title)
+			a.Equal("By VCS files:\n\n0001##migrate##😊create_table_book.sql\n0002##migrate##新建create_table_book2.sql\n0003##migrate##create_table_book3.sql\n", issue.Description)
 			err = ctl.closeIssue(ctx, ctl.project, issue.Name)
 			a.NoError(err)
 
@@ -399,7 +295,7 @@ func TestSimpleVCS(t *testing.T) {
 			a.Equal(want3BookSchema, dbMetadata.Schema)
 
 			// Simulate Git commits for failed data update.
-			gitFile4 := "bbtest/prod/testVCSSchemaUpdate##ver4##data##insert_data.sql"
+			gitFile4 := "bbtest/0004##data##insert_data.sql"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile4: dataUpdateStatementWrong})
 			a.NoError(err)
 			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "2", "3", []vcs.FileDiff{
@@ -446,8 +342,8 @@ func TestSimpleVCS(t *testing.T) {
 
 			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
 			a.NoError(err)
-			a.Equal("[testVCSSchemaUpdate] Change data: Insert data", issue.Title)
-			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver4##data##insert_data.sql\n", issue.Description)
+			a.Equal("Change data: insert data", issue.Title)
+			a.Equal("By VCS files:\n\n0004##data##insert_data.sql\n", issue.Description)
 			err = ctl.closeIssue(ctx, ctl.project, issue.Name)
 			a.NoError(err)
 
@@ -517,10 +413,10 @@ func TestSimpleVCS(t *testing.T) {
 				a.NotEqual(history.Version, "")
 			}
 
-			a.Equal("ver4-dml", histories[1].Version)
-			a.Equal("ver3-ddl", histories[2].Version)
-			a.Equal("ver2-ddl", histories[3].Version)
-			a.Equal("ver1-ddl", histories[4].Version)
+			a.Equal("0004-dml", histories[1].Version)
+			a.Equal("0003-ddl", histories[2].Version)
+			a.Equal("0002-ddl", histories[3].Version)
+			a.Equal("0001-ddl", histories[4].Version)
 		})
 	}
 }

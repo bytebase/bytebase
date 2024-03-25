@@ -1,11 +1,5 @@
 package api
 
-import (
-	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/common"
-)
-
 const (
 	// DefaultProjectUID is the UID for the default project.
 	DefaultProjectUID = 1
@@ -39,16 +33,6 @@ const (
 	VCSWorkflow ProjectWorkflowType = "VCS"
 )
 
-// ProjectVisibility is the visibility of a project.
-type ProjectVisibility string
-
-const (
-	// Public is the project visibility for PUBLIC.
-	Public ProjectVisibility = "PUBLIC"
-	// Private is the project visibility for PRIVATE.
-	Private ProjectVisibility = "PRIVATE"
-)
-
 // ProjectTenantMode is the tenant mode setting for project.
 type ProjectTenantMode string
 
@@ -58,95 +42,3 @@ const (
 	// TenantModeTenant is the TENANT value for ProjectTenantMode.
 	TenantModeTenant ProjectTenantMode = "TENANT"
 )
-
-var (
-	// DBNameToken is the token for database name.
-	DBNameToken = "{{DB_NAME}}"
-	// EnvironmentToken is the token for environment.
-	EnvironmentToken = "{{ENV_ID}}"
-	// LocationToken is the token for location.
-	LocationToken = "{{LOCATION}}"
-	// TenantToken is the token for tenant.
-	TenantToken = "{{TENANT}}"
-
-	// boolean indicates whether it's a required or optional token.
-	repositoryFilePathTemplateTokens = map[string]bool{
-		"{{VERSION}}":     true,
-		DBNameToken:       true,
-		"{{TYPE}}":        true,
-		EnvironmentToken:  false,
-		"{{DESCRIPTION}}": false,
-	}
-	tenantRepositoryFilePathTemplateTokens = map[string]bool{
-		"{{VERSION}}":     true,
-		"{{TYPE}}":        true,
-		"{{DESCRIPTION}}": false,
-	}
-	schemaPathTemplateTokens = map[string]bool{
-		DBNameToken:      true,
-		EnvironmentToken: false,
-	}
-	tenantSchemaPathTemplateTokens = map[string]bool{}
-)
-
-// ValidateRepositoryFilePathTemplate validates the repository file path template.
-func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode ProjectTenantMode) error {
-	tokens, _ := common.ParseTemplateTokens(filePathTemplate)
-	tokenMap := make(map[string]bool)
-	for _, token := range tokens {
-		tokenMap[token] = true
-	}
-
-	filePathTemplateTokens := repositoryFilePathTemplateTokens
-	if tenantMode == TenantModeTenant {
-		filePathTemplateTokens = tenantRepositoryFilePathTemplateTokens
-	}
-	for token, required := range filePathTemplateTokens {
-		// Skip checking tokens that are not required
-		if !required {
-			continue
-		}
-
-		if _, ok := tokenMap[token]; !ok {
-			return errors.Errorf("missing %s in file path template", token)
-		}
-	}
-	for token := range tokenMap {
-		if _, ok := filePathTemplateTokens[token]; !ok {
-			return errors.Errorf("unknown token %s in file path template", token)
-		}
-	}
-	return nil
-}
-
-// ValidateRepositorySchemaPathTemplate validates the repository schema path template.
-func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode ProjectTenantMode) error {
-	if schemaPathTemplate == "" {
-		return nil
-	}
-	tokens, _ := common.ParseTemplateTokens(schemaPathTemplate)
-	tokenMap := make(map[string]bool)
-	for _, token := range tokens {
-		tokenMap[token] = true
-	}
-
-	allowedTokens := schemaPathTemplateTokens
-	if tenantMode == TenantModeTenant {
-		allowedTokens = tenantSchemaPathTemplateTokens
-	}
-
-	for token, required := range allowedTokens {
-		if required {
-			if _, ok := tokenMap[token]; !ok {
-				return errors.Errorf("missing %s in schema path template", token)
-			}
-		}
-	}
-
-	for token := range tokenMap {
-		if _, ok := allowedTokens[token]; !ok {
-			return errors.Errorf("unknown token %s in schema path template", token)
-		}
-	}
-	return nil
-}
