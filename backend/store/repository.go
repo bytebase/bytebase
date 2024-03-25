@@ -14,12 +14,10 @@ import (
 
 // RepositoryMessage is the message for a repository.
 type RepositoryMessage struct {
-	// Output only
-	UID int
-
 	// Related fields
 	VCSUID            int
 	ProjectResourceID string
+	ResourceID        string
 
 	// Domain specific fields
 	Title              string
@@ -34,6 +32,9 @@ type RepositoryMessage struct {
 	WebhookURLHost     string
 	WebhookEndpointID  string
 	WebhookSecretToken string
+
+	// Output only
+	UID int
 }
 
 // FindRepositoryMessage is the message for finding repositories.
@@ -42,13 +43,15 @@ type FindRepositoryMessage struct {
 	WebURL            *string
 	VCSUID            *int
 	ProjectResourceID *string
+	ResourceID        *string
 	WebhookEndpointID *string
 }
 
 // PatchRepositoryMessage is the API message for patching a repository.
 type PatchRepositoryMessage struct {
-	UID    *int
-	WebURL *string
+	ResourceID *string
+	UID        *int
+	WebURL     *string
 
 	// Domain specific fields
 	BranchFilter       *string
@@ -194,6 +197,7 @@ func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *Repo
 			updater_id,
 			vcs_id,
 			project_id,
+			resource_id,
 			name,
 			full_path,
 			web_url,
@@ -207,14 +211,15 @@ func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *Repo
 			webhook_endpoint_id,
 			webhook_secret_token
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-		RETURNING id, vcs_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+		RETURNING id, vcs_id, resource_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token
 	`
 	if err := tx.QueryRowContext(ctx, query,
 		creatorID,
 		creatorID,
 		create.VCSUID,
 		project.UID,
+		create.ResourceID,
 		create.Title,
 		create.FullPath,
 		create.WebURL,
@@ -230,6 +235,7 @@ func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *Repo
 	).Scan(
 		&repository.UID,
 		&repository.VCSUID,
+		&repository.ResourceID,
 		&repository.Title,
 		&repository.FullPath,
 		&repository.WebURL,
@@ -260,6 +266,9 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 	if v := find.VCSUID; v != nil {
 		where, args = append(where, fmt.Sprintf("vcs_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.ResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.WebURL; v != nil {
 		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
 	}
@@ -275,6 +284,7 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 			repository.id AS id,
 			vcs_id,
 			project.resource_id AS project_resource_id,
+			repository.resource_id,
 			repository.name AS name,
 			full_path,
 			web_url,
@@ -305,6 +315,7 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 			&repository.UID,
 			&repository.VCSUID,
 			&repository.ProjectResourceID,
+			&repository.ResourceID,
 			&repository.Title,
 			&repository.FullPath,
 			&repository.WebURL,
@@ -352,6 +363,9 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 	if v := patch.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("repository.id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.ResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("repository.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.WebURL; v != nil {
 		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
 	}
@@ -370,6 +384,7 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 			repository.id AS id,
 			vcs_id,
 			project.resource_id AS project_resource_id,
+			repository.resource_id,
 			repository.name AS name,
 			full_path,
 			web_url,
@@ -388,6 +403,7 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 		&repository.UID,
 		&repository.VCSUID,
 		&repository.ProjectResourceID,
+		&repository.ResourceID,
 		&repository.Title,
 		&repository.FullPath,
 		&repository.WebURL,
