@@ -319,25 +319,6 @@ export interface ListQueryHistoryRequest {
    */
   name: string;
   /**
-   * filter is the filter to apply on the list histories request,
-   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-   * The field only support in filter:
-   * - creator, example:
-   *    - creator = "users/{email}"
-   * - create_time, example:
-   *    - create_time <= "2022-01-01T12:00:00.000Z"
-   *    - create_time >= "2022-01-01T12:00:00.000Z"
-   */
-  filter: string;
-  /**
-   * The order by of the history.
-   * Only support order by create_time.
-   * For example:
-   *  - order_by = "create_time asc"
-   *  - order_by = "create_time desc"
-   */
-  orderBy: string;
-  /**
    * Not used. The maximum number of histories to return.
    * The service may return fewer than this value.
    * If unspecified, at most 100 history entries will be returned.
@@ -365,9 +346,14 @@ export interface ListQueryHistoryResponse {
 export interface QueryHistory {
   /**
    * The name for the query history.
-   * Format: instances/{instance}/databases/{databaseName}/queryHistories/{uid}
+   * Format: queryHistories/{uid}
    */
   name: string;
+  /**
+   * The database name to execute the query.
+   * Format: instances/{instance}/databases/{databaseName}
+   */
+  database: string;
   creator: string;
   createTime: Date | undefined;
   statement: string;
@@ -2352,7 +2338,7 @@ export const StringifyMetadataResponse = {
 };
 
 function createBaseListQueryHistoryRequest(): ListQueryHistoryRequest {
-  return { name: "", filter: "", orderBy: "", pageSize: 0, pageToken: "" };
+  return { name: "", pageSize: 0, pageToken: "" };
 }
 
 export const ListQueryHistoryRequest = {
@@ -2360,17 +2346,11 @@ export const ListQueryHistoryRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.filter !== "") {
-      writer.uint32(18).string(message.filter);
-    }
-    if (message.orderBy !== "") {
-      writer.uint32(26).string(message.orderBy);
-    }
     if (message.pageSize !== 0) {
-      writer.uint32(32).int32(message.pageSize);
+      writer.uint32(16).int32(message.pageSize);
     }
     if (message.pageToken !== "") {
-      writer.uint32(42).string(message.pageToken);
+      writer.uint32(26).string(message.pageToken);
     }
     return writer;
   },
@@ -2390,28 +2370,14 @@ export const ListQueryHistoryRequest = {
           message.name = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.filter = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.orderBy = reader.string();
-          continue;
-        case 4:
-          if (tag !== 32) {
+          if (tag !== 16) {
             break;
           }
 
           message.pageSize = reader.int32();
           continue;
-        case 5:
-          if (tag !== 42) {
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
@@ -2429,8 +2395,6 @@ export const ListQueryHistoryRequest = {
   fromJSON(object: any): ListQueryHistoryRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-      orderBy: isSet(object.orderBy) ? globalThis.String(object.orderBy) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
     };
@@ -2440,12 +2404,6 @@ export const ListQueryHistoryRequest = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.filter !== "") {
-      obj.filter = message.filter;
-    }
-    if (message.orderBy !== "") {
-      obj.orderBy = message.orderBy;
     }
     if (message.pageSize !== 0) {
       obj.pageSize = Math.round(message.pageSize);
@@ -2462,8 +2420,6 @@ export const ListQueryHistoryRequest = {
   fromPartial(object: DeepPartial<ListQueryHistoryRequest>): ListQueryHistoryRequest {
     const message = createBaseListQueryHistoryRequest();
     message.name = object.name ?? "";
-    message.filter = object.filter ?? "";
-    message.orderBy = object.orderBy ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     return message;
@@ -2547,7 +2503,15 @@ export const ListQueryHistoryResponse = {
 };
 
 function createBaseQueryHistory(): QueryHistory {
-  return { name: "", creator: "", createTime: undefined, statement: "", error: undefined, duration: undefined };
+  return {
+    name: "",
+    database: "",
+    creator: "",
+    createTime: undefined,
+    statement: "",
+    error: undefined,
+    duration: undefined,
+  };
 }
 
 export const QueryHistory = {
@@ -2555,20 +2519,23 @@ export const QueryHistory = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.database !== "") {
+      writer.uint32(18).string(message.database);
+    }
     if (message.creator !== "") {
-      writer.uint32(18).string(message.creator);
+      writer.uint32(26).string(message.creator);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(34).fork()).ldelim();
     }
     if (message.statement !== "") {
-      writer.uint32(34).string(message.statement);
+      writer.uint32(42).string(message.statement);
     }
     if (message.error !== undefined) {
-      writer.uint32(42).string(message.error);
+      writer.uint32(50).string(message.error);
     }
     if (message.duration !== undefined) {
-      Duration.encode(message.duration, writer.uint32(50).fork()).ldelim();
+      Duration.encode(message.duration, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -2592,31 +2559,38 @@ export const QueryHistory = {
             break;
           }
 
-          message.creator = reader.string();
+          message.database = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.creator = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.statement = reader.string();
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.error = reader.string();
+          message.statement = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
             break;
           }
 
@@ -2634,6 +2608,7 @@ export const QueryHistory = {
   fromJSON(object: any): QueryHistory {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
@@ -2646,6 +2621,9 @@ export const QueryHistory = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
     }
     if (message.creator !== "") {
       obj.creator = message.creator;
@@ -2671,6 +2649,7 @@ export const QueryHistory = {
   fromPartial(object: DeepPartial<QueryHistory>): QueryHistory {
     const message = createBaseQueryHistory();
     message.name = object.name ?? "";
+    message.database = object.database ?? "";
     message.creator = object.creator ?? "";
     message.createTime = object.createTime ?? undefined;
     message.statement = object.statement ?? "";

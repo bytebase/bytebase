@@ -311,32 +311,15 @@ message ListQueryHistoryRequest {
   // Format: instances/{instance}/databases/{databaseName}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // filter is the filter to apply on the list histories request,
-  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-  // The field only support in filter:
-  // - creator, example:
-  //    - creator = "users/{email}"
-  // - create_time, example:
-  //    - create_time <= "2022-01-01T12:00:00.000Z"
-  //    - create_time >= "2022-01-01T12:00:00.000Z"
-  string filter = 2;
-
-  // The order by of the history.
-  // Only support order by create_time.
-  // For example:
-  //  - order_by = "create_time asc"
-  //  - order_by = "create_time desc"
-  string order_by = 3;
-
   // Not used. The maximum number of histories to return.
   // The service may return fewer than this value.
   // If unspecified, at most 100 history entries will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 4;
+  int32 page_size = 2;
 
   // Not used. A page token, received from a previous `ListQueryHistory` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 5;
+  string page_token = 3;
 }
 
 message ListQueryHistoryResponse {
@@ -351,16 +334,20 @@ message ListQueryHistoryResponse {
 
 message QueryHistory {
   // The name for the query history.
-  // Format: instances/{instance}/databases/{databaseName}/queryHistories/{uid}
+  // Format: queryHistories/{uid}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string creator = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The database name to execute the query.
+  // Format: instances/{instance}/databases/{databaseName}
+  string database = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp create_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string statement = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  optional string error = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string statement = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Duration duration = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  optional string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Duration duration = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

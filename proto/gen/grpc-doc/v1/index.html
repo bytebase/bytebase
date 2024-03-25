@@ -25890,31 +25890,6 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
                 </tr>
               
                 <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>filter is the filter to apply on the list histories request,
-follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-The field only support in filter:
-- creator, example:
-   - creator = &#34;users/{email}&#34;
-- create_time, example:
-   - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34;
-   - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; </p></td>
-                </tr>
-              
-                <tr>
-                  <td>order_by</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The order by of the history.
-Only support order by create_time.
-For example:
- - order_by = &#34;create_time asc&#34;
- - order_by = &#34;create_time desc&#34; </p></td>
-                </tr>
-              
-                <tr>
                   <td>page_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
@@ -26105,7 +26080,15 @@ This information will be sorted to match the order of statements in the userSche
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name for the query history.
-Format: instances/{instance}/databases/{databaseName}/queryHistories/{uid} </p></td>
+Format: queryHistories/{uid} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The database name to execute the query.
+Format: instances/{instance}/databases/{databaseName} </p></td>
                 </tr>
               
                 <tr>
