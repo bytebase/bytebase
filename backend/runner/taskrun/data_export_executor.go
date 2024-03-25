@@ -134,7 +134,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	exportArchive, err := exec.store.CreateExportArchive(ctx, &store.ExportArchiveMessage{
 		Bytes: encryptedBytes,
 		Payload: &storepb.ExportArchivePayload{
-			FileType: exportRequest.Format.String(),
+			FileFormat: payload.Format,
 		},
 	})
 	if err != nil {

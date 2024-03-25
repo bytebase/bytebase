@@ -1469,7 +1469,7 @@ Used internally for obfuscating the page token.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| file_type | [string](#string) |  | The exported file type. e.g. JSON, CSV, SQL |
+| file_format | [ExportFormat](#bytebase-store-ExportFormat) |  | The exported file format. e.g. JSON, CSV, SQL |
 
 
 
