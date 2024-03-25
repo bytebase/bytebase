@@ -20,8 +20,8 @@ type VCSProviderMessage struct {
 	Type vcs.Type
 	// InstanceURL is the URL for the VCS provider instance.
 	InstanceURL string
-	// Name is the name of the VCS provider.
-	Name string
+	// Title is the name of the VCS provider.
+	Title string
 	// AccessToken is the access token for the VCS provider.
 	AccessToken string
 
@@ -45,8 +45,8 @@ type FindVCSProviderMessage struct {
 	ResourceID *string
 }
 
-// GetVCSProviderV2 gets an VCS provider by ID.
-func (s *Store) GetVCSProviderV2(ctx context.Context, find *FindVCSProviderMessage) (*VCSProviderMessage, error) {
+// GetVCSProvider gets an VCS provider by ID.
+func (s *Store) GetVCSProvider(ctx context.Context, find *FindVCSProviderMessage) (*VCSProviderMessage, error) {
 	if find.ID != nil {
 		if v, ok := s.vcsIDCache.Get(*find.ID); ok {
 			return v, nil
@@ -59,7 +59,7 @@ func (s *Store) GetVCSProviderV2(ctx context.Context, find *FindVCSProviderMessa
 	}
 	defer tx.Rollback()
 
-	vcsProviders, err := s.findVCSProvidersImplV2(ctx, tx, find)
+	vcsProviders, err := s.findVCSProvidersImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (s *Store) ListVCSProviders(ctx context.Context) ([]*VCSProviderMessage, er
 	}
 	defer tx.Rollback()
 
-	vcsProviders, err := s.findVCSProvidersImplV2(ctx, tx, &FindVCSProviderMessage{})
+	vcsProviders, err := s.findVCSProvidersImpl(ctx, tx, &FindVCSProviderMessage{})
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +99,8 @@ func (s *Store) ListVCSProviders(ctx context.Context) ([]*VCSProviderMessage, er
 	return vcsProviders, nil
 }
 
-// CreateVCSProviderV2 creates an VCS provider.
-func (s *Store) CreateVCSProviderV2(ctx context.Context, principalUID int, create *VCSProviderMessage) (*VCSProviderMessage, error) {
+// CreateVCSProvider creates an VCS provider.
+func (s *Store) CreateVCSProvider(ctx context.Context, principalUID int, create *VCSProviderMessage) (*VCSProviderMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
@@ -125,14 +125,14 @@ func (s *Store) CreateVCSProviderV2(ctx context.Context, principalUID int, creat
 		principalUID,
 		principalUID,
 		create.ResourceID,
-		create.Name,
+		create.Title,
 		create.Type,
 		create.InstanceURL,
 		create.AccessToken,
 	).Scan(
 		&vcsProvider.ID,
 		&vcsProvider.ResourceID,
-		&vcsProvider.Name,
+		&vcsProvider.Title,
 		&vcsProvider.Type,
 		&vcsProvider.InstanceURL,
 		&vcsProvider.AccessToken,
@@ -151,8 +151,8 @@ func (s *Store) CreateVCSProviderV2(ctx context.Context, principalUID int, creat
 	return &vcsProvider, nil
 }
 
-// UpdateVCSProviderV2 updates an VCS provider.
-func (s *Store) UpdateVCSProviderV2(ctx context.Context, principalUID int, vcsProviderUID int, update *UpdateVCSProviderMessage) (*VCSProviderMessage, error) {
+// UpdateVCSProvider updates an VCS provider.
+func (s *Store) UpdateVCSProvider(ctx context.Context, principalUID int, vcsProviderUID int, update *UpdateVCSProviderMessage) (*VCSProviderMessage, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []any{principalUID}
 	if v := update.Name; v != nil {
@@ -181,7 +181,7 @@ func (s *Store) UpdateVCSProviderV2(ctx context.Context, principalUID int, vcsPr
 	).Scan(
 		&vcsProvider.ID,
 		&vcsProvider.ResourceID,
-		&vcsProvider.Name,
+		&vcsProvider.Title,
 		&vcsProvider.Type,
 		&vcsProvider.InstanceURL,
 		&vcsProvider.AccessToken,
@@ -199,8 +199,8 @@ func (s *Store) UpdateVCSProviderV2(ctx context.Context, principalUID int, vcsPr
 	return &vcsProvider, nil
 }
 
-// DeleteVCSProviderV2 deletes an VCS provider.
-func (s *Store) DeleteVCSProviderV2(ctx context.Context, vcsProviderUID int) error {
+// DeleteVCSProvider deletes an VCS provider.
+func (s *Store) DeleteVCSProvider(ctx context.Context, vcsProviderUID int) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
@@ -219,7 +219,7 @@ func (s *Store) DeleteVCSProviderV2(ctx context.Context, vcsProviderUID int) err
 	return nil
 }
 
-func (*Store) findVCSProvidersImplV2(ctx context.Context, tx *Tx, find *FindVCSProviderMessage) ([]*VCSProviderMessage, error) {
+func (*Store) findVCSProvidersImpl(ctx context.Context, tx *Tx, find *FindVCSProviderMessage) ([]*VCSProviderMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
@@ -250,7 +250,7 @@ func (*Store) findVCSProvidersImplV2(ctx context.Context, tx *Tx, find *FindVCSP
 		if err := rows.Scan(
 			&vcsProvider.ID,
 			&vcsProvider.ResourceID,
-			&vcsProvider.Name,
+			&vcsProvider.Title,
 			&vcsProvider.Type,
 			&vcsProvider.InstanceURL,
 			&vcsProvider.AccessToken,

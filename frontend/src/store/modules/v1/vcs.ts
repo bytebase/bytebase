@@ -24,7 +24,7 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
     return resp.vcsProviders;
   };
 
-  const fetchVCSByName = async (name: string) => {
+  const fetchVCSByName = async (name: string, silent = false) => {
     const vcs = await vcsProviderServiceClient.getVCSProvider({
       name,
     });
@@ -33,11 +33,11 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
     return vcs;
   };
 
-  const fetchVCSByUid = async (vcsId: VCSId) => {
+  const fetchVCSById = async (vcsId: VCSId) => {
     return fetchVCSByName(`${vcsProviderPrefix}${vcsId}`);
   };
 
-  const getVCSByUid = (vcsId: VCSId) => {
+  const getVCSById = (vcsId: VCSId) => {
     return vcsMapByName.get(`${vcsProviderPrefix}${vcsId}`);
   };
 
@@ -52,9 +52,10 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
     vcsMapByName.delete(name);
   };
 
-  const createVCS = async (vcs: VCSProvider) => {
+  const createVCS = async (resourceId: string, vcs: VCSProvider) => {
     const resp = await vcsProviderServiceClient.createVCSProvider({
       vcsProvider: vcs,
+      vcsProviderId: resourceId,
     });
     vcsMapByName.set(resp.name, resp);
     return resp;
@@ -79,10 +80,10 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
 
   return {
     listVCSExternalProjects,
-    getVCSByUid,
+    getVCSById,
     getVCSList,
     fetchVCSByName,
-    fetchVCSByUid,
+    fetchVCSById,
     fetchVCSList,
     deleteVCS,
     createVCS,
