@@ -66,7 +66,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.AuthService_Logout_FullMethodName,
 		v1pb.CelService_BatchParse_FullMethodName,
 		v1pb.CelService_BatchDeparse_FullMethodName,
-		v1pb.LoggingService_ListLogs_FullMethodName,
+		v1pb.LoggingService_SearchLogs_FullMethodName,
 		v1pb.LoggingService_GetLog_FullMethodName,
 		v1pb.LoggingService_ExportLogs_FullMethodName,
 		v1pb.SQLService_Query_FullMethodName,

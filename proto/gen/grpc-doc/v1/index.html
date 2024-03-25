@@ -1312,15 +1312,15 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListLogsRequest"><span class="badge">M</span>ListLogsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListLogsResponse"><span class="badge">M</span>ListLogsResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.LogEntity"><span class="badge">M</span>LogEntity</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchLogsRequest"><span class="badge">M</span>SearchLogsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchLogsResponse"><span class="badge">M</span>SearchLogsResponse</a>
                 </li>
               
               
@@ -2414,6 +2414,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ListQueryHistoriesRequest"><span class="badge">M</span>ListQueryHistoriesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListQueryHistoriesResponse"><span class="badge">M</span>ListQueryHistoriesResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ParseMyBatisMapperRequest"><span class="badge">M</span>ParseMyBatisMapperRequest</a>
                 </li>
               
@@ -2427,6 +2435,10 @@
               
                 <li>
                   <a href="#bytebase.v1.PrettyResponse"><span class="badge">M</span>PrettyResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.QueryHistory"><span class="badge">M</span>QueryHistory</a>
                 </li>
               
                 <li>
@@ -14442,109 +14454,6 @@ Format: logs/{uid} </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListLogsRequest">ListLogsRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>filter is the filter to apply on the list logs request,
-follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-The field only support in filter:
-- creator, example:
-   - creator = &#34;users/{email}&#34;
-- resource, example:
-   - resource = &#34;projects/{project resource id}&#34;
-- level, example:
-   - level = &#34;INFO&#34;
-   - level = &#34;ERROR | WARN&#34;
-- action, example:
-   - action = &#34;ACTION_MEMBER_CREATE&#34;
-   - action = &#34;ACTION_MEMBER_CREATE | ACTION_ISSUE_CREATE&#34;
-- create_time, example:
-   - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34;
-   - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34;
-For example:
-List the logs of type &#39;ACTION_ISSUE_COMMENT_CREATE&#39; in issue/123: &#39;action=&#34;ACTION_ISSUE_COMMENT_CREATE&#34;, resource=&#34;issue/123&#34;&#39; </p></td>
-                </tr>
-              
-                <tr>
-                  <td>order_by</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The order by of the log.
-Only support order by create_time.
-For example:
- - order_by = &#34;create_time asc&#34;
- - order_by = &#34;create_time desc&#34; </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Not used. The maximum number of logs to return.
-The service may return fewer than this value.
-If unspecified, at most 100 log entries will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Not used. A page token, received from a previous `ListLogs` call.
-Provide this to retrieve the subsequent page. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListLogsResponse">ListLogsResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>log_entities</td>
-                  <td><a href="#bytebase.v1.LogEntity">LogEntity</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of log entities. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token to retrieve next page of log entities.
-Pass this value in the page_token field in the subsequent call to `ListLogs` method
-to retrieve the next page of log entities. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.LogEntity">LogEntity</h3>
         <p></p>
 
@@ -14625,6 +14534,109 @@ TODO: use oneof </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchLogsRequest">SearchLogsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>filter is the filter to apply on the list logs request,
+follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+The field only support in filter:
+- creator, example:
+   - creator = &#34;users/{email}&#34;
+- resource, example:
+   - resource = &#34;projects/{project resource id}&#34;
+- level, example:
+   - level = &#34;INFO&#34;
+   - level = &#34;ERROR | WARN&#34;
+- action, example:
+   - action = &#34;ACTION_MEMBER_CREATE&#34;
+   - action = &#34;ACTION_MEMBER_CREATE | ACTION_ISSUE_CREATE&#34;
+- create_time, example:
+   - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34;
+   - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34;
+For example:
+List the logs of type &#39;ACTION_ISSUE_COMMENT_CREATE&#39; in issue/123: &#39;action=&#34;ACTION_ISSUE_COMMENT_CREATE&#34;, resource=&#34;issue/123&#34;&#39; </p></td>
+                </tr>
+              
+                <tr>
+                  <td>order_by</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The order by of the log.
+Only support order by create_time.
+For example:
+ - order_by = &#34;create_time asc&#34;
+ - order_by = &#34;create_time desc&#34; </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Not used. The maximum number of logs to return.
+The service may return fewer than this value.
+If unspecified, at most 100 log entries will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Not used. A page token, received from a previous `SearchLogs` call.
+Provide this to retrieve the subsequent page. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchLogsResponse">SearchLogsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>log_entities</td>
+                  <td><a href="#bytebase.v1.LogEntity">LogEntity</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of log entities. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token to retrieve next page of log entities.
+Pass this value in the page_token field in the subsequent call to `SearchLogs` method
+to retrieve the next page of log entities. </p></td>
                 </tr>
               
             </tbody>
@@ -14845,9 +14857,9 @@ ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query.</p></td>
           <tbody>
             
               <tr>
-                <td>ListLogs</td>
-                <td><a href="#bytebase.v1.ListLogsRequest">ListLogsRequest</a></td>
-                <td><a href="#bytebase.v1.ListLogsResponse">ListLogsResponse</a></td>
+                <td>SearchLogs</td>
+                <td><a href="#bytebase.v1.SearchLogsRequest">SearchLogsRequest</a></td>
+                <td><a href="#bytebase.v1.SearchLogsResponse">SearchLogsResponse</a></td>
                 <td><p></p></td>
               </tr>
             
@@ -14886,7 +14898,7 @@ ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query.</p></td>
               
               
               <tr>
-                <td>ListLogs</td>
+                <td>SearchLogs</td>
                 <td>GET</td>
                 <td>/v1/logs:search</td>
                 <td></td>
@@ -25859,6 +25871,85 @@ The exported data is not masked. </p></td>
 
         
       
+        <h3 id="bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Not used. The maximum number of histories to return.
+The service may return fewer than this value.
+If unspecified, at most 100 history entries will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Not used. A page token, received from a previous `ListQueryHistory` call.
+Provide this to retrieve the subsequent page. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>filter is the filter to apply on the search query history,
+follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+Only support filter by database for now.
+For example:
+database = &#34;instances/{instance}/databases/{database}&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>query_histories</td>
+                  <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of history. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token to retrieve next page of history.
+Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method
+to retrieve the next page of history. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ParseMyBatisMapperRequest">ParseMyBatisMapperRequest</h3>
         <p></p>
 
@@ -25968,6 +26059,74 @@ This information will be sorted to match the order of statements in the userSche
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The expected SDL schema after normalizing. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.QueryHistory">QueryHistory</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name for the query history.
+Format: queryHistories/{uid} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The database name to execute the query.
+Format: instances/{instance}/databases/{databaseName} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creator</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>duration</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -26437,6 +26596,13 @@ The types come from the Golang SQL driver. </p></td>
               </tr>
             
               <tr>
+                <td>ListQueryHistories</td>
+                <td><a href="#bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</a></td>
+                <td><a href="#bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>Export</td>
                 <td><a href="#bytebase.v1.ExportRequest">ExportRequest</a></td>
                 <td><a href="#bytebase.v1.ExportResponse">ExportResponse</a></td>
@@ -26516,6 +26682,16 @@ The types come from the Golang SQL driver. </p></td>
                 <td>Query</td>
                 <td>POST</td>
                 <td>/v1/{name=instances/*}:query</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListQueryHistories</td>
+                <td>GET</td>
+                <td>/v1/queryHistories</td>
                 <td></td>
               </tr>
               
