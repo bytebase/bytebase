@@ -242,6 +242,7 @@ func convertToVCSProvider(vcsProvider *store.VCSProviderMessage) *v1pb.VCSProvid
 		Name:  fmt.Sprintf("%s%d", common.VCSProviderPrefix, vcsProvider.ID),
 		Title: vcsProvider.Name,
 		Type:  tp,
+		Url:   vcsProvider.InstanceURL,
 	}
 }
 
