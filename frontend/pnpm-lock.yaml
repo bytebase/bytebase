@@ -275,8 +275,8 @@ devDependencies:
     specifier: ^7.3.3
     version: 7.3.3
   '@types/prettier':
-    specifier: 2.7.1
-    version: 2.7.1
+    specifier: 3.0.0
+    version: 3.0.0
   '@types/qrcode':
     specifier: ^1.5.5
     version: 1.5.5
@@ -2059,8 +2059,11 @@ packages:
       '@types/pouchdb-replication': 6.4.7
     dev: true
 
-  /@types/prettier@2.7.1:
-    resolution: {integrity: sha512-ri0UmynRRvZiiUJdiz38MmIblKK+oH30MztdBVR95dv/Ubw6neWSb8u1XpRb72L4qsZOhz+L+z9JD40SJmfWow==}
+  /@types/prettier@3.0.0:
+    resolution: {integrity: sha512-mFMBfMOz8QxhYVbuINtswBp9VL2b4Y0QqYHwqLz3YbgtfAcat2Dl6Y1o4e22S/OVE6Ebl9m7wWiMT2lSbAs1wA==}
+    deprecated: This is a stub types definition. prettier provides its own type definitions, so you do not need this installed.
+    dependencies:
+      prettier: 3.2.5
     dev: true
 
   /@types/qrcode@1.5.5:
