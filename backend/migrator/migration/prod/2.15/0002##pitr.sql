@@ -13,4 +13,5 @@ DELETE FROM stage WHERE NOT EXISTS (SELECT task.id FROM task WHERE task.stage_id
 DELETE FROM instance_change_history WHERE issue_id IN (SELECT id FROM issue WHERE NOT EXISTS (SELECT task.id FROM task WHERE task.pipeline_id = issue.pipeline_id) AND issue.type = 'bb.issue.database.general');
 DELETE FROM instance_change_history WHERE type = 'BRANCH';
 DELETE FROM issue WHERE NOT EXISTS (SELECT task.id FROM task WHERE task.pipeline_id = issue.pipeline_id) AND issue.type = 'bb.issue.database.general';
+DELETE FROM plan WHERE pipeline_id IN (SELECT id FROM pipeline WHERE NOT EXISTS (SELECT task.id FROM task WHERE task.pipeline_id = pipeline.id));
 DELETE FROM pipeline WHERE NOT EXISTS (SELECT task.id FROM task WHERE task.pipeline_id = pipeline.id);
