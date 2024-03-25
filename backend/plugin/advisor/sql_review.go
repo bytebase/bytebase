@@ -93,6 +93,9 @@ const (
 	SchemaRuleStatementDisallowAddColumnWithDefault = "statement.disallow-add-column-with-default"
 	// SchemaRuleStatementAddCheckNotValid require add check constraints not valid.
 	SchemaRuleStatementAddCheckNotValid = "statement.add-check-not-valid"
+	// SchemaRuleStatementAddFKNotValid require add foreign key not valid.
+	SchemaRuleStatementAddFKNotValid = "statement.add-foreign-key-not-valid"
+
 	// SchemaRuleStatementDisallowAddNotNull disallow to add NOT NULL.
 	SchemaRuleStatementDisallowAddNotNull = "statement.disallow-add-not-null"
 	// SchemaRuleStatementDisallowAddColumn disallow to add column.
@@ -1543,6 +1546,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementAddCheckNotValid:
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLAddCheckNotValid, nil
+		}
+	case SchemaRuleStatementAddFKNotValid:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLAddFKNotValid, nil
 		}
 	case SchemaRuleStatementDisallowAddNotNull:
 		if engine == storepb.Engine_POSTGRES {
