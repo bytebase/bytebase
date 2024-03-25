@@ -61,7 +61,7 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
   const activityListByIssueV1 = reactive(new Map<string, LogEntity[]>());
 
   const fetchActivityList = async (find: FindActivityMessage) => {
-    const resp = await loggingServiceClient.listLogs({
+    const resp = await loggingServiceClient.searchLogs({
       orderBy: find.order ? `create_time ${find.order}` : "",
       filter: buildFilter(find),
       pageSize: find.pageSize,

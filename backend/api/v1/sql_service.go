@@ -263,11 +263,10 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 		return nil, nil, nil, err
 	}
 	activity, err := s.createQueryActivity(ctx, user, api.ActivityInfo, instance.UID, database, api.ActivitySQLEditorQueryPayload{
-		Statement:              request.Statement,
-		InstanceID:             instance.UID,
-		DeprecatedInstanceName: instance.Title,
-		DatabaseID:             database.UID,
-		DatabaseName:           database.DatabaseName,
+		Statement:    request.Statement,
+		InstanceID:   instance.UID,
+		DatabaseID:   database.UID,
+		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return nil, nil, nil, err
@@ -1009,11 +1008,10 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	activity, err := s.createQueryActivity(ctx, user, level, instance.UID, database, api.ActivitySQLEditorQueryPayload{
-		Statement:              request.Statement,
-		InstanceID:             instance.UID,
-		DeprecatedInstanceName: instance.Title,
-		DatabaseID:             database.UID,
-		DatabaseName:           database.DatabaseName,
+		Statement:    request.Statement,
+		InstanceID:   instance.UID,
+		DatabaseID:   database.UID,
+		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
 		return nil, err

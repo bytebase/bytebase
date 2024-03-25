@@ -260,15 +260,13 @@ type ActivityProjectDatabaseTransferPayload struct {
 // ActivitySQLEditorQueryPayload is the API message payloads for the executed query info.
 type ActivitySQLEditorQueryPayload struct {
 	// Used by activity table to display info without paying the join cost
-	Statement  string `json:"statement"`
-	DurationNs int64  `json:"durationNs"`
-	InstanceID int    `json:"instanceId"`
-	// DeprecatedInstanceName is deprecated and should be removed from future version.
-	DeprecatedInstanceName string           `json:"instanceName"`
-	DatabaseID             int              `json:"databaseId"`
-	DatabaseName           string           `json:"databaseName"`
-	Error                  string           `json:"error"`
-	AdviceList             []advisor.Advice `json:"adviceList"`
+	Statement    string           `json:"statement"`
+	DurationNs   int64            `json:"durationNs"`
+	InstanceID   int              `json:"instanceId"`
+	DatabaseID   int              `json:"databaseId"`
+	DatabaseName string           `json:"databaseName"`
+	Error        string           `json:"error"`
+	AdviceList   []advisor.Advice `json:"adviceList"`
 }
 
 // ActivitySQLExportPayload is the API message payloads for the exported SQL info.
