@@ -1,5 +1,5 @@
 import type monaco from "monaco-editor";
-import { ISuggestOptions } from "vscode/vscode/vs/editor/common/config/editorOptions";
+import type { ISuggestOptions } from "vscode/vscode/vs/editor/common/config/editorOptions";
 import { watchEffect } from "vue";
 import type { MonacoModule } from "../types";
 import { useTextModelLanguage } from "./common";

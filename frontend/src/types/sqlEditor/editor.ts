@@ -17,7 +17,7 @@ export const EngineTypesUsingSQL = [
   "SPANNER",
   "OCEANBASE",
 ] as const;
-export type SQLDialect = typeof EngineTypesUsingSQL[number];
+export type SQLDialect = (typeof EngineTypesUsingSQL)[number];
 export const EngineToSQLDialectMap = new Map<Engine, SQLDialect>([
   [Engine.MYSQL, "MYSQL"],
   [Engine.CLICKHOUSE, "CLICKHOUSE"],

@@ -99,7 +99,8 @@ const options = computed(() => {
     };
   });
 });
-const renderLabel = (option: KeyOption | KeyValueOption) => {
+const renderLabel = (cascaderOption: CascaderOption) => {
+  const option = cascaderOption as KeyOption | KeyValueOption;
   if (option.type === "key") {
     const { key } = option;
     return key;

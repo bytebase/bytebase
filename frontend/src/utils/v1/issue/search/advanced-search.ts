@@ -41,8 +41,8 @@ export const buildIssueFilterBySearchParams = (params: SearchParams) => {
       status === "OPEN"
         ? [IssueStatus.OPEN]
         : status === "CLOSED"
-        ? [IssueStatus.DONE, IssueStatus.CANCELED]
-        : undefined,
+          ? [IssueStatus.DONE, IssueStatus.CANCELED]
+          : undefined,
   };
   return filter;
 };

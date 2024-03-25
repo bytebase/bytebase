@@ -130,7 +130,7 @@
             </label>
             <div class="flex flex-row items-center relative">
               <DropdownInput
-                :value="getColumnDefaultDisplayString(state.column!)||null"
+                :value="getColumnDefaultDisplayString(state.column!) || null"
                 :options="defaultValueOptions"
                 :disabled="readonly"
                 :allow-filter="true"

@@ -21,7 +21,7 @@
         "
         @view-detail="
           (log: DebugLog) => {
-            state.modalContent = log
+            state.modalContent = log;
             state.showModal = true;
             dialog!.open();
           }

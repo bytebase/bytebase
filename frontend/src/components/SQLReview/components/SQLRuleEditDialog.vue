@@ -79,7 +79,7 @@
         :selected="state.selectedEngine"
         :engine-list="rule.engineList"
         :individual-engine-list="rule.individualConfigList.map((c) => c.engine)"
-        @update:engine="(val: Engine) => state.selectedEngine = val"
+        @update:engine="(val: Engine) => (state.selectedEngine = val)"
       />
       <div
         v-for="(config, index) in rule.componentList"

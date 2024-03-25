@@ -12,9 +12,11 @@
     :placeholder="$t('principal.select')"
     class="bb-user-select"
     style="width: 12rem"
-    @update:show="(show: boolean)=>{
-      showStatus = show
-    }"
+    @update:show="
+      (show: boolean) => {
+        showStatus = show;
+      }
+    "
     @update:value="handleValueUpdated"
   />
 </template>

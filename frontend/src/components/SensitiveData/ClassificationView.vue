@@ -178,10 +178,13 @@ const onFileChange = () => {
         id: uuidv4(),
         title: data.title || "",
         levels: data.levels,
-        classification: data.classifications.reduce((obj, item) => {
-          obj[item.id] = item;
-          return obj;
-        }, {} as { [key: string]: DataClassification }),
+        classification: data.classifications.reduce(
+          (obj, item) => {
+            obj[item.id] = item;
+            return obj;
+          },
+          {} as { [key: string]: DataClassification }
+        ),
       });
   };
   fr.onerror = () => {

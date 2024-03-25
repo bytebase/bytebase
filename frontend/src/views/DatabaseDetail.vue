@@ -250,7 +250,7 @@ const databaseHashList = [
   "slow-query",
   "setting",
 ] as const;
-export type DatabaseHash = typeof databaseHashList[number];
+export type DatabaseHash = (typeof databaseHashList)[number];
 const isDatabaseHash = (x: any): x is DatabaseHash =>
   databaseHashList.includes(x);
 

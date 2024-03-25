@@ -3,7 +3,7 @@ import { watch } from "vue";
 export const useVModel = <
   PS extends { [key in K]: PS[K] },
   K extends string,
-  E extends (name: `update:${K}`, value: PS[K]) => void
+  E extends (name: `update:${K}`, value: PS[K]) => void,
 >(
   props: PS,
   state: PS,

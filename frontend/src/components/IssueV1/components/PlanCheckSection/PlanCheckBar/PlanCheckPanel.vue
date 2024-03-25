@@ -86,8 +86,8 @@ const tabItemList = computed(() => {
         i === 0
           ? t("common.latest")
           : checkRun.createTime
-          ? humanizeDate(checkRun.createTime)
-          : `UID(${checkRun.uid})`;
+            ? humanizeDate(checkRun.createTime)
+            : `UID(${checkRun.uid})`;
       return {
         label,
         value: checkRun.uid,

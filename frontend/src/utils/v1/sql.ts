@@ -121,14 +121,14 @@ const toInt = (a: any) => {
   return typeof a === "number"
     ? a
     : typeof a === "string"
-    ? parseInt(a, 10)
-    : Number(a);
+      ? parseInt(a, 10)
+      : Number(a);
 };
 
 const toFloat = (a: any) => {
   return typeof a === "number"
     ? a
     : typeof a === "string"
-    ? parseFloat(a)
-    : Number(a);
+      ? parseFloat(a)
+      : Number(a);
 };

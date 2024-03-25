@@ -7,8 +7,8 @@ import { EditorType } from "./common";
 type OptionsType<E> = E extends monaco.editor.IStandaloneCodeEditor
   ? monaco.editor.IEditorOptions
   : E extends monaco.editor.IStandaloneDiffEditor
-  ? monaco.editor.IDiffEditorOptions
-  : never;
+    ? monaco.editor.IDiffEditorOptions
+    : never;
 
 export const useOptions = <E extends EditorType>(
   monaco: MonacoModule,
@@ -27,7 +27,7 @@ export const useOptions = <E extends EditorType>(
 
 export const useOptionByKey = <
   E extends EditorType,
-  K extends keyof OptionsType<E>
+  K extends keyof OptionsType<E>,
 >(
   monaco: MonacoModule,
   editor: E,

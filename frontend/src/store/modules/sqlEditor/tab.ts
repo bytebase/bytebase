@@ -39,7 +39,7 @@ const PERSISTENT_TAB_FIELDS = [
   "status",
   "batchQueryContext",
 ] as const;
-type PersistentTab = Pick<SQLEditorTab, typeof PERSISTENT_TAB_FIELDS[number]>;
+type PersistentTab = Pick<SQLEditorTab, (typeof PERSISTENT_TAB_FIELDS)[number]>;
 
 // `tabsById` stores all PersistentTab items across all projects
 const tabsById = reactive(new Map<string, SQLEditorTab>());
