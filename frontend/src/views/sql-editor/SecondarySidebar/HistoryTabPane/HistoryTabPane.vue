@@ -72,13 +72,16 @@ import {
   useSQLEditorQueryHistoryStore,
   useSQLEditorTabStore,
 } from "@/store";
-import { SQLEditorQueryHistory } from "@/types";
-import { getHighlightHTMLByKeyWords } from "@/utils";
+import { QueryHistory } from "@/types/proto/v1/sql_service";
+import {
+  getHighlightHTMLByKeyWords,
+  extractDatabaseResourceName,
+} from "@/utils";
 import HistoryConnectionIcon from "./HistoryConnectionIcon.vue";
 
 interface State {
   search: string;
-  currentActionHistory: SQLEditorQueryHistory | null;
+  currentActionHistory: QueryHistory | null;
 }
 
 const { t } = useI18n();
@@ -96,18 +99,15 @@ const { copy: copyTextToClipboard, isSupported } = useClipboard({
 });
 
 const data = computed(() => {
-  const tempData =
-    queryHistoryList.value.length > 0
-      ? queryHistoryList.value.filter((history) => {
-          let t = false;
+  const tempData = queryHistoryList.value.filter((history) => {
+    let t = false;
 
-          if (history.statement.includes(state.search)) {
-            t = true;
-          }
+    if (history.statement.includes(state.search)) {
+      t = true;
+    }
 
-          return t;
-        })
-      : [];
+    return t;
+  });
 
   return tempData.map((history) => {
     return {
@@ -122,7 +122,7 @@ const data = computed(() => {
   });
 });
 
-const titleOfQueryHistory = (history: SQLEditorQueryHistory) => {
+const titleOfQueryHistory = (history: QueryHistory) => {
   return dayjs(history.createTime).format("YYYY-MM-DD HH:mm:ss");
 };
 
@@ -137,7 +137,7 @@ const notifyMessage = computed(() => {
   return "";
 });
 
-const handleCopy = (history: SQLEditorQueryHistory) => {
+const handleCopy = (history: QueryHistory) => {
   if (!isSupported.value) {
     pushNotification({
       module: "bytebase",
@@ -156,14 +156,14 @@ const handleCopy = (history: SQLEditorQueryHistory) => {
   });
 };
 
-const handleQueryHistoryClick = async (queryHistory: SQLEditorQueryHistory) => {
-  const { instance, database, statement } = queryHistory;
+const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
+  const { database, statement } = queryHistory;
 
   // Open a new tab with the connection and statement.
   tabStore.addTab({
     title: `Query history at ${titleOfQueryHistory(queryHistory)}`,
     connection: {
-      instance,
+      instance: `instances/${extractDatabaseResourceName(database).instance}`,
       database,
     },
     statement,

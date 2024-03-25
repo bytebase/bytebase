@@ -505,8 +505,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 });
 
 const ensureDatabaseResourceName = (name: string) => {
-  const { instance, database } = extractDatabaseResourceName(name);
-  return `instances/${instance}/databases/${database}`;
+  return extractDatabaseResourceName(name).full;
 };
 const ensureDatabaseMetadataResourceName = (name: string) => {
   const database = ensureDatabaseResourceName(name);
