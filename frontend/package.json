@@ -154,7 +154,7 @@
     "vitest": "1.4.0",
     "vue-i18n": "9.9.1",
     "vue-router": "4.3.0",
-    "vue-tsc": "2.0.6",
+    "vue-tsc": "2.0.7",
     "ws": "^8.15.1"
   },
   "peerDependencies": {
