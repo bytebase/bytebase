@@ -290,7 +290,11 @@ func (d *Driver) getTableInfo(ctx context.Context, tabName string) (
 		if rowMap["data_type"] == nil {
 			typeStr = ""
 		} else {
-			typeStr = strings.ReplaceAll(rowMap["data_type"].(string), " ", "")
+			ok := false
+			typeStr, ok = rowMap["data_type"].(string)
+			if !ok {
+				panic("assertion failed")
+			}
 		}
 		if rowMap["comment"] == nil {
 			commentStr = ""
@@ -298,7 +302,7 @@ func (d *Driver) getTableInfo(ctx context.Context, tabName string) (
 			commentStr = strings.ReplaceAll(rowMap["comment"].(string), " ", "")
 		}
 
-		// process table type
+		// process table type.
 		if strings.Contains(colName, "Table Type") {
 			tabType = strings.ReplaceAll(typeStr, " ", "")
 		} else if colName == "" {

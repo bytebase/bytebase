@@ -12,11 +12,9 @@ import (
 const (
 	schemaStmtFmt = "" +
 		"--\n" +
-		"-- %s structure for `%s`\n" +
+		"-- %s structure for %s\n" +
 		"--\n" +
 		"%s;\n"
-	// TODO(tommy): more rigorous grammar analysis is needed.
-	mtViewDDLFormat = "CREATE MATERIALIZED VIEW %s\nAS\n%s\n"
 )
 
 type IndexDDLOptions struct {
@@ -31,8 +29,25 @@ type IndexDDLOptions struct {
 	storedAs              string
 	storedBy              string
 	location              string
-	tableProperties       []string
+	tableProperties       map[string]string
 	comment               string
+}
+
+type MaterializedViewDDLOptions struct {
+	mtViewName     string
+	disableRewrite bool
+	comment        string
+	partitionedOn  []string
+	clusteredOn    []string
+	distributedOn  []string
+	sortedOn       []string
+	rowFmt         string
+	storedAs       string
+	storedBy       string
+	serdProperties map[string]string
+	location       string
+	tblProperties  map[string]string
+	as             string
 }
 
 func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) {
@@ -44,7 +59,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 	var dumpStrBuilder strings.Builder
 	for _, database := range instanceMetadata.Databases[0].Schemas {
 		// dump databases.
-		databaseDDL, err := d.showCreateSchemaDDL(ctx, "DATABASE", database.Name, "")
+		databaseDDL, err := d.showCreateSchemaDDL(ctx, "DATABASE", fmt.Sprintf("`%s`", database.Name), "")
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to dump database %s", database.Name)
 		}
@@ -52,7 +67,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 
 		// dump managed tables.
 		for _, table := range database.Tables {
-			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", table.Name, database.Name)
+			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", fmt.Sprintf("`%s`", table.Name), fmt.Sprintf("`%s`", database.Name))
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to dump table %s", table.Name)
 			}
@@ -64,7 +79,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 				)
 				// TODO(tommy): get more index info from SyncInstance.
 				indexDDL, err := genIndexDDL(&IndexDDLOptions{
-					indexName:             index.Name,
+					indexName:             tabNameWithDB,
 					tableName:             table.Name,
 					indexType:             index.Type,
 					colNames:              index.Expressions,
@@ -89,7 +104,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 
 		// dump external tables.
 		for _, extTable := range database.ExternalTables {
-			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", extTable.Name, database.Name)
+			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", fmt.Sprintf("`%s`", extTable.Name), fmt.Sprintf("`%s`", database.Name))
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to dump table %s", extTable.Name)
 			}
@@ -98,16 +113,37 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 
 		// dump views.
 		for _, view := range database.Views {
-			viewDDL, err := d.showCreateSchemaDDL(ctx, "VIEW", view.Name, database.Name)
+			viewDDL, err := d.showCreateSchemaDDL(ctx, "VIEW", fmt.Sprintf("`%s`", view.Name), fmt.Sprintf("`%s`", database.Name))
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to dump view %s", view.Name)
 			}
 			_, _ = dumpStrBuilder.WriteString(viewDDL)
 		}
 
+		// TODO(tommy): get more mt view info from SyncInstance.
 		// dump materialized views.
 		for _, mtView := range database.MaterializedViews {
-			mtViewDDL := fmt.Sprintf(mtViewDDLFormat, mtView.Name, mtView.Definition)
+			viewNameWithDB := fmt.Sprintf("`%s`.`%s`", database.Name, mtView.Name)
+			mtViewDDL, err := genMaterializedViewDDL(&MaterializedViewDDLOptions{
+				mtViewName:     viewNameWithDB,
+				disableRewrite: false,
+				comment:        mtView.Comment,
+				partitionedOn:  nil,
+				clusteredOn:    nil,
+				distributedOn:  nil,
+				sortedOn:       nil,
+				rowFmt:         "",
+				storedAs:       "",
+				storedBy:       "",
+				serdProperties: nil,
+				location:       "",
+				tblProperties:  nil,
+				as:             mtView.Definition,
+			})
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to generate DDL for materialized view %s", mtView.Name)
+			}
+
 			_, _ = dumpStrBuilder.WriteString(fmt.Sprintf(schemaStmtFmt, "MATERIALIZED VIEW", mtView.Name, mtViewDDL))
 		}
 	}
@@ -123,9 +159,9 @@ func (*Driver) Restore(_ context.Context, _ io.Reader) error {
 // This function shows DDLs for creating certain type of schema [VIEW, DATABASE, TABLE].
 func (d *Driver) showCreateSchemaDDL(ctx context.Context, schemaType string, schemaName string, belongTo string) (string, error) {
 	// 'SHOW CREATE TABLE' can also be used for dumping views.
-	queryStatement := fmt.Sprintf("SHOW CREATE %s `%s`", schemaType, schemaName)
+	queryStatement := fmt.Sprintf("SHOW CREATE %s %s", schemaType, schemaName)
 	if schemaType == "VIEW" {
-		queryStatement = fmt.Sprintf("SHOW CREATE TABLE `%s`", schemaName)
+		queryStatement = fmt.Sprintf("SHOW CREATE TABLE %s", schemaName)
 	}
 
 	schemaDDLResults, err := d.QueryConn(ctx, nil, queryStatement, nil)
@@ -153,15 +189,10 @@ func genIndexDDL(opts *IndexDDLOptions) (string, error) {
 	var builder strings.Builder
 
 	// index name, table name.
-	_, _ = builder.WriteString(fmt.Sprintf("CREATE INDEX `%s`\nON TABLE `%s` (\n", opts.indexName, opts.tableName))
+	_, _ = builder.WriteString(fmt.Sprintf("CREATE INDEX %s\nON TABLE %s ", opts.indexName, opts.tableName))
 
 	// column names.
-	for idx, colName := range opts.colNames {
-		_, _ = builder.WriteString(fmt.Sprintf("  `%s`", colName))
-		if idx != len(opts.colNames)-1 {
-			_, _ = builder.WriteString(",\n")
-		}
-	}
+	formatColumn(&builder, opts.colNames)
 
 	// index type.
 	_, _ = builder.WriteString(fmt.Sprintf(")\nAS '%s'\n", opts.indexType))
@@ -172,15 +203,9 @@ func genIndexDDL(opts *IndexDDLOptions) (string, error) {
 	}
 
 	// index properties.
-	if len(opts.idxProperties) != 0 {
+	if opts.idxProperties != nil {
 		_, _ = builder.WriteString("IDXPROPERTIES ")
-		for idx, prop := range opts.idxProperties {
-			_, _ = builder.WriteString(prop)
-			if idx != len(opts.idxProperties)-1 {
-				_, _ = builder.WriteString(", ")
-			}
-		}
-		_, _ = builder.WriteRune('\n')
+		formatKVPair(&builder, opts.tableProperties)
 	}
 
 	// index table.
@@ -212,19 +237,108 @@ func genIndexDDL(opts *IndexDDLOptions) (string, error) {
 	// table properties.
 	if opts.tableProperties != nil {
 		_, _ = builder.WriteString("TBLPROPERTIES (")
-		for idx, prop := range opts.tableProperties {
-			_, _ = builder.WriteString(prop)
-			if idx != len(opts.tableProperties)-1 {
-				_, _ = builder.WriteString(", ")
-			}
-		}
-		_, _ = builder.WriteString(")\n")
+		formatKVPair(&builder, opts.tableProperties)
 	}
 
 	// comment.
 	if opts.comment != "" {
-		_, _ = builder.WriteString(fmt.Sprintf("COMMENT \"%s\"\n", opts.comment))
+		_, _ = builder.WriteString(fmt.Sprintf("COMMENT '%s'\n", opts.comment))
 	}
 
 	return builder.String(), nil
+}
+
+func genMaterializedViewDDL(opts *MaterializedViewDDLOptions) (string, error) {
+	var builder strings.Builder
+
+	// mtView name.
+	_, _ = builder.WriteString(fmt.Sprintf("CREATE MATERIALIZED VIEW %s\n", opts.mtViewName))
+
+	// disable rewrite.
+	if opts.disableRewrite {
+		_, _ = builder.WriteString("DISABLE REWRITE\n")
+	}
+
+	// comment.
+	if opts.comment != "" {
+		_, _ = builder.WriteString(fmt.Sprintf("COMMENT '%s'\n", opts.comment))
+	}
+
+	// partitioned on.
+	if opts.partitionedOn != nil {
+		_, _ = builder.WriteString("PARTITIONED ON ")
+		formatColumn(&builder, opts.partitionedOn)
+	}
+
+	if opts.clusteredOn != nil && opts.distributedOn != nil {
+		return "", errors.New("keywords 'CLUSTERED ON' and 'DISTRIBUTED ON' cannot appear at the same time")
+	} else if opts.clusteredOn != nil {
+		// clusteredOn
+		_, _ = builder.WriteString("CLUSTERED ON ")
+		formatColumn(&builder, opts.clusteredOn)
+	} else if opts.distributedOn != nil && opts.sortedOn != nil {
+		// distributed on.
+		_, _ = builder.WriteString("DISTRIBUTED ON ")
+		formatColumn(&builder, opts.distributedOn)
+
+		// sorted on.
+		_, _ = builder.WriteString("SORTED ON ")
+		formatColumn(&builder, opts.sortedOn)
+	}
+
+	// stored as or stored by.
+	if opts.storedAs != "" && opts.storedBy != "" {
+		return "", errors.New("keywords 'STORED AS' and 'STORED BY' cannot appear at the same time")
+	} else if opts.storedAs != "" {
+		_, _ = builder.WriteString(fmt.Sprintf("STORED AS %s\n", opts.storedAs))
+	} else if opts.storedBy != "" {
+		_, _ = builder.WriteString(fmt.Sprintf("STORED BY '%s'\n", opts.storedBy))
+
+		// if with serde properties.
+		if opts.serdProperties != nil {
+			_, _ = builder.WriteString("WITH SERDEPROPERTIES ")
+			formatKVPair(&builder, opts.serdProperties)
+		}
+	}
+
+	// location.
+	if opts.location != "" {
+		_, _ = builder.WriteString(opts.location)
+		_, _ = builder.WriteRune('\n')
+	}
+
+	// table properties.
+	if opts.tblProperties != nil {
+		_, _ = builder.WriteString("TBLPROPERTIES ")
+		formatKVPair(&builder, opts.tblProperties)
+	}
+
+	// as.
+	_, _ = builder.WriteString(fmt.Sprintf("AS %s \n", opts.as))
+
+	return builder.String(), nil
+}
+
+func formatColumn(builder *strings.Builder, columnNames []string) {
+	_, _ = builder.WriteString("(\n")
+	for idx, colName := range columnNames {
+		_, _ = builder.WriteString(fmt.Sprintf("  `%s`", colName))
+		if idx != len(columnNames)-1 {
+			_, _ = builder.WriteString(",\n")
+		}
+	}
+	_, _ = builder.WriteString(")\n")
+}
+
+func formatKVPair(builder *strings.Builder, kvMap map[string]string) {
+	_, _ = builder.WriteString("(\n")
+	index := 0
+	for k, v := range kvMap {
+		_, _ = builder.WriteString(fmt.Sprintf("  '%s' = '%s'", k, v))
+		if index != len(kvMap)-1 {
+			_, _ = builder.WriteString(",\n")
+		}
+		index++
+	}
+	_, _ = builder.WriteString(")\n")
 }
