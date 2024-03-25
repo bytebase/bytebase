@@ -111,8 +111,8 @@ dependencies:
     specifier: 7.3.0
     version: 7.3.0(@codingame/monaco-vscode-api@1.85.5)(monaco-editor@0.45.0)
   naive-ui:
-    specifier: 2.37.3
-    version: 2.37.3(vue@3.4.21)
+    specifier: 2.38.1
+    version: 2.38.1(vue@3.4.21)
   nice-grpc-common:
     specifier: ^2.0.2
     version: 2.0.2
@@ -5078,8 +5078,8 @@ packages:
       thenify-all: 1.6.0
     dev: true
 
-  /naive-ui@2.37.3(vue@3.4.21):
-    resolution: {integrity: sha512-aUkHFXVIluSi8Me+npbcsdv1NYhVMj5t9YaruoCESlqmfqspj+R2QHEVXkTtUI1kQwVrABMCtAGq/wountqjZA==}
+  /naive-ui@2.38.1(vue@3.4.21):
+    resolution: {integrity: sha512-AnU1FQ7K/CbhguAX++V4kCFjk7h7RvWt4nvZPRjORMpq+fUIlzD+EcQ5Cv1VqDloNF8+eMv4Akc2Ogacc9S+5A==}
     peerDependencies:
       vue: ^3.0.0
     dependencies:
