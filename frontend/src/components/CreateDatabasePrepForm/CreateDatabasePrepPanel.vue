@@ -5,7 +5,6 @@
       :project-id="projectId"
       :environment-id="environmentId"
       :instance-id="instanceId"
-      :backup="backup"
       @dismiss="$emit('dismiss')"
     />
     <template #footer>
@@ -15,9 +14,8 @@
 </template>
 
 <script setup lang="ts">
-import { PropType, ref } from "vue";
+import { ref } from "vue";
 import { DrawerContent } from "@/components/v2";
-import { Backup } from "@/types/proto/v1/database_service";
 import CreateDatabasePrepButtonGroup from "./CreateDatabasePrepButtonGroup.vue";
 import CreateDatabasePrepForm from "./CreateDatabasePrepForm.vue";
 
@@ -32,10 +30,6 @@ defineProps({
   },
   instanceId: {
     type: String,
-    default: undefined,
-  },
-  backup: {
-    type: Object as PropType<Backup>,
     default: undefined,
   },
 });

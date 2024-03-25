@@ -622,10 +622,6 @@ const pushEvent = computed((): PushEvent | undefined => {
 });
 
 const vcsCommit = computed(() => {
-  const fileCommit = pushEvent.value?.fileCommit;
-  if (fileCommit && fileCommit.id) {
-    return fileCommit;
-  }
   const commit = pushEvent.value?.commits[0];
   if (commit && commit.id) {
     return commit;
