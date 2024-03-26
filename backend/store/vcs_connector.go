@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// VCSConnectorMessage is the message for a changelist.
+// VCSConnectorMessage is the message for a VCS connector.
 type VCSConnectorMessage struct {
 	// Related fields
 	VCSUID        int
@@ -38,14 +38,14 @@ type VCSConnectorMessage struct {
 	UpdatedTime time.Time
 }
 
-// FindVCSConnectorMessage is the API message for finding changelists.
+// FindVCSConnectorMessage is the API message for finding VCS connectors.
 type FindVCSConnectorMessage struct {
 	VCSUID     *int
 	ProjectID  *string
 	ResourceID *string
 }
 
-// UpdateVCSConnectorMessage is the message to update a changelist.
+// UpdateVCSConnectorMessage is the message to update a VCS connector.
 type UpdateVCSConnectorMessage struct {
 	ProjectID string
 	UpdaterID int
@@ -56,22 +56,22 @@ type UpdateVCSConnectorMessage struct {
 	BaseDirectory *string
 }
 
-// GetVCSConnector gets a changelist.
+// GetVCSConnector gets a VCS connector.
 func (s *Store) GetVCSConnector(ctx context.Context, find *FindVCSConnectorMessage) (*VCSConnectorMessage, error) {
-	changelists, err := s.ListVCSConnectors(ctx, find)
+	vcsConnectors, err := s.ListVCSConnectors(ctx, find)
 	if err != nil {
 		return nil, err
 	}
-	if len(changelists) == 0 {
+	if len(vcsConnectors) == 0 {
 		return nil, nil
 	}
-	if len(changelists) > 1 {
-		return nil, errors.Errorf("expected 1 changelist, got %d", len(changelists))
+	if len(vcsConnectors) > 1 {
+		return nil, errors.Errorf("expected 1 VCS connector, got %d", len(vcsConnectors))
 	}
-	return changelists[0], nil
+	return vcsConnectors[0], nil
 }
 
-// ListVCSConnectors returns a list of changelists.
+// ListVCSConnectors returns a list of VCS connectors.
 func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMessage) ([]*VCSConnectorMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 
@@ -153,7 +153,7 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 	return vcsConnectors, nil
 }
 
-// CreateVCSConnector creates a changelist.
+// CreateVCSConnector creates a VCS connector.
 func (s *Store) CreateVCSConnector(ctx context.Context, create *VCSConnectorMessage) (*VCSConnectorMessage, error) {
 	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectID})
 	if err != nil {
@@ -218,7 +218,7 @@ func (s *Store) CreateVCSConnector(ctx context.Context, create *VCSConnectorMess
 	return create, nil
 }
 
-// UpdateVCSConnector updates a changelist.
+// UpdateVCSConnector updates a VCS connector.
 func (s *Store) UpdateVCSConnector(ctx context.Context, update *UpdateVCSConnectorMessage) error {
 	set, args := []string{"updater_id = $1"}, []any{update.UpdaterID}
 	if v := update.Branch; v != nil {
@@ -248,7 +248,7 @@ func (s *Store) UpdateVCSConnector(ctx context.Context, update *UpdateVCSConnect
 	return tx.Commit()
 }
 
-// DeleteVCSConnector deletes a changelist.
+// DeleteVCSConnector deletes a VCS connector.
 func (s *Store) DeleteVCSConnector(ctx context.Context, projectID, resourceID string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
