@@ -2406,14 +2406,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListQueryHistoriesRequest"><span class="badge">M</span>ListQueryHistoriesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListQueryHistoriesResponse"><span class="badge">M</span>ListQueryHistoriesResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ParseMyBatisMapperRequest"><span class="badge">M</span>ParseMyBatisMapperRequest</a>
                 </li>
               
@@ -2454,6 +2446,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SearchQueryHistoriesRequest"><span class="badge">M</span>SearchQueryHistoriesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchQueryHistoriesResponse"><span class="badge">M</span>SearchQueryHistoriesResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.StringifyMetadataRequest"><span class="badge">M</span>StringifyMetadataRequest</a>
                 </li>
               
@@ -2468,6 +2468,10 @@
               
                 <li>
                   <a href="#bytebase.v1.CheckRequest.ChangeType"><span class="badge">E</span>CheckRequest.ChangeType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.QueryHistory.Type"><span class="badge">E</span>QueryHistory.Type</a>
                 </li>
               
               
@@ -25836,85 +25840,6 @@ The exported data is not masked. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Not used. The maximum number of histories to return.
-The service may return fewer than this value.
-If unspecified, at most 100 history entries will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Not used. A page token, received from a previous `ListQueryHistory` call.
-Provide this to retrieve the subsequent page. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>filter is the filter to apply on the search query history,
-follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-Only support filter by database for now.
-For example:
-database = &#34;instances/{instance}/databases/{database}&#34; </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>query_histories</td>
-                  <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of history. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token to retrieve next page of history.
-Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method
-to retrieve the next page of history. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.ParseMyBatisMapperRequest">ParseMyBatisMapperRequest</h3>
         <p></p>
 
@@ -26090,6 +26015,13 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
                 <tr>
                   <td>duration</td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.QueryHistory.Type">QueryHistory.Type</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -26414,6 +26346,89 @@ The types come from the Golang SQL driver. </p></td>
 
         
       
+        <h3 id="bytebase.v1.SearchQueryHistoriesRequest">SearchQueryHistoriesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Not used. The maximum number of histories to return.
+The service may return fewer than this value.
+If unspecified, at most 100 history entries will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Not used. A page token, received from a previous `ListQueryHistory` call.
+Provide this to retrieve the subsequent page. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>filter is the filter to apply on the search query history,
+follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+Support filter by:
+- database, for example:
+   database = &#34;instances/{instance}/databases/{database}&#34;
+- instance, for example:
+   instance = &#34;instance/{instance}&#34;
+- type, for example:
+   type = &#34;QUERY&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchQueryHistoriesResponse">SearchQueryHistoriesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>query_histories</td>
+                  <td><a href="#bytebase.v1.QueryHistory">QueryHistory</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of history. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token to retrieve next page of history.
+Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method
+to retrieve the next page of history. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.StringifyMetadataRequest">StringifyMetadataRequest</h3>
         <p></p>
 
@@ -26541,6 +26556,35 @@ The types come from the Golang SQL driver. </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.QueryHistory.Type">QueryHistory.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>QUERY</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EXPORT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
 
@@ -26561,9 +26605,9 @@ The types come from the Golang SQL driver. </p></td>
               </tr>
             
               <tr>
-                <td>ListQueryHistories</td>
-                <td><a href="#bytebase.v1.ListQueryHistoriesRequest">ListQueryHistoriesRequest</a></td>
-                <td><a href="#bytebase.v1.ListQueryHistoriesResponse">ListQueryHistoriesResponse</a></td>
+                <td>SearchQueryHistories</td>
+                <td><a href="#bytebase.v1.SearchQueryHistoriesRequest">SearchQueryHistoriesRequest</a></td>
+                <td><a href="#bytebase.v1.SearchQueryHistoriesResponse">SearchQueryHistoriesResponse</a></td>
                 <td><p></p></td>
               </tr>
             
@@ -26654,9 +26698,9 @@ The types come from the Golang SQL driver. </p></td>
               
               
               <tr>
-                <td>ListQueryHistories</td>
+                <td>SearchQueryHistories</td>
                 <td>GET</td>
-                <td>/v1/queryHistories</td>
+                <td>/v1/queryHistories:search</td>
                 <td></td>
               </tr>
               

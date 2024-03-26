@@ -170,6 +170,9 @@
     - [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource)
     - [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target)
   
+- [store/query_history.proto](#store_query_history-proto)
+    - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
+  
 - [store/role.proto](#store_role-proto)
     - [RolePermissions](#bytebase-store-RolePermissions)
   
@@ -2631,6 +2634,38 @@ The type of target.
 | BRANCH | 1 |  |
 | CHANGELIST | 2 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_query_history-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/query_history.proto
+
+
+
+<a name="bytebase-store-QueryHistoryPayload"></a>
+
+### QueryHistoryPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) | optional |  |
+| duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+
+
+
+
+
+ 
 
  
 
