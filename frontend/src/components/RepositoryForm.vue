@@ -77,90 +77,14 @@
         :disabled="!allowEdit"
       />
     </div>
-    <div>
-      <div class="textlabel">
-        {{ $t("project.settings.schema-change-type") }}
-        <span class="text-red-600">*</span>
-        <LearnMoreLink
-          url="https://www.bytebase.com/docs/change-database/state-based-migration?source=console"
-          class="ml-1"
-        />
-      </div>
-    </div>
-    <div>
-      <div class="textlabel">
-        {{ $t("repository.file-path-template") }}
-        <span class="text-red-600">*</span>
-      </div>
-      <div class="mt-1 textinfolabel">
-        {{ $t("repository.file-path-template-description") }}
-        <LearnMoreLink
-          url="https://www.bytebase.com/docs/vcs-integration/name-and-organize-schema-files?source=console#file-path-template"
-          class="ml-1"
-        />
-      </div>
-      <BBTextField
-        id="filepathtemplate"
-        v-model:value="repositoryConfig.filePathTemplate"
-        name="filepathtemplate"
-        class="mt-2 w-full"
-        :disabled="!allowEdit"
-      />
-      <div class="mt-2 textinfolabel capitalize">
-        <span class="text-red-600">*</span>
-        {{ $t("common.required-placeholder") }}:
-        {{ FILE_REQUIRED_PLACEHOLDER }};
-        <template v-if="fileOptionalPlaceholder.length > 0">
-          {{ $t("common.optional-placeholder") }}:
-          {{ fileOptionalPlaceholder.join(", ") }};
-        </template>
-        {{ $t("common.optional-directory-wildcard") }}:
-        {{ FILE_OPTIONAL_DIRECTORY_WILDCARD }}
-      </div>
-      <div class="mt-2 textinfolabel">
-        • {{ $t("repository.file-path-example-schema-migration") }}:
-        {{
-          sampleFilePath(
-            repositoryConfig.baseDirectory,
-            repositoryConfig.filePathTemplate,
-            "ddl"
-          )
-        }}
-      </div>
-      <div class="mt-2 textinfolabel">
-        • {{ $t("repository.file-path-example-data-migration") }}:
-        {{
-          sampleFilePath(
-            repositoryConfig.baseDirectory,
-            repositoryConfig.filePathTemplate,
-            "dml"
-          )
-        }}
-      </div>
-    </div>
   </div>
-  <InstanceAssignment
-    :show="state.showInstanceAssignmentDrawer"
-    @dismiss="state.showInstanceAssignmentDrawer = false"
-  />
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed } from "vue";
+import { computed } from "vue";
 import type { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
-
-const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
-const FILE_OPTIONAL_DIRECTORY_WILDCARD = "*, **";
-const SINGLE_ASTERISK_REGEX = /\/\*\//g;
-const DOUBLE_ASTERISKS_REGEX = /\/\*\*\//g;
-
-interface LocalState {
-  showFeatureModal: boolean;
-  showInstanceAssignmentDrawer: boolean;
-}
 
 defineEmits<{
   (event: "change-repository"): void;
@@ -182,61 +106,6 @@ const props = withDefaults(
   }
 );
 
-const state = reactive<LocalState>({
-  showFeatureModal: false,
-  showInstanceAssignmentDrawer: false,
-});
-
-const isTenantProject = computed(() => {
-  return props.project.tenantMode === TenantMode.TENANT_MODE_ENABLED;
-});
-
-const sampleFilePath = (
-  baseDirectory: string,
-  filePathTemplate: string,
-  type: string
-): string => {
-  type Item = {
-    placeholder: string;
-    sampleText: string;
-  };
-  const placeholderList: Item[] = [
-    {
-      placeholder: "{{VERSION}}",
-      sampleText: "202101131000",
-    },
-    {
-      placeholder: "{{DB_NAME}}",
-      sampleText: "db1",
-    },
-    {
-      placeholder: "{{TYPE}}",
-      sampleText: type,
-    },
-    {
-      placeholder: "{{ENV_ID}}",
-      sampleText: "env1",
-    },
-    {
-      placeholder: "{{ENV_NAME}}", // for legacy support
-      sampleText: "env1",
-    },
-    {
-      placeholder: "{{DESCRIPTION}}",
-      sampleText: "create_tablefoo_for_bar",
-    },
-  ];
-  let result = `${baseDirectory}/${filePathTemplate}`;
-  // To replace the wildcard.
-  result = result.replace(SINGLE_ASTERISK_REGEX, "/foo/");
-  result = result.replace(DOUBLE_ASTERISKS_REGEX, "/foo/bar/");
-  for (const item of placeholderList) {
-    const re = new RegExp(item.placeholder, "g");
-    result = result.replace(re, item.sampleText);
-  }
-  return result;
-};
-
 const getWebhookLink = computed(() => {
   if (props.vcsType === VCSProvider_Type.AZURE_DEVOPS) {
     const parts = props.repositoryInfo.externalId.split("/");
@@ -247,13 +116,5 @@ const getWebhookLink = computed(() => {
     return `https://dev.azure.com/${organization}/${project}/_settings/serviceHooks`;
   }
   return "";
-});
-
-const fileOptionalPlaceholder = computed(() => {
-  const tags = [] as string[];
-  // Only allows {{ENV_ID}} to be an optional placeholder for non-tenant mode projects
-  if (!isTenantProject.value) tags.push("{{ENV_ID}}");
-  tags.push("{{DESCRIPTION}}");
-  return tags;
 });
 </script>
