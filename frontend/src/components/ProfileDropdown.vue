@@ -14,7 +14,8 @@
 </template>
 
 <script lang="ts" setup>
-import { NSwitch, NDropdown, DropdownOption } from "naive-ui";
+import type { DropdownOption } from "naive-ui";
+import { NSwitch, NDropdown } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, ref, h } from "vue";
 import { useI18n } from "vue-i18n";

@@ -85,14 +85,10 @@ import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPa
 import ProjectRoleSelect from "@/components/v2/Select/ProjectRoleSelect.vue";
 import { useUserStore } from "@/store";
 import { getUserId } from "@/store/modules/v1/common";
-import {
-  ComposedProject,
-  DatabaseResource,
-  getUserEmailInBinding,
-  PresetRoleType,
-} from "@/types";
+import type { ComposedProject, DatabaseResource } from "@/types";
+import { getUserEmailInBinding, PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import { Binding } from "@/types/proto/v1/iam_policy";
+import type { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle, extractDatabaseResourceName } from "@/utils";
 
 const props = defineProps<{

@@ -3294,6 +3294,7 @@ SlowQueryStatisticsItem is the item of slow query statistics.
 | version | [string](#string) |  |  |
 | start_position | [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position) |  |  |
 | end_position | [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position) |  |  |
+| export_archive_uid | [int32](#int32) |  |  |
 
 
 

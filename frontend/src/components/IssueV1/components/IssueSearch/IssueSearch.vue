@@ -46,13 +46,8 @@
 
 <script lang="ts" setup>
 import { ref, computed } from "vue";
-import {
-  SearchParams,
-  SearchScope,
-  SearchScopeId,
-  UIIssueFilterScopeIdList,
-  SearchScopeIdList,
-} from "@/utils";
+import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
+import { UIIssueFilterScopeIdList, SearchScopeIdList } from "@/utils";
 import AdvancedSearchBox from "./AdvancedSearchBox.vue";
 import Status from "./Status.vue";
 import TimeRange from "./TimeRange.vue";

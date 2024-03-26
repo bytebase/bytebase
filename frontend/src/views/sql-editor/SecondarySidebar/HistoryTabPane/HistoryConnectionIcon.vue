@@ -12,7 +12,7 @@ import { computed } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useInstanceV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { QueryHistory } from "@/types/proto/v1/sql_service";
+import type { QueryHistory } from "@/types/proto/v1/sql_service";
 import { extractDatabaseResourceName } from "@/utils";
 
 const props = defineProps<{

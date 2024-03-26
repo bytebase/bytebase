@@ -20,7 +20,7 @@
 <script lang="ts" setup>
 import { toRef } from "vue";
 import { SQLCheckButton, SQLCheckSummary } from "@/components/SQLCheck";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { useSchemaEditorSQLCheck } from "./useSchemaEditorSQLCheck";
 
 const props = defineProps<{

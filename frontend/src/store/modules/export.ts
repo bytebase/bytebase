@@ -1,5 +1,5 @@
 import { useSQLStore } from "@/store";
-import { ExportFormat } from "@/types/proto/v1/common";
+import type { ExportFormat } from "@/types/proto/v1/common";
 import { extractDatabaseResourceName } from "@/utils";
 
 export type ExportDataParams = {

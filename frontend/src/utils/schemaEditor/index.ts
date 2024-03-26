@@ -1,4 +1,4 @@
-import { ComposedDatabase, Database } from "@/types";
+import type { ComposedDatabase, Database } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 
 export * from "./filter";

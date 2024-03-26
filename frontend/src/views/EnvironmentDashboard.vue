@@ -75,14 +75,12 @@ import {
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
 import { VirtualRoleType, emptyEnvironment } from "@/types";
-import {
+import type {
   Environment,
   EnvironmentTier,
 } from "@/types/proto/v1/environment_service";
-import {
-  Policy,
-  PolicyResourceType,
-} from "@/types/proto/v1/org_policy_service";
+import type { Policy } from "@/types/proto/v1/org_policy_service";
+import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
 import type { BBTabItem } from "../bbkit/types";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import { arraySwap, extractEnvironmentResourceName } from "../utils";

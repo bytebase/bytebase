@@ -1,5 +1,5 @@
 import { inject, provide, type InjectionKey } from "vue";
-import { AIContext } from "../types";
+import type { AIContext } from "../types";
 
 export const KEY = Symbol("bb.plugin.ai") as InjectionKey<AIContext>;
 

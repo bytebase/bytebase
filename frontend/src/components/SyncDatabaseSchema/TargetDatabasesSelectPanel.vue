@@ -131,9 +131,10 @@ import {
   InstanceV1Name,
 } from "@/components/v2";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
-import { ComposedDatabase } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { ComposedDatabase } from "@/types";
+import type { Engine } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/v1/common";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import MaskSpinner from "../misc/MaskSpinner.vue";
 
 type LocalState = {

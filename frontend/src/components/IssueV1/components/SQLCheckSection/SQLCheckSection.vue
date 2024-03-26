@@ -44,7 +44,7 @@ import { SQLCheckButton } from "@/components/SQLCheck";
 import { TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
-import { Defer } from "@/utils/util";
+import type { Defer } from "@/utils/util";
 import { isGhostEnabledForTask } from "../Sidebar/GhostSection/common";
 import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
 import SQLCheckBadge from "./SQLCheckBadge.vue";

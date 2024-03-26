@@ -5,8 +5,8 @@
 </template>
 
 <script lang="ts" setup>
-import { ComposedIssue } from "@/types";
-import { Stage } from "@/types/proto/v1/rollout_service";
+import type { ComposedIssue } from "@/types";
+import type { Stage } from "@/types/proto/v1/rollout_service";
 
 defineProps<{
   issue: ComposedIssue;

@@ -1,8 +1,6 @@
-import { VCSUIType } from "@/types";
-import {
-  VCSProvider,
-  VCSProvider_Type,
-} from "@/types/proto/v1/vcs_provider_service";
+import type { VCSUIType } from "@/types";
+import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
+import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 
 export const getVCSUIType = (vcs: VCSProvider): VCSUIType => {
   switch (vcs.type) {

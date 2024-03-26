@@ -11,12 +11,12 @@
 
 <script lang="ts">
 import { useResizeObserver, useWindowSize } from "@vueuse/core";
+import type { PropType } from "vue";
 import {
   computed,
   defineComponent,
   nextTick,
   onMounted,
-  PropType,
   ref,
   watch,
 } from "vue";

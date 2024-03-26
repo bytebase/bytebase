@@ -1,8 +1,9 @@
 import Emittery from "emittery";
-import { Ref, inject, provide } from "vue";
-import { ComposedProject } from "@/types";
-import { RebuildMetadataEditReset } from "../algorithm/rebuild";
-import { EditTarget, ResourceType, RolloutObject } from "../types";
+import type { Ref } from "vue";
+import { inject, provide } from "vue";
+import type { ComposedProject } from "@/types";
+import type { RebuildMetadataEditReset } from "../algorithm/rebuild";
+import type { EditTarget, ResourceType, RolloutObject } from "../types";
 import { useEditConfigs } from "./config";
 import { useEditStatus } from "./edit";
 import { useScrollStatus } from "./scroll";

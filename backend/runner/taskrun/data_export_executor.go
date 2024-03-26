@@ -48,7 +48,7 @@ type DataExportExecutor struct {
 }
 
 // RunOnce will run the data export task executor once.
-func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
 		state.TaskRunExecutionStatus{
 			ExecutionStatus: v1pb.TaskRun_PRE_EXECUTING,
@@ -141,8 +141,8 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Wrap(err, "failed to create export archive")
 	}
 
-	return true, &api.TaskRunResultPayload{
+	return true, &storepb.TaskRunResult{
 		Detail:           fmt.Sprintf("Exported successfully in %v", time.Duration(durationNs).String()),
-		ExportArchiveUID: exportArchive.UID,
+		ExportArchiveUid: int32(exportArchive.UID),
 	}, nil
 }

@@ -35,8 +35,9 @@ import { first, orderBy } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
-import { TabFilter, TabFilterItem } from "@/components/v2";
-import {
+import type { TabFilterItem } from "@/components/v2";
+import { TabFilter } from "@/components/v2";
+import type {
   PlanCheckRun,
   PlanCheckRun_Type,
   Task,

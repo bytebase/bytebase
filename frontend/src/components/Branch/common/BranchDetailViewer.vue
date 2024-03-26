@@ -44,7 +44,7 @@
 <script lang="ts" setup>
 import { ref } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
-import { ComposedProject } from "@/types";
+import type { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 
 type TabValue = "visualized-schema" | "schema-text";

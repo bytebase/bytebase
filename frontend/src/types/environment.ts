@@ -1,5 +1,5 @@
-import { RowStatus } from "./common";
-import { EnvironmentId } from "./id";
+import type { RowStatus } from "./common";
+import type { EnvironmentId } from "./id";
 
 export type Environment = {
   id: EnvironmentId;

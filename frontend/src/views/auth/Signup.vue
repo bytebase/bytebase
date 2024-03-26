@@ -220,7 +220,8 @@ import {
   useAuthStore,
   useOnboardingStateStore,
 } from "@/store";
-import { SignupInfo, TEXT_VALIDATION_DELAY } from "@/types";
+import type { SignupInfo } from "@/types";
+import { TEXT_VALIDATION_DELAY } from "@/types";
 import { isValidEmail } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 

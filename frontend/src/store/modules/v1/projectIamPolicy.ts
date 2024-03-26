@@ -2,12 +2,8 @@ import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
-import {
-  ALL_USERS_USER_EMAIL,
-  ComposedDatabase,
-  MaybeRef,
-  PresetRoleType,
-} from "@/types";
+import type { ComposedDatabase, MaybeRef } from "@/types";
+import { ALL_USERS_USER_EMAIL, PresetRoleType } from "@/types";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
   hasWorkspacePermissionV2,

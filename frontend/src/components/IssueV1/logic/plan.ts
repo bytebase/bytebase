@@ -1,4 +1,4 @@
-import { Plan_Spec } from "@/types/proto/v1/rollout_service";
+import type { Plan_Spec } from "@/types/proto/v1/rollout_service";
 
 /**
  *

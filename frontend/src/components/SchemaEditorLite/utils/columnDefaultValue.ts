@@ -1,7 +1,7 @@
-import { DropdownOption } from "naive-ui";
+import type { DropdownOption } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import { Engine } from "@/types/proto/v1/common";
-import { ColumnDefaultValue } from "@/types/v1/schemaEditor";
+import type { ColumnDefaultValue } from "@/types/v1/schemaEditor";
 
 interface DefaultValue {
   hasDefault: boolean;

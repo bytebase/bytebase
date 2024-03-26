@@ -1,20 +1,17 @@
-import { InjectionKey, Ref, computed, inject, provide } from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { computed, inject, provide } from "vue";
 import { useDatabaseV1Store, useCurrentUserV1 } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import {
-  ComposedDatabase,
-  ProjectPermission,
-  DEFAULT_PROJECT_V1_NAME,
-} from "@/types";
+import type { ComposedDatabase, ProjectPermission } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import {
   hasProjectPermissionV2,
   instanceV1HasAlterSchema,
   instanceV1SupportSlowQuery,
   isArchivedDatabaseV1,
-  instanceV1HasBackupRestore,
   hasPermissionToCreateChangeDatabaseIssue,
 } from "@/utils";
 
@@ -24,8 +21,6 @@ export type DatabaseDetailContext = {
   allowUpdateDatabase: Ref<boolean>;
   allowSyncDatabase: Ref<boolean>;
   allowTransferDatabase: Ref<boolean>;
-  allowListBackup: Ref<boolean>;
-  allowCreateBackup: Ref<boolean>;
   allowGetSchema: Ref<boolean>;
   allowChangeData: Ref<boolean>;
   allowAlterSchema: Ref<boolean>;
@@ -82,13 +77,6 @@ export const provideDatabaseDetailContext = (
     return allowUpdateDatabase.value;
   });
 
-  const allowListBackup = computed(() => checkPermission("bb.backups.list"));
-  const allowCreateBackup = computed(
-    () =>
-      checkPermission("bb.backups.create") &&
-      instanceV1HasBackupRestore(database.value.instanceEntity)
-  );
-
   const allowGetSchema = computed(() =>
     checkPermission("bb.databases.getSchema")
   );
@@ -132,8 +120,6 @@ export const provideDatabaseDetailContext = (
     allowUpdateDatabase,
     allowSyncDatabase,
     allowTransferDatabase,
-    allowListBackup,
-    allowCreateBackup,
     allowGetSchema,
     allowChangeData,
     allowAlterSchema,

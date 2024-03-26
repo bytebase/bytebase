@@ -1,6 +1,6 @@
 import slug from "slug";
 import { State } from "@/types/proto/v1/common";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
 
 export const extractEnvironmentResourceName = (name: string) => {
   const pattern = /(?:^|\/)environments\/([^/]+)(?:$|\/)/;

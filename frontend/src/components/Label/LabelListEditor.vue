@@ -35,7 +35,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { MAX_LABEL_VALUE_LENGTH, isVirtualLabelKey } from "@/utils";
 import LabelEditorRow from "./LabelEditorRow.vue";
-import { Label } from "./types";
+import type { Label } from "./types";
 
 const props = defineProps<{
   kvList: Label[];

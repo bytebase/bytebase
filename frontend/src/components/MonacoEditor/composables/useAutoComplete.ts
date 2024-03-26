@@ -1,5 +1,6 @@
 import type monaco from "monaco-editor";
-import { Ref, computed, watch } from "vue";
+import type { Ref } from "vue";
+import { computed, watch } from "vue";
 import { UNKNOWN_ID } from "@/types";
 import {
   extractDatabaseResourceName,

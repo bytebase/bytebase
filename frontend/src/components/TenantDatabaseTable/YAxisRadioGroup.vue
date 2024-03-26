@@ -10,9 +10,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NSelect, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed, withDefaults } from "vue";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import {
   displayDeploymentMatchSelectorKey,
   getAvailableDeploymentConfigMatchSelectorKeyList,

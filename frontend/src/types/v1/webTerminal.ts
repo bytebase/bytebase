@@ -1,4 +1,4 @@
-import Emittery from "emittery";
+import type Emittery from "emittery";
 import type { ComputedRef, Ref } from "vue";
 import type { SQLEditorQueryParams, SQLEditorTab } from "../sqlEditor";
 import type { SQLResultSetV1 } from "./sql";

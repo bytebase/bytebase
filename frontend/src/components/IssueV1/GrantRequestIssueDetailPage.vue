@@ -78,9 +78,8 @@ import {
   GrantRequestExporterForm,
   GrantRequestQuerierForm,
 } from "./components";
+import type { IssueReviewAction, IssueStatusAction } from "./logic";
 import {
-  IssueReviewAction,
-  IssueStatusAction,
   provideIssueSidebarContext,
   useIssueContext,
   usePollIssue,

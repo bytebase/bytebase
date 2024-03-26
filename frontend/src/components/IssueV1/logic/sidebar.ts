@@ -1,5 +1,6 @@
 import { useElementSize } from "@vueuse/core";
-import { InjectionKey, Ref, computed, inject, provide, ref } from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { computed, inject, provide, ref } from "vue";
 
 export type SidebarMode = "NONE" | "DESKTOP" | "MOBILE";
 

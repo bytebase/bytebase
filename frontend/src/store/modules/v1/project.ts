@@ -1,19 +1,17 @@
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
+import type { ComposedProject, MaybeRef, ResourceId } from "@/types";
 import {
-  ComposedProject,
   emptyProject,
   EMPTY_ID,
   EMPTY_PROJECT_NAME,
-  MaybeRef,
-  ResourceId,
   unknownProject,
   UNKNOWN_ID,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { Project } from "@/types/proto/v1/project_service";
+import type { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
 import { projectNamePrefix } from "./common";

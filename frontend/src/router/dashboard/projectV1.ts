@@ -1,4 +1,4 @@
-import { RouteRecordRaw } from "vue-router";
+import type { RouteRecordRaw } from "vue-router";
 import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
 import { t } from "@/plugins/i18n";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "./workspaceRoutes";

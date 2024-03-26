@@ -34,11 +34,10 @@ import {
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import type { SearchParams, SearchScopeId } from "@/utils";
 import {
   sortInstanceV1ListByEnvironmentV1,
   extractEnvironmentResourceName,
-  SearchParams,
-  SearchScopeId,
 } from "@/utils";
 
 interface LocalState {

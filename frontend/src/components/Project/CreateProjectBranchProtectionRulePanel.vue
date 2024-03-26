@@ -115,7 +115,8 @@ import {
   useProjectBranchProtectionRules,
   useProjectProtectionRulesStore,
 } from "@/store/modules/v1/projectProtectionRoles";
-import { ComposedProject, PresetRoleType } from "@/types";
+import type { ComposedProject } from "@/types";
+import { PresetRoleType } from "@/types";
 import {
   ProtectionRule,
   ProtectionRule_BranchSource as BranchSource,

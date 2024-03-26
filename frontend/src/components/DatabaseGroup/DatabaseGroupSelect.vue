@@ -10,10 +10,10 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useDBGroupStore } from "@/store";
-import { DatabaseGroup } from "@/types/proto/v1/project_service";
+import type { DatabaseGroup } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   selectedDatabaseGroup?: string;

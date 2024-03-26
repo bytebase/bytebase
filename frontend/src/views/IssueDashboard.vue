@@ -37,8 +37,8 @@ import IssueSearch from "@/components/IssueV1/components/IssueSearch";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { useProjectV1Store } from "@/store";
+import type { SearchParams } from "@/utils";
 import {
-  SearchParams,
   buildSearchParamsBySearchText,
   buildIssueFilterBySearchParams,
   buildUIIssueFilterBySearchParams,

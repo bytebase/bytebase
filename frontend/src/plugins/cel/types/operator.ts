@@ -1,5 +1,5 @@
 import { uniq } from "lodash-es";
-import { Factor } from "./factor";
+import type { Factor } from "./factor";
 
 export const NegativeOperatorList = ["!_"] as const;
 export type NegativeOperator = (typeof NegativeOperatorList)[number];

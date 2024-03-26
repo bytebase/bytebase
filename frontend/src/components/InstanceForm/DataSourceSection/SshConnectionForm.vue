@@ -91,11 +91,12 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { NInput, NRadio } from "naive-ui";
-import { PropType, reactive, computed, watch } from "vue";
+import type { PropType } from "vue";
+import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import { useSubscriptionV1Store } from "@/store";
-import { Instance } from "@/types/proto/v1/instance_service";
+import type { Instance } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
 
 const SshTypes = ["NONE", "TUNNEL", "TUNNEL+PK"] as const;

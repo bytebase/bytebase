@@ -26,7 +26,7 @@
 <script lang="ts" setup>
 import { TrashIcon, Undo2Icon } from "lucide-vue-next";
 import { MiniActionButton } from "@/components/v2";
-import { Column } from "@/types/v1/schemaEditor";
+import type { Column } from "@/types/v1/schemaEditor";
 
 defineProps<{
   column: Column;

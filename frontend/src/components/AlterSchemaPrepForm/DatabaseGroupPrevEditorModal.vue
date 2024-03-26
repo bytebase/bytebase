@@ -70,13 +70,14 @@
 <script lang="ts" setup>
 import { UploadIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, onMounted, PropType, reactive } from "vue";
+import type { PropType } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
 import { useDBGroupStore, useNotificationStore } from "@/store";
-import { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
+import type { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;

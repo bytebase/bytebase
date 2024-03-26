@@ -1,4 +1,4 @@
-import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
+import type { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 
 // Backend uses the same ENUM for GitLab/GitHub SaaS and self-hosted. Because they are based on the
 // same codebase.

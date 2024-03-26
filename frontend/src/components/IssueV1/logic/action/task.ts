@@ -1,9 +1,11 @@
-import { ButtonProps } from "naive-ui";
+import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { ComposedIssue, PresetRoleType } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { ComposedIssue } from "@/types";
+import { PresetRoleType } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto/v1/rollout_service";
+import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 
 export type TaskRolloutAction =
   | "ROLLOUT" // NOT_STARTED -> PENDING

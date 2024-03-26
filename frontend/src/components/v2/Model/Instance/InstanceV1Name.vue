@@ -26,7 +26,7 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
-import { Instance } from "@/types/proto/v1/instance_service";
+import type { Instance } from "@/types/proto/v1/instance_service";
 import { instanceV1Name } from "@/utils";
 import InstanceV1EngineIcon from "./InstanceV1EngineIcon.vue";
 

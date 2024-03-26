@@ -14,8 +14,8 @@
 import { computed } from "vue";
 import { SlowQueryPanel } from "@/components/SlowQuery";
 import type { ComposedDatabase } from "@/types";
+import type { SearchScope } from "@/utils";
 import {
-  SearchScope,
   extractEnvironmentResourceName,
   extractInstanceResourceName,
 } from "@/utils";

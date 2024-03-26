@@ -88,8 +88,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { VueClass } from "@/utils";
-import { BBGridColumn } from "../types";
+import type { VueClass } from "@/utils";
+import type { BBGridColumn } from "../types";
 import { useResponsiveGridColumns } from "./useResponsiveGridColumns";
 
 type DataType = any; // vue does not support generic typed components yet

@@ -1,11 +1,9 @@
 import axios from "axios";
 import { trimEnd, uniq } from "lodash-es";
 import { stringify } from "qs";
-import { OAuthState } from "@/types";
-import {
-  IdentityProvider,
-  IdentityProviderType,
-} from "@/types/proto/v1/idp_service";
+import type { OAuthState } from "@/types";
+import type { IdentityProvider } from "@/types/proto/v1/idp_service";
+import { IdentityProviderType } from "@/types/proto/v1/idp_service";
 
 export const SSOConfigSessionKey = "sso-config";
 

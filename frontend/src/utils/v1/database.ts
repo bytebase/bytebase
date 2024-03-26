@@ -1,5 +1,5 @@
 import { orderBy } from "lodash-es";
-import { SimpleExpr } from "@/plugins/cel";
+import type { SimpleExpr } from "@/plugins/cel";
 import {
   hasFeature,
   useCurrentUserIamPolicy,

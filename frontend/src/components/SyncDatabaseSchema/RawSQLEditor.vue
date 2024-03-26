@@ -94,7 +94,7 @@ import {
   getStatementSize,
   getSheetStatement,
 } from "@/utils";
-import { RawSQLState } from "./types";
+import type { RawSQLState } from "./types";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
 

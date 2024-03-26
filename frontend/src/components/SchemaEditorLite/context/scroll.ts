@@ -1,7 +1,8 @@
 import { useMounted } from "@vueuse/core";
-import { Ref, computed, ref, watch } from "vue";
-import { ComposedDatabase } from "@/types";
-import {
+import type { Ref } from "vue";
+import { computed, ref, watch } from "vue";
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,

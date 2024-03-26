@@ -24,7 +24,7 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { computed } from "vue";
-import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 
 const props = defineProps<{
   changes: Change[];

@@ -1,4 +1,4 @@
-import { WorkspacePermission, ProjectPermission } from "./iam/permission";
+import type { WorkspacePermission, ProjectPermission } from "./iam/permission";
 
 export type EnvironmentQuickActionType =
   | "quickaction.bb.environment.create"

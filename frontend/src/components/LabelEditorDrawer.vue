@@ -39,7 +39,7 @@ import { isEqual, cloneDeep } from "lodash-es";
 import { computed, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { LabelListEditor } from "@/components/Label";
-import { Label } from "@/components/Label/types";
+import type { Label } from "@/components/Label/types";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { convertKVListToLabels } from "@/utils";
 

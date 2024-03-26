@@ -154,8 +154,9 @@ import { NCheckbox, NRadio } from "naive-ui";
 import { ref, watch } from "vue";
 import { computed } from "vue";
 import { PresetRoleType, VirtualRoleType } from "@/types";
-import { Policy, RolloutPolicy } from "@/types/proto/v1/org_policy_service";
-import { Role } from "@/types/proto/v1/role_service";
+import type { Policy } from "@/types/proto/v1/org_policy_service";
+import { RolloutPolicy } from "@/types/proto/v1/org_policy_service";
+import type { Role } from "@/types/proto/v1/role_service";
 import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
 
 const props = defineProps<{

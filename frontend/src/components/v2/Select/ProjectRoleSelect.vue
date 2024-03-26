@@ -21,13 +21,15 @@
 </template>
 
 <script setup lang="ts">
-import { type SelectOption, NSelect, NTooltip, TooltipProps } from "naive-ui";
-import { computed, h, ref, VNode } from "vue";
+import type { TooltipProps } from "naive-ui";
+import { type SelectOption, NSelect, NTooltip } from "naive-ui";
+import type { VNode } from "vue";
+import { computed, h, ref } from "vue";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { featureToRef, useRoleStore } from "@/store";
 import { PresetRoleType } from "@/types";
-import { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto/v1/role_service";
 import { displayRoleDescription, displayRoleTitle } from "@/utils";
 
 // UNALLOWED_ROLES_IN_PROJECT are roles that are not allowed to be assigned to

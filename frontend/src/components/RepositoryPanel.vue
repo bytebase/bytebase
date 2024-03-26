@@ -18,13 +18,6 @@
           {{ repositoryFormattedFullPath }}
         </a>
       </template>
-      <template #fullPathTemplate>
-        <span class="font-medium text-main"
-          >{{ state.repositoryConfig.baseDirectory }}/{{
-            state.repositoryConfig.filePathTemplate
-          }}</span
-        >
-      </template>
     </i18n-t>
     <span>&nbsp;</span>
     <i18n-t keypath="repository.gitops-description-branch">
@@ -39,16 +32,6 @@
         </span>
       </template>
     </i18n-t>
-    <template v-if="state.repositoryConfig.schemaPathTemplate">
-      <span>&nbsp;</span>
-      <i18n-t keypath="repository.gitops-description-description-schema-path">
-        <template #schemaPathTemplate>
-          <span class="font-medium text-main">{{
-            state.repositoryConfig.schemaPathTemplate
-          }}</span>
-        </template>
-      </i18n-t>
-    </template>
   </div>
   <RepositoryForm
     class="mt-4"
@@ -89,20 +72,21 @@
 
 <script lang="ts" setup>
 import isEmpty from "lodash-es/isEmpty";
-import { computed, PropType, reactive, watch } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
   useProjectV1Store,
   useRepositoryV1Store,
 } from "@/store";
-import { Project } from "@/types/proto/v1/project_service";
-import {
+import type { Project } from "@/types/proto/v1/project_service";
+import type {
   ProjectGitOpsInfo,
   VCSProvider,
-  VCSProvider_Type,
 } from "@/types/proto/v1/vcs_provider_service";
-import { ExternalRepositoryInfo, RepositoryConfig } from "../types";
+import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
+import type { ExternalRepositoryInfo, RepositoryConfig } from "../types";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -141,8 +125,6 @@ const state = reactive<LocalState>({
   repositoryConfig: {
     baseDirectory: props.repository.baseDirectory,
     branchFilter: props.repository.branchFilter,
-    filePathTemplate: props.repository.filePathTemplate,
-    schemaPathTemplate: props.repository.schemaPathTemplate,
   },
   showFeatureModal: false,
   processing: false,
@@ -154,8 +136,6 @@ watch(
     state.repositoryConfig = {
       baseDirectory: cur.baseDirectory,
       branchFilter: cur.branchFilter,
-      filePathTemplate: cur.filePathTemplate,
-      schemaPathTemplate: cur.schemaPathTemplate,
     };
   }
 );
@@ -184,13 +164,8 @@ const allowUpdate = computed(() => {
   return (
     !state.processing &&
     !isEmpty(state.repositoryConfig.branchFilter) &&
-    !isEmpty(state.repositoryConfig.filePathTemplate) &&
     (props.repository.branchFilter !== state.repositoryConfig.branchFilter ||
-      props.repository.baseDirectory !== state.repositoryConfig.baseDirectory ||
-      props.repository.filePathTemplate !==
-        state.repositoryConfig.filePathTemplate ||
-      props.repository.schemaPathTemplate !==
-        state.repositoryConfig.schemaPathTemplate)
+      props.repository.baseDirectory !== state.repositoryConfig.baseDirectory)
   );
 });
 
@@ -231,18 +206,6 @@ const doUpdate = async () => {
   }
   if (props.repository.baseDirectory != state.repositoryConfig.baseDirectory) {
     repositoryPatch.baseDirectory = state.repositoryConfig.baseDirectory;
-  }
-  if (
-    props.repository.filePathTemplate != state.repositoryConfig.filePathTemplate
-  ) {
-    repositoryPatch.filePathTemplate = state.repositoryConfig.filePathTemplate;
-  }
-  if (
-    props.repository.schemaPathTemplate !=
-    state.repositoryConfig.schemaPathTemplate
-  ) {
-    repositoryPatch.schemaPathTemplate =
-      state.repositoryConfig.schemaPathTemplate;
   }
 
   try {

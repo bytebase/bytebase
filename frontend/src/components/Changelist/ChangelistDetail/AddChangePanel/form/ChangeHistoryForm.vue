@@ -70,10 +70,11 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
-import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { AffectedTable } from "@/types/changeHistory";
+import { EmptyAffectedTable } from "@/types/changeHistory";
+import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
-  ChangeHistory,
   ChangeHistory_Status,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";

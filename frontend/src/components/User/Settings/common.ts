@@ -1,6 +1,6 @@
 import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
-import { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import { toClipboard } from "@/utils";
 
 export const copyServiceKeyToClipboardIfNeeded = (user: User) => {

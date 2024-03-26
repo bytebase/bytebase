@@ -1,4 +1,4 @@
-import { RouteRecordRaw } from "vue-router";
+import type { RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
 import SettingSidebar from "@/views/SettingSidebar.vue";
 

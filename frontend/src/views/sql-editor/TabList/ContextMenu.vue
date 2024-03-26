@@ -14,11 +14,13 @@
 </template>
 
 <script setup lang="ts">
-import { NDropdown, DropdownOption } from "naive-ui";
+import type { DropdownOption } from "naive-ui";
+import { NDropdown } from "naive-ui";
 import { computed, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { SQLEditorTab } from "@/types";
-import { CloseTabAction, useTabListContext } from "./context";
+import type { SQLEditorTab } from "@/types";
+import type { CloseTabAction } from "./context";
+import { useTabListContext } from "./context";
 
 const { t } = useI18n();
 const { contextMenu: state, events } = useTabListContext();

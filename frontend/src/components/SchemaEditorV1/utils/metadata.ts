@@ -1,7 +1,7 @@
 import { cloneDeep, isEqual, uniq } from "lodash-es";
+import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
   ColumnMetadata,
-  DatabaseMetadata,
   ForeignKeyMetadata,
   IndexMetadata,
   SchemaMetadata,
@@ -10,11 +10,13 @@ import {
   ColumnConfig,
   TableConfig,
 } from "@/types/proto/v1/database_service";
-import {
+import type {
   Column,
   ForeignKey,
   Schema,
   Table,
+} from "@/types/v1/schemaEditor";
+import {
   convertColumnMetadataToColumn,
   convertSchemaMetadataToSchema,
   convertTableMetadataToTable,

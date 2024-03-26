@@ -1,9 +1,11 @@
-import {
+import type {
   ApprovalFlow,
+  ApprovalTemplate,
+} from "@/types/proto/v1/issue_service";
+import {
   ApprovalNode_GroupValue,
   ApprovalNode_Type,
   ApprovalStep_Type,
-  ApprovalTemplate,
 } from "@/types/proto/v1/issue_service";
 
 const validateApprovalFlow = (flow: ApprovalFlow) => {

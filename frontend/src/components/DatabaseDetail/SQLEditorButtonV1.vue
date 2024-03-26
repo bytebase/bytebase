@@ -34,13 +34,10 @@ import { useRouter } from "vue-router";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import { useCurrentUserV1, usePageMode, useSQLEditorTreeStore } from "@/store";
+import type { ComposedDatabase } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME, defaultProject } from "@/types";
+import type { VueClass } from "@/utils";
 import {
-  ComposedDatabase,
-  DEFAULT_PROJECT_V1_NAME,
-  defaultProject,
-} from "@/types";
-import {
-  VueClass,
   hasProjectPermissionV2,
   extractProjectResourceName,
   extractInstanceResourceName,

@@ -124,23 +124,21 @@ import type { ColumnDef } from "@tanstack/vue-table";
 import { sortBy } from "lodash-es";
 import cloneDeep from "lodash-es/cloneDeep";
 import { NPagination } from "naive-ui";
-import { computed, PropType, reactive, ref, watch } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBGridColumn } from "@/bbkit/types";
+import type { BBGridColumn } from "@/bbkit/types";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { usePageMode, useCurrentUserV1 } from "@/store";
 import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
-import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
-import {
-  databaseV1Url,
-  getScrollParent,
-  isDatabaseV1Queryable,
-  VueClass,
-} from "@/utils";
+import type { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
+import type { VueClass } from "@/utils";
+import { databaseV1Url, getScrollParent, isDatabaseV1Queryable } from "@/utils";
 import DatabaseGroupTableRow from "./DatabaseGroupTableRow.vue";
 import DatabaseTableRow from "./DatabaseTableRow.vue";
-import { isDatabase, Mode } from "./utils";
+import type { Mode } from "./utils";
+import { isDatabase } from "./utils";
 
 const { getCoreRowModel, getPaginationRowModel, useVueTable } = await import(
   "@tanstack/vue-table"

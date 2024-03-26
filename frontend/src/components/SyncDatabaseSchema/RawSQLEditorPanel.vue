@@ -35,7 +35,7 @@
 <script lang="ts" setup>
 import { Drawer, DrawerContent } from "@/components/v2";
 import RawSQLEditor from "./RawSQLEditor.vue";
-import { RawSQLState } from "./types";
+import type { RawSQLState } from "./types";
 
 defineProps<{
   rawSqlState: RawSQLState;

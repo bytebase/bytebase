@@ -14,9 +14,11 @@ import {
   useIssueV1Store,
   pushNotification,
 } from "@/store";
-import { ComposedIssue, UNKNOWN_ID } from "@/types";
+import type { ComposedIssue } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto/v1/rollout_service";
+import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   extractUserResourceName,
   flattenTaskV1List,

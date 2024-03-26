@@ -95,7 +95,7 @@ import {
 } from "@/router/dashboard/workspaceRoutes";
 import { featureToRef, useCurrentUserV1 } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
-import { IdentityProvider } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import {
   hasWorkspacePermissionV2,
   identityProviderTypeToString,

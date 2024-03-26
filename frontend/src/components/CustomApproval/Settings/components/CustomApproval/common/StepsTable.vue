@@ -66,8 +66,8 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
+import type { ApprovalFlow } from "@/types/proto/v1/issue_service";
 import {
-  ApprovalFlow,
   ApprovalNode_GroupValue,
   ApprovalNode_Type,
   ApprovalStep,

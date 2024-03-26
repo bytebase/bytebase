@@ -35,14 +35,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import DefinitionView from "@/components/DefinitionView.vue";
-import { ComposedDatabase } from "@/types";
-import {
-  TaskMetadata,
-  TaskMetadata_State,
-} from "@/types/proto/v1/database_service";
+import type { ComposedDatabase } from "@/types";
+import type { TaskMetadata } from "@/types/proto/v1/database_service";
+import { TaskMetadata_State } from "@/types/proto/v1/database_service";
 
 defineProps({
   database: {

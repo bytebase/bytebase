@@ -2,8 +2,8 @@ import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { vcsProviderServiceClient } from "@/grpcweb";
-import { VCSId } from "@/types";
-import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
+import type { VCSId } from "@/types";
+import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { vcsProviderPrefix } from "./common";
 
 export const useVCSV1Store = defineStore("vcs_v1", () => {

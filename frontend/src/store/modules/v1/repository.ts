@@ -2,8 +2,8 @@ import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { projectServiceClient, vcsProviderServiceClient } from "@/grpcweb";
-import { ComposedRepository } from "@/types";
-import { ProjectGitOpsInfo } from "@/types/proto/v1/vcs_provider_service";
+import type { ComposedRepository } from "@/types";
+import type { ProjectGitOpsInfo } from "@/types/proto/v1/vcs_provider_service";
 import { getProjectPathFromRepoName } from "./common";
 import { useProjectV1Store } from "./project";
 
@@ -138,18 +138,6 @@ const getUpdateMaskForRepository = (
     !isEqual(origin.baseDirectory, update.baseDirectory)
   ) {
     updateMask.push("base_directory");
-  }
-  if (
-    !isUndefined(update.filePathTemplate) &&
-    !isEqual(origin.filePathTemplate, update.filePathTemplate)
-  ) {
-    updateMask.push("file_path_template");
-  }
-  if (
-    !isUndefined(update.schemaPathTemplate) &&
-    !isEqual(origin.schemaPathTemplate, update.schemaPathTemplate)
-  ) {
-    updateMask.push("schema_path_template");
   }
   return updateMask;
 };

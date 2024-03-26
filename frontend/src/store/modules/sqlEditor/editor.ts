@@ -1,7 +1,7 @@
 import { useLocalStorage } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
 import { useProjectV1Store } from "../v1";

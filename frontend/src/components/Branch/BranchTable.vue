@@ -41,14 +41,14 @@ import dayjs from "dayjs";
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGridColumn } from "@/bbkit";
+import type { BBGridColumn } from "@/bbkit";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { useDatabaseV1Store, useProjectV1Store, useUserStore } from "@/store";
 import {
   getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 import { projectV1Name } from "@/utils";
 
 const emit = defineEmits<{

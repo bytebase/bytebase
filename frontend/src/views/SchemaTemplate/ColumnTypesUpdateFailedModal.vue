@@ -41,7 +41,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 
 const props = defineProps<{
   fieldTemplates: SchemaTemplateSetting_FieldTemplate[];

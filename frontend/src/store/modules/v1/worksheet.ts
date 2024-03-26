@@ -4,7 +4,7 @@ import { computed } from "vue";
 import { worksheetServiceClient } from "@/grpcweb";
 import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
-import {
+import type {
   Worksheet,
   WorksheetOrganizer,
 } from "@/types/proto/v1/worksheet_service";

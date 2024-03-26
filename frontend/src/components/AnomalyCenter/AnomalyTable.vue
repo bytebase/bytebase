@@ -76,14 +76,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBTableSectionDataSource } from "@/bbkit/types";
+import type { BBTableSectionDataSource } from "@/bbkit/types";
 import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
+import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import {
-  Anomaly,
   Anomaly_AnomalyType,
   Anomaly_AnomalySeverity,
 } from "@/types/proto/v1/anomaly_service";

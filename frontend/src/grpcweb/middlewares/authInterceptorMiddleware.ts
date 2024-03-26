@@ -1,5 +1,5 @@
 import { ClientError, ServerError, Status } from "nice-grpc-common";
-import { ClientMiddleware } from "nice-grpc-web";
+import type { ClientMiddleware } from "nice-grpc-web";
 import { router } from "@/router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";

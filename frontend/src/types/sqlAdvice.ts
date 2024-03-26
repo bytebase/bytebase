@@ -1,4 +1,4 @@
-import { SQLAdviceCode } from "./sqlAdviceCode";
+import type { SQLAdviceCode } from "./sqlAdviceCode";
 
 export * from "./sqlAdviceCode";
 

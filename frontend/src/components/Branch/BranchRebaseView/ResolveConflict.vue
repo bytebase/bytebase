@@ -12,13 +12,13 @@
 
 <script setup lang="ts">
 import { computed, reactive, watch } from "vue";
-import {
+import type {
   LineHighlightOption,
   LineHighlightOverviewRulerPosition,
-  MonacoEditor,
 } from "@/components/MonacoEditor";
-import { ComposedProject } from "@/types";
-import { RebaseBranchValidationState } from "./types";
+import { MonacoEditor } from "@/components/MonacoEditor";
+import type { ComposedProject } from "@/types";
+import type { RebaseBranchValidationState } from "./types";
 
 type LocalState = {
   editingSchema: string;

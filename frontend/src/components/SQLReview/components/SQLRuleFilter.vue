@@ -29,13 +29,14 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { convertToCategoryList, RuleTemplate } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import type { RuleTemplate } from "@/types";
+import { convertToCategoryList } from "@/types";
+import type { Engine } from "@/types/proto/v1/common";
+import type { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import SQLReviewCategorySummaryFilter from "./SQLReviewCategorySummaryFilter.vue";
 import type { CategoryFilterItem } from "./SQLReviewCategoryTabFilter.vue";
 import SQLReviewCategoryTabFilter from "./SQLReviewCategoryTabFilter.vue";
-import { SQLRuleFilterParams } from "./useSQLRuleFilter";
+import type { SQLRuleFilterParams } from "./useSQLRuleFilter";
 
 const props = defineProps<{
   ruleList: RuleTemplate[];

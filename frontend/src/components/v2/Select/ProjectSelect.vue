@@ -15,22 +15,16 @@
 
 <script lang="ts" setup>
 import { intersection } from "lodash-es";
-import { NSelect, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCurrentUserV1, useProjectV1Store, useProjectV1List } from "@/store";
-import {
-  ComposedProject,
-  DEFAULT_PROJECT_ID,
-  UNKNOWN_ID,
-  unknownProject,
-} from "@/types";
+import type { ComposedProject } from "@/types";
+import { DEFAULT_PROJECT_ID, UNKNOWN_ID, unknownProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import {
-  Project,
-  TenantMode,
-  Workflow,
-} from "@/types/proto/v1/project_service";
+import type { Project } from "@/types/proto/v1/project_service";
+import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2, roleListInProjectV1 } from "@/utils";
 
 interface ProjectSelectOption extends SelectOption {

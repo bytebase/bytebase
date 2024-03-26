@@ -1,5 +1,5 @@
-import { VNode } from "vue";
-import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
+import type { VNode } from "vue";
+import type { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
 
 interface SheetVCSPayload {
   fileName: string;

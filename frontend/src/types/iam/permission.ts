@@ -47,8 +47,6 @@ export type WorkspacePermission =
   | "bb.settings.set";
 
 export type ProjectPermission =
-  | "bb.backups.create"
-  | "bb.backups.list"
   | "bb.branches.create"
   | "bb.branches.delete"
   | "bb.branches.get"
@@ -67,13 +65,11 @@ export type ProjectPermission =
   | "bb.databases.adviseIndex"
   | "bb.databases.export"
   | "bb.databases.get"
-  | "bb.databases.getBackupSetting"
   | "bb.databases.getSchema"
   | "bb.databases.list"
   | "bb.databases.query"
   | "bb.databases.sync"
   | "bb.databases.update"
-  | "bb.databases.updateBackupSetting"
   | "bb.issueComments.create"
   | "bb.issueComments.update"
   | "bb.issues.create"

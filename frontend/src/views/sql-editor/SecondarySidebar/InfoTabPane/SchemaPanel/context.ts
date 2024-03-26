@@ -1,4 +1,5 @@
-import { InjectionKey, inject, provide, Ref, ref } from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide, ref } from "vue";
 
 export type SchemaPanelContext = {
   keyword: Ref<string>;

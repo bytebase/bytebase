@@ -1,7 +1,7 @@
 import type Emittery from "emittery";
 import type { Ref } from "vue";
 import type { ComposedDatabase } from "@/types";
-import {
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,

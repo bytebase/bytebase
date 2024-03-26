@@ -248,7 +248,8 @@ import {
   useCurrentUserV1,
   useSubscriptionV1Store,
 } from "@/store";
-import { QuickActionType, QuickActionPermissionMap } from "@/types";
+import type { QuickActionType } from "@/types";
+import { QuickActionPermissionMap } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import DashboardHeader from "@/views/DashboardHeader.vue";
