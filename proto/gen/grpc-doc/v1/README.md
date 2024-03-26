@@ -133,6 +133,7 @@
     - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
     - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
     - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
+    - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
     - [SchemaConfig](#bytebase-v1-SchemaConfig)
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
     - [SearchDatabasesRequest](#bytebase-v1-SearchDatabasesRequest)
@@ -2354,8 +2355,8 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a view. |
-| definition | [string](#string) |  | The definition is the definition of a view. |
+| name | [string](#string) |  | The name is the name of a function. |
+| definition | [string](#string) |  | The definition is the definition of a function. |
 
 
 
@@ -2614,6 +2615,22 @@ MaterializedViewMetadata is the metadata for materialized views.
 
 
 
+<a name="bytebase-v1-ProcedureMetadata"></a>
+
+### ProcedureMetadata
+ProcedureMetadata is the metadata for procedures.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a procedure. |
+| definition | [string](#string) |  | The definition is the definition of a procedure. |
+
+
+
+
+
+
 <a name="bytebase-v1-SchemaConfig"></a>
 
 ### SchemaConfig
@@ -2644,6 +2661,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | external_tables | [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata) | repeated | The external_tables is the list of external tables in a schema. |
 | views | [ViewMetadata](#bytebase-v1-ViewMetadata) | repeated | The views is the list of views in a schema. |
 | functions | [FunctionMetadata](#bytebase-v1-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
+| procedures | [ProcedureMetadata](#bytebase-v1-ProcedureMetadata) | repeated | The procedures is the list of procedures in a schema. |
 | streams | [StreamMetadata](#bytebase-v1-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
 | tasks | [TaskMetadata](#bytebase-v1-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
 | materialized_views | [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
