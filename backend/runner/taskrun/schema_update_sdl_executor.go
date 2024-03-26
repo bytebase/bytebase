@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	backendutils "github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -49,7 +50,7 @@ type SchemaUpdateSDLExecutor struct {
 }
 
 // RunOnce will run the schema update (SDL) task executor once.
-func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *api.TaskRunResultPayload, error) {
+func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
 	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
 		state.TaskRunExecutionStatus{
 			ExecutionStatus: v1pb.TaskRun_PRE_EXECUTING,

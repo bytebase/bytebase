@@ -11,6 +11,7 @@ export interface TaskRunResult {
   version: string;
   startPosition: TaskRunResult_Position | undefined;
   endPosition: TaskRunResult_Position | undefined;
+  exportArchiveUid: number;
 }
 
 /** The following fields are used for error reporting. */
@@ -20,7 +21,14 @@ export interface TaskRunResult_Position {
 }
 
 function createBaseTaskRunResult(): TaskRunResult {
-  return { detail: "", changeHistory: "", version: "", startPosition: undefined, endPosition: undefined };
+  return {
+    detail: "",
+    changeHistory: "",
+    version: "",
+    startPosition: undefined,
+    endPosition: undefined,
+    exportArchiveUid: 0,
+  };
 }
 
 export const TaskRunResult = {
@@ -39,6 +47,9 @@ export const TaskRunResult = {
     }
     if (message.endPosition !== undefined) {
       TaskRunResult_Position.encode(message.endPosition, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.exportArchiveUid !== 0) {
+      writer.uint32(48).int32(message.exportArchiveUid);
     }
     return writer;
   },
@@ -85,6 +96,13 @@ export const TaskRunResult = {
 
           message.endPosition = TaskRunResult_Position.decode(reader, reader.uint32());
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.exportArchiveUid = reader.int32();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -101,6 +119,7 @@ export const TaskRunResult = {
       version: isSet(object.version) ? globalThis.String(object.version) : "",
       startPosition: isSet(object.startPosition) ? TaskRunResult_Position.fromJSON(object.startPosition) : undefined,
       endPosition: isSet(object.endPosition) ? TaskRunResult_Position.fromJSON(object.endPosition) : undefined,
+      exportArchiveUid: isSet(object.exportArchiveUid) ? globalThis.Number(object.exportArchiveUid) : 0,
     };
   },
 
@@ -121,6 +140,9 @@ export const TaskRunResult = {
     if (message.endPosition !== undefined) {
       obj.endPosition = TaskRunResult_Position.toJSON(message.endPosition);
     }
+    if (message.exportArchiveUid !== 0) {
+      obj.exportArchiveUid = Math.round(message.exportArchiveUid);
+    }
     return obj;
   },
 
@@ -138,6 +160,7 @@ export const TaskRunResult = {
     message.endPosition = (object.endPosition !== undefined && object.endPosition !== null)
       ? TaskRunResult_Position.fromPartial(object.endPosition)
       : undefined;
+    message.exportArchiveUid = object.exportArchiveUid ?? 0;
     return message;
   },
 };
