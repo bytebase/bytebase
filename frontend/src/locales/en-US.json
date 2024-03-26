@@ -1812,8 +1812,6 @@
     "gitops-status": "@.capitalize:common.gitops is {status}",
     "gitops-description-file-path": "Database migration scripts are stored in {fullPath}. To make schema changes, a developer would create a migration script matching file path pattern {fullPathTemplate}.",
     "gitops-description-branch": "After the script is review approved and merged into the {branch} branch, Bytebase will automatically kicks off the pipeline to apply the new schema change.",
-    "gitops-description-description-schema-path": "After applying the schema change, Bytebase will also write the latest schema to the specified schema path location {schemaPathTemplate}.",
-    "gitops-description-sdl": "Database migration scripts are stored in {fullPath}. To make schema changes, a developer would modify the full schema script matching file path pattern {schemaPathTemplate}. To make data changes, a developer would create a migration script matching file path pattern {filePathTemplate}. Once the script is merged into the {branch} branch, Bytebase will automatically kick off the pipeline to apply the new database change.",
     "restore-to-ui-workflow": "Restore to UI workflow",
     "restore-ui-workflow-description": "When using the UI workflow, the developer submits a SQL review ticket directly from Bytebase console and waits for the assigned DBA or peer developer to review. Bytebase applies the SQL change after review approved.",
     "restore-ui-workflow-success": "Successfully restored to UI workflow",

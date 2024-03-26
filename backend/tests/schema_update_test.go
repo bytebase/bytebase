@@ -208,16 +208,14 @@ func TestSimpleVCS(t *testing.T) {
 
 			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
 				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
-					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-					Vcs:                evcs.Name,
-					Title:              "Test Repository",
-					FullPath:           test.repositoryFullPath,
-					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
-					BranchFilter:       "feature/foo",
-					BaseDirectory:      baseDirectory,
-					FilePathTemplate:   "{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
-					SchemaPathTemplate: "{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql",
-					ExternalId:         test.externalID,
+					Name:          fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
+					Vcs:           evcs.Name,
+					Title:         "Test Repository",
+					FullPath:      test.repositoryFullPath,
+					WebUrl:        fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:  "feature/foo",
+					BaseDirectory: baseDirectory,
+					ExternalId:    test.externalID,
 				},
 				AllowMissing: true,
 			})

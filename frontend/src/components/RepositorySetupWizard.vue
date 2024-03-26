@@ -54,24 +54,12 @@ import { StepTab } from "@/components/v2";
 import { PROJECT_V1_ROUTE_GITOPS } from "@/router/dashboard/projectV1";
 import { useRepositoryV1Store } from "@/store";
 import type { Project } from "@/types/proto/v1/project_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import type {
   ProjectGitOpsInfo,
   VCSProvider,
 } from "@/types/proto/v1/vcs_provider_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import type { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
-
-// Default file path template is to organize migration files from different environments under separate directories.
-const DEFAULT_FILE_PATH_TEMPLATE =
-  "{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql";
-// Default schema path template is co-locate with the corresponding db's migration files and use .(dot) to appear the first.
-const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql";
-
-// For tenant mode projects, {{ENV_ID}} and {{DB_NAME}} is not supported.
-const DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE =
-  "{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql";
-const DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE = ".LATEST.sql";
 
 const CHOOSE_PROVIDER_STEP = 0;
 // const CHOOSE_REPOSITORY_STEP = 1;
@@ -112,10 +100,6 @@ const stepList = [
   { title: t("repository.configure-deploy") },
 ];
 
-const isTenantProject = computed(() => {
-  return props.project.tenantMode === TenantMode.TENANT_MODE_ENABLED;
-});
-
 const state = reactive<LocalState>({
   config: {
     vcs: {} as VCSProvider,
@@ -129,12 +113,6 @@ const state = reactive<LocalState>({
     repositoryConfig: {
       baseDirectory: "bytebase",
       branchFilter: "main",
-      filePathTemplate: isTenantProject.value
-        ? DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE
-        : DEFAULT_FILE_PATH_TEMPLATE,
-      schemaPathTemplate: isTenantProject.value
-        ? DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE
-        : DEFAULT_SCHEMA_PATH_TEMPLATE,
     },
   },
   currentStep: CHOOSE_PROVIDER_STEP,
@@ -146,7 +124,6 @@ const allowNext = computed((): boolean => {
   if (state.currentStep == CONFIGURE_DEPLOY_STEP) {
     return (
       !isEmpty(state.config.repositoryConfig.branchFilter.trim()) &&
-      !isEmpty(state.config.repositoryConfig.filePathTemplate.trim()) &&
       !state.processing
     );
   }
@@ -182,8 +159,6 @@ const tryFinishSetup = async () => {
       webUrl: state.config.repositoryInfo.webUrl,
       branchFilter: state.config.repositoryConfig.branchFilter,
       baseDirectory: state.config.repositoryConfig.baseDirectory,
-      filePathTemplate: state.config.repositoryConfig.filePathTemplate,
-      schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
       externalId: externalId,
     };
     await repositoryV1Store.upsertRepository(

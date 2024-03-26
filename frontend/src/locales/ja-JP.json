@@ -1812,8 +1812,6 @@
     "gitops-status": "@.capitalize:common.gitopsは{status}です",
     "gitops-description-file-path": "データベースのマイグレーションスクリプトは{fullPath}に保存されます。スキーマの変更を行うには、開発者が{fullPathTemplate}と一致するファイルパスパターンのマイグレーションスクリプトを作成します。",
     "gitops-description-branch": "スクリプトがレビュー承認され、{branch} ブランチにマージされた後、Bytebase は自動的にパイプラインを開始して新しいスキーマ変更を適用します。",
-    "gitops-description-description-schema-path": "スキーマ変更を適用した後、Bytebase は最新のスキーマを指定されたスキーマパスの場所 {schemaPathTemplate} にも書き込みます。",
-    "gitops-description-sdl": "データベースのマイグレーションスクリプトは {fullPath} に保存されます。スキーマの変更を行うには、開発者はスキーマパスのパターン {schemaPathTemplate} に一致するフルスキーマスクリプトを変更します。データの変更を行うには、開発者はファイルパスのパターン {filePathTemplate} に一致するマイグレーションスクリプトを作成します。スクリプトが {branch} ブランチにマージされると、Bytebase は自動的にパイプラインを開始して新しいデータベースの変更を適用します。",
     "restore-to-ui-workflow": "UI ワークフローに復元",
     "restore-ui-workflow-description": "UI ワークフローを使用する場合、開発者は Bytebase コンソールから直接 SQL レビューチケットを提出し、割り当てられた DBA または同僚の開発者がレビューを待ちます。レビューが承認された後、Bytebase は SQL 変更を適用します。",
     "restore-ui-workflow-success": "UI ワークフローに正常に復元しました",

@@ -1,8 +1,6 @@
 export type RepositoryConfig = {
   baseDirectory: string;
   branchFilter: string;
-  filePathTemplate: string;
-  schemaPathTemplate: string;
 };
 
 export type ExternalRepositoryInfo = {
