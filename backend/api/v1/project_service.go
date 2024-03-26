@@ -401,7 +401,7 @@ func (s *ProjectService) GetProjectGitOpsInfo(ctx context.Context, request *v1pb
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	repo, err := s.findProjectRepository(ctx, projectName)
+	repo, err := s.getDefaultVCSConnector(ctx, projectName)
 	if err != nil {
 		return nil, err
 	}
@@ -433,13 +433,15 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
 
-	repo, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{
-		ProjectID: &project.ResourceID,
+	defaultResourceID := "default"
+	vcsConnector, err := s.store.GetVCSConnector(ctx, &store.FindVCSConnectorMessage{
+		ProjectID:  &project.ResourceID,
+		ResourceID: &defaultResourceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get repository, error %v", err.Error())
 	}
-	if repo == nil {
+	if vcsConnector == nil {
 		if !request.AllowMissing {
 			return nil, status.Errorf(codes.NotFound, "gitops not found, please set allow_missing flag for creation")
 		}
@@ -447,7 +449,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		return s.createProjectGitOpsInfo(ctx, request, project)
 	}
 
-	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &repo.VCSResourceID})
+	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get vcs provider, error %v", err.Error())
 	}
@@ -459,8 +461,13 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set to update gitops")
 	}
 
-	patch := &store.PatchRepositoryMessage{
-		UID: &repo.UID,
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	patch := &store.UpdateVCSConnectorMessage{
+		UID:       vcsConnector.UID,
+		UpdaterID: principalID,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
@@ -481,7 +488,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		}
 	}
 
-	if v := patch.Branch; v != nil && repo.Branch != *v {
+	if v := patch.Branch; v != nil && vcsConnector.Branch != *v {
 		if *v == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
 		}
@@ -489,84 +496,70 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 			ctx,
 			vcs,
 			vcs.AccessToken,
-			repo.ExternalID,
+			vcsConnector.ExternalID,
 			*v,
 		)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
 		}
 		if notFound {
-			return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", *v, repo.FullPath)
+			return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", *v, vcsConnector.FullPath)
 		}
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	updatedRepo, err := s.store.PatchRepositoryV2(ctx, patch, principalID)
-	if err != nil {
+	if err := s.store.UpdateVCSConnector(ctx, patch); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update repository with error: %v", err.Error())
 	}
+	vcsConnector, err = s.store.GetVCSConnector(ctx, &store.FindVCSConnectorMessage{
+		ProjectID:  &project.ResourceID,
+		ResourceID: &defaultResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get repository, error %v", err.Error())
+	}
 
-	return convertToProjectGitOpsInfo(updatedRepo), nil
+	return convertToProjectGitOpsInfo(vcsConnector), nil
 }
 
 // UnsetProjectGitOpsInfo deletes the GitOps info for a project.
 func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1pb.UnsetProjectGitOpsInfoRequest) (*emptypb.Empty, error) {
-	projectName, err := common.TrimSuffix(request.Name, common.GitOpsInfoSuffix)
+	projectID, err := common.TrimSuffix(request.Name, common.GitOpsInfoSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	repo, err := s.findProjectRepository(ctx, projectName)
+	vcsConnector, err := s.getDefaultVCSConnector(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
 
-	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &repo.VCSResourceID})
+	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
 	if vcs == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSUID)
+		return nil, status.Errorf(codes.NotFound, "vcs %d not found", vcsConnector.UID)
 	}
 
-	if err := s.store.DeleteRepositoryV2(ctx, repo.ProjectResourceID); err != nil {
+	if err := s.store.DeleteVCSConnector(ctx, vcsConnector.ProjectID, vcsConnector.ResourceID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete repository with error: %v", err.Error())
 	}
 
-	// We use one webhook in one repo for at least one Bytebase project, so we only delete the webhook if this project is the last one using this webhook.
-	repos, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{
-		WebURL: &repo.WebURL,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, `failed to list repository for web url "%s" with error: %v`, repo.WebURL, err.Error())
-	}
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
-	}
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
-	}
-	if len(repos) == 0 {
-		// Delete the webhook after we successfully delete the repository.
-		// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
-		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
-		if err = vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).DeleteWebhook(
-			ctx,
-			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
-			&common.OauthContext{
-				AccessToken: vcs.AccessToken,
-			},
-			vcs.InstanceURL,
-			repo.ExternalID,
-			repo.ExternalWebhookID,
-		); err != nil {
-			// Despite the error here, we have deleted the repository in the database, we still return success.
-			slog.Error("failed to delete webhook for project", slog.String("project", projectName), slog.Int("repo", repo.UID), log.BBError(err))
-		}
+	// Delete the webhook after we successfully delete the repository.
+	// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
+	// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
+	if err = vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).DeleteWebhook(
+		ctx,
+		// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
+		&common.OauthContext{
+			AccessToken: vcs.AccessToken,
+		},
+		vcs.InstanceURL,
+		vcsConnector.ExternalID,
+		vcsConnector.ExternalWebhookID,
+	); err != nil {
+		// Despite the error here, we have deleted the repository in the database, we still return success.
+		slog.Error("failed to delete webhook for project", slog.String("project", projectID), slog.Int("repo", vcsConnector.UID), log.BBError(err))
 	}
 
 	return &emptypb.Empty{}, nil
@@ -901,7 +894,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 	return resp, nil
 }
 
-func (s *ProjectService) findProjectRepository(ctx context.Context, projectName string) (*store.RepositoryMessage, error) {
+func (s *ProjectService) getDefaultVCSConnector(ctx context.Context, projectName string) (*store.VCSConnectorMessage, error) {
 	project, err := s.getProjectMessage(ctx, projectName)
 	if err != nil {
 		return nil, err
@@ -910,20 +903,30 @@ func (s *ProjectService) findProjectRepository(ctx context.Context, projectName 
 		return nil, status.Errorf(codes.NotFound, "project %s has been deleted", projectName)
 	}
 
-	repo, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{
-		ProjectID: &project.ResourceID,
+	defaultResourceID := "default"
+	vcsConnector, err := s.store.GetVCSConnector(ctx, &store.FindVCSConnectorMessage{
+		ProjectID:  &project.ResourceID,
+		ResourceID: &defaultResourceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	if repo == nil {
-		return nil, status.Errorf(codes.NotFound, "gitops not found")
+	if vcsConnector == nil {
+		return nil, status.Errorf(codes.NotFound, "VCS connector not found")
 	}
 
-	return repo, nil
+	return vcsConnector, nil
 }
 
 func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v1pb.UpdateProjectGitOpsInfoRequest, project *store.ProjectMessage) (*v1pb.ProjectGitOpsInfo, error) {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	if request.GetProjectGitopsInfo().Branch == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
+	}
+
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting: %v", err)
@@ -956,22 +959,19 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 
 	// TODO(d): pass in the resource ID from API.
 	vcsConnectorID := "default"
-	repositoryCreate := &store.RepositoryMessage{
-		VCSUID:            vcs.ID,
-		VCSResourceID:     vcs.ResourceID,
-		ProjectResourceID: project.ResourceID,
-		ResourceID:        vcsConnectorID,
-		WebhookURLHost:    setting.ExternalUrl,
-		Title:             request.ProjectGitopsInfo.Title,
-		FullPath:          request.ProjectGitopsInfo.FullPath,
-		WebURL:            request.ProjectGitopsInfo.WebUrl,
-		Branch:            request.ProjectGitopsInfo.Branch,
-		BaseDirectory:     baseDir,
-		ExternalID:        request.ProjectGitopsInfo.ExternalId,
-	}
-
-	if repositoryCreate.Branch == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
+	vcsConnectorCreate := &store.VCSConnectorMessage{
+		CreatorID:      principalID,
+		VCSUID:         vcs.ID,
+		VCSResourceID:  vcs.ResourceID,
+		ProjectID:      project.ResourceID,
+		ResourceID:     vcsConnectorID,
+		WebhookURLHost: setting.ExternalUrl,
+		Title:          request.ProjectGitopsInfo.Title,
+		FullPath:       request.ProjectGitopsInfo.FullPath,
+		WebURL:         request.ProjectGitopsInfo.WebUrl,
+		Branch:         request.ProjectGitopsInfo.Branch,
+		BaseDirectory:  baseDir,
+		ExternalID:     request.ProjectGitopsInfo.ExternalId,
 	}
 
 	// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
@@ -979,67 +979,42 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		ctx,
 		vcs,
 		vcs.AccessToken,
-		repositoryCreate.ExternalID,
-		repositoryCreate.Branch,
+		vcsConnectorCreate.ExternalID,
+		vcsConnectorCreate.Branch,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check branch %s with error: %v", repositoryCreate.Branch, err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to check branch %s with error: %v", vcsConnectorCreate.Branch, err.Error())
 	}
 	if notFound {
-		return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", repositoryCreate.Branch, repositoryCreate.FullPath)
+		return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", vcsConnectorCreate.Branch, vcsConnectorCreate.FullPath)
 	}
 
-	// For a particular VCS repo, all Bytebase projects share the same webhook.
-	repositories, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{
-		WebURL: &repositoryCreate.WebURL,
-	})
+	// Create the webhook.
+	workspaceID, err := s.store.GetWorkspaceID(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find repository with web url %s: %v", repositoryCreate.WebURL, err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to find workspace id with error: %v", err.Error())
 	}
-
-	// If we can find at least one repository with the same web url, we will use the same webhook instead of creating a new one.
-	if len(repositories) > 0 {
-		repo := repositories[0]
-		repositoryCreate.WebhookEndpointID = repo.WebhookEndpointID
-		repositoryCreate.WebhookSecretToken = repo.WebhookSecretToken
-		repositoryCreate.ExternalWebhookID = repo.ExternalWebhookID
-	} else {
-		workspaceID, err := s.store.GetWorkspaceID(ctx)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find workspace id with error: %v", err.Error())
-		}
-
-		repositoryCreate.WebhookEndpointID = fmt.Sprintf("workspaces/%s/projects/%s/vcsConnectors/%s", workspaceID, project.ResourceID, vcsConnectorID)
-		secretToken, err := common.RandomString(gitlab.SecretTokenLength)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to generate random secret token for vcs with error: %v", err.Error())
-		}
-		repositoryCreate.WebhookSecretToken = secretToken
-
-		bytebaseEndpointURL := setting.GitopsWebhookUrl
-		if bytebaseEndpointURL == "" {
-			bytebaseEndpointURL = setting.ExternalUrl
-		}
-		webhookID, err := createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, vcs.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID, bytebaseEndpointURL)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create webhook for project %s with error: %v", repositoryCreate.ProjectResourceID, err.Error())
-		}
-		repositoryCreate.ExternalWebhookID = webhookID
-	}
-
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	repository, err := s.store.CreateRepositoryV2(ctx, repositoryCreate, principalID)
+	vcsConnectorCreate.WebhookEndpointID = fmt.Sprintf("workspaces/%s/projects/%s/vcsConnectors/%s", workspaceID, project.ResourceID, vcsConnectorID)
+	secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 	if err != nil {
-		if common.ErrorCode(err) == common.Conflict {
-			return nil, status.Errorf(codes.AlreadyExists, "project %s has already linked repository", repositoryCreate.ProjectResourceID)
-		}
+		return nil, status.Errorf(codes.Internal, "failed to generate random secret token for vcs with error: %v", err.Error())
+	}
+	vcsConnectorCreate.WebhookSecretToken = secretToken
+	bytebaseEndpointURL := setting.GitopsWebhookUrl
+	if bytebaseEndpointURL == "" {
+		bytebaseEndpointURL = setting.ExternalUrl
+	}
+	webhookID, err := createVCSWebhook(ctx, vcs.Type, vcsConnectorCreate.WebhookEndpointID, secretToken, vcs.AccessToken, vcs.InstanceURL, vcsConnectorCreate.ExternalID, bytebaseEndpointURL)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create webhook for project %s with error: %v", vcsConnectorCreate.ProjectID, err.Error())
+	}
+	vcsConnectorCreate.ExternalWebhookID = webhookID
+	vcsConnector, err := s.store.CreateVCSConnector(ctx, vcsConnectorCreate)
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to link project repository with error: %v", err.Error())
 	}
 
-	return convertToProjectGitOpsInfo(repository), nil
+	return convertToProjectGitOpsInfo(vcsConnector), nil
 }
 
 // CreateDatabaseGroup creates a database group.
@@ -2412,17 +2387,17 @@ func validateMember(member string) error {
 	return errors.Errorf("invalid user %s", member)
 }
 
-func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.ProjectGitOpsInfo {
+func convertToProjectGitOpsInfo(vcsConnector *store.VCSConnectorMessage) *v1pb.ProjectGitOpsInfo {
 	return &v1pb.ProjectGitOpsInfo{
-		Name:              fmt.Sprintf("%s%s/gitOpsInfo", common.ProjectNamePrefix, repository.ProjectResourceID),
-		Vcs:               fmt.Sprintf("%s%s", common.VCSProviderPrefix, repository.VCSResourceID),
-		Title:             repository.Title,
-		FullPath:          repository.FullPath,
-		WebUrl:            repository.WebURL,
-		Branch:            repository.Branch,
-		BaseDirectory:     repository.BaseDirectory,
-		WebhookEndpointId: repository.WebhookEndpointID,
-		ExternalId:        repository.ExternalID,
+		Name:              fmt.Sprintf("%s%s/gitOpsInfo", common.ProjectNamePrefix, vcsConnector.ProjectID),
+		Vcs:               fmt.Sprintf("%s%s", common.VCSProviderPrefix, vcsConnector.VCSResourceID),
+		Title:             vcsConnector.Title,
+		FullPath:          vcsConnector.FullPath,
+		WebUrl:            vcsConnector.WebURL,
+		Branch:            vcsConnector.Branch,
+		BaseDirectory:     vcsConnector.BaseDirectory,
+		WebhookEndpointId: vcsConnector.WebhookEndpointID,
+		ExternalId:        vcsConnector.ExternalID,
 	}
 }
 

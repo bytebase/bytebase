@@ -71,7 +71,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		if project == nil || project.Deleted {
 			return c.String(http.StatusBadRequest, fmt.Sprintf("project %q does not exist or has been deleted", projectID))
 		}
-		vcsConnector, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{ProjectID: &projectID, ResourceID: &vcsConnectorID})
+		vcsConnector, err := s.store.GetVCSConnector(ctx, &store.FindVCSConnectorMessage{ProjectID: &projectID, ResourceID: &vcsConnectorID})
 		if err != nil {
 			return c.String(http.StatusServiceUnavailable, fmt.Sprintf("failed to get project %q VCS connector %q, error %v", projectID, vcsConnectorID, err))
 		}
@@ -509,7 +509,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 }
 
 type repoInfo struct {
-	repository *store.RepositoryMessage
+	repository *store.VCSConnectorMessage
 	project    *store.ProjectMessage
 	vcs        *store.VCSProviderMessage
 }
