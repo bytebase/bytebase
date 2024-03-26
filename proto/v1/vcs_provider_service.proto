@@ -183,7 +183,7 @@ message ProjectGitOpsInfo {
   string web_url = 5;
 
   // The branch Bytebase listens to for changes. For example: main.
-  string branch_filter = 6;
+  string branch = 6;
 
   // The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.
   string base_directory = 7;

@@ -5729,7 +5729,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | title | [string](#string) |  | The title of the repository. For axample: sample. |
 | full_path | [string](#string) |  | The full_path of the repository. For example: bytebase/sample. |
 | web_url | [string](#string) |  | The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. |
-| branch_filter | [string](#string) |  | The branch Bytebase listens to for changes. For example: main. |
+| branch | [string](#string) |  | The branch Bytebase listens to for changes. For example: main. |
 | base_directory | [string](#string) |  | The root directory where Bytebase observes the file change. If empty, then it observes the entire repository. |
 | external_id | [string](#string) |  | The reposition external id in target VCS. |
 | webhook_endpoint_id | [string](#string) |  | The webhook endpoint ID of the repository. |

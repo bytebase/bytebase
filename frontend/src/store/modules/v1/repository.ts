@@ -127,10 +127,7 @@ const getUpdateMaskForRepository = (
   if (!isUndefined(update.title) && !isEqual(origin.title, update.title)) {
     updateMask.push("title");
   }
-  if (
-    !isUndefined(update.branchFilter) &&
-    !isEqual(origin.branchFilter, update.branchFilter)
-  ) {
+  if (!isUndefined(update.branch) && !isEqual(origin.branch, update.branch)) {
     updateMask.push("branch_filter");
   }
   if (
