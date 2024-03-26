@@ -9,8 +9,9 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { ComposedDatabase, UNKNOWN_ID } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import { UNKNOWN_ID } from "@/types";
+import type { ComposedDatabase } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import {

@@ -345,7 +345,7 @@ import {
   useInstanceV1Store,
   useSettingV1Store,
 } from "@/store";
-import { AffectedTable } from "@/types/changeHistory";
+import type { AffectedTable } from "@/types/changeHistory";
 import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
