@@ -23,8 +23,8 @@
     <i18n-t keypath="repository.gitops-description-branch">
       <template #branch>
         <span class="font-medium text-main">
-          <template v-if="state.repositoryConfig.branchFilter">
-            {{ state.repositoryConfig.branchFilter }}
+          <template v-if="state.repositoryConfig.branch">
+            {{ state.repositoryConfig.branch }}
           </template>
           <template v-else>
             {{ $t("common.default") }}
@@ -124,7 +124,7 @@ const projectV1Store = useProjectV1Store();
 const state = reactive<LocalState>({
   repositoryConfig: {
     baseDirectory: props.repository.baseDirectory,
-    branchFilter: props.repository.branchFilter,
+    branch: props.repository.branch,
   },
   showFeatureModal: false,
   processing: false,
@@ -135,7 +135,7 @@ watch(
   (cur) => {
     state.repositoryConfig = {
       baseDirectory: cur.baseDirectory,
-      branchFilter: cur.branchFilter,
+      branch: cur.branch,
     };
   }
 );
@@ -163,8 +163,8 @@ const repositoryInfo = computed((): ExternalRepositoryInfo => {
 const allowUpdate = computed(() => {
   return (
     !state.processing &&
-    !isEmpty(state.repositoryConfig.branchFilter) &&
-    (props.repository.branchFilter !== state.repositoryConfig.branchFilter ||
+    !isEmpty(state.repositoryConfig.branch) &&
+    (props.repository.branch !== state.repositoryConfig.branch ||
       props.repository.baseDirectory !== state.repositoryConfig.baseDirectory)
   );
 });
@@ -201,8 +201,8 @@ const doUpdate = async () => {
 
   repositoryPatch.vcs = props.vcs.name;
 
-  if (props.repository.branchFilter != state.repositoryConfig.branchFilter) {
-    repositoryPatch.branchFilter = state.repositoryConfig.branchFilter;
+  if (props.repository.branch != state.repositoryConfig.branch) {
+    repositoryPatch.branch = state.repositoryConfig.branch;
   }
   if (props.repository.baseDirectory != state.repositoryConfig.baseDirectory) {
     repositoryPatch.baseDirectory = state.repositoryConfig.baseDirectory;

@@ -681,6 +681,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ProcedureMetadata"><span class="badge">M</span>ProcedureMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SchemaConfig"><span class="badge">M</span>SchemaConfig</a>
                 </li>
               
@@ -7141,14 +7145,14 @@ It&#39;s empty string for other databases. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a view. </p></td>
+                  <td><p>The name is the name of a function. </p></td>
                 </tr>
               
                 <tr>
                   <td>definition</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The definition is the definition of a view. </p></td>
+                  <td><p>The definition is the definition of a function. </p></td>
                 </tr>
               
             </tbody>
@@ -7790,6 +7794,37 @@ Default: order by average_query_time desc. </p></td>
 
         
       
+        <h3 id="bytebase.v1.ProcedureMetadata">ProcedureMetadata</h3>
+        <p>ProcedureMetadata is the metadata for procedures.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a procedure. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The definition is the definition of a procedure. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.SchemaConfig">SchemaConfig</h3>
         <p></p>
 
@@ -7866,6 +7901,13 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><a href="#bytebase.v1.FunctionMetadata">FunctionMetadata</a></td>
                   <td>repeated</td>
                   <td><p>The functions is the list of functions in a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>procedures</td>
+                  <td><a href="#bytebase.v1.ProcedureMetadata">ProcedureMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The procedures is the list of procedures in a schema. </p></td>
                 </tr>
               
                 <tr>
@@ -16385,24 +16427,10 @@ Format: projects/{project}/gitOpsInfo </p></td>
                 </tr>
               
                 <tr>
-                  <td>full_path</td>
+                  <td>external_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The full_path of the repository. For example: bytebase/sample. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>web_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>branch_filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The branch Bytebase listens to for changes. For example: main. </p></td>
+                  <td><p>The reposition external id in target VCS. </p></td>
                 </tr>
               
                 <tr>
@@ -16413,10 +16441,10 @@ Format: projects/{project}/gitOpsInfo </p></td>
                 </tr>
               
                 <tr>
-                  <td>external_id</td>
+                  <td>branch</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The reposition external id in target VCS. </p></td>
+                  <td><p>The branch Bytebase listens to for changes. For example: main. </p></td>
                 </tr>
               
                 <tr>
@@ -16424,6 +16452,21 @@ Format: projects/{project}/gitOpsInfo </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The webhook endpoint ID of the repository. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>TODO(d): move these to create VCS connector API.
+The full_path of the repository. For example: bytebase/sample. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>web_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. </p></td>
                 </tr>
               
             </tbody>

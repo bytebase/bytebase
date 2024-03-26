@@ -110,7 +110,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
     name: WORKSPACE_ROUTE_EXPORT_CENTER,
     meta: {
       title: () => startCase(t("export-center.self")),
-      requiredWorkspacePermissionList: () => ["bb.projects.getIamPolicy"],
     },
     components: {
       content: () => import("@/views/ExportCenter/index.vue"),

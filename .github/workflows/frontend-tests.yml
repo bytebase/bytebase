@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  eslint-checks:
+  static-checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +29,9 @@ jobs:
         working-directory: frontend
       - name: Run pnpm lint
         run: pnpm lint
+        working-directory: frontend
+      - name: Run pnpm type-check
+        run: pnpm type-check
         working-directory: frontend
 
   frontend-tests:

@@ -360,7 +360,7 @@ func (diff *diffNode) diffForeignKey(oldTable, newTable *tableDef) {
 
 // isForeignKeyEqual returns true if two foreign keys are the same.
 func isForeignKeyEqual(old, new *foreignKeyDef) bool {
-	if old.name != new.name {
+	if !strings.EqualFold(old.name, new.name) {
 		return false
 	}
 	if !isKeyPartEqual(old.columns, new.columns) {
@@ -1906,9 +1906,9 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 		case "FOREIGN":
 			var name string
 			if ctx.ConstraintName() != nil && ctx.ConstraintName().Identifier() != nil {
-				name = NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
+				name = strings.ToLower(NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier()))
 			} else if ctx.IndexName() != nil {
-				name = NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
+				name = strings.ToLower(NormalizeMySQLIdentifier(ctx.IndexName().Identifier()))
 			}
 			keys := extractKeyList(ctx.KeyList())
 			if table.foreignKeys[name] != nil {

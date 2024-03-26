@@ -191,15 +191,7 @@ func (s *VCSProviderService) getVCS(ctx context.Context, name string) (*store.VC
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	vcsResourceUID, isNumber := isNumber(vcsResourceID)
-	find := &store.FindVCSProviderMessage{}
-	if isNumber {
-		find.ID = &vcsResourceUID
-	} else {
-		find.ResourceID = &vcsResourceID
-	}
-
-	vcsProvider, err := s.store.GetVCSProvider(ctx, find)
+	vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to retrieve vcs provider: %v", err)
 	}
