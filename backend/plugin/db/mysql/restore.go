@@ -33,8 +33,6 @@ import (
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-
-	"github.com/blang/semver/v4"
 )
 
 const (
@@ -874,60 +872,6 @@ func (driver *Driver) parseLocalBinlogFirstEventTs(ctx context.Context, fileName
 	return eventTs, nil
 }
 
-// Use command like mysqlbinlog --start-datetime=targetTs binlog.000001 to parse the first binlog event position with timestamp equal or after targetTs.
-// TODO(dragonly): Add integration test.
-func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogFileName string, targetTs int64) (int64, error) {
-	args := []string{
-		// Local binlog file path.
-		path.Join(driver.binlogDir, binlogFileName),
-		// Verify checksum binlog events.
-		"--verify-binlog-checksum",
-		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
-		"--base64-output=DECODE-ROWS",
-		// Instruct mysqlbinlog to start output only after encountering the first binlog event with timestamp equal or after targetTs.
-		"--start-datetime", formatDateTime(targetTs),
-	}
-	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.dbBinDir), args...)
-	cmd.Stderr = os.Stderr
-	pr, err := cmd.StdoutPipe()
-	if err != nil {
-		return 0, err
-	}
-	s := bufio.NewScanner(pr)
-	if err := cmd.Start(); err != nil {
-		return 0, err
-	}
-	defer func() {
-		_ = pr.Close()
-		_ = cmd.Process.Kill()
-	}()
-
-	var pos int64
-	for s.Scan() {
-		line := s.Text()
-		posParsed, found, err := parseBinlogEventPosInLine(line)
-		if err != nil {
-			return 0, errors.Wrap(err, "failed to parse binlog event start position from mysqlbinlog output")
-		}
-		if !found {
-			continue
-		}
-		if posParsed == 4 {
-			// When invoking mysqlbinlog with --start-datetime, the first valid event will always be FORMAT_DESCRIPTION_EVENT which should be skipped.
-			continue
-		}
-		pos = posParsed
-		break
-	}
-
-	if pos == 0 {
-		// TODO(dragonly): Check for mysqlbinlog process exit error to give more specific error messages, e.g., file not exist.
-		return 0, common.Errorf(common.NotFound, "failed to find event position at or after targetTs %d", targetTs)
-	}
-
-	return pos, nil
-}
-
 // ParseBinlogName parses the numeric extension and the binary log base name by using split the dot.
 // Examples:
 //   - ("binlog.000001") => ("binlog", 1)
@@ -952,57 +896,6 @@ func GenBinlogFileNames(base string, seqStart, seqEnd int64) []string {
 		ret = append(ret, fmt.Sprintf("%s.%06d", base, i))
 	}
 	return ret
-}
-
-// checks the MySQL version is >=8.0.
-func checkVersionForPITR(version string) error {
-	v, err := semver.Parse(version)
-	if err != nil {
-		return err
-	}
-	v8 := semver.MustParse("8.0.0")
-	if v.LT(v8) {
-		return errors.Errorf("version %s is not supported for PITR; the minimum supported version is 8.0", version)
-	}
-	return nil
-}
-
-// CheckServerVersionForPITR checks that the MySQL server version meets the requirements of PITR.
-func (driver *Driver) CheckServerVersionForPITR(ctx context.Context) error {
-	value, err := driver.getServerVariable(ctx, "version")
-	if err != nil {
-		return err
-	}
-	return checkVersionForPITR(value)
-}
-
-// CheckEngineInnoDB checks that the tables in the database is all using InnoDB as the storage engine.
-func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) error {
-	db := driver.GetDB()
-	// ref: https://dev.mysql.com/doc/refman/8.0/en/information-schema-tables-table.html
-	query := fmt.Sprintf("SELECT table_name, engine FROM information_schema.tables WHERE table_schema='%s';", database)
-	rows, err := db.QueryContext(ctx, query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	var tablesNotInnoDB []string
-	for rows.Next() {
-		var tableName, engine string
-		if err := rows.Scan(&tableName, &engine); err != nil {
-			return err
-		}
-		if strings.ToLower(engine) != "innodb" {
-			tablesNotInnoDB = append(tablesNotInnoDB, tableName)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return util.FormatErrorWithQuery(err, query)
-	}
-	if len(tablesNotInnoDB) != 0 {
-		return errors.Errorf("tables %v of database %s do not use the InnoDB engine, which is required for PITR", tablesNotInnoDB, database)
-	}
-	return nil
 }
 
 func (driver *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
