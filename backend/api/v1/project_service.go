@@ -173,15 +173,9 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			patch.Title = &request.Project.Title
 		case "key":
 			patch.Key = &request.Project.Key
-		case "workflow":
-			workflow := convertToProjectWorkflowType(request.Project.Workflow)
-			patch.Workflow = &workflow
 		case "tenant_mode":
 			tenantMode := convertToProjectTenantMode(request.Project.TenantMode)
 			patch.TenantMode = &tenantMode
-		case "schema_change":
-			schemaChange := convertToProjectSchemaChangeType(request.Project.SchemaChange)
-			patch.SchemaChangeType = &schemaChange
 		case "data_classification_config_id":
 			setting, err := s.store.GetDataClassificationSetting(ctx)
 			if err != nil {
@@ -454,6 +448,14 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		return s.createProjectGitOpsInfo(ctx, request, project)
 	}
 
+	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &repo.VCSResourceID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get vcs provider, error %v", err.Error())
+	}
+	if vcs == nil {
+		return nil, status.Errorf(codes.NotFound, "VCS provider not found")
+	}
+
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set to update gitops")
 	}
@@ -467,20 +469,9 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		case "branch_filter":
 			patch.BranchFilter = &request.ProjectGitopsInfo.BranchFilter
 		case "base_directory":
-			intVCSUID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid vcs uid: %s", request.ProjectGitopsInfo.VcsUid)
-			}
-			storeVCS, err := s.store.GetVCSProviderV2(ctx, intVCSUID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
-			}
-			if storeVCS == nil {
-				return nil, status.Errorf(codes.NotFound, "vcs %d not found", intVCSUID)
-			}
 			baseDir := request.ProjectGitopsInfo.BaseDirectory
 			// Azure DevOps base directory should start with /.
-			if storeVCS.Type == vcsplugin.AzureDevOps {
+			if vcs.Type == vcsplugin.AzureDevOps {
 				if !strings.HasPrefix(baseDir, "/") {
 					baseDir = "/" + request.ProjectGitopsInfo.BaseDirectory
 				}
@@ -488,16 +479,6 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 				baseDir = strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
 			}
 			patch.BaseDirectory = &baseDir
-		case "file_path_template":
-			if err := api.ValidateRepositoryFilePathTemplate(request.ProjectGitopsInfo.FilePathTemplate, project.TenantMode); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid file_path_template: %s", err.Error())
-			}
-			patch.FilePathTemplate = &request.ProjectGitopsInfo.FilePathTemplate
-		case "schema_path_template":
-			if err := api.ValidateRepositorySchemaPathTemplate(request.ProjectGitopsInfo.SchemaPathTemplate, project.TenantMode); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid schema_path_template: %s", err.Error())
-			}
-			patch.SchemaPathTemplate = &request.ProjectGitopsInfo.SchemaPathTemplate
 		}
 	}
 
@@ -505,15 +486,6 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		if *v == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
 		}
-
-		vcs, err := s.store.GetVCSProviderV2(ctx, repo.VCSUID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
-		}
-		if vcs == nil {
-			return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSUID)
-		}
-
 		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
 		if !strings.Contains(*v, "*") {
 			notFound, err := isBranchNotFound(
@@ -570,7 +542,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 		return nil, err
 	}
 
-	vcs, err := s.store.GetVCSProviderV2(ctx, repo.VCSUID)
+	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &repo.VCSResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
@@ -578,11 +550,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSUID)
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	if err := s.store.DeleteRepositoryV2(ctx, repo.ProjectResourceID, principalID); err != nil {
+	if err := s.store.DeleteRepositoryV2(ctx, repo.ProjectResourceID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete repository with error: %v", err.Error())
 	}
 
@@ -982,21 +950,28 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
-	intVCSUID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
+	vcsResourceID, err := common.GetVCSProviderID(request.ProjectGitopsInfo.Vcs)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs uid: %s", request.ProjectGitopsInfo.VcsUid)
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	storeVCS, err := s.store.GetVCSProviderV2(ctx, intVCSUID)
+	vcsResourceUID, isNumber := isNumber(vcsResourceID)
+	find := &store.FindVCSProviderMessage{}
+	if isNumber {
+		find.ID = &vcsResourceUID
+	} else {
+		find.ResourceID = &vcsResourceID
+	}
+	vcs, err := s.store.GetVCSProvider(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
-	if storeVCS == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs %d not found", intVCSUID)
+	if vcs == nil {
+		return nil, status.Errorf(codes.NotFound, "vcs %s not found", vcsResourceID)
 	}
 
 	baseDir := request.ProjectGitopsInfo.BaseDirectory
 	// Azure DevOps base directory should start with /.
-	if storeVCS.Type == vcsplugin.AzureDevOps {
+	if vcs.Type == vcsplugin.AzureDevOps {
 		if !strings.HasPrefix(baseDir, "/") {
 			baseDir = "/" + request.ProjectGitopsInfo.BaseDirectory
 		}
@@ -1004,25 +979,19 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		baseDir = strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
 	}
 
-	vcsID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs id: %s", request.ProjectGitopsInfo.VcsUid)
-	}
-
 	repositoryCreate := &store.RepositoryMessage{
-		VCSUID:            int(vcsID),
+		VCSUID:            vcs.ID,
+		VCSResourceID:     vcs.ResourceID,
 		ProjectResourceID: project.ResourceID,
 		// TODO(d): pass in the resource ID from API.
-		ResourceID:         "default",
-		WebhookURLHost:     setting.ExternalUrl,
-		Title:              request.ProjectGitopsInfo.Title,
-		FullPath:           request.ProjectGitopsInfo.FullPath,
-		WebURL:             request.ProjectGitopsInfo.WebUrl,
-		BranchFilter:       request.ProjectGitopsInfo.BranchFilter,
-		BaseDirectory:      baseDir,
-		FilePathTemplate:   request.ProjectGitopsInfo.FilePathTemplate,
-		SchemaPathTemplate: request.ProjectGitopsInfo.SchemaPathTemplate,
-		ExternalID:         request.ProjectGitopsInfo.ExternalId,
+		ResourceID:     "default",
+		WebhookURLHost: setting.ExternalUrl,
+		Title:          request.ProjectGitopsInfo.Title,
+		FullPath:       request.ProjectGitopsInfo.FullPath,
+		WebURL:         request.ProjectGitopsInfo.WebUrl,
+		BranchFilter:   request.ProjectGitopsInfo.BranchFilter,
+		BaseDirectory:  baseDir,
+		ExternalID:     request.ProjectGitopsInfo.ExternalId,
 	}
 
 	if repositoryCreate.BranchFilter == "" {
@@ -1033,22 +1002,6 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 	// This avoids to a certain extent that the creation succeeds but does not work.
 	if err := vcsplugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
-	}
-
-	if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate, project.TenantMode); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid file_path_template: %v", err.Error())
-	}
-
-	if err := api.ValidateRepositorySchemaPathTemplate(repositoryCreate.SchemaPathTemplate, project.TenantMode); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid schema_path_template: %s", err.Error())
-	}
-
-	vcs, err := s.store.GetVCSProviderV2(ctx, repositoryCreate.VCSUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
-	}
-	if vcs == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repositoryCreate.VCSUID)
 	}
 
 	// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
@@ -2214,22 +2167,10 @@ func convertProjectRole(role string) (api.Role, error) {
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
-	workflow := v1pb.Workflow_WORKFLOW_UNSPECIFIED
-	switch projectMessage.Workflow {
-	case api.UIWorkflow:
-		workflow = v1pb.Workflow_UI
-	case api.VCSWorkflow:
+	workflow := v1pb.Workflow_UI
+	if projectMessage.VCSConnectorsCount > 0 {
 		workflow = v1pb.Workflow_VCS
 	}
-
-	visibility := v1pb.Visibility_VISIBILITY_UNSPECIFIED
-	switch projectMessage.Visibility {
-	case api.Private:
-		visibility = v1pb.Visibility_VISIBILITY_PRIVATE
-	case api.Public:
-		visibility = v1pb.Visibility_VISIBILITY_PUBLIC
-	}
-
 	tenantMode := v1pb.TenantMode_TENANT_MODE_UNSPECIFIED
 	switch projectMessage.TenantMode {
 	case api.TenantModeDisabled:
@@ -2237,15 +2178,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	case api.TenantModeTenant:
 		tenantMode = v1pb.TenantMode_TENANT_MODE_ENABLED
 	}
-
-	schemaChange := v1pb.SchemaChange_SCHEMA_CHANGE_UNSPECIFIED
-	switch projectMessage.SchemaChangeType {
-	case api.ProjectSchemaChangeTypeDDL:
-		schemaChange = v1pb.SchemaChange_DDL
-	case api.ProjectSchemaChangeTypeSDL:
-		schemaChange = v1pb.SchemaChange_SDL
-	}
-
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
@@ -2264,35 +2196,9 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Title:                      projectMessage.Title,
 		Key:                        projectMessage.Key,
 		Workflow:                   workflow,
-		Visibility:                 visibility,
 		TenantMode:                 tenantMode,
-		SchemaChange:               schemaChange,
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
-	}
-}
-
-func convertToProjectWorkflowType(workflow v1pb.Workflow) api.ProjectWorkflowType {
-	switch workflow {
-	case v1pb.Workflow_UI:
-		return api.UIWorkflow
-	case v1pb.Workflow_VCS:
-		return api.VCSWorkflow
-	default:
-		// Default is UI workflow.
-		return api.UIWorkflow
-	}
-}
-
-func convertToProjectVisibility(visibility v1pb.Visibility) api.ProjectVisibility {
-	switch visibility {
-	case v1pb.Visibility_VISIBILITY_PRIVATE:
-		return api.Private
-	case v1pb.Visibility_VISIBILITY_PUBLIC:
-		return api.Public
-	default:
-		// Default is public.
-		return api.Public
 	}
 }
 
@@ -2307,31 +2213,13 @@ func convertToProjectTenantMode(tenantMode v1pb.TenantMode) api.ProjectTenantMod
 	}
 }
 
-func convertToProjectSchemaChangeType(schemaChange v1pb.SchemaChange) api.ProjectSchemaChangeType {
-	switch schemaChange {
-	case v1pb.SchemaChange_DDL:
-		return api.ProjectSchemaChangeTypeDDL
-	case v1pb.SchemaChange_SDL:
-		return api.ProjectSchemaChangeTypeSDL
-	default:
-		return api.ProjectSchemaChangeTypeDDL
-	}
-}
-
 func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.ProjectMessage, error) {
-	workflow := convertToProjectWorkflowType(project.Workflow)
-	visibility := convertToProjectVisibility(project.Visibility)
 	tenantMode := convertToProjectTenantMode(project.TenantMode)
-	schemaChange := convertToProjectSchemaChangeType(project.SchemaChange)
-
 	return &store.ProjectMessage{
-		ResourceID:       resourceID,
-		Title:            project.Title,
-		Key:              project.Key,
-		Workflow:         workflow,
-		Visibility:       visibility,
-		TenantMode:       tenantMode,
-		SchemaChangeType: schemaChange,
+		ResourceID: resourceID,
+		Title:      project.Title,
+		Key:        project.Key,
+		TenantMode: tenantMode,
 	}, nil
 }
 
@@ -2558,17 +2446,15 @@ func validateMember(member string) error {
 
 func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.ProjectGitOpsInfo {
 	return &v1pb.ProjectGitOpsInfo{
-		Name:               fmt.Sprintf("%s%s/gitOpsInfo", common.ProjectNamePrefix, repository.ProjectResourceID),
-		VcsUid:             fmt.Sprintf("%d", repository.VCSUID),
-		Title:              repository.Title,
-		FullPath:           repository.FullPath,
-		WebUrl:             repository.WebURL,
-		BranchFilter:       repository.BranchFilter,
-		BaseDirectory:      repository.BaseDirectory,
-		FilePathTemplate:   repository.FilePathTemplate,
-		SchemaPathTemplate: repository.SchemaPathTemplate,
-		WebhookEndpointId:  repository.WebhookEndpointID,
-		ExternalId:         repository.ExternalID,
+		Name:              fmt.Sprintf("%s%s/gitOpsInfo", common.ProjectNamePrefix, repository.ProjectResourceID),
+		Vcs:               fmt.Sprintf("%s%s", common.VCSProviderPrefix, repository.VCSResourceID),
+		Title:             repository.Title,
+		FullPath:          repository.FullPath,
+		WebUrl:            repository.WebURL,
+		BranchFilter:      repository.BranchFilter,
+		BaseDirectory:     repository.BaseDirectory,
+		WebhookEndpointId: repository.WebhookEndpointID,
+		ExternalId:        repository.ExternalID,
 	}
 }
 

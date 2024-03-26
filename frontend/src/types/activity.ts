@@ -5,20 +5,11 @@ import {
 import { FieldId } from "../plugins";
 import { t } from "../plugins/i18n";
 import { ExternalApprovalEvent } from "./externalApproval";
-import {
-  DatabaseId,
-  InstanceId,
-  IssueId,
-  PrincipalId,
-  SheetId,
-  StageId,
-  TaskId,
-} from "./id";
+import { IssueId, PrincipalId, SheetId, StageId, TaskId } from "./id";
 import { IssueStatus } from "./issue";
 import { MemberStatus, RoleType } from "./member";
 import { StageStatusUpdateType, TaskRunStatus, TaskStatus } from "./pipeline";
 import { ApprovalEvent } from "./review";
-import { Advice } from "./sqlAdvice";
 import { VCSPushEvent } from "./vcs";
 
 export function activityName(action: LogEntity_Action): string {
@@ -196,17 +187,6 @@ export type ActivityProjectDatabaseTransferPayload = {
   databaseName: string;
 };
 
-export type ActivitySQLEditorQueryPayload = {
-  statement: string;
-  durationNs: number;
-  instanceId: InstanceId;
-  instanceName: string;
-  databaseId: DatabaseId;
-  databaseName: string;
-  error: string;
-  adviceList: Advice[];
-};
-
 export type ActionPayloadType =
   | ActivityIssueCreatePayload
   | ActivityIssueCommentCreatePayload
@@ -220,8 +200,7 @@ export type ActionPayloadType =
   | ActivityMemberRoleUpdatePayload
   | ActivityMemberActivateDeactivatePayload
   | ActivityProjectRepositoryPushPayload
-  | ActivityProjectDatabaseTransferPayload
-  | ActivitySQLEditorQueryPayload;
+  | ActivityProjectDatabaseTransferPayload;
 
 export interface FindActivityMessage {
   resource?: string;

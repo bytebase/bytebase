@@ -16,6 +16,7 @@ export type VCSUIType =
 export interface VCSConfig {
   type: VCSProvider_Type;
   uiType: VCSUIType;
+  resourceId: string;
   name: string;
   instanceUrl: string;
   accessToken: string;

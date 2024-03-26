@@ -71,22 +71,6 @@ export enum SortText {
   KEYWORD = "3",
 }
 
-export type SQLEditorQueryHistory = {
-  name: string; // Format: logs/{uid}
-
-  // Standard fields
-  // creator in users/{email} format.
-  creator: string;
-  createTime: Date;
-
-  // Domain fields
-  statement: string;
-  durationNs: number;
-  instance: string;
-  database: string;
-  error: string;
-};
-
 export interface SQLEditorConnection {
   instance: string; // instance resource name, empty if not connected
   database: string; // database resource name, empty if not connected to a database

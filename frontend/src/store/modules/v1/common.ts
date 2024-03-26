@@ -152,8 +152,7 @@ export const getProjectPathFromRepoName = (repoName: string): string => {
   return repoName.split("/gitOpsInfo")[0];
 };
 
-export const getVCSUid = (name: string): number => {
+export const getVCSId = (name: string): string => {
   const tokens = getNameParentTokens(name, [vcsProviderPrefix]);
-  const vcsUid = Number(tokens[0] || UNKNOWN_ID);
-  return vcsUid;
+  return tokens[0];
 };

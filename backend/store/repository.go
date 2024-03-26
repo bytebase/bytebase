@@ -9,13 +9,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // RepositoryMessage is the message for a repository.
 type RepositoryMessage struct {
 	// Related fields
 	VCSUID            int
+	VCSResourceID     string
 	ProjectResourceID string
 	ResourceID        string
 
@@ -42,6 +42,7 @@ type FindRepositoryMessage struct {
 	UID               *int
 	WebURL            *string
 	VCSUID            *int
+	VCSResourceID     *string
 	ProjectResourceID *string
 	ResourceID        *string
 	WebhookEndpointID *string
@@ -62,13 +63,18 @@ type PatchRepositoryMessage struct {
 
 // CreateRepositoryV2 creates the repository.
 func (s *Store) CreateRepositoryV2(ctx context.Context, create *RepositoryMessage, creatorUID int) (*RepositoryMessage, error) {
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectResourceID})
+	if err != nil {
+		return nil, err
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	repository, err := s.createRepositoryImplV2(ctx, tx, create, creatorUID)
+	repository, err := createRepositoryImplV2(ctx, tx, project, create, creatorUID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +84,6 @@ func (s *Store) CreateRepositoryV2(ctx context.Context, create *RepositoryMessag
 	}
 
 	s.removeProjectCache(create.ProjectResourceID)
-
 	return repository, nil
 }
 
@@ -149,14 +154,19 @@ func (s *Store) PatchRepositoryV2(ctx context.Context, patch *PatchRepositoryMes
 }
 
 // DeleteRepositoryV2 deletes an existing repository by ID.
-func (s *Store) DeleteRepositoryV2(ctx context.Context, projectResourceID string, deleterID int) error {
+func (s *Store) DeleteRepositoryV2(ctx context.Context, projectResourceID string) error {
+	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &projectResourceID})
+	if err != nil {
+		return err
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if err := s.deleteRepositoryImplV2(ctx, tx, projectResourceID, deleterID); err != nil {
+	if err := deleteAllRepositoryImplV2(ctx, tx, project); err != nil {
 		return err
 	}
 
@@ -165,28 +175,11 @@ func (s *Store) DeleteRepositoryV2(ctx context.Context, projectResourceID string
 	}
 
 	s.removeProjectCache(projectResourceID)
-
 	return nil
 }
 
 // createRepositoryImplV2 creates a new repository.
-func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *RepositoryMessage, creatorID int) (*RepositoryMessage, error) {
-	// Updates the project workflow_type to "VCS"
-	// TODO(d): ideally, we should not update project fields on repository changes.
-	workflowType := api.VCSWorkflow
-	update := &UpdateProjectMessage{
-		UpdaterID:  creatorID,
-		ResourceID: create.ProjectResourceID,
-		Workflow:   &workflowType,
-	}
-	project, err := s.updateProjectImplV2(ctx, tx, update)
-	if err != nil {
-		return nil, err
-	}
-	if project == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot found project %s", create.ProjectResourceID)}
-	}
-
+func createRepositoryImplV2(ctx context.Context, tx *Tx, project *ProjectMessage, create *RepositoryMessage, creatorID int) (*RepositoryMessage, error) {
 	repository := RepositoryMessage{
 		ProjectResourceID: project.ResourceID,
 	}
@@ -254,6 +247,7 @@ func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *Repo
 		}
 		return nil, err
 	}
+	repository.VCSResourceID = create.VCSResourceID
 	return &repository, nil
 }
 
@@ -265,6 +259,9 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 	}
 	if v := find.VCSUID; v != nil {
 		where, args = append(where, fmt.Sprintf("vcs_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.VCSResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("vcs.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
@@ -283,6 +280,7 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 		SELECT
 			repository.id AS id,
 			vcs_id,
+			vcs.resource_id,
 			project.resource_id AS project_resource_id,
 			repository.resource_id,
 			repository.name AS name,
@@ -299,6 +297,7 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 			webhook_secret_token
 		FROM repository
 		LEFT JOIN project ON project.id = repository.project_id
+		LEFT JOIN vcs ON vcs.id = repository.vcs_id
 		WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
@@ -314,6 +313,7 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 		if err := rows.Scan(
 			&repository.UID,
 			&repository.VCSUID,
+			&repository.VCSResourceID,
 			&repository.ProjectResourceID,
 			&repository.ResourceID,
 			&repository.Title,
@@ -378,11 +378,12 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 	if err := tx.QueryRowContext(ctx, `
 		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
-		FROM project
-		WHERE project.id = repository.project_id AND `+strings.Join(where, " AND ")+`
+		FROM project, vcs
+		WHERE project.id = repository.project_id AND vcs.id = repository.vcs_id AND `+strings.Join(where, " AND ")+`
 		RETURNING
 			repository.id AS id,
 			vcs_id,
+			vcs.resource_id,
 			project.resource_id AS project_resource_id,
 			repository.resource_id,
 			repository.name AS name,
@@ -402,6 +403,7 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 	).Scan(
 		&repository.UID,
 		&repository.VCSUID,
+		&repository.VCSResourceID,
 		&repository.ProjectResourceID,
 		&repository.ResourceID,
 		&repository.Title,
@@ -425,24 +427,8 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 	return &repository, nil
 }
 
-// deleteRepositoryImplV2 permanently deletes a repository by ID.
-func (s *Store) deleteRepositoryImplV2(ctx context.Context, tx *Tx, projectResourceID string, deleterID int) error {
-	// Updates the project workflow_type to "UI"
-	// TODO(d): ideally, we should not update project fields on repository changes.
-	workflowType := api.UIWorkflow
-	update := &UpdateProjectMessage{
-		UpdaterID:  deleterID,
-		ResourceID: projectResourceID,
-		Workflow:   &workflowType,
-	}
-	project, err := s.updateProjectImplV2(ctx, tx, update)
-	if err != nil {
-		return err
-	}
-	if project == nil {
-		return &common.Error{Code: common.NotFound, Err: errors.Errorf("cannot found project %s", projectResourceID)}
-	}
-
+// deleteAllRepositoryImplV2 permanently deletes a repository by ID.
+func deleteAllRepositoryImplV2(ctx context.Context, tx *Tx, project *ProjectMessage) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM repository WHERE project_id = $1`, project.UID); err != nil {
 		return err
 	}

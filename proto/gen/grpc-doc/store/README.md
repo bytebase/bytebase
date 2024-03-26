@@ -86,6 +86,9 @@
     - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
   
+- [store/export_archive.proto](#store_export_archive-proto)
+    - [ExportArchivePayload](#bytebase-store-ExportArchivePayload)
+  
 - [store/idp.proto](#store_idp-proto)
     - [FieldMapping](#bytebase-store-FieldMapping)
     - [IdentityProviderConfig](#bytebase-store-IdentityProviderConfig)
@@ -1442,6 +1445,37 @@ Used internally for obfuscating the page token.
 | SAECRET_TYPE_UNSPECIFIED | 0 |  |
 | VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_export_archive-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/export_archive.proto
+
+
+
+<a name="bytebase-store-ExportArchivePayload"></a>
+
+### ExportArchivePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| file_format | [ExportFormat](#bytebase-store-ExportFormat) |  | The exported file format. e.g. JSON, CSV, SQL |
+
+
+
+
+
+ 
 
  
 

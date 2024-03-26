@@ -162,7 +162,7 @@ const requestAI = async (query: string) => {
   };
   state.loading = true;
   const axios = new Axios({
-    timeout: 20 * 1000,
+    timeout: 300 * 1000,
     responseType: "json",
   });
   const headers = {
