@@ -345,7 +345,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			ROUTINE_TYPE
 		FROM
 			INFORMATION_SCHEMA.ROUTINES
-		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE IN ('FUNCTION', 'PROCEDURE');
+		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE IN ('FUNCTION', 'PROCEDURE')
+		ORDER BY ROUTINE_TYPE, ROUTINE_NAME;
 	`
 	routineRows, err := driver.db.QueryContext(ctx, routinesQuery, driver.databaseName)
 	if err != nil {
