@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"google.golang.org/grpc/codes"
@@ -11,9 +12,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	vcsplugin "github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -43,6 +46,14 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting: %v", err)
+	}
+	if setting.ExternalUrl == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
 	}
 
 	projectResourceID, err := common.GetProjectID(request.Parent)
@@ -91,21 +102,45 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 	} else {
 		baseDir = strings.Trim(request.GetVcsConnector().BaseDirectory, "/")
 	}
-	vcsConnector, err = s.store.CreateVCSConnector(ctx, &store.VCSConnectorMessage{
+
+	workspaceID, err := s.store.GetWorkspaceID(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace id with error: %v", err.Error())
+	}
+	secretToken, err := common.RandomString(gitlab.SecretTokenLength)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate random secret token for vcs with error: %v", err.Error())
+	}
+	vcsConnectorCreate := &store.VCSConnectorMessage{
 		ProjectID:  project.ResourceID,
 		ResourceID: request.VcsConnectorId,
 		CreatorID:  principalID,
 
-		VCSUID:         vcs.ID,
-		VCSResourceID:  vcs.ResourceID,
-		WebhookURLHost: "setting.ExternalUrl",
-		Title:          request.GetVcsConnector().Title,
-		FullPath:       request.GetVcsConnector().FullPath,
-		WebURL:         request.GetVcsConnector().WebUrl,
-		Branch:         request.GetVcsConnector().Branch,
-		BaseDirectory:  baseDir,
-		ExternalID:     request.GetVcsConnector().ExternalId,
-	})
+		VCSUID:             vcs.ID,
+		VCSResourceID:      vcs.ResourceID,
+		WebhookURLHost:     "setting.ExternalUrl",
+		Title:              request.GetVcsConnector().Title,
+		FullPath:           request.GetVcsConnector().FullPath,
+		WebURL:             request.GetVcsConnector().WebUrl,
+		Branch:             request.GetVcsConnector().Branch,
+		BaseDirectory:      baseDir,
+		ExternalID:         request.GetVcsConnector().ExternalId,
+		WebhookEndpointID:  fmt.Sprintf("workspaces/%s/projects/%s/vcsConnectors/%s", workspaceID, project.ResourceID, request.VcsConnectorId),
+		WebhookSecretToken: secretToken,
+	}
+
+	// Create the webhook.
+	bytebaseEndpointURL := setting.GitopsWebhookUrl
+	if bytebaseEndpointURL == "" {
+		bytebaseEndpointURL = setting.ExternalUrl
+	}
+	webhookID, err := createVCSWebhook(ctx, vcs.Type, vcsConnectorCreate.WebhookEndpointID, secretToken, vcs.AccessToken, vcs.InstanceURL, vcsConnectorCreate.ExternalID, bytebaseEndpointURL)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create webhook for project %s with error: %v", vcsConnectorCreate.ProjectID, err.Error())
+	}
+	vcsConnectorCreate.ExternalWebhookID = webhookID
+
+	vcsConnector, err = s.store.CreateVCSConnector(ctx, vcsConnectorCreate)
 	if err != nil {
 		return nil, err
 	}
@@ -287,8 +322,29 @@ func (s *VCSConnectorService) DeleteVCSConnector(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "vcs connector %q not found", vcsConnectorID)
 	}
 
+	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
+	}
+	if vcs == nil {
+		return nil, status.Errorf(codes.NotFound, "vcs %d not found", vcsConnector.UID)
+	}
+
 	if err := s.store.DeleteVCSConnector(ctx, project.ResourceID, vcsConnectorID); err != nil {
 		return nil, err
+	}
+
+	// Delete the webhook, and fail-open.
+	if err = vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).DeleteWebhook(
+		ctx,
+		&common.OauthContext{
+			AccessToken: vcs.AccessToken,
+		},
+		vcs.InstanceURL,
+		vcsConnector.ExternalID,
+		vcsConnector.ExternalWebhookID,
+	); err != nil {
+		slog.Error("failed to delete webhook for VCS connector", slog.String("project", projectID), slog.String("VCS connector", vcsConnector.ResourceID), log.BBError(err))
 	}
 
 	return &emptypb.Empty{}, nil
