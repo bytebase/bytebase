@@ -54,7 +54,7 @@
 import { NButton, NInput } from "naive-ui";
 import { computed } from "vue";
 import ErrorList from "../misc/ErrorList.vue";
-import { Label } from "./types";
+import type { Label } from "./types";
 
 const props = defineProps<{
   kv: Label;

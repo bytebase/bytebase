@@ -17,7 +17,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import type { SQLEditorTab } from "@/types";

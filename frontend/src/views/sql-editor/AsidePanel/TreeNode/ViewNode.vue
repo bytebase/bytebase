@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { ViewIcon } from "@/components/Icon";
-import {
+import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
 } from "@/types";

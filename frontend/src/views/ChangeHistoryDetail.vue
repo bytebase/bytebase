@@ -349,16 +349,17 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { AffectedTable } from "@/types/changeHistory";
+import type { AffectedTable } from "@/types/changeHistory";
 import { Engine } from "@/types/proto/v1/common";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
-  ChangeHistory,
   ChangeHistory_Type,
   changeHistory_SourceToJSON,
   changeHistory_TypeToJSON,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
-import { PushEvent, VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
+import type { PushEvent } from "@/types/proto/v1/vcs";
+import { VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
 import {
   changeHistoryLink,
   extractIssueUID,

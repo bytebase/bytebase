@@ -1,5 +1,5 @@
 import { has } from "lodash-es";
-import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
+import type { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
 
 export type Mode =
   | "ALL"

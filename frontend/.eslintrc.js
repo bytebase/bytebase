@@ -26,6 +26,10 @@ module.exports = {
         printWidth: 80,
       },
     ],
+    "@typescript-eslint/consistent-type-imports": [
+      "error",
+      { fixStyle: "separate-type-imports", prefer: "type-imports" },
+    ],
     "@typescript-eslint/no-empty-interface": "error",
     "@typescript-eslint/no-unused-vars": [
       "error",

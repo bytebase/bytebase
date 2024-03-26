@@ -87,7 +87,8 @@ import { cloneDeep, last } from "lodash-es";
 import { FilterIcon } from "lucide-vue-next";
 import { XIcon } from "lucide-vue-next";
 import { matchSorter } from "match-sorter";
-import { InputInst, NInput } from "naive-ui";
+import type { InputInst } from "naive-ui";
+import { NInput } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
 import {
@@ -99,10 +100,8 @@ import {
   computed,
   nextTick,
 } from "vue";
+import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
 import {
-  SearchParams,
-  SearchScope,
-  SearchScopeId,
   emptySearchParams,
   getValueFromSearchParams,
   minmax,

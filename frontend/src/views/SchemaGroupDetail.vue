@@ -105,7 +105,7 @@ import MatchedTableView from "@/components/DatabaseGroup/MatchedTableView.vue";
 import { FactorList } from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
 import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
-import { ConditionGroupExpr } from "@/plugins/cel";
+import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   useDBGroupStore,
   useProjectV1Store,
@@ -116,7 +116,7 @@ import {
   schemaGroupNamePrefix,
 } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { ComposedSchemaGroupTable } from "@/types";
+import type { ComposedSchemaGroupTable } from "@/types";
 import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
 
 interface LocalState {

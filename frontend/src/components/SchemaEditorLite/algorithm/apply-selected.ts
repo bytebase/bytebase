@@ -1,18 +1,17 @@
 import { cloneDeep } from "lodash-es";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnConfig,
   ColumnMetadata,
   DatabaseMetadata,
-  SchemaConfig,
   SchemaMetadata,
-  TableConfig,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { SchemaConfig, TableConfig } from "@/types/proto/v1/database_service";
 import { filterColumnMetadata, filterTableMetadata } from "@/utils";
-import { SchemaEditorContext } from "../context";
+import type { SchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
-import { RolloutObject } from "../types";
+import type { RolloutObject } from "../types";
 import {
   buildColumnConfigMap,
   buildColumnMap,

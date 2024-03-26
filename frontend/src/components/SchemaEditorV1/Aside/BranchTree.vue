@@ -76,7 +76,8 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { debounce, escape, head, isUndefined, pick } from "lodash-es";
-import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
+import type { TreeOption } from "naive-ui";
+import { NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
 import { computed, watch, ref, h, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -85,10 +86,11 @@ import TableIcon from "~icons/heroicons-outline/table-cells";
 import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
 import { generateUniqueTabId, useSchemaEditorV1Store } from "@/store";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 import { Engine } from "@/types/proto/v1/common";
-import { Table } from "@/types/v1/schemaEditor";
-import { BranchSchema, SchemaEditorTabType } from "@/types/v1/schemaEditor";
+import type { Table } from "@/types/v1/schemaEditor";
+import type { BranchSchema } from "@/types/v1/schemaEditor";
+import { SchemaEditorTabType } from "@/types/v1/schemaEditor";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";

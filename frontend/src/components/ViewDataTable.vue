@@ -10,12 +10,14 @@
 </template>
 
 <script lang="ts" setup>
-import { DataTableColumn, NDataTable } from "naive-ui";
-import { computed, PropType } from "vue";
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { ViewMetadata } from "@/types/proto/v1/database_service";
+import type { ViewMetadata } from "@/types/proto/v1/database_service";
 
 const props = defineProps({
   database: {

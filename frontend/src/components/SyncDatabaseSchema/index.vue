@@ -64,7 +64,8 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { isNull, isUndefined } from "lodash-es";
-import { NRadioGroup, NRadio, useDialog, ButtonProps } from "naive-ui";
+import type { ButtonProps } from "naive-ui";
+import { NRadioGroup, NRadio, useDialog } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -72,13 +73,14 @@ import { StepTab } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { useProjectV1Store } from "@/store";
-import { UNKNOWN_ID, ComposedProject } from "@/types";
+import type { ComposedProject } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { extractProjectResourceName } from "@/utils";
 import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
 import RawSQLEditor from "./RawSQLEditor.vue";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
-import {
+import type {
   ChangeHistorySourceSchema,
   RawSQLState,
   SourceSchemaType,

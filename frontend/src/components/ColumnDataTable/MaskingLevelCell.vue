@@ -65,13 +65,13 @@ import { computed } from "vue";
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionV1Store } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
-import {
+import type {
   ColumnMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { MaskData } from "@/types/proto/v1/org_policy_service";
+import type { MaskData } from "@/types/proto/v1/org_policy_service";
 import SensitiveColumnDrawer from "../SensitiveData/SensitiveColumnDrawer.vue";
 
 type LocalState = {

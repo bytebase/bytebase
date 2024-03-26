@@ -22,9 +22,9 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useEnvironmentV1List } from "@/store";
 import { UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentV1Name } from "../Model";
-import { TabFilterItem } from "./types";
+import type { TabFilterItem } from "./types";
 
 interface EnvironmentTabFilterItem extends TabFilterItem<string> {
   environment: Environment;

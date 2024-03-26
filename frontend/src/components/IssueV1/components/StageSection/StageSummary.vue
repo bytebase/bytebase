@@ -10,7 +10,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { Stage, Task_Status } from "@/types/proto/v1/rollout_service";
+import type { Stage } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
 
 const props = defineProps<{
   stage: Stage;

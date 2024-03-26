@@ -10,7 +10,8 @@
 
 <script setup lang="ts">
 import { NInput } from "naive-ui";
-import { CSSProperties, computed, ref } from "vue";
+import type { CSSProperties } from "vue";
+import { computed, ref } from "vue";
 
 defineProps<{
   value: string | undefined | null;

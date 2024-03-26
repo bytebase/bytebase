@@ -1,4 +1,5 @@
-import { ResourceId, UNKNOWN_ID, Project, SheetId } from "@/types";
+import type { ResourceId, Project, SheetId } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 
 export const userNamePrefix = "users/";
 export const environmentNamePrefix = "environments/";

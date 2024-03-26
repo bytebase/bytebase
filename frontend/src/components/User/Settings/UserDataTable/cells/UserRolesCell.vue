@@ -8,7 +8,7 @@
 
 <script lang="ts" setup>
 import { NTag } from "naive-ui";
-import { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import { displayRoleTitle, sortRoles } from "@/utils";
 
 defineProps<{

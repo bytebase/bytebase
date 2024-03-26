@@ -49,9 +49,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { DebugLog } from "@/types/proto/v1/actuator_service";
+import type { DebugLog } from "@/types/proto/v1/actuator_service";
 import EllipsisText from "../EllipsisText.vue";
 
 defineProps({

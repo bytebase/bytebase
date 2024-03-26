@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch } from "vue";
 import { anomalyServiceClient } from "@/grpcweb";
-import { FindAnomalyMessage, MaybeRef } from "@/types";
-import { Anomaly } from "@/types/proto/v1/anomaly_service";
+import type { FindAnomalyMessage, MaybeRef } from "@/types";
+import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 
 const buildFilter = (find: FindAnomalyMessage): string => {
   const filter: string[] = [];

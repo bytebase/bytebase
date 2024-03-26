@@ -1,16 +1,18 @@
-import {
-  LogEntity_Action,
-  LogEntity_Level,
-} from "@/types/proto/v1/logging_service";
-import { FieldId } from "../plugins";
+import type { LogEntity_Level } from "@/types/proto/v1/logging_service";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
+import type { FieldId } from "../plugins";
 import { t } from "../plugins/i18n";
-import { ExternalApprovalEvent } from "./externalApproval";
-import { IssueId, PrincipalId, SheetId, StageId, TaskId } from "./id";
-import { IssueStatus } from "./issue";
-import { MemberStatus, RoleType } from "./member";
-import { StageStatusUpdateType, TaskRunStatus, TaskStatus } from "./pipeline";
-import { ApprovalEvent } from "./review";
-import { VCSPushEvent } from "./vcs";
+import type { ExternalApprovalEvent } from "./externalApproval";
+import type { IssueId, PrincipalId, SheetId, StageId, TaskId } from "./id";
+import type { IssueStatus } from "./issue";
+import type { MemberStatus, RoleType } from "./member";
+import type {
+  StageStatusUpdateType,
+  TaskRunStatus,
+  TaskStatus,
+} from "./pipeline";
+import type { ApprovalEvent } from "./review";
+import type { VCSPushEvent } from "./vcs";
 
 export function activityName(action: LogEntity_Action): string {
   switch (action) {

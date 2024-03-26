@@ -128,14 +128,14 @@ import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBTableSectionDataSource } from "@/bbkit/types";
+import type { BBTableSectionDataSource } from "@/bbkit/types";
 import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
-import { ComposedDatabase } from "@/types";
-import { AffectedTable } from "@/types/changeHistory";
+import type { ComposedDatabase } from "@/types";
+import type { AffectedTable } from "@/types/changeHistory";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
-  ChangeHistory,
   ChangeHistory_Status,
   ChangeHistory_Type,
   changeHistory_TypeToJSON,

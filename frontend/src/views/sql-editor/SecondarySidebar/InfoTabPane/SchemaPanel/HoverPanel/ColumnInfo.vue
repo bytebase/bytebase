@@ -27,9 +27,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,

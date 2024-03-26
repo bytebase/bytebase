@@ -5,7 +5,7 @@
 </template>
 
 <script lang="ts" setup>
-import { RuleTemplate } from "@/types";
+import type { RuleTemplate } from "@/types";
 
 defineProps<{
   rule: RuleTemplate;

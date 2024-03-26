@@ -63,7 +63,8 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { flatten } from "lodash-es";
-import { DataTableColumn, NCheckbox, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
+import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
@@ -75,10 +76,10 @@ import {
   useSubscriptionV1Store,
   useSchemaEditorV1Store,
 } from "@/store/modules";
-import { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto/v1/common";
 import { ColumnConfig } from "@/types/proto/v1/database_service";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
+import type { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import {
   getDefaultValueByKey,

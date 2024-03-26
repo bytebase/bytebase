@@ -10,13 +10,15 @@
 </template>
 
 <script lang="ts" setup>
-import { DataTableColumn, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoleStore } from "@/store";
-import { ComposedProject, PRESET_WORKSPACE_ROLES } from "@/types";
+import type { ComposedProject } from "@/types";
+import { PRESET_WORKSPACE_ROLES } from "@/types";
 import { displayRoleTitle, sortRoles } from "@/utils";
-import { ProjectMember } from "../types";
+import type { ProjectMember } from "../types";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 

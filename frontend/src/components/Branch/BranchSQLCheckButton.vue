@@ -23,7 +23,7 @@
 import { computed } from "vue";
 import { SQLCheckButton, SQLCheckSummary } from "@/components/SQLCheck";
 import { useDatabaseV1Store } from "@/store";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 
 const props = defineProps<{
   branch: Branch;

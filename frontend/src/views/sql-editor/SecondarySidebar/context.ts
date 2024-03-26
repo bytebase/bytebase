@@ -1,5 +1,6 @@
 import Emittery from "emittery";
-import { InjectionKey, inject, provide, Ref, ref } from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide, ref } from "vue";
 
 type SecondarySidebarEvents = Emittery<{
   // nothing by now

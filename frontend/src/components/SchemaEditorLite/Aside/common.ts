@@ -1,6 +1,6 @@
-import { TreeOption } from "naive-ui";
-import { ComposedDatabase, ComposedInstance } from "@/types";
-import {
+import type { TreeOption } from "naive-ui";
+import type { ComposedDatabase, ComposedInstance } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
@@ -8,7 +8,7 @@ import {
 } from "@/types/proto/v1/database_service";
 import { groupBy } from "@/utils";
 import { keyForResource } from "../context/common";
-import { EditTarget } from "../types";
+import type { EditTarget } from "../types";
 
 export interface BaseTreeNode extends TreeOption {
   key: string;

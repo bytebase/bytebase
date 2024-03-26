@@ -36,9 +36,10 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-import { PropType, computed } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { getFeatureLocalization } from "@/types";
-import { LocalPlan } from "./types";
+import type { LocalPlan } from "./types";
 
 const props = defineProps({
   plan: {

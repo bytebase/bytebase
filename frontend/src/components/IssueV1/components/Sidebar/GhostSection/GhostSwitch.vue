@@ -33,10 +33,8 @@ import { NSwitch, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { specForTask, useIssueContext } from "@/components/IssueV1/logic";
-import {
-  ErrorItem,
-  default as ErrorList,
-} from "@/components/misc/ErrorList.vue";
+import type { ErrorItem } from "@/components/misc/ErrorList.vue";
+import { default as ErrorList } from "@/components/misc/ErrorList.vue";
 import { hasFeature, useCurrentUserV1 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {

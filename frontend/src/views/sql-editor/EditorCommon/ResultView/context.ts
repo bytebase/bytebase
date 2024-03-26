@@ -1,6 +1,6 @@
 import { type Table } from "@tanstack/vue-table";
 import { type Ref, type InjectionKey, provide, inject } from "vue";
-import { QueryRow } from "@/types/proto/v1/sql_service";
+import type { QueryRow } from "@/types/proto/v1/sql_service";
 
 export type SQLResultViewContext = {
   dark: Ref<boolean>;

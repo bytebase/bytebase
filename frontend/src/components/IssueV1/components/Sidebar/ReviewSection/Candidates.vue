@@ -31,7 +31,7 @@
 import { computed } from "vue";
 import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
 import { useCurrentUserV1 } from "@/store";
-import { WrappedReviewStep } from "@/types";
+import type { WrappedReviewStep } from "@/types";
 
 const props = defineProps<{
   step: WrappedReviewStep;

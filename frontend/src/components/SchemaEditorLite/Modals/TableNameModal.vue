@@ -29,16 +29,19 @@
 </template>
 
 <script lang="ts" setup>
-import { InputInst, NButton, NInput } from "naive-ui";
+import type { InputInst } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useNotificationStore } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
-  ColumnMetadata,
+import type {
   DatabaseMetadata,
   SchemaMetadata,
+} from "@/types/proto/v1/database_service";
+import {
+  ColumnMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { useSchemaEditorContext } from "../context";

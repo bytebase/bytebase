@@ -50,17 +50,10 @@
 </template>
 
 <script setup lang="ts">
-import {
-  DropdownOption,
-  DropdownProps,
-  NDropdown,
-  NElement,
-  NInput,
-  NSelect,
-  SelectOption,
-} from "naive-ui";
+import type { DropdownOption, DropdownProps, SelectOption } from "naive-ui";
+import { NDropdown, NElement, NInput, NSelect } from "naive-ui";
 import { computed, h, ref } from "vue";
-import { VueClass, VueStyle } from "@/utils";
+import type { VueClass, VueStyle } from "@/utils";
 
 const props = withDefaults(
   defineProps<{

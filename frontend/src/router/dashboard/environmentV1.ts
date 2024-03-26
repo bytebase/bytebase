@@ -1,4 +1,4 @@
-import { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
+import type { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
 import { useEnvironmentV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { unknownEnvironment } from "@/types";

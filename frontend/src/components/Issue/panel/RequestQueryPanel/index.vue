@@ -95,13 +95,8 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import {
-  ComposedDatabase,
-  DatabaseResource,
-  SYSTEM_BOT_EMAIL,
-  UNKNOWN_ID,
-  PresetRoleType,
-} from "@/types";
+import type { ComposedDatabase, DatabaseResource } from "@/types";
+import { SYSTEM_BOT_EMAIL, UNKNOWN_ID, PresetRoleType } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";

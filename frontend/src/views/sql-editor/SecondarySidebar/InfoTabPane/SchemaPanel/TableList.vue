@@ -45,8 +45,8 @@ import { escape } from "lodash-es";
 import { computed, nextTick } from "vue";
 import { VirtualList } from "vueuc";
 import { TableIcon, ViewIcon } from "@/components/Icon";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   DatabaseMetadata,
   ExternalTableMetadata,
   SchemaMetadata,

@@ -33,10 +33,11 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-import { reactive, PropType, computed } from "vue";
+import type { PropType } from "vue";
+import { reactive, computed } from "vue";
 import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
-import { FeatureType } from "@/types";
-import { Instance } from "@/types/proto/v1/instance_service";
+import type { FeatureType } from "@/types";
+import type { Instance } from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {

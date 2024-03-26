@@ -60,11 +60,11 @@ import {
   useSettingV1Store,
   pushNotification,
 } from "@/store";
-import {
-  DataClassificationSetting_DataClassificationConfig,
+import type {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
 } from "@/types/proto/v1/setting_service";
+import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const uploader = ref<HTMLInputElement | null>(null);

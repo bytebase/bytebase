@@ -49,7 +49,7 @@ import { computed, ref } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
 import { usePageMode } from "@/store";
-import { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { useSheetContext, openWorksheetByName, addNewSheet } from "../Sheet";
 import { useSQLEditorContext } from "../context";
 import SheetTable from "./SheetTable";

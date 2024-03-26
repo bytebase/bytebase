@@ -1,5 +1,6 @@
 import type monaco from "monaco-editor";
-import { Ref, unref, watch } from "vue";
+import type { Ref } from "vue";
+import { unref, watch } from "vue";
 import type { MaybeRef } from "@/types";
 import { minmax } from "@/utils";
 import type { MonacoModule } from "../types";

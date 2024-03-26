@@ -1,5 +1,5 @@
 import { ClientError, ServerError, Status } from "nice-grpc-common";
-import { ClientMiddleware } from "nice-grpc-web";
+import type { ClientMiddleware } from "nice-grpc-web";
 import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
 

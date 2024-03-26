@@ -49,12 +49,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTableSectionDataSource } from "@/bbkit/types";
-import { ComposedDatabase } from "@/types";
+import type { BBTableSectionDataSource } from "@/bbkit/types";
+import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { IndexMetadata } from "@/types/proto/v1/database_service";
+import type { IndexMetadata } from "@/types/proto/v1/database_service";
 
 const props = defineProps({
   database: {

@@ -13,13 +13,13 @@ import {
   useSQLStore,
   useSQLEditorQueryHistoryStore,
 } from "@/store";
-import {
+import type {
   ComposedDatabase,
   SQLResultSetV1,
-  UNKNOWN_ID,
   BBNotificationStyle,
   SQLEditorQueryParams,
 } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import {
   Advice_Status,
   advice_StatusToJSON,

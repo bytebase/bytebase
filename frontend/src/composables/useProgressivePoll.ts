@@ -1,6 +1,6 @@
 import { random } from "lodash-es";
 import { onBeforeUnmount, reactive, unref } from "vue";
-import { MaybeRef } from "@/types";
+import type { MaybeRef } from "@/types";
 import { minmax } from "@/utils";
 
 type ProgressivePollOptions = {

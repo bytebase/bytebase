@@ -29,14 +29,12 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
+import type { BBGridColumn, BBGridRow } from "@/bbkit";
+import { BBGrid } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Duration } from "@/types/proto/google/protobuf/duration";
-import {
-  Task,
-  TaskRun,
-  TaskRun_Status,
-} from "@/types/proto/v1/rollout_service";
+import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
+import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import TaskRunComment from "./TaskRunComment.vue";
 import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 

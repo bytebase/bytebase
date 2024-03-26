@@ -41,7 +41,8 @@
 <script lang="ts">
 import { X } from "lucide-vue-next";
 import { NModal } from "naive-ui";
-import { defineComponent, h, PropType, RenderFunction } from "vue";
+import type { PropType, RenderFunction } from "vue";
+import { defineComponent, h } from "vue";
 import { useOverlayStack } from "@/components/misc/OverlayStackManager.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import type { VueClass } from "@/utils";

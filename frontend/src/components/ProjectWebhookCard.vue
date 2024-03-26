@@ -56,12 +56,13 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_WEBHOOK_DETAIL } from "@/router/dashboard/projectV1";
 import { projectWebhookV1ActivityItemList } from "@/types";
+import type { Webhook } from "@/types/proto/v1/project_service";
 import {
-  Webhook,
   Webhook_Type,
   activity_TypeToJSON,
 } from "@/types/proto/v1/project_service";

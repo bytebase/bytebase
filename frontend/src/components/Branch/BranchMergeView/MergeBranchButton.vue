@@ -14,14 +14,14 @@
 </template>
 
 <script setup lang="ts">
-import { ButtonProps } from "naive-ui";
+import type { ButtonProps } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   ContextMenuButton,
   type ContextMenuButtonAction,
 } from "@/components/v2";
-import { PostMergeAction } from "./types";
+import type { PostMergeAction } from "./types";
 
 const props = defineProps<{
   buttonProps?: ButtonProps;

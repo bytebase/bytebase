@@ -14,10 +14,8 @@ import { NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useSQLEditorTreeStore } from "@/store/modules";
-import {
-  SQLEditorTreeFactor as Factor,
-  readableSQLEditorTreeFactor,
-} from "@/types";
+import type { SQLEditorTreeFactor as Factor } from "@/types";
+import { readableSQLEditorTreeFactor } from "@/types";
 
 const props = defineProps<{
   factor: Factor;

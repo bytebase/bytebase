@@ -1,15 +1,17 @@
 import { cloneDeep, isEqual, pick } from "lodash-es";
-import { ComposedDatabase } from "@/types";
-import {
-  ColumnConfig,
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   ForeignKeyMetadata,
   IndexMetadata,
-  SchemaConfig,
   SchemaMetadata,
-  TableConfig,
   TableMetadata,
+} from "@/types/proto/v1/database_service";
+import {
+  ColumnConfig,
+  SchemaConfig,
+  TableConfig,
 } from "@/types/proto/v1/database_service";
 import { TinyTimer, keyBy } from "@/utils";
 import {
@@ -18,7 +20,7 @@ import {
   ComparableIndexFields,
   ComparableTableFields,
 } from "@/utils";
-import { SchemaEditorContext } from "../context";
+import type { SchemaEditorContext } from "../context";
 import { keyForResourceName } from "../context/common";
 
 type RichSchemaMetadata = {

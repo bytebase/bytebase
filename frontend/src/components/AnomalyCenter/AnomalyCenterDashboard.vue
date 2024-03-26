@@ -124,7 +124,7 @@
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTableSectionDataSource } from "@/bbkit/types";
+import type { BBTableSectionDataSource } from "@/bbkit/types";
 import {
   featureToRef,
   useAnomalyV1List,
@@ -133,11 +133,10 @@ import {
   useEnvironmentV1List,
   useInstanceV1List,
 } from "@/store";
-import { UNKNOWN_USER_NAME, ComposedProject } from "@/types";
-import {
-  Anomaly,
-  Anomaly_AnomalySeverity,
-} from "@/types/proto/v1/anomaly_service";
+import type { ComposedProject } from "@/types";
+import { UNKNOWN_USER_NAME } from "@/types";
+import type { Anomaly } from "@/types/proto/v1/anomaly_service";
+import { Anomaly_AnomalySeverity } from "@/types/proto/v1/anomaly_service";
 import { databaseV1Url, sortDatabaseV1List, sortInstanceV1List } from "@/utils";
 import AnomalyTable from "./AnomalyTable.vue";
 

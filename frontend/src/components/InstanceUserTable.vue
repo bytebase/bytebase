@@ -19,9 +19,10 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { InstanceUser } from "../types/InstanceUser";
+import type { InstanceUser } from "../types/InstanceUser";
 
 export default {
   name: "InstanceUserTable",

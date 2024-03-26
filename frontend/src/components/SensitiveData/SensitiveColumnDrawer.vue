@@ -236,13 +236,13 @@
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
 import { TrashIcon } from "lucide-vue-next";
+import type { SelectOption } from "naive-ui";
 import {
   NSelect,
   NButton,
   NCheckbox,
   NDatePicker,
   NPopconfirm,
-  SelectOption,
 } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -261,14 +261,16 @@ import {
 import { getUserId } from "@/store/modules/v1/common";
 import { unknownUser } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
-import {
+import type {
   Policy,
-  PolicyType,
   MaskData,
-  PolicyResourceType,
   MaskingExceptionPolicy_MaskingException,
+} from "@/types/proto/v1/org_policy_service";
+import {
+  PolicyType,
+  PolicyResourceType,
   MaskingExceptionPolicy_MaskingException_Action,
 } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -276,7 +278,7 @@ import UserAvatar from "../User/UserAvatar.vue";
 import GrantAccessDrawer from "./GrantAccessDrawer.vue";
 import MaskingLevelDropdown from "./components/MaskingLevelDropdown.vue";
 import MaskingLevelRadioGroup from "./components/MaskingLevelRadioGroup.vue";
-import { SensitiveColumn } from "./types";
+import type { SensitiveColumn } from "./types";
 import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
 interface AccessUser {

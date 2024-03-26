@@ -52,7 +52,8 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { computed, defineComponent, nextTick, PropType, ref, VNode } from "vue";
+import type { PropType, VNode } from "vue";
+import { computed, defineComponent, nextTick, ref } from "vue";
 import Watermark from "@/components/misc/Watermark.vue";
 import { pushNotification } from "@/store";
 import { minmax } from "@/utils";

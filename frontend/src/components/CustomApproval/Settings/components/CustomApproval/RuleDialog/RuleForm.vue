@@ -72,7 +72,8 @@
 import { cloneDeep } from "lodash-es";
 import { NInput } from "naive-ui";
 import { computed, nextTick, onMounted, ref } from "vue";
-import { LocalApprovalRule, SYSTEM_BOT_USER_NAME } from "@/types";
+import type { LocalApprovalRule } from "@/types";
+import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { creatorOfRule } from "@/utils";
 import { RequiredStar } from "../../common";
 import { StepsTable } from "../common";

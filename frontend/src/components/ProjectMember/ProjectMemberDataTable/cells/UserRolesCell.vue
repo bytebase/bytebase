@@ -23,7 +23,7 @@ import { Building2Icon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { displayRoleTitle, sortRoles } from "@/utils";
-import { ProjectMember } from "../../types";
+import type { ProjectMember } from "../../types";
 
 const props = defineProps<{
   projectMember: ProjectMember;

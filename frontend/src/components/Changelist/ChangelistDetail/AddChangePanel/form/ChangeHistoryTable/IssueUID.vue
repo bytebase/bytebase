@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { ChangeHistory } from "@/types/proto/v1/database_service";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import { extractIssueUID, extractProjectResourceName } from "@/utils";
 
 const props = defineProps<{

@@ -1,6 +1,6 @@
 import { keyBy } from "lodash-es";
 import { Engine } from "@/types/proto/v1/common";
-import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
+import type { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
 import type { Database, Environment } from "../types";
 import { semverCompare } from "./util";
 

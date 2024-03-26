@@ -26,7 +26,7 @@
 <script lang="ts" setup>
 import { TrashIcon, Undo2Icon } from "lucide-vue-next";
 import { MiniActionButton } from "@/components/v2";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import type { ColumnMetadata } from "@/types/proto/v1/database_service";
 
 defineProps<{
   column: ColumnMetadata;

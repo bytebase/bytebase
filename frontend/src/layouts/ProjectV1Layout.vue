@@ -51,9 +51,9 @@ import {
   pushNotification,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import type { QuickActionType } from "@/types";
 import {
   DEFAULT_PROJECT_V1_NAME,
-  QuickActionType,
   activityName,
   QuickActionProjectPermissionMap,
 } from "@/types";

@@ -1,4 +1,4 @@
-import { DataSourceType } from "../types";
+import type { DataSourceType } from "../types";
 
 const directive = {
   beforeMount(el: HTMLElement) {

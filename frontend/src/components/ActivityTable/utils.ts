@@ -1,14 +1,14 @@
 import { head } from "lodash-es";
 import { getIssueId } from "@/store/modules/v1/common";
-import {
+import type {
   ActivityIssueCreatePayload,
   ActivityProjectRepositoryPushPayload,
   ActivityProjectDatabaseTransferPayload,
-  UNKNOWN_ID,
-  EMPTY_ID,
 } from "@/types";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
-import { Link } from "./types";
+import { UNKNOWN_ID, EMPTY_ID } from "@/types";
+import type { LogEntity } from "@/types/proto/v1/logging_service";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
+import type { Link } from "./types";
 
 export const getLinkFromActivity = (activity: LogEntity): Link | undefined => {
   switch (activity.action) {

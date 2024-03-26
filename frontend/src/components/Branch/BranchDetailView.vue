@@ -135,7 +135,8 @@ import dayjs from "dayjs";
 import { cloneDeep } from "lodash-es";
 import { NButton, NCheckbox, NDivider, NInput, useDialog } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { CSSProperties, computed, nextTick, reactive, ref, watch } from "vue";
+import type { CSSProperties } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
@@ -157,7 +158,7 @@ import {
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
-import { ComposedProject, ProjectPermission } from "@/types";
+import type { ComposedProject, ProjectPermission } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {

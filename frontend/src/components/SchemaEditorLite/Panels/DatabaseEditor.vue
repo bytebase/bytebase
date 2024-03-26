@@ -156,15 +156,15 @@ import { computed, nextTick, reactive, watch } from "vue";
 import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";

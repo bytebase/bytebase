@@ -18,10 +18,12 @@
 </template>
 
 <script lang="ts" setup>
-import { NSelect, SelectOption } from "naive-ui";
-import { CSSProperties, computed, ref } from "vue";
-import { ComposedDatabase } from "@/types";
-import {
+import type { SelectOption } from "naive-ui";
+import { NSelect } from "naive-ui";
+import type { CSSProperties } from "vue";
+import { computed, ref } from "vue";
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   IndexMetadata,

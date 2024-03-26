@@ -21,17 +21,19 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
-import { DropdownOption, NDropdown, NButton } from "naive-ui";
-import { VNode, computed, h } from "vue";
+import type { DropdownOption } from "naive-ui";
+import { NDropdown, NButton } from "naive-ui";
+import type { VNode } from "vue";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
+import type { TaskRolloutAction } from "@/components/IssueV1/logic";
 import {
-  TaskRolloutAction,
   allowUserToApplyTaskRolloutAction,
   getApplicableTaskRolloutActionList,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { useCurrentUserV1 } from "@/store";
-import { Task } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto/v1/rollout_service";
 import { DropdownItemWithErrorList } from "../common";
 
 type ExtraTaskRolloutActionDropdownOption = DropdownOption & {

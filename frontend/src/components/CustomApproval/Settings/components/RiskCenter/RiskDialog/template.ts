@@ -1,6 +1,7 @@
 import { first, last } from "lodash-es";
 import { computed } from "vue";
-import { ConditionGroupExpr, wrapAsGroup } from "@/plugins/cel";
+import type { ConditionGroupExpr } from "@/plugins/cel";
+import { wrapAsGroup } from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
 import { useEnvironmentV1List } from "@/store";
 import { PresetRiskLevel } from "@/types";

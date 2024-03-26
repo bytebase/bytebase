@@ -18,7 +18,7 @@ import { onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { AUTH_MFA_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
-import { OAuthState, OAuthWindowEventPayload } from "../types";
+import type { OAuthState, OAuthWindowEventPayload } from "../types";
 
 interface LocalState {
   message: string;

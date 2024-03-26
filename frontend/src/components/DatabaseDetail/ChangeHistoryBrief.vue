@@ -86,11 +86,12 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { computed, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
-import { ComposedDatabase } from "@/types";
-import { ChangeHistory } from "@/types/proto/v1/database_service";
+import type { ComposedDatabase } from "@/types";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   extractUserResourceName,
   extractIssueUID,

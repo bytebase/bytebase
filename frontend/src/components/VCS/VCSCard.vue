@@ -30,12 +30,13 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import { PropType, computed } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { WORKSPACE_ROUTE_GITOPS_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1 } from "@/store";
 import { getVCSId } from "@/store/modules/v1/common";
-import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
+import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps({

@@ -16,8 +16,8 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoleStore, useSettingV1Store } from "@/store";
+import type { ApprovalNode } from "@/types/proto/v1/issue_service";
 import {
-  ApprovalNode,
   ApprovalNode_GroupValue,
   ApprovalNode_Type,
 } from "@/types/proto/v1/issue_service";

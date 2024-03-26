@@ -1,4 +1,5 @@
-import { Template, TemplateInput, InputType } from "./types";
+import type { Template, TemplateInput } from "./types";
+import { InputType } from "./types";
 
 const TEMPLATE_BRACKET_LEFT = "{{";
 const TEMPLATE_BRACKET_RIGHT = "}}";

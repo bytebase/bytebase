@@ -6,23 +6,21 @@ import {
   useSettingV1Store,
   useUserStore,
 } from "@/store";
-import {
+import type {
   ReviewFlow,
-  emptyFlow,
   MaybeRef,
   ComposedIssue,
   WrappedReviewStep,
-  PresetRoleType,
 } from "@/types";
+import { emptyFlow, PresetRoleType } from "@/types";
+import type { ApprovalNode, Issue } from "@/types/proto/v1/issue_service";
 import {
-  ApprovalNode,
   ApprovalNode_GroupValue,
   ApprovalNode_Type,
-  Issue,
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
 import { displayRoleTitle, extractUserResourceName } from "@/utils";
-import { ReviewContext } from "./context";
+import type { ReviewContext } from "./context";
 
 export const extractReviewContext = (issue: MaybeRef<Issue>): ReviewContext => {
   const ready = computed(() => {

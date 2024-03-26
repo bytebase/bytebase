@@ -8,7 +8,8 @@
 </template>
 
 <script lang="ts" setup>
-import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+import type { Action } from "@bytebase/vue-kbar";
+import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import {
   LinkIcon,
   HomeIcon,
@@ -23,8 +24,9 @@ import {
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter, useRoute, RouteRecordRaw } from "vue-router";
-import { SidebarItem } from "@/components/CommonSidebar.vue";
+import type { RouteRecordRaw } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
+import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import { useGlobalDatabaseActions } from "@/components/KBar/useDatabaseActions";
 import { useProjectActions } from "@/components/KBar/useProjectActions";
 import workspaceRoutes from "@/router/dashboard/workspace";
@@ -49,7 +51,7 @@ import {
 } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { useCurrentUserV1 } from "@/store";
-import { WorkspacePermission } from "@/types";
+import type { WorkspacePermission } from "@/types";
 import { hasWorkspacePermissionV2, hasProjectPermissionV2 } from "@/utils";
 
 interface DashboardSidebarItem extends SidebarItem {

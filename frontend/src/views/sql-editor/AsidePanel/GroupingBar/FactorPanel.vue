@@ -26,7 +26,7 @@ import { cloneDeep, orderBy, uniq } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useSQLEditorTreeStore } from "@/store";
-import { SQLEditorTreeFactor as Factor } from "@/types";
+import type { SQLEditorTreeFactor as Factor } from "@/types";
 import { useSQLEditorContext } from "../../context";
 import FactorItem from "./FactorItem.vue";
 import FactorTags from "./FactorTags.vue";

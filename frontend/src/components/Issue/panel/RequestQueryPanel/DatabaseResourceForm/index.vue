@@ -38,7 +38,7 @@
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useProjectV1Store } from "@/store";
-import { DatabaseResource } from "@/types";
+import type { DatabaseResource } from "@/types";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
 import DatabaseResourceSelector from "./DatabaseResourceSelector.vue";
 

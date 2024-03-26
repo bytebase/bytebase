@@ -1,7 +1,7 @@
 import { groupBy } from "lodash-es";
-import { TransferOption, TreeOption } from "naive-ui";
+import type { TransferOption, TreeOption } from "naive-ui";
 import { useEnvironmentV1Store } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 
 export interface DatabaseTreeOption<L = "environment" | "database">
   extends TreeOption {

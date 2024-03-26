@@ -1,10 +1,10 @@
 import { useProjectV1List, useRoleStore } from "@/store";
-import {
+import type {
   ComposedProject,
   ProjectPermission,
   WorkspacePermission,
 } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import { roleListInProjectV1 } from "../v1/project";
 
 export const hasWorkspacePermissionV2 = (

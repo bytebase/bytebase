@@ -66,12 +66,10 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  Issue,
-  ActivityTaskFileCommitPayload,
-  SYSTEM_BOT_EMAIL,
-} from "@/types";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import type { Issue, ActivityTaskFileCommitPayload } from "@/types";
+import { SYSTEM_BOT_EMAIL } from "@/types";
+import type { LogEntity } from "@/types/proto/v1/logging_service";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
 import ActionCreator from "./ActionCreator.vue";
 import ActionSentence from "./ActionSentence.vue";

@@ -142,7 +142,8 @@ import { NCheckbox } from "naive-ui";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBButtonConfirm, BBGrid, BBGridColumn } from "@/bbkit";
+import type { BBGridColumn } from "@/bbkit";
+import { BBButtonConfirm, BBGrid } from "@/bbkit";
 import { EnvironmentV1Name } from "@/components/v2";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
@@ -154,8 +155,8 @@ import {
   useSQLReviewStore,
   useEnvironmentV1List,
 } from "@/store";
-import { SQLReviewPolicy } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { SQLReviewPolicy } from "@/types";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import {
   extractEnvironmentResourceName,
   hasWorkspacePermissionV2,
