@@ -12,9 +12,7 @@ CREATE TABLE query_history (
     payload JSONB NOT NULL DEFAULT '{}' -- saved for details, like error, duration, etc.
 );
 
-CREATE INDEX idx_query_history_creator_id_database ON query_history(creator_id, database);
-
-CREATE INDEX idx_query_history_created_ts ON query_history(created_ts);
+CREATE INDEX idx_query_history_creator_id_created_ts_project_id ON query_history(creator_id, created_ts, project_id DESC);
 
 ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 
