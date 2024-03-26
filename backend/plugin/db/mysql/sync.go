@@ -496,28 +496,22 @@ func isCurrentTimestampLike(s string) bool {
 
 func (driver *Driver) reconcileViewDefinition(ctx context.Context, databaseName, viewName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE VIEW `%s`.`%s`", databaseName, viewName)
-	viewDefRows, err := driver.db.QueryContext(ctx, query)
-	if err != nil {
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	defer viewDefRows.Close()
-	for viewDefRows.Next() {
-		var createStmt, unused string
-		if err := viewDefRows.Scan(&unused, &createStmt, &unused, &unused); err != nil {
-			return "", err
-		}
-		def, err := getViewDefFromCreateView(createStmt)
-		if err != nil {
-			slog.Warn("failed to get view definition", slog.String("viewName", viewName), slog.String("databaseName", databaseName), log.BBError(err))
+	var createStmt, unused string
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&unused, &createStmt, &unused, &unused); err != nil {
+		if noRows := errors.Is(err, sql.ErrNoRows); noRows {
+			slog.Warn("no rows return for query show create view", slog.String("viewName", viewName), slog.String("databaseName", databaseName))
 			return "", nil
 		}
-		return def, nil
-	}
-	if err := viewDefRows.Err(); err != nil {
-		return "", util.FormatErrorWithQuery(err, query)
+		return "", errors.Wrapf(err, "failed to scan row for query: %s", query)
 	}
 
-	return "", nil
+	def, err := getViewDefFromCreateView(createStmt)
+	if err != nil {
+		slog.Warn("failed to get view definition", slog.String("viewName", viewName), slog.String("databaseName", databaseName), log.BBError(err))
+		return "", nil
+	}
+
+	return def, nil
 }
 
 func getViewDefFromCreateView(createView string) (string, error) {

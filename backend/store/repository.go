@@ -23,10 +23,8 @@ type RepositoryMessage struct {
 	Title              string
 	FullPath           string
 	WebURL             string
-	BranchFilter       string
+	Branch             string
 	BaseDirectory      string
-	FilePathTemplate   string
-	SchemaPathTemplate string
 	ExternalID         string
 	ExternalWebhookID  string
 	WebhookURLHost     string
@@ -55,10 +53,8 @@ type PatchRepositoryMessage struct {
 	WebURL     *string
 
 	// Domain specific fields
-	BranchFilter       *string
-	BaseDirectory      *string
-	FilePathTemplate   *string
-	SchemaPathTemplate *string
+	Branch        *string
+	BaseDirectory *string
 }
 
 // CreateRepositoryV2 creates the repository.
@@ -194,18 +190,16 @@ func createRepositoryImplV2(ctx context.Context, tx *Tx, project *ProjectMessage
 			name,
 			full_path,
 			web_url,
-			branch_filter,
+			branch,
 			base_directory,
-			file_path_template,
-			schema_path_template,
 			external_id,
 			external_webhook_id,
 			webhook_url_host,
 			webhook_endpoint_id,
 			webhook_secret_token
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-		RETURNING id, vcs_id, resource_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		RETURNING id, vcs_id, resource_id, name, full_path, web_url, branch, base_directory, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token
 	`
 	if err := tx.QueryRowContext(ctx, query,
 		creatorID,
@@ -216,10 +210,8 @@ func createRepositoryImplV2(ctx context.Context, tx *Tx, project *ProjectMessage
 		create.Title,
 		create.FullPath,
 		create.WebURL,
-		create.BranchFilter,
+		create.Branch,
 		create.BaseDirectory,
-		create.FilePathTemplate,
-		create.SchemaPathTemplate,
 		create.ExternalID,
 		create.ExternalWebhookID,
 		create.WebhookURLHost,
@@ -232,10 +224,8 @@ func createRepositoryImplV2(ctx context.Context, tx *Tx, project *ProjectMessage
 		&repository.Title,
 		&repository.FullPath,
 		&repository.WebURL,
-		&repository.BranchFilter,
+		&repository.Branch,
 		&repository.BaseDirectory,
-		&repository.FilePathTemplate,
-		&repository.SchemaPathTemplate,
 		&repository.ExternalID,
 		&repository.ExternalWebhookID,
 		&repository.WebhookURLHost,
@@ -286,10 +276,8 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 			repository.name AS name,
 			full_path,
 			web_url,
-			branch_filter,
+			branch,
 			base_directory,
-			file_path_template,
-			schema_path_template,
 			external_id,
 			external_webhook_id,
 			webhook_url_host,
@@ -319,10 +307,8 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 			&repository.Title,
 			&repository.FullPath,
 			&repository.WebURL,
-			&repository.BranchFilter,
+			&repository.Branch,
 			&repository.BaseDirectory,
-			&repository.FilePathTemplate,
-			&repository.SchemaPathTemplate,
 			&repository.ExternalID,
 			&repository.ExternalWebhookID,
 			&repository.WebhookURLHost,
@@ -346,17 +332,11 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRepositoryMessage, updaterID int) (*RepositoryMessage, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []any{updaterID}
-	if v := patch.BranchFilter; v != nil {
-		set, args = append(set, fmt.Sprintf("branch_filter = $%d", len(args)+1)), append(args, *v)
+	if v := patch.Branch; v != nil {
+		set, args = append(set, fmt.Sprintf("branch = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.BaseDirectory; v != nil {
 		set, args = append(set, fmt.Sprintf("base_directory = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.FilePathTemplate; v != nil {
-		set, args = append(set, fmt.Sprintf("file_path_template = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SchemaPathTemplate; v != nil {
-		set, args = append(set, fmt.Sprintf("schema_path_template = $%d", len(args)+1)), append(args, *v)
 	}
 
 	where := []string{}
@@ -389,10 +369,8 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 			repository.name AS name,
 			full_path,
 			web_url,
-			branch_filter,
+			branch,
 			base_directory,
-			file_path_template,
-			schema_path_template,
 			external_id,
 			external_webhook_id,
 			webhook_url_host,
@@ -409,10 +387,8 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 		&repository.Title,
 		&repository.FullPath,
 		&repository.WebURL,
-		&repository.BranchFilter,
+		&repository.Branch,
 		&repository.BaseDirectory,
-		&repository.FilePathTemplate,
-		&repository.SchemaPathTemplate,
 		&repository.ExternalID,
 		&repository.ExternalWebhookID,
 		&repository.WebhookURLHost,

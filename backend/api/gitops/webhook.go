@@ -85,7 +85,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if c.Request().Header.Get("X-Gitlab-Token") != repo.WebhookSecretToken {
 				return false, nil
 			}
-			return isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
+			return isWebhookEventBranch(pushEvent.Ref, repo.Branch)
 		}
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
@@ -162,7 +162,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				return false, nil
 			}
 
-			return isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
+			return isWebhookEventBranch(pushEvent.Ref, repo.Branch)
 		}
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
@@ -226,7 +226,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 
 			ref := "refs/heads/" + change.New.Name
 			filter := func(repo *store.RepositoryMessage) (bool, error) {
-				return isWebhookEventBranch(ref, repo.BranchFilter)
+				return isWebhookEventBranch(ref, repo.Branch)
 			}
 			repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 			if err != nil {
@@ -371,7 +371,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		// Filter out the repository which does not match the branch filter.
 		filter := func(repo *store.RepositoryMessage) (bool, error) {
 			refUpdate := pushEvent.Resource.RefUpdates[0]
-			return isWebhookEventBranch(refUpdate.Name, repo.BranchFilter)
+			return isWebhookEventBranch(refUpdate.Name, repo.Branch)
 		}
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
@@ -404,7 +404,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 					continue
 				}
 				// We only handle the pull request which is merged to the target branch.
-				// NOTE: here we should compare with the refUpdates.Name instead of the repository.BranchFilter
+				// NOTE: here we should compare with the refUpdates.Name instead of the repository.branch.
 				if pullRequest.TargetRefName != pushEvent.Resource.RefUpdates[0].Name {
 					continue
 				}
@@ -499,7 +499,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get workspace id with error").SetInternal(err)
 			}
 			// Setup SQL review pipeline and policy.
-			if err := azure.EnableSQLReviewCI(ctx, oauthContext, repositoryList[0].repository.Title, repositoryList[0].repository.ExternalID, repositoryList[0].repository.BranchFilter, workspaceID); err != nil {
+			if err := azure.EnableSQLReviewCI(ctx, oauthContext, repositoryList[0].repository.Title, repositoryList[0].repository.ExternalID, repositoryList[0].repository.Branch, workspaceID); err != nil {
 				slog.Error("failed to setup pipeline", log.BBError(err), slog.String("repository", repositoryList[0].repository.ExternalID))
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to setup SQL review pipeline").SetInternal(err)
 			}
@@ -628,17 +628,13 @@ func (s *Service) filterRepository(ctx context.Context, webhookEndpointID string
 	return filteredRepos, nil
 }
 
-func isWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
+func isWebhookEventBranch(pushEventRef, wantBranch string) (bool, error) {
 	branch, err := parseBranchNameFromRefs(pushEventRef)
 	if err != nil {
 		return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid ref: %s", pushEventRef)).SetInternal(err)
 	}
-	ok, err := filepath.Match(branchFilter, branch)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to match branch filter")
-	}
-	if !ok {
-		slog.Debug("Skipping repo due to branch filter mismatch", slog.String("branch", branch), slog.String("filter", branchFilter))
+	if branch != wantBranch {
+		slog.Debug("Skipping repo due to branch filter mismatch", slog.String("branch", branch), slog.String("wantBranch", wantBranch))
 		return false, nil
 	}
 	return true, nil

@@ -127,10 +127,7 @@ const getUpdateMaskForRepository = (
   if (!isUndefined(update.title) && !isEqual(origin.title, update.title)) {
     updateMask.push("title");
   }
-  if (
-    !isUndefined(update.branchFilter) &&
-    !isEqual(origin.branchFilter, update.branchFilter)
-  ) {
+  if (!isUndefined(update.branch) && !isEqual(origin.branch, update.branch)) {
     updateMask.push("branch_filter");
   }
   if (
@@ -138,18 +135,6 @@ const getUpdateMaskForRepository = (
     !isEqual(origin.baseDirectory, update.baseDirectory)
   ) {
     updateMask.push("base_directory");
-  }
-  if (
-    !isUndefined(update.filePathTemplate) &&
-    !isEqual(origin.filePathTemplate, update.filePathTemplate)
-  ) {
-    updateMask.push("file_path_template");
-  }
-  if (
-    !isUndefined(update.schemaPathTemplate) &&
-    !isEqual(origin.schemaPathTemplate, update.schemaPathTemplate)
-  ) {
-    updateMask.push("schema_path_template");
   }
   return updateMask;
 };

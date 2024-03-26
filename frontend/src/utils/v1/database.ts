@@ -5,8 +5,12 @@ import {
   useCurrentUserIamPolicy,
   useSubscriptionV1Store,
 } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import {
+  databaseNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
@@ -24,12 +28,8 @@ import {
 
 export const databaseV1Url = (db: ComposedDatabase) => {
   const project = extractProjectResourceName(db.project);
-  const { instance, database } = extractDatabaseResourceName(db.name);
-  return `/projects/${encodeURIComponent(
-    project
-  )}/instances/${encodeURIComponent(instance)}/databases/${encodeURIComponent(
-    database
-  )}`;
+  const { databaseName, instanceName } = extractDatabaseResourceName(db.name);
+  return `/projects/${encodeURIComponent(project)}/${instanceNamePrefix}${encodeURIComponent(instanceName)}/${databaseNamePrefix}${encodeURIComponent(databaseName)}`;
 };
 
 export const extractDatabaseResourceName = (
@@ -37,24 +37,22 @@ export const extractDatabaseResourceName = (
 ): {
   instance: string;
   database: string;
-  full: string;
+  databaseName: string;
+  instanceName: string;
 } => {
   const pattern =
-    /(?:^|\/)instances\/(?<instance>[^/]+)\/databases\/(?<database>[^/]+)(?:$|\/)/;
+    /(?:^|\/)instances\/(?<instanceName>[^/]+)\/databases\/(?<databaseName>[^/]+)(?:$|\/)/;
   const matches = resource.match(pattern);
-  if (matches) {
-    const { instance = String(UNKNOWN_ID), database = "" } =
-      matches.groups ?? {};
-    return {
-      instance,
-      database,
-      full: `instances/${instance}/databases/${database}`,
-    };
-  }
+
+  const {
+    databaseName = String(UNKNOWN_ID),
+    instanceName = String(UNKNOWN_ID),
+  } = matches?.groups ?? {};
   return {
-    instance: String(UNKNOWN_ID),
-    database: "",
-    full: `instances/${UNKNOWN_ID}/databases/`,
+    instance: `${instanceNamePrefix}${instanceName}`,
+    instanceName,
+    database: `${instanceNamePrefix}${instanceName}/${databaseNamePrefix}${databaseName}`,
+    databaseName,
   };
 };
 

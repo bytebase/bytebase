@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -466,8 +465,8 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "branch_filter":
-			patch.BranchFilter = &request.ProjectGitopsInfo.BranchFilter
+		case "branch":
+			patch.Branch = &request.ProjectGitopsInfo.Branch
 		case "base_directory":
 			baseDir := request.ProjectGitopsInfo.BaseDirectory
 			// Azure DevOps base directory should start with /.
@@ -482,40 +481,23 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		}
 	}
 
-	if v := patch.BranchFilter; v != nil && repo.BranchFilter != *v {
+	if v := patch.Branch; v != nil && repo.Branch != *v {
 		if *v == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
 		}
-		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
-		if !strings.Contains(*v, "*") {
-			notFound, err := isBranchNotFound(
-				ctx,
-				vcs,
-				vcs.AccessToken,
-				repo.ExternalID,
-				*v,
-			)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
-			}
-			if notFound {
-				return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", *v, repo.FullPath)
-			}
+		notFound, err := isBranchNotFound(
+			ctx,
+			vcs,
+			vcs.AccessToken,
+			repo.ExternalID,
+			*v,
+		)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
 		}
-	}
-
-	// We need to check the FilePathTemplate in create repository request.
-	// This avoids to a certain extent that the creation succeeds but does not work.
-	newBaseDirectory, newFilePathTemplate := repo.BaseDirectory, repo.FilePathTemplate
-	if patch.BaseDirectory != nil {
-		newBaseDirectory = *patch.BaseDirectory
-	}
-	if patch.FilePathTemplate != nil {
-		newFilePathTemplate = *patch.FilePathTemplate
-	}
-
-	if err := vcsplugin.IsAsterisksInTemplateValid(path.Join(newBaseDirectory, newFilePathTemplate)); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
+		if notFound {
+			return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", *v, repo.FullPath)
+		}
 	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -954,14 +936,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	vcsResourceUID, isNumber := isNumber(vcsResourceID)
-	find := &store.FindVCSProviderMessage{}
-	if isNumber {
-		find.ID = &vcsResourceUID
-	} else {
-		find.ResourceID = &vcsResourceID
-	}
-	vcs, err := s.store.GetVCSProvider(ctx, find)
+	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
@@ -989,36 +964,28 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		Title:          request.ProjectGitopsInfo.Title,
 		FullPath:       request.ProjectGitopsInfo.FullPath,
 		WebURL:         request.ProjectGitopsInfo.WebUrl,
-		BranchFilter:   request.ProjectGitopsInfo.BranchFilter,
+		Branch:         request.ProjectGitopsInfo.Branch,
 		BaseDirectory:  baseDir,
 		ExternalID:     request.ProjectGitopsInfo.ExternalId,
 	}
 
-	if repositoryCreate.BranchFilter == "" {
+	if repositoryCreate.Branch == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
 	}
 
-	// We need to check the FilePathTemplate in create repository request.
-	// This avoids to a certain extent that the creation succeeds but does not work.
-	if err := vcsplugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
-	}
-
 	// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
-	if !strings.Contains(repositoryCreate.BranchFilter, "*") {
-		notFound, err := isBranchNotFound(
-			ctx,
-			vcs,
-			vcs.AccessToken,
-			repositoryCreate.ExternalID,
-			repositoryCreate.BranchFilter,
-		)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check branch %s with error: %v", repositoryCreate.BranchFilter, err.Error())
-		}
-		if notFound {
-			return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", repositoryCreate.BranchFilter, repositoryCreate.FullPath)
-		}
+	notFound, err := isBranchNotFound(
+		ctx,
+		vcs,
+		vcs.AccessToken,
+		repositoryCreate.ExternalID,
+		repositoryCreate.Branch,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check branch %s with error: %v", repositoryCreate.Branch, err.Error())
+	}
+	if notFound {
+		return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", repositoryCreate.Branch, repositoryCreate.FullPath)
 	}
 
 	// For a particular VCS repo, all Bytebase projects share the same webhook.
@@ -2451,7 +2418,7 @@ func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.Proje
 		Title:             repository.Title,
 		FullPath:          repository.FullPath,
 		WebUrl:            repository.WebURL,
-		BranchFilter:      repository.BranchFilter,
+		Branch:            repository.Branch,
 		BaseDirectory:     repository.BaseDirectory,
 		WebhookEndpointId: repository.WebhookEndpointID,
 		ExternalId:        repository.ExternalID,

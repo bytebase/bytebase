@@ -18,20 +18,13 @@
           {{ repositoryFormattedFullPath }}
         </a>
       </template>
-      <template #fullPathTemplate>
-        <span class="font-medium text-main"
-          >{{ state.repositoryConfig.baseDirectory }}/{{
-            state.repositoryConfig.filePathTemplate
-          }}</span
-        >
-      </template>
     </i18n-t>
     <span>&nbsp;</span>
     <i18n-t keypath="repository.gitops-description-branch">
       <template #branch>
         <span class="font-medium text-main">
-          <template v-if="state.repositoryConfig.branchFilter">
-            {{ state.repositoryConfig.branchFilter }}
+          <template v-if="state.repositoryConfig.branch">
+            {{ state.repositoryConfig.branch }}
           </template>
           <template v-else>
             {{ $t("common.default") }}
@@ -39,16 +32,6 @@
         </span>
       </template>
     </i18n-t>
-    <template v-if="state.repositoryConfig.schemaPathTemplate">
-      <span>&nbsp;</span>
-      <i18n-t keypath="repository.gitops-description-description-schema-path">
-        <template #schemaPathTemplate>
-          <span class="font-medium text-main">{{
-            state.repositoryConfig.schemaPathTemplate
-          }}</span>
-        </template>
-      </i18n-t>
-    </template>
   </div>
   <RepositoryForm
     class="mt-4"
@@ -141,9 +124,7 @@ const projectV1Store = useProjectV1Store();
 const state = reactive<LocalState>({
   repositoryConfig: {
     baseDirectory: props.repository.baseDirectory,
-    branchFilter: props.repository.branchFilter,
-    filePathTemplate: props.repository.filePathTemplate,
-    schemaPathTemplate: props.repository.schemaPathTemplate,
+    branch: props.repository.branch,
   },
   showFeatureModal: false,
   processing: false,
@@ -154,9 +135,7 @@ watch(
   (cur) => {
     state.repositoryConfig = {
       baseDirectory: cur.baseDirectory,
-      branchFilter: cur.branchFilter,
-      filePathTemplate: cur.filePathTemplate,
-      schemaPathTemplate: cur.schemaPathTemplate,
+      branch: cur.branch,
     };
   }
 );
@@ -184,14 +163,9 @@ const repositoryInfo = computed((): ExternalRepositoryInfo => {
 const allowUpdate = computed(() => {
   return (
     !state.processing &&
-    !isEmpty(state.repositoryConfig.branchFilter) &&
-    !isEmpty(state.repositoryConfig.filePathTemplate) &&
-    (props.repository.branchFilter !== state.repositoryConfig.branchFilter ||
-      props.repository.baseDirectory !== state.repositoryConfig.baseDirectory ||
-      props.repository.filePathTemplate !==
-        state.repositoryConfig.filePathTemplate ||
-      props.repository.schemaPathTemplate !==
-        state.repositoryConfig.schemaPathTemplate)
+    !isEmpty(state.repositoryConfig.branch) &&
+    (props.repository.branch !== state.repositoryConfig.branch ||
+      props.repository.baseDirectory !== state.repositoryConfig.baseDirectory)
   );
 });
 
@@ -227,23 +201,11 @@ const doUpdate = async () => {
 
   repositoryPatch.vcs = props.vcs.name;
 
-  if (props.repository.branchFilter != state.repositoryConfig.branchFilter) {
-    repositoryPatch.branchFilter = state.repositoryConfig.branchFilter;
+  if (props.repository.branch != state.repositoryConfig.branch) {
+    repositoryPatch.branch = state.repositoryConfig.branch;
   }
   if (props.repository.baseDirectory != state.repositoryConfig.baseDirectory) {
     repositoryPatch.baseDirectory = state.repositoryConfig.baseDirectory;
-  }
-  if (
-    props.repository.filePathTemplate != state.repositoryConfig.filePathTemplate
-  ) {
-    repositoryPatch.filePathTemplate = state.repositoryConfig.filePathTemplate;
-  }
-  if (
-    props.repository.schemaPathTemplate !=
-    state.repositoryConfig.schemaPathTemplate
-  ) {
-    repositoryPatch.schemaPathTemplate =
-      state.repositoryConfig.schemaPathTemplate;
   }
 
   try {

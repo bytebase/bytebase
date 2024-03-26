@@ -163,7 +163,7 @@ const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
   tabStore.addTab({
     title: `Query history at ${titleOfQueryHistory(queryHistory)}`,
     connection: {
-      instance: `instances/${extractDatabaseResourceName(database).instance}`,
+      instance: extractDatabaseResourceName(database).instance,
       database,
     },
     statement,
