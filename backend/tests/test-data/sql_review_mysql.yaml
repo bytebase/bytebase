@@ -552,7 +552,7 @@
       {
         "status": "WARNING",
         "title": "statement.affected-row-limit",
-        "content": "\"DELETE FROM user WHERE id <= 10;\" affected 10 rows. The count exceeds 5.",
+        "content": "\"DELETE FROM user WHERE id <= 10;\" affected 10 rows (estimated). The count exceeds 5.",
         "sqlReviewReport": {
           "line": 1,
           "code": 209
