@@ -171,7 +171,7 @@ func (s *VCSProviderService) ListProjectGitOpsInfo(ctx context.Context, request 
 	if err != nil {
 		return nil, err
 	}
-	repoList, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{
+	vcsConnectors, err := s.store.ListVCSConnectors(ctx, &store.FindVCSConnectorMessage{
 		VCSUID: &vcs.ID,
 	})
 	if err != nil {
@@ -179,7 +179,7 @@ func (s *VCSProviderService) ListProjectGitOpsInfo(ctx context.Context, request 
 	}
 
 	resp := &v1pb.ListProjectGitOpsInfoResponse{}
-	for _, repo := range repoList {
+	for _, repo := range vcsConnectors {
 		resp.ProjectGitopsInfo = append(resp.ProjectGitopsInfo, convertToProjectGitOpsInfo(repo))
 	}
 
