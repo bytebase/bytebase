@@ -496,16 +496,15 @@ func isCurrentTimestampLike(s string) bool {
 
 func (driver *Driver) reconcileViewDefinition(ctx context.Context, databaseName, viewName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE VIEW `%s`.`%s`", databaseName, viewName)
-	viewDefRows := driver.db.QueryRowContext(ctx, query)
-
 	var createStmt, unused string
-	if err := viewDefRows.Scan(&unused, &createStmt, &unused, &unused); err != nil {
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&unused, &createStmt, &unused, &unused); err != nil {
 		if noRows := errors.Is(err, sql.ErrNoRows); noRows {
 			slog.Warn("no rows return for query show create view", slog.String("viewName", viewName), slog.String("databaseName", databaseName))
 			return "", nil
 		}
 		return "", errors.Wrapf(err, "failed to scan row for query: %s", query)
 	}
+
 	def, err := getViewDefFromCreateView(createStmt)
 	if err != nil {
 		slog.Warn("failed to get view definition", slog.String("viewName", viewName), slog.String("databaseName", databaseName), log.BBError(err))
