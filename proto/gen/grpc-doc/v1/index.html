@@ -16381,24 +16381,10 @@ Format: projects/{project}/gitOpsInfo </p></td>
                 </tr>
               
                 <tr>
-                  <td>full_path</td>
+                  <td>external_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The full_path of the repository. For example: bytebase/sample. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>web_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>branch</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The branch Bytebase listens to for changes. For example: main. </p></td>
+                  <td><p>The reposition external id in target VCS. </p></td>
                 </tr>
               
                 <tr>
@@ -16409,10 +16395,10 @@ Format: projects/{project}/gitOpsInfo </p></td>
                 </tr>
               
                 <tr>
-                  <td>external_id</td>
+                  <td>branch</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The reposition external id in target VCS. </p></td>
+                  <td><p>The branch Bytebase listens to for changes. For example: main. </p></td>
                 </tr>
               
                 <tr>
@@ -16420,6 +16406,21 @@ Format: projects/{project}/gitOpsInfo </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The webhook endpoint ID of the repository. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>TODO(d): move these to create VCS connector API.
+The full_path of the repository. For example: bytebase/sample. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>web_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. </p></td>
                 </tr>
               
             </tbody>

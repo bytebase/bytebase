@@ -188,18 +188,21 @@ export interface ProjectGitOpsInfo {
   vcs: string;
   /** The title of the repository. For axample: sample. */
   title: string;
-  /** The full_path of the repository. For example: bytebase/sample. */
+  /** The reposition external id in target VCS. */
+  externalId: string;
+  /** The root directory where Bytebase observes the file change. If empty, then it observes the entire repository. */
+  baseDirectory: string;
+  /** The branch Bytebase listens to for changes. For example: main. */
+  branch: string;
+  /** The webhook endpoint ID of the repository. */
+  webhookEndpointId: string;
+  /**
+   * TODO(d): move these to create VCS connector API.
+   * The full_path of the repository. For example: bytebase/sample.
+   */
   fullPath: string;
   /** The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. */
   webUrl: string;
-  /** The branch Bytebase listens to for changes. For example: main. */
-  branch: string;
-  /** The root directory where Bytebase observes the file change. If empty, then it observes the entire repository. */
-  baseDirectory: string;
-  /** The reposition external id in target VCS. */
-  externalId: string;
-  /** The webhook endpoint ID of the repository. */
-  webhookEndpointId: string;
 }
 
 function createBaseCreateVCSProviderRequest(): CreateVCSProviderRequest {
@@ -1084,12 +1087,12 @@ function createBaseProjectGitOpsInfo(): ProjectGitOpsInfo {
     name: "",
     vcs: "",
     title: "",
+    externalId: "",
+    baseDirectory: "",
+    branch: "",
+    webhookEndpointId: "",
     fullPath: "",
     webUrl: "",
-    branch: "",
-    baseDirectory: "",
-    externalId: "",
-    webhookEndpointId: "",
   };
 }
 
@@ -1104,23 +1107,23 @@ export const ProjectGitOpsInfo = {
     if (message.title !== "") {
       writer.uint32(26).string(message.title);
     }
-    if (message.fullPath !== "") {
-      writer.uint32(34).string(message.fullPath);
+    if (message.externalId !== "") {
+      writer.uint32(34).string(message.externalId);
     }
-    if (message.webUrl !== "") {
-      writer.uint32(42).string(message.webUrl);
+    if (message.baseDirectory !== "") {
+      writer.uint32(42).string(message.baseDirectory);
     }
     if (message.branch !== "") {
       writer.uint32(50).string(message.branch);
     }
-    if (message.baseDirectory !== "") {
-      writer.uint32(58).string(message.baseDirectory);
-    }
-    if (message.externalId !== "") {
-      writer.uint32(90).string(message.externalId);
-    }
     if (message.webhookEndpointId !== "") {
-      writer.uint32(106).string(message.webhookEndpointId);
+      writer.uint32(58).string(message.webhookEndpointId);
+    }
+    if (message.fullPath !== "") {
+      writer.uint32(66).string(message.fullPath);
+    }
+    if (message.webUrl !== "") {
+      writer.uint32(74).string(message.webUrl);
     }
     return writer;
   },
@@ -1158,14 +1161,14 @@ export const ProjectGitOpsInfo = {
             break;
           }
 
-          message.fullPath = reader.string();
+          message.externalId = reader.string();
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.webUrl = reader.string();
+          message.baseDirectory = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
@@ -1179,21 +1182,21 @@ export const ProjectGitOpsInfo = {
             break;
           }
 
-          message.baseDirectory = reader.string();
-          continue;
-        case 11:
-          if (tag !== 90) {
-            break;
-          }
-
-          message.externalId = reader.string();
-          continue;
-        case 13:
-          if (tag !== 106) {
-            break;
-          }
-
           message.webhookEndpointId = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.fullPath = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.webUrl = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1209,12 +1212,12 @@ export const ProjectGitOpsInfo = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       vcs: isSet(object.vcs) ? globalThis.String(object.vcs) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
+      externalId: isSet(object.externalId) ? globalThis.String(object.externalId) : "",
+      baseDirectory: isSet(object.baseDirectory) ? globalThis.String(object.baseDirectory) : "",
+      branch: isSet(object.branch) ? globalThis.String(object.branch) : "",
+      webhookEndpointId: isSet(object.webhookEndpointId) ? globalThis.String(object.webhookEndpointId) : "",
       fullPath: isSet(object.fullPath) ? globalThis.String(object.fullPath) : "",
       webUrl: isSet(object.webUrl) ? globalThis.String(object.webUrl) : "",
-      branch: isSet(object.branch) ? globalThis.String(object.branch) : "",
-      baseDirectory: isSet(object.baseDirectory) ? globalThis.String(object.baseDirectory) : "",
-      externalId: isSet(object.externalId) ? globalThis.String(object.externalId) : "",
-      webhookEndpointId: isSet(object.webhookEndpointId) ? globalThis.String(object.webhookEndpointId) : "",
     };
   },
 
@@ -1229,23 +1232,23 @@ export const ProjectGitOpsInfo = {
     if (message.title !== "") {
       obj.title = message.title;
     }
+    if (message.externalId !== "") {
+      obj.externalId = message.externalId;
+    }
+    if (message.baseDirectory !== "") {
+      obj.baseDirectory = message.baseDirectory;
+    }
+    if (message.branch !== "") {
+      obj.branch = message.branch;
+    }
+    if (message.webhookEndpointId !== "") {
+      obj.webhookEndpointId = message.webhookEndpointId;
+    }
     if (message.fullPath !== "") {
       obj.fullPath = message.fullPath;
     }
     if (message.webUrl !== "") {
       obj.webUrl = message.webUrl;
-    }
-    if (message.branch !== "") {
-      obj.branch = message.branch;
-    }
-    if (message.baseDirectory !== "") {
-      obj.baseDirectory = message.baseDirectory;
-    }
-    if (message.externalId !== "") {
-      obj.externalId = message.externalId;
-    }
-    if (message.webhookEndpointId !== "") {
-      obj.webhookEndpointId = message.webhookEndpointId;
     }
     return obj;
   },
@@ -1258,12 +1261,12 @@ export const ProjectGitOpsInfo = {
     message.name = object.name ?? "";
     message.vcs = object.vcs ?? "";
     message.title = object.title ?? "";
+    message.externalId = object.externalId ?? "";
+    message.baseDirectory = object.baseDirectory ?? "";
+    message.branch = object.branch ?? "";
+    message.webhookEndpointId = object.webhookEndpointId ?? "";
     message.fullPath = object.fullPath ?? "";
     message.webUrl = object.webUrl ?? "";
-    message.branch = object.branch ?? "";
-    message.baseDirectory = object.baseDirectory ?? "";
-    message.externalId = object.externalId ?? "";
-    message.webhookEndpointId = object.webhookEndpointId ?? "";
     return message;
   },
 };

@@ -154,11 +154,12 @@ const tryFinishSetup = async () => {
     const repositoryCreate: Partial<ProjectGitOpsInfo> = {
       vcs: state.config.vcs.name,
       title: state.config.repositoryInfo.name,
+      externalId: externalId,
+      baseDirectory: state.config.repositoryConfig.baseDirectory,
+      branch: state.config.repositoryConfig.branch,
+      // TODO(d): move these to create VCS connector.
       fullPath: state.config.repositoryInfo.fullPath,
       webUrl: state.config.repositoryInfo.webUrl,
-      branch: state.config.repositoryConfig.branch,
-      baseDirectory: state.config.repositoryConfig.baseDirectory,
-      externalId: externalId,
     };
     await repositoryV1Store.upsertRepository(
       props.project.name,
