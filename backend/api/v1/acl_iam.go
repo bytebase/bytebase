@@ -275,6 +275,14 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 
 		projectIDsGetter = in.getProjectIDsForDatabaseService
 	case
+		v1pb.VCSConnectorService_CreateVCSConnector_FullMethodName,
+		v1pb.VCSConnectorService_GetVCSConnector_FullMethodName,
+		v1pb.VCSConnectorService_ListVCSConnectors_FullMethodName,
+		v1pb.VCSConnectorService_UpdateVCSConnector_FullMethodName,
+		v1pb.VCSConnectorService_DeleteVCSConnector_FullMethodName:
+
+		projectIDsGetter = in.getProjectIDsForVCSConnectorService
+	case
 		v1pb.ChangelistService_CreateChangelist_FullMethodName,
 		v1pb.ChangelistService_GetChangelist_FullMethodName:
 
@@ -368,6 +376,40 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 		return nil, errors.Errorf("database %q not found", databaseResourceName)
 	}
 	return database, nil
+}
+
+func (*ACLInterceptor) getProjectIDsForVCSConnectorService(_ context.Context, req any) ([]string, error) {
+	var projects, vcsConnectors []string
+	switch r := req.(type) {
+	case *v1pb.CreateVCSConnectorRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.ListVCSConnectorsRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.GetVCSConnectorRequest:
+		vcsConnectors = append(vcsConnectors, r.GetName())
+	case *v1pb.UpdateVCSConnectorRequest:
+		vcsConnectors = append(vcsConnectors, r.GetVcsConnector().GetName())
+	case *v1pb.DeleteVCSConnectorRequest:
+		vcsConnectors = append(vcsConnectors, r.GetName())
+	}
+
+	var projectIDs []string
+	for _, vcsConnector := range vcsConnectors {
+		projectID, _, err := common.GetProjectVCSConnectorID(vcsConnector)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse vcsConnector %q", vcsConnector)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, project := range projects {
+		projectID, err := common.GetProjectID(project)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse project %q", project)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+
+	return uniq(projectIDs), nil
 }
 
 func (*ACLInterceptor) getProjectIDsForChangelistService(_ context.Context, req any) ([]string, error) {
