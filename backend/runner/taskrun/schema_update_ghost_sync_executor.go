@@ -19,6 +19,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -40,7 +41,7 @@ type SchemaUpdateGhostSyncExecutor struct {
 
 // RunOnce will run SchemaUpdateGhostSync task once.
 // TODO: support cancellation.
-func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, taskContext context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, taskContext context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
 		state.TaskRunExecutionStatus{
 			ExecutionStatus: v1pb.TaskRun_EXECUTING,
@@ -64,7 +65,7 @@ type sharedGhostState struct {
 	errCh            <-chan error
 }
 
-func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, taskContext context.Context, task *store.TaskMessage, statement string, flags map[string]string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, taskContext context.Context, task *store.TaskMessage, statement string, flags map[string]string) (terminated bool, result *storepb.TaskRunResult, err error) {
 	syncDone := make(chan struct{})
 	// set buffer size to 1 to unblock the sender because there is no listner if the task is canceled.
 	// see PR #2919.
@@ -154,7 +155,7 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 	select {
 	case <-syncDone:
 		exec.stateCfg.GhostTaskState.Store(task.ID, sharedGhostState{migrationContext: migrationContext, errCh: migrationError})
-		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
+		return true, &storepb.TaskRunResult{Detail: "sync done"}, nil
 	case err := <-migrationError:
 		return true, nil, err
 	case <-ctx.Done():

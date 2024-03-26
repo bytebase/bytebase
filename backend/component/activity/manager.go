@@ -566,8 +566,8 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 				return taskRuns[i].ID > taskRuns[j].ID
 			})
 
-			var result api.TaskRunResultPayload
-			if err := json.Unmarshal([]byte(taskRuns[0].Result), &result); err != nil {
+			var result storepb.TaskRunResult
+			if err := protojson.Unmarshal([]byte(taskRuns[0].Result), &result); err != nil {
 				err := errors.Wrap(err, "failed to unmarshal TaskRun Result")
 				slog.Warn(err.Error(),
 					slog.Any("TaskRun", taskRuns[0]),
