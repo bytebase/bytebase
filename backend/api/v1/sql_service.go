@@ -174,7 +174,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		result, durationNs, queryErr := s.doAdminExecute(ctx, driver, conn, request)
 		sanitizeResults(result)
 
-		if err := s.postQuery(ctx, activity, durationNs, queryErr); err != nil {
+		if err := s.postQuery(ctx, database, activity, durationNs, queryErr); err != nil {
 			slog.Error("failed to post admin execute activity", log.BBError(err))
 		}
 
@@ -316,7 +316,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 
 	bytes, durationNs, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, instance, database, spans)
 
-	if err := s.postExport(ctx, activity, durationNs, exportErr); err != nil {
+	if err := s.postExport(ctx, database, activity, durationNs, exportErr); err != nil {
 		return nil, err
 	}
 
@@ -408,7 +408,7 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	return content, durationNs, nil
 }
 
-func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
+func (s *SQLService) postExport(ctx context.Context, database *store.DatabaseMessage, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
 	// Update the activity
 	var payload api.ActivitySQLExportPayload
 	if err := json.Unmarshal([]byte(activity.Payload), &payload); err != nil {
@@ -445,10 +445,11 @@ func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMes
 	}
 
 	if _, err := s.store.CreateQueryHistory(ctx, &store.QueryHistoryMessage{
-		CreatorUID:  activity.CreatorUID,
-		DatabaseUID: payload.DatabaseID,
-		Statement:   payload.Statement,
-		Type:        store.QueryHistoryTypeExport,
+		CreatorUID: activity.CreatorUID,
+		ProjectID:  database.ProjectID,
+		Database:   common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		Statement:  payload.Statement,
+		Type:       store.QueryHistoryTypeExport,
 		Payload: &storepb.QueryHistoryPayload{
 			Error:    &payload.Error,
 			Duration: durationpb.New(time.Duration(durationNs)),
@@ -945,49 +946,22 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.Sea
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	var instanceName string
-	var databaseName string
 	for _, spec := range filters {
 		if spec.operator != comparatorTypeEqual {
 			return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%v" filter`, spec.key)
 		}
 		switch spec.key {
 		case "database":
-			instanceID, _, err := common.GetInstanceDatabaseID(spec.value)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
-			databaseName = spec.value
-			instanceName = fmt.Sprintf("%s%s", common.InstanceNamePrefix, instanceID)
+			database := spec.value
+			find.Database = &database
 		case "instance":
-			instanceName = spec.value
+			instance := spec.value
+			find.Instance = &instance
 		case "type":
 			historyType := store.QueryHistoryType(spec.value)
 			find.Type = &historyType
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid filter %s", spec.key)
-		}
-	}
-
-	if instanceName != "" {
-		if databaseName == "" {
-			instanceMessage, err := getInstanceMessage(ctx, s.store, instanceName)
-			if err != nil {
-				return nil, err
-			}
-			find.InstanceUID = &instanceMessage.UID
-		} else {
-			databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:   &instanceName,
-				DatabaseName: &databaseName,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
-			if databaseMessage == nil {
-				return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-			}
-			find.DatabaseUID = &databaseMessage.UID
 		}
 	}
 
@@ -1025,16 +999,6 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.Sea
 }
 
 func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store.QueryHistoryMessage) (*v1pb.QueryHistory, error) {
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		UID: &history.DatabaseUID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if database == nil {
-		return nil, nil
-	}
-
 	user, err := s.store.GetUserByID(ctx, history.CreatorUID)
 	if err != nil {
 		return nil, err
@@ -1055,7 +1019,7 @@ func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store
 		Name:       fmt.Sprintf("queryHistories/%d", history.UID),
 		Statement:  history.Statement,
 		Error:      history.Payload.Error,
-		Database:   common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		Database:   history.Database,
 		Creator:    fmt.Sprintf("%s%s", common.UserNamePrefix, user.Email),
 		CreateTime: timestamppb.New(history.CreatedTime),
 		Duration:   history.Payload.Duration,
@@ -1164,7 +1128,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	// Update activity.
-	if err = s.postQuery(ctx, activity, durationNs, queryErr); err != nil {
+	if err = s.postQuery(ctx, database, activity, durationNs, queryErr); err != nil {
 		return nil, err
 	}
 	if queryErr != nil {
@@ -1244,7 +1208,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 // postQuery does the following:
 //  1. Check index hit Explain statements
 //  2. Update SQL query activity
-func (s *SQLService) postQuery(ctx context.Context, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
+func (s *SQLService) postQuery(ctx context.Context, database *store.DatabaseMessage, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
 	newLevel := activity.Level
 
 	// Update the activity
@@ -1279,16 +1243,17 @@ func (s *SQLService) postQuery(ctx context.Context, activity *store.ActivityMess
 	}
 
 	if _, err := s.store.CreateQueryHistory(ctx, &store.QueryHistoryMessage{
-		CreatorUID:  activity.CreatorUID,
-		DatabaseUID: payload.DatabaseID,
-		Statement:   payload.Statement,
-		Type:        store.QueryHistoryTypeQuery,
+		CreatorUID: activity.CreatorUID,
+		ProjectID:  database.ProjectID,
+		Database:   common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		Statement:  payload.Statement,
+		Type:       store.QueryHistoryTypeQuery,
 		Payload: &storepb.QueryHistoryPayload{
 			Error:    &payload.Error,
 			Duration: durationpb.New(time.Duration(durationNs)),
 		},
 	}); err != nil {
-		return status.Errorf(codes.Internal, "Failed to create query history with error: %v", err)
+		return status.Errorf(codes.Internal, "Failed to create export history with error: %v", err)
 	}
 
 	return nil

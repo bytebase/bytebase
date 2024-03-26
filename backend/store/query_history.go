@@ -29,13 +29,16 @@ type QueryHistoryMessage struct {
 	CreatedTime time.Time
 
 	// Related fields
-	CreatorUID  int
-	DatabaseUID int
+	CreatorUID int
+	// ProjectID is the project resource id.
+	ProjectID string
 
 	// Domain specific fields
 	Type      QueryHistoryType
 	Statement string
 	Payload   *storepb.QueryHistoryPayload
+	// Database is the database resource name, like instances/{instance}/databases/{database}
+	Database string
 
 	createdTs int64
 }
@@ -43,11 +46,12 @@ type QueryHistoryMessage struct {
 // FindQueryHistoryMessage is the API message for finding query histories.
 type FindQueryHistoryMessage struct {
 	CreatorUID *int
-	// InstanceUID is the instance resource id.
-	InstanceUID *int
-	// DatabaseUID is the uid for database.
-	DatabaseUID *int
-	Type        *QueryHistoryType
+	ProjectID  *string
+	// Instance is the instance resource name like instances/{instance}.
+	Instance *string
+	// Database is database resource name like instances/{instance}/databases/{database}.
+	Database *string
+	Type     *QueryHistoryType
 
 	Limit  *int
 	Offset *int
@@ -70,19 +74,21 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 		INSERT INTO query_history (
 			creator_id,
 			updater_id,
-			database_id,
+			project_id,
+			database,
 			statement,
 			type,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING
 			id,
 			created_ts
 	`,
 		create.CreatorUID,
 		create.CreatorUID,
-		create.DatabaseUID,
+		create.ProjectID,
+		create.Database,
 		create.Statement,
 		create.Type,
 		payload,
@@ -108,10 +114,13 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 	if v := find.CreatorUID; v != nil {
 		where, args = append(where, fmt.Sprintf("query_history.creator_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.InstanceUID; v != nil {
-		where, args = append(where, fmt.Sprintf("query_history.database_id IN (SELECT DISTINCT id FROM db WHERE db.instance_id = $%d)", len(args)+1)), append(args, *v)
-	} else if v := find.DatabaseUID; v != nil {
-		where, args = append(where, fmt.Sprintf("query_history.database_id = $%d", len(args)+1)), append(args, *v)
+	if v := find.ProjectID; v != nil {
+		where, args = append(where, fmt.Sprintf("query_history.project_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Instance; v != nil {
+		where, args = append(where, fmt.Sprintf("query_history.database LIKE $%d", len(args)+1)), append(args, *v)
+	} else if v := find.Database; v != nil {
+		where, args = append(where, fmt.Sprintf("query_history.database = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("query_history.type = $%d", len(args)+1)), append(args, *v)
@@ -128,12 +137,12 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 			query_history.id,
 			query_history.creator_id,
 			query_history.created_ts,
-			query_history.database_id,
+			query_history.project_id,
+			query_history.database,
 			query_history.statement,
 			query_history.type,
 			query_history.payload
 		FROM query_history
-		LEFT JOIN db ON query_history.database_id = db.id
 		WHERE %s
 		ORDER BY created_ts DESC
 	`, strings.Join(where, " AND "))
@@ -158,7 +167,8 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 			&queryHistory.UID,
 			&queryHistory.CreatorUID,
 			&queryHistory.createdTs,
-			&queryHistory.DatabaseUID,
+			&queryHistory.ProjectID,
+			&queryHistory.Database,
 			&queryHistory.Statement,
 			&queryHistory.Type,
 			&payloadStr,

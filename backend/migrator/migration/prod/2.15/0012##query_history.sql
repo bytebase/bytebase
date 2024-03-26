@@ -5,13 +5,14 @@ CREATE TABLE query_history (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    database_id INTEGER NOT NULL REFERENCES db (id),
+    project_id TEXT NOT NULL, -- the project resource id
+    database TEXT NOT NULL, -- the database resource name, for example, instances/{instance}/databases/{database}
     statement TEXT NOT NULL,
     type TEXT NOT NULL, -- the history type, support QUERY and EXPORT.
     payload JSONB NOT NULL DEFAULT '{}' -- saved for details, like error, duration, etc.
 );
 
-CREATE INDEX idx_query_history_creator_id_database_id ON query_history(creator_id, database_id);
+CREATE INDEX idx_query_history_creator_id_database ON query_history(creator_id, database);
 
 CREATE INDEX idx_query_history_created_ts ON query_history(created_ts);
 
