@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math"
 	"os"
 	"os/exec"
 	"path"
@@ -84,20 +83,6 @@ func newBinlogFile(name string, size int64) (BinlogFile, error) {
 		return BinlogFile{}, err
 	}
 	return BinlogFile{Name: name, Size: size, Seq: seq}, nil
-}
-
-type binlogCoordinate struct {
-	Name string
-	Seq  int64
-	Pos  int64
-}
-
-func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, error) {
-	_, seq, err := ParseBinlogName(binlogFileName)
-	if err != nil {
-		return binlogCoordinate{}, err
-	}
-	return binlogCoordinate{Name: binlogFileName, Seq: seq, Pos: pos}, nil
 }
 
 type binlogFileMeta struct {
@@ -805,65 +790,6 @@ func (driver *Driver) GetSortedBinlogFilesOnServer(ctx context.Context) ([]Binlo
 	}
 
 	return sortBinlogFiles(binlogFiles), nil
-}
-
-// getBinlogCoordinateByTs converts a timestamp to binlog coordinate using local binlog files.
-func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int64, client *bbs3.Client) (*binlogCoordinate, error) {
-	metaList, err := getSortedLocalBinlogFilesMeta(driver.binlogDir)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read local binlog metadata files")
-	}
-	if len(metaList) == 0 {
-		return nil, errors.Errorf("no local binlog metadata files found")
-	}
-	if !binlogMetaAreContinuous(metaList) {
-		return nil, errors.Errorf("local binlog metadata files are not continuous")
-	}
-
-	var targetMeta *binlogFileMeta
-	for i, meta := range metaList {
-		if meta.FirstEventTs >= targetTs {
-			if i == 0 {
-				return nil, errors.Errorf("the targetTs %d is before the first event ts %d of the oldest binlog file %q", targetTs, meta.FirstEventTs, metaList[0].binlogName)
-			}
-			// The previous local binlog file contains targetTs.
-			targetMeta = &metaList[i-1]
-			break
-		}
-	}
-	// All of the local binlog files' first event start ts <= targetTs, so we choose the last binlog file as probably "containing" targetTs.
-	// This may not be true, because possibly targetTs > last eventTs of the last binlog file.
-	// In this case, we should return an error.
-	var isLastBinlogFile bool
-	if targetMeta == nil {
-		isLastBinlogFile = true
-		targetMeta = &metaList[len(metaList)-1]
-	}
-	slog.Debug("Found potential binlog file containing targetTs", slog.String("binlogFile", targetMeta.binlogName), slog.Int64("targetTs", targetTs), slog.Bool("isLastBinlogFile", isLastBinlogFile))
-
-	if client != nil {
-		// Use filepath.Join to compose an OS-specific local file system path.
-		filePathLocal := filepath.Join(driver.binlogDir, targetMeta.binlogName)
-		// Use path.Join to compose a path on cloud which always uses / as the separator.
-		filePathOnCloud := path.Join(common.GetBinlogRelativeDir(driver.binlogDir), targetMeta.binlogName)
-		if err := client.DownloadFileFromCloud(ctx, filePathLocal, filePathOnCloud); err != nil {
-			return nil, errors.Wrapf(err, "failed to download binlog file %s from the cloud storage", targetMeta.binlogName)
-		}
-	}
-	eventPos, err := driver.getBinlogEventPositionAtOrAfterTs(ctx, targetMeta.binlogName, targetTs)
-	if err != nil {
-		if common.ErrorCode(err) == common.NotFound {
-			// All the binlog events in this binlog file have ts < targetTs.
-			// If this is the last binlog file, the user wants to recover to a time in the future and we should return an error.
-			// Otherwise, we should return the end position of the current binlog file.
-			if isLastBinlogFile {
-				return nil, errors.Errorf("the targetTs %d is after the last event ts of the latest binlog file %q", targetTs, targetMeta.binlogName)
-			}
-			return &binlogCoordinate{Name: targetMeta.binlogName, Seq: targetMeta.seq, Pos: math.MaxInt64}, nil
-		}
-		return nil, errors.Wrapf(err, "failed to find the binlog event after targetTs %d", targetTs)
-	}
-	return &binlogCoordinate{Name: targetMeta.binlogName, Seq: targetMeta.seq, Pos: eventPos}, nil
 }
 
 func parseBinlogEventTsInLine(line string) (eventTs int64, found bool, err error) {
