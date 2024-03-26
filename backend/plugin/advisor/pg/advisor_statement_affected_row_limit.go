@@ -115,7 +115,7 @@ func (checker *statementAffectedRowLimitChecker) Visit(in ast.Node) ast.Visitor 
 			Status:  checker.level,
 			Code:    code,
 			Title:   checker.title,
-			Content: fmt.Sprintf("The statement \"%s\" affected %d rows. The count exceeds %d.", checker.text, rows, checker.maxRow),
+			Content: fmt.Sprintf("The statement \"%s\" affected %d rows (estimated). The count exceeds %d.", checker.text, rows, checker.maxRow),
 			Line:    in.LastLine(),
 		})
 	}
