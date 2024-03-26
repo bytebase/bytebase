@@ -1,0 +1,28 @@
+- schema: CREATE VIEW v1 AS select 1 AS `id`;
+  metadata: |-
+    {
+      "schemas":  [
+        {
+          "views":  [
+            {
+              "name":  "v1",
+              "definition":  "select 1 AS `id`"
+            }
+          ]
+        }
+      ]
+    }
+- schema: CREATE VIEW v1 AS select * from t;
+  metadata: |-
+    {
+      "schemas":  [
+        {
+          "views":  [
+            {
+              "name":  "v1",
+              "definition":  "select * from t"
+            }
+          ]
+        }
+      ]
+    }
