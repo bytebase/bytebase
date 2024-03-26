@@ -38,11 +38,11 @@ type Executor interface {
 	// 2. If err is non-nil, then the detail field will be ignored since info is provided in the err.
 	// driverCtx is used by the database driver so that we can cancel the query
 	// while have the ability to cleanup migration history etc.
-	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error)
+	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error)
 }
 
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
-func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -406,7 +406,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, conn *sql.Conn, t
 	return updatedTask, nil
 }
 
-func postMigration(ctx context.Context, stores *store.Store, task *store.TaskMessage, mi *db.MigrationInfo, migrationID string, sheetID *int) (bool, *api.TaskRunResultPayload, error) {
+func postMigration(ctx context.Context, stores *store.Store, task *store.TaskMessage, mi *db.MigrationInfo, migrationID string, sheetID *int) (bool, *storepb.TaskRunResult, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
@@ -478,14 +478,14 @@ func postMigration(ctx context.Context, stores *store.Store, task *store.TaskMes
 			log.BBError(err),
 		)
 	}
-	return true, &api.TaskRunResultPayload{
+	return true, &storepb.TaskRunResult{
 		Detail:        detail,
 		ChangeHistory: fmt.Sprintf("instances/%s/databases/%s/changeHistories/%s", instance.ResourceID, database.DatabaseName, migrationID),
 		Version:       storedVersion,
 	}, nil
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	mi, err := getMigrationInfo(ctx, store, profile, task, migrationType, statement, schemaVersion)
 	if err != nil {
 		return true, nil, err

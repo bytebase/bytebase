@@ -17,4 +17,6 @@ message TaskRunResult {
   }
   Position start_position = 4;
   Position end_position = 5;
+
+  int32 export_archive_uid = 6;
 }
