@@ -52,6 +52,8 @@ export interface SchemaMetadata {
   views: ViewMetadata[];
   /** The functions is the list of functions in a schema. */
   functions: FunctionMetadata[];
+  /** The procedures is the list of procedures in a schema. */
+  procedures: ProcedureMetadata[];
   /** The streams is the list of streams in a schema, currently, only used for Snowflake. */
   streams: StreamMetadata[];
   /** The routines is the list of routines in a schema, currently, only used for Snowflake. */
@@ -458,9 +460,17 @@ export interface MaterializedViewMetadata {
 
 /** FunctionMetadata is the metadata for functions. */
 export interface FunctionMetadata {
-  /** The name is the name of a view. */
+  /** The name is the name of a function. */
   name: string;
-  /** The definition is the definition of a view. */
+  /** The definition is the definition of a function. */
+  definition: string;
+}
+
+/** ProcedureMetadata is the metadata for procedures. */
+export interface ProcedureMetadata {
+  /** The name is the name of a procedure. */
+  name: string;
+  /** The definition is the definition of a procedure. */
   definition: string;
 }
 
@@ -916,6 +926,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     externalTables: [],
     views: [],
     functions: [],
+    procedures: [],
     streams: [],
     tasks: [],
     materializedViews: [],
@@ -939,14 +950,17 @@ export const SchemaMetadata = {
     for (const v of message.functions) {
       FunctionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
     }
+    for (const v of message.procedures) {
+      ProcedureMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
+    }
     for (const v of message.streams) {
-      StreamMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
+      StreamMetadata.encode(v!, writer.uint32(58).fork()).ldelim();
     }
     for (const v of message.tasks) {
-      TaskMetadata.encode(v!, writer.uint32(58).fork()).ldelim();
+      TaskMetadata.encode(v!, writer.uint32(66).fork()).ldelim();
     }
     for (const v of message.materializedViews) {
-      MaterializedViewMetadata.encode(v!, writer.uint32(66).fork()).ldelim();
+      MaterializedViewMetadata.encode(v!, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -998,17 +1012,24 @@ export const SchemaMetadata = {
             break;
           }
 
-          message.streams.push(StreamMetadata.decode(reader, reader.uint32()));
+          message.procedures.push(ProcedureMetadata.decode(reader, reader.uint32()));
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.tasks.push(TaskMetadata.decode(reader, reader.uint32()));
+          message.streams.push(StreamMetadata.decode(reader, reader.uint32()));
           continue;
         case 8:
           if (tag !== 66) {
+            break;
+          }
+
+          message.tasks.push(TaskMetadata.decode(reader, reader.uint32()));
+          continue;
+        case 9:
+          if (tag !== 74) {
             break;
           }
 
@@ -1033,6 +1054,9 @@ export const SchemaMetadata = {
       views: globalThis.Array.isArray(object?.views) ? object.views.map((e: any) => ViewMetadata.fromJSON(e)) : [],
       functions: globalThis.Array.isArray(object?.functions)
         ? object.functions.map((e: any) => FunctionMetadata.fromJSON(e))
+        : [],
+      procedures: globalThis.Array.isArray(object?.procedures)
+        ? object.procedures.map((e: any) => ProcedureMetadata.fromJSON(e))
         : [],
       streams: globalThis.Array.isArray(object?.streams)
         ? object.streams.map((e: any) => StreamMetadata.fromJSON(e))
@@ -1061,6 +1085,9 @@ export const SchemaMetadata = {
     if (message.functions?.length) {
       obj.functions = message.functions.map((e) => FunctionMetadata.toJSON(e));
     }
+    if (message.procedures?.length) {
+      obj.procedures = message.procedures.map((e) => ProcedureMetadata.toJSON(e));
+    }
     if (message.streams?.length) {
       obj.streams = message.streams.map((e) => StreamMetadata.toJSON(e));
     }
@@ -1083,6 +1110,7 @@ export const SchemaMetadata = {
     message.externalTables = object.externalTables?.map((e) => ExternalTableMetadata.fromPartial(e)) || [];
     message.views = object.views?.map((e) => ViewMetadata.fromPartial(e)) || [];
     message.functions = object.functions?.map((e) => FunctionMetadata.fromPartial(e)) || [];
+    message.procedures = object.procedures?.map((e) => ProcedureMetadata.fromPartial(e)) || [];
     message.streams = object.streams?.map((e) => StreamMetadata.fromPartial(e)) || [];
     message.tasks = object.tasks?.map((e) => TaskMetadata.fromPartial(e)) || [];
     message.materializedViews = object.materializedViews?.map((e) => MaterializedViewMetadata.fromPartial(e)) || [];
@@ -2626,6 +2654,80 @@ export const FunctionMetadata = {
   },
   fromPartial(object: DeepPartial<FunctionMetadata>): FunctionMetadata {
     const message = createBaseFunctionMetadata();
+    message.name = object.name ?? "";
+    message.definition = object.definition ?? "";
+    return message;
+  },
+};
+
+function createBaseProcedureMetadata(): ProcedureMetadata {
+  return { name: "", definition: "" };
+}
+
+export const ProcedureMetadata = {
+  encode(message: ProcedureMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.definition !== "") {
+      writer.uint32(18).string(message.definition);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProcedureMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProcedureMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.definition = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProcedureMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
+    };
+  },
+
+  toJSON(message: ProcedureMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.definition !== "") {
+      obj.definition = message.definition;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProcedureMetadata>): ProcedureMetadata {
+    return ProcedureMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProcedureMetadata>): ProcedureMetadata {
+    const message = createBaseProcedureMetadata();
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
     return message;
