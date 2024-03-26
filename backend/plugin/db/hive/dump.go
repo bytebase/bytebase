@@ -18,12 +18,13 @@ const (
 )
 
 type IndexDDLOptions struct {
+	databaseName          string
 	indexName             string
 	tableName             string
 	indexType             string
 	colNames              []string
 	isWithDeferredRebuild bool
-	idxProperties         []string
+	idxProperties         map[string]string
 	indexTableName        string
 	rowFmt                string
 	storedAs              string
@@ -34,6 +35,7 @@ type IndexDDLOptions struct {
 }
 
 type MaterializedViewDDLOptions struct {
+	databaseName   string
 	mtViewName     string
 	disableRewrite bool
 	comment        string
@@ -59,7 +61,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 	var dumpStrBuilder strings.Builder
 	for _, database := range instanceMetadata.Databases[0].Schemas {
 		// dump databases.
-		databaseDDL, err := d.showCreateSchemaDDL(ctx, "DATABASE", fmt.Sprintf("`%s`", database.Name), "")
+		databaseDDL, err := d.showCreateSchemaDDL(ctx, "DATABASE", database.Name, "")
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to dump database %s", database.Name)
 		}
@@ -67,19 +69,17 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 
 		// dump managed tables.
 		for _, table := range database.Tables {
-			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", fmt.Sprintf("`%s`", table.Name), fmt.Sprintf("`%s`", database.Name))
+			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", table.Name, database.Name)
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to dump table %s", table.Name)
 			}
 
 			// dump indexes.
 			for _, index := range table.Indexes {
-				var (
-					tabNameWithDB = fmt.Sprintf("`%s`.`%s`", database.Name, table.Name)
-				)
 				// TODO(tommy): get more index info from SyncInstance.
 				indexDDL, err := genIndexDDL(&IndexDDLOptions{
-					indexName:             tabNameWithDB,
+					databaseName:          database.Name,
+					indexName:             index.Name,
 					tableName:             table.Name,
 					indexType:             index.Type,
 					colNames:              index.Expressions,
@@ -97,14 +97,14 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 					return "", errors.Wrapf(err, "failed to generate DDL for index %s", index.Name)
 				}
 
-				_, _ = dumpStrBuilder.WriteString(fmt.Sprintf(schemaStmtFmt, "INDEX", tabNameWithDB, indexDDL))
+				_, _ = dumpStrBuilder.WriteString(fmt.Sprintf(schemaStmtFmt, "INDEX", fmt.Sprintf("`%s`", index.Name), indexDDL))
 			}
 			_, _ = dumpStrBuilder.WriteString(tabDDL)
 		}
 
 		// dump external tables.
 		for _, extTable := range database.ExternalTables {
-			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", fmt.Sprintf("`%s`", extTable.Name), fmt.Sprintf("`%s`", database.Name))
+			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", extTable.Name, database.Name)
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to dump table %s", extTable.Name)
 			}
@@ -113,7 +113,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 
 		// dump views.
 		for _, view := range database.Views {
-			viewDDL, err := d.showCreateSchemaDDL(ctx, "VIEW", fmt.Sprintf("`%s`", view.Name), fmt.Sprintf("`%s`", database.Name))
+			viewDDL, err := d.showCreateSchemaDDL(ctx, "VIEW", view.Name, database.Name)
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to dump view %s", view.Name)
 			}
@@ -123,9 +123,9 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 		// TODO(tommy): get more mt view info from SyncInstance.
 		// dump materialized views.
 		for _, mtView := range database.MaterializedViews {
-			viewNameWithDB := fmt.Sprintf("`%s`.`%s`", database.Name, mtView.Name)
 			mtViewDDL, err := genMaterializedViewDDL(&MaterializedViewDDLOptions{
-				mtViewName:     viewNameWithDB,
+				databaseName:   database.Name,
+				mtViewName:     mtView.Name,
 				disableRewrite: false,
 				comment:        mtView.Comment,
 				partitionedOn:  nil,
@@ -144,7 +144,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 				return "", errors.Wrapf(err, "failed to generate DDL for materialized view %s", mtView.Name)
 			}
 
-			_, _ = dumpStrBuilder.WriteString(fmt.Sprintf(schemaStmtFmt, "MATERIALIZED VIEW", mtView.Name, mtViewDDL))
+			_, _ = dumpStrBuilder.WriteString(fmt.Sprintf(schemaStmtFmt, "MATERIALIZED VIEW", fmt.Sprintf("`%s`.`%s`", database.Name, mtView.Name), mtViewDDL))
 		}
 	}
 
@@ -158,6 +158,7 @@ func (*Driver) Restore(_ context.Context, _ io.Reader) error {
 
 // This function shows DDLs for creating certain type of schema [VIEW, DATABASE, TABLE].
 func (d *Driver) showCreateSchemaDDL(ctx context.Context, schemaType string, schemaName string, belongTo string) (string, error) {
+	schemaName = fmt.Sprintf("`%s`", schemaName)
 	// 'SHOW CREATE TABLE' can also be used for dumping views.
 	queryStatement := fmt.Sprintf("SHOW CREATE %s %s", schemaType, schemaName)
 	if schemaType == "VIEW" {
@@ -177,19 +178,19 @@ func (d *Driver) showCreateSchemaDDL(ctx context.Context, schemaType string, sch
 	// rename table to format: [DatabaseName].[TableName].
 	newSchemaName := schemaName
 	if belongTo != "" {
+		belongTo = fmt.Sprintf("`%s`", belongTo)
 		newSchemaName = fmt.Sprintf("%s.%s", belongTo, schemaName)
 		schemaDDL = strings.Replace(schemaDDL, schemaName, newSchemaName, 1)
 	}
 
-	return fmt.Sprintf(schemaStmtFmt,
-		schemaType, newSchemaName, schemaDDL), nil
+	return fmt.Sprintf(schemaStmtFmt, schemaType, newSchemaName, schemaDDL), nil
 }
 
 func genIndexDDL(opts *IndexDDLOptions) (string, error) {
 	var builder strings.Builder
 
 	// index name, table name.
-	_, _ = builder.WriteString(fmt.Sprintf("CREATE INDEX %s\nON TABLE %s ", opts.indexName, opts.tableName))
+	_, _ = builder.WriteString(fmt.Sprintf("CREATE INDEX `%s`\nON TABLE %s ", opts.indexName, fmt.Sprintf("`%s`.`%s`", opts.databaseName, opts.tableName)))
 
 	// column names.
 	formatColumn(&builder, opts.colNames)
@@ -250,9 +251,10 @@ func genIndexDDL(opts *IndexDDLOptions) (string, error) {
 
 func genMaterializedViewDDL(opts *MaterializedViewDDLOptions) (string, error) {
 	var builder strings.Builder
+	viewNameWithDB := fmt.Sprintf("`%s`.`%s`", opts.databaseName, opts.mtViewName)
 
 	// mtView name.
-	_, _ = builder.WriteString(fmt.Sprintf("CREATE MATERIALIZED VIEW %s\n", opts.mtViewName))
+	_, _ = builder.WriteString(fmt.Sprintf("CREATE MATERIALIZED VIEW %s\n", viewNameWithDB))
 
 	// disable rewrite.
 	if opts.disableRewrite {

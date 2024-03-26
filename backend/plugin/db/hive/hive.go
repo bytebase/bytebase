@@ -21,6 +21,14 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+func hiveDriverFunc(db.DriverConfig) db.Driver {
+	return &Driver{}
+}
+
+func init() {
+	db.Register(storepb.Engine_HIVE, hiveDriverFunc)
+}
+
 type Driver struct {
 	config   db.ConnectionConfig
 	ctx      db.ConnectionContext

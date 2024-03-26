@@ -293,7 +293,7 @@ func (d *Driver) getTableInfo(ctx context.Context, tabName string) (
 			ok := false
 			typeStr, ok = rowMap["data_type"].(string)
 			if !ok {
-				panic("assertion failed")
+				return "", nil, 0, "", errors.New("type assertions fails")
 			}
 		}
 		if rowMap["comment"] == nil {
