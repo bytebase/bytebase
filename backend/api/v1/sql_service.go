@@ -1495,15 +1495,6 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 		return nil, status.Errorf(codes.Internal, "Failed to create activity: %v", err)
 	}
 
-	// if _, err := s.store.CreateQueryHistory(ctx, &store.QueryHistoryMessage{
-	// 	CreatorUID:        user.ID,
-	// 	DatabaseUID: payload.DatabaseID,
-	// 	Statement: payload.Statement,
-	// 	Type: store.QueryHistoryTypeQuery,
-	// 	// Payload: ,
-	// }); err != nil {
-	// 	return nil, status.Errorf(codes.Internal, "Failed to create query history with error: %v", err)
-	// }
 	return activity, nil
 }
 
