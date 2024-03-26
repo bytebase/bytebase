@@ -57,7 +57,7 @@
       </div>
       <BBTextField
         id="branch"
-        v-model:value="repositoryConfig.branchFilter"
+        v-model:value="repositoryConfig.branch"
         name="branch"
         class="mt-2 w-full"
         placeholder="e.g. main"
