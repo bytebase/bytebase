@@ -74,8 +74,9 @@ import { NCheckbox } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
-import { ComposedInstance } from "@/types";
+import type { BBGridColumn, BBGridRow } from "@/bbkit";
+import { BBGrid } from "@/bbkit";
+import type { ComposedInstance } from "@/types";
 import { urlfy, hostPortOfInstanceV1 } from "@/utils";
 import EnvironmentV1Name from "../../EnvironmentV1Name.vue";
 

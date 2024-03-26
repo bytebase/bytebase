@@ -29,8 +29,9 @@
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
-import { User, UserType } from "@/types/proto/v1/auth_service";
-import { ProjectMember } from "../../types";
+import type { User } from "@/types/proto/v1/auth_service";
+import { UserType } from "@/types/proto/v1/auth_service";
+import type { ProjectMember } from "../../types";
 
 const props = defineProps<{
   projectMember: ProjectMember;

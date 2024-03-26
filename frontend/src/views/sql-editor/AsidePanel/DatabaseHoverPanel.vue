@@ -73,7 +73,7 @@ import {
   ProjectV1Name,
 } from "@/components/v2";
 import { useSQLEditorTreeStore } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { useHoverStateContext } from "./hover-state";
 
 const props = defineProps<{

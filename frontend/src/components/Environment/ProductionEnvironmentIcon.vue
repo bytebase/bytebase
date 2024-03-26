@@ -20,9 +20,10 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed, defineComponent } from "vue";
 import { featureToRef } from "@/store";
-import { Environment } from "@/types";
+import type { Environment } from "@/types";
 
 export default defineComponent({
   name: "ProductionEnvironmentIcon",

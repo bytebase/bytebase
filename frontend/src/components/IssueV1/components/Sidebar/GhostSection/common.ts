@@ -1,5 +1,6 @@
 import { uniqBy } from "lodash-es";
-import { InjectionKey, Ref, computed, inject, provide, ref } from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { computed, inject, provide, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   databaseForTask,
@@ -10,13 +11,12 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
-import { ComposedDatabase, ComposedIssue } from "@/types";
+import type { ComposedDatabase, ComposedIssue } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
+import type { Plan_Spec, Task } from "@/types/proto/v1/rollout_service";
 import {
   Plan_ChangeDatabaseConfig_Type,
-  Plan_Spec,
-  Task,
   Task_Status,
   Task_Type,
   task_StatusToJSON,

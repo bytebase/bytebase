@@ -1,5 +1,5 @@
+import type { ComposedProject } from "@/types";
 import {
-  ComposedProject,
   EMPTY_PROJECT_NAME,
   UNKNOWN_PROJECT_NAME,
   emptyProject,
@@ -7,10 +7,11 @@ import {
   emptyUser,
   unknownUser,
 } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
-import { Issue, Issue_Type, IssueStatus } from "../../proto/v1/issue_service";
-import {
+import type { IssueStatus } from "../../proto/v1/issue_service";
+import { Issue, Issue_Type } from "../../proto/v1/issue_service";
+import type {
   Plan,
   PlanCheckRun,
   Rollout,

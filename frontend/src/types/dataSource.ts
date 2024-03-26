@@ -1,6 +1,6 @@
 // For now the ADMIN requires the same database privilege as RW.
 // The seperation is to make it explicit which one serves as the ADMIN data source,
-import { DatabaseId, DataSourceId, InstanceId } from "./id";
+import type { DatabaseId, DataSourceId, InstanceId } from "./id";
 
 // which from the ops perspective, having different meaning from the normal RW data source.
 export type DataSourceType = "ADMIN" | "RW" | "RO";

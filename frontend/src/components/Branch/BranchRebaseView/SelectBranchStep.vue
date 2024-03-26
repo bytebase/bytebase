@@ -123,10 +123,10 @@ import SchemaEditorLite from "@/components/SchemaEditorLite";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { DatabaseSelect } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { ComposedDatabase, ComposedProject } from "@/types";
+import type { ComposedDatabase, ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { RebaseBranchValidationState, RebaseSourceType } from "./types";
+import type { RebaseBranchValidationState, RebaseSourceType } from "./types";
 
 type TabValue = "schema-editor" | "raw-schema-text";
 

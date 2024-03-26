@@ -5,9 +5,9 @@ import {
   worksheetNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { Worksheet } from "@/types/proto/v1/worksheet_service";
-import { IssueId, SQLReviewPolicy } from "../types";
-import { IdType } from "../types/id";
+import type { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { IssueId, SQLReviewPolicy } from "../types";
+import type { IdType } from "../types/id";
 
 export const indexOrUIDFromSlug = (slug: string): number => {
   const parts = slug.split("-");

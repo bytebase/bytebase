@@ -5,16 +5,15 @@ import {
   useInstanceV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import {
+import type {
   ComposedDatabase,
   ComposedInstance,
   CoreSQLEditorTab,
-  DEFAULT_SQL_EDITOR_TAB_MODE,
   SQLEditorConnection,
   SQLEditorTab,
   SQLEditorTabQueryContext,
-  UNKNOWN_ID,
 } from "@/types";
+import { DEFAULT_SQL_EDITOR_TAB_MODE, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 

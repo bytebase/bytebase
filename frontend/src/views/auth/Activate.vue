@@ -81,7 +81,7 @@
 import { defineComponent, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/store";
-import { ActivateInfo, RoleType } from "../../types";
+import type { ActivateInfo, RoleType } from "../../types";
 
 interface LocalState {
   email: string;

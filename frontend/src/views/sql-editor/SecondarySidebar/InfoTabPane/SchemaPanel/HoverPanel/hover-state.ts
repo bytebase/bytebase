@@ -1,7 +1,8 @@
-import { InjectionKey, Ref, inject, provide, ref } from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide, ref } from "vue";
 import { useDelayedValue } from "@/composables/useDelayedValue";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   ExternalTableMetadata,

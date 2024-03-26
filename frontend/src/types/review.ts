@@ -1,9 +1,6 @@
 import type { User } from "./proto/v1/auth_service";
-import {
-  ApprovalStep,
-  ApprovalTemplate,
-  Issue_Approver,
-} from "./proto/v1/issue_service";
+import type { ApprovalStep, Issue_Approver } from "./proto/v1/issue_service";
+import { ApprovalTemplate } from "./proto/v1/issue_service";
 
 export type ApprovalEvent = {
   status: "APPROVED" | "REJECTED" | "PENDING";

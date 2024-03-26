@@ -10,8 +10,8 @@
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,

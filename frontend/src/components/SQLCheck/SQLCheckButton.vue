@@ -64,21 +64,20 @@
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
-import { ButtonProps, NButton, NPopover } from "naive-ui";
+import type { ButtonProps } from "naive-ui";
+import { NButton, NPopover } from "naive-ui";
 import { computed, onUnmounted, ref } from "vue";
 import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { sqlServiceClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1, useSQLReviewStore } from "@/store";
-import { ComposedDatabase } from "@/types";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import {
-  Advice,
-  Advice_Status,
-  CheckRequest_ChangeType,
-} from "@/types/proto/v1/sql_service";
-import { Defer, VueStyle, defer, hasWorkspacePermissionV2 } from "@/utils";
+import type { ComposedDatabase } from "@/types";
+import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import type { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
+import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
+import type { Defer, VueStyle } from "@/utils";
+import { defer, hasWorkspacePermissionV2 } from "@/utils";
 import ErrorList from "../misc/ErrorList.vue";
 import SQLCheckPanel from "./SQLCheckPanel.vue";
 import { useSQLCheckContext } from "./context";

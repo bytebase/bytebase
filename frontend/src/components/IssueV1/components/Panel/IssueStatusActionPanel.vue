@@ -84,8 +84,8 @@
 import { NCheckbox } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import type { IssueStatusAction } from "@/components/IssueV1/logic";
 import {
-  IssueStatusAction,
   useIssueContext,
   issueStatusActionButtonProps,
   issueStatusActionDisplayName,

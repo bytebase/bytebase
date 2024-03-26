@@ -52,16 +52,18 @@ import {
   useSubscriptionV1Store,
   useEnvironmentV1List,
 } from "@/store";
-import {
+import type {
   RuleTemplate,
-  convertToCategoryList,
-  convertRuleTemplateToPolicyRule,
-  ruleIsAvailableInSubscription,
   SQLReviewPolicyTemplate,
   SQLReviewPolicy,
   SchemaPolicyRule,
 } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
+import {
+  convertToCategoryList,
+  convertRuleTemplateToPolicyRule,
+  ruleIsAvailableInSubscription,
+} from "@/types";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import SQLReviewConfig from "./SQLReviewConfig.vue";

@@ -1,7 +1,8 @@
 import { cloneDeep, last } from "lodash-es";
-import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
-import { DatabaseResource } from "@/types";
-import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import type { SimpleExpr } from "@/plugins/cel";
+import { resolveCELExpr } from "@/plugins/cel";
+import type { DatabaseResource } from "@/types";
+import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { batchConvertCELStringToParsedExpr } from "@/utils";
 
 interface DatabaseLevelCondition {

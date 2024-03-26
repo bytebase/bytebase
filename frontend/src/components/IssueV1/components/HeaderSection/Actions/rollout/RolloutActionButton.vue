@@ -19,19 +19,22 @@
 import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
+import type {
   StageRolloutAction,
   TaskRolloutAction,
+} from "@/components/IssueV1/logic";
+import {
   allowUserToApplyTaskRolloutAction,
   taskRolloutActionButtonProps,
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import ErrorList, { ErrorItem } from "@/components/misc/ErrorList.vue";
+import type { ErrorItem } from "@/components/misc/ErrorList.vue";
+import ErrorList from "@/components/misc/ErrorList.vue";
 import { ContextMenuButton } from "@/components/v2";
 import { useCurrentUserV1, useUserStore } from "@/store";
 import { displayRoleTitle, extractUserResourceName } from "@/utils";
-import { RolloutAction, RolloutButtonAction } from "./common";
+import type { RolloutAction, RolloutButtonAction } from "./common";
 
 const props = defineProps<{
   action: TaskRolloutAction;

@@ -82,8 +82,10 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { hasFeature, pushNotification, useProjectV1Store } from "@/store";
-import { DEFAULT_PROJECT_ID, FeatureType } from "@/types";
-import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import type { FeatureType } from "@/types";
+import { DEFAULT_PROJECT_ID } from "@/types";
+import type { Project } from "@/types/proto/v1/project_service";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import { extractProjectResourceName } from "@/utils";
 
 interface LocalState {

@@ -129,16 +129,12 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
-import {
-  ComposedProject,
-  DatabaseResource,
-  getUserEmailInBinding,
-  PresetRoleType,
-} from "@/types";
+import type { ComposedProject, DatabaseResource } from "@/types";
+import { getUserEmailInBinding, PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { Binding } from "@/types/proto/v1/iam_policy";
+import type { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle, extractUserUID } from "@/utils";
 import {
   convertFromCELString,

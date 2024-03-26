@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { InstanceV1EngineIcon } from "./Instance";
 
 defineProps<{

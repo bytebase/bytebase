@@ -1,14 +1,15 @@
-import { MaybeRef, useLocalStorage, watchThrottled } from "@vueuse/core";
+import type { MaybeRef } from "@vueuse/core";
+import { useLocalStorage, watchThrottled } from "@vueuse/core";
 import { head, pick, uniqBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, unref } from "vue";
-import {
+import type {
   SQLEditorConnection,
   SQLEditorTreeNodeMeta,
   CoreSQLEditorTab,
   SQLEditorTab,
-  UNKNOWN_ID,
 } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import {
   WebStorageHelper,
   defaultSQLEditorTab,

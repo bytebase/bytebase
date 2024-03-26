@@ -1,4 +1,4 @@
-import { ProjectPermission, WorkspacePermission } from "./permission";
+import type { ProjectPermission, WorkspacePermission } from "./permission";
 import PERMISSION_DATA from "./permission.yaml";
 
 export const WORKSPACE_PERMISSIONS: WorkspacePermission[] =

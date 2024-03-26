@@ -77,31 +77,17 @@
 import { useElementSize } from "@vueuse/core";
 import { cloneDeep, debounce, escape, head } from "lodash-es";
 import { MoreHorizontalIcon, CopyIcon } from "lucide-vue-next";
-import {
-  TreeOption,
-  NInput,
-  NDropdown,
-  NTree,
-  DropdownOption,
-  NPerformantEllipsis,
-} from "naive-ui";
-import {
-  computed,
-  onMounted,
-  watch,
-  ref,
-  h,
-  reactive,
-  nextTick,
-  VNodeChild,
-} from "vue";
+import type { TreeOption, DropdownOption } from "naive-ui";
+import { NInput, NDropdown, NTree, NPerformantEllipsis } from "naive-ui";
+import type { VNodeChild } from "vue";
+import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { DatabaseIcon, SchemaIcon, TableIcon } from "@/components/Icon";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
+import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -113,13 +99,13 @@ import { useSchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
 import { engineHasSchema } from "../engine-specs";
 import NodeCheckbox from "./NodeCheckbox";
-import {
+import type {
   TreeNode,
   TreeNodeForInstance,
   TreeNodeForSchema,
   TreeNodeForTable,
-  buildTree,
 } from "./common";
+import { buildTree } from "./common";
 
 interface TreeContextMenu {
   showDropdown: boolean;

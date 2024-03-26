@@ -76,8 +76,9 @@
 </template>
 
 <script lang="ts" setup>
-import { NSteps, NStep, NButton, ButtonProps } from "naive-ui";
-import { VueClass } from "@/utils/types";
+import type { ButtonProps } from "naive-ui";
+import { NSteps, NStep, NButton } from "naive-ui";
+import type { VueClass } from "@/utils/types";
 
 withDefaults(
   defineProps<{

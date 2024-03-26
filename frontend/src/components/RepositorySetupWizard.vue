@@ -46,19 +46,21 @@
 
 <script lang="ts" setup>
 import isEmpty from "lodash-es/isEmpty";
-import { reactive, computed, PropType } from "vue";
+import type { PropType } from "vue";
+import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
 import { PROJECT_V1_ROUTE_GITOPS } from "@/router/dashboard/projectV1";
 import { useRepositoryV1Store } from "@/store";
-import { Project, TenantMode } from "@/types/proto/v1/project_service";
-import {
+import type { Project } from "@/types/proto/v1/project_service";
+import { TenantMode } from "@/types/proto/v1/project_service";
+import type {
   ProjectGitOpsInfo,
   VCSProvider,
-  VCSProvider_Type,
 } from "@/types/proto/v1/vcs_provider_service";
-import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
+import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
+import type { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =

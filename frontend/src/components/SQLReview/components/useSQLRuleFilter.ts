@@ -1,8 +1,9 @@
 import { computed, reactive, unref } from "vue";
 import { useRoute } from "vue-router";
-import { getRuleLocalization, MaybeRef, RuleTemplate } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import type { MaybeRef, RuleTemplate } from "@/types";
+import { getRuleLocalization } from "@/types";
+import type { Engine } from "@/types/proto/v1/common";
+import type { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 
 export type SQLRuleFilterParams = {
   checkedEngine: Set<Engine>;

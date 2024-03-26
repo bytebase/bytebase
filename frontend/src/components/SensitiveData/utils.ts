@@ -1,9 +1,9 @@
-import {
+import type {
   MaskData,
   MaskingExceptionPolicy_MaskingException,
 } from "@/types/proto/v1/org_policy_service";
 import { extractInstanceResourceName } from "@/utils";
-import { SensitiveColumn } from "./types";
+import type { SensitiveColumn } from "./types";
 
 export const getMaskDataIdentifier = (maskData: MaskData): string => {
   return `${maskData.schema}.${maskData.table}.${maskData.column}`;

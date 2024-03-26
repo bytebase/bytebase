@@ -31,7 +31,8 @@ import {
   useCurrentUserV1,
   useInstanceV1List,
 } from "@/store";
-import { FeatureType, instanceLimitFeature } from "@/types";
+import type { FeatureType } from "@/types";
+import { instanceLimitFeature } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

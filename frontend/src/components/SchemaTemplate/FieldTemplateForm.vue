@@ -238,7 +238,8 @@
 <script lang="ts" setup>
 import { isEqual, cloneDeep } from "lodash-es";
 import { XIcon, PencilIcon } from "lucide-vue-next";
-import { NButton, NInput, NSwitch, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NButton, NInput, NSwitch } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { LabelListEditor } from "@/components/Label";

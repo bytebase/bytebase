@@ -7,8 +7,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,

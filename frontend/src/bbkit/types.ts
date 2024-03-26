@@ -1,5 +1,5 @@
-import { VueClass } from "@/utils";
-import { ColumnWidth } from "./BBGrid";
+import type { VueClass } from "@/utils";
+import type { ColumnWidth } from "./BBGrid";
 
 export type BBButtonType =
   | "NORMAL"

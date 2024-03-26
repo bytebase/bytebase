@@ -75,9 +75,10 @@
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
 import { head, isNull, isUndefined } from "lodash-es";
-import { NEllipsis, NSelect, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NEllipsis, NSelect } from "naive-ui";
 import { computed, h, reactive, ref, watch } from "vue";
-import { VNodeArrayChildren } from "vue";
+import type { VNodeArrayChildren } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   EnvironmentSelect,
@@ -92,8 +93,8 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
-  ChangeHistory,
   ChangeHistoryView,
   ChangeHistory_Type,
   DatabaseMetadataView,
@@ -105,7 +106,7 @@ import {
 } from "@/utils";
 import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
 import HumanizeDate from "../misc/HumanizeDate.vue";
-import { ChangeHistorySourceSchema } from "./types";
+import type { ChangeHistorySourceSchema } from "./types";
 
 const props = defineProps<{
   selectState?: ChangeHistorySourceSchema;

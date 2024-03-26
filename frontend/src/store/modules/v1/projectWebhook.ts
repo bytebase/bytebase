@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { projectServiceClient } from "@/grpcweb";
-import { IdType } from "@/types";
-import { Project, Webhook } from "@/types/proto/v1/project_service";
+import type { IdType } from "@/types";
+import type { Project, Webhook } from "@/types/proto/v1/project_service";
 import { extractProjectWebhookID } from "@/utils";
 import { useProjectV1Store } from "./project";
 

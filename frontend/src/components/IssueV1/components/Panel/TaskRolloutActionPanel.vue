@@ -129,8 +129,8 @@ import { NButton, NCheckbox, NInput, NScrollbar, NTooltip } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { PlanCheckBar } from "@/components/IssueV1/components/PlanCheckSection";
+import type { TaskRolloutAction } from "@/components/IssueV1/logic";
 import {
-  TaskRolloutAction,
   planCheckRunListForTask,
   planCheckRunSummaryForCheckRunList,
   semanticTaskType,
@@ -143,11 +143,8 @@ import {
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import {
-  Task,
-  TaskRun,
-  TaskRun_Status,
-} from "@/types/proto/v1/rollout_service";
+import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
+import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
 import RolloutTaskDatabaseName from "./RolloutTaskDatabaseName.vue";

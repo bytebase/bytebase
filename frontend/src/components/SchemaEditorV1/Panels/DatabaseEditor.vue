@@ -136,17 +136,19 @@ import {
   useSchemaEditorV1Store,
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import {
+import type {
   ColumnMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
 import { emptyDatabase } from "@/types/v1/database";
-import {
+import type {
   Table,
   DatabaseTabContext,
   DatabaseSchema,
+} from "@/types/v1/schemaEditor";
+import {
   SchemaEditorTabType,
   convertTableMetadataToTable,
 } from "@/types/v1/schemaEditor";

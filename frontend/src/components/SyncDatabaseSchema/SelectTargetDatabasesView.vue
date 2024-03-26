@@ -242,9 +242,10 @@ import {
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
-import { ComposedDatabase, UNKNOWN_ID } from "@/types";
+import type { ComposedDatabase } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { ChangeHistory } from "@/types/proto/v1/database_service";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   changeHistoryLink,
   databaseV1Url,
@@ -254,7 +255,7 @@ import {
 import DiffViewPanel from "./DiffViewPanel.vue";
 import RawSQLEditorPanel from "./RawSQLEditorPanel.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
-import { RawSQLState, SourceSchemaType } from "./types";
+import type { RawSQLState, SourceSchemaType } from "./types";
 
 interface DatabaseSourceSchema {
   environmentId: string;

@@ -33,15 +33,10 @@
 <script setup lang="ts">
 import { useLocalStorage } from "@vueuse/core";
 import { head } from "lodash-es";
-import {
-  NButton,
-  NButtonGroup,
-  ButtonGroupProps,
-  NPopselect,
-  SelectOption,
-} from "naive-ui";
+import type { ButtonGroupProps, SelectOption } from "naive-ui";
+import { NButton, NButtonGroup, NPopselect } from "naive-ui";
 import { ref, computed } from "vue";
-import { ContextMenuButtonAction } from "./types";
+import type { ContextMenuButtonAction } from "./types";
 
 const STORE_PREFIX = "bb.context-menu-button";
 

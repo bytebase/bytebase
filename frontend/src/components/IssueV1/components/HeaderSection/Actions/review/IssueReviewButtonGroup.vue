@@ -22,8 +22,8 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import type { IssueReviewAction } from "@/components/IssueV1";
 import {
-  IssueReviewAction,
   getApplicableIssueStatusActionList,
   getApplicableStageRolloutActionList,
   getApplicableTaskRolloutActionList,
@@ -37,7 +37,8 @@ import {
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
 import { extractUserResourceName } from "@/utils";
-import { ExtraActionOption, IssueStatusActionButtonGroup } from "../common";
+import type { ExtraActionOption } from "../common";
+import { IssueStatusActionButtonGroup } from "../common";
 import ReviewActionButton from "./ReviewActionButton.vue";
 
 const { t } = useI18n();

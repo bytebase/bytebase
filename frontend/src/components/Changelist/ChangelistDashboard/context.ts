@@ -1,5 +1,6 @@
 import Emittery from "emittery";
-import { InjectionKey, Ref, inject, provide, ref, watch } from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 export type ChangelistDashboardFilter = {

@@ -1,10 +1,10 @@
 import { t } from "@/plugins/i18n";
-import { ComposedIssue } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { ComposedIssue } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import type { Task } from "@/types/proto/v1/rollout_service";
 import {
-  Task,
   Task_Status,
   task_StatusToJSON,
   Task_Type,

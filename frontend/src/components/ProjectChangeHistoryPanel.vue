@@ -24,12 +24,13 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, reactive, watchEffect } from "vue";
-import { BBTableSectionDataSource } from "@/bbkit/types";
+import type { PropType } from "vue";
+import { reactive, watchEffect } from "vue";
+import type { BBTableSectionDataSource } from "@/bbkit/types";
 import { ChangeHistoryTable } from "@/components/ChangeHistory";
 import { useChangeHistoryStore } from "@/store";
-import { ComposedDatabase } from "@/types";
-import { ChangeHistory } from "@/types/proto/v1/database_service";
+import type { ComposedDatabase } from "@/types";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import { databaseV1Url } from "@/utils";
 
 // Show at most 5 recent migration history for each database

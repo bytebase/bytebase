@@ -1,13 +1,11 @@
 import { useEventListener } from "@vueuse/core";
 import { v1 as uuidv1 } from "uuid";
-import { Ref, computed, ref, unref, watchEffect } from "vue";
+import type { Ref } from "vue";
+import { computed, ref, unref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { ComposedProject, MaybeRef } from "@/types";
-import {
-  ExtractPromiseType,
-  extractProjectResourceName,
-  minmax,
-} from "@/utils";
+import type { ComposedProject, MaybeRef } from "@/types";
+import type { ExtractPromiseType } from "@/utils";
+import { extractProjectResourceName, minmax } from "@/utils";
 
 export type UseRenderMarkdownOptions = {
   minHeight: number;

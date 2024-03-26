@@ -89,9 +89,9 @@
 import { NButton, NCheckbox, NInput, NTooltip } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import type { IssueReviewAction } from "@/components/IssueV1/logic";
 import {
   useIssueContext,
-  IssueReviewAction,
   targetReviewStatusForReviewAction,
   issueReviewActionButtonProps,
   issueReviewActionDisplayName,

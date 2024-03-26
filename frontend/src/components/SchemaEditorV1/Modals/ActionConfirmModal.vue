@@ -20,8 +20,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ButtonProps, NButton } from "naive-ui";
-import { PropType } from "vue";
+import type { ButtonProps } from "naive-ui";
+import { NButton } from "naive-ui";
+import type { PropType } from "vue";
 
 const props = defineProps({
   show: {

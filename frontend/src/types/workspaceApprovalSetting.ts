@@ -1,5 +1,5 @@
-import { SimpleExpr } from "@/plugins/cel";
-import { ApprovalTemplate } from "@/types/proto/v1/issue_service";
+import type { SimpleExpr } from "@/plugins/cel";
+import type { ApprovalTemplate } from "@/types/proto/v1/issue_service";
 import type { Risk_Source } from "@/types/proto/v1/risk_service";
 
 export type LocalApprovalRule = {

@@ -19,7 +19,7 @@
 import { PencilIcon, XIcon } from "lucide-vue-next";
 import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
 import { MiniActionButton } from "@/components/v2";
-import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import type { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 
 defineProps<{
   classification?: string | undefined;

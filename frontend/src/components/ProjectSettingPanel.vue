@@ -14,7 +14,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ComposedProject } from "@/types";
+import type { ComposedProject } from "@/types";
 import ProjectArchiveRestoreButton from "./Project/ProjectArchiveRestoreButton.vue";
 import ProjectGeneralSettingPanel from "./Project/ProjectGeneralSettingPanel.vue";
 

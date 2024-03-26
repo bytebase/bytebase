@@ -18,7 +18,7 @@
 <script lang="ts" setup>
 import { NButton, NInput } from "naive-ui";
 import { ref, nextTick } from "vue";
-import { SQLEditorTab } from "@/types";
+import type { SQLEditorTab } from "@/types";
 
 const props = defineProps<{
   tab: SQLEditorTab;

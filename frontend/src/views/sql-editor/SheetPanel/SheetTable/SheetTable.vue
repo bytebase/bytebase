@@ -36,16 +36,16 @@
 import { escape, orderBy } from "lodash-es";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, BBGridRow, BBGridColumn } from "@/bbkit";
+import type { BBGridRow, BBGridColumn } from "@/bbkit";
+import { BBGrid } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { ProjectV1Name } from "@/components/v2";
 import { useUserStore, useProjectV1Store } from "@/store";
-import {
-  Worksheet,
-  Worksheet_Visibility,
-} from "@/types/proto/v1/worksheet_service";
+import type { Worksheet } from "@/types/proto/v1/worksheet_service";
+import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
 import { getHighlightHTMLByRegExp } from "@/utils";
-import { SheetViewMode, useSheetContextByView, Dropdown } from "../../Sheet";
+import type { SheetViewMode } from "../../Sheet";
+import { useSheetContextByView, Dropdown } from "../../Sheet";
 import SheetConnection from "./SheetConnection.vue";
 
 const props = defineProps<{

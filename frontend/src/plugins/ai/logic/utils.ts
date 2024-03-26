@@ -1,8 +1,8 @@
 import { watch } from "vue";
 import { useCurrentSQLEditorTab } from "@/store";
 import type { SQLEditorConnection } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import type { Engine } from "@/types/proto/v1/common";
+import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { engineNameV1 } from "@/utils";
 
 export const onConnectionChanged = (

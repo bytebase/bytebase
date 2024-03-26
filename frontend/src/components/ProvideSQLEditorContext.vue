@@ -41,10 +41,10 @@ import {
   pushNotification,
   useFilterStore,
 } from "@/store";
+import type { SQLEditorConnection } from "@/types";
 import {
   DEFAULT_PROJECT_V1_NAME,
   DEFAULT_SQL_EDITOR_TAB_MODE,
-  SQLEditorConnection,
   UNKNOWN_ID,
   UNKNOWN_USER_NAME,
 } from "@/types";

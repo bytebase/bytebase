@@ -1,5 +1,5 @@
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   SchemaMetadata,
   TableMetadata,

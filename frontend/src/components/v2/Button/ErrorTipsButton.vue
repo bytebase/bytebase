@@ -30,9 +30,10 @@
 </template>
 
 <script setup lang="ts">
-import { NTooltip, NButton, TooltipProps, ButtonProps } from "naive-ui";
+import type { TooltipProps, ButtonProps } from "naive-ui";
+import { NTooltip, NButton } from "naive-ui";
 import ErrorList from "@/components/misc/ErrorList.vue";
-import { VueClass } from "@/utils";
+import type { VueClass } from "@/utils";
 
 defineProps<{
   disabled?: boolean;

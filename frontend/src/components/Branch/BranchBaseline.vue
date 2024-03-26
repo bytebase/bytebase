@@ -15,7 +15,7 @@
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 
 const props = withDefaults(
   defineProps<{

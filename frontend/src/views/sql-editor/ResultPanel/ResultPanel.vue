@@ -84,7 +84,7 @@ import { Info, X } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { ResultViewV1 } from "../EditorCommon/";
 
 const tabStore = useSQLEditorTabStore();

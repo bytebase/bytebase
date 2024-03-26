@@ -4,8 +4,8 @@ import PouchDB from "pouchdb";
 import PouchDBFind from "pouchdb-find";
 import { v1 as uuidv1 } from "uuid";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
-import { MaybeRef, SQLEditorConnection } from "@/types";
-import { Conversation, Message } from "../types";
+import type { MaybeRef, SQLEditorConnection } from "@/types";
+import type { Conversation, Message } from "../types";
 
 type RowStatus = "NORMAL" | "ARCHIVED";
 

@@ -1,13 +1,6 @@
 import Emittery from "emittery";
-import {
-  InjectionKey,
-  Ref,
-  computed,
-  inject,
-  provide,
-  ref,
-  watchEffect,
-} from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { computed, inject, provide, ref, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import {
   useChangelistStore,
@@ -15,13 +8,9 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import {
-  ComposedProject,
-  unknownChangelist,
-  unknownProject,
-  ProjectPermission,
-} from "@/types";
-import {
+import type { ComposedProject, ProjectPermission } from "@/types";
+import { unknownChangelist, unknownProject } from "@/types";
+import type {
   Changelist,
   Changelist_Change as Change,
 } from "@/types/proto/v1/changelist_service";

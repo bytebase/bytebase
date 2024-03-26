@@ -15,7 +15,8 @@
 </template>
 
 <script lang="ts" setup>
-import { NSelect, SelectOption, SelectRenderLabel } from "naive-ui";
+import type { SelectOption, SelectRenderLabel } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed, h, watch } from "vue";
 import { useSlots } from "vue";
 import { useI18n } from "vue-i18n";
@@ -24,8 +25,9 @@ import {
   useSearchDatabaseV1List,
   useDatabaseV1Store,
 } from "@/store";
-import { ComposedDatabase, UNKNOWN_ID, unknownDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import type { ComposedDatabase } from "@/types";
+import { UNKNOWN_ID, unknownDatabase } from "@/types";
+import type { Engine } from "@/types/proto/v1/common";
 import { instanceV1Name, supportedEngineV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model";
 

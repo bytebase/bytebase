@@ -8,8 +8,8 @@ import {
 } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { IamPolicy } from "@/types/proto/v1/iam_policy";
-import { Project } from "@/types/proto/v1/project_service";
+import type { IamPolicy } from "@/types/proto/v1/iam_policy";
+import type { Project } from "@/types/proto/v1/project_service";
 
 export const extractProjectResourceName = (name: string) => {
   const pattern = /(?:^|\/)projects\/([^/]+)(?:$|\/)/;

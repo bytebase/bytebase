@@ -1,12 +1,6 @@
 import { isNumber } from "lodash-es";
-import {
-  ConditionExpr,
-  ConditionGroupExpr,
-  isEqualityExpr,
-  isNumberFactor,
-  isStringFactor,
-  SimpleExpr,
-} from "../types";
+import type { ConditionExpr, ConditionGroupExpr, SimpleExpr } from "../types";
+import { isEqualityExpr, isNumberFactor, isStringFactor } from "../types";
 import {
   isCollectionExpr,
   isConditionExpr,

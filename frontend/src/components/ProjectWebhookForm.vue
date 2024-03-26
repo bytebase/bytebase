@@ -259,7 +259,8 @@
 <script lang="ts" setup>
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { NCheckbox, NRadio, NRadioGroup } from "naive-ui";
-import { reactive, computed, PropType, watch } from "vue";
+import type { PropType } from "vue";
+import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
@@ -275,12 +276,12 @@ import {
   projectWebhookV1ActivityItemList,
   projectWebhookV1TypeItemList,
 } from "@/types";
-import {
+import type {
   Activity_Type,
   Project,
   Webhook,
-  Webhook_Type,
 } from "@/types/proto/v1/project_service";
+import { Webhook_Type } from "@/types/proto/v1/project_service";
 import { projectWebhookV1Slug } from "../utils";
 
 interface LocalState {

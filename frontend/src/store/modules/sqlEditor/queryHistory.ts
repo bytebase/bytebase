@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { sqlServiceClient } from "@/grpcweb";
-import { QueryHistory } from "@/types/proto/v1/sql_service";
+import type { QueryHistory } from "@/types/proto/v1/sql_service";
 
 export const useSQLEditorQueryHistoryStore = defineStore(
   "sqlEditorQueryHistory",

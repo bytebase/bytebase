@@ -63,10 +63,10 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { UNKNOWN_ID, PresetRoleType } from "@/types";
-import { SearchParams, SearchScopeId } from "@/utils";
+import type { SearchParams, SearchScopeId } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import ExportRecordTable from "./ExportRecordTable.vue";
-import { ExportRecord } from "./types";
+import type { ExportRecord } from "./types";
 
 interface LocalState {
   exportRecords: ExportRecord[];

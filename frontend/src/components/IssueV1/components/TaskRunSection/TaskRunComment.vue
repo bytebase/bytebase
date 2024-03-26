@@ -27,8 +27,8 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { unknownTask, isPostgresFamily } from "@/types";
+import type { TaskRun } from "@/types/proto/v1/rollout_service";
 import {
-  TaskRun,
   TaskRun_ExecutionStatus,
   TaskRun_Status,
   Task_Type,

@@ -16,12 +16,15 @@
 </template>
 
 <script lang="ts" setup>
-import { NSelect, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useEnvironmentV1Store, useInstanceV1List } from "@/store";
-import { ComposedInstance, UNKNOWN_ID, unknownInstance } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
+import type { ComposedInstance } from "@/types";
+import { UNKNOWN_ID, unknownInstance } from "@/types";
+import type { Engine } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/v1/common";
 import { supportedEngineV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model/Instance";
 

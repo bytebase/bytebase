@@ -29,11 +29,9 @@ import { NInput } from "naive-ui";
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useNotificationStore } from "@/store";
-import { ComposedDatabase } from "@/types";
-import {
-  DatabaseMetadata,
-  SchemaMetadata,
-} from "@/types/proto/v1/database_service";
+import type { ComposedDatabase } from "@/types";
+import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import { SchemaMetadata } from "@/types/proto/v1/database_service";
 import { useSchemaEditorContext } from "../context";
 
 const schemaNameFieldRegexp = /^\S+$/;

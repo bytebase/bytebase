@@ -1,13 +1,13 @@
 import { orderBy, uniq } from "lodash-es";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   DeploymentConfig,
   DeploymentSpec,
   LabelSelector,
   LabelSelectorRequirement,
-  OperatorType,
   Schedule,
 } from "@/types/proto/v1/project_service";
+import { OperatorType } from "@/types/proto/v1/project_service";
 import { getSemanticLabelValue } from "../label";
 
 export const VIRTUAL_LABEL_KEYS = ["environment"];

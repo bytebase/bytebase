@@ -6,8 +6,8 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   DatabaseMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
