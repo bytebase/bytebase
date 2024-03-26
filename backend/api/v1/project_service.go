@@ -954,19 +954,20 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		baseDir = strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
 	}
 
+	// TODO(d): pass in the resource ID from API.
+	vcsConnectorID := "default"
 	repositoryCreate := &store.RepositoryMessage{
 		VCSUID:            vcs.ID,
 		VCSResourceID:     vcs.ResourceID,
 		ProjectResourceID: project.ResourceID,
-		// TODO(d): pass in the resource ID from API.
-		ResourceID:     "default",
-		WebhookURLHost: setting.ExternalUrl,
-		Title:          request.ProjectGitopsInfo.Title,
-		FullPath:       request.ProjectGitopsInfo.FullPath,
-		WebURL:         request.ProjectGitopsInfo.WebUrl,
-		Branch:         request.ProjectGitopsInfo.Branch,
-		BaseDirectory:  baseDir,
-		ExternalID:     request.ProjectGitopsInfo.ExternalId,
+		ResourceID:        vcsConnectorID,
+		WebhookURLHost:    setting.ExternalUrl,
+		Title:             request.ProjectGitopsInfo.Title,
+		FullPath:          request.ProjectGitopsInfo.FullPath,
+		WebURL:            request.ProjectGitopsInfo.WebUrl,
+		Branch:            request.ProjectGitopsInfo.Branch,
+		BaseDirectory:     baseDir,
+		ExternalID:        request.ProjectGitopsInfo.ExternalId,
 	}
 
 	if repositoryCreate.Branch == "" {
@@ -1008,18 +1009,18 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 			return nil, status.Errorf(codes.Internal, "failed to find workspace id with error: %v", err.Error())
 		}
 
-		repositoryCreate.WebhookEndpointID = fmt.Sprintf("%s-%d", workspaceID, time.Now().Unix())
+		repositoryCreate.WebhookEndpointID = fmt.Sprintf("workspaces/%s/projects/%s/vcsConnectors/%s", workspaceID, project.ResourceID, vcsConnectorID)
 		secretToken, err := common.RandomString(gitlab.SecretTokenLength)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate random secret token for vcs with error: %v", err.Error())
 		}
 		repositoryCreate.WebhookSecretToken = secretToken
 
-		gitopsWebhookURL := setting.GitopsWebhookUrl
-		if gitopsWebhookURL == "" {
-			gitopsWebhookURL = setting.ExternalUrl
+		bytebaseEndpointURL := setting.GitopsWebhookUrl
+		if bytebaseEndpointURL == "" {
+			bytebaseEndpointURL = setting.ExternalUrl
 		}
-		webhookID, err := createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, vcs.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID, gitopsWebhookURL)
+		webhookID, err := createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, vcs.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID, bytebaseEndpointURL)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create webhook for project %s with error: %v", repositoryCreate.ProjectResourceID, err.Error())
 		}
@@ -2443,14 +2444,14 @@ func isBranchNotFound(
 	return false, err
 }
 
-func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID, gitopsWebhookURL string) (string, error) {
+func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID, bytebaseEndpointURL string) (string, error) {
 	// Create a new webhook and retrieve the created webhook ID
 	var webhookCreatePayload []byte
 	var err error
 	switch vcsType {
 	case vcsplugin.GitLab:
 		webhookCreate := gitlab.WebhookCreate{
-			URL:                   fmt.Sprintf("%s/hook/gitlab/%s", gitopsWebhookURL, webhookEndpointID),
+			URL:                   fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 			SecretToken:           secretToken,
 			PushEvents:            true,
 			EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
@@ -2462,7 +2463,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 	case vcsplugin.GitHub:
 		webhookPost := github.WebhookCreateOrUpdate{
 			Config: github.WebhookConfig{
-				URL:         fmt.Sprintf("%s/hook/github/%s", gitopsWebhookURL, webhookEndpointID),
+				URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 				ContentType: "json",
 				Secret:      secretToken,
 				InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
@@ -2476,7 +2477,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 	case vcsplugin.Bitbucket:
 		webhookPost := bitbucket.WebhookCreateOrUpdate{
 			Description: "Bytebase GitOps",
-			URL:         fmt.Sprintf("%s/hook/bitbucket/%s", gitopsWebhookURL, webhookEndpointID),
+			URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 			Active:      true,
 			Events:      []string{"repo:push"},
 		}
@@ -2495,7 +2496,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 			ConsumerActionID: "httpRequest",
 			ConsumerID:       "webHooks",
 			ConsumerInputs: azure.WebhookCreateConsumerInputs{
-				URL:                  fmt.Sprintf("%s/hook/azure/%s", gitopsWebhookURL, webhookEndpointID),
+				URL:                  fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 				AcceptUntrustedCerts: true,
 			},
 			EventType:   "git.push",
