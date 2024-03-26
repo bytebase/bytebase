@@ -1,0 +1,163 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "generated-go/v1";
+
+service VCSConnectorService {
+  rpc CreateVCSConnector(CreateVCSConnectorRequest) returns (VCSConnector) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/vcsConnectors"
+      body: "vcs_connector"
+    };
+    option (google.api.method_signature) = "parent,vcsConnector";
+  }
+
+  rpc GetVCSConnector(GetVCSConnectorRequest) returns (VCSConnector) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/vcsConnectors/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc ListVCSConnectors(ListVCSConnectorsRequest) returns (ListVCSConnectorsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/vcsConnectors"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc UpdateVCSConnector(UpdateVCSConnectorRequest) returns (VCSConnector) {
+    option (google.api.http) = {
+      patch: "/v1/{vcs_connector.name=projects/*/vcsConnectors/*}"
+      body: "vcs_connector"
+    };
+    option (google.api.method_signature) = "vcs_connector,update_mask";
+  }
+
+  rpc DeleteVCSConnector(DeleteVCSConnectorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=projects/*/vcsConnectors/*}"};
+    option (google.api.method_signature) = "name";
+  }
+}
+
+message CreateVCSConnectorRequest {
+  // The parent resource where this vcsConnector will be created.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The vcsConnector to create.
+  VCSConnector vcs_connector = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The ID to use for the vcsConnector, which will become the final component of
+  // the vcsConnector's resource name.
+  //
+  // This value should be 4-63 characters, and valid characters
+  // are /[a-z][0-9]-/.
+  string vcs_connector_id = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetVCSConnectorRequest {
+  // The name of the vcsConnector to retrieve.
+  // Format: projects/{project}/vcsConnectors/{vcsConnector}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListVCSConnectorsRequest {
+  // The parent, which owns this collection of vcsConnectors.
+  // Format: projects/{project}
+  // Use "projects/-" to list all vcsConnectors.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of databases to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 databases will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListDatabases` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListDatabases` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListVCSConnectorsResponse {
+  // The vcsConnectors from the specified request.
+  repeated VCSConnector vcs_connectors = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message UpdateVCSConnectorRequest {
+  // The vcsConnector to update.
+  //
+  // The vcsConnector's `name` field is used to identify the vcsConnector to update.
+  // Format: projects/{project}/vcsConnectors/{vcsConnector}
+  VCSConnector vcs_connector = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to be updated.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteVCSConnectorRequest {
+  // The name of the vcsConnector to delete.
+  // Format: projects/{project}/vcsConnectors/{vcsConnector}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message VCSConnector {
+  // The name of the vcsConnector resource.
+  // Canonical parent is project.
+  // Format: projects/{project}/vcsConnectors/{vcsConnector}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // The title of the vcs connector.
+  string title = 2;
+
+  // The creator of the vcsConnector.
+  // Format: users/{email}
+  string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The updater of the vcsConnector.
+  // Format: users/{email}
+  string updater = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The create time of the vcsConnector.
+  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The last update time of the vcsConnector.
+  google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The name of the VCS.
+  // Format: vcsProviders/{vcsProvider}
+  string vcs_provider = 7;
+
+  // The reposition external id in target VCS.
+  string external_id = 8;
+
+  // The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.
+  string base_directory = 9;
+
+  // The branch Bytebase listens to for changes. For example: main.
+  string branch = 10;
+
+  // The webhook endpoint ID of the repository.
+  string webhook_endpoint_id = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // TODO(d): move these to create VCS connector API.
+  // The full_path of the repository. For example: bytebase/sample.
+  string full_path = 12;
+
+  // The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample.
+  string web_url = 13;
+}

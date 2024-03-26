@@ -602,6 +602,17 @@
   
     - [SQLService](#bytebase-v1-SQLService)
   
+- [v1/vcs_connector_service.proto](#v1_vcs_connector_service-proto)
+    - [CreateVCSConnectorRequest](#bytebase-v1-CreateVCSConnectorRequest)
+    - [DeleteVCSConnectorRequest](#bytebase-v1-DeleteVCSConnectorRequest)
+    - [GetVCSConnectorRequest](#bytebase-v1-GetVCSConnectorRequest)
+    - [ListVCSConnectorsRequest](#bytebase-v1-ListVCSConnectorsRequest)
+    - [ListVCSConnectorsResponse](#bytebase-v1-ListVCSConnectorsResponse)
+    - [UpdateVCSConnectorRequest](#bytebase-v1-UpdateVCSConnectorRequest)
+    - [VCSConnector](#bytebase-v1-VCSConnector)
+  
+    - [VCSConnectorService](#bytebase-v1-VCSConnectorService)
+  
 - [v1/worksheet_service.proto](#v1_worksheet_service-proto)
     - [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest)
     - [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest)
@@ -9671,6 +9682,165 @@ Type of the SheetPayload.
 | ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
+
+ 
+
+
+
+<a name="v1_vcs_connector_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/vcs_connector_service.proto
+
+
+
+<a name="bytebase-v1-CreateVCSConnectorRequest"></a>
+
+### CreateVCSConnectorRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where this vcsConnector will be created. Format: projects/{project} |
+| vcs_connector | [VCSConnector](#bytebase-v1-VCSConnector) |  | The vcsConnector to create. |
+| vcs_connector_id | [string](#string) |  | The ID to use for the vcsConnector, which will become the final component of the vcsConnector&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteVCSConnectorRequest"></a>
+
+### DeleteVCSConnectorRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcsConnector to delete. Format: projects/{project}/vcsConnectors/{vcsConnector} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetVCSConnectorRequest"></a>
+
+### GetVCSConnectorRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcsConnector to retrieve. Format: projects/{project}/vcsConnectors/{vcsConnector} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListVCSConnectorsRequest"></a>
+
+### ListVCSConnectorsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of vcsConnectors. Format: projects/{project} Use &#34;projects/-&#34; to list all vcsConnectors. |
+| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListVCSConnectorsResponse"></a>
+
+### ListVCSConnectorsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_connectors | [VCSConnector](#bytebase-v1-VCSConnector) | repeated | The vcsConnectors from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateVCSConnectorRequest"></a>
+
+### UpdateVCSConnectorRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_connector | [VCSConnector](#bytebase-v1-VCSConnector) |  | The vcsConnector to update.
+
+The vcsConnector&#39;s `name` field is used to identify the vcsConnector to update. Format: projects/{project}/vcsConnectors/{vcsConnector} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
+
+
+
+
+
+
+<a name="bytebase-v1-VCSConnector"></a>
+
+### VCSConnector
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcsConnector resource. Canonical parent is project. Format: projects/{project}/vcsConnectors/{vcsConnector} |
+| title | [string](#string) |  | The title of the vcs connector. |
+| creator | [string](#string) |  | The creator of the vcsConnector. Format: users/{email} |
+| updater | [string](#string) |  | The updater of the vcsConnector. Format: users/{email} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the vcsConnector. |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the vcsConnector. |
+| vcs_provider | [string](#string) |  | The name of the VCS. Format: vcsProviders/{vcsProvider} |
+| external_id | [string](#string) |  | The reposition external id in target VCS. |
+| base_directory | [string](#string) |  | The root directory where Bytebase observes the file change. If empty, then it observes the entire repository. |
+| branch | [string](#string) |  | The branch Bytebase listens to for changes. For example: main. |
+| webhook_endpoint_id | [string](#string) |  | The webhook endpoint ID of the repository. |
+| full_path | [string](#string) |  | TODO(d): move these to create VCS connector API. The full_path of the repository. For example: bytebase/sample. |
+| web_url | [string](#string) |  | The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-VCSConnectorService"></a>
+
+### VCSConnectorService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| CreateVCSConnector | [CreateVCSConnectorRequest](#bytebase-v1-CreateVCSConnectorRequest) | [VCSConnector](#bytebase-v1-VCSConnector) |  |
+| GetVCSConnector | [GetVCSConnectorRequest](#bytebase-v1-GetVCSConnectorRequest) | [VCSConnector](#bytebase-v1-VCSConnector) |  |
+| ListVCSConnectors | [ListVCSConnectorsRequest](#bytebase-v1-ListVCSConnectorsRequest) | [ListVCSConnectorsResponse](#bytebase-v1-ListVCSConnectorsResponse) |  |
+| UpdateVCSConnector | [UpdateVCSConnectorRequest](#bytebase-v1-UpdateVCSConnectorRequest) | [VCSConnector](#bytebase-v1-VCSConnector) |  |
+| DeleteVCSConnector | [DeleteVCSConnectorRequest](#bytebase-v1-DeleteVCSConnectorRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 
