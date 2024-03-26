@@ -480,48 +480,6 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	return instanceMessages, nil
 }
 
-// FindInstanceWithDatabaseBackupEnabled finds instances with at least one database who enables backup policy.
-func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context) ([]*InstanceMessage, error) {
-	rows, err := s.db.db.QueryContext(ctx, `
-		SELECT DISTINCT
-			instance.id
-		FROM instance
-		JOIN db ON db.instance_id = instance.id
-		JOIN backup_setting AS bs ON db.id = bs.database_id
-		WHERE bs.enabled = true AND instance.row_status = $1
-	`, api.Normal)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var instanceUIDs []int
-	for rows.Next() {
-		var instanceUID int
-		if err := rows.Scan(
-			&instanceUID,
-		); err != nil {
-			return nil, err
-		}
-		instanceUIDs = append(instanceUIDs, instanceUID)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	var instances []*InstanceMessage
-	for _, instanceUID := range instanceUIDs {
-		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{UID: &instanceUID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance %v", instanceUID)
-		}
-		if instance == nil {
-			continue
-		}
-		instances = append(instances, instance)
-	}
-	return instances, nil
-}
-
 var countActivateInstanceQuery = "SELECT COUNT(*) FROM instance WHERE activation = TRUE AND row_status = 'NORMAL'"
 
 // CheckActivationLimit checks if activation instance count reaches the limit.

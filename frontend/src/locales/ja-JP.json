@@ -110,7 +110,6 @@
     "schema": "スキーマ",
     "anomalies": "異常",
     "do-not-show-again": "再表示しない",
-    "backups": "バックアップ",
     "detail": "詳細",
     "type": "タイプ",
     "language": "言語",
@@ -195,7 +194,6 @@
     "enable": "有効にする",
     "disable": "無効にする",
     "view-doc": "ドキュメントを表示",
-    "backup-and-restore": "バックアップと復元",
     "write-only": "書き込み専用",
     "pitr": "PITR",
     "fix": "修正",
@@ -272,7 +270,6 @@
     "missing-permission": "必要な権限が不足しています",
     "continue-anyway": "とにかく続けます",
     "permissions": "権限",
-    "backup": "バックアップ",
     "cutover": "カットオーバー",
     "baseline": "ベースライン",
     "project-member": "プロジェクトメンバー",
@@ -1423,10 +1420,6 @@
     "create": "環境を作成する",
     "restore": "この環境を復元する",
     "successfully-updated-environment": "環境'{name}'が正常に更新されました。",
-    "disable-auto-backup": {
-      "self": "データベースの自動バックアップを無効にする",
-      "content": "自動バックアップポリシーの無効化は過去に適用されません。\nこの環境のすべてのデータベースに適用することを確認していますか？"
-    },
     "production-environment": "本番環境",
     "access-control": {
       "title": "アクセス制御",
@@ -1507,16 +1500,6 @@
       "manual-by-workspace-admin": "ワークスペース管理者",
       "manual-by-custom-project-roles": "カスタムプロジェクト役割"
     },
-    "backup": {
-      "name": "データベースバックアップスケジュールポリシー",
-      "tip": "このポリシーは遡及的に適用されません。",
-      "not-enforced": "強制されていません",
-      "not-enforced-info": "バックアップスケジュールは強制されていません。",
-      "daily": "毎日のバックアップ",
-      "daily-info": "すべてのデータベースを毎日バックアップするように強制します。",
-      "weekly": "週次バックアップ",
-      "weekly-info": "すべてのデータベースを週次バックアップするように強制します。"
-    },
     "environment-tier": {
       "name": "環境ティア",
       "description": "この環境は他の環境とは異なる表示になります。",
@@ -1565,7 +1548,6 @@
     "sync-status": "同期ステータス",
     "last-successful-sync": "最後の成功した同期",
     "filter-database": "データベースをフィルターする",
-    "database-backup": "データベースのバックアップ",
     "transfer-project": "プロジェクトの転送",
     "unassign": "アンアサイン",
     "unassign-alert-title": "データベースのアンアサイン",
@@ -1591,47 +1573,10 @@
     "batch-action-disabled-for-unassigned": "アンアサインされたデータベースに対して{action}することはできません",
     "successfully-transferred-databases": "データベースが正常に転送されました",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "'{0}'がプロジェクト'{1}'に正常に転送されました",
-    "backup-name": "バックアップ名",
-    "create-backup": "バックアップを作成する",
-    "automatic-x-backup": "自動{freq}バックアップ",
-    "automatic-backup": "自動バックアップ",
-    "disable-automatic-backup": "自動バックアップを無効にする",
-    "backuppolicy-backup-enforced-and-cant-be-disabled": "{0}バックアップが強制されており、無効にすることはできません",
-    "backup-policy": {
-      "DAILY": "毎日",
-      "WEEKLY": "毎週"
-    },
-    "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "バックアップが成功した場合には、HTTP POSTリクエストが送信されます。",
-    "backup-info": {
-      "template": "バックアップは毎週の{dayOrWeek}の{time}に実行されます。バックアップデータは{retentionDays}日間保持されます。"
-    },
-    "week": {
-      "Sunday": "日曜日",
-      "Monday": "月曜日",
-      "Tuesday": "火曜日",
-      "Wednesday": "水曜日",
-      "Thursday": "木曜日",
-      "Friday": "金曜日",
-      "Saturday": "土曜日",
-      "day": "日"
-    },
-    "enable-backup": "バックアップを有効にする",
-    "backup-now": "今すぐバックアップ",
-    "create-a-manual-backup": "手動でバックアップを作成",
-    "disabled": "無効",
-    "enabled": "有効",
-    "action-automatic-backup-for-database-props-database-name": "データベース '{1}' の自動バックアップ {0}。",
-    "updated-backup-webhook-url-for-database-props-database-name": "データベース '{0}' のバックアップ Webhook URL を更新しました。",
     "last-sync-status": "最後の同期ステータス",
     "last-sync-status-long": "最後の同期ステータス {0} {1}",
     "gitops-enabled": "GitOps が有効になっています",
-    "restore-backup": "バックアップ '{0}' を新しいデータベースに復元",
     "nullable": "Nullable",
-    "restore": "復元",
-    "backup": {
-      "enabled": "有効",
-      "disabled": "無効"
-    },
     "expression": "式",
     "position": "位置",
     "unique": "ユニーク",
@@ -1666,20 +1611,6 @@
     },
     "show-reserved-tables": "Bytebaseの予約済みテーブルを表示します",
     "show-reserved-databases": "Bytebaseの予約済みデータベースを表示します",
-    "backup-setting": {
-      "schedule": {
-        "disabled": "無効",
-        "weekly": "毎週",
-        "daily": "毎日"
-      },
-      "form": {
-        "schedule": "スケジュール",
-        "day-of-week": "曜日",
-        "time-of-day": "時刻",
-        "retention-period": "保持期間（日）"
-      }
-    },
-    "backup-policy-violation": "バックアップポリシーの違反",
     "synced-at": "{time}に同期済み",
     "not-found-last-successful-sync-was": "見つかりませんでした、最後の成功した同期は{time}でした",
     "view-unassigned-databases": "未割り当てのデータベースを表示する",
@@ -1856,8 +1787,6 @@
     },
     "action": {
       "check-instance": "インスタンスのチェック",
-      "view-backup": "バックアップの表示",
-      "configure-backup": "バックアップの設定",
       "view-diff": "差分の表示"
     },
     "last-seen": "最終確認日時",
@@ -2056,7 +1985,7 @@
         "github-com-admin-requirement": "GitHubの組織の管理者である必要があります。",
         "bitbucket-admin-requirement": "Bitbucketのワークスペースの管理者でなければなりません。",
         "azure-devops-service": "Azure DevOps サービス",
-        "azure-admin-requirement":"Azure DevOpsの組織の管理者である必要があります。",
+        "azure-admin-requirement": "Azure DevOpsの組織の管理者である必要があります。",
         "add-success": "Gitプロバイダー {vcs} を正常に追加しました",
         "choose": "Gitプロバイダーを選択してください",
         "basic-info": {
@@ -2521,10 +2450,6 @@
         "title": "展開ポリシー",
         "desc": "展開ポリシーは、スキーマ変更タスクが手動で展開が必要かどうかを制御します。"
       },
-      "bb-feature-backup-policy": {
-        "title": "バックアップポリシー",
-        "desc": "バックアップポリシーは、スケジュールに基づいてデータベースを自動バックアップします。"
-      },
       "bb-feature-environment-tier-policy": {
         "title": "環境ティア",
         "desc": "環境を本番環境としてマークします。"
@@ -2584,10 +2509,6 @@
       "bb-feature-online-migration": {
         "title": "オンラインマイグレーション",
         "desc": "gh-ostをベースにしています。大きなテーブルの場合、テーブルのロック時間を数時間から数秒に短縮することができます。"
-      },
-      "bb-feature-disaster-recovery-pitr": {
-        "title": "ポイントインタイムリカバリ（PITR）",
-        "desc": "データベースの状態を特定の時点に復元します。"
       },
       "bb-feature-sync-schema-all-versions": {
         "title": "すべてのバージョンのスキーマを同期します",

@@ -43,8 +43,6 @@ type State struct {
 	// RunningTaskRunsCancelFunc is the cancelFunc of running taskruns.
 	RunningTaskRunsCancelFunc sync.Map // map[taskRunID]context.CancelFunc
 
-	// RunningBackupDatabases is the set of databases running backups.
-	RunningBackupDatabases sync.Map // map[databaseID]bool
 	// RunningPlanChecks is the set of running plan checks.
 	RunningPlanChecks sync.Map
 	// InstanceOutstandingConnections is the maximum number of connections per instance.
