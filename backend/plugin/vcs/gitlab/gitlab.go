@@ -48,7 +48,9 @@ type WebhookCreate struct {
 	URL         string `json:"url"`
 	SecretToken string `json:"token"`
 	// This is set to true
-	PushEvents bool `json:"push_events"`
+	PushEvents          bool `json:"push_events"`
+	NoteEvents          bool `json:"note_events"`
+	MergeRequestsEvents bool `json:"merge_requests_events"`
 	// For now, there is no native dry run DDL support in mysql/postgres. One may wonder if we could wrap the DDL
 	// in a transaction and just not commit at the end, unfortunately there are side effects which are hard to control.
 	// See https://www.postgresql.org/message-id/CAMsr%2BYGiYQ7PYvYR2Voio37YdCpp79j5S%2BcmgVJMOLM2LnRQcA%40mail.gmail.com
