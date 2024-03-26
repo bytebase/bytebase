@@ -248,13 +248,13 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 		where, args = append(where, fmt.Sprintf("repository.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.VCSUID; v != nil {
-		where, args = append(where, fmt.Sprintf("vcs_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("repository.vcs_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.VCSResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("vcs.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("repository.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.WebURL; v != nil {
 		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
