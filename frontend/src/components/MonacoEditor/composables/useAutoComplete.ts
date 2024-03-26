@@ -37,9 +37,7 @@ export const useAutoComplete = async (
       if (instance && instance !== String(UNKNOWN_ID)) {
         p.instanceId = ctx.instance;
       }
-      const databaseName = extractDatabaseResourceName(
-        ctx.database ?? ""
-      ).database;
+      const { databaseName } = extractDatabaseResourceName(ctx.database ?? "");
       if (databaseName && databaseName !== String(UNKNOWN_ID)) {
         p.databaseName = databaseName;
       }

@@ -18,7 +18,8 @@ export const useExportData = () => {
   const exportData = async (params: ExportDataParams) => {
     const { content } = await sqlStore.exportData({
       name: params.database,
-      connectionDatabase: extractDatabaseResourceName(params.database).database, // deprecated field, remove me later
+      connectionDatabase: extractDatabaseResourceName(params.database)
+        .databaseName, // deprecated field, remove me later
       statement: params.statement,
       limit: params.limit,
       format: params.format,

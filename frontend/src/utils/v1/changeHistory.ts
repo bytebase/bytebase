@@ -37,8 +37,8 @@ export const changeHistoryLinkRaw = (
   uid: string,
   version: string
 ) => {
-  const { full } = extractDatabaseResourceName(parent);
-  const composedDatabase = useDatabaseV1Store().getDatabaseByName(full);
+  const { database } = extractDatabaseResourceName(parent);
+  const composedDatabase = useDatabaseV1Store().getDatabaseByName(database);
   const path = [databaseV1Url(composedDatabase), "change-histories", uid].join(
     "/"
   );

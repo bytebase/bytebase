@@ -297,19 +297,19 @@ const generateConditionTitle = () => {
 };
 
 const getDatabaseResourceName = (databaseResource: DatabaseResource) => {
-  const { database } = extractDatabaseResourceName(
+  const { databaseName } = extractDatabaseResourceName(
     databaseResource.databaseName
   );
   if (databaseResource.table) {
     if (databaseResource.schema) {
-      return `${database}.${databaseResource.schema}.${databaseResource.table}`;
+      return `${databaseName}.${databaseResource.schema}.${databaseResource.table}`;
     } else {
-      return `${database}.${databaseResource.table}`;
+      return `${databaseName}.${databaseResource.table}`;
     }
   } else if (databaseResource.schema) {
-    return `${database}.${databaseResource.schema}`;
+    return `${databaseName}.${databaseResource.schema}`;
   } else {
-    return database;
+    return databaseName;
   }
 };
 

@@ -88,9 +88,7 @@ const changeHistory = computed(() => {
 });
 
 const database = computed(() => {
-  const { full: databaseResourceName } = extractDatabaseResourceName(
-    changeHistory.value.name
-  );
-  return useDatabaseV1Store().getDatabaseByName(databaseResourceName);
+  const { database } = extractDatabaseResourceName(changeHistory.value.name);
+  return useDatabaseV1Store().getDatabaseByName(database);
 });
 </script>

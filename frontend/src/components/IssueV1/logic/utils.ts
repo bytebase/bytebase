@@ -44,16 +44,17 @@ export const databaseForTask = (issue: ComposedIssue, task: Task) => {
         db.projectEntity = issue.projectEntity;
 
         db.name = task.target;
-        const { instance: instanceName, database: databaseName } =
-          extractDatabaseResourceName(db.name);
+        const { instance, databaseName } = extractDatabaseResourceName(db.name);
         db.databaseName = databaseName;
-        db.instance = `instances/${instanceName}`;
-        const instance = useInstanceV1Store().getInstanceByName(db.instance);
-        db.instanceEntity = instance;
-        db.instanceResource = InstanceResource.fromJSON(instance);
-        db.environment = instance.environment;
-        db.effectiveEnvironment = instance.environment;
-        db.effectiveEnvironmentEntity = instance.environmentEntity;
+        db.instance = instance;
+        const instanceEntity = useInstanceV1Store().getInstanceByName(
+          db.instance
+        );
+        db.instanceEntity = instanceEntity;
+        db.instanceResource = InstanceResource.fromJSON(instanceEntity);
+        db.environment = instanceEntity.environment;
+        db.effectiveEnvironment = instanceEntity.environment;
+        db.effectiveEnvironmentEntity = instanceEntity.environmentEntity;
         db.syncState = State.DELETED;
       }
       return db;
