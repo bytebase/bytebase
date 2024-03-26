@@ -480,7 +480,6 @@ func postMigration(ctx context.Context, stores *store.Store, task *store.TaskMes
 	}
 	return true, &api.TaskRunResultPayload{
 		Detail:        detail,
-		MigrationID:   migrationID,
 		ChangeHistory: fmt.Sprintf("instances/%s/databases/%s/changeHistories/%s", instance.ResourceID, database.DatabaseName, migrationID),
 		Version:       storedVersion,
 	}, nil

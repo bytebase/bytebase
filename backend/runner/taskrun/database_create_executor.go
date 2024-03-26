@@ -242,9 +242,8 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		)
 	}
 	return true, &api.TaskRunResultPayload{
-		Detail:      fmt.Sprintf("Created database %q", payload.DatabaseName),
-		MigrationID: "",
-		Version:     storedVersion,
+		Detail:  fmt.Sprintf("Created database %q", payload.DatabaseName),
+		Version: storedVersion,
 	}, nil
 }
 
