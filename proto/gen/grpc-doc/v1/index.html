@@ -2466,6 +2466,10 @@
                   <a href="#bytebase.v1.CheckRequest.ChangeType"><span class="badge">E</span>CheckRequest.ChangeType</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.QueryHistory.Type"><span class="badge">E</span>QueryHistory.Type</a>
+                </li>
+              
               
               
                 <li>
@@ -26008,6 +26012,13 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.QueryHistory.Type">QueryHistory.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -26449,6 +26460,35 @@ The types come from the Golang SQL driver. </p></td>
               <tr>
                 <td>DML</td>
                 <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.QueryHistory.Type">QueryHistory.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>QUERY</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EXPORT</td>
+                <td>2</td>
                 <td><p></p></td>
               </tr>
             

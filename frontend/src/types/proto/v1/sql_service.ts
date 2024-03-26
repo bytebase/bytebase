@@ -362,6 +362,46 @@ export interface QueryHistory {
   statement: string;
   error?: string | undefined;
   duration: Duration | undefined;
+  type: QueryHistory_Type;
+}
+
+export enum QueryHistory_Type {
+  TYPE_UNSPECIFIED = 0,
+  QUERY = 1,
+  EXPORT = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function queryHistory_TypeFromJSON(object: any): QueryHistory_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return QueryHistory_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "QUERY":
+      return QueryHistory_Type.QUERY;
+    case 2:
+    case "EXPORT":
+      return QueryHistory_Type.EXPORT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return QueryHistory_Type.UNRECOGNIZED;
+  }
+}
+
+export function queryHistory_TypeToJSON(object: QueryHistory_Type): string {
+  switch (object) {
+    case QueryHistory_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case QueryHistory_Type.QUERY:
+      return "QUERY";
+    case QueryHistory_Type.EXPORT:
+      return "EXPORT";
+    case QueryHistory_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 function createBaseDifferPreviewRequest(): DifferPreviewRequest {
@@ -2514,6 +2554,7 @@ function createBaseQueryHistory(): QueryHistory {
     statement: "",
     error: undefined,
     duration: undefined,
+    type: 0,
   };
 }
 
@@ -2539,6 +2580,9 @@ export const QueryHistory = {
     }
     if (message.duration !== undefined) {
       Duration.encode(message.duration, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.type !== 0) {
+      writer.uint32(64).int32(message.type);
     }
     return writer;
   },
@@ -2599,6 +2643,13 @@ export const QueryHistory = {
 
           message.duration = Duration.decode(reader, reader.uint32());
           continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2617,6 +2668,7 @@ export const QueryHistory = {
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       error: isSet(object.error) ? globalThis.String(object.error) : undefined,
       duration: isSet(object.duration) ? Duration.fromJSON(object.duration) : undefined,
+      type: isSet(object.type) ? queryHistory_TypeFromJSON(object.type) : 0,
     };
   },
 
@@ -2643,6 +2695,9 @@ export const QueryHistory = {
     if (message.duration !== undefined) {
       obj.duration = Duration.toJSON(message.duration);
     }
+    if (message.type !== 0) {
+      obj.type = queryHistory_TypeToJSON(message.type);
+    }
     return obj;
   },
 
@@ -2660,6 +2715,7 @@ export const QueryHistory = {
     message.duration = (object.duration !== undefined && object.duration !== null)
       ? Duration.fromPartial(object.duration)
       : undefined;
+    message.type = object.type ?? 0;
     return message;
   },
 };

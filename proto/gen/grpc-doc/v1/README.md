@@ -598,6 +598,7 @@
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
     - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
+    - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -9467,6 +9468,7 @@ Type of the SheetPayload.
 | statement | [string](#string) |  |  |
 | error | [string](#string) | optional |  |
 | duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+| type | [QueryHistory.Type](#bytebase-v1-QueryHistory-Type) |  |  |
 
 
 
@@ -9630,6 +9632,19 @@ Type of the SheetPayload.
 | DDL | 1 |  |
 | DDL_GHOST | 2 |  |
 | DML | 3 |  |
+
+
+
+<a name="bytebase-v1-QueryHistory-Type"></a>
+
+### QueryHistory.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| QUERY | 1 |  |
+| EXPORT | 2 |  |
 
 
  
