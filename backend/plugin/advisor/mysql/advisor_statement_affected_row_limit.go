@@ -130,7 +130,7 @@ func (checker *statementAffectedRowLimitChecker) handleStmt(lineNumber int) {
 				Status:  checker.level,
 				Code:    advisor.StatementAffectedRowExceedsLimit,
 				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\" affected %d rows. The count exceeds %d.", checker.text, rowCount, checker.maxRow),
+				Content: fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", checker.text, rowCount, checker.maxRow),
 				Line:    lineNumber,
 			})
 		}
