@@ -1,13 +1,13 @@
 import { defineStore } from "pinia";
 import { settingServiceClient } from "@/grpcweb";
 import { settingNamePrefix } from "@/store/modules/v1/common";
-import {
+import type {
   Setting,
   Value as SettingValue,
   WorkspaceProfileSetting,
   DataClassificationSetting_DataClassificationConfig,
 } from "@/types/proto/v1/setting_service";
-import { SettingName } from "@/types/setting";
+import type { SettingName } from "@/types/setting";
 import { useActuatorV1Store } from "./actuator";
 
 interface SettingState {

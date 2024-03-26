@@ -60,7 +60,7 @@
 
 <script setup lang="ts">
 import { NPopover } from "naive-ui";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import DatabaseV1Name from "./DatabaseV1Name.vue";
 import EnvironmentV1Name from "./EnvironmentV1Name.vue";
 import { InstanceV1EngineIcon, InstanceV1Name } from "./Instance";

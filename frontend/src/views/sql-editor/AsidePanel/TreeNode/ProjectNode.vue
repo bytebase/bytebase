@@ -5,11 +5,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
+import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
-  DEFAULT_PROJECT_ID,
 } from "@/types";
+import { DEFAULT_PROJECT_ID } from "@/types";
 import HighlightLabelText from "./HighlightLabelText.vue";
 
 const props = defineProps<{

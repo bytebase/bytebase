@@ -8,7 +8,7 @@ import Emittery from "emittery";
 import { computed, reactive, toRef } from "vue";
 import { useMetadata, useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { SQLEditorConnection } from "@/types";
+import type { SQLEditorConnection } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import type { AIContextEvents } from "../types";
 

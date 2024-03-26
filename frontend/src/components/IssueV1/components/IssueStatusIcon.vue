@@ -52,8 +52,9 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-import { PropType, computed } from "vue";
-import { ComposedIssue } from "@/types";
+import type { PropType } from "vue";
+import { computed } from "vue";
+import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { isUnfinishedResolvedTask as checkUnfinishedResolvedTask } from "../logic";

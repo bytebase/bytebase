@@ -105,7 +105,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Table } from "@tanstack/vue-table";
+import type { Table } from "@tanstack/vue-table";
 import { computed, nextTick, ref, watch } from "vue";
 import { useSubscriptionV1Store } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";

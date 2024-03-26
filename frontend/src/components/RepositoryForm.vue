@@ -147,8 +147,9 @@
 
 <script lang="ts" setup>
 import { reactive, computed } from "vue";
-import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
-import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import type { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
+import type { Project } from "@/types/proto/v1/project_service";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";

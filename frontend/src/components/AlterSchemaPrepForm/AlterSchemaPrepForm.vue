@@ -317,7 +317,8 @@ import {
   NInputGroupLabel,
   NCheckbox,
 } from "naive-ui";
-import { computed, reactive, PropType, ref, watch, watchEffect, h } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive, ref, watch, watchEffect, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
@@ -331,23 +332,21 @@ import {
   useProjectV1Store,
   useDBGroupStore,
 } from "@/store";
-import {
+import type {
   ComposedDatabase,
   ComposedDatabaseGroup,
   FeatureType,
-  UNKNOWN_ID,
-  DEFAULT_PROJECT_V1_NAME,
 } from "@/types";
+import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import type { SearchScopeId, SearchParams } from "@/utils";
 import {
   allowUsingSchemaEditorV1,
   instanceV1HasAlterSchema,
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
   generateIssueName,
-  SearchScopeId,
-  SearchParams,
   extractEnvironmentResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,

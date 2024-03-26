@@ -29,8 +29,8 @@
 import { cloneDeep } from "lodash-es";
 import { computed, onMounted, reactive } from "vue";
 import { useDBGroupStore, hasFeature } from "@/store";
-import { ComposedProject } from "@/types";
-import { DatabaseGroup } from "@/types/proto/v1/project_service";
+import type { ComposedProject } from "@/types";
+import type { DatabaseGroup } from "@/types/proto/v1/project_service";
 import DatabaseGroupPanel from "./DatabaseGroupPanel.vue";
 import DatabaseGroupTable from "./DatabaseGroupTable.vue";
 

@@ -1,7 +1,7 @@
 import { uniqBy } from "lodash-es";
 import { useUserStore } from "@/store";
-import { ComposedIssue } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { ComposedIssue } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { extractUserResourceName, memberListInProjectV1 } from "@/utils";
 
 export const releaserCandidatesForIssue = (issue: ComposedIssue) => {

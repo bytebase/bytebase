@@ -1,4 +1,4 @@
-import { RouteRecordRaw } from "vue-router";
+import type { RouteRecordRaw } from "vue-router";
 import InstanceLayout from "@/layouts/InstanceLayout.vue";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import { INSTANCE_ROUTE_DASHBOARD } from "./workspaceRoutes";

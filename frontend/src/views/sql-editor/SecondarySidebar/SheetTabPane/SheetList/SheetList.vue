@@ -67,7 +67,8 @@
 
 <script lang="ts" setup>
 import { orderBy, escape } from "lodash-es";
-import { NButton, NInput, NTree, NEllipsis, TreeOption } from "naive-ui";
+import type { TreeOption } from "naive-ui";
+import { NButton, NInput, NTree, NEllipsis } from "naive-ui";
 import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, onMounted, ref, watch, h } from "vue";
@@ -82,10 +83,11 @@ import {
   useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { ComposedProject, ComposedDatabase, UNKNOWN_ID } from "@/types";
+import type { ComposedProject, ComposedDatabase } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { connectionForSQLEditorTab } from "@/utils";
+import type { SheetViewMode } from "@/views/sql-editor/Sheet";
 import {
-  SheetViewMode,
   openWorksheetByName,
   useSheetContextByView,
   Dropdown,
@@ -93,14 +95,8 @@ import {
 } from "@/views/sql-editor/Sheet";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import UnsavedPrefix from "./UnsavedPrefix.vue";
-import {
-  DropdownState,
-  MergedItem,
-  domIDForItem,
-  isSheetItem,
-  isTabItem,
-  keyOfItem,
-} from "./common";
+import type { DropdownState, MergedItem } from "./common";
+import { domIDForItem, isSheetItem, isTabItem, keyOfItem } from "./common";
 
 interface TreeNode extends TreeOption {
   key: string;

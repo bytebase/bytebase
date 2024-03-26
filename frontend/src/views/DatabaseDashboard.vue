@@ -78,16 +78,14 @@ import {
   useProjectV1List,
   useUIStateStore,
 } from "@/store";
+import type { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
 import {
   UNKNOWN_ID,
   UNKNOWN_USER_NAME,
-  ComposedDatabase,
-  ComposedDatabaseGroup,
   DEFAULT_PROJECT_V1_NAME,
 } from "@/types";
+import type { SearchScopeId, SearchParams } from "@/utils";
 import {
-  SearchScopeId,
-  SearchParams,
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
   CommonFilterScopeIdList,

@@ -66,37 +66,30 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { pick } from "lodash-es";
-import {
-  DataTableColumn,
-  DataTableInst,
-  NCheckbox,
-  NDataTable,
-} from "naive-ui";
+import type { DataTableColumn, DataTableInst } from "naive-ui";
+import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
 import { useSettingV1Store, useSubscriptionV1Store } from "@/store/modules";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
-  ColumnConfig,
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   ForeignKeyMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { ColumnConfig } from "@/types/proto/v1/database_service";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import { useSchemaEditorContext } from "../../context";
-import { EditStatus } from "../../types";
-import {
-  DefaultValueOption,
-  getDefaultValueByKey,
-  isTextOfColumnType,
-} from "../../utils";
+import type { EditStatus } from "../../types";
+import type { DefaultValueOption } from "../../utils";
+import { getDefaultValueByKey, isTextOfColumnType } from "../../utils";
 import { markUUID } from "../common";
 import {
   ClassificationCell,

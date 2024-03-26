@@ -23,12 +23,8 @@
 
 <script lang="ts" setup>
 import { intersection } from "lodash-es";
-import {
-  NSelect,
-  SelectGroupOption,
-  SelectOption,
-  SelectProps,
-} from "naive-ui";
+import type { SelectGroupOption, SelectOption, SelectProps } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed, watch, watchEffect, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
@@ -43,7 +39,8 @@ import {
   unknownUser,
   PresetRoleType,
 } from "@/types";
-import { User, UserType } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
+import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { extractUserUID, memberListInProjectV1 } from "@/utils";
 

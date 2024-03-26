@@ -39,7 +39,8 @@ import {
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { hasProjectPermissionV2, instanceV1HasAlterSchema } from "@/utils";
-import { TabView, useSecondarySidebarContext } from "../context";
+import type { TabView } from "../context";
+import { useSecondarySidebarContext } from "../context";
 import OpenAIButton from "./OpenAIButton.vue";
 
 const { show, tab } = useSecondarySidebarContext();

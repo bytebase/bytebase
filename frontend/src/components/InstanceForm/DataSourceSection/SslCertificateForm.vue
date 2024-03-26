@@ -65,7 +65,7 @@ import { reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import { Engine } from "@/types/proto/v1/common";
-import { DataSource } from "@/types/proto/v1/instance_service";
+import type { DataSource } from "@/types/proto/v1/instance_service";
 
 type SslType = "NONE" | "CA" | "CA+KEY+CERT";
 

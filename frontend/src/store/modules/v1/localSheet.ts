@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { Sheet, DeepPartial } from "@/types/proto/v1/sheet_service";
+import type { DeepPartial } from "@/types/proto/v1/sheet_service";
+import { Sheet } from "@/types/proto/v1/sheet_service";
 import { extractProjectResourceName } from "@/utils";
 import { useSheetV1Store } from "./sheet";
 

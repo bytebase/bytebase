@@ -151,8 +151,8 @@
 </template>
 
 <script lang="ts" setup>
+import type { ColumnDef } from "@tanstack/vue-table";
 import {
-  ColumnDef,
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
@@ -161,10 +161,10 @@ import {
 import { useDebounceFn } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
 import { NInput, NSwitch, NPagination, NTooltip } from "naive-ui";
-import { BinaryLike } from "node:crypto";
+import type { BinaryLike } from "node:crypto";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { ExportOption } from "@/components/DataExportButton.vue";
+import type { ExportOption } from "@/components/DataExportButton.vue";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import {
@@ -177,15 +177,19 @@ import {
   useConnectionOfCurrentSQLEditorTab,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
-import {
+import type {
   ComposedDatabase,
   SQLEditorQueryParams,
   SQLResultSetV1,
-  UNKNOWN_ID,
 } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { Engine } from "@/types/proto/v1/common";
-import { QueryResult, QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import type {
+  QueryResult,
+  QueryRow,
+  RowValue,
+} from "@/types/proto/v1/sql_service";
 import {
   compareQueryRowValues,
   createExplainToken,

@@ -1,6 +1,7 @@
 import { useEventListener, usePointer } from "@vueuse/core";
 import { sumBy } from "lodash-es";
-import { computed, onBeforeUnmount, reactive, Ref, watch } from "vue";
+import type { Ref } from "vue";
+import { computed, onBeforeUnmount, reactive, watch } from "vue";
 
 export type TableResizeOptions = {
   tableRef: Ref<HTMLTableElement | undefined>;

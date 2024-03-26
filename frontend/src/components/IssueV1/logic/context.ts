@@ -1,12 +1,13 @@
-import Emittery from "emittery";
-import { useDialog } from "naive-ui";
+import type Emittery from "emittery";
+import type { useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { InjectionKey, Ref, inject, provide } from "vue";
-import { ComposedIssue, ReviewFlow } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
-import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import { Stage, Task } from "@/types/proto/v1/rollout_service";
-import {
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide } from "vue";
+import type { ComposedIssue, ReviewFlow } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
+import type { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+import type { Stage, Task } from "@/types/proto/v1/rollout_service";
+import type {
   IssueReviewAction,
   IssueStatusAction,
   TaskRolloutAction,

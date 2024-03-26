@@ -83,7 +83,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store";
-import { RowValue } from "@/types/proto/v1/sql_service";
+import type { RowValue } from "@/types/proto/v1/sql_service";
 import { extractSQLRowValue } from "@/utils";
 import { useSQLResultViewContext } from "./context";
 

@@ -11,7 +11,7 @@
 import { PencilIcon } from "lucide-vue-next";
 import { MiniActionButton } from "@/components/v2";
 import LabelsColumn from "@/components/v2/Model/DatabaseV1Table/LabelsColumn.vue";
-import { Column } from "@/types/v1/schemaEditor";
+import type { Column } from "@/types/v1/schemaEditor";
 
 defineProps<{
   column: Column;

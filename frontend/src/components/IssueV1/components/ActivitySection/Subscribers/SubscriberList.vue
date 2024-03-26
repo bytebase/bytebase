@@ -40,19 +40,15 @@
 </template>
 
 <script setup lang="ts">
-import {
-  NButton,
-  NPopselect,
-  NInput,
-  SelectOption,
-  SelectGroupOption,
-} from "naive-ui";
+import type { SelectOption, SelectGroupOption } from "naive-ui";
+import { NButton, NPopselect, NInput } from "naive-ui";
 import { computed, h, nextTick, ref } from "vue";
 import { updateIssueSubscribers, useIssueContext } from "@/components/IssueV1";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useUserStore } from "@/store";
 import { unknownUser } from "@/types";
-import { User, UserType } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
+import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { extractUserResourceName } from "@/utils";
 import SubscriberListItem from "./SubscriberListItem.vue";

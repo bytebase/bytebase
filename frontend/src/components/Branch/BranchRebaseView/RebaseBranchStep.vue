@@ -61,17 +61,17 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue";
-import {
+import type {
   LineHighlightOption,
   LineHighlightOverviewRulerPosition,
-  MonacoEditor,
 } from "@/components/MonacoEditor";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
 import { useDatabaseV1Store } from "@/store";
-import { ComposedProject } from "@/types";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { ComposedProject } from "@/types";
+import type { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { RebaseBranchValidationState } from "./types";
+import type { RebaseBranchValidationState } from "./types";
 
 type TabValue = "schema-editor" | "raw-schema-text";
 type LocalState = {

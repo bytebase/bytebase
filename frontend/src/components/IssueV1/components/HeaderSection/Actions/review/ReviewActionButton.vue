@@ -21,15 +21,16 @@
 import { NButton, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import type { IssueReviewAction } from "@/components/IssueV1/logic";
 import {
-  IssueReviewAction,
   issueReviewActionDisplayName,
   issueReviewActionButtonProps,
   allowUserToApplyReviewAction,
   useIssueContext,
   displayReviewRoleTitle,
 } from "@/components/IssueV1/logic";
-import ErrorList, { ErrorItem } from "@/components/misc/ErrorList.vue";
+import type { ErrorItem } from "@/components/misc/ErrorList.vue";
+import ErrorList from "@/components/misc/ErrorList.vue";
 import { useCurrentUserV1 } from "@/store";
 
 const props = defineProps<{

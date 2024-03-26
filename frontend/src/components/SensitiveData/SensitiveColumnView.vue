@@ -141,11 +141,8 @@ import {
   usePolicyV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import {
-  UNKNOWN_ID,
-  UNKNOWN_ENVIRONMENT_NAME,
-  ComposedInstance,
-} from "@/types";
+import type { ComposedInstance } from "@/types";
+import { UNKNOWN_ID, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import {
   PolicyType,
@@ -156,7 +153,7 @@ import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import GrantAccessDrawer from "./GrantAccessDrawer.vue";
 import SensitiveColumnDrawer from "./SensitiveColumnDrawer.vue";
 import SensitiveColumnTable from "./components/SensitiveColumnTable.vue";
-import { SensitiveColumn } from "./types";
+import type { SensitiveColumn } from "./types";
 import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
 interface LocalState {

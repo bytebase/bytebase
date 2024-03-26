@@ -20,7 +20,8 @@
 <script setup lang="ts">
 import { NPerformantEllipsis } from "naive-ui";
 import { useCurrentUserV1 } from "@/store";
-import { SYSTEM_BOT_USER_NAME, WrappedReviewStep } from "@/types";
+import type { WrappedReviewStep } from "@/types";
+import { SYSTEM_BOT_USER_NAME } from "@/types";
 
 const currentUser = useCurrentUserV1();
 

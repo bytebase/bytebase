@@ -1,5 +1,5 @@
 import { startCase } from "lodash-es";
-import { RouteRecordRaw } from "vue-router";
+import type { RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
 import Home from "@/views/Home.vue";
 import SettingSidebar from "@/views/SettingSidebar.vue";

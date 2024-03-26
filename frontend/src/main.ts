@@ -15,13 +15,13 @@ import NaiveUI from "./plugins/naive-ui";
 import { isSilent } from "./plugins/silent-request";
 import { router } from "./router";
 import { AUTH_SIGNIN_MODULE } from "./router/auth";
+import type { PageMode } from "./store";
 import {
   pinia,
   pushNotification,
   useActuatorV1Store,
   useAuthStore,
   useSubscriptionV1Store,
-  PageMode,
 } from "./store";
 import {
   environmentName,

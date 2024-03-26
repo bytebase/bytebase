@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import CreateDatabasePrepForm from "./CreateDatabasePrepForm.vue";
+import type CreateDatabasePrepForm from "./CreateDatabasePrepForm.vue";
 
 defineProps<{
   form?: InstanceType<typeof CreateDatabasePrepForm>;

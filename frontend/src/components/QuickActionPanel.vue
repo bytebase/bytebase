@@ -109,7 +109,8 @@ import {
   FileDownIcon,
 } from "lucide-vue-next";
 import { NButton, NEllipsis } from "naive-ui";
-import { reactive, PropType, computed, watch, VNode, h } from "vue";
+import type { PropType, VNode } from "vue";
+import { reactive, computed, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
@@ -130,7 +131,7 @@ import {
   useProjectV1List,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import {
+import type {
   QuickActionType,
   DatabaseGroupQuickActionType,
   FeatureType,

@@ -79,9 +79,9 @@
 import { useElementSize } from "@vueuse/core";
 import { computed, defineAsyncComponent, ref, unref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
-import { IStandaloneCodeEditor } from "@/components/MonacoEditor";
+import type { IStandaloneCodeEditor } from "@/components/MonacoEditor";
 import { useSQLEditorTabStore, useWebTerminalStore } from "@/store";
-import { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
+import type { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
 import {
   EditorAction,
   ConnectionPathBar,

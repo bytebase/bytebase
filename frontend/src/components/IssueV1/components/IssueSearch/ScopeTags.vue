@@ -19,16 +19,13 @@
 </template>
 <script setup lang="ts">
 import dayjs from "dayjs";
-import { NTag, TagProps } from "naive-ui";
+import type { TagProps } from "naive-ui";
+import { NTag } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { UNKNOWN_ID } from "@/types";
-import {
-  SearchParams,
-  SearchScope,
-  SearchScopeId,
-  callCssVariable,
-} from "@/utils";
+import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
+import { callCssVariable } from "@/utils";
 
 const props = defineProps<{
   params: SearchParams;

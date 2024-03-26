@@ -81,7 +81,8 @@
 import { Info } from "lucide-vue-next";
 import { darkTheme, NConfigProvider, NTabs, NTabPane } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, PropType, ref, toRef } from "vue";
+import type { PropType } from "vue";
+import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { Drawer } from "@/components/v2";
@@ -90,19 +91,20 @@ import {
   useCurrentUserV1,
   usePolicyV1Store,
 } from "@/store";
-import {
+import type {
   ComposedDatabase,
   SQLEditorQueryParams,
   SQLResultSetV1,
 } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import { QueryResult } from "@/types/proto/v1/sql_service";
+import type { QueryResult } from "@/types/proto/v1/sql_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import DetailPanel from "./DetailPanel.vue";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView.vue";
 import RequestQueryButton from "./RequestQueryButton.vue";
-import { provideSQLResultViewContext, SQLResultViewContext } from "./context";
+import type { SQLResultViewContext } from "./context";
+import { provideSQLResultViewContext } from "./context";
 
 const { default: SingleResultViewV1 } = await import(
   "./SingleResultViewV1.vue"

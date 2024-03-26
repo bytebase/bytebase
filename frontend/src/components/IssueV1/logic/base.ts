@@ -7,7 +7,8 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUIStateStore } from "@/store";
 import { emptyStage, emptyTask, TaskTypeListWithStatement } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { Stage, Task, Task_Type } from "@/types/proto/v1/rollout_service";
+import type { Stage, Task } from "@/types/proto/v1/rollout_service";
+import { Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   activeStageInRollout,
   activeTaskInRollout,
@@ -18,7 +19,7 @@ import {
   stageV1Slug,
   taskV1Slug,
 } from "@/utils";
-import { IssueContext, IssueEvents, IssuePhase } from "./context";
+import type { IssueContext, IssueEvents, IssuePhase } from "./context";
 import { releaserCandidatesForIssue } from "./releaser";
 import { extractReviewContext } from "./review";
 import { stageForTask } from "./utils";

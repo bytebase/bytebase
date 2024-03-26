@@ -68,9 +68,9 @@
 import { cloneDeep } from "lodash-es";
 import { computed, onBeforeMount, reactive } from "vue";
 import { toRef } from "vue";
+import type { TransferSource } from "@/components/TransferDatabaseForm";
 import {
   MultipleDatabaseSelector,
-  TransferSource,
   TransferSourceSelector,
 } from "@/components/TransferDatabaseForm";
 import {
@@ -80,14 +80,13 @@ import {
   useProjectV1ByUID,
   useProjectV1Store,
 } from "@/store";
+import type { ComposedInstance, ComposedDatabase } from "@/types";
 import {
   DEFAULT_PROJECT_ID,
-  ComposedInstance,
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_INSTANCE_NAME,
-  ComposedDatabase,
 } from "@/types";
-import { Project } from "@/types/proto/v1/project_service";
+import type { Project } from "@/types/proto/v1/project_service";
 import {
   filterDatabaseV1ByKeyword,
   hasProjectPermissionV2,

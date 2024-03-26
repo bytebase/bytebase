@@ -2,7 +2,7 @@ import { cloneDeep, groupBy, orderBy } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
 import { rolloutServiceClient } from "@/grpcweb";
-import { TemplateType } from "@/plugins";
+import type { TemplateType } from "@/plugins";
 import {
   useBranchStore,
   useChangelistStore,
@@ -12,14 +12,11 @@ import {
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
-import {
-  ComposedProject,
-  emptyIssue,
-  TaskTypeListWithStatement,
-  UNKNOWN_ID,
-} from "@/types";
+import type { ComposedProject } from "@/types";
+import { emptyIssue, TaskTypeListWithStatement, UNKNOWN_ID } from "@/types";
 import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
+import type { Stage } from "@/types/proto/v1/rollout_service";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
@@ -27,7 +24,6 @@ import {
   Plan_Spec,
   Plan_Step,
   Rollout,
-  Stage,
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import { SheetPayload } from "@/types/proto/v1/sheet_service";

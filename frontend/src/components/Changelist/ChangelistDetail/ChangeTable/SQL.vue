@@ -13,7 +13,7 @@
 import { computed } from "vue";
 import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import { useSheetV1Store } from "@/store";
-import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { getSheetStatement } from "@/utils";
 
 const props = defineProps<{

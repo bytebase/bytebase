@@ -30,8 +30,9 @@
 </template>
 
 <script setup lang="ts">
-import { ButtonProps, NButton, NRadio, RadioProps } from "naive-ui";
-import { RadioGridOption } from "./types";
+import type { ButtonProps, RadioProps } from "naive-ui";
+import { NButton, NRadio } from "naive-ui";
+import type { RadioGridOption } from "./types";
 
 defineProps<{
   value?: string | number | undefined | null;

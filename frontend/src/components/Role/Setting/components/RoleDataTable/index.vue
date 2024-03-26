@@ -8,10 +8,11 @@
 </template>
 
 <script lang="ts" setup>
-import { DataTableColumn, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto/v1/role_service";
 import { displayRoleDescription } from "@/utils";
 import RoleOperationsCell from "./cells/RoleOperationsCell.vue";
 import RoleTitleCell from "./cells/RoleTitleCell.vue";

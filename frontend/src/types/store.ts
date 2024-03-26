@@ -1,6 +1,6 @@
-import { Command } from "./common";
-import { CommandId } from "./id";
-import { Notification } from "./notification";
+import type { Command } from "./common";
+import type { CommandId } from "./id";
+import type { Notification } from "./notification";
 
 export interface NotificationState {
   notificationByModule: Map<string, Notification[]>;

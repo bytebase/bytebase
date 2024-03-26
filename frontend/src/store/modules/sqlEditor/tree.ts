@@ -3,7 +3,7 @@ import { cloneDeep, isFunction, orderBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watch } from "vue";
-import {
+import type {
   ComposedDatabase,
   ComposedInstance,
   ComposedProject,
@@ -12,20 +12,22 @@ import {
   SQLEditorTreeNodeTarget as NodeTarget,
   SQLEditorTreeNodeType as NodeType,
   SQLEditorTreeState as TreeState,
-  isValidSQLEditorTreeFactor as isValidFactor,
-  extractSQLEditorLabelFactor as extractLabelFactor,
-  unknownEnvironment,
   RichSchemaMetadata,
   RichTableMetadata,
   StatefulSQLEditorTreeFactor as StatefulFactor,
-  LeafTreeNodeTypes,
-  DEFAULT_PROJECT_V1_NAME,
   RichViewMetadata,
   TextTarget,
   RichPartitionTableMetadata,
   RichExternalTableMetadata,
 } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
+import {
+  isValidSQLEditorTreeFactor as isValidFactor,
+  extractSQLEditorLabelFactor as extractLabelFactor,
+  unknownEnvironment,
+  LeafTreeNodeTypes,
+  DEFAULT_PROJECT_V1_NAME,
+} from "@/types";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import { getSemanticLabelValue, groupBy } from "@/utils";
 import { useFilterStore } from "../filter";
 import {

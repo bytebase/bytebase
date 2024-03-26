@@ -1,6 +1,6 @@
 import { useChangeHistoryStore, useSheetV1Store } from "@/store";
-import { Changelist_Change_Source, ComposedDatabase } from "@/types";
-import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change_Source, ComposedDatabase } from "@/types";
+import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { getHistoryChangeType } from "./changeHistory";
 import { getSheetStatement } from "./sheet";
 

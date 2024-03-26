@@ -89,26 +89,26 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { NGrid, NGi, NDatePicker } from "naive-ui";
-import { BinaryLike } from "node:crypto";
+import type { BinaryLike } from "node:crypto";
 import { reactive, ref, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBDialog } from "@/bbkit";
-import { ExportOption } from "@/components/DataExportButton.vue";
+import type { ExportOption } from "@/components/DataExportButton.vue";
 import { WORKSPACE_ROUTE_AUDIT_LOG } from "@/router/dashboard/workspaceRoutes";
 import { featureToRef, useUserStore, useActivityV1Store } from "@/store";
+import type { FindActivityMessage } from "@/types";
 import {
   AuditActivityTypeList,
   UNKNOWN_ID,
   AuditActivityTypeI18nNameMap,
-  FindActivityMessage,
 } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
-import {
+import type {
   LogEntity,
   LogEntity_Action,
-  logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
+import { logEntity_LevelToJSON } from "@/types/proto/v1/logging_service";
 
 const dialog = ref<InstanceType<typeof BBDialog> | null>(null);
 const state = reactive({

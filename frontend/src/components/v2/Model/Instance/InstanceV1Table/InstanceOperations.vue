@@ -35,14 +35,15 @@
 <script setup lang="ts">
 import { GraduationCapIcon, RefreshCwIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, h, VNode, reactive } from "vue";
+import type { VNode } from "vue";
+import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   useInstanceV1Store,
   pushNotification,
   useCurrentUserV1,
 } from "@/store";
-import { ComposedInstance } from "@/types";
+import type { ComposedInstance } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface Action {

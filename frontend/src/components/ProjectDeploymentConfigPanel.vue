@@ -81,27 +81,21 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import { NPopover, useDialog } from "naive-ui";
-import {
-  computed,
-  nextTick,
-  PropType,
-  reactive,
-  watch,
-  watchEffect,
-} from "vue";
+import type { PropType } from "vue";
+import { computed, nextTick, reactive, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
   useDeploymentConfigV1Store,
   useEnvironmentV1List,
 } from "@/store";
-import {
+import type {
   DeploymentConfig,
   LabelSelectorRequirement,
-  OperatorType,
   Project,
 } from "@/types/proto/v1/project_service";
-import { ComposedDatabase } from "../types";
+import { OperatorType } from "@/types/proto/v1/project_service";
+import type { ComposedDatabase } from "../types";
 import {
   extractEnvironmentResourceName,
   validateDeploymentConfigV1,

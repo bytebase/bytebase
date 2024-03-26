@@ -110,7 +110,8 @@ import {
   useUserStore,
   useUIStateStore,
 } from "@/store";
-import { User, UserType } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
+import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import {
   ALL_USERS_USER_EMAIL,

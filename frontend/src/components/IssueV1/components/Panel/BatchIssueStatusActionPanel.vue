@@ -61,15 +61,15 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import type { IssueStatusAction } from "@/components/IssueV1/logic";
 import {
-  IssueStatusAction,
   issueStatusActionButtonProps,
   issueStatusActionDisplayName,
   IssueStatusActionToIssueStatusMap,
 } from "@/components/IssueV1/logic";
 import { issueServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { ComposedIssue } from "@/types";
+import type { ComposedIssue } from "@/types";
 import CommonDrawer from "./CommonDrawer.vue";
 
 type LocalState = {

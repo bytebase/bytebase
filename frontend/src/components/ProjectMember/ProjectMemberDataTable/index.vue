@@ -10,11 +10,12 @@
 </template>
 
 <script lang="ts" setup>
-import { DataTableColumn, DataTableRowKey, NDataTable } from "naive-ui";
+import type { DataTableColumn, DataTableRowKey } from "naive-ui";
+import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { ComposedProject } from "@/types";
-import { ProjectMember } from "../types";
+import type { ComposedProject } from "@/types";
+import type { ProjectMember } from "../types";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 import UserRolesCell from "./cells/UserRolesCell.vue";

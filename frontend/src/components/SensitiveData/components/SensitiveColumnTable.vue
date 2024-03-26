@@ -102,8 +102,9 @@ import {
   MiniActionButton,
   ProjectV1Name,
 } from "@/components/v2";
-import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
-import { SensitiveColumn } from "../types";
+import type { MaskingLevel } from "@/types/proto/v1/common";
+import { maskingLevelToJSON } from "@/types/proto/v1/common";
+import type { SensitiveColumn } from "../types";
 
 type SensitiveColumnRow = BBGridRow<SensitiveColumn>;
 

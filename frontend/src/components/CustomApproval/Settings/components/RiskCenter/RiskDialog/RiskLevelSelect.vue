@@ -11,7 +11,8 @@
 </template>
 
 <script lang="ts" setup>
-import { NSelect, SelectOption, type SelectProps } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NSelect, type SelectProps } from "naive-ui";
 import { computed } from "vue";
 import { PresetRiskLevelList } from "@/types";
 import { levelText } from "../../common";

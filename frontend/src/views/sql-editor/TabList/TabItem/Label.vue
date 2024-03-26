@@ -26,7 +26,8 @@
 </template>
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
-import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
+import type { PropType } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useSQLEditorTabStore, useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";

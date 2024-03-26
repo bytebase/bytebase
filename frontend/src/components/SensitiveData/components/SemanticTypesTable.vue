@@ -146,7 +146,7 @@ import { useI18n } from "vue-i18n";
 import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
 import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
-import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
+import type { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 
 type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
 

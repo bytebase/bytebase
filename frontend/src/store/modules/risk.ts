@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { riskServiceClient } from "@/grpcweb";
-import { Risk } from "@/types/proto/v1/risk_service";
+import type { Risk } from "@/types/proto/v1/risk_service";
 
 export const useRiskStore = defineStore("risk", () => {
   const riskList = ref<Risk[]>([]);

@@ -1,7 +1,8 @@
-import { ComposedIssue } from "@/types";
+import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Stage, Task } from "@/types/proto/v1/rollout_service";
-import { getApplicableTaskRolloutActionList, TaskRolloutAction } from "./task";
+import type { Stage, Task } from "@/types/proto/v1/rollout_service";
+import type { TaskRolloutAction } from "./task";
+import { getApplicableTaskRolloutActionList } from "./task";
 
 export type StageRolloutAction = Extract<
   TaskRolloutAction,

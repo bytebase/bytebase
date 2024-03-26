@@ -10,13 +10,10 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { TabFilter, TabFilterItem } from "@/components/v2";
-import {
-  SearchParams,
-  SemanticIssueStatus,
-  getSemanticIssueStatusFromSearchParams,
-  upsertScope,
-} from "@/utils";
+import type { TabFilterItem } from "@/components/v2";
+import { TabFilter } from "@/components/v2";
+import type { SearchParams, SemanticIssueStatus } from "@/utils";
+import { getSemanticIssueStatusFromSearchParams, upsertScope } from "@/utils";
 
 const props = defineProps<{
   params: SearchParams;

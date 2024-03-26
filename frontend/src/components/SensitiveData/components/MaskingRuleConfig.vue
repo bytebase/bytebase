@@ -82,7 +82,8 @@
 
 <script lang="ts" setup>
 import { TrashIcon } from "lucide-vue-next";
-import { NSelect, SelectOption, NPopconfirm } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NSelect, NPopconfirm } from "naive-ui";
 import { computed, reactive, onMounted, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
@@ -99,7 +100,7 @@ import {
 } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
-import { MaskingRulePolicy_MaskingRule } from "@/types/proto/v1/org_policy_service";
+import type { MaskingRulePolicy_MaskingRule } from "@/types/proto/v1/org_policy_service";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,

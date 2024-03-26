@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto/v1/common";
 import { engineNameV1 } from "@/utils";
 
 const RE_SUBTITLE = /\(.+?\)/;

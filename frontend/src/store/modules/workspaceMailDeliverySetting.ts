@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { settingServiceClient } from "@/grpcweb";
-import {
+import type {
   SMTPMailDeliverySettingValue,
   Setting,
 } from "@/types/proto/v1/setting_service";

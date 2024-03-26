@@ -13,13 +13,13 @@
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
+import type { IssueStatusAction } from "@/components/IssueV1/logic";
 import {
-  IssueStatusAction,
   allowUserToApplyIssueStatusAction,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { useCurrentUserV1 } from "@/store";
-import { ExtraActionOption } from "../types";
+import type { ExtraActionOption } from "../types";
 
 const props = defineProps<{
   option: ExtraActionOption;

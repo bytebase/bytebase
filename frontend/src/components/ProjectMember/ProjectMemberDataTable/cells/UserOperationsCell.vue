@@ -20,11 +20,12 @@ import { PencilIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
-import { ComposedProject, SYSTEM_BOT_USER_NAME } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { ComposedProject } from "@/types";
+import { SYSTEM_BOT_USER_NAME } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
-import { ProjectMember } from "../../types";
+import type { ProjectMember } from "../../types";
 
 const props = defineProps<{
   project: ComposedProject;

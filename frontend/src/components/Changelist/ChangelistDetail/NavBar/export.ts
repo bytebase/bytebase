@@ -1,9 +1,9 @@
-import JSZip from "jszip";
+import type JSZip from "jszip";
 import { padStart } from "lodash-es";
 import { useChangeHistoryStore, useSheetV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
-import { Changelist_Change_Source as ChangeSource } from "@/types";
-import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change_Source as ChangeSource } from "@/types";
+import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { ChangeHistoryView } from "@/types/proto/v1/database_service";
 import {
   escapeFilename,

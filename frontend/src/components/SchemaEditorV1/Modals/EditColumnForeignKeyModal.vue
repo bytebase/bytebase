@@ -64,7 +64,7 @@ import { computed, onMounted, reactive, watch } from "vue";
 import { BBModal } from "@/bbkit";
 import { useSchemaEditorV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { Column, ForeignKey } from "@/types/v1/schemaEditor";
+import type { Column, ForeignKey } from "@/types/v1/schemaEditor";
 
 interface LocalState {
   referencedSchemaId?: string;

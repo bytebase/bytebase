@@ -18,11 +18,12 @@
 </template>
 
 <script lang="ts" setup>
-import { DataTableColumn, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
 import { computed, reactive, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
-import { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import { copyServiceKeyToClipboardIfNeeded } from "../common";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";

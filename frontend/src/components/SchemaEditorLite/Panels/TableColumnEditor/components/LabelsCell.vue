@@ -13,8 +13,8 @@ import { computed } from "vue";
 import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
 import { MiniActionButton } from "@/components/v2";
 import LabelsColumn from "@/components/v2/Model/DatabaseV1Table/LabelsColumn.vue";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,

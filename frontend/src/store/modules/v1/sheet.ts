@@ -2,8 +2,9 @@ import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { sheetServiceClient } from "@/grpcweb";
 import { useCache } from "@/store/cache";
-import { UNKNOWN_ID, MaybeRef } from "@/types";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import type { MaybeRef } from "@/types";
+import { UNKNOWN_ID } from "@/types";
+import type { Sheet } from "@/types/proto/v1/sheet_service";
 import { extractSheetUID, getSheetStatement } from "@/utils";
 
 export type SheetView = "FULL" | "BASIC";

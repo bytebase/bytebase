@@ -176,7 +176,8 @@
 <script lang="ts" setup>
 import { isEqual, cloneDeep } from "lodash-es";
 import { PlusIcon, XIcon, PencilIcon } from "lucide-vue-next";
-import { NButton, NInput, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { computed, nextTick, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
@@ -188,19 +189,16 @@ import {
   InstanceEngineRadioGrid,
 } from "@/components/v2";
 import { useSettingV1Store, useNotificationStore } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata, TableConfig } from "@/types/proto/v1/database_service";
-import {
-  SchemaTemplateSetting,
+import type {
   SchemaTemplateSetting_FieldTemplate,
   SchemaTemplateSetting_TableTemplate,
 } from "@/types/proto/v1/setting_service";
+import { SchemaTemplateSetting } from "@/types/proto/v1/setting_service";
 import { convertTableMetadataToTable } from "@/types/v1/schemaEditor";
-import {
-  Column,
-  Table,
-  convertColumnMetadataToColumn,
-} from "@/types/v1/schemaEditor";
+import type { Column, Table } from "@/types/v1/schemaEditor";
+import { convertColumnMetadataToColumn } from "@/types/v1/schemaEditor";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import { engineList, categoryList, classificationConfig } from "./utils";

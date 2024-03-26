@@ -1,5 +1,5 @@
-import { ComposedDatabase, ComposedProject } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { ComposedDatabase, ComposedProject } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { hasProjectPermissionV2 } from "./permission";
 
 export const hasPermissionToCreateRequestGrantIssueInProject = (

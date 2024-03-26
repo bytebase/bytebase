@@ -6,9 +6,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import AnomalyCenterDashboard, {
-  AnomalyTabId,
-} from "@/components/AnomalyCenter/AnomalyCenterDashboard.vue";
+import type { AnomalyTabId } from "@/components/AnomalyCenter/AnomalyCenterDashboard.vue";
+import AnomalyCenterDashboard from "@/components/AnomalyCenter/AnomalyCenterDashboard.vue";
 import { useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

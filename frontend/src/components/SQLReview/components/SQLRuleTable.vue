@@ -183,15 +183,15 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { useCurrentPlan } from "@/store";
+import type { RuleTemplate } from "@/types";
 import {
   convertToCategoryList,
   getRuleLocalization,
   ruleIsAvailableInSubscription,
   planTypeToString,
-  RuleTemplate,
 } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import { PayloadForEngine } from "./RuleConfigComponents";
+import type { PayloadForEngine } from "./RuleConfigComponents";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import SQLRuleEditDialog from "./SQLRuleEditDialog.vue";
 

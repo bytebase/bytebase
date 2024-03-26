@@ -1,6 +1,6 @@
 import { orderBy, uniq } from "lodash-es";
 import { useEnvironmentV1Store } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { extractEnvironmentResourceName } from "./v1";
 
 export const MAX_LABEL_VALUE_LENGTH = 63;

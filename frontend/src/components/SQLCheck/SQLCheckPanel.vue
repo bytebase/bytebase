@@ -36,7 +36,7 @@
 import { NButton } from "naive-ui";
 import { computed, onMounted } from "vue";
 import { usePolicyV1Store } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import {
   PlanCheckRun,
   PlanCheckRun_Result,
@@ -44,8 +44,9 @@ import {
   PlanCheckRun_Result_SqlReviewReport,
   PlanCheckRun_Status,
 } from "@/types/proto/v1/rollout_service";
-import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
-import { Defer } from "@/utils";
+import type { Advice } from "@/types/proto/v1/sql_service";
+import { Advice_Status } from "@/types/proto/v1/sql_service";
+import type { Defer } from "@/utils";
 import PlanCheckDetail from "../IssueV1/components/PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
 
 const { advices, database } = defineProps<{

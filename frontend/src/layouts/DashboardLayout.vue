@@ -22,7 +22,7 @@ import BannersWrapper from "@/components/BannersWrapper.vue";
 import HelpDrawer from "@/components/HelpDrawer";
 import ProvideDashboardContext from "@/components/ProvideDashboardContext.vue";
 import { useHelpStore, useUIStateStore } from "@/store";
-import { RouteMapList } from "@/types";
+import type { RouteMapList } from "@/types";
 
 interface LocalState {
   helpTimer: number | undefined;

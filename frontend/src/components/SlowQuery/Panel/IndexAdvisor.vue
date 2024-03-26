@@ -59,7 +59,7 @@ import { databaseServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { featureToRef, hasFeature } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { ComposedSlowQueryLog } from "@/types";
+import type { ComposedSlowQueryLog } from "@/types";
 import { extractProjectResourceName } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 

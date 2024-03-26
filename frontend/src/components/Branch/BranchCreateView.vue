@@ -96,7 +96,8 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
-import { UNKNOWN_ID, ComposedProject } from "@/types";
+import type { ComposedProject } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { hasProjectPermissionV2 } from "@/utils";

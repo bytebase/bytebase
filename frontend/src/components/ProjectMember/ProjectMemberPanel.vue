@@ -93,8 +93,8 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
+import type { ComposedProject } from "@/types";
 import {
-  ComposedProject,
   DEFAULT_PROJECT_V1_NAME,
   getUserEmailInBinding,
   unknownUser,
@@ -102,14 +102,14 @@ import {
   ALL_USERS_USER_EMAIL,
   PRESET_WORKSPACE_ROLES,
 } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
 import ProjectMemberDataTable from "./ProjectMemberDataTable/index.vue";
 import ProjectMemberDataTableByRole from "./ProjectMemberDataTableByRole/index.vue";
 import ProjectMemberRolePanel from "./ProjectMemberRolePanel/index.vue";
-import { ProjectMember } from "./types";
+import type { ProjectMember } from "./types";
 
 interface LocalState {
   searchText: string;

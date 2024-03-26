@@ -39,7 +39,8 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { NPerformantEllipsis, DataTableColumn, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
+import { NPerformantEllipsis, NDataTable } from "naive-ui";
 import { reactive, computed, watch, ref, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

@@ -16,7 +16,8 @@
 import dayjs from "dayjs";
 import { NDatePicker } from "naive-ui";
 import { computed } from "vue";
-import { SearchParams, getTsRangeFromSearchParams, upsertScope } from "@/utils";
+import type { SearchParams } from "@/utils";
+import { getTsRangeFromSearchParams, upsertScope } from "@/utils";
 
 const props = defineProps<{
   params: SearchParams;

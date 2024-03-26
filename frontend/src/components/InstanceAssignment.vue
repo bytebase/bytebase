@@ -127,7 +127,8 @@ import { NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, BBGridColumn } from "@/bbkit";
+import type { BBGridColumn } from "@/bbkit";
+import { BBGrid } from "@/bbkit";
 import EllipsisText from "@/components/EllipsisText.vue";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -139,7 +140,7 @@ import {
   useDatabaseV1Store,
   useCurrentUserV1,
 } from "@/store";
-import { ComposedInstance } from "@/types";
+import type { ComposedInstance } from "@/types";
 import {
   instanceV1Name,
   hostPortOfInstanceV1,

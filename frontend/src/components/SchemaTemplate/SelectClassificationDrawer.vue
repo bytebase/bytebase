@@ -24,7 +24,7 @@
 <script lang="ts" setup>
 import ClassificationTree from "@/components/SchemaTemplate/ClassificationTree.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 
 defineProps<{
   show: boolean;

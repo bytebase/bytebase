@@ -11,12 +11,12 @@
 </template>
 
 <script lang="ts" setup>
-import {
+import type {
   StageRolloutAction,
   TaskRolloutAction,
 } from "@/components/IssueV1/logic";
 import RolloutActionButton from "./RolloutActionButton.vue";
-import { RolloutAction } from "./common";
+import type { RolloutAction } from "./common";
 
 defineProps<{
   taskRolloutActionList: TaskRolloutAction[];

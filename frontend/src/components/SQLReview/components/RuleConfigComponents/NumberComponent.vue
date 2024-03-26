@@ -9,7 +9,7 @@
 
 <script lang="ts" setup>
 import { NInputNumber } from "naive-ui";
-import { RuleConfigComponent } from "@/types";
+import type { RuleConfigComponent } from "@/types";
 
 defineProps<{
   config: RuleConfigComponent;

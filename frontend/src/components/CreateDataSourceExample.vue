@@ -143,7 +143,8 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType, computed } from "vue";
+import type { PropType } from "vue";
+import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import { languageOfEngineV1 } from "@/types";

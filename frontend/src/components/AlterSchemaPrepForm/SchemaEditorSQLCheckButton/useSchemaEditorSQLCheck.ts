@@ -1,5 +1,6 @@
-import { Ref, computed } from "vue";
-import { ComposedDatabase } from "@/types";
+import type { Ref } from "vue";
+import { computed } from "vue";
+import type { ComposedDatabase } from "@/types";
 
 export const useSchemaEditorSQLCheck = (params: {
   databaseList: Ref<ComposedDatabase[]>;
