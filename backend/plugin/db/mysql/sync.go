@@ -337,6 +337,36 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		}
 	}
 
+	// Query functions info.
+	functionQuery := `
+		SELECT
+			ROUTINE_NAME,
+			ROUTINE_DEFINITION
+		FROM
+			INFORMATION_SCHEMA.ROUTINES
+		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE = 'FUNCTION';
+	`
+	functionRows, err := driver.db.QueryContext(ctx, functionQuery, driver.databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, functionQuery)
+	}
+	defer functionRows.Close()
+	var functions []*storepb.FunctionMetadata
+	for functionRows.Next() {
+		function := &storepb.FunctionMetadata{}
+		if err := functionRows.Scan(
+			&function.Name,
+			&function.Definition,
+		); err != nil {
+			return nil, err
+		}
+		functions = append(functions, function)
+	}
+	if err := functionRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, functionQuery)
+	}
+	schemaMetadata.Functions = functions
+
 	// Query table info.
 	tableQuery := `
 		SELECT
