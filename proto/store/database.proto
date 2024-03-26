@@ -55,14 +55,17 @@ message SchemaMetadata {
   // The functions is the list of functions in a schema.
   repeated FunctionMetadata functions = 5;
 
+  // The procedures is the list of procedures in a schema.
+  repeated ProcedureMetadata procedures = 6;
+
   // The streams is the list of streams in a schema, currently, only used for Snowflake.
-  repeated StreamMetadata streams = 6;
+  repeated StreamMetadata streams = 7;
 
   // The routines is the list of routines in a schema, currently, only used for Snowflake.
-  repeated TaskMetadata tasks = 7;
+  repeated TaskMetadata tasks = 8;
 
   // The materialized_views is the list of materialized views in a schema.
-  repeated MaterializedViewMetadata materialized_views = 8;
+  repeated MaterializedViewMetadata materialized_views = 9;
 }
 
 message TaskMetadata {
@@ -341,10 +344,19 @@ message MaterializedViewMetadata {
 
 // FunctionMetadata is the metadata for functions.
 message FunctionMetadata {
-  // The name is the name of a view.
+  // The name is the name of a function.
   string name = 1;
 
-  // The definition is the definition of a view.
+  // The definition is the definition of a function.
+  string definition = 2;
+}
+
+// ProcedureMetadata is the metadata for procedures.
+message ProcedureMetadata {
+  // The name is the name of a procedure.
+  string name = 1;
+
+  // The definition is the definition of a procedure.
   string definition = 2;
 }
 

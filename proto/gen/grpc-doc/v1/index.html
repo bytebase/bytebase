@@ -681,6 +681,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ProcedureMetadata"><span class="badge">M</span>ProcedureMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SchemaConfig"><span class="badge">M</span>SchemaConfig</a>
                 </li>
               
@@ -7137,14 +7141,14 @@ It&#39;s empty string for other databases. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a view. </p></td>
+                  <td><p>The name is the name of a function. </p></td>
                 </tr>
               
                 <tr>
                   <td>definition</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The definition is the definition of a view. </p></td>
+                  <td><p>The definition is the definition of a function. </p></td>
                 </tr>
               
             </tbody>
@@ -7786,6 +7790,37 @@ Default: order by average_query_time desc. </p></td>
 
         
       
+        <h3 id="bytebase.v1.ProcedureMetadata">ProcedureMetadata</h3>
+        <p>ProcedureMetadata is the metadata for procedures.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a procedure. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The definition is the definition of a procedure. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.SchemaConfig">SchemaConfig</h3>
         <p></p>
 
@@ -7862,6 +7897,13 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><a href="#bytebase.v1.FunctionMetadata">FunctionMetadata</a></td>
                   <td>repeated</td>
                   <td><p>The functions is the list of functions in a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>procedures</td>
+                  <td><a href="#bytebase.v1.ProcedureMetadata">ProcedureMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The procedures is the list of procedures in a schema. </p></td>
                 </tr>
               
                 <tr>

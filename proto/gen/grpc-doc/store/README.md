@@ -45,6 +45,7 @@
     - [IndexMetadata](#bytebase-store-IndexMetadata)
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
     - [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata)
+    - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
     - [SchemaConfig](#bytebase-store-SchemaConfig)
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [SecretItem](#bytebase-store-SecretItem)
@@ -796,8 +797,8 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a view. |
-| definition | [string](#string) |  | The definition is the definition of a view. |
+| name | [string](#string) |  | The name is the name of a function. |
+| definition | [string](#string) |  | The definition is the definition of a function. |
 
 
 
@@ -861,6 +862,22 @@ MaterializedViewMetadata is the metadata for materialized views.
 
 
 
+<a name="bytebase-store-ProcedureMetadata"></a>
+
+### ProcedureMetadata
+ProcedureMetadata is the metadata for procedures.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a procedure. |
+| definition | [string](#string) |  | The definition is the definition of a procedure. |
+
+
+
+
+
+
 <a name="bytebase-store-SchemaConfig"></a>
 
 ### SchemaConfig
@@ -891,6 +908,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | external_tables | [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata) | repeated | The external_tables is the list of external tables in a schema. |
 | views | [ViewMetadata](#bytebase-store-ViewMetadata) | repeated | The views is the list of views in a schema. |
 | functions | [FunctionMetadata](#bytebase-store-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
+| procedures | [ProcedureMetadata](#bytebase-store-ProcedureMetadata) | repeated | The procedures is the list of procedures in a schema. |
 | streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
 | tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
 | materialized_views | [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
