@@ -203,7 +203,7 @@ const action = (anomaly: Anomaly): Action => {
     }
     case Anomaly_AnomalyType.DATABASE_CONNECTION: {
       const instance = useInstanceV1Store().getInstanceByName(
-        `instances/${extractDatabaseResourceName(anomaly.resource).instance}`
+        extractDatabaseResourceName(anomaly.resource).instance
       );
       return {
         onClick: () => {
