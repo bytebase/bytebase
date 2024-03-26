@@ -20,7 +20,6 @@ const (
 	UserNamePrefix             = "users/"
 	IdentityProviderNamePrefix = "idps/"
 	SettingNamePrefix          = "settings/"
-	BackupPrefix               = "backups/"
 	VCSProviderPrefix          = "vcsProviders/"
 	RiskPrefix                 = "risks/"
 	IssuePrefix                = "issues/"
@@ -47,7 +46,6 @@ const (
 	DeploymentConfigPrefix     = "deploymentConfigs/"
 	ChangelistsPrefix          = "changelists/"
 
-	BackupSettingSuffix   = "/backupSetting"
 	SchemaSuffix          = "/schema"
 	MetadataSuffix        = "/metadata"
 	GitOpsInfoSuffix      = "/gitOpsInfo"
@@ -202,15 +200,6 @@ func GetInstanceDatabaseIDChangeHistory(name string) (string, string, string, er
 func GetInstanceDatabaseIDSecretName(name string) (string, string, string, error) {
 	// the instance request should be instances/{instance-id}/databases/{database-id}/secrets/{secret-name}
 	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, SecretNamePrefix)
-	if err != nil {
-		return "", "", "", err
-	}
-	return tokens[0], tokens[1], tokens[2], nil
-}
-
-// GetInstanceDatabaseIDBackupName returns the instance ID, database ID, and backup name from a resource name.
-func GetInstanceDatabaseIDBackupName(name string) (string, string, string, error) {
-	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, BackupPrefix)
 	if err != nil {
 		return "", "", "", err
 	}

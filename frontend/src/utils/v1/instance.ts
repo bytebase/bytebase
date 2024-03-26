@@ -122,17 +122,6 @@ export const instanceV1HasAlterSchema = (
   return true;
 };
 
-export const instanceV1HasBackupRestore = (
-  instanceOrEngine: Instance | Engine
-): boolean => {
-  const engine = engineOfInstanceV1(instanceOrEngine);
-  if (engine === Engine.MONGODB) return false;
-  if (engine === Engine.REDIS) return false;
-  if (engine === Engine.SPANNER) return false;
-  if (engine === Engine.REDSHIFT) return false;
-  return true;
-};
-
 export const instanceV1HasReadonlyMode = (
   instanceOrEngine: Instance | Engine
 ): boolean => {

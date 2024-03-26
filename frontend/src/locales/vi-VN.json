@@ -110,7 +110,6 @@
     "schema": "Lược đồ",
     "anomalies": "dị thường",
     "do-not-show-again": "Không hiển thị trở lại",
-    "backups": "Sao lưu",
     "detail": "Chi tiết",
     "type": "Kiểu",
     "language": "Ngôn ngữ",
@@ -195,7 +194,6 @@
     "enable": "Cho phép",
     "disable": "Vô hiệu hóa",
     "view-doc": "Xem tài liệu",
-    "backup-and-restore": "Sao lưu và khôi phục",
     "write-only": "chỉ viết",
     "pitr": "PITR",
     "fix": "Sửa chữa",
@@ -272,7 +270,6 @@
     "missing-permission": "Thiếu quyền cần thiết",
     "continue-anyway": "Vẫn tiếp tục",
     "permissions": "Quyền",
-    "backup": "Hỗ trợ",
     "cutover": "Chuyển đổi",
     "baseline": "Đường cơ sở",
     "project-member": "Thành viên dự án",
@@ -1423,10 +1420,6 @@
     "create": "Tạo môi trường",
     "restore": "Khôi phục môi trường này",
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'.",
-    "disable-auto-backup": {
-      "self": "Vô hiệu hóa sao lưu tự động cơ sở dữ liệu",
-      "content": "Việc tắt chính sách sao lưu tự động không được áp dụng trở về trước.\nBạn có chắc chắn về việc áp dụng cho tất cả cơ sở dữ liệu trong môi trường này không?"
-    },
     "production-environment": "Môi trường sản xuất",
     "access-control": {
       "title": "Kiểm soát truy cập",
@@ -1507,16 +1500,6 @@
       "manual-by-workspace-admin": "Quản trị viên không gian làm việc",
       "manual-by-custom-project-roles": "Vai trò dự án tùy chỉnh"
     },
-    "backup": {
-      "name": "Chính sách lịch trình sao lưu cơ sở dữ liệu",
-      "tip": "Chính sách này không được áp dụng hồi tố.",
-      "not-enforced": "Không thực thi",
-      "not-enforced-info": "Không có lịch trình sao lưu nào được thực thi.",
-      "daily": "Sao lưu hàng ngày",
-      "daily-info": "Thực thi mọi cơ sở dữ liệu để sao lưu hàng ngày.",
-      "weekly": "Sao lưu hàng tuần",
-      "weekly-info": "Thực thi mọi cơ sở dữ liệu để sao lưu hàng tuần."
-    },
     "environment-tier": {
       "name": "Cấp môi trường",
       "description": "Môi trường sẽ xuất hiện khác với các môi trường khác.",
@@ -1565,7 +1548,6 @@
     "sync-status": "Trạng thái đồng bộ hóa",
     "last-successful-sync": "Đồng bộ hóa thành công lần cuối",
     "filter-database": "Lọc cơ sở dữ liệu",
-    "database-backup": "sao lưu cơ sở dữ liệu",
     "transfer-project": "Dự án chuyển nhượng",
     "unassign": "Bỏ chỉ định",
     "unassign-alert-title": "Bỏ gán cơ sở dữ liệu",
@@ -1591,47 +1573,10 @@
     "batch-action-disabled-for-unassigned": "Không thể {action} đối với cơ sở dữ liệu chưa được chỉ định",
     "successfully-transferred-databases": "Đã chuyển cơ sở dữ liệu thành công",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Đã chuyển thành công '{0}' sang dự án '{1}'.",
-    "backup-name": "Tên dự phòng",
-    "create-backup": "Tạo bản sao",
-    "automatic-x-backup": "Tự động sao lưu {freq}",
-    "automatic-backup": "Tự động sao lưu",
-    "disable-automatic-backup": "Vô hiệu hóa sao lưu tự động",
-    "backuppolicy-backup-enforced-and-cant-be-disabled": "Sao lưu {0} đã được thực thi và không thể tắt được",
-    "backup-policy": {
-      "DAILY": "HẰNG NGÀY",
-      "WEEKLY": "HÀNG TUẦN"
-    },
-    "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "Một yêu cầu HTTP POST sẽ được gửi tới nó sau khi sao lưu thành công.",
-    "backup-info": {
-      "template": "Quá trình sao lưu sẽ được thực hiện vào {dayOrWeek} hàng tuần vào lúc {time}. Dữ liệu sao lưu sẽ được lưu giữ trong {retentionDays} ngày."
-    },
-    "week": {
-      "Sunday": "Chủ nhật",
-      "Monday": "Thứ hai",
-      "Tuesday": "Thứ ba",
-      "Wednesday": "Thứ Tư",
-      "Thursday": "Thứ năm",
-      "Friday": "Thứ sáu",
-      "Saturday": "Thứ bảy",
-      "day": "ngày"
-    },
-    "enable-backup": "Bật sao lưu",
-    "backup-now": "Sao lưu ngay bây giờ",
-    "create-a-manual-backup": "Tạo bản sao lưu thủ công",
-    "disabled": "Tàn tật",
-    "enabled": "Đã bật",
-    "action-automatic-backup-for-database-props-database-name": "{0} sao lưu tự động cho cơ sở dữ liệu '{1}'.",
-    "updated-backup-webhook-url-for-database-props-database-name": "Đã cập nhật URL webhook sao lưu cho cơ sở dữ liệu '{0}'.",
     "last-sync-status": "Trạng thái đồng bộ hóa lần cuối",
     "last-sync-status-long": "Trạng thái đồng bộ hóa lần cuối {0} lúc {1}",
     "gitops-enabled": "Đã bật GitOps",
-    "restore-backup": "Khôi phục bản sao lưu '{0}' sang cơ sở dữ liệu mới",
     "nullable": "Có thể rỗng",
-    "restore": "Khôi phục",
-    "backup": {
-      "enabled": "đã bật",
-      "disabled": "tàn tật"
-    },
     "expression": "Sự biểu lộ",
     "position": "Chức vụ",
     "unique": "Độc nhất",
@@ -1666,20 +1611,6 @@
     },
     "show-reserved-tables": "Hiển thị các bảng dành riêng của Bytebase",
     "show-reserved-databases": "Hiển thị cơ sở dữ liệu dành riêng Bytebase",
-    "backup-setting": {
-      "schedule": {
-        "disabled": "Tàn tật",
-        "weekly": "Mỗi tuần",
-        "daily": "Hằng ngày"
-      },
-      "form": {
-        "schedule": "Lịch trình",
-        "day-of-week": "Ngày trong tuần",
-        "time-of-day": "Thời gian trong ngày",
-        "retention-period": "Thời gian lưu giữ (ngày)"
-      }
-    },
-    "backup-policy-violation": "Vi phạm chính sách sao lưu",
     "synced-at": "Đã đồng bộ hóa lúc {time}",
     "not-found-last-successful-sync-was": "Không tìm thấy, đồng bộ hóa thành công lần cuối là {time}",
     "view-unassigned-databases": "Xem cơ sở dữ liệu chưa được chỉ định",
@@ -1856,8 +1787,6 @@
     },
     "action": {
       "check-instance": "Kiểm tra phiên bản",
-      "view-backup": "Xem bản sao lưu",
-      "configure-backup": "Định cấu hình sao lưu",
       "view-diff": "Xem khác biệt"
     },
     "last-seen": "Nhìn thấy lần cuối",
@@ -2521,10 +2450,6 @@
         "title": "Chính sách triển khai",
         "desc": "Chính sách triển khai kiểm soát xem tác vụ thay đổi lược đồ có yêu cầu triển khai thủ công hay không."
       },
-      "bb-feature-backup-policy": {
-        "title": "Chính sách dự phòng",
-        "desc": "Chính sách sao lưu sẽ tự động sao lưu cơ sở dữ liệu của bạn theo lịch trình."
-      },
       "bb-feature-environment-tier-policy": {
         "title": "Cấp môi trường",
         "desc": "Đánh dấu môi trường là sản xuất."
@@ -2584,10 +2509,6 @@
       "bb-feature-online-migration": {
         "title": "Di chuyển trực tuyến",
         "desc": "Dựa trên gh-ost. Đối với các bảng lớn, nó có thể giảm thời gian khóa bảng từ vài giờ xuống còn vài giây."
-      },
-      "bb-feature-disaster-recovery-pitr": {
-        "title": "Phục hồi tại thời điểm (PITR)",
-        "desc": "Khôi phục trạng thái cơ sở dữ liệu về một thời điểm."
       },
       "bb-feature-sync-schema-all-versions": {
         "title": "Đồng bộ hóa lược đồ tất cả các phiên bản",

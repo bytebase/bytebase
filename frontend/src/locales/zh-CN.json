@@ -110,7 +110,6 @@
     "schema": "Schema",
     "anomalies": "异常",
     "do-not-show-again": "不再显示",
-    "backups": "备份",
     "detail": "详情",
     "type": "类型",
     "language": "语言",
@@ -195,7 +194,6 @@
     "enable": "开启",
     "disable": "禁用",
     "view-doc": "查看文档",
-    "backup-and-restore": "备份与恢复",
     "write-only": "仅写入",
     "pitr": "PITR",
     "fix": "修复",
@@ -272,7 +270,6 @@
     "missing-permission": "缺少必需的权限",
     "continue-anyway": "仍要继续",
     "permissions": "权限",
-    "backup": "备份",
     "cutover": "切换",
     "baseline": "基线",
     "project-member": "项目成员",
@@ -1423,10 +1420,6 @@
     "create": "创建环境",
     "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
-    "disable-auto-backup": {
-      "self": "禁用数据库自动备份",
-      "content": "禁用自动备份策略仅对新添加的数据库生效。\n是否要将该设置应用到当前环境下的所有数据库？"
-    },
     "production-environment": "生产环境",
     "access-control": {
       "title": "访问控制",
@@ -1507,16 +1500,6 @@
       "manual-by-workspace-admin": "Bytebase 工作空间管理员",
       "manual-by-custom-project-roles": "自定义项目角色"
     },
-    "backup": {
-      "name": "数据库备份策略",
-      "tip": "新策略仅对新添加的数据库生效",
-      "not-enforced": "无策略",
-      "not-enforced-info": "无备份策略。",
-      "daily": "每日",
-      "daily-info": "每日备份数据库。",
-      "weekly": "每周",
-      "weekly-info": "每周备份数据库。"
-    },
     "environment-tier": {
       "name": "环境级别",
       "description": "使该环境在显示上不同于其他环境。",
@@ -1590,48 +1573,10 @@
     "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
     "successfully-transferred-databases": "数据库转移完成",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "成功将'{0}'转移到项目'{1}'。",
-    "database-backup": "数据库备份",
-    "backup-name": "备份名称",
-    "create-backup": "创建备份",
-    "automatic-x-backup": "{freq}自动备份",
-    "automatic-backup": "自动备份",
-    "disable-automatic-backup": "禁用自动备份",
-    "backuppolicy-backup-enforced-and-cant-be-disabled": "强制{0}备份，不能禁用",
-    "backup-policy": {
-      "DAILY": "每日",
-      "WEEKLY": "每周"
-    },
-    "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "备份成功后向其发送 HTTP POST 请求。",
-    "backup-info": {
-      "template": "每{dayOrWeek} {time} 备份，数据将保留 {retentionDays} 天。"
-    },
-    "week": {
-      "Friday": "周五",
-      "Monday": "周一",
-      "Saturday": "周六",
-      "Sunday": "周日",
-      "Thursday": "周四",
-      "Wednesday": "周三",
-      "Tuesday": "周二",
-      "day": "日"
-    },
-    "enable-backup": "启用备份",
-    "backup-now": "现在备份",
-    "create-a-manual-backup": "创建手动备份",
-    "action-automatic-backup-for-database-props-database-name": "数据库'{1}'{0}自动备份",
-    "enabled": "启用",
-    "disabled": "禁用",
-    "updated-backup-webhook-url-for-database-props-database-name": "更新了数据库'{0}'的 webhook URL。",
     "last-sync-status": "最后一次同步状态",
     "last-sync-status-long": "最后一次同步在{1}，状态为{0}",
     "gitops-enabled": "已启用 GitOps",
-    "restore-backup": "恢复备份'{0}'到一个新的数据库中",
     "nullable": "可为空",
-    "restore": "恢复",
-    "backup": {
-      "enabled": "已启用",
-      "disabled": "已禁用"
-    },
     "expression": "表达式",
     "position": "位置",
     "unique": "Unique",
@@ -1666,20 +1611,6 @@
     },
     "show-reserved-tables": "显示 Bytebase 保留的表",
     "show-reserved-databases": "显示 Bytebase 保留的数据库",
-    "backup-setting": {
-      "schedule": {
-        "disabled": "关闭",
-        "weekly": "每周",
-        "daily": "每天"
-      },
-      "form": {
-        "schedule": "计划",
-        "day-of-week": "星期",
-        "time-of-day": "时间",
-        "retention-period": "保留时长（天）"
-      }
-    },
-    "backup-policy-violation": "违反了备份策略",
     "synced-at": "同步于 {time}",
     "not-found-last-successful-sync-was": "未找到，上次成功同步于 {time}",
     "view-unassigned-databases": "查看未分配的数据库",
@@ -1856,8 +1787,6 @@
     },
     "action": {
       "check-instance": "检查实例",
-      "view-backup": "查看备份",
-      "configure-backup": "配置备份",
       "view-diff": "查看差异"
     },
     "last-seen": "上次出现",
@@ -2520,10 +2449,6 @@
         "title": "发布策略",
         "desc": "「发布策略」可以控制数据库 schema 的变更是否需要手动发布"
       },
-      "bb-feature-backup-policy": {
-        "title": "备份策略",
-        "desc": "「备份策略」可以根据指定的周期自动备份数据库"
-      },
       "bb-feature-environment-tier-policy": {
         "title": "环境级别",
         "desc": "「环境级别」可以将环境标记为生产环境"
@@ -2583,10 +2508,6 @@
       "bb-feature-online-migration": {
         "title": "在线大表变更",
         "desc": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级。"
-      },
-      "bb-feature-disaster-recovery-pitr": {
-        "title": "恢复到指定时间点 (PITR)",
-        "desc": "将数据库的状态恢复到一个时间点。"
       },
       "bb-feature-sync-schema-all-versions": {
         "title": "库表同步",

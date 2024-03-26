@@ -110,7 +110,6 @@
     "schema": "Esquema",
     "anomalies": "Anomalías",
     "do-not-show-again": "No mostrar de nuevo",
-    "backups": "Copias de seguridad",
     "detail": "Detalle",
     "type": "Tipo",
     "language": "Idioma",
@@ -195,7 +194,6 @@
     "enable": "Habilitar",
     "disable": "Inhabilitar",
     "view-doc": "Ver doc",
-    "backup-and-restore": "Respaldo y restauración",
     "write-only": "solo escritura",
     "pitr": "PITR",
     "fix": "Corregir",
@@ -272,7 +270,6 @@
     "missing-permission": "Faltan permisos requeridos",
     "continue-anyway": "De todas maneras, continúe",
     "permissions": "Permisos",
-    "backup": "Respaldo",
     "cutover": "transición",
     "baseline": "Base",
     "project-member": "Miembro del proyecto",
@@ -1423,10 +1420,6 @@
     "create": "Crear entorno",
     "restore": "Restaurar este entorno",
     "successfully-updated-environment": "entorno '{name}' actualizado exitosamente.",
-    "disable-auto-backup": {
-      "self": "Desactivar copia de seguridad automática de la base de datos",
-      "content": "La política de desactivación de copias de seguridad automáticas no se aplica de forma retroactiva.\n¿Está seguro de aplicarla a todas las bases de datos en este entorno?"
-    },
     "production-environment": "Entorno de producción",
     "access-control": {
       "title": "Control de acceso",
@@ -1507,16 +1500,6 @@
       "manual-by-workspace-admin": "Administrador del espacio de trabajo",
       "manual-by-custom-project-roles": "Roles de proyecto personalizados"
     },
-    "backup": {
-      "name": "Política de programación de copias de seguridad de la base de datos",
-      "tip": "La política no se aplica retrospectivamente.",
-      "not-enforced": "No obligatoria",
-      "not-enforced-info": "No se aplica ninguna programación de copias de seguridad.",
-      "daily": "Copia de seguridad diaria",
-      "daily-info": "Aplica copias de seguridad diarias para cada base de datos.",
-      "weekly": "Copia de seguridad semanal",
-      "weekly-info": "Aplica copias de seguridad semanales para cada base de datos."
-    },
     "environment-tier": {
       "name": "Nivel de entorno",
       "description": "El entorno aparecerá de manera diferente a otros entornos.",
@@ -1565,7 +1548,6 @@
     "sync-status": "Estado de sincronización",
     "last-successful-sync": "Última sincronización exitosa",
     "filter-database": "Filtrar base de datos",
-    "database-backup": "copia de seguridad de la base de datos",
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
     "unassign-alert-title": "Desasignar bases de datos",
@@ -1591,47 +1573,10 @@
     "batch-action-disabled-for-unassigned": "No se puede {action} para una base de datos no asignada",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Se transfirió correctamente '{0}' al proyecto '{1}'.",
-    "backup-name": "Nombre de la copia de seguridad",
-    "create-backup": "Crear copia de seguridad",
-    "automatic-x-backup": "Copia de seguridad automática cada {freq}",
-    "automatic-backup": "Copia de seguridad automática",
-    "disable-automatic-backup": "Desactivar copia de seguridad automática",
-    "backuppolicy-backup-enforced-and-cant-be-disabled": "Copia de seguridad {0} obligatoria y no se puede desactivar",
-    "backup-policy": {
-      "DAILY": "DIARIA",
-      "WEEKLY": "SEMANAL"
-    },
-    "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "Se enviará una solicitud HTTP POST después de una copia de seguridad exitosa.",
-    "backup-info": {
-      "template": "Se realizará una copia de seguridad todos los {dayOrWeek} a las {time}. Los datos de copia de seguridad se conservarán durante {retentionDays} días."
-    },
-    "week": {
-      "Sunday": "Domingo",
-      "Monday": "Lunes",
-      "Tuesday": "Martes",
-      "Wednesday": "Miércoles",
-      "Thursday": "Jueves",
-      "Friday": "Viernes",
-      "Saturday": "Sábado",
-      "day": "día"
-    },
-    "enable-backup": "Activar copia de seguridad",
-    "backup-now": "Realizar copia de seguridad ahora",
-    "create-a-manual-backup": "Crear una copia de seguridad manual",
-    "disabled": "Desactivado",
-    "enabled": "Activado",
-    "action-automatic-backup-for-database-props-database-name": "Copia de seguridad automática {0} para la base de datos '{1}'.",
-    "updated-backup-webhook-url-for-database-props-database-name": "Se actualizó la URL del webhook de copia de seguridad para la base de datos '{0}'.",
     "last-sync-status": "Estado de sincronización anterior",
     "last-sync-status-long": "Estado de sincronización anterior {0} a las {1}",
     "gitops-enabled": "GitOps habilitado",
-    "restore-backup": "Restaurar copia de seguridad '{0}' en una nueva base de datos",
     "nullable": "Anulable",
-    "restore": "Restaurar",
-    "backup": {
-      "enabled": "habilitado",
-      "disabled": "deshabilitado"
-    },
     "expression": "Expresión",
     "position": "Posición",
     "unique": "Único",
@@ -1666,20 +1611,6 @@
     },
     "show-reserved-tables": "Mostrar tablas reservadas de Bytebase",
     "show-reserved-databases": "Mostrar bases de datos reservadas de Bytebase",
-    "backup-setting": {
-      "schedule": {
-        "disabled": "Desactivado",
-        "weekly": "Cada semana",
-        "daily": "Cada día"
-      },
-      "form": {
-        "schedule": "Programar",
-        "day-of-week": "Día de la semana",
-        "time-of-day": "Hora del día",
-        "retention-period": "Período de retención (días)"
-      }
-    },
-    "backup-policy-violation": "Violación de la política de copias de seguridad",
     "synced-at": "Sincronizado en {time}",
     "not-found-last-successful-sync-was": "No encontrado, última sincronización exitosa fue {time}",
     "view-unassigned-databases": "Ver bases de datos no asignadas",
@@ -1856,8 +1787,6 @@
     },
     "action": {
       "check-instance": "Ver instancia",
-      "view-backup": "Ver copia de seguridad",
-      "configure-backup": "Configurar copia de seguridad",
       "view-diff": "Ver diferencia"
     },
     "last-seen": "Último visto",
@@ -2521,10 +2450,6 @@
         "title": "Política de implementación",
         "desc": "La política de implementación controla si la tarea de cambio de esquema requiere una implementación manual."
       },
-      "bb-feature-backup-policy": {
-        "title": "Política de respaldo",
-        "desc": "La política de respaldo realizará una copia de seguridad automática de su base de datos según la programación establecida."
-      },
       "bb-feature-environment-tier-policy": {
         "title": "Nivel de entorno",
         "desc": "Marque el entorno como producción."
@@ -2584,10 +2509,6 @@
       "bb-feature-online-migration": {
         "title": "Migración en línea",
         "desc": "Basado en gh-ost. Para tablas grandes, puede reducir la duración del bloqueo de la tabla de horas a segundos."
-      },
-      "bb-feature-disaster-recovery-pitr": {
-        "title": "Recuperación en punto en el tiempo (PITR)",
-        "desc": "Restaura el estado de la base de datos a un punto en el tiempo."
       },
       "bb-feature-sync-schema-all-versions": {
         "title": "Sincronización de esquemas de todas las versiones",
