@@ -337,35 +337,50 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		}
 	}
 
-	// Query functions info.
-	functionQuery := `
+	// Query functions and procedure info.
+	routinesQuery := `
 		SELECT
 			ROUTINE_NAME,
-			ROUTINE_DEFINITION
+			ROUTINE_DEFINITION,
+			ROUTINE_TYPE
 		FROM
 			INFORMATION_SCHEMA.ROUTINES
-		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE = 'FUNCTION';
+		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE IN ('FUNCTION', 'PROCEDURE')
+		ORDER BY ROUTINE_TYPE, ROUTINE_NAME;
 	`
-	functionRows, err := driver.db.QueryContext(ctx, functionQuery, driver.databaseName)
+	routineRows, err := driver.db.QueryContext(ctx, routinesQuery, driver.databaseName)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, functionQuery)
+		return nil, util.FormatErrorWithQuery(err, routinesQuery)
 	}
-	defer functionRows.Close()
+	defer routineRows.Close()
 	var functions []*storepb.FunctionMetadata
-	for functionRows.Next() {
-		function := &storepb.FunctionMetadata{}
-		if err := functionRows.Scan(
-			&function.Name,
-			&function.Definition,
+	var procedures []*storepb.ProcedureMetadata
+	for routineRows.Next() {
+		var name, definition, routineType string
+		if err := routineRows.Scan(
+			&name,
+			&definition,
+			&routineType,
 		); err != nil {
 			return nil, err
 		}
-		functions = append(functions, function)
+		if strings.EqualFold(routineType, "PROCEDURE") {
+			procedures = append(procedures, &storepb.ProcedureMetadata{
+				Name:       name,
+				Definition: definition,
+			})
+		} else {
+			functions = append(functions, &storepb.FunctionMetadata{
+				Name:       name,
+				Definition: definition,
+			})
+		}
 	}
-	if err := functionRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, functionQuery)
+	if err := routineRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, routinesQuery)
 	}
 	schemaMetadata.Functions = functions
+	schemaMetadata.Procedures = procedures
 
 	// Query table info.
 	tableQuery := `
