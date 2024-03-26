@@ -208,15 +208,6 @@ const doCreateIssue = async () => {
     return;
   }
 
-  // const newIssue: IssueCreate = {
-  //   name: generateIssueName(),
-  //   type: "bb.issue.grant.request",
-  //   description: state.description,
-  //   projectId: Number(state.projectId),
-  //   assigneeId: SYSTEM_BOT_ID,
-  //   createContext: {},
-  //   payload: {},
-  // };
   const newIssue = Issue.fromPartial({
     title: generateIssueName(),
     description: state.description,
