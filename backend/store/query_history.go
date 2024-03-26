@@ -79,7 +79,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 			type,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING
 			id,
 			created_ts
