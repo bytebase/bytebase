@@ -110,7 +110,6 @@
     "schema": "Schema",
     "anomalies": "Anomalies",
     "do-not-show-again": "Do not show again",
-    "backups": "Backups",
     "detail": "Detail",
     "type": "Type",
     "language": "Language",
@@ -195,7 +194,6 @@
     "enable": "Enable",
     "disable": "Disable",
     "view-doc": "View doc",
-    "backup-and-restore": "Backup and restore",
     "write-only": "write only",
     "pitr": "PITR",
     "fix": "Fix",
@@ -272,7 +270,6 @@
     "missing-permission": "Missing required permissions",
     "continue-anyway": "Continue anyway",
     "permissions": "Permissions",
-    "backup": "Backup",
     "cutover": "Cutover",
     "baseline": "Baseline",
     "project-member": "Project member",
@@ -1423,10 +1420,6 @@
     "create": "Create Environment",
     "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
-    "disable-auto-backup": {
-      "self": "Disable database automatic backup",
-      "content": "Disabling automatic backup policy is not applied retroactively.\nAre you sure about applying to all databases in this environment?"
-    },
     "production-environment": "Production environment",
     "access-control": {
       "title": "Access control",
@@ -1507,16 +1500,6 @@
       "manual-by-workspace-admin": "Workspace admin",
       "manual-by-custom-project-roles": "Custom project roles"
     },
-    "backup": {
-      "name": "Database backup schedule policy",
-      "tip": "The policy is not applied retroactively.",
-      "not-enforced": "Not enforced",
-      "not-enforced-info": "No backup schedule is enforced.",
-      "daily": "Daily backup",
-      "daily-info": "Enforce every database to backup daily.",
-      "weekly": "Weekly backup",
-      "weekly-info": "Enforce every database to backup weekly."
-    },
     "environment-tier": {
       "name": "Environment tier",
       "description": "The environment will appear differently from other environments.",
@@ -1565,7 +1548,6 @@
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",
     "filter-database": "Filter database",
-    "database-backup": "database backup",
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
     "unassign-alert-title": "Unassign databases",
@@ -1591,47 +1573,10 @@
     "batch-action-disabled-for-unassigned": "Can not {action} for unassigned database",
     "successfully-transferred-databases": "Successfully transferred databases",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
-    "backup-name": "Backup name",
-    "create-backup": "Create backup",
-    "automatic-x-backup": "Automatic {freq} backup",
-    "automatic-backup": "Automatic backup",
-    "disable-automatic-backup": "Disable automatic backup",
-    "backuppolicy-backup-enforced-and-cant-be-disabled": "{0} backup enforced and can't be disabled",
-    "backup-policy": {
-      "DAILY": "DAILY",
-      "WEEKLY": "WEEKLY"
-    },
-    "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "An HTTP POST request will be sent to it after a successful backup.",
-    "backup-info": {
-      "template": "Backup will be taken on every {dayOrWeek} at {time}. Backup data will be kept for {retentionDays} days."
-    },
-    "week": {
-      "Sunday": "Sunday",
-      "Monday": "Monday",
-      "Tuesday": "Tuesday",
-      "Wednesday": "Wednesday",
-      "Thursday": "Thursday",
-      "Friday": "Friday",
-      "Saturday": "Saturday",
-      "day": "day"
-    },
-    "enable-backup": "Enable backup",
-    "backup-now": "Backup now",
-    "create-a-manual-backup": "Create a manual backup",
-    "disabled": "Disabled",
-    "enabled": "Enabled",
-    "action-automatic-backup-for-database-props-database-name": "{0} automatic backup for database '{1}'.",
-    "updated-backup-webhook-url-for-database-props-database-name": "Updated backup webhook URL for database '{0}'.",
     "last-sync-status": "Last sync status",
     "last-sync-status-long": "Last sync status {0} at {1}",
     "gitops-enabled": "GitOps enabled",
-    "restore-backup": "Restore backup '{0}' to a new database",
     "nullable": "Nullable",
-    "restore": "Restore",
-    "backup": {
-      "enabled": "enabled",
-      "disabled": "disabled"
-    },
     "expression": "Expression",
     "position": "Position",
     "unique": "Unique",
@@ -1666,20 +1611,6 @@
     },
     "show-reserved-tables": "Show Bytebase reserved tables",
     "show-reserved-databases": "Show Bytebase reserved databases",
-    "backup-setting": {
-      "schedule": {
-        "disabled": "Disabled",
-        "weekly": "Every week",
-        "daily": "Every day"
-      },
-      "form": {
-        "schedule": "Schedule",
-        "day-of-week": "Day of week",
-        "time-of-day": "Time of day",
-        "retention-period": "Retention period(days)"
-      }
-    },
-    "backup-policy-violation": "Backup policy violation",
     "synced-at": "Synced at {time}",
     "not-found-last-successful-sync-was": "Not found, last successful sync was {time}",
     "view-unassigned-databases": "View unassigned databases",
@@ -1856,8 +1787,6 @@
     },
     "action": {
       "check-instance": "Check instance",
-      "view-backup": "View backup",
-      "configure-backup": "Configure backup",
       "view-diff": "View diff"
     },
     "last-seen": "Last seen",
@@ -2521,10 +2450,6 @@
         "title": "Rollout policy",
         "desc": "Rollout policy controls whether the schema change task requires manual rolling out."
       },
-      "bb-feature-backup-policy": {
-        "title": "Backup policy",
-        "desc": "Backup policy will auto-backup your database based on the schedule."
-      },
       "bb-feature-environment-tier-policy": {
         "title": "Environment tier",
         "desc": "Mark environment as production."
@@ -2584,10 +2509,6 @@
       "bb-feature-online-migration": {
         "title": "Online migration",
         "desc": "Based on gh-ost. For large tables, it can reduce the table lock duration from hours to seconds."
-      },
-      "bb-feature-disaster-recovery-pitr": {
-        "title": "Point-in-Time-Recovery (PITR)",
-        "desc": "Restore the database state to a point in time."
       },
       "bb-feature-sync-schema-all-versions": {
         "title": "Synchronize schema all versions",

@@ -12,7 +12,6 @@ import {
   instanceV1HasAlterSchema,
   instanceV1SupportSlowQuery,
   isArchivedDatabaseV1,
-  instanceV1HasBackupRestore,
   hasPermissionToCreateChangeDatabaseIssue,
 } from "@/utils";
 
@@ -22,8 +21,6 @@ export type DatabaseDetailContext = {
   allowUpdateDatabase: Ref<boolean>;
   allowSyncDatabase: Ref<boolean>;
   allowTransferDatabase: Ref<boolean>;
-  allowListBackup: Ref<boolean>;
-  allowCreateBackup: Ref<boolean>;
   allowGetSchema: Ref<boolean>;
   allowChangeData: Ref<boolean>;
   allowAlterSchema: Ref<boolean>;
@@ -80,13 +77,6 @@ export const provideDatabaseDetailContext = (
     return allowUpdateDatabase.value;
   });
 
-  const allowListBackup = computed(() => checkPermission("bb.backups.list"));
-  const allowCreateBackup = computed(
-    () =>
-      checkPermission("bb.backups.create") &&
-      instanceV1HasBackupRestore(database.value.instanceEntity)
-  );
-
   const allowGetSchema = computed(() =>
     checkPermission("bb.databases.getSchema")
   );
@@ -130,8 +120,6 @@ export const provideDatabaseDetailContext = (
     allowUpdateDatabase,
     allowSyncDatabase,
     allowTransferDatabase,
-    allowListBackup,
-    allowCreateBackup,
     allowGetSchema,
     allowChangeData,
     allowAlterSchema,

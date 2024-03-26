@@ -46,7 +46,6 @@ export type FeatureType =
   | "bb.feature.index-advisor"
   // Policy Control
   | "bb.feature.approval-policy"
-  | "bb.feature.backup-policy"
   | "bb.feature.environment-tier-policy"
   | "bb.feature.sensitive-data"
   | "bb.feature.access-control"

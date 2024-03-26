@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math"
 	"os"
 	"os/exec"
 	"path"
@@ -33,10 +32,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
-	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-
-	"github.com/blang/semver/v4"
 )
 
 const (
@@ -85,20 +81,6 @@ func newBinlogFile(name string, size int64) (BinlogFile, error) {
 		return BinlogFile{}, err
 	}
 	return BinlogFile{Name: name, Size: size, Seq: seq}, nil
-}
-
-type binlogCoordinate struct {
-	Name string
-	Seq  int64
-	Pos  int64
-}
-
-func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, error) {
-	_, seq, err := ParseBinlogName(binlogFileName)
-	if err != nil {
-		return binlogCoordinate{}, err
-	}
-	return binlogCoordinate{Name: binlogFileName, Seq: seq, Pos: pos}, nil
 }
 
 type binlogFileMeta struct {
@@ -344,88 +326,6 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 		return sorted[i].Seq < sorted[j].Seq
 	})
 	return sorted
-}
-
-// GetLatestBackupBeforeOrEqualTs finds the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
-// The backupList should only contain DONE backups.
-func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*store.BackupMessage, targetTs int64, client *bbs3.Client) (*store.BackupMessage, *api.BinlogInfo, error) {
-	if len(backupList) == 0 {
-		return nil, nil, errors.Errorf("no valid backup")
-	}
-
-	targetBinlogCoordinate, err := driver.getBinlogCoordinateByTs(ctx, targetTs, client)
-	if err != nil {
-		slog.Error("Failed to get binlog coordinate by targetTs", slog.Int64("targetTs", targetTs), log.BBError(err))
-		return nil, nil, errors.Wrapf(err, "failed to get binlog coordinate by targetTs %d", targetTs)
-	}
-	slog.Debug("Got binlog coordinate by targetTs", slog.Int64("targetTs", targetTs), slog.Any("binlogCoordinate", *targetBinlogCoordinate))
-
-	var validBackupList []*store.BackupMessage
-	for _, b := range backupList {
-		if b.Payload.BinlogInfo.IsEmpty() {
-			slog.Debug("Skip parsing binlog event timestamp of the backup where BinlogInfo is empty", slog.Int("backupId", b.UID), slog.String("backupName", b.Name))
-			continue
-		}
-		validBackupList = append(validBackupList, b)
-	}
-
-	backup, err := getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get the latest backup before or equal to binlog coordinate %+v", *targetBinlogCoordinate)
-	}
-	targetBinlogInfo := &api.BinlogInfo{
-		FileName: targetBinlogCoordinate.Name,
-		Position: targetBinlogCoordinate.Pos,
-	}
-
-	return backup, targetBinlogInfo, nil
-}
-
-func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*store.BackupMessage, targetBinlogCoordinate binlogCoordinate) (*store.BackupMessage, error) {
-	type backupBinlogCoordinate struct {
-		binlogCoordinate
-		backup *store.BackupMessage
-	}
-	var backupCoordinateListSorted []backupBinlogCoordinate
-	for _, b := range backupList {
-		c, err := newBinlogCoordinate(b.Payload.BinlogInfo.FileName, b.Payload.BinlogInfo.Position)
-		if err != nil {
-			return nil, err
-		}
-		backupCoordinateListSorted = append(backupCoordinateListSorted, backupBinlogCoordinate{binlogCoordinate: c, backup: b})
-	}
-
-	// Sort in order that latest binlog coordinate comes first.
-	sort.Slice(backupCoordinateListSorted, func(i, j int) bool {
-		return backupCoordinateListSorted[i].Seq > backupCoordinateListSorted[j].Seq ||
-			(backupCoordinateListSorted[i].Seq == backupCoordinateListSorted[j].Seq && backupCoordinateListSorted[i].Pos > backupCoordinateListSorted[j].Pos)
-	})
-
-	var backup *store.BackupMessage
-	for _, bc := range backupCoordinateListSorted {
-		if bc.Seq < targetBinlogCoordinate.Seq || (bc.Seq == targetBinlogCoordinate.Seq && bc.Pos <= targetBinlogCoordinate.Pos) {
-			if bc.backup.Status == api.BackupStatusDone {
-				backup = bc.backup
-				break
-			}
-			if bc.backup.Status == api.BackupStatusFailed && bc.backup.BackupType == api.BackupTypePITR {
-				return nil, errors.Errorf("the backup %q taken after a former PITR cutover is failed, so we cannot recover to a point in time before this backup", bc.backup.Name)
-			}
-			if bc.backup.Status == api.BackupStatusPendingCreate && bc.backup.BackupType == api.BackupTypePITR {
-				return nil, errors.Errorf("the backup %q taken after a former PITR cutover is still in progress, please try again later", bc.backup.Name)
-			}
-		}
-	}
-
-	if backup == nil {
-		oldestBackupBinlogCoordinate := backupCoordinateListSorted[len(backupCoordinateListSorted)-1]
-		slog.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
-			slog.Any("targetBinlogCoordinate", targetBinlogCoordinate),
-			slog.Any("oldestBackupBinlogCoordinate", oldestBackupBinlogCoordinate))
-		return nil, errors.Errorf("the target binlog coordinate %v is earlier than the oldest backup's binlog coordinate %v", targetBinlogCoordinate, oldestBackupBinlogCoordinate)
-	}
-
-	return backup, nil
 }
 
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database
@@ -890,65 +790,6 @@ func (driver *Driver) GetSortedBinlogFilesOnServer(ctx context.Context) ([]Binlo
 	return sortBinlogFiles(binlogFiles), nil
 }
 
-// getBinlogCoordinateByTs converts a timestamp to binlog coordinate using local binlog files.
-func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int64, client *bbs3.Client) (*binlogCoordinate, error) {
-	metaList, err := getSortedLocalBinlogFilesMeta(driver.binlogDir)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read local binlog metadata files")
-	}
-	if len(metaList) == 0 {
-		return nil, errors.Errorf("no local binlog metadata files found")
-	}
-	if !binlogMetaAreContinuous(metaList) {
-		return nil, errors.Errorf("local binlog metadata files are not continuous")
-	}
-
-	var targetMeta *binlogFileMeta
-	for i, meta := range metaList {
-		if meta.FirstEventTs >= targetTs {
-			if i == 0 {
-				return nil, errors.Errorf("the targetTs %d is before the first event ts %d of the oldest binlog file %q", targetTs, meta.FirstEventTs, metaList[0].binlogName)
-			}
-			// The previous local binlog file contains targetTs.
-			targetMeta = &metaList[i-1]
-			break
-		}
-	}
-	// All of the local binlog files' first event start ts <= targetTs, so we choose the last binlog file as probably "containing" targetTs.
-	// This may not be true, because possibly targetTs > last eventTs of the last binlog file.
-	// In this case, we should return an error.
-	var isLastBinlogFile bool
-	if targetMeta == nil {
-		isLastBinlogFile = true
-		targetMeta = &metaList[len(metaList)-1]
-	}
-	slog.Debug("Found potential binlog file containing targetTs", slog.String("binlogFile", targetMeta.binlogName), slog.Int64("targetTs", targetTs), slog.Bool("isLastBinlogFile", isLastBinlogFile))
-
-	if client != nil {
-		// Use filepath.Join to compose an OS-specific local file system path.
-		filePathLocal := filepath.Join(driver.binlogDir, targetMeta.binlogName)
-		// Use path.Join to compose a path on cloud which always uses / as the separator.
-		filePathOnCloud := path.Join(common.GetBinlogRelativeDir(driver.binlogDir), targetMeta.binlogName)
-		if err := client.DownloadFileFromCloud(ctx, filePathLocal, filePathOnCloud); err != nil {
-			return nil, errors.Wrapf(err, "failed to download binlog file %s from the cloud storage", targetMeta.binlogName)
-		}
-	}
-	eventPos, err := driver.getBinlogEventPositionAtOrAfterTs(ctx, targetMeta.binlogName, targetTs)
-	if err != nil {
-		if common.ErrorCode(err) == common.NotFound {
-			// All the binlog events in this binlog file have ts < targetTs.
-			// If this is the last binlog file, the user wants to recover to a time in the future and we should return an error.
-			// Otherwise, we should return the end position of the current binlog file.
-			if isLastBinlogFile {
-				return nil, errors.Errorf("the targetTs %d is after the last event ts of the latest binlog file %q", targetTs, targetMeta.binlogName)
-			}
-			return &binlogCoordinate{Name: targetMeta.binlogName, Seq: targetMeta.seq, Pos: math.MaxInt64}, nil
-		}
-		return nil, errors.Wrapf(err, "failed to find the binlog event after targetTs %d", targetTs)
-	}
-	return &binlogCoordinate{Name: targetMeta.binlogName, Seq: targetMeta.seq, Pos: eventPos}, nil
-}
-
 func parseBinlogEventTsInLine(line string) (eventTs int64, found bool, err error) {
 	// The target line starts with string like "#220421 14:49:26 server id 1"
 	if !strings.Contains(line, "server id") {
@@ -1031,60 +872,6 @@ func (driver *Driver) parseLocalBinlogFirstEventTs(ctx context.Context, fileName
 	return eventTs, nil
 }
 
-// Use command like mysqlbinlog --start-datetime=targetTs binlog.000001 to parse the first binlog event position with timestamp equal or after targetTs.
-// TODO(dragonly): Add integration test.
-func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogFileName string, targetTs int64) (int64, error) {
-	args := []string{
-		// Local binlog file path.
-		path.Join(driver.binlogDir, binlogFileName),
-		// Verify checksum binlog events.
-		"--verify-binlog-checksum",
-		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
-		"--base64-output=DECODE-ROWS",
-		// Instruct mysqlbinlog to start output only after encountering the first binlog event with timestamp equal or after targetTs.
-		"--start-datetime", formatDateTime(targetTs),
-	}
-	cmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQLBinlog, driver.dbBinDir), args...)
-	cmd.Stderr = os.Stderr
-	pr, err := cmd.StdoutPipe()
-	if err != nil {
-		return 0, err
-	}
-	s := bufio.NewScanner(pr)
-	if err := cmd.Start(); err != nil {
-		return 0, err
-	}
-	defer func() {
-		_ = pr.Close()
-		_ = cmd.Process.Kill()
-	}()
-
-	var pos int64
-	for s.Scan() {
-		line := s.Text()
-		posParsed, found, err := parseBinlogEventPosInLine(line)
-		if err != nil {
-			return 0, errors.Wrap(err, "failed to parse binlog event start position from mysqlbinlog output")
-		}
-		if !found {
-			continue
-		}
-		if posParsed == 4 {
-			// When invoking mysqlbinlog with --start-datetime, the first valid event will always be FORMAT_DESCRIPTION_EVENT which should be skipped.
-			continue
-		}
-		pos = posParsed
-		break
-	}
-
-	if pos == 0 {
-		// TODO(dragonly): Check for mysqlbinlog process exit error to give more specific error messages, e.g., file not exist.
-		return 0, common.Errorf(common.NotFound, "failed to find event position at or after targetTs %d", targetTs)
-	}
-
-	return pos, nil
-}
-
 // ParseBinlogName parses the numeric extension and the binary log base name by using split the dot.
 // Examples:
 //   - ("binlog.000001") => ("binlog", 1)
@@ -1109,57 +896,6 @@ func GenBinlogFileNames(base string, seqStart, seqEnd int64) []string {
 		ret = append(ret, fmt.Sprintf("%s.%06d", base, i))
 	}
 	return ret
-}
-
-// checks the MySQL version is >=8.0.
-func checkVersionForPITR(version string) error {
-	v, err := semver.Parse(version)
-	if err != nil {
-		return err
-	}
-	v8 := semver.MustParse("8.0.0")
-	if v.LT(v8) {
-		return errors.Errorf("version %s is not supported for PITR; the minimum supported version is 8.0", version)
-	}
-	return nil
-}
-
-// CheckServerVersionForPITR checks that the MySQL server version meets the requirements of PITR.
-func (driver *Driver) CheckServerVersionForPITR(ctx context.Context) error {
-	value, err := driver.getServerVariable(ctx, "version")
-	if err != nil {
-		return err
-	}
-	return checkVersionForPITR(value)
-}
-
-// CheckEngineInnoDB checks that the tables in the database is all using InnoDB as the storage engine.
-func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) error {
-	db := driver.GetDB()
-	// ref: https://dev.mysql.com/doc/refman/8.0/en/information-schema-tables-table.html
-	query := fmt.Sprintf("SELECT table_name, engine FROM information_schema.tables WHERE table_schema='%s';", database)
-	rows, err := db.QueryContext(ctx, query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	var tablesNotInnoDB []string
-	for rows.Next() {
-		var tableName, engine string
-		if err := rows.Scan(&tableName, &engine); err != nil {
-			return err
-		}
-		if strings.ToLower(engine) != "innodb" {
-			tablesNotInnoDB = append(tablesNotInnoDB, tableName)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return util.FormatErrorWithQuery(err, query)
-	}
-	if len(tablesNotInnoDB) != 0 {
-		return errors.Errorf("tables %v of database %s do not use the InnoDB engine, which is required for PITR", tablesNotInnoDB, database)
-	}
-	return nil
 }
 
 func (driver *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
