@@ -83,6 +83,7 @@ type ResourceType =
   | "instance"
   | "project"
   | "idp"
+  | "vcsProvider"
   | "role"
   | "database-group"
   | "schema-group"

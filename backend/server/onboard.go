@@ -26,8 +26,6 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		ResourceID: "project-sample",
 		Title:      "Sample Project",
 		Key:        "SAM",
-		Workflow:   api.UIWorkflow,
-		Visibility: api.Public,
 		TenantMode: api.TenantModeDisabled,
 	}, userID)
 	if err != nil {

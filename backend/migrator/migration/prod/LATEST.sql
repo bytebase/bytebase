@@ -237,10 +237,7 @@ CREATE TABLE project (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
     key TEXT NOT NULL,
-    workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS')),
-    visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE')),
     tenant_mode TEXT NOT NULL CHECK (tenant_mode IN ('DISABLED', 'TENANT')) DEFAULT 'DISABLED',
-    schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
     resource_id TEXT NOT NULL,
     data_classification_config_id TEXT NOT NULL DEFAULT '',
     setting JSONB NOT NULL DEFAULT '{}'
@@ -257,8 +254,6 @@ INSERT INTO
         updater_id,
         name,
         key,
-        workflow_type,
-        visibility,
         tenant_mode,
         resource_id
     )
@@ -269,8 +264,6 @@ VALUES
         1,
         'Default',
         'DEFAULT',
-        'UI',
-        'PUBLIC',
         'DISABLED',
         'default'
     );

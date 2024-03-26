@@ -19,13 +19,11 @@ type ProjectMessage struct {
 	ResourceID                 string
 	Title                      string
 	Key                        string
-	Workflow                   api.ProjectWorkflowType
-	Visibility                 api.ProjectVisibility
 	TenantMode                 api.ProjectTenantMode
-	SchemaChangeType           api.ProjectSchemaChangeType
 	Webhooks                   []*ProjectWebhookMessage
 	DataClassificationConfigID string
 	Setting                    *storepb.Project
+	VCSConnectorsCount         int
 	// The following fields are output only and not used for create().
 	UID     int
 	Deleted bool
@@ -52,8 +50,6 @@ type UpdateProjectMessage struct {
 	Title                      *string
 	Key                        *string
 	TenantMode                 *api.ProjectTenantMode
-	Workflow                   *api.ProjectWorkflowType
-	SchemaChangeType           *api.ProjectSchemaChangeType
 	DataClassificationConfigID *string
 	Setting                    *storepb.Project
 	Delete                     *bool
@@ -126,16 +122,6 @@ func (s *Store) ListProjectV2(ctx context.Context, find *FindProjectMessage) ([]
 
 // CreateProjectV2 creates a project.
 func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, creatorID int) (*ProjectMessage, error) {
-	// TODO(d): consider moving these defaults to somewhere else.
-	if create.Workflow == "" {
-		create.Workflow = api.UIWorkflow
-	}
-	if create.Visibility == "" {
-		create.Visibility = api.Public
-	}
-	if create.SchemaChangeType == "" {
-		create.SchemaChangeType = api.ProjectSchemaChangeTypeDDL
-	}
 	user, err := s.GetUserByID(ctx, creatorID)
 	if err != nil {
 		return nil, err
@@ -158,10 +144,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		ResourceID:                 create.ResourceID,
 		Title:                      create.Title,
 		Key:                        create.Key,
-		Workflow:                   create.Workflow,
-		Visibility:                 create.Visibility,
 		TenantMode:                 create.TenantMode,
-		SchemaChangeType:           create.SchemaChangeType,
 		DataClassificationConfigID: create.DataClassificationConfigID,
 		Setting:                    create.Setting,
 	}
@@ -172,14 +155,11 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 				resource_id,
 				name,
 				key,
-				workflow_type,
-				visibility,
 				tenant_mode,
-				schema_change_type,
 				data_classification_config_id,
 				setting
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			RETURNING id
 		`,
 		creatorID,
@@ -187,10 +167,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		create.ResourceID,
 		create.Title,
 		create.Key,
-		create.Workflow,
-		create.Visibility,
 		create.TenantMode,
-		create.SchemaChangeType,
 		create.DataClassificationConfigID,
 		payload,
 	).Scan(
@@ -226,14 +203,15 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 
 // UpdateProjectV2 updates a project.
 func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage) (*ProjectMessage, error) {
+	s.removeProjectCache(patch.ResourceID)
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	project, err := s.updateProjectImplV2(ctx, tx, patch)
-	if err != nil {
+	if err := updateProjectImplV2(ctx, tx, patch); err != nil {
 		return nil, err
 	}
 
@@ -241,12 +219,10 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 		return nil, err
 	}
 
-	s.storeProjectCache(project)
-	return project, nil
+	return s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &patch.ResourceID})
 }
 
-// WARNING: calling updateProjectImplV2 from other store library has to invalidate the cache.
-func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProjectMessage) (*ProjectMessage, error) {
+func updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProjectMessage) error {
 	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", patch.UpdaterID)}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -264,77 +240,27 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 	if v := patch.TenantMode; v != nil {
 		set, args = append(set, fmt.Sprintf("tenant_mode = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.Workflow; v != nil {
-		set, args = append(set, fmt.Sprintf("workflow_type = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SchemaChangeType; v != nil {
-		set, args = append(set, fmt.Sprintf("schema_change_type = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := patch.DataClassificationConfigID; v != nil {
 		set, args = append(set, fmt.Sprintf("data_classification_config_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Setting; v != nil {
 		payload, err := protojson.Marshal(patch.Setting)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		set, args = append(set, fmt.Sprintf("setting = $%d", len(args)+1)), append(args, payload)
 	}
 
 	args = append(args, patch.ResourceID)
-
-	project := &ProjectMessage{}
-	var rowStatus string
-	var payload []byte
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 		UPDATE project
 		SET `+strings.Join(set, ", ")+`
-		WHERE resource_id = $%d
-		RETURNING
-			id,
-			resource_id,
-			name,
-			key,
-			workflow_type,
-			visibility,
-			tenant_mode,
-			schema_change_type,
-			data_classification_config_id,
-			setting,
-			row_status
-	`, len(args)),
+		WHERE resource_id = $%d`, len(args)),
 		args...,
-	).Scan(
-		&project.UID,
-		&project.ResourceID,
-		&project.Title,
-		&project.Key,
-		&project.Workflow,
-		&project.Visibility,
-		&project.TenantMode,
-		&project.SchemaChangeType,
-		&project.DataClassificationConfigID,
-		&payload,
-		&rowStatus,
 	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %s", patch.ResourceID)}
-		}
-		return nil, err
+		return err
 	}
-	setting := &storepb.Project{}
-	if err := protojsonUnmarshaler.Unmarshal(payload, setting); err != nil {
-		return nil, err
-	}
-	project.Setting = setting
-
-	projectWebhooks, err := s.findProjectWebhookImplV2(ctx, tx, &FindProjectWebhookMessage{ProjectID: &project.UID})
-	if err != nil {
-		return nil, err
-	}
-	project.Webhooks = projectWebhooks
-	project.Deleted = convertRowStatusToDeleted(rowStatus)
-	return project, nil
+	return nil
 }
 
 func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
@@ -356,11 +282,9 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			resource_id,
 			name,
 			key,
-			workflow_type,
-			visibility,
 			tenant_mode,
-			schema_change_type,
 			data_classification_config_id,
+			(SELECT COUNT(1) FROM repository WHERE project.id = repository.project_id) AS connectors,
 			setting,
 			row_status
 		FROM project
@@ -382,11 +306,9 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			&projectMessage.ResourceID,
 			&projectMessage.Title,
 			&projectMessage.Key,
-			&projectMessage.Workflow,
-			&projectMessage.Visibility,
 			&projectMessage.TenantMode,
-			&projectMessage.SchemaChangeType,
 			&projectMessage.DataClassificationConfigID,
+			&projectMessage.VCSConnectorsCount,
 			&payload,
 			&rowStatus,
 		); err != nil {

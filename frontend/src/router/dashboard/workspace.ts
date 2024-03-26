@@ -254,7 +254,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         props: true,
       },
       {
-        path: ":vcsSlug",
+        path: ":vcsResourceId",
         name: WORKSPACE_ROUTE_GITOPS_DETAIL,
         meta: {
           requiredWorkspacePermissionList: () => ["bb.vcsProviders.get"],

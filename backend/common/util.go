@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -83,27 +82,6 @@ func GetResourceDir(dataDir string) string {
 // We cannot add task ID because tenant mode databases should use the same migration version string when applying a schema update.
 func DefaultMigrationVersion() model.Version {
 	return model.Version{Version: time.Now().Format("20060102150405")}
-}
-
-// ParseTemplateTokens parses the template and returns template tokens and their delimiters.
-// For example, if the template is "{{DB_NAME}}_hello_{{LOCATION}}", then the tokens will be ["{{DB_NAME}}", "{{LOCATION}}"],
-// and the delimiters will be ["_hello_"].
-// The caller will usually replace the tokens with a normal string, or a regexp. In the latter case, it will be a problem
-// if there are special regexp characters such as "$" in the delimiters. The caller should escape the delimiters in such cases.
-func ParseTemplateTokens(template string) ([]string, []string) {
-	r := regexp.MustCompile(`{{[^{}]+}}`)
-	tokens := r.FindAllString(template, -1)
-	if len(tokens) > 0 {
-		split := r.Split(template, -1)
-		var delimiters []string
-		for _, s := range split {
-			if s != "" {
-				delimiters = append(delimiters, s)
-			}
-		}
-		return tokens, delimiters
-	}
-	return nil, nil
 }
 
 // GetFileSizeSum calculates the sum of file sizes for file names in the list.
