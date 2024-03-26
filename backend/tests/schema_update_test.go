@@ -213,7 +213,7 @@ func TestSimpleVCS(t *testing.T) {
 					Title:         "Test Repository",
 					FullPath:      test.repositoryFullPath,
 					WebUrl:        fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
-					BranchFilter:  "feature/foo",
+					Branch:        "feature/foo",
 					BaseDirectory: baseDirectory,
 					ExternalId:    test.externalID,
 				},
