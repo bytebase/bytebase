@@ -49,259 +49,253 @@ const (
 )
 
 func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
-	g.POST("/gitlab/:id", func(c echo.Context) error {
+	g.POST(":id", func(c echo.Context) error {
 		ctx := c.Request().Context()
-
-		body, err := io.ReadAll(c.Request().Body)
+		// The id start with "/".
+		url := strings.TrimPrefix(c.Param("id"), "/")
+		workspaceID, projectID, vcsConnectorID, err := common.GetWorkspaceProjectVCSConnectorID(url)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
+			return c.String(http.StatusBadRequest, fmt.Sprintf("invalid id %q", url))
 		}
-		var pushEvent gitlab.WebhookPushEvent
-		if err := json.Unmarshal(body, &pushEvent); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
-		}
-		// This shouldn't happen as we only setup webhook to receive push event, just in case.
-		if pushEvent.ObjectKind != gitlab.WebhookPush {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want push", pushEvent.ObjectKind))
-		}
-		repositoryID := fmt.Sprintf("%v", pushEvent.Project.ID)
-
-		nonBytebaseCommitList := filterGitLabBytebaseCommit(pushEvent.CommitList)
-		if len(nonBytebaseCommitList) == 0 {
-			var commitList []string
-			for _, commit := range pushEvent.CommitList {
-				commitList = append(commitList, commit.ID)
-			}
-			slog.Debug("all commits are created by Bytebase",
-				slog.String("repoURL", pushEvent.Project.WebURL),
-				slog.String("repoName", pushEvent.Project.FullPath),
-				slog.String("commits", strings.Join(commitList, ", ")),
-			)
-			return c.String(http.StatusOK, "OK")
-		}
-		pushEvent.CommitList = nonBytebaseCommitList
-
-		filter := func(repo *store.RepositoryMessage) (bool, error) {
-			if c.Request().Header.Get("X-Gitlab-Token") != repo.WebhookSecretToken {
-				return false, nil
-			}
-			return isWebhookEventBranch(pushEvent.Ref, repo.Branch)
-		}
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
+		myWorkspaceID, err := s.store.GetWorkspaceID(ctx)
 		if err != nil {
-			return err
+			return c.String(http.StatusServiceUnavailable, fmt.Sprintf("failed to get workspace ID, error %v", err))
 		}
-		if len(repositoryList) == 0 {
-			slog.Debug("Empty handle repo list. Ignore this push event.")
-			return c.String(http.StatusOK, "OK")
+		if myWorkspaceID != workspaceID {
+			return c.String(http.StatusBadRequest, fmt.Sprintf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID))
 		}
-
-		repo := repositoryList[0]
-		oauthContext := &common.OauthContext{
-			AccessToken: repo.vcs.AccessToken,
-		}
-
-		baseVCSPushEvent, err := pushEvent.ToVCS()
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
+			return c.String(http.StatusServiceUnavailable, fmt.Sprintf("failed to get project %q, error %v", projectID, err))
 		}
-
-		createdMessages, err := s.processPushEvent(ctx, oauthContext, repositoryList, baseVCSPushEvent)
+		if project == nil || project.Deleted {
+			return c.String(http.StatusBadRequest, fmt.Sprintf("project %q does not exist or has been deleted", projectID))
+		}
+		vcsConnector, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{ProjectResourceID: &projectID, ResourceID: &vcsConnectorID})
 		if err != nil {
-			return err
+			return c.String(http.StatusServiceUnavailable, fmt.Sprintf("failed to get project %q VCS connector %q, error %v", projectID, vcsConnectorID, err))
 		}
-		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
-	})
-
-	g.POST("/github/:id", func(c echo.Context) error {
-		ctx := c.Request().Context()
-
-		// This shouldn't happen as we only setup webhook to receive push event, just in case.
-		eventType := github.WebhookType(c.Request().Header.Get("X-GitHub-Event"))
-		// https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks#ping-event
-		// When we create a new webhook, GitHub will send us a simple ping event to let us know we've set up the webhook correctly.
-		// We respond to this event so as not to mislead users.
-		if eventType == github.WebhookPing {
-			return c.String(http.StatusOK, "OK")
+		if vcsConnector == nil {
+			return c.String(http.StatusBadRequest, fmt.Sprintf("project %q VCS connector %q does not exist or has been deleted", projectID, vcsConnectorID))
 		}
-		if eventType != github.WebhookPush {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want %s", eventType, github.WebhookPush))
+		vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
+		if err != nil {
+			return c.String(http.StatusServiceUnavailable, fmt.Sprintf("failed to get VCS provider %q, error %v", vcsConnector.VCSResourceID, err))
+		}
+		if vcsProvider == nil {
+			return c.String(http.StatusBadRequest, fmt.Sprintf("VCS provider %q does not exist or has been deleted", vcsConnector.VCSResourceID))
 		}
 
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
+			return c.String(http.StatusServiceUnavailable, fmt.Sprintf("failed to read body, error %v", err))
 		}
-		var pushEvent github.WebhookPushEvent
-		if err := json.Unmarshal(body, &pushEvent); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
-		}
-		repositoryID := pushEvent.Repository.FullName
 
-		nonBytebaseCommitList := filterGitHubBytebaseCommit(pushEvent.Commits)
-		if len(nonBytebaseCommitList) == 0 {
-			var commitList []string
-			for _, commit := range pushEvent.Commits {
-				commitList = append(commitList, commit.ID)
-			}
-			slog.Debug("all commits are created by Bytebase",
-				slog.String("repoURL", pushEvent.Repository.HTMLURL),
-				slog.String("repoName", pushEvent.Repository.FullName),
-				slog.String("commits", strings.Join(commitList, ", ")),
-			)
-			return c.String(http.StatusOK, "OK")
-		}
-		pushEvent.Commits = nonBytebaseCommitList
-
-		filter := func(repo *store.RepositoryMessage) (bool, error) {
-			ok, err := validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body)
+		// Validate webhook secret.
+		switch vcsProvider.Type {
+		case vcs.GitHub:
+			secretToken := c.Request().Header.Get("X-Hub-Signature-256")
+			ok, err := validateGitHubWebhookSignature256(secretToken, vcsConnector.WebhookSecretToken, body)
 			if err != nil {
-				return false, echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate GitHub webhook signature").SetInternal(err)
+				return c.String(http.StatusBadRequest, fmt.Sprintf("failed to validate webhook signature %q, error %v", secretToken, err))
 			}
 			if !ok {
-				return false, nil
+				return c.String(http.StatusBadRequest, fmt.Sprintf("invalid webhook secret token %q", secretToken))
+			}
+		case vcs.GitLab:
+			secretToken := c.Request().Header.Get("X-Gitlab-Token")
+			if secretToken != vcsConnector.WebhookSecretToken {
+				return c.String(http.StatusBadRequest, fmt.Sprintf("invalid webhook secret token %q", secretToken))
+			}
+		}
+
+		var baseVCSPushEvents []vcs.PushEvent
+
+		switch vcsProvider.Type {
+		case vcs.GitHub:
+			// This shouldn't happen as we only setup webhook to receive push event, just in case.
+			eventType := github.WebhookType(c.Request().Header.Get("X-GitHub-Event"))
+			// https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks#ping-event
+			// When we create a new webhook, GitHub will send us a simple ping event to let us know we've set up the webhook correctly.
+			// We respond to this event so as not to mislead users.
+			if eventType == github.WebhookPing {
+				return c.String(http.StatusOK, "OK")
+			}
+			if eventType != github.WebhookPush {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want %s", eventType, github.WebhookPush))
 			}
 
-			return isWebhookEventBranch(pushEvent.Ref, repo.Branch)
-		}
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
-		if err != nil {
-			return err
-		}
-		if len(repositoryList) == 0 {
-			slog.Debug("Empty handle repo list. Ignore this push event.")
-			return c.String(http.StatusOK, "OK")
-		}
-		repo := repositoryList[0]
-		oauthContext := &common.OauthContext{
-			AccessToken: repo.vcs.AccessToken,
-		}
-
-		baseVCSPushEvent := pushEvent.ToVCS()
-
-		createdMessages, err := s.processPushEvent(ctx, oauthContext, repositoryList, baseVCSPushEvent)
-		if err != nil {
-			return err
-		}
-		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
-	})
-
-	g.POST("/bitbucket/:id", func(c echo.Context) error {
-		ctx := c.Request().Context()
-
-		// This shouldn't happen as we only set up webhook to receive push event, just in case.
-		eventType := c.Request().Header.Get("X-Event-Key")
-		if eventType != "repo:push" {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %q, want %q", eventType, "repo:push"))
-		}
-
-		body, err := io.ReadAll(c.Request().Body)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
-		}
-		var pushEvent bitbucket.WebhookPushEvent
-		if err := json.Unmarshal(body, &pushEvent); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
-		}
-		repositoryID := pushEvent.Repository.FullName
-
-		var allCreatedMessages []string
-		for _, change := range pushEvent.Push.Changes {
-			var nonBytebaseCommitList []bitbucket.WebhookCommit
-			nonBytebaseCommitList = append(nonBytebaseCommitList, filterBitbucketBytebaseCommit(change.Commits)...)
-			if len(nonBytebaseCommitList) == 0 {
-				var commitList []string
-				for _, change := range pushEvent.Push.Changes {
-					for _, commit := range change.Commits {
-						commitList = append(commitList, commit.Hash)
-					}
-				}
-				slog.Debug("all commits are created by Bytebase",
-					slog.String("repoURL", pushEvent.Repository.Links.HTML.Href),
-					slog.String("repoName", pushEvent.Repository.FullName),
-					slog.String("commits", strings.Join(commitList, ", ")),
-				)
-				continue
+			var pushEvent github.WebhookPushEvent
+			if err := json.Unmarshal(body, &pushEvent); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 			}
 
-			ref := "refs/heads/" + change.New.Name
-			filter := func(repo *store.RepositoryMessage) (bool, error) {
-				return isWebhookEventBranch(ref, repo.Branch)
-			}
-			repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
+			// Check webhook branch.
+			ok, err := isWebhookEventBranch(pushEvent.Ref, vcsConnector.Branch)
 			if err != nil {
 				return err
 			}
-			if len(repositoryList) == 0 {
-				slog.Debug("Empty handle repo list. Ignore this push event.")
-				continue
-			}
-			repo := repositoryList[0]
-
-			oauthContext := &common.OauthContext{
-				AccessToken: repo.vcs.AccessToken,
+			if !ok {
+				return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", pushEvent.Ref, vcsConnector.Branch))
 			}
 
-			var commitList []vcs.Commit
-			for _, commit := range nonBytebaseCommitList {
-				before := strings.Repeat("0", 40)
-				if len(commit.Parents) > 0 {
-					before = commit.Parents[0].Hash
+			// Squash commits.
+			nonBytebaseCommitList := filterGitHubBytebaseCommit(pushEvent.Commits)
+			if len(nonBytebaseCommitList) == 0 {
+				var commitList []string
+				for _, commit := range pushEvent.Commits {
+					commitList = append(commitList, commit.ID)
 				}
-				fileDiffList, err := vcs.Get(repo.vcs.Type, vcs.ProviderConfig{}).GetDiffFileList(
-					ctx,
-					oauthContext,
-					repo.vcs.InstanceURL,
-					repo.repository.ExternalID,
-					before,
-					commit.Hash,
+				slog.Debug("all commits are created by Bytebase",
+					slog.String("repoURL", pushEvent.Repository.HTMLURL),
+					slog.String("repoName", pushEvent.Repository.FullName),
+					slog.String("commits", strings.Join(commitList, ", ")),
 				)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to get diff file list for commit %q", commit.Hash)).SetInternal(err)
-				}
+				return c.String(http.StatusOK, "OK")
+			}
+			pushEvent.Commits = nonBytebaseCommitList
 
-				var addedList, modifiedList []string
-				for _, f := range fileDiffList {
-					switch f.Type {
-					case vcs.FileDiffTypeAdded:
-						addedList = append(addedList, f.Path)
-					case vcs.FileDiffTypeModified:
-						modifiedList = append(modifiedList, f.Path)
+			baseVCSPushEvents = append(baseVCSPushEvents, pushEvent.ToVCS())
+		case vcs.GitLab:
+			var pushEvent gitlab.WebhookPushEvent
+			if err := json.Unmarshal(body, &pushEvent); err != nil {
+				return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unmarshal push event, error %v", err))
+			}
+			// This shouldn't happen as we only setup webhook to receive push event, just in case.
+			if pushEvent.ObjectKind != gitlab.WebhookPush {
+				return c.String(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want push", pushEvent.ObjectKind))
+			}
+
+			// Check webhook branch.
+			ok, err := isWebhookEventBranch(pushEvent.Ref, vcsConnector.Branch)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", pushEvent.Ref, vcsConnector.Branch))
+			}
+
+			// Squash commits.
+			nonBytebaseCommitList := filterGitLabBytebaseCommit(pushEvent.CommitList)
+			if len(nonBytebaseCommitList) == 0 {
+				var commitList []string
+				for _, commit := range pushEvent.CommitList {
+					commitList = append(commitList, commit.ID)
+				}
+				slog.Debug("all commits are created by Bytebase",
+					slog.String("repoURL", pushEvent.Project.WebURL),
+					slog.String("repoName", pushEvent.Project.FullPath),
+					slog.String("commits", strings.Join(commitList, ", ")),
+				)
+				return c.String(http.StatusOK, "OK")
+			}
+			pushEvent.CommitList = nonBytebaseCommitList
+
+			baseVCSPushEvent, err := pushEvent.ToVCS()
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
+			}
+			baseVCSPushEvents = append(baseVCSPushEvents, baseVCSPushEvent)
+		case vcs.Bitbucket:
+			// This shouldn't happen as we only set up webhook to receive push event, just in case.
+			eventType := c.Request().Header.Get("X-Event-Key")
+			if eventType != "repo:push" {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %q, want %q", eventType, "repo:push"))
+			}
+
+			var pushEvent bitbucket.WebhookPushEvent
+			if err := json.Unmarshal(body, &pushEvent); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
+			}
+
+			for _, change := range pushEvent.Push.Changes {
+				var nonBytebaseCommitList []bitbucket.WebhookCommit
+				nonBytebaseCommitList = append(nonBytebaseCommitList, filterBitbucketBytebaseCommit(change.Commits)...)
+				if len(nonBytebaseCommitList) == 0 {
+					var commitList []string
+					for _, change := range pushEvent.Push.Changes {
+						for _, commit := range change.Commits {
+							commitList = append(commitList, commit.Hash)
+						}
 					}
+					slog.Debug("all commits are created by Bytebase",
+						slog.String("repoURL", pushEvent.Repository.Links.HTML.Href),
+						slog.String("repoName", pushEvent.Repository.FullName),
+						slog.String("commits", strings.Join(commitList, ", ")),
+					)
+					continue
 				}
 
-				// Per Git convention, the message title and body are separated by two new line characters.
-				messages := strings.SplitN(commit.Message, "\n\n", 2)
-				messageTitle := messages[0]
-
-				authorName := commit.Author.User.Nickname
-				authorEmail := ""
-				addr, err := mail.ParseAddress(commit.Author.Raw)
-				if err == nil {
-					authorName = addr.Name
-					authorEmail = addr.Address
+				// Check webhook branch.
+				ref := "refs/heads/" + change.New.Name
+				ok, err := isWebhookEventBranch(ref, vcsConnector.Branch)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", ref, vcsConnector.Branch))
 				}
 
-				commitList = append(commitList,
-					vcs.Commit{
-						ID:           commit.Hash,
-						Title:        messageTitle,
-						Message:      commit.Message,
-						CreatedTs:    commit.Date.Unix(),
-						URL:          commit.Links.HTML.Href,
-						AuthorName:   authorName,
-						AuthorEmail:  authorEmail,
-						AddedList:    addedList,
-						ModifiedList: modifiedList,
-					},
-				)
-			}
+				// Squash commits.
+				oauthContext := &common.OauthContext{
+					AccessToken: vcsProvider.AccessToken,
+				}
+				var commitList []vcs.Commit
+				for _, commit := range nonBytebaseCommitList {
+					before := strings.Repeat("0", 40)
+					if len(commit.Parents) > 0 {
+						before = commit.Parents[0].Hash
+					}
+					fileDiffList, err := vcs.Get(vcsProvider.Type, vcs.ProviderConfig{}).GetDiffFileList(
+						ctx,
+						oauthContext,
+						vcsProvider.InstanceURL,
+						vcsConnector.ExternalID,
+						before,
+						commit.Hash,
+					)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to get diff file list for commit %q", commit.Hash)).SetInternal(err)
+					}
 
-			createdMessages, err := s.processPushEvent(
-				ctx,
-				oauthContext,
-				repositoryList,
-				vcs.PushEvent{
+					var addedList, modifiedList []string
+					for _, f := range fileDiffList {
+						switch f.Type {
+						case vcs.FileDiffTypeAdded:
+							addedList = append(addedList, f.Path)
+						case vcs.FileDiffTypeModified:
+							modifiedList = append(modifiedList, f.Path)
+						}
+					}
+
+					// Per Git convention, the message title and body are separated by two new line characters.
+					messages := strings.SplitN(commit.Message, "\n\n", 2)
+					messageTitle := messages[0]
+
+					authorName := commit.Author.User.Nickname
+					authorEmail := ""
+					addr, err := mail.ParseAddress(commit.Author.Raw)
+					if err == nil {
+						authorName = addr.Name
+						authorEmail = addr.Address
+					}
+
+					commitList = append(commitList,
+						vcs.Commit{
+							ID:           commit.Hash,
+							Title:        messageTitle,
+							Message:      commit.Message,
+							CreatedTs:    commit.Date.Unix(),
+							URL:          commit.Links.HTML.Href,
+							AuthorName:   authorName,
+							AuthorEmail:  authorEmail,
+							AddedList:    addedList,
+							ModifiedList: modifiedList,
+						},
+					)
+				}
+
+				baseVCSPushEvents = append(baseVCSPushEvents, vcs.PushEvent{
 					VCSType:            vcs.Bitbucket,
 					Ref:                ref,
 					Before:             change.Old.Target.Hash,
@@ -311,321 +305,213 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 					RepositoryFullPath: pushEvent.Repository.FullName,
 					AuthorName:         pushEvent.Actor.Nickname,
 					CommitList:         commitList,
-				},
-			)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to process push event for commit %q", change.New.Target.Hash)).SetInternal(err)
+				})
 			}
-			allCreatedMessages = append(allCreatedMessages, createdMessages...)
-		}
-		return c.String(http.StatusOK, strings.Join(allCreatedMessages, "\n"))
-	})
-
-	g.POST("/azure/:id", func(c echo.Context) error {
-		ctx := c.Request().Context()
-
-		body, err := io.ReadAll(c.Request().Body)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
-		}
-		pushEvent := new(azure.ServiceHookCodePushEvent)
-		if err := json.Unmarshal(body, pushEvent); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
-		}
-
-		// Validate presumptions.
-		// This shouldn't happen as we only setup webhook to receive push event, just in case.
-		if pushEvent.EventType != "git.push" {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Presumption failed: invalid webhook event type, got %s, want git.push", pushEvent.EventType))
-		}
-		// All the examples on https://learn.microsoft.com/en-us/azure/devops/service-hooks/events?view=azure-devops#code-pushed
-		// have only one ref update.
-		if len(pushEvent.Resource.RefUpdates) != 1 {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Presumption failed: the number of ref updates is not 1, got %d", len(pushEvent.Resource.RefUpdates)))
-		}
-		if pushEvent.Resource.RefUpdates[0].NewObjectID == strings.Repeat("0", 40) {
-			// Users delete branch will trigger a push event, but the refUpdates.NewObjectID is all zero.
-			return c.String(http.StatusOK, "Do not process the push event which is generated by deleting branch")
-		}
-
-		webhookEndpointID := c.Param("id")
-		// TODO(zp): find a better way to recognize the refine repository id, we use the format:
-		// organization_name/project_name/repository_name
-		repositories, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{
-			WebhookEndpointID: &webhookEndpointID,
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list repositories").SetInternal(err)
-		}
-		if len(repositories) == 0 {
-			return c.String(http.StatusOK, "No repository matched")
-		}
-		// Check the consistence of the repositories, it should not throw any error by right.
-		for i := 1; i < len(repositories); i++ {
-			if repositories[i].ExternalID != repositories[0].ExternalID {
-				return echo.NewHTTPError(http.StatusPreconditionFailed, "The repositories external id are not consistent: %v", fmt.Sprintf("%v", repositories))
+		case vcs.AzureDevOps:
+			pushEvent := new(azure.ServiceHookCodePushEvent)
+			if err := json.Unmarshal(body, pushEvent); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 			}
-		}
-		repositoryID := repositories[0].ExternalID
 
-		// Filter out the repository which does not match the branch filter.
-		filter := func(repo *store.RepositoryMessage) (bool, error) {
+			// Validate presumptions.
+			// This shouldn't happen as we only setup webhook to receive push event, just in case.
+			if pushEvent.EventType != "git.push" {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Presumption failed: invalid webhook event type, got %s, want git.push", pushEvent.EventType))
+			}
+			// All the examples on https://learn.microsoft.com/en-us/azure/devops/service-hooks/events?view=azure-devops#code-pushed
+			// have only one ref update.
+			if len(pushEvent.Resource.RefUpdates) != 1 {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Presumption failed: the number of ref updates is not 1, got %d", len(pushEvent.Resource.RefUpdates)))
+			}
+			if pushEvent.Resource.RefUpdates[0].NewObjectID == strings.Repeat("0", 40) {
+				// Users delete branch will trigger a push event, but the refUpdates.NewObjectID is all zero.
+				return c.String(http.StatusOK, "Do not process the push event which is generated by deleting branch")
+			}
+
+			// Check webhook branch.
 			refUpdate := pushEvent.Resource.RefUpdates[0]
-			return isWebhookEventBranch(refUpdate.Name, repo.Branch)
-		}
-		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to filter repository").SetInternal(err)
-		}
-		if len(repositoryList) == 0 {
-			slog.Debug("Empty handle repo list. Ignore this push event.")
-			return c.String(http.StatusOK, "No repository matched")
-		}
-
-		repo := repositoryList[0]
-		oauthContext := &common.OauthContext{
-			AccessToken: repo.vcs.AccessToken,
-		}
-
-		if len(pushEvent.Resource.Commits) == 0 {
-			// If users merge one branch to our target branch, the commits list is empty in push event.
-			// And we cannot get the commits in range [refUpdates.oldObjectId, refUpdates.newObjectId] from Azure DevOps API.
-			// So, when the commit list is empty, we think it is generated by merge,
-			// then we need to query the queryPullRequest API to find out if the updateRef.newObjectId
-			// is the last commit of the Pull Request, and then we can use the PullRef.newObjectId API
-			// to find out if it is the last commit of the Pull Request. Request ID to list the corresponding commits.
-			probablePullRequests, err := azure.QueryPullRequest(ctx, oauthContext, repositoryList[0].repository.ExternalID, pushEvent.Resource.RefUpdates[0].NewObjectID)
+			ok, err := isWebhookEventBranch(refUpdate.Name, vcsConnector.Branch)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query pull request").SetInternal(err)
+				return err
 			}
-			var filterOutPullRequestList []*azure.PullRequest
-			for _, pullRequest := range probablePullRequests {
-				if pullRequest.Status != "completed" {
-					continue
+			if !ok {
+				return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", refUpdate, vcsConnector.Branch))
+			}
+
+			// Squash commits.
+			oauthContext := &common.OauthContext{
+				AccessToken: vcsProvider.AccessToken,
+			}
+			if len(pushEvent.Resource.Commits) == 0 {
+				// If users merge one branch to our target branch, the commits list is empty in push event.
+				// And we cannot get the commits in range [refUpdates.oldObjectId, refUpdates.newObjectId] from Azure DevOps API.
+				// So, when the commit list is empty, we think it is generated by merge,
+				// then we need to query the queryPullRequest API to find out if the updateRef.newObjectId
+				// is the last commit of the Pull Request, and then we can use the PullRef.newObjectId API
+				// to find out if it is the last commit of the Pull Request. Request ID to list the corresponding commits.
+				probablePullRequests, err := azure.QueryPullRequest(ctx, oauthContext, vcsConnector.ExternalID, pushEvent.Resource.RefUpdates[0].NewObjectID)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query pull request").SetInternal(err)
 				}
-				// We only handle the pull request which is merged to the target branch.
-				// NOTE: here we should compare with the refUpdates.Name instead of the repository.branch.
-				if pullRequest.TargetRefName != pushEvent.Resource.RefUpdates[0].Name {
-					continue
+				var filterOutPullRequestList []*azure.PullRequest
+				for _, pullRequest := range probablePullRequests {
+					if pullRequest.Status != "completed" {
+						continue
+					}
+					// We only handle the pull request which is merged to the target branch.
+					// NOTE: here we should compare with the refUpdates.Name instead of the repository.branch.
+					if pullRequest.TargetRefName != pushEvent.Resource.RefUpdates[0].Name {
+						continue
+					}
+					filterOutPullRequestList = append(filterOutPullRequestList, pullRequest)
 				}
-				filterOutPullRequestList = append(filterOutPullRequestList, pullRequest)
-			}
 
-			if len(filterOutPullRequestList) == 0 {
-				return echo.NewHTTPError(http.StatusOK, "No pull request matched")
+				if len(filterOutPullRequestList) == 0 {
+					return echo.NewHTTPError(http.StatusOK, "No pull request matched")
+				}
+				if len(filterOutPullRequestList) != 1 {
+					return echo.NewHTTPError(http.StatusInternalServerError, errors.Errorf("Expected only one pull request, but got %d, content: %+v", len(filterOutPullRequestList), filterOutPullRequestList).Error())
+				}
+				// We should backfill the commit list by the commits in the pull request.
+				pullRequest := filterOutPullRequestList[0]
+				commitsInPullRequest, err := azure.GetPullRequestCommits(ctx, oauthContext, vcsConnector.ExternalID, pullRequest.ID)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get pull request commits").SetInternal(err)
+				}
+				pushEvent.Resource.Commits = commitsInPullRequest
 			}
-			if len(filterOutPullRequestList) != 1 {
-				return echo.NewHTTPError(http.StatusInternalServerError, errors.Errorf("Expected only one pull request, but got %d, content: %+v", len(filterOutPullRequestList), filterOutPullRequestList).Error())
-			}
-			// We should backfill the commit list by the commits in the pull request.
-			pullRequest := filterOutPullRequestList[0]
-			commitsInPullRequest, err := azure.GetPullRequestCommits(ctx, oauthContext, repositoryList[0].repository.ExternalID, pullRequest.ID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get pull request commits").SetInternal(err)
-			}
-			pushEvent.Resource.Commits = commitsInPullRequest
-		}
-
-		// For Azure DevOps, if users create a new branch and push it to the remote. It will trigger a code push event,
-		// but do not contain any commits in the event. So we do not need to consider the case that the commit id is
-		// all zero.
-		for _, commit := range pushEvent.Resource.Commits {
-			if commit.CommitID == strings.Repeat("0", 40) {
-				return echo.NewHTTPError(http.StatusBadRequest, "Presumption failed: the commit id is all zero")
-			}
-		}
-
-		// Filter out all the commits created by Bytebase(e.g. write-back the latest schema) to avoid infinite loop.
-		nonBytebaseCommitList := filterAzureBytebaseCommit(pushEvent.Resource.Commits)
-		if len(nonBytebaseCommitList) == 0 {
-			var commitIDs []string
+			// For Azure DevOps, if users create a new branch and push it to the remote. It will trigger a code push event,
+			// but do not contain any commits in the event. So we do not need to consider the case that the commit id is
+			// all zero.
 			for _, commit := range pushEvent.Resource.Commits {
-				commitIDs = append(commitIDs, commit.CommitID)
+				if commit.CommitID == strings.Repeat("0", 40) {
+					return echo.NewHTTPError(http.StatusBadRequest, "Presumption failed: the commit id is all zero")
+				}
 			}
-			slog.Debug("all commits are created by Bytebase",
-				slog.String("repoURL", pushEvent.Resource.Repository.URL),
-				slog.String("repoID", repositoryID),
-				slog.String("repoName", pushEvent.Resource.Repository.Name),
-				slog.String("commits", strings.Join(commitIDs, ", ")),
-			)
-			return c.String(http.StatusOK, "OK")
-		}
-		pushEvent.Resource.Commits = nonBytebaseCommitList
+			// Filter out all the commits created by Bytebase(e.g. write-back the latest schema) to avoid infinite loop.
+			nonBytebaseCommitList := filterAzureBytebaseCommit(pushEvent.Resource.Commits)
+			if len(nonBytebaseCommitList) == 0 {
+				var commitIDs []string
+				for _, commit := range pushEvent.Resource.Commits {
+					commitIDs = append(commitIDs, commit.CommitID)
+				}
+				slog.Debug("all commits are created by Bytebase",
+					slog.String("repoURL", pushEvent.Resource.Repository.URL),
+					slog.String("repoID", vcsConnector.ExternalID),
+					slog.String("repoName", pushEvent.Resource.Repository.Name),
+					slog.String("commits", strings.Join(commitIDs, ", ")),
+				)
+				return c.String(http.StatusOK, "OK")
+			}
+			pushEvent.Resource.Commits = nonBytebaseCommitList
+			// Azure DevOps' service hook does not contain the file diff information for each commit, so we need to backfill
+			// the file diff information by ourselves.
+			// We will use the previous commit id as the base commit id and the current commit id as the target commit id to
+			// get the file diff information commit by commit. We use the oldObjectId in resources.refUpdates as the base commit id
+			// for the first commit.
+			// NOTE: We presume that the sequence of the commits in the code push event is the reverse order of the commit sequence(aka. stack sequence, commit first, appear last) in the repository.
+			backfillCommits := make([]vcs.Commit, 0, len(nonBytebaseCommitList))
+			for _, commit := range nonBytebaseCommitList {
+				changes, err := azure.GetChangesByCommit(ctx, oauthContext, vcsConnector.ExternalID, commit.CommitID)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get changes by commit %q", commit.CommitID)).SetInternal(err)
+				}
 
-		// Azure DevOps' service hook does not contain the file diff information for each commit, so we need to backfill
-		// the file diff information by ourselves.
-		// We will use the previous commit id as the base commit id and the current commit id as the target commit id to
-		// get the file diff information commit by commit. We use the oldObjectId in resources.refUpdates as the base commit id
-		// for the first commit.
-		// NOTE: We presume that the sequence of the commits in the code push event is the reverse order of the commit sequence(aka. stack sequence, commit first, appear last) in the repository.
-		backfillCommits := make([]vcs.Commit, 0, len(nonBytebaseCommitList))
-		for _, commit := range nonBytebaseCommitList {
-			changes, err := azure.GetChangesByCommit(ctx, oauthContext, repositoryList[0].repository.ExternalID, commit.CommitID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get changes by commit %q", commit.CommitID)).SetInternal(err)
+				var addedList, modifiedList []string
+				for _, change := range changes.Changes {
+					switch change.ChangeType {
+					case "add":
+						addedList = append(addedList, change.Item.Path)
+					case "edit":
+						modifiedList = append(modifiedList, change.Item.Path)
+					case "rename":
+						// To be consistent with VCS, we treat rename as delete + add, but we do not need to handle delete here.
+						addedList = append(addedList, change.Item.Path)
+					}
+				}
+
+				backfillCommits = append(backfillCommits, vcs.Commit{
+					ID:           commit.CommitID,
+					Title:        commit.Comment,
+					Message:      commit.Comment,
+					CreatedTs:    commit.Author.Date.Unix(),
+					URL:          commit.URL,
+					AuthorName:   commit.Author.Name,
+					AuthorEmail:  commit.Author.Email,
+					AddedList:    addedList,
+					ModifiedList: modifiedList,
+				})
+			}
+			if len(backfillCommits) == 1 && len(backfillCommits[0].AddedList) == 1 && strings.HasSuffix(backfillCommits[0].AddedList[0], azure.SQLReviewPipelineFilePath) {
+				slog.Debug("start to setup pipeline", slog.String("repository", vcsConnector.ExternalID))
+				// Use workspaceID instead of repo secret as SQL review pipeline token, so that we don't need to re-create the pipeline if users disable then enable the CI.
+				workspaceID, err := s.store.GetWorkspaceID(ctx)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get workspace id with error").SetInternal(err)
+				}
+				// Setup SQL review pipeline and policy.
+				if err := azure.EnableSQLReviewCI(ctx, oauthContext, vcsConnector.Title, vcsConnector.ExternalID, vcsConnector.Branch, workspaceID); err != nil {
+					slog.Error("failed to setup pipeline", log.BBError(err), slog.String("repository", vcsConnector.ExternalID))
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to setup SQL review pipeline").SetInternal(err)
+				}
+				return c.String(http.StatusOK, "OK")
 			}
 
-			var addedList, modifiedList []string
-			for _, change := range changes.Changes {
-				switch change.ChangeType {
-				case "add":
-					addedList = append(addedList, change.Item.Path)
-				case "edit":
-					modifiedList = append(modifiedList, change.Item.Path)
-				case "rename":
-					// To be consistent with VCS, we treat rename as delete + add, but we do not need to handle delete here.
-					addedList = append(addedList, change.Item.Path)
+			// Backfill web url for commits.
+			if pushEvent.Resource.PushID != 0 {
+				commitsInPush, err := azure.GetPushCommitsByPushID(ctx, oauthContext, vcsConnector.ExternalID, pushEvent.Resource.PushID)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get push commits by push id %d", pushEvent.Resource.PushID)).SetInternal(err)
+				}
+				// Convert values to map from commitID to remote url.
+				commitID2Value := make(map[string]string)
+				for _, value := range commitsInPush.Value {
+					commitID2Value[value.CommitID] = value.RemoteURL
+				}
+				for i := range backfillCommits {
+					if remoteURL, ok := commitID2Value[backfillCommits[i].ID]; ok {
+						backfillCommits[i].URL = remoteURL
+					}
 				}
 			}
 
-			backfillCommits = append(backfillCommits, vcs.Commit{
-				ID:           commit.CommitID,
-				Title:        commit.Comment,
-				Message:      commit.Comment,
-				CreatedTs:    commit.Author.Date.Unix(),
-				URL:          commit.URL,
-				AuthorName:   commit.Author.Name,
-				AuthorEmail:  commit.Author.Email,
-				AddedList:    addedList,
-				ModifiedList: modifiedList,
+			baseVCSPushEvents = append(baseVCSPushEvents, vcs.PushEvent{
+				VCSType:            vcs.AzureDevOps,
+				Ref:                pushEvent.Resource.RefUpdates[0].Name,
+				Before:             pushEvent.Resource.RefUpdates[0].OldObjectID,
+				After:              pushEvent.Resource.RefUpdates[0].NewObjectID,
+				RepositoryID:       vcsConnector.ExternalID,
+				RepositoryURL:      vcsConnector.WebURL,
+				RepositoryFullPath: vcsConnector.ExternalID,
+				AuthorName:         pushEvent.Resource.PushedBy.DisplayName,
+				CommitList:         backfillCommits,
 			})
 		}
 
-		if len(backfillCommits) == 1 && len(backfillCommits[0].AddedList) == 1 && strings.HasSuffix(backfillCommits[0].AddedList[0], azure.SQLReviewPipelineFilePath) {
-			slog.Debug("start to setup pipeline", slog.String("repository", repositoryList[0].repository.ExternalID))
-			// Use workspaceID instead of repo secret as SQL review pipeline token, so that we don't need to re-create the pipeline if users disable then enable the CI.
-			workspaceID, err := s.store.GetWorkspaceID(ctx)
+		repo := &repoInfo{
+			repository: vcsConnector,
+			project:    project,
+			vcs:        vcsProvider,
+		}
+		oauthContext := &common.OauthContext{
+			AccessToken: vcsProvider.AccessToken,
+		}
+		var allCreatedMessages []string
+		for _, baseVCSPushEvent := range baseVCSPushEvents {
+			createdMessage, err := s.processPushEvent(ctx, oauthContext, repo, baseVCSPushEvent)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get workspace id with error").SetInternal(err)
+				return err
 			}
-			// Setup SQL review pipeline and policy.
-			if err := azure.EnableSQLReviewCI(ctx, oauthContext, repositoryList[0].repository.Title, repositoryList[0].repository.ExternalID, repositoryList[0].repository.Branch, workspaceID); err != nil {
-				slog.Error("failed to setup pipeline", log.BBError(err), slog.String("repository", repositoryList[0].repository.ExternalID))
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to setup SQL review pipeline").SetInternal(err)
-			}
-			return c.String(http.StatusOK, "OK")
+			allCreatedMessages = append(allCreatedMessages, createdMessage)
 		}
-
-		// Backfill web url for commits.
-		if pushEvent.Resource.PushID != 0 {
-			commitsInPush, err := azure.GetPushCommitsByPushID(ctx, oauthContext, repositoryList[0].repository.ExternalID, pushEvent.Resource.PushID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get push commits by push id %d", pushEvent.Resource.PushID)).SetInternal(err)
-			}
-			// Convert values to map from commitID to remote url.
-			commitID2Value := make(map[string]string)
-			for _, value := range commitsInPush.Value {
-				commitID2Value[value.CommitID] = value.RemoteURL
-			}
-			for i := range backfillCommits {
-				if remoteURL, ok := commitID2Value[backfillCommits[i].ID]; ok {
-					backfillCommits[i].URL = remoteURL
-				}
-			}
-		}
-
-		baseVCSPushEvent := vcs.PushEvent{
-			VCSType:            vcs.AzureDevOps,
-			Ref:                pushEvent.Resource.RefUpdates[0].Name,
-			Before:             pushEvent.Resource.RefUpdates[0].OldObjectID,
-			After:              pushEvent.Resource.RefUpdates[0].NewObjectID,
-			RepositoryID:       repositoryList[0].repository.ExternalID,
-			RepositoryURL:      repositoryList[0].repository.WebURL,
-			RepositoryFullPath: repositoryList[0].repository.ExternalID,
-			AuthorName:         pushEvent.Resource.PushedBy.DisplayName,
-			CommitList:         backfillCommits,
-		}
-
-		createdMessages, err := s.processPushEvent(ctx, oauthContext, repositoryList, baseVCSPushEvent)
-		if err != nil {
-			return err
-		}
-		return c.String(http.StatusOK, strings.Join(createdMessages, "\n"))
+		return c.String(http.StatusOK, strings.Join(allCreatedMessages, "\n"))
 	})
 }
-
-type repositoryFilter func(*store.RepositoryMessage) (bool, error)
 
 type repoInfo struct {
 	repository *store.RepositoryMessage
 	project    *store.ProjectMessage
 	vcs        *store.VCSProviderMessage
-}
-
-func (s *Service) filterRepository(ctx context.Context, webhookEndpointID string, pushEventRepositoryID string, filter repositoryFilter) ([]*repoInfo, error) {
-	repos, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{WebhookEndpointID: &webhookEndpointID})
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
-	}
-	if len(repos) == 0 {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Repository for webhook endpoint %s not found", webhookEndpointID))
-	}
-
-	var filteredRepos []*repoInfo
-	for _, repo := range repos {
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID:  &repo.ProjectResourceID,
-			ShowDeleted: false,
-		})
-		if err != nil {
-			slog.Error("failed to find the project",
-				slog.String("project_resource_id", repo.ProjectResourceID),
-				slog.String("repository_external_id", repo.ExternalID),
-			)
-			continue
-		}
-		if project == nil {
-			slog.Debug("skipping repo due to missing project",
-				slog.String("project_resource_id", repo.ProjectResourceID),
-				slog.String("repository_external_id", repo.ExternalID),
-			)
-			continue
-		}
-		externalVCS, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ID: &repo.VCSUID})
-		if err != nil {
-			slog.Error("failed to find the vcs",
-				slog.Int("vcs_uid", repo.VCSUID),
-				slog.String("repository_external_id", repo.ExternalID),
-			)
-			continue
-		}
-		if externalVCS == nil {
-			slog.Debug("skipping repo due to missing VCS",
-				slog.Int("vcs_uid", repo.VCSUID),
-				slog.String("repository_external_id", repo.ExternalID),
-			)
-			continue
-		}
-
-		switch externalVCS.Type {
-		case vcs.AzureDevOps:
-			if !strings.HasSuffix(repo.ExternalID, pushEventRepositoryID) {
-				slog.Debug("Skipping repo due to external ID mismatch", slog.Int("repoID", repo.UID), slog.String("pushEventExternalID", pushEventRepositoryID), slog.String("repoExternalID", repo.ExternalID))
-				continue
-			}
-		default:
-			if pushEventRepositoryID != repo.ExternalID {
-				slog.Debug("Skipping repo due to external ID mismatch", slog.Int("repoID", repo.UID), slog.String("pushEventExternalID", pushEventRepositoryID), slog.String("repoExternalID", repo.ExternalID))
-				continue
-			}
-		}
-
-		ok, err := filter(repo)
-		if err != nil {
-			return nil, err
-		}
-		if !ok {
-			slog.Debug("Skipping repo due to mismatched payload signature", slog.Int("repoID", repo.UID))
-			continue
-		}
-
-		filteredRepos = append(filteredRepos, &repoInfo{
-			repository: repo,
-			project:    project,
-			vcs:        externalVCS,
-		})
-	}
-	return filteredRepos, nil
 }
 
 func isWebhookEventBranch(pushEventRef, wantBranch string) (bool, error) {
@@ -672,81 +558,74 @@ func parseBranchNameFromRefs(ref string) (string, error) {
 	return ref[len(expectedPrefix):], nil
 }
 
-func (s *Service) processPushEvent(ctx context.Context, oauthContext *common.OauthContext, repoInfoList []*repoInfo, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
-	if len(repoInfoList) == 0 {
-		return nil, errors.Errorf("empty repository list")
-	}
-
-	distinctFileList := baseVCSPushEvent.GetDistinctFileList()
+func (s *Service) processPushEvent(ctx context.Context, oauthContext *common.OauthContext, repo *repoInfo, pushEvent vcs.PushEvent) (string, error) {
+	pushEvent.VCSType = repo.vcs.Type
+	distinctFileList := pushEvent.GetDistinctFileList()
 	if len(distinctFileList) == 0 {
 		var commitIDs []string
-		for _, c := range baseVCSPushEvent.CommitList {
+		for _, c := range pushEvent.CommitList {
 			commitIDs = append(commitIDs, c.ID)
 		}
 		slog.Warn("No files found from the push event",
-			slog.String("repoURL", baseVCSPushEvent.RepositoryURL),
-			slog.String("repoName", baseVCSPushEvent.RepositoryFullPath),
+			slog.String("repoURL", pushEvent.RepositoryURL),
+			slog.String("repoName", pushEvent.RepositoryFullPath),
 			slog.String("commits", strings.Join(commitIDs, ",")))
-		return nil, nil
+		return "", nil
 	}
-
-	repo := repoInfoList[0]
 
 	filteredDistinctFileList, err := func() ([]vcs.DistinctFileItem, error) {
 		// The before commit ID is all zeros when the branch is just created and contains no commits yet.
-		if baseVCSPushEvent.Before == strings.Repeat("0", 40) {
+		if pushEvent.Before == strings.Repeat("0", 40) {
 			return distinctFileList, nil
 		}
-		return filterFilesByCommitsDiff(ctx, oauthContext, repo, distinctFileList, baseVCSPushEvent.Before, baseVCSPushEvent.After)
+		return filterFilesByCommitsDiff(ctx, oauthContext, repo, distinctFileList, pushEvent.Before, pushEvent.After)
 	}()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to filtered distinct files by commits diff")
+		return "", errors.Wrapf(err, "failed to filtered distinct files by commits diff")
 	}
 
-	repoID2FileItemList := groupFileInfoByRepo(filteredDistinctFileList, repoInfoList)
+	fileItemList := getFileInfoList(filteredDistinctFileList, repo)
 
-	var createdMessageList []string
-	for _, fileInfoListInRepo := range repoID2FileItemList {
-		// There are possibly multiple files in the push event.
-		// Each file corresponds to a (database name, schema version) pair.
-		// We want the migration statements are sorted by the file's schema version, and grouped by the database name.
-		dbName2FileInfoList := groupFileInfoByDatabase(fileInfoListInRepo)
-		for _, fileInfoListInDB := range dbName2FileInfoList {
-			fileInfoListSorted := sortFilesBySchemaVersion(fileInfoListInDB)
-			repoInfo := fileInfoListSorted[0].repoInfo
-			pushEvent := baseVCSPushEvent
-			pushEvent.VCSType = repoInfo.vcs.Type
-			createdMessage, created, activityCreateList, err := s.processFilesInProject(
-				ctx,
-				oauthContext,
-				pushEvent,
-				repoInfo,
-				fileInfoListSorted,
-			)
-			if err != nil {
-				return nil, err
-			}
-			if created {
-				createdMessageList = append(createdMessageList, createdMessage)
-			} else {
-				for _, activityCreate := range activityCreateList {
-					if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
-						slog.Warn("Failed to create project activity for the ignored repository files", log.BBError(err))
-					}
-				}
-			}
+	var migrationDetailList []*migrationDetail
+	var activityCreateList []*store.ActivityMessage
+	var createdIssueList []string
+	var fileNameList []string
+
+	creatorID := s.getIssueCreatorID(ctx, pushEvent.CommitList[0].AuthorEmail)
+	for _, fileInfo := range fileItemList {
+		// This is a migration-based DDL or DML file.
+		migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, oauthContext, repo, pushEvent, fileInfo)
+		activityCreateList = append(activityCreateList, activityCreateListForFile...)
+		migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
+		if len(migrationDetailListForFile) != 0 {
+			fileNameList = append(fileNameList, strings.TrimPrefix(fileInfo.item.FileName, repo.repository.BaseDirectory+"/"))
 		}
 	}
-
-	if len(createdMessageList) == 0 {
-		var repoURLs []string
-		for _, repoInfo := range repoInfoList {
-			repoURLs = append(repoURLs, repoInfo.repository.WebURL)
-		}
-		slog.Warn("Ignored push event because no applicable file found in the commit list", slog.Any("repos", repoURLs))
+	if len(migrationDetailList) == 0 {
+		return "", nil
 	}
 
-	return createdMessageList, nil
+	// Create one issue per push event for DDL project, or non-schema files for SDL project.
+	migrateType := "Change data"
+	for _, d := range migrationDetailList {
+		if d.migrationType == db.Migrate {
+			migrateType = "Alter schema"
+			break
+		}
+	}
+	description := strings.ReplaceAll(fileItemList[0].migrationInfo.Description, "_", " ")
+	issueName := fmt.Sprintf(issueNameTemplate, migrateType, description)
+	issueDescription := fmt.Sprintf("By VCS files:\n\n%s\n", strings.Join(fileNameList, "\n"))
+	if err := s.createIssueFromMigrationDetailsV2(ctx, repo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailList); err != nil {
+		return "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s, error %v", issueName, err)).SetInternal(err)
+	}
+
+	for _, activityCreate := range activityCreateList {
+		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
+			slog.Warn("Failed to create project activity for the ignored repository files", log.BBError(err))
+		}
+	}
+	return fmt.Sprintf("Created issue %q from push event", strings.Join(createdIssueList, ",")), nil
 }
 
 // Users may merge commits from other branches,
@@ -787,55 +666,17 @@ func filterFilesByCommitsDiff(
 type fileInfo struct {
 	item          vcs.DistinctFileItem
 	migrationInfo *db.MigrationInfo
-	repoInfo      *repoInfo
 }
 
-func groupFileInfoByDatabase(fileInfoList []fileInfo) map[string][]fileInfo {
-	dbID2FileInfoList := make(map[string][]fileInfo)
-	for _, fileInfo := range fileInfoList {
-		dbID2FileInfoList[fileInfo.migrationInfo.Database] = append(dbID2FileInfoList[fileInfo.migrationInfo.Database], fileInfo)
-	}
-	return dbID2FileInfoList
-}
-
-// groupFileInfoByRepo groups information for distinct files in the push event by their corresponding store.RepositoryMessage.
-// In a GitLab/GitHub monorepo, a user could create multiple projects and configure different base directory in the repository.
-// Bytebase will create a different store.RepositoryMessage for each project. If the user decides to do a migration in multiple directories at once,
-// the push event will trigger changes in multiple projects. So we first group the files into store.RepositoryMessage, and create issue(s) in
-// each project.
-func groupFileInfoByRepo(distinctFileList []vcs.DistinctFileItem, repoInfoList []*repoInfo) map[int][]fileInfo {
-	repoID2FileItemList := make(map[int][]fileInfo)
+func getFileInfoList(distinctFileList []vcs.DistinctFileItem, repo *repoInfo) []fileInfo {
+	var result []fileInfo
 	for _, item := range distinctFileList {
 		slog.Debug("Processing file", slog.String("file", item.FileName), slog.String("commit", item.Commit.ID))
-		migrationInfo, repoInfo, err := getFileInfo(item, repoInfoList)
-		if err != nil {
-			slog.Warn("Failed to get file info for the ignored repository file",
-				slog.String("file", item.FileName),
-				log.BBError(err),
-			)
+		var migrationInfo *db.MigrationInfo
+		if filepath.Dir(item.FileName) != repo.repository.BaseDirectory {
 			continue
 		}
-		repoID2FileItemList[repoInfo.repository.UID] = append(repoID2FileItemList[repoInfo.repository.UID], fileInfo{
-			item:          item,
-			migrationInfo: migrationInfo,
-			repoInfo:      repoInfo,
-		})
-	}
-	return repoID2FileItemList
-}
-
-// getFileInfo processes the file item against the candidate list of
-// repositories and returns the parsed migration information, file change type
-// and a single matched repository. It returns an error when none or multiple
-// repositories are matched.
-func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.MigrationInfo, *repoInfo, error) {
-	var migrationInfo *db.MigrationInfo
-	var fileRepositoryList []*repoInfo
-	for _, repoInfo := range repoInfoList {
-		if filepath.Dir(fileItem.FileName) != repoInfo.repository.BaseDirectory {
-			continue
-		}
-		filename := filepath.Base(fileItem.FileName)
+		filename := filepath.Base(item.FileName)
 		if filepath.Ext(filename) != ".sql" {
 			continue
 		}
@@ -862,87 +703,17 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.M
 			Type:        migrationType,
 			Description: description,
 		}
-		fileRepositoryList = append(fileRepositoryList, repoInfo)
+		result = append(result, fileInfo{
+			item:          item,
+			migrationInfo: migrationInfo,
+		})
 	}
-
-	switch len(fileRepositoryList) {
-	case 0:
-		return nil, nil, errors.Errorf("file change is not associated with any project")
-	case 1:
-		return migrationInfo, fileRepositoryList[0], nil
-	default:
-		var projectList []string
-		for _, repoInfo := range fileRepositoryList {
-			projectList = append(projectList, repoInfo.project.Title)
-		}
-		return nil, nil, errors.Errorf("file change should be associated with exactly one project but found %s", strings.Join(projectList, ", "))
-	}
-}
-
-// processFilesInProject attempts to create new issue(s) according to the repository type.
-// 1. For a state based project, we create one issue per schema file, and one issue for all of the rest migration files (if any).
-// 2. For a migration based project, we create one issue for all of the migration files. All schema files are ignored.
-// It returns "created=true" when new issue(s) has been created,
-// along with the creation message to be presented in the UI. An *echo.HTTPError
-// is returned in case of the error during the process.
-func (s *Service) processFilesInProject(ctx context.Context, oauthContext *common.OauthContext, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*store.ActivityMessage, *echo.HTTPError) {
-	var migrationDetailList []*migrationDetail
-	var activityCreateList []*store.ActivityMessage
-	var createdIssueList []string
-	var fileNameList []string
-
-	creatorID := s.getIssueCreatorID(ctx, pushEvent.CommitList[0].AuthorEmail)
-	for _, fileInfo := range fileInfoList {
-		// This is a migration-based DDL or DML file.
-		migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, oauthContext, repoInfo, pushEvent, fileInfo)
-		activityCreateList = append(activityCreateList, activityCreateListForFile...)
-		migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
-		if len(migrationDetailListForFile) != 0 {
-			fileNameList = append(fileNameList, strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
-		}
-	}
-
-	if len(migrationDetailList) == 0 {
-		return "", len(createdIssueList) != 0, activityCreateList, nil
-	}
-
-	// Create one issue per push event for DDL project, or non-schema files for SDL project.
-	migrateType := "Change data"
-	for _, d := range migrationDetailList {
-		if d.migrationType == db.Migrate {
-			migrateType = "Alter schema"
-			break
-		}
-	}
-	description := strings.ReplaceAll(fileInfoList[0].migrationInfo.Description, "_", " ")
-	issueName := fmt.Sprintf(issueNameTemplate, migrateType, description)
-	issueDescription := fmt.Sprintf("By VCS files:\n\n%s\n", strings.Join(fileNameList, "\n"))
-	if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailList); err != nil {
-		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s, error %v", issueName, err)).SetInternal(err)
-	}
-	createdIssueList = append(createdIssueList, issueName)
-
-	return fmt.Sprintf("Created issue %q from push event", strings.Join(createdIssueList, ",")), true, activityCreateList, nil
-}
-
-func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
-	var ret []fileInfo
-	ret = append(ret, fileInfoList...)
-	sort.Slice(ret, func(i, j int) bool {
-		mi := ret[i].migrationInfo
-		mj := ret[j].migrationInfo
-		if mi.Database < mj.Database {
-			return true
-		}
-		if mi.Database == mj.Database && mi.Version.Version < mj.Version.Version {
-			return true
-		}
-		if mi.Database == mj.Database && mi.Version == mj.Version && mi.Type.GetVersionTypeSuffix() < mj.Type.GetVersionTypeSuffix() {
-			return true
-		}
-		return false
+	sort.Slice(result, func(i, j int) bool {
+		mi := result[i].migrationInfo
+		mj := result[j].migrationInfo
+		return mi.Version.Version < mj.Version.Version
 	})
-	return ret
+	return result
 }
 
 func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project *store.ProjectMessage, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID int, migrationDetailList []*migrationDetail) error {
@@ -963,10 +734,6 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 	}
 	allSteps := make([]*v1pb.Plan_Step, len(environments))
 	for _, migrationDetail := range migrationDetailList {
-		if migrationDetail.databaseID == 0 {
-			// TODO(d): should never reach this.
-			return errors.Errorf("tenant database is not supported yet")
-		}
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: &migrationDetail.databaseID})
 		if err != nil {
 			return err
