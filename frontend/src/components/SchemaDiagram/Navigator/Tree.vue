@@ -23,7 +23,7 @@ import { isDescendantOf } from "@/utils";
 import { useSchemaDiagramContext } from "../common";
 import { DEFAULT_PADDINGS } from "../common/const";
 import { Label, Prefix, Suffix } from "./TreeNode";
-import { TreeNode } from "./types";
+import type { TreeNode } from "./types";
 import { isTypedNode } from "./utils";
 
 const props = withDefaults(

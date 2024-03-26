@@ -24,7 +24,8 @@
 </template>
 
 <script lang="ts" setup>
-import { InputInst, NButton, NInput } from "naive-ui";
+import type { InputInst } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { onMounted, reactive, ref } from "vue";
 import { useNotificationStore } from "@/store";
 

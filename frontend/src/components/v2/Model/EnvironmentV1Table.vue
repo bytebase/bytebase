@@ -22,8 +22,9 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { BBGridColumn, BBGridRow } from "@/bbkit";
+import { BBGrid } from "@/bbkit";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentV1Name } from ".";
 
 export type EnvironmentRow = BBGridRow<Environment>;

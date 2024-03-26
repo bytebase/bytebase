@@ -1,4 +1,5 @@
-import { inject, InjectionKey, provide, unref, watchEffect } from "vue";
+import type { InjectionKey } from "vue";
+import { inject, provide, unref, watchEffect } from "vue";
 import type { MaybeRef } from "@/types";
 import type { Geometry, SchemaDiagramContext } from "../types";
 

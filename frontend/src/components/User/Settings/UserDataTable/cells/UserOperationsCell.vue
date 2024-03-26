@@ -32,7 +32,7 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useCurrentUserV1, useUserStore } from "@/store";
 import { PresetRoleType, SYSTEM_BOT_USER_NAME } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 
 defineProps<{

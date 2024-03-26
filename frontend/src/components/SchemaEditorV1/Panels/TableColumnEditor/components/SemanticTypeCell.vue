@@ -23,8 +23,8 @@
 import { PencilIcon, XIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { MiniActionButton } from "@/components/v2";
-import { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/v1/setting_service";
-import { Column } from "@/types/v1/schemaEditor";
+import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/v1/setting_service";
+import type { Column } from "@/types/v1/schemaEditor";
 
 const props = defineProps<{
   column: Column;

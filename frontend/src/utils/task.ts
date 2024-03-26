@@ -4,7 +4,7 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import {
+import type {
   Issue,
   Task,
   TaskCheckStatus,
@@ -18,8 +18,8 @@ import {
   TaskDatabaseSchemaUpdateSDLPayload,
   TaskStatus,
   TaskType,
-  unknownDatabase,
 } from "@/types";
+import { unknownDatabase } from "@/types";
 import { hasProjectPermissionV2 } from "./iam";
 import { activeTask } from "./pipeline";
 import { extractUserUID } from "./v1";

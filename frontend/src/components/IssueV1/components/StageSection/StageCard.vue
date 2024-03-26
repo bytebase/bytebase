@@ -76,9 +76,9 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { EMPTY_TASK_NAME } from "@/types";
+import type { Stage } from "@/types/proto/v1/rollout_service";
 import {
   PlanCheckRun_Result_Status,
-  Stage,
   task_StatusToJSON,
 } from "@/types/proto/v1/rollout_service";
 import { activeTaskInStageV1 } from "@/utils";

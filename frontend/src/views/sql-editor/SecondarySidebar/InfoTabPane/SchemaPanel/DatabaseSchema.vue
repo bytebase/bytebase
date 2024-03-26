@@ -52,7 +52,7 @@ import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
 import { UNKNOWN_ID, type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
+import type {
   DatabaseMetadata,
   ExternalTableMetadata,
   SchemaMetadata,

@@ -198,7 +198,7 @@
 import { useTitle } from "@vueuse/core";
 import dayjs from "dayjs";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import { ClientError } from "nice-grpc-web";
+import type { ClientError } from "nice-grpc-web";
 import { computed, reactive, watch, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -235,7 +235,7 @@ import {
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID, unknownEnvironment } from "@/types";
-import { Anomaly } from "@/types/proto/v1/anomaly_service";
+import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { State } from "@/types/proto/v1/common";
 import {
   instanceV1HasAlterSchema,

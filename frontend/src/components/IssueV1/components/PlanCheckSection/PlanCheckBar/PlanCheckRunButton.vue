@@ -29,11 +29,12 @@ import {
   planCheckRunListForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { ContextMenuButton, ContextMenuButtonAction } from "@/components/v2";
+import type { ContextMenuButtonAction } from "@/components/v2";
+import { ContextMenuButton } from "@/components/v2";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
+import type { Task } from "@/types/proto/v1/rollout_service";
 import {
   PlanCheckRun_Status,
-  Task,
   Task_Status,
 } from "@/types/proto/v1/rollout_service";
 

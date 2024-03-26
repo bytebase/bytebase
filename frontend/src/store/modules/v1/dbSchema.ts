@@ -2,10 +2,11 @@ import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
 import { useCache } from "@/store/cache";
-import { MaybeRef, UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
+import type { MaybeRef } from "@/types";
+import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
+import type { TableMetadata } from "@/types/proto/v1/database_service";
 import {
   DatabaseMetadata,
-  TableMetadata,
   DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName } from "@/utils";

@@ -1,16 +1,15 @@
 import { useCurrentUserV1 } from "@/store";
-import {
+import type {
   ComposedIssue,
   IssueStatusTransitionType,
-  ISSUE_STATUS_TRANSITION_LIST,
   IssueStatusTransition,
 } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import { ISSUE_STATUS_TRANSITION_LIST } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
+import type { StageStatusTransition, TaskStatusTransition } from "@/utils";
 import {
-  StageStatusTransition,
-  TaskStatusTransition,
   isDatabaseRelatedIssue,
   flattenTaskV1List,
   isGrantRequestIssue,

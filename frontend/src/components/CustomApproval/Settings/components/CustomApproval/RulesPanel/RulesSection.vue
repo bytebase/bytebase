@@ -37,12 +37,9 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
-import {
-  DEFAULT_RISK_LEVEL,
-  ParsedApprovalRule,
-  PresetRiskLevelList,
-} from "@/types";
-import { Risk_Source } from "@/types/proto/v1/risk_service";
+import type { ParsedApprovalRule } from "@/types";
+import { DEFAULT_RISK_LEVEL, PresetRiskLevelList } from "@/types";
+import type { Risk_Source } from "@/types/proto/v1/risk_service";
 import { levelText, sourceText, useRiskFilter } from "../../common";
 import { useCustomApprovalContext } from "../context";
 import RuleSelect from "./RuleSelect.vue";

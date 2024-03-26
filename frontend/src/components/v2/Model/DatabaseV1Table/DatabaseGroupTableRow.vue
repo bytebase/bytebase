@@ -43,9 +43,9 @@
 import BBBadge from "@/bbkit/BBBadge.vue";
 import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import { EnvironmentV1Name } from "@/components/v2";
-import { ComposedDatabaseGroup } from "@/types";
+import type { ComposedDatabaseGroup } from "@/types";
 import ProjectCol from "./ProjectCol.vue";
-import { Mode } from "./utils";
+import type { Mode } from "./utils";
 
 defineProps<{
   databaseGroup: ComposedDatabaseGroup;

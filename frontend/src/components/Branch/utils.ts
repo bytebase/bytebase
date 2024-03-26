@@ -1,5 +1,5 @@
 import { useCurrentUserV1 } from "@/store";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 
 export const generateForkedBranchName = (branch: Branch): string => {
   const currentUser = useCurrentUserV1();

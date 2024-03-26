@@ -14,12 +14,12 @@ import {
   InputWithTemplate,
   type Template,
 } from "@/components/InputWithTemplate";
-import {
-  getRuleLocalizationKey,
+import type {
   RuleConfigComponent,
   RuleTemplate,
   TemplatePayload,
 } from "@/types";
+import { getRuleLocalizationKey } from "@/types";
 
 const props = defineProps<{
   rule: RuleTemplate;

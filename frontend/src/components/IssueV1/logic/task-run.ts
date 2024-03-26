@@ -1,6 +1,6 @@
 import { first, orderBy } from "lodash-es";
-import { ComposedIssue } from "@/types";
-import { Task } from "@/types/proto/v1/rollout_service";
+import type { ComposedIssue } from "@/types";
+import type { Task } from "@/types/proto/v1/rollout_service";
 import { extractTaskUID } from "@/utils";
 
 export const taskRunListForTask = (issue: ComposedIssue, task: Task) => {

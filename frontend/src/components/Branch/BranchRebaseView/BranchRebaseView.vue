@@ -74,13 +74,14 @@ import { useRoute } from "vue-router";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { branchServiceClient } from "@/grpcweb";
 import { pushNotification, useBranchStore, useDatabaseV1Store } from "@/store";
-import { ComposedProject, UNKNOWN_ID } from "@/types";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { ComposedProject } from "@/types";
+import { UNKNOWN_ID } from "@/types";
+import type { Branch } from "@/types/proto/v1/branch_service";
 import { defer } from "@/utils";
 import RebaseBranchSelect from "./RebaseBranchSelect.vue";
 import RebaseBranchValidationStateView from "./RebaseBranchValidationStateView.vue";
 import ResolveConflict from "./ResolveConflict.vue";
-import { RebaseBranchValidationState, RebaseSourceType } from "./types";
+import type { RebaseBranchValidationState, RebaseSourceType } from "./types";
 
 interface LocalState {
   currentStepIndex: number;

@@ -42,8 +42,9 @@ import {
   useSlowQueryStore,
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
-import { ComposedInstance, ComposedSlowQueryPolicy, UNKNOWN_ID } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { ComposedInstance, ComposedSlowQueryPolicy } from "@/types";
+import { UNKNOWN_ID } from "@/types";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import { instanceV1SupportSlowQuery } from "@/utils";
 import { SlowQueryPolicyTable } from "./components";
 

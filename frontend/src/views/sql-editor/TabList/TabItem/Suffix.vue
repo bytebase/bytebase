@@ -22,7 +22,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive } from "vue";
 import type { SQLEditorTab } from "@/types";
 
 type LocalState = {

@@ -2,9 +2,10 @@ import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { policyServiceClient } from "@/grpcweb";
 import { policyNamePrefix } from "@/store/modules/v1/common";
-import { MaybeRef, UNKNOWN_USER_NAME, VirtualRoleType } from "@/types";
+import type { MaybeRef } from "@/types";
+import { UNKNOWN_USER_NAME, VirtualRoleType } from "@/types";
+import type { Policy } from "@/types/proto/v1/org_policy_service";
 import {
-  Policy,
   PolicyType,
   PolicyResourceType,
   policyTypeToJSON,

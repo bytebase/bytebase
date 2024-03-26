@@ -1,14 +1,15 @@
 import { pick } from "lodash-es";
-import { Ref, computed } from "vue";
-import { ComposedDatabase } from "@/types";
-import {
+import type { Ref } from "vue";
+import { computed } from "vue";
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { SchemaEditorEvents } from ".";
-import { RolloutObject } from "../types";
+import type { SchemaEditorEvents } from ".";
+import type { RolloutObject } from "../types";
 import { keyForResource } from "./common";
 
 export const useSelection = (

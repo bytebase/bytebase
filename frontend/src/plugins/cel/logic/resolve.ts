@@ -1,4 +1,4 @@
-import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import type { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import type {
   StringFactor,
   Operator,

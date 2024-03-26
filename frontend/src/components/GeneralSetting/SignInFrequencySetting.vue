@@ -55,7 +55,8 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { FeatureType, defaultTokenDurationInHours } from "@/types";
+import type { FeatureType } from "@/types";
+import { defaultTokenDurationInHours } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 
 const getInitialState = (): LocalState => {

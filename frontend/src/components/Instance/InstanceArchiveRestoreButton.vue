@@ -59,7 +59,7 @@ import {
   pushNotification,
   useSubscriptionV1Store,
 } from "@/store";
-import { ComposedInstance } from "@/types";
+import type { ComposedInstance } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

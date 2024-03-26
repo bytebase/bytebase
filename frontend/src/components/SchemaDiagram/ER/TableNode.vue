@@ -91,7 +91,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
-import {
+import type {
   ColumnMetadata,
   SchemaMetadata,
   TableMetadata,

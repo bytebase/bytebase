@@ -1,6 +1,6 @@
 import { computed, unref } from "vue";
-import { EditStatus } from "@/components/SchemaDiagram";
-import { ComposedDatabase, MaybeRef } from "@/types";
+import type { EditStatus } from "@/components/SchemaDiagram";
+import type { ComposedDatabase, MaybeRef } from "@/types";
 import {
   ColumnMetadata,
   DatabaseMetadata,
@@ -9,7 +9,12 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { DatabaseSchema, Column, Schema, Table } from "@/types/v1/schemaEditor";
+import type {
+  DatabaseSchema,
+  Column,
+  Schema,
+  Table,
+} from "@/types/v1/schemaEditor";
 import { isColumnChanged } from "./column";
 import { isSchemaChanged } from "./schema";
 import { isTableChanged } from "./table";

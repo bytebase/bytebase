@@ -474,11 +474,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	}
 
 	if done && err == nil {
-		resultBytes, marshalErr := protojson.Marshal(&storepb.TaskRunResult{
-			Detail:        result.Detail,
-			ChangeHistory: result.ChangeHistory,
-			Version:       result.Version,
-		})
+		resultBytes, marshalErr := protojson.Marshal(result)
 		if marshalErr != nil {
 			slog.Error("Failed to marshal task run result",
 				slog.Int("task_id", task.ID),

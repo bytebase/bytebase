@@ -1,4 +1,4 @@
-import { GraphEdgeItem, GraphNodeItem, Layout } from "./types";
+import type { GraphEdgeItem, GraphNodeItem, Layout } from "./types";
 
 export * from "./types";
 

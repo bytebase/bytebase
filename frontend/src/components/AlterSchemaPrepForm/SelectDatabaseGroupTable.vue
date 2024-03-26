@@ -38,8 +38,8 @@
 import { NRadio } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGridColumn } from "@/bbkit";
-import { ComposedDatabaseGroup } from "@/types";
+import type { BBGridColumn } from "@/bbkit";
+import type { ComposedDatabaseGroup } from "@/types";
 
 interface LocalState {
   selectedDatabaseGroupName?: string;

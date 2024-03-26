@@ -73,7 +73,7 @@ import { Drawer, SearchBox } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { TableMetadata, TableConfig } from "@/types/proto/v1/database_service";
-import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
 
 interface LocalState {
   template: SchemaTemplateSetting_TableTemplate;

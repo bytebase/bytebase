@@ -8,10 +8,9 @@ import {
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
+import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import {
-  DataSource,
   DataSourceType,
-  Instance,
   InstanceOptions,
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";

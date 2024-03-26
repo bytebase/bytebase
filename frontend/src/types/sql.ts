@@ -1,4 +1,4 @@
-import { InstanceId } from "./id";
+import type { InstanceId } from "./id";
 
 export type QueryInfo = {
   instanceId: InstanceId;

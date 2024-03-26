@@ -1,8 +1,7 @@
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
+import type { ComposedIssue, ComposedProject } from "@/types";
 import {
-  ComposedIssue,
-  ComposedProject,
   emptyIssue,
   emptyRollout,
   unknownUser,
@@ -12,8 +11,8 @@ import {
   UNKNOWN_ID,
   UNKNOWN_ISSUE_NAME,
 } from "@/types";
-import { Issue } from "@/types/proto/v1/issue_service";
-import { Plan, Rollout } from "@/types/proto/v1/rollout_service";
+import type { Issue } from "@/types/proto/v1/issue_service";
+import type { Plan, Rollout } from "@/types/proto/v1/rollout_service";
 import {
   extractProjectResourceName,
   extractUserResourceName,

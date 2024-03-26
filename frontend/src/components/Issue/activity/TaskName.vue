@@ -20,7 +20,7 @@
 <script lang="ts" setup>
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed } from "vue";
-import { Issue, Task } from "@/types";
+import type { Issue, Task } from "@/types";
 
 const props = defineProps<{
   issue: Issue;

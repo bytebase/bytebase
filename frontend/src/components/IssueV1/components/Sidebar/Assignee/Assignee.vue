@@ -41,7 +41,8 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
-import { NTooltip, SelectGroupOption } from "naive-ui";
+import type { SelectGroupOption } from "naive-ui";
+import { NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -49,7 +50,8 @@ import {
   useIssueContext,
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1/logic";
-import ErrorList, { ErrorItem } from "@/components/misc/ErrorList.vue";
+import type { ErrorItem } from "@/components/misc/ErrorList.vue";
+import ErrorList from "@/components/misc/ErrorList.vue";
 import { UserSelect } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
@@ -66,7 +68,7 @@ import {
   UNKNOWN_ID,
   unknownUser,
 } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import { Issue } from "@/types/proto/v1/issue_service";
 import {
   extractUserResourceName,

@@ -46,7 +46,8 @@
 import { head } from "lodash-es";
 import { computed } from "vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
-import { PushEvent, VcsType } from "@/types/proto/v1/vcs";
+import type { PushEvent } from "@/types/proto/v1/vcs";
+import { VcsType } from "@/types/proto/v1/vcs";
 import { useIssueContext } from "../../logic";
 import { useActiveTaskSheet } from "./useActiveTaskSheet";
 

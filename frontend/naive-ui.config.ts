@@ -1,9 +1,9 @@
 import {
-  GlobalThemeOverrides,
-  zhCN,
+  type GlobalThemeOverrides,
+  type NLocale,
+  type NDateLocale,
   dateZhCN,
-  NLocale,
-  NDateLocale,
+  zhCN,
 } from "naive-ui";
 import { computed } from "vue";
 import { callCssVariable } from "@/utils";

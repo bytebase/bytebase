@@ -183,14 +183,15 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
-import { SelectOption, NCheckbox } from "naive-ui";
-import { ClientError } from "nice-grpc-web";
+import type { SelectOption } from "naive-ui";
+import { NCheckbox } from "naive-ui";
+import type { ClientError } from "nice-grpc-web";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import { useWorkspaceMailDeliverySettingStore } from "@/store/modules/workspaceMailDeliverySetting";
+import type { SMTPMailDeliverySettingValue } from "@/types/proto/v1/setting_service";
 import {
-  SMTPMailDeliverySettingValue,
   SMTPMailDeliverySettingValue_Authentication,
   SMTPMailDeliverySettingValue_Encryption,
 } from "@/types/proto/v1/setting_service";

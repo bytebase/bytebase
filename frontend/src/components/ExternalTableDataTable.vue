@@ -19,11 +19,13 @@
 </template>
 
 <script lang="ts" setup>
-import { DataTableColumn, NDataTable } from "naive-ui";
-import { computed, PropType, reactive } from "vue";
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
+import type { PropType } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { ComposedDatabase } from "@/types";
-import { ExternalTableMetadata } from "@/types/proto/v1/database_service";
+import type { ComposedDatabase } from "@/types";
+import type { ExternalTableMetadata } from "@/types/proto/v1/database_service";
 
 type LocalState = {
   selectedTableName?: string;

@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { useDatabaseV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { ListSlowQueriesRequest } from "@/types/proto/v1/database_service";
-import { SearchScope } from "@/utils";
+import type { SearchScope } from "@/utils";
 
 export const buildListSlowQueriesRequest = (
   scopes: SearchScope[],

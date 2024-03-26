@@ -39,7 +39,7 @@
 
 <script lang="ts" setup>
 import { NButton, useDialog } from "naive-ui";
-import { ClientError } from "nice-grpc-common";
+import type { ClientError } from "nice-grpc-common";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -66,7 +66,10 @@ import type {
 } from "@/types";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
-import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
+import type {
+  DatabaseGroup,
+  SchemaGroup,
+} from "@/types/proto/v1/project_service";
 import { batchConvertParsedExprToCELString } from "@/utils";
 import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 import DatabaseGroupForm from "./DatabaseGroupForm.vue";

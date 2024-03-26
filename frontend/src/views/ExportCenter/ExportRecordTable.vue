@@ -65,11 +65,11 @@
 import dayjs from "dayjs";
 import { computed, shallowRef } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGridColumn } from "@/bbkit";
+import type { BBGridColumn } from "@/bbkit";
 import { InstanceV1Name } from "@/components/v2";
 import { UNKNOWN_ID } from "@/types";
 import ExportDataButton from "./ExportDataButton.vue";
-import { ExportRecord } from "./types";
+import type { ExportRecord } from "./types";
 
 defineProps<{
   exportRecords: ExportRecord[];

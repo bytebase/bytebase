@@ -5,19 +5,21 @@ import {
   policyNamePrefix,
   environmentNamePrefix,
 } from "@/store/modules/v1/common";
-import {
+import type {
   PolicyId,
   SchemaPolicyRule,
   SQLReviewPolicy,
   IdType,
   MaybeRef,
 } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
+import type {
+  Policy,
+  SQLReviewPolicy as SQLReviewPolicyV1,
+} from "@/types/proto/v1/org_policy_service";
 import {
   PolicyType,
-  Policy,
   policyTypeToJSON,
-  SQLReviewPolicy as SQLReviewPolicyV1,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
 import { extractEnvironmentResourceName } from "@/utils";

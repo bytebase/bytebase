@@ -30,7 +30,8 @@
 </template>
 
 <script lang="ts" setup>
-import { Axios, AxiosResponse } from "axios";
+import type { AxiosResponse } from "axios";
+import { Axios } from "axios";
 import { head } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { computed, reactive, watch } from "vue";
@@ -38,7 +39,7 @@ import { useSQLEditorTabStore } from "@/store";
 import { engineNameV1 } from "@/utils";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import { useConversationStore } from "../store";
-import { OpenAIMessage, OpenAIResponse } from "../types";
+import type { OpenAIMessage, OpenAIResponse } from "../types";
 import ActionBar from "./ActionBar.vue";
 import ChatView from "./ChatView";
 import DynamicSuggestions from "./DynamicSuggestions.vue";

@@ -15,7 +15,7 @@
 import { NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
+import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
 } from "@/types";

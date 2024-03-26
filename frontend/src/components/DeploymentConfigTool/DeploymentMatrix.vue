@@ -48,9 +48,9 @@
 <script lang="ts" setup>
 import { NInputGroup, NInputGroupLabel } from "naive-ui";
 import { computed, reactive } from "vue";
-import { ComposedDatabase } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
-import { DeploymentConfig } from "@/types/proto/v1/project_service";
+import type { ComposedDatabase } from "@/types";
+import type { Environment } from "@/types/proto/v1/environment_service";
+import type { DeploymentConfig } from "@/types/proto/v1/project_service";
 import { filterDatabaseV1ByKeyword } from "@/utils";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 import { SearchBox } from "../v2";

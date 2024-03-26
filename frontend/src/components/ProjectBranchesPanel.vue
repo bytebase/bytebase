@@ -45,7 +45,7 @@ import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { useBranchListByProject } from "@/store/modules/branch";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import { ComposedProject } from "@/types";
+import type { ComposedProject } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 
 const props = defineProps<{

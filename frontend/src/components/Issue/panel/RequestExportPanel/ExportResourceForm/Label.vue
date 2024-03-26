@@ -25,7 +25,7 @@ import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import { getHighlightHTMLByRegExp } from "@/utils";
-import { DatabaseTreeOption } from "./common";
+import type { DatabaseTreeOption } from "./common";
 
 const props = defineProps<{
   option: DatabaseTreeOption;

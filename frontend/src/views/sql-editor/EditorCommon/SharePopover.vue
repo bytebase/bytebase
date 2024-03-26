@@ -103,7 +103,7 @@ import {
   useWorkSheetStore,
   useWorkSheetAndTabStore,
 } from "@/store";
-import { AccessOption } from "@/types";
+import type { AccessOption } from "@/types";
 import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
 import { extractProjectResourceName, extractSheetUID } from "@/utils";
 

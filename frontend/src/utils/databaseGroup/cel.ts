@@ -1,11 +1,6 @@
-import {
-  ConditionGroupExpr,
-  SimpleExpr,
-  emptySimpleExpr,
-  resolveCELExpr,
-  wrapAsGroup,
-} from "@/plugins/cel";
-import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import type { ConditionGroupExpr, SimpleExpr } from "@/plugins/cel";
+import { emptySimpleExpr, resolveCELExpr, wrapAsGroup } from "@/plugins/cel";
+import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { batchConvertCELStringToParsedExpr } from "@/utils";
 
 interface DatabaseGroupExpr {

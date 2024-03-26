@@ -115,18 +115,16 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed, reactive } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useLanguage } from "@/composables/useLanguage";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
-import {
-  FeatureType,
-  planTypeToString,
-  ENTERPRISE_INQUIRE_LINK,
-} from "@/types";
-import { Instance } from "@/types/proto/v1/instance_service";
+import type { FeatureType } from "@/types";
+import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
+import type { Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

@@ -1,4 +1,4 @@
-import { Factor } from "@/plugins/cel";
+import type { Factor } from "@/plugins/cel";
 
 export type ResourceType = "DATABASE_GROUP" | "SCHEMA_GROUP";
 

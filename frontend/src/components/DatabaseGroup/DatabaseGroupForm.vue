@@ -83,11 +83,8 @@ import { Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
-import {
-  ConditionGroupExpr,
-  emptySimpleExpr,
-  wrapAsGroup,
-} from "@/plugins/cel";
+import type { ConditionGroupExpr } from "@/plugins/cel";
+import { emptySimpleExpr, wrapAsGroup } from "@/plugins/cel";
 import { useDBGroupStore, useSubscriptionV1Store } from "@/store";
 import {
   databaseGroupNamePrefix,
@@ -96,7 +93,7 @@ import {
   schemaGroupNamePrefix,
 } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import {
+import type {
   ComposedSchemaGroupTable,
   ComposedDatabase,
   ComposedDatabaseGroup,
@@ -104,14 +101,18 @@ import {
   ResourceId,
   ValidatedMessage,
 } from "@/types";
-import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
+import type {
+  DatabaseGroup,
+  SchemaGroup,
+} from "@/types/proto/v1/project_service";
 import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
 import { getErrorCode } from "@/utils/grpcweb";
 import { EnvironmentSelect, ProjectSelect, ResourceIdField } from "../v2";
 import DatabaseGroupSelect from "./DatabaseGroupSelect.vue";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import MatchedTableView from "./MatchedTableView.vue";
-import { FactorList, ResourceType } from "./utils";
+import type { ResourceType } from "./utils";
+import { FactorList } from "./utils";
 
 const props = defineProps<{
   project: ComposedProject;

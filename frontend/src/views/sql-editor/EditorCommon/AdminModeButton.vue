@@ -20,7 +20,7 @@ import {
   useSQLEditorTabStore,
   useWebTerminalStore,
 } from "@/store";
-import { CoreSQLEditorTab } from "@/types";
+import type { CoreSQLEditorTab } from "@/types";
 import {
   hasWorkspacePermissionV2,
   suggestedTabTitleForSQLEditorConnection,

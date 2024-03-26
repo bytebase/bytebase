@@ -3,12 +3,14 @@ import { reactive } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
 import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
-import {
+import type {
   ChangeHistory,
-  ChangeHistoryView,
-  ChangeHistory_Type,
   GetChangeHistoryRequest,
   ListChangeHistoriesRequest,
+} from "@/types/proto/v1/database_service";
+import {
+  ChangeHistoryView,
+  ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
 import { extractChangeHistoryUID } from "@/utils";
 

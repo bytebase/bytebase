@@ -41,7 +41,7 @@ import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 
 const props = defineProps<{
   change: Change;

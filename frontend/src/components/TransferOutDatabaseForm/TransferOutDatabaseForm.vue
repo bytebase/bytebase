@@ -71,7 +71,8 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import { ComposedDatabase, UNKNOWN_ID, PresetRoleType } from "@/types";
+import type { ComposedDatabase } from "@/types";
+import { UNKNOWN_ID, PresetRoleType } from "@/types";
 
 const props = defineProps<{
   databaseList: ComposedDatabase[];

@@ -1,13 +1,13 @@
 import { defineStore } from "pinia";
 import { ref, unref, watchEffect } from "vue";
 import { branchServiceClient } from "@/grpcweb";
-import { MaybeRef } from "@/types";
-import {
+import type { MaybeRef } from "@/types";
+import type {
   MergeBranchRequest,
   Branch,
-  BranchView,
   RebaseBranchRequest,
 } from "@/types/proto/v1/branch_service";
+import { BranchView } from "@/types/proto/v1/branch_service";
 import { useCache } from "../cache";
 
 type BranchCacheKey = [string /* name */, BranchView];

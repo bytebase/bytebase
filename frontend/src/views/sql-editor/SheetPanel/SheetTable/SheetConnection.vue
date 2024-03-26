@@ -38,7 +38,7 @@ import {
 } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 
 const props = defineProps<{
   sheet: Worksheet;

@@ -55,11 +55,11 @@ import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { Drawer } from "@/components/v2";
 import { useProjectV1List } from "@/store";
+import type { ComposedProject } from "@/types";
 import {
   DEFAULT_PROJECT_ID,
   UNKNOWN_PROJECT_NAME,
   EMPTY_PROJECT_NAME,
-  ComposedProject,
 } from "@/types";
 import { filterProjectV1ListByKeyword } from "@/utils";
 

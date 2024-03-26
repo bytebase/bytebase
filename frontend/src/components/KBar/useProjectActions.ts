@@ -1,4 +1,5 @@
-import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+import type { Action } from "@bytebase/vue-kbar";
+import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

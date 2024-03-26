@@ -104,11 +104,8 @@ import { computed, reactive, watch, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent, ResourceIdField } from "@/components/v2";
 import { pushNotification, useRoleStore } from "@/store";
-import {
-  PROJECT_PERMISSIONS,
-  ValidatedMessage,
-  WORKSPACE_PERMISSIONS,
-} from "@/types";
+import type { ValidatedMessage } from "@/types";
+import { PROJECT_PERMISSIONS, WORKSPACE_PERMISSIONS } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { extractRoleResourceName } from "@/utils";
 import { displayPermissionTitle } from "@/utils/permission";

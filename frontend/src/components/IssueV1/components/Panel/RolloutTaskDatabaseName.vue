@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
-import { Task } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto/v1/rollout_service";
 import { databaseForTask, useIssueContext } from "../../logic";
 
 const props = defineProps<{

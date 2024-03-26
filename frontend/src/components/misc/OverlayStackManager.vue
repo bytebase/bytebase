@@ -7,17 +7,17 @@ import { useEventListener } from "@vueuse/core";
 import Emittery from "emittery";
 import { last, pullAt } from "lodash-es";
 import { unref } from "vue";
+import type { Ref } from "vue";
 import {
   computed,
   defineComponent,
   inject,
   onUnmounted,
   provide,
-  Ref,
   ref,
   watch,
 } from "vue";
-import { MaybeRef } from "@/types";
+import type { MaybeRef } from "@/types";
 
 export type OverlayStackEvents = Emittery<{
   esc: KeyboardEvent;

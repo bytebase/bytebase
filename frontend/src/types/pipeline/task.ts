@@ -1,6 +1,6 @@
-import { ErrorCode, MigrationHistoryId, TaskCheckRunId } from "..";
-import { Database } from "../database";
-import {
+import type { ErrorCode, MigrationHistoryId, TaskCheckRunId } from "..";
+import type { Database } from "../database";
+import type {
   DatabaseId,
   InstanceId,
   IssueId,
@@ -9,11 +9,11 @@ import {
   TaskId,
   TaskRunId,
 } from "../id";
-import { Instance } from "../instance";
-import { Principal } from "../principal";
-import { VCSPushEvent } from "../vcs";
-import { Pipeline } from "./pipeline";
-import { Stage } from "./stage";
+import type { Instance } from "../instance";
+import type { Principal } from "../principal";
+import type { VCSPushEvent } from "../vcs";
+import type { Pipeline } from "./pipeline";
+import type { Stage } from "./stage";
 
 export type TaskType =
   | "bb.task.general"

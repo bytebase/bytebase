@@ -1,19 +1,19 @@
 import dayjs from "dayjs";
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
-import { ref, watch, WatchCallback } from "vue";
+import type { WatchCallback } from "vue";
+import { ref, watch } from "vue";
 import { issueServiceClient } from "@/grpcweb";
-import {
+import type {
   ActivityIssueCommentCreatePayload,
   ComposedIssue,
   IssueFilter,
-  PresetRoleType,
-  UNKNOWN_PROJECT_NAME,
 } from "@/types";
+import { PresetRoleType, UNKNOWN_PROJECT_NAME } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
+import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import {
   issueStatusToJSON,
-  ApprovalStep,
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/issue_service";

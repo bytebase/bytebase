@@ -1,16 +1,15 @@
 import { groupBy, cloneDeep } from "lodash-es";
-import {
-  convertPolicyRuleToRuleTemplate,
+import type {
   RuleConfigComponent,
   RuleTemplate,
   SQLReviewPolicy,
-  TEMPLATE_LIST,
   IndividualConfigForEngine,
 } from "@/types";
+import { convertPolicyRuleToRuleTemplate, TEMPLATE_LIST } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import { PayloadForEngine } from "./RuleConfigComponents";
+import type { PayloadForEngine } from "./RuleConfigComponents";
 
 export const templateIdForEnvironment = (environment: Environment): string => {
   return `bb.sql-review.environment-policy.${environment.name}`;

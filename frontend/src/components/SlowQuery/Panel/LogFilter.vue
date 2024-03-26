@@ -47,7 +47,7 @@
 import dayjs from "dayjs";
 import { NDatePicker, NInputGroup } from "naive-ui";
 import { useSlowQueryPolicyList } from "@/store";
-import { SearchParams, SearchScopeId } from "@/utils";
+import type { SearchParams, SearchScopeId } from "@/utils";
 
 const props = defineProps<{
   fromTime: number | undefined;

@@ -11,7 +11,7 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-import { SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
 import { computed, watch } from "vue";
 import { type ConditionExpr } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";

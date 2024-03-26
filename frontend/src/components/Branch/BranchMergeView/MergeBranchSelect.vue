@@ -27,8 +27,8 @@
 
 <script setup lang="ts">
 import { MoveLeftIcon } from "lucide-vue-next";
-import { ComposedProject } from "@/types";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { ComposedProject } from "@/types";
+import type { Branch } from "@/types/proto/v1/branch_service";
 
 const props = defineProps<{
   project: ComposedProject;

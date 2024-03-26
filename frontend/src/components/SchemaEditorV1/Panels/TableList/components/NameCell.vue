@@ -10,7 +10,7 @@
 
 <script lang="ts" setup>
 import { NPerformantEllipsis } from "naive-ui";
-import { Table } from "@/types/v1/schemaEditor";
+import type { Table } from "@/types/v1/schemaEditor";
 
 defineProps<{
   table: Table;

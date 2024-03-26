@@ -1,10 +1,12 @@
 import { keyBy, orderBy } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionV1Store } from "@/store";
-import { ComposedInstance, UNKNOWN_ID } from "@/types";
+import type { ComposedInstance } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
-import { Environment } from "@/types/proto/v1/environment_service";
-import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
+import type { Instance } from "@/types/proto/v1/instance_service";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
 export function instanceV1Name(instance: Instance) {

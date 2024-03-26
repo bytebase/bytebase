@@ -63,14 +63,14 @@ import { useI18n } from "vue-i18n";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { branchServiceClient } from "@/grpcweb";
 import { pushNotification, useBranchStore } from "@/store";
-import { ComposedProject } from "@/types";
+import type { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import BranchComparison from "../common/BranchComparison.vue";
 import MergeBranchButton from "./MergeBranchButton.vue";
 import MergeBranchSelect from "./MergeBranchSelect.vue";
 import MergeBranchValidationStateView from "./MergeBranchValidationStateView.vue";
-import { MergeBranchValidationState, PostMergeAction } from "./types";
+import type { MergeBranchValidationState, PostMergeAction } from "./types";
 
 interface LocalState {
   targetBranchName: string | null;
