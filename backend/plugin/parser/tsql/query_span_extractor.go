@@ -632,6 +632,26 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 				}
 				return physicalTableSource, nil
 			}
+			// search views
+			allViewNames := schemaSchema.ListViewNames()
+			for _, viewName := range allViewNames {
+				if !q.isIdentifierEqual(normalizedTableName, viewName) {
+					continue
+				}
+				view := schemaSchema.GetView(viewName)
+				columns, err := q.getColumnsForView(view.Definition)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get columns for view %s.%s.%s", databaseName, schemaName, viewName)
+				}
+				tableSource := &base.PhysicalView{
+					Server:   "",
+					Database: databaseName,
+					Schema:   schemaName,
+					Name:     viewName,
+					Columns:  columns,
+				}
+				return tableSource, nil
+			}
 		}
 	}
 	return nil, &parsererror.ResourceNotFoundError{
@@ -639,6 +659,15 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 		Schema:   &normalizedSchemaName,
 		Table:    &normalizedTableName,
 	}
+}
+
+func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
+	newQ := newQuerySpanExtractor(q.connectedDB, q.connectedSchema, q.f, q.l, q.ignoreCaseSensitive)
+	span, err := newQ.getQuerySpan(q.ctx, definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get query span for view definition")
+	}
+	return span.Results, nil
 }
 
 func (q *querySpanExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) ([]base.QuerySpanResult, error) {
