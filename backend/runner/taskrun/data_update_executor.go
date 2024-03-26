@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -52,7 +53,7 @@ type DataUpdateExecutor struct {
 }
 
 // RunOnce will run the data update (DML) task executor once.
-func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
 		state.TaskRunExecutionStatus{
 			ExecutionStatus: v1pb.TaskRun_PRE_EXECUTING,
