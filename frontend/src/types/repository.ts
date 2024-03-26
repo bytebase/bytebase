@@ -1,6 +1,6 @@
 export type RepositoryConfig = {
   baseDirectory: string;
-  branchFilter: string;
+  branch: string;
 };
 
 export type ExternalRepositoryInfo = {

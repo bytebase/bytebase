@@ -112,7 +112,7 @@ const state = reactive<LocalState>({
     },
     repositoryConfig: {
       baseDirectory: "bytebase",
-      branchFilter: "main",
+      branch: "main",
     },
   },
   currentStep: CHOOSE_PROVIDER_STEP,
@@ -123,8 +123,7 @@ const state = reactive<LocalState>({
 const allowNext = computed((): boolean => {
   if (state.currentStep == CONFIGURE_DEPLOY_STEP) {
     return (
-      !isEmpty(state.config.repositoryConfig.branchFilter.trim()) &&
-      !state.processing
+      !isEmpty(state.config.repositoryConfig.branch.trim()) && !state.processing
     );
   }
   return true;
@@ -157,7 +156,7 @@ const tryFinishSetup = async () => {
       title: state.config.repositoryInfo.name,
       fullPath: state.config.repositoryInfo.fullPath,
       webUrl: state.config.repositoryInfo.webUrl,
-      branchFilter: state.config.repositoryConfig.branchFilter,
+      branch: state.config.repositoryConfig.branch,
       baseDirectory: state.config.repositoryConfig.baseDirectory,
       externalId: externalId,
     };

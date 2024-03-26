@@ -886,9 +886,8 @@ CREATE TABLE repository (
     -- Web url from the corresponding VCS provider.
     -- For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1
     web_url TEXT NOT NULL,
-    -- Branch we are interested.
-    -- For GitLab, this corresponds to webhook's push_events_branch_filter. Wildcard is supported
-    branch_filter TEXT NOT NULL DEFAULT '',
+    -- Branch to listen to.
+    branch TEXT NOT NULL DEFAULT '',
     -- Base working directory we are interested.
     base_directory TEXT NOT NULL DEFAULT '',
     -- Repository id from the corresponding VCS provider.

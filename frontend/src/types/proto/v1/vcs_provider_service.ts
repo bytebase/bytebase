@@ -193,7 +193,7 @@ export interface ProjectGitOpsInfo {
   /** The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. */
   webUrl: string;
   /** The branch Bytebase listens to for changes. For example: main. */
-  branchFilter: string;
+  branch: string;
   /** The root directory where Bytebase observes the file change. If empty, then it observes the entire repository. */
   baseDirectory: string;
   /** The reposition external id in target VCS. */
@@ -1086,7 +1086,7 @@ function createBaseProjectGitOpsInfo(): ProjectGitOpsInfo {
     title: "",
     fullPath: "",
     webUrl: "",
-    branchFilter: "",
+    branch: "",
     baseDirectory: "",
     externalId: "",
     webhookEndpointId: "",
@@ -1110,8 +1110,8 @@ export const ProjectGitOpsInfo = {
     if (message.webUrl !== "") {
       writer.uint32(42).string(message.webUrl);
     }
-    if (message.branchFilter !== "") {
-      writer.uint32(50).string(message.branchFilter);
+    if (message.branch !== "") {
+      writer.uint32(50).string(message.branch);
     }
     if (message.baseDirectory !== "") {
       writer.uint32(58).string(message.baseDirectory);
@@ -1172,7 +1172,7 @@ export const ProjectGitOpsInfo = {
             break;
           }
 
-          message.branchFilter = reader.string();
+          message.branch = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
@@ -1211,7 +1211,7 @@ export const ProjectGitOpsInfo = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       fullPath: isSet(object.fullPath) ? globalThis.String(object.fullPath) : "",
       webUrl: isSet(object.webUrl) ? globalThis.String(object.webUrl) : "",
-      branchFilter: isSet(object.branchFilter) ? globalThis.String(object.branchFilter) : "",
+      branch: isSet(object.branch) ? globalThis.String(object.branch) : "",
       baseDirectory: isSet(object.baseDirectory) ? globalThis.String(object.baseDirectory) : "",
       externalId: isSet(object.externalId) ? globalThis.String(object.externalId) : "",
       webhookEndpointId: isSet(object.webhookEndpointId) ? globalThis.String(object.webhookEndpointId) : "",
@@ -1235,8 +1235,8 @@ export const ProjectGitOpsInfo = {
     if (message.webUrl !== "") {
       obj.webUrl = message.webUrl;
     }
-    if (message.branchFilter !== "") {
-      obj.branchFilter = message.branchFilter;
+    if (message.branch !== "") {
+      obj.branch = message.branch;
     }
     if (message.baseDirectory !== "") {
       obj.baseDirectory = message.baseDirectory;
@@ -1260,7 +1260,7 @@ export const ProjectGitOpsInfo = {
     message.title = object.title ?? "";
     message.fullPath = object.fullPath ?? "";
     message.webUrl = object.webUrl ?? "";
-    message.branchFilter = object.branchFilter ?? "";
+    message.branch = object.branch ?? "";
     message.baseDirectory = object.baseDirectory ?? "";
     message.externalId = object.externalId ?? "";
     message.webhookEndpointId = object.webhookEndpointId ?? "";
