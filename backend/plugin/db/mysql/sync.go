@@ -317,7 +317,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		if err != nil {
 			return nil, err
 		}
-		viewMap[key].Definition = def
+		if def != "" {
+			viewMap[key].Definition = def
+		}
 	}
 
 	// Query foreign key info.
@@ -507,6 +509,7 @@ func (driver *Driver) reconcileViewDefinition(ctx context.Context, databaseName,
 		def, err := getViewDefFromCreateView(createStmt)
 		if err != nil {
 			slog.Warn("failed to get view definition", slog.String("viewName", viewName), slog.String("databaseName", databaseName), log.BBError(err))
+			return "", nil
 		}
 		return def, nil
 	}
