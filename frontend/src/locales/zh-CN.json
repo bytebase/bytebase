@@ -1811,8 +1811,6 @@
     "gitops-status": "@.capitalize:common.gitops 已{status}",
     "gitops-description-file-path": "数据库变更脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的变更脚本。",
     "gitops-description-branch": "当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。",
-    "gitops-description-description-schema-path": "当 schema 变更完成后, Bytebase 会把变更后的最新 schema 回写到指定的 {schemaPathTemplate}。",
-    "gitops-description-sdl": "数据库变更脚本存放在 {fullPath}。如果要变更据库 schema，开发者需要修改脚本文件 {schemaPathTemplate}。如果要修改数据库数据，开发者需要按照 {filePathTemplate} 创建一个变更脚本。当脚本合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的数据库变更。",
     "restore-to-ui-workflow": "恢复到 UI 工作流",
     "restore-ui-workflow-description": "当使用 UI 工作流时，开发者会通过 Bytebase\n\n控制台直接提交一个 SQL 审核工单，让指定的 DBA 或者开发同事审核。当审核通过后，Bytebase 再执行相应的 SQL 变更。",
     "restore-ui-workflow-success": "成功恢复到 UI 工作流",

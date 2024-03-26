@@ -139,17 +139,5 @@ const getUpdateMaskForRepository = (
   ) {
     updateMask.push("base_directory");
   }
-  if (
-    !isUndefined(update.filePathTemplate) &&
-    !isEqual(origin.filePathTemplate, update.filePathTemplate)
-  ) {
-    updateMask.push("file_path_template");
-  }
-  if (
-    !isUndefined(update.schemaPathTemplate) &&
-    !isEqual(origin.schemaPathTemplate, update.schemaPathTemplate)
-  ) {
-    updateMask.push("schema_path_template");
-  }
   return updateMask;
 };

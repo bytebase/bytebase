@@ -1812,8 +1812,6 @@
     "gitops-status": "@.capitalize:common.gitops là {status}",
     "gitops-description-file-path": "Tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong {fullPath}. Để thực hiện thay đổi lược đồ, nhà phát triển sẽ tạo tập lệnh di chuyển khớp với mẫu đường dẫn tệp {fullPathTemplate}.",
     "gitops-description-branch": "Sau khi tập lệnh được phê duyệt xem xét và hợp nhất vào nhánh {branch}, Bytebase sẽ tự động khởi động quy trình để áp dụng thay đổi lược đồ mới.",
-    "gitops-description-description-schema-path": "Sau khi áp dụng thay đổi lược đồ, Bytebase cũng sẽ ghi lược đồ mới nhất vào vị trí đường dẫn lược đồ đã chỉ định {schemaPathTemplate}.",
-    "gitops-description-sdl": "Tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong {fullPath}. Để thực hiện thay đổi lược đồ, nhà phát triển sẽ sửa đổi tập lệnh lược đồ đầy đủ khớp với mẫu đường dẫn tệp {schemaPathTemplate}. Để thực hiện thay đổi dữ liệu, nhà phát triển sẽ tạo tập lệnh di chuyển khớp với mẫu đường dẫn tệp {filePathTemplate}. Sau khi tập lệnh được hợp nhất vào nhánh {branch}, Bytebase sẽ tự động khởi động quy trình để áp dụng thay đổi cơ sở dữ liệu mới.",
     "restore-to-ui-workflow": "Khôi phục quy trình làm việc UI",
     "restore-ui-workflow-description": "Khi sử dụng quy trình làm việc UI, nhà phát triển sẽ gửi phiếu đánh giá SQL trực tiếp từ bảng điều khiển Bytebase và đợi DBA được chỉ định hoặc nhà phát triển ngang hàng xem xét. Bytebase áp dụng thay đổi SQL sau khi phê duyệt đánh giá.",
     "restore-ui-workflow-success": "Đã khôi phục thành công quy trình làm việc trên giao diện người dùng",
