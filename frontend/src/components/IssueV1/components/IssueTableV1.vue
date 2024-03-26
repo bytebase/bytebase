@@ -172,7 +172,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
         h(
           "div",
           { class: "flex flex-row items-center overflow-hidden gap-x-2" },
-          () => [
+          [
             h(BBAvatar, { size: "SMALL", username: issue.creator }),
             h("span", { class: "truncate" }, issue.creatorEntity.title),
           ]
