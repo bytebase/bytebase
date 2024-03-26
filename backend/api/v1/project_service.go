@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -504,20 +503,6 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		}
 	}
 
-	// We need to check the FilePathTemplate in create repository request.
-	// This avoids to a certain extent that the creation succeeds but does not work.
-	newBaseDirectory, newFilePathTemplate := repo.BaseDirectory, repo.FilePathTemplate
-	if patch.BaseDirectory != nil {
-		newBaseDirectory = *patch.BaseDirectory
-	}
-	if patch.FilePathTemplate != nil {
-		newFilePathTemplate = *patch.FilePathTemplate
-	}
-
-	if err := vcsplugin.IsAsterisksInTemplateValid(path.Join(newBaseDirectory, newFilePathTemplate)); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
-	}
-
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
@@ -996,12 +981,6 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 
 	if repositoryCreate.BranchFilter == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
-	}
-
-	// We need to check the FilePathTemplate in create repository request.
-	// This avoids to a certain extent that the creation succeeds but does not work.
-	if err := vcsplugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
 	}
 
 	// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
