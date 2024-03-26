@@ -434,7 +434,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 	}
 
 	repo, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{
-		ProjectResourceID: &project.ResourceID,
+		ProjectID: &project.ResourceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get repository, error %v", err.Error())
@@ -911,7 +911,7 @@ func (s *ProjectService) findProjectRepository(ctx context.Context, projectName 
 	}
 
 	repo, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{
-		ProjectResourceID: &project.ResourceID,
+		ProjectID: &project.ResourceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

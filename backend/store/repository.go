@@ -37,20 +37,15 @@ type RepositoryMessage struct {
 
 // FindRepositoryMessage is the message for finding repositories.
 type FindRepositoryMessage struct {
-	UID               *int
-	WebURL            *string
-	VCSUID            *int
-	VCSResourceID     *string
-	ProjectResourceID *string
-	ResourceID        *string
-	WebhookEndpointID *string
+	WebURL     *string
+	VCSUID     *int
+	ProjectID  *string
+	ResourceID *string
 }
 
 // PatchRepositoryMessage is the API message for patching a repository.
 type PatchRepositoryMessage struct {
-	ResourceID *string
-	UID        *int
-	WebURL     *string
+	UID *int
 
 	// Domain specific fields
 	Branch        *string
@@ -244,14 +239,8 @@ func createRepositoryImplV2(ctx context.Context, tx *Tx, project *ProjectMessage
 func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindRepositoryMessage) ([]*RepositoryMessage, error) {
 	// Build WHERE clause.
 	where, args := []string{"TRUE"}, []any{}
-	if v := find.UID; v != nil {
-		where, args = append(where, fmt.Sprintf("repository.id = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.VCSUID; v != nil {
 		where, args = append(where, fmt.Sprintf("repository.vcs_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.VCSResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("vcs.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("repository.resource_id = $%d", len(args)+1)), append(args, *v)
@@ -259,10 +248,7 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 	if v := find.WebURL; v != nil {
 		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.WebhookEndpointID; v != nil {
-		where, args = append(where, fmt.Sprintf("webhook_endpoint_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.ProjectResourceID; v != nil {
+	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 
@@ -342,12 +328,6 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 	where := []string{}
 	if v := patch.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("repository.id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.ResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("repository.resource_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.WebURL; v != nil {
-		where, args = append(where, fmt.Sprintf("web_url = $%d", len(args)+1)), append(args, *v)
 	}
 	if len(where) == 0 {
 		return nil, common.Errorf(common.Invalid, "missing predicate in where clause for patching repository")
