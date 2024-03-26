@@ -65,14 +65,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, ref } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { TooltipButton } from "@/components/v2";
 import { refreshIssueList } from "@/store";
 import type { ComposedIssue } from "@/types";
+import type { IssueStatusAction } from "../logic";
 import {
   getApplicableIssueStatusActionList,
-  IssueStatusAction,
   issueStatusActionDisplayName,
 } from "../logic";
 import { BatchIssueStatusActionPanel } from "./Panel";

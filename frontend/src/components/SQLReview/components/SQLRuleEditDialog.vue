@@ -162,20 +162,18 @@ import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import {
-  getRuleLocalization,
-  getRuleLocalizationKey,
-  RuleConfigComponent,
-  RuleTemplate,
-} from "@/types/sqlReview";
+import type { RuleConfigComponent, RuleTemplate } from "@/types/sqlReview";
+import { getRuleLocalization, getRuleLocalizationKey } from "@/types/sqlReview";
+import type {
+  PayloadValueType,
+  PayloadForEngine,
+} from "./RuleConfigComponents";
 import {
   StringComponent,
   NumberComponent,
   BooleanComponent,
   StringArrayComponent,
   TemplateComponent,
-  PayloadValueType,
-  PayloadForEngine,
 } from "./RuleConfigComponents";
 import RuleEngineIcons from "./RuleEngineIcons.vue";
 import RuleEngineTabFilter from "./RuleEngineTabFilter.vue";

@@ -145,7 +145,7 @@ import {
   useSQLRuleFilter,
   SQLRuleTable,
 } from "@/components/SQLReview/components";
-import { PayloadForEngine } from "@/components/SQLReview/components/RuleConfigComponents";
+import type { PayloadForEngine } from "@/components/SQLReview/components/RuleConfigComponents";
 import { EnvironmentV1Name } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import {
@@ -154,16 +154,15 @@ import {
   useSQLReviewStore,
   useSubscriptionV1Store,
 } from "@/store";
+import type { RuleTemplate, SchemaPolicyRule } from "@/types";
 import {
   unknown,
-  RuleTemplate,
-  SchemaPolicyRule,
   TEMPLATE_LIST,
   convertPolicyRuleToRuleTemplate,
   ruleIsAvailableInSubscription,
   convertRuleTemplateToPolicyRule,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import type { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { idFromSlug, hasWorkspacePermissionV2 } from "@/utils";
 

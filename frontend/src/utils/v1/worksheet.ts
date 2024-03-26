@@ -1,10 +1,8 @@
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import { PresetRoleType } from "@/types";
-import {
-  Worksheet,
-  Worksheet_Visibility,
-} from "@/types/proto/v1/worksheet_service";
+import type { Worksheet } from "@/types/proto/v1/worksheet_service";
+import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
 import { isMemberOfProjectV1, isOwnerOfProjectV1 } from "@/utils";
 
 export const extractWorksheetUID = (name: string) => {

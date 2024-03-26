@@ -52,9 +52,9 @@ import { NRadioGroup } from "naive-ui";
 import { computed, toRef } from "vue";
 import { DatabaseSelect } from "@/components/v2";
 import { useDatabaseInGroupFilter, useDatabaseV1Store } from "@/store";
-import { ComposedDatabase, ComposedProject } from "@/types";
-import { Branch } from "@/types/proto/v1/branch_service";
-import { RebaseSourceType } from "./types";
+import type { ComposedDatabase, ComposedProject } from "@/types";
+import type { Branch } from "@/types/proto/v1/branch_service";
+import type { RebaseSourceType } from "./types";
 
 const props = defineProps<{
   project: ComposedProject;

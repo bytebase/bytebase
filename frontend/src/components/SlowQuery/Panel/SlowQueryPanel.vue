@@ -75,14 +75,9 @@ import {
   useSlowQueryPolicyStore,
   useSlowQueryStore,
 } from "@/store";
-import { ComposedSlowQueryLog } from "@/types";
-import {
-  SearchScope,
-  SearchParams,
-  SearchScopeId,
-  extractInstanceResourceName,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+import type { ComposedSlowQueryLog } from "@/types";
+import type { SearchScope, SearchParams, SearchScopeId } from "@/utils";
+import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import { SlowQuerySettings } from "../Settings";
 import DetailPanel from "./DetailPanel.vue";
 import LogFilter from "./LogFilter.vue";

@@ -44,13 +44,15 @@ import {
   useSettingV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
+import type {
+  ColumnMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
 import {
   ColumnConfig,
-  ColumnMetadata,
   SchemaConfig,
   TableConfig,
-  TableMetadata,
 } from "@/types/proto/v1/database_service";
 
 type LocalState = {

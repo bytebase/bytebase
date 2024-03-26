@@ -20,8 +20,8 @@
 
 <script lang="ts" setup>
 import { useCurrentUserV1, useRoleStore } from "@/store";
-import { WorkspacePermission } from "@/types";
-import { Role } from "@/types/proto/v1/role_service";
+import type { WorkspacePermission } from "@/types";
+import type { Role } from "@/types/proto/v1/role_service";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
 import { useCustomRoleSettingContext } from "../../../context";
 

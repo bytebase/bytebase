@@ -19,12 +19,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_GITOPS } from "@/router/dashboard/projectV1";
 import { getProjectName } from "@/store/modules/v1/common";
-import { ComposedRepository } from "@/types";
+import type { ComposedRepository } from "@/types";
 import { projectV1Name } from "../utils";
 
 const props = defineProps({

@@ -1,4 +1,4 @@
-import { InstanceId, InstanceUserId } from "./id";
+import type { InstanceId, InstanceUserId } from "./id";
 
 export type InstanceUser = {
   id: InstanceUserId;

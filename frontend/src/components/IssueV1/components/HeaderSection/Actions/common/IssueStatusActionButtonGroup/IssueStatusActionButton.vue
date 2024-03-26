@@ -22,8 +22,8 @@
 import { NTooltip, NButton } from "naive-ui";
 import { computed } from "vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
+import type { IssueStatusAction } from "@/components/IssueV1/logic";
 import {
-  IssueStatusAction,
   allowUserToApplyIssueStatusAction,
   issueStatusActionButtonProps,
   issueStatusActionDisplayName,

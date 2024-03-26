@@ -251,10 +251,8 @@ import {
   useAuthStore,
   useIdentityProviderStore,
 } from "@/store";
-import {
-  IdentityProvider,
-  IdentityProviderType,
-} from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto/v1/idp_service";
+import { IdentityProviderType } from "@/types/proto/v1/idp_service";
 import { isValidEmail, openWindowForSSO } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 

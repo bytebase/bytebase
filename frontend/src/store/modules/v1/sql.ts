@@ -2,14 +2,14 @@ import { ClientError, Status } from "nice-grpc-common";
 import { RichClientError } from "nice-grpc-error-details";
 import { defineStore } from "pinia";
 import { sqlServiceClient } from "@/grpcweb";
-import { SQLResultSetV1 } from "@/types";
+import type { SQLResultSetV1 } from "@/types";
 import { PlanCheckRun_Result_SqlReviewReport } from "@/types/proto/v1/rollout_service";
-import {
+import type {
   ExportRequest,
   QueryRequest,
   Advice,
-  Advice_Status,
 } from "@/types/proto/v1/sql_service";
+import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
 const getSqlReviewReports = (err: unknown): Advice[] => {

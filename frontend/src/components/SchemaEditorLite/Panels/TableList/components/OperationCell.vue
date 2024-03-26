@@ -25,7 +25,7 @@
 <script lang="ts" setup>
 import { TrashIcon, Undo2Icon } from "lucide-vue-next";
 import { MiniActionButton } from "@/components/v2";
-import { TableMetadata } from "@/types/proto/v1/database_service";
+import type { TableMetadata } from "@/types/proto/v1/database_service";
 
 defineProps<{
   table: TableMetadata;

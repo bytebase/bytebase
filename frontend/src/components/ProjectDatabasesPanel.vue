@@ -91,10 +91,11 @@
 import { NCheckbox } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useFilterStore, usePageMode } from "@/store";
-import { ComposedDatabase, ComposedProject, UNKNOWN_ID } from "@/types";
+import type { ComposedDatabase, ComposedProject } from "@/types";
+import { UNKNOWN_ID } from "@/types";
+import type { SearchParams } from "@/utils";
 import {
   filterDatabaseV1ByKeyword,
-  SearchParams,
   CommonFilterScopeIdList,
   extractEnvironmentResourceName,
   extractInstanceResourceName,

@@ -4,11 +4,8 @@ import { sqlServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import { useChangeHistoryStore, useDatabaseV1Store } from "@/store";
 import { ChangeHistoryView } from "@/types/proto/v1/database_service";
-import {
-  Task,
-  TaskRun_Status,
-  Task_Status,
-} from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto/v1/rollout_service";
+import { TaskRun_Status, Task_Status } from "@/types/proto/v1/rollout_service";
 import { extractTaskUID } from "@/utils";
 import { useIssueContext } from "../../../logic";
 import { useTaskSheet } from "../useTaskSheet";

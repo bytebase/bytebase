@@ -40,7 +40,7 @@
 
 <script lang="ts" setup>
 import { NSelect } from "naive-ui";
-import { TabFilterItem } from "./types";
+import type { TabFilterItem } from "./types";
 
 type ValueType = string | number; // Use generic typed component in the future
 

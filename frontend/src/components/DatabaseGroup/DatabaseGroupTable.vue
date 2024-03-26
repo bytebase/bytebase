@@ -26,10 +26,10 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBGridColumn } from "@/bbkit";
+import type { BBGridColumn } from "@/bbkit";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
-import { ComposedDatabaseGroup } from "@/types";
-import { DatabaseGroup } from "@/types/proto/v1/project_service";
+import type { ComposedDatabaseGroup } from "@/types";
+import type { DatabaseGroup } from "@/types/proto/v1/project_service";
 
 const props = defineProps<{
   rowClickable?: boolean;

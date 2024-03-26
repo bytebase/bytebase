@@ -42,7 +42,8 @@ import {
   useSQLEditorTabStore,
   useConnectionOfCurrentSQLEditorTab,
 } from "@/store";
-import { dialectOfEngineV1, SQLDialect, SQLEditorQueryParams } from "@/types";
+import type { SQLDialect, SQLEditorQueryParams } from "@/types";
+import { dialectOfEngineV1 } from "@/types";
 import { useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../context";
 

@@ -82,8 +82,9 @@
 
 <script lang="ts" setup>
 import { NPopover } from "naive-ui";
-import { computed, PropType } from "vue";
-import { ComposedDatabase } from "@/types";
+import type { PropType } from "vue";
+import { computed } from "vue";
+import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   convertLabelsToKVList,

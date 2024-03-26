@@ -22,8 +22,8 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { computed } from "vue";
 import { stageForTask } from "@/components/IssueV1/logic";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { ComposedIssue } from "@/types";
-import { Task } from "@/types/proto/v1/rollout_service";
+import type { ComposedIssue } from "@/types";
+import type { Task } from "@/types/proto/v1/rollout_service";
 import {
   extractProjectResourceName,
   extractSchemaVersionFromTask,

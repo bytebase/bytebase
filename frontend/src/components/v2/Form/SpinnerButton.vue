@@ -29,7 +29,7 @@ defineComponent({
 <script lang="ts" setup>
 import { computed, ref, useAttrs } from "vue";
 import { omit } from "lodash-es";
-import { VueClass } from "@/utils";
+import type { VueClass } from "@/utils";
 import {
   type ButtonProps,
   type PopconfirmProps,

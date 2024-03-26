@@ -6,7 +6,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Role } from "@/types/proto/v1/role_service";
+import type { Role } from "@/types/proto/v1/role_service";
 import { displayRoleTitle, isCustomRole } from "@/utils";
 
 defineProps<{

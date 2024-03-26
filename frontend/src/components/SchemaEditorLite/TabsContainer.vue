@@ -66,7 +66,7 @@ import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { DatabaseIcon, TableIcon } from "../Icon";
 import { useSchemaEditorContext } from "./context";
-import { TabContext } from "./types";
+import type { TabContext } from "./types";
 
 const emit = defineEmits<{
   (event: "update:table-search-pattern", pattern: string): void;

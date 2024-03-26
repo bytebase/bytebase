@@ -1,5 +1,5 @@
 import { useI18n } from "vue-i18n";
-import { Binding } from "@/types/proto/v1/iam_policy";
+import type { Binding } from "@/types/proto/v1/iam_policy";
 import { convertFromExpr } from "@/utils/issue/cel";
 
 export const getExpiredTimeString = (binding: Binding) => {

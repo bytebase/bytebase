@@ -3,12 +3,11 @@ import { defineStore } from "pinia";
 import { computed } from "vue";
 import { environmentServiceClient } from "@/grpcweb";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-import { ResourceId, unknownEnvironment } from "@/types";
+import type { ResourceId } from "@/types";
+import { unknownEnvironment } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import {
-  Environment,
-  EnvironmentTier,
-} from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 
 interface EnvironmentState {
   environmentMapByName: Map<ResourceId, Environment>;

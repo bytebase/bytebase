@@ -100,20 +100,20 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
-import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
+import type { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyByEnvironmentName } from "@/store";
+import type { RuleTemplate } from "@/types";
 import {
   GeneralErrorCode,
-  RuleTemplate,
   SQLReviewPolicyErrorCode,
   UNKNOWN_ENVIRONMENT_NAME,
   findRuleTemplate,
   getRuleLocalization,
   ruleTemplateMap,
 } from "@/types";
+import type { PlanCheckRun } from "@/types/proto/v1/rollout_service";
 import {
-  PlanCheckRun,
   PlanCheckRun_Result,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,

@@ -22,7 +22,8 @@ import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { experimentalFetchIssueByUID } from "@/store";
-import { RollbackDetail, UNKNOWN_ID, unknownIssue, unknownTask } from "@/types";
+import type { RollbackDetail } from "@/types";
+import { UNKNOWN_ID, unknownIssue, unknownTask } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   buildIssueV1LinkWithTask,

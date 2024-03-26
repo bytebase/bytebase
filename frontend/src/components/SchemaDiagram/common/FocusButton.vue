@@ -11,8 +11,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { TableMetadata } from "@/types/proto/v1/database_service";
-import { VueClass } from "@/utils";
+import type { TableMetadata } from "@/types/proto/v1/database_service";
+import type { VueClass } from "@/utils";
 import { expectedZoomRange, useSchemaDiagramContext } from ".";
 import FocusIcon from "./FocusIcon.vue";
 import { DEFAULT_PADDINGS } from "./const";

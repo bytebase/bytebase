@@ -65,13 +65,14 @@
 import { head, without } from "lodash-es";
 import { XIcon } from "lucide-vue-next";
 import { NButton, NInput } from "naive-ui";
-import { computed, PropType } from "vue";
-import { ComposedDatabase } from "@/types";
-import {
+import type { PropType } from "vue";
+import { computed } from "vue";
+import type { ComposedDatabase } from "@/types";
+import type {
   LabelSelectorRequirement,
-  OperatorType,
   ScheduleDeployment,
 } from "@/types/proto/v1/project_service";
+import { OperatorType } from "@/types/proto/v1/project_service";
 import { getAvailableDeploymentConfigMatchSelectorKeyList } from "@/utils";
 import SelectorItemV2 from "./SelectorItemV2.vue";
 

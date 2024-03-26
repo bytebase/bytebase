@@ -191,7 +191,8 @@ import { Building2Icon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, BBGridRow } from "@/bbkit";
+import type { BBGridRow } from "@/bbkit";
+import { BBGrid } from "@/bbkit";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
   useCurrentUserV1,
@@ -200,14 +201,9 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
-import {
-  ComposedProject,
-  DatabaseResource,
-  getUserEmailInBinding,
-  PresetRoleType,
-  PRESET_ROLES,
-} from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { ComposedProject, DatabaseResource } from "@/types";
+import { getUserEmailInBinding, PresetRoleType, PRESET_ROLES } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
@@ -216,7 +212,7 @@ import {
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
 import EditProjectRolePanel from "../EditProjectRolePanel.vue";
-import { ProjectMember } from "../types";
+import type { ProjectMember } from "../types";
 import RoleDescription from "./RoleDescription.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";
 

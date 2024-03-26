@@ -20,15 +20,17 @@
 </template>
 
 <script lang="ts" setup>
-import { DataTableColumn, NDataTable } from "naive-ui";
-import { computed, PropType, reactive, onMounted, h, watch } from "vue";
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
+import type { PropType } from "vue";
+import { computed, reactive, onMounted, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
 import { useSettingV1Store } from "@/store/modules";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { TableMetadata } from "@/types/proto/v1/database_service";
+import type { TableMetadata } from "@/types/proto/v1/database_service";
 import { bytesToString, isGhostTable } from "@/utils";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 

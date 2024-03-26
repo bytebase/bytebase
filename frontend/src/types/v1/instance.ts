@@ -1,6 +1,6 @@
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { Engine, State } from "../proto/v1/common";
-import { Environment } from "../proto/v1/environment_service";
+import type { Environment } from "../proto/v1/environment_service";
 import { Instance } from "../proto/v1/instance_service";
 import { emptyEnvironment, unknownEnvironment } from "./environment";
 

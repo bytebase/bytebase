@@ -107,7 +107,7 @@ import { NCheckbox } from "naive-ui";
 import { computed, onBeforeMount, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBTableSectionDataSource } from "@/bbkit/types";
+import type { BBTableSectionDataSource } from "@/bbkit/types";
 import {
   AffectedTableSelect,
   ChangeHistoryTable,
@@ -116,10 +116,12 @@ import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
-import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
-import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
+import type { ComposedDatabase } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import type { AffectedTable } from "@/types/changeHistory";
+import { EmptyAffectedTable } from "@/types/changeHistory";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
-  ChangeHistory,
   ChangeHistory_Status,
   ChangeHistory_Type,
   ChangeHistoryView,

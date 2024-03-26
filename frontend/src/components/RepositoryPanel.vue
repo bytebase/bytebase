@@ -89,20 +89,21 @@
 
 <script lang="ts" setup>
 import isEmpty from "lodash-es/isEmpty";
-import { computed, PropType, reactive, watch } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
   useProjectV1Store,
   useRepositoryV1Store,
 } from "@/store";
-import { Project } from "@/types/proto/v1/project_service";
-import {
+import type { Project } from "@/types/proto/v1/project_service";
+import type {
   ProjectGitOpsInfo,
   VCSProvider,
-  VCSProvider_Type,
 } from "@/types/proto/v1/vcs_provider_service";
-import { ExternalRepositoryInfo, RepositoryConfig } from "../types";
+import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
+import type { ExternalRepositoryInfo, RepositoryConfig } from "../types";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;

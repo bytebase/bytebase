@@ -1,8 +1,8 @@
-import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
-import { RowStatus } from "./common";
-import { ProjectId } from "./id";
-import { Principal } from "./principal";
-import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
+import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
+import type { RowStatus } from "./common";
+import type { ProjectId } from "./id";
+import type { Principal } from "./principal";
+import type { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
 
 export type ProjectWorkflowType = "UI" | "VCS";
 

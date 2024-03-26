@@ -1,17 +1,18 @@
 import { isUndefined, uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
-import { ComposedDatabase, emptyProject } from "@/types";
+import type { ComposedDatabase } from "@/types";
+import { emptyProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
+import type {
   BranchSchema,
   DatabaseSchema,
   SchemaEditorV1State,
   Table,
   TabContext,
-  SchemaEditorTabType,
   TableTabContext,
 } from "@/types/v1/schemaEditor";
-import { Schema } from "@/types/v1/schemaEditor/atomType";
+import { SchemaEditorTabType } from "@/types/v1/schemaEditor";
+import type { Schema } from "@/types/v1/schemaEditor/atomType";
 import { useDatabaseV1Store } from "./database";
 
 export const generateUniqueTabId = () => {

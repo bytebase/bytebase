@@ -2,12 +2,10 @@ import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
+import type { ComposedInstance, ComposedDatabase, MaybeRef } from "@/types";
 import {
-  ComposedInstance,
-  ComposedDatabase,
   emptyDatabase,
   EMPTY_ID,
-  MaybeRef,
   unknownDatabase,
   unknownEnvironment,
   unknownInstance,
@@ -15,8 +13,8 @@ import {
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
-import {
+import type { User } from "@/types/proto/v1/auth_service";
+import type {
   Database,
   UpdateDatabaseRequest,
   DiffSchemaRequest,

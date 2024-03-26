@@ -1,8 +1,9 @@
 import Emittery from "emittery";
-import { InjectionKey, inject, provide, Ref, ref } from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide, ref } from "vue";
 import { useSQLEditorStore } from "@/store";
-import { ComposedDatabase, SQLEditorTab } from "@/types";
-import {
+import type { ComposedDatabase, SQLEditorTab } from "@/types";
+import type {
   DatabaseMetadata,
   ExternalTableMetadata,
   SchemaMetadata,

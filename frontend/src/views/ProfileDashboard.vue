@@ -240,7 +240,8 @@
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
-import { NButton, NInput, NDropdown, DropdownOption } from "naive-ui";
+import type { DropdownOption } from "naive-ui";
+import { NButton, NInput, NDropdown } from "naive-ui";
 import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -259,11 +260,8 @@ import {
   useUserStore,
 } from "@/store";
 import { unknownUser } from "@/types";
-import {
-  UpdateUserRequest,
-  User,
-  UserType,
-} from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
+import { UpdateUserRequest, UserType } from "@/types/proto/v1/auth_service";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
 
 interface LocalState {

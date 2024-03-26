@@ -1,14 +1,12 @@
-import { InjectionKey, Ref, computed, inject, provide } from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { computed, inject, provide } from "vue";
 import { useDatabaseV1Store, useCurrentUserV1 } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import {
-  ComposedDatabase,
-  ProjectPermission,
-  DEFAULT_PROJECT_V1_NAME,
-} from "@/types";
+import type { ComposedDatabase, ProjectPermission } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import {
   hasProjectPermissionV2,
   instanceV1HasAlterSchema,

@@ -1,12 +1,9 @@
 import { useDatabaseV1Store } from "@/store";
-import { IssueFilter, UNKNOWN_ID } from "@/types";
+import type { IssueFilter } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import {
-  SearchParams,
-  SemanticIssueStatus,
-  getTsRangeFromSearchParams,
-  getValueFromSearchParams,
-} from "./common";
+import type { SearchParams, SemanticIssueStatus } from "./common";
+import { getTsRangeFromSearchParams, getValueFromSearchParams } from "./common";
 
 export const buildIssueFilterBySearchParams = (params: SearchParams) => {
   const { query, scopes } = params;

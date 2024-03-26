@@ -14,7 +14,7 @@
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { useSQLEditorTreeStore } from "@/store";
-import { StatefulSQLEditorTreeFactor as StatefulFactor } from "@/types";
+import type { StatefulSQLEditorTreeFactor as StatefulFactor } from "@/types";
 import { useSQLEditorContext } from "../../context";
 import FactorTag from "./FactorTag.vue";
 

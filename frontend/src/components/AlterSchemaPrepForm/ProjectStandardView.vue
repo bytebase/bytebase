@@ -117,10 +117,10 @@
 import { NCollapse, NCollapseItem, NCheckbox } from "naive-ui";
 import { reactive, computed, watch } from "vue";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { Environment } from "@/types/proto/v1/environment_service";
-import { Project } from "@/types/proto/v1/project_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
+import type { Project } from "@/types/proto/v1/project_service";
 import { instanceV1Name } from "@/utils";
 
 interface LocalState {

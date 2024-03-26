@@ -1,10 +1,8 @@
 import { markRaw } from "vue";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import {
-  BranchSchema,
-  convertSchemaMetadataList,
-} from "@/types/v1/schemaEditor";
+import type { BranchSchema } from "@/types/v1/schemaEditor";
+import { convertSchemaMetadataList } from "@/types/v1/schemaEditor";
 import { rebuildEditableSchemas } from "./metadata";
 
 export const convertBranchToBranchSchema = async (

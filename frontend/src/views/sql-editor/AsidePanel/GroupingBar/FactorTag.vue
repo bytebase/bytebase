@@ -30,10 +30,8 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useSQLEditorTreeStore } from "@/store";
-import {
-  StatefulSQLEditorTreeFactor as StatefulFactor,
-  readableSQLEditorTreeFactor,
-} from "@/types";
+import type { StatefulSQLEditorTreeFactor as StatefulFactor } from "@/types";
+import { readableSQLEditorTreeFactor } from "@/types";
 
 const props = defineProps<{
   factor: StatefulFactor;

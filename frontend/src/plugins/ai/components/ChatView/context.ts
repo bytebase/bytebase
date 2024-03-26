@@ -1,5 +1,6 @@
-import { inject, InjectionKey, provide, Ref } from "vue";
-import { Mode } from "./types";
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide } from "vue";
+import type { Mode } from "./types";
 
 export type ChatViewContext = {
   mode: Ref<Mode>;

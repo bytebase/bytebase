@@ -1,16 +1,17 @@
 import { computedAsync } from "@vueuse/core";
 import { isEqual } from "lodash-es";
 import { defineStore } from "pinia";
-import { MaybeRef, computed, ref, unref } from "vue";
+import type { MaybeRef } from "vue";
+import { computed, ref, unref } from "vue";
 import { projectServiceClient } from "@/grpcweb";
+import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
-  ConditionGroupExpr,
   buildCELExpr,
   emptySimpleExpr,
   resolveCELExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
-import {
+import type {
   ComposedSchemaGroupTable,
   ComposedDatabaseGroup,
   ComposedSchemaGroup,
@@ -20,11 +21,13 @@ import {
 import { unknownEnvironment } from "@/types";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
-import { Environment } from "@/types/proto/v1/environment_service";
-import {
+import type { Environment } from "@/types/proto/v1/environment_service";
+import type {
   DatabaseGroup,
-  DatabaseGroupView,
   SchemaGroup,
+} from "@/types/proto/v1/project_service";
+import {
+  DatabaseGroupView,
   TenantMode,
 } from "@/types/proto/v1/project_service";
 import {

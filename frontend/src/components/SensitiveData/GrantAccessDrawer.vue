@@ -95,20 +95,23 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { usePolicyV1Store, useUserStore, pushNotification } from "@/store";
-import { ComposedProject, getUserEmailInBinding } from "@/types";
+import type { ComposedProject } from "@/types";
+import { getUserEmailInBinding } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel } from "@/types/proto/v1/common";
-import {
+import type {
   Policy,
+  MaskingExceptionPolicy_MaskingException,
+} from "@/types/proto/v1/org_policy_service";
+import {
   PolicyType,
   PolicyResourceType,
-  MaskingExceptionPolicy_MaskingException,
   MaskingExceptionPolicy_MaskingException_Action,
   maskingExceptionPolicy_MaskingException_ActionToJSON,
 } from "@/types/proto/v1/org_policy_service";
 import MaskingLevelRadioGroup from "./components/MaskingLevelRadioGroup.vue";
 import SensitiveColumnTable from "./components/SensitiveColumnTable.vue";
-import { SensitiveColumn } from "./types";
+import type { SensitiveColumn } from "./types";
 import { getExpressionsForSensitiveColumn } from "./utils";
 
 const props = defineProps<{

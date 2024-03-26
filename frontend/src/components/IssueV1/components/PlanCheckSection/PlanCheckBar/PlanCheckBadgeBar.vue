@@ -15,10 +15,8 @@
 <script lang="ts" setup>
 import { orderBy } from "lodash-es";
 import { computed } from "vue";
-import {
-  PlanCheckRun,
-  PlanCheckRun_Type,
-} from "@/types/proto/v1/rollout_service";
+import type { PlanCheckRun } from "@/types/proto/v1/rollout_service";
+import { PlanCheckRun_Type } from "@/types/proto/v1/rollout_service";
 import { groupBy } from "@/utils/collections";
 import PlanCheckBadge from "./PlanCheckBadge.vue";
 

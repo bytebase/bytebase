@@ -48,13 +48,14 @@
 
 <script setup lang="ts">
 import { pullAt } from "lodash-es";
-import { NTabs, NTab, TabsInst, NButton } from "naive-ui";
+import type { TabsInst } from "naive-ui";
+import { NTabs, NTab, NButton } from "naive-ui";
 import { nextTick, ref, watch } from "vue";
 import { BBButtonConfirm } from "@/bbkit";
 import { useCurrentUserV1, useInstanceV1Store } from "@/store";
-import { WorkspacePermission } from "@/types";
+import type { WorkspacePermission } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { EditDataSource } from "../common";
+import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 
 defineEmits<{

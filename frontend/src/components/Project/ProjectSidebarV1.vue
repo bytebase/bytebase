@@ -22,8 +22,9 @@ import {
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter, useRoute, RouteRecordRaw } from "vue-router";
-import { SidebarItem } from "@/components/CommonSidebar.vue";
+import type { RouteRecordRaw } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
+import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_ISSUES,
@@ -55,7 +56,8 @@ import projectV1Routes, {
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
-import { DEFAULT_PROJECT_V1_NAME, ProjectPermission } from "@/types";
+import type { ProjectPermission } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import { useProjectDatabaseActions } from "../KBar/useDatabaseActions";

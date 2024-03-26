@@ -3,19 +3,18 @@ import { computed, reactive, ref, unref, watch, watchEffect } from "vue";
 import { instanceRoleServiceClient, instanceServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import type { ComposedInstance, MaybeRef } from "@/types";
 import {
-  ComposedInstance,
   emptyInstance,
   EMPTY_ID,
-  MaybeRef,
   unknownEnvironment,
   unknownInstance,
   UNKNOWN_ID,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { InstanceRole } from "@/types/proto/v1/instance_role_service";
-import { DataSource, Instance } from "@/types/proto/v1/instance_service";
+import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { useEnvironmentV1Store } from "./environment";

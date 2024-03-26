@@ -1,6 +1,7 @@
-import { InjectionKey, Ref, inject, provide } from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide } from "vue";
 import { useDelayedValue } from "@/composables/useDelayedValue";
-import { SQLEditorTreeNode } from "@/types";
+import type { SQLEditorTreeNode } from "@/types";
 
 type UpdateFn = ReturnType<
   typeof useDelayedValue<SQLEditorTreeNode | undefined>

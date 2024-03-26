@@ -1,8 +1,8 @@
 import { v1 as uuidv1 } from "uuid";
 import { computed, ref } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { CoreTabContext, TabContext } from "../types";
-import { SchemaEditorEvents } from "./index";
+import type { CoreTabContext, TabContext } from "../types";
+import type { SchemaEditorEvents } from "./index";
 
 export const useTabs = (events: SchemaEditorEvents) => {
   const tabMap = ref(new Map<string, TabContext>());

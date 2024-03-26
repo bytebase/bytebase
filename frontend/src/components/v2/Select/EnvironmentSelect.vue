@@ -13,12 +13,13 @@
 </template>
 
 <script lang="ts" setup>
-import { NSelect, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed, h, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
 import { State } from "@/types/proto/v1/common";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentV1Name } from "../Model";
 
 interface EnvironmentSelectOption extends SelectOption {

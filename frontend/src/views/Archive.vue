@@ -50,7 +50,7 @@ import {
   useProjectV1List,
 } from "@/store";
 import { State } from "@/types/proto/v1/common";
-import { IdentityProvider } from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import {
   filterProjectV1ListByKeyword,
   hasWorkspacePermissionV2,

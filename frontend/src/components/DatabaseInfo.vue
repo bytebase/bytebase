@@ -52,7 +52,7 @@
 <script lang="ts" setup>
 import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 
 withDefaults(
   defineProps<{

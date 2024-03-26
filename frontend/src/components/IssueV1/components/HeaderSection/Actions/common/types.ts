@@ -1,10 +1,10 @@
-import { DropdownOption } from "naive-ui";
-import {
+import type { DropdownOption } from "naive-ui";
+import type {
   IssueStatusAction,
   TaskRolloutAction,
 } from "@/components/IssueV1/logic";
-import { ComposedIssue } from "@/types";
-import { Task } from "@/types/proto/v1/rollout_service";
+import type { ComposedIssue } from "@/types";
+import type { Task } from "@/types/proto/v1/rollout_service";
 
 export type ExtraAction<T extends "ISSUE" | "TASK" | "TASK-BATCH"> = {
   type: T;

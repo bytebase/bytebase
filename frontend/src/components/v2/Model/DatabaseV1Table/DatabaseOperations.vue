@@ -90,7 +90,8 @@ import {
   PenSquareIcon,
   ArrowRightLeftIcon,
 } from "lucide-vue-next";
-import { computed, h, VNode, reactive, ref } from "vue";
+import type { VNode } from "vue";
+import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { Drawer } from "@/components/v2";
@@ -105,11 +106,8 @@ import {
   pushNotification,
   usePageMode,
 } from "@/store";
-import {
-  ComposedDatabase,
-  DEFAULT_PROJECT_V1_NAME,
-  ProjectPermission,
-} from "@/types";
+import type { ComposedDatabase, ProjectPermission } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import {
   Database,
   DatabaseMetadataView,

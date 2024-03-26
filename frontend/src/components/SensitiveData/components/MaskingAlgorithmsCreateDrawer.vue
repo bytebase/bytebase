@@ -218,12 +218,11 @@ import { TrashIcon } from "lucide-vue-next";
 import { NInput, NInputNumber } from "naive-ui";
 import { computed, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import type { RadioGridOption, RadioGridItem } from "@/components/v2";
 import {
   Drawer,
   DrawerContent,
   RadioGrid,
-  RadioGridOption,
-  RadioGridItem,
   MiniActionButton,
 } from "@/components/v2";
 import { pushNotification, useSettingV1Store } from "@/store";
@@ -234,7 +233,8 @@ import {
   MaskingAlgorithmSetting_Algorithm_MD5Mask as MD5Mask,
   MaskingAlgorithmSetting_Algorithm_RangeMask_Slice as RangeMask_Slice,
 } from "@/types/proto/v1/setting_service";
-import { MaskingType, getMaskingType } from "./utils";
+import type { MaskingType } from "./utils";
+import { getMaskingType } from "./utils";
 
 interface MaskingTypeOption extends RadioGridOption<MaskingType> {
   value: MaskingType;

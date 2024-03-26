@@ -13,11 +13,12 @@
 </template>
 
 <script lang="ts" setup>
-import { SelectOption } from "naive-ui";
-import { PropType, computed, ref, watch } from "vue";
+import type { SelectOption } from "naive-ui";
+import type { PropType } from "vue";
+import { computed, ref, watch } from "vue";
 import { useInstanceV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
 
 interface InstanceRoleSelectOption extends SelectOption {
   value: string;

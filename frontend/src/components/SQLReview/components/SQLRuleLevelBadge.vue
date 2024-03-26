@@ -10,7 +10,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBBadgeStyle } from "@/bbkit/BBBadge.vue";
+import type { BBBadgeStyle } from "@/bbkit/BBBadge.vue";
 import {
   SQLReviewRuleLevel,
   sQLReviewRuleLevelToJSON,

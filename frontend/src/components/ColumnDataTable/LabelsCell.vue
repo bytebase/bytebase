@@ -27,13 +27,15 @@ import { computed } from "vue";
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useDBSchemaV1Store } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
+import type {
+  ColumnMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
 import {
   ColumnConfig,
-  ColumnMetadata,
   SchemaConfig,
   TableConfig,
-  TableMetadata,
 } from "@/types/proto/v1/database_service";
 
 type LocalState = {

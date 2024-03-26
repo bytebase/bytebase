@@ -14,7 +14,7 @@
 import { isFunction } from "lodash-es";
 import { computed } from "vue";
 import { TableIcon, ViewIcon } from "@/components/Icon";
-import {
+import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
 } from "@/types";

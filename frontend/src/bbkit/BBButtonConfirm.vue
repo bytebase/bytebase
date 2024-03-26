@@ -65,7 +65,7 @@
 <script lang="ts" setup>
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBButtonConfirmStyle } from "./types";
+import type { BBButtonConfirmStyle } from "./types";
 
 const props = withDefaults(
   defineProps<{

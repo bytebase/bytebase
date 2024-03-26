@@ -57,11 +57,12 @@ import { escape } from "lodash-es";
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
+import type { BBGridColumn, BBGridRow } from "@/bbkit";
+import { BBGrid } from "@/bbkit";
 import BranchBaseline from "@/components/Branch/BranchBaseline.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { useUserStore } from "@/store";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 import { extractUserResourceName, getHighlightHTMLByRegExp } from "@/utils";
 
 const props = defineProps<{

@@ -66,18 +66,19 @@
 </template>
 
 <script lang="ts" setup>
-import { NSelect, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { BBModal } from "@/bbkit";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
+import type {
   ColumnMetadata,
   DatabaseMetadata,
-  ForeignKeyMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { ForeignKeyMetadata } from "@/types/proto/v1/database_service";
 import { randomString } from "@/utils";
 import { useSchemaEditorContext } from "../context";
 import {

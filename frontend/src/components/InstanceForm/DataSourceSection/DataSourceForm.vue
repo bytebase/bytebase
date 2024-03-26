@@ -462,10 +462,10 @@ MIIEvQ...
 import { NButton, NRadioGroup, NRadio, NCheckbox, NInput } from "naive-ui";
 import { watch, reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { DataSourceOptions } from "@/types/dataSource";
+import type { DataSourceOptions } from "@/types/dataSource";
 import { Engine } from "@/types/proto/v1/common";
+import type { DataSource } from "@/types/proto/v1/instance_service";
 import {
-  DataSource,
   DataSourceType,
   DataSourceExternalSecret,
   DataSourceExternalSecret_AuthType,
@@ -473,7 +473,7 @@ import {
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
 } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber, isDev } from "@/utils";
-import { EditDataSource } from "../common";
+import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import { useInstanceSpecs } from "../specs";
 import SpannerCredentialInput from "./SpannerCredentialInput.vue";

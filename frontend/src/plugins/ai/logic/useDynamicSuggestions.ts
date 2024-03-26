@@ -3,7 +3,7 @@ import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
 import { WebStorageHelper } from "@/utils";
-import { OpenAIMessage, OpenAIResponse } from "../types";
+import type { OpenAIMessage, OpenAIResponse } from "../types";
 import { useAIContext } from "./context";
 import { databaseMetadataToText } from "./utils";
 

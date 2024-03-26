@@ -1,7 +1,7 @@
 import { flatten } from "lodash-es";
-import { TransferOption, TreeOption } from "naive-ui";
+import type { TransferOption, TreeOption } from "naive-ui";
 import { useDBSchemaV1Store } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { hasSchemaProperty } from "@/utils";
 
 export interface DatabaseTreeOption<L = "database" | "schema" | "table">
