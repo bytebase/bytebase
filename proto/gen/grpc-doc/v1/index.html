@@ -2481,6 +2481,49 @@
         
           
           <li>
+            <a href="#v1%2fvcs_connector_service.proto">v1/vcs_connector_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.CreateVCSConnectorRequest"><span class="badge">M</span>CreateVCSConnectorRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DeleteVCSConnectorRequest"><span class="badge">M</span>DeleteVCSConnectorRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetVCSConnectorRequest"><span class="badge">M</span>GetVCSConnectorRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListVCSConnectorsRequest"><span class="badge">M</span>ListVCSConnectorsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListVCSConnectorsResponse"><span class="badge">M</span>ListVCSConnectorsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdateVCSConnectorRequest"><span class="badge">M</span>UpdateVCSConnectorRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.VCSConnector"><span class="badge">M</span>VCSConnector</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.VCSConnectorService"><span class="badge">S</span>VCSConnectorService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2fworksheet_service.proto">v1/worksheet_service.proto</a>
             <ul>
               
@@ -26692,6 +26735,455 @@ The types come from the Golang SQL driver. </p></td>
                 <td>POST</td>
                 <td>/v1/schemaDesign:stringifyMetadata</td>
                 <td>*</td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/vcs_connector_service.proto">v1/vcs_connector_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.CreateVCSConnectorRequest">CreateVCSConnectorRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource where this vcsConnector will be created.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vcs_connector</td>
+                  <td><a href="#bytebase.v1.VCSConnector">VCSConnector</a></td>
+                  <td></td>
+                  <td><p>The vcsConnector to create. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vcs_connector_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The ID to use for the vcsConnector, which will become the final component of
+the vcsConnector&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters
+are /[a-z][0-9]-/. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DeleteVCSConnectorRequest">DeleteVCSConnectorRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the vcsConnector to delete.
+Format: projects/{project}/vcsConnectors/{vcsConnector} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetVCSConnectorRequest">GetVCSConnectorRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the vcsConnector to retrieve.
+Format: projects/{project}/vcsConnectors/{vcsConnector} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListVCSConnectorsRequest">ListVCSConnectorsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent, which owns this collection of vcsConnectors.
+Format: projects/{project}
+Use &#34;projects/-&#34; to list all vcsConnectors. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of databases to return. The service may return fewer than
+this value.
+If unspecified, at most 50 databases will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListDatabases` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListDatabases` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListVCSConnectorsResponse">ListVCSConnectorsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>vcs_connectors</td>
+                  <td><a href="#bytebase.v1.VCSConnector">VCSConnector</a></td>
+                  <td>repeated</td>
+                  <td><p>The vcsConnectors from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateVCSConnectorRequest">UpdateVCSConnectorRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>vcs_connector</td>
+                  <td><a href="#bytebase.v1.VCSConnector">VCSConnector</a></td>
+                  <td></td>
+                  <td><p>The vcsConnector to update.
+
+The vcsConnector&#39;s `name` field is used to identify the vcsConnector to update.
+Format: projects/{project}/vcsConnectors/{vcsConnector} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to be updated. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.VCSConnector">VCSConnector</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the vcsConnector resource.
+Canonical parent is project.
+Format: projects/{project}/vcsConnectors/{vcsConnector} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The title of the vcs connector. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creator</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The creator of the vcsConnector.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The updater of the vcsConnector.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The create time of the vcsConnector. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The last update time of the vcsConnector. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vcs_provider</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the VCS.
+Format: vcsProviders/{vcsProvider} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>external_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The reposition external id in target VCS. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>base_directory</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The root directory where Bytebase observes the file change. If empty, then it observes the entire repository. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The branch Bytebase listens to for changes. For example: main. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>webhook_endpoint_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The webhook endpoint ID of the repository. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>TODO(d): move these to create VCS connector API.
+The full_path of the repository. For example: bytebase/sample. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>web_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.VCSConnectorService">VCSConnectorService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CreateVCSConnector</td>
+                <td><a href="#bytebase.v1.CreateVCSConnectorRequest">CreateVCSConnectorRequest</a></td>
+                <td><a href="#bytebase.v1.VCSConnector">VCSConnector</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GetVCSConnector</td>
+                <td><a href="#bytebase.v1.GetVCSConnectorRequest">GetVCSConnectorRequest</a></td>
+                <td><a href="#bytebase.v1.VCSConnector">VCSConnector</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ListVCSConnectors</td>
+                <td><a href="#bytebase.v1.ListVCSConnectorsRequest">ListVCSConnectorsRequest</a></td>
+                <td><a href="#bytebase.v1.ListVCSConnectorsResponse">ListVCSConnectorsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateVCSConnector</td>
+                <td><a href="#bytebase.v1.UpdateVCSConnectorRequest">UpdateVCSConnectorRequest</a></td>
+                <td><a href="#bytebase.v1.VCSConnector">VCSConnector</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DeleteVCSConnector</td>
+                <td><a href="#bytebase.v1.DeleteVCSConnectorRequest">DeleteVCSConnectorRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>CreateVCSConnector</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/vcsConnectors</td>
+                <td>vcs_connector</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetVCSConnector</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/vcsConnectors/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListVCSConnectors</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/vcsConnectors</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateVCSConnector</td>
+                <td>PATCH</td>
+                <td>/v1/{vcs_connector.name=projects/*/vcsConnectors/*}</td>
+                <td>vcs_connector</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DeleteVCSConnector</td>
+                <td>DELETE</td>
+                <td>/v1/{name=projects/*/vcsConnectors/*}</td>
+                <td></td>
               </tr>
               
             
