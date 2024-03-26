@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -684,6 +685,24 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 	return res, nil
 }
 
+func relocationTiDBErrorLine(errorMessage string, baseLine int) string {
+	re := regexp.MustCompile(`line\s+(\d+)`)
+	modified := re.ReplaceAllStringFunc(errorMessage, func(match string) string {
+		matchSlice := re.FindStringSubmatch(match)
+		if len(matchSlice) != 2 {
+			return match
+		}
+		lineStr := matchSlice[1]
+		lineNum, err := strconv.Atoi(lineStr)
+		if err != nil {
+			return match
+		}
+		newLine := lineNum + baseLine
+		return fmt.Sprintf("line %d", newLine)
+	})
+	return modified
+}
+
 func tidbSyntaxCheck(statement string) (any, []Advice) {
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
@@ -701,6 +720,7 @@ func tidbSyntaxCheck(statement string) (any, []Advice) {
 	p := newTiDBParser()
 	var returnNodes []tidbast.StmtNode
 	var adviceList []Advice
+	baseLine := 0
 	for _, singleSQL := range singleSQLs {
 		nodes, _, err := p.Parse(singleSQL.Text, "", "")
 		if err != nil {
@@ -709,8 +729,8 @@ func tidbSyntaxCheck(statement string) (any, []Advice) {
 					Status:  Warn,
 					Code:    Internal,
 					Title:   "Parse error",
-					Content: err.Error(),
-					Line:    1,
+					Content: relocationTiDBErrorLine(err.Error(), baseLine),
+					Line:    1 + baseLine,
 				},
 			}
 		}
@@ -734,6 +754,7 @@ func tidbSyntaxCheck(statement string) (any, []Advice) {
 			}
 		}
 		returnNodes = append(returnNodes, node)
+		baseLine = singleSQL.LastLine
 	}
 
 	return returnNodes, adviceList
