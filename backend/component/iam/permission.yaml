@@ -7,6 +7,11 @@ permissions:
     - bb.branches.update
     - bb.changeHistories.get
     - bb.changeHistories.list
+    - bb.vcsConnectors.create
+    - bb.vcsConnectors.delete
+    - bb.vcsConnectors.get
+    - bb.vcsConnectors.list
+    - bb.vcsConnectors.update
     - bb.changelists.create
     - bb.changelists.delete
     - bb.changelists.get
