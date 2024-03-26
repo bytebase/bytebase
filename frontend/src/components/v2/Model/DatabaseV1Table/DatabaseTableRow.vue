@@ -51,10 +51,10 @@
 import { computed } from "vue";
 import { InstanceV1Name, EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import LabelsColumn from "./LabelsColumn.vue";
 import ProjectCol from "./ProjectCol.vue";
-import { Mode } from "./utils";
+import type { Mode } from "./utils";
 
 const props = defineProps<{
   database: ComposedDatabase;

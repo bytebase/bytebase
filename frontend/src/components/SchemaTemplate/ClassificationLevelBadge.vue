@@ -10,7 +10,7 @@
 <script lang="ts" setup>
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
-import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 
 const props = withDefaults(
   defineProps<{

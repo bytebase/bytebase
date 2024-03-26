@@ -1,6 +1,11 @@
 import { defineStore } from "pinia";
 import { onMounted, onUnmounted } from "vue";
-import { Command, CommandId, CommandRegisterId, CommandState } from "@/types";
+import type {
+  Command,
+  CommandId,
+  CommandRegisterId,
+  CommandState,
+} from "@/types";
 
 export const useCommandStore = defineStore("command", {
   state: (): CommandState => ({

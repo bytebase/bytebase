@@ -42,7 +42,7 @@ import { NCheckbox } from "naive-ui";
 import { computed, ref } from "vue";
 import { restartAppRoot } from "@/AppRootContext";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
-import { ComposedProject } from "@/types";
+import type { ComposedProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

@@ -2,10 +2,11 @@ import Emittery from "emittery";
 import { uniqueId } from "lodash-es";
 import { ClientError, Status } from "nice-grpc-common";
 import { defineStore } from "pinia";
-import { fromEventPattern, map, Observable, Subscription } from "rxjs";
+import type { Subscription } from "rxjs";
+import { fromEventPattern, map, Observable } from "rxjs";
 import { markRaw, ref, shallowRef } from "vue";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
-import {
+import type {
   SQLResultSetV1,
   StreamingQueryController,
   SQLEditorTab,

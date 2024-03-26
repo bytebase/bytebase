@@ -242,13 +242,11 @@ import {
   useCurrentUserV1,
   useSheetV1Store,
 } from "@/store";
-import {
-  SQLDialect,
-  TaskTypeListWithStatement,
-  dialectOfEngineV1,
-} from "@/types";
+import type { SQLDialect } from "@/types";
+import { TaskTypeListWithStatement, dialectOfEngineV1 } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { Plan_Spec, Task, Task_Type } from "@/types/proto/v1/rollout_service";
+import type { Plan_Spec, Task } from "@/types/proto/v1/rollout_service";
+import { Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   defer,
   flattenTaskV1List,
@@ -261,7 +259,8 @@ import {
 import { readFileAsync } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
-import { EditState, useTempEditState } from "./useTempEditState";
+import type { EditState } from "./useTempEditState";
+import { useTempEditState } from "./useTempEditState";
 
 type LocalState = EditState & {
   showFeatureModal: boolean;

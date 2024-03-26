@@ -1,5 +1,6 @@
 import slug from "slug";
-import { ComposedDatabase, ComposedInstance, UNKNOWN_ID } from "@/types";
+import type { ComposedDatabase, ComposedInstance } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 
 const databaseV1Slug = (db: ComposedDatabase) => {
   return [slug(db.databaseName), db.uid].join("-");

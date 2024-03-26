@@ -40,12 +40,12 @@ import {
 } from "@/store/modules/v1/policy";
 import { VirtualRoleType, unknownEnvironment } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import {
+import type {
   Environment,
   EnvironmentTier,
 } from "@/types/proto/v1/environment_service";
+import type { Policy as PolicyV1 } from "@/types/proto/v1/org_policy_service";
 import {
-  Policy as PolicyV1,
   PolicyType as PolicyTypeV1,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";

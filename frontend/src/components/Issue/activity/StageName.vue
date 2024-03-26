@@ -5,7 +5,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Issue, Stage } from "@/types";
+import type { Issue, Stage } from "@/types";
 
 defineProps<{
   issue: Issue;

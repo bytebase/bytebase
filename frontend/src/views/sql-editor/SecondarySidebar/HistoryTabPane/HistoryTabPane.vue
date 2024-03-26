@@ -72,7 +72,7 @@ import {
   useSQLEditorQueryHistoryStore,
   useSQLEditorTabStore,
 } from "@/store";
-import { QueryHistory } from "@/types/proto/v1/sql_service";
+import type { QueryHistory } from "@/types/proto/v1/sql_service";
 import {
   getHighlightHTMLByKeyWords,
   extractDatabaseResourceName,

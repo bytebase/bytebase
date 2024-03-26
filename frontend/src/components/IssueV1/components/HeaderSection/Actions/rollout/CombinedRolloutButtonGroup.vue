@@ -37,9 +37,9 @@
 import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import type { TaskRolloutAction } from "@/components/IssueV1/logic";
 import {
   PrimaryTaskRolloutActionList,
-  TaskRolloutAction,
   allowUserToApplyTaskRolloutAction,
   getApplicableIssueStatusActionList,
   getApplicableStageRolloutActionList,
@@ -47,10 +47,11 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { useCurrentUserV1 } from "@/store";
-import { Task } from "@/types/proto/v1/rollout_service";
-import { ExtraActionOption, IssueStatusActionButtonGroup } from "../common";
+import type { Task } from "@/types/proto/v1/rollout_service";
+import type { ExtraActionOption } from "../common";
+import { IssueStatusActionButtonGroup } from "../common";
 import RolloutActionButtonGroup from "./RolloutActionButtonGroup.vue";
-import { RolloutAction } from "./common";
+import type { RolloutAction } from "./common";
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();

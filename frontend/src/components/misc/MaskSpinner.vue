@@ -9,7 +9,8 @@
 </template>
 
 <script lang="ts" setup>
-import { NSpin, SpinProps } from "naive-ui";
+import type { SpinProps } from "naive-ui";
+import { NSpin } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 
 withDefaults(

@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { ProductionEnvironmentV1Icon } from "@/components/v2";
-import {
+import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
 } from "@/types";

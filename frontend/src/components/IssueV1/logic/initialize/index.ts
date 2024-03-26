@@ -1,12 +1,10 @@
-import { computed, MaybeRef, ref, unref, watch } from "vue";
-import {
-  useRoute,
-  useRouter,
-  _RouteLocationBase,
-  LocationQuery,
-} from "vue-router";
+import type { MaybeRef } from "vue";
+import { computed, ref, unref, watch } from "vue";
+import type { LocationQuery } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { experimentalFetchIssueByUID } from "@/store";
-import { ComposedIssue, emptyIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
+import type { ComposedIssue } from "@/types";
+import { emptyIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { uidFromSlug } from "@/utils";
 import { createIssueSkeleton } from "./create";
 

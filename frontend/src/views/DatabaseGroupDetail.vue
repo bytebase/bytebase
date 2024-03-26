@@ -139,9 +139,10 @@ import DatabaseGroupPrevEditorModal from "@/components/AlterSchemaPrepForm/Datab
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
-import { FactorList, ResourceType } from "@/components/DatabaseGroup/utils";
+import type { ResourceType } from "@/components/DatabaseGroup/utils";
+import { FactorList } from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
-import { ConditionGroupExpr } from "@/plugins/cel";
+import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   useCurrentUserV1,
   useDBGroupStore,
@@ -150,8 +151,11 @@ import {
 } from "@/store";
 import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
-import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
+import type { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
+import type {
+  DatabaseGroup,
+  SchemaGroup,
+} from "@/types/proto/v1/project_service";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 
 interface LocalState {

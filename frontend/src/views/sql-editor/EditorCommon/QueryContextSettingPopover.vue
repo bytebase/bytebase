@@ -23,21 +23,16 @@
 <script lang="ts" setup>
 import { head, orderBy } from "lodash-es";
 import { ChevronDown } from "lucide-vue-next";
-import {
-  NButton,
-  NEllipsis,
-  NPopover,
-  NSelect,
-  SelectOption,
-  SelectRenderLabel,
-} from "naive-ui";
+import type { SelectOption, SelectRenderLabel } from "naive-ui";
+import { NButton, NEllipsis, NPopover, NSelect } from "naive-ui";
 import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorTabStore,
 } from "@/store";
-import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
+import type { DataSource } from "@/types/proto/v1/instance_service";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
 
 interface DataSourceSelectOption extends SelectOption {
   value: string;

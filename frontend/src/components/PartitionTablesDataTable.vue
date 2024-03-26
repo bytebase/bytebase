@@ -14,11 +14,11 @@ import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
-import {
+import type {
   TableMetadata,
   TablePartitionMetadata,
-  TablePartitionMetadata_Type,
 } from "@/types/proto/v1/database_service";
+import { TablePartitionMetadata_Type } from "@/types/proto/v1/database_service";
 
 type PartitionTableRowData = {
   name: string;

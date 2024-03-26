@@ -41,12 +41,9 @@
 <script setup lang="ts">
 import { NTooltip } from "naive-ui";
 import { State } from "@/types/proto/v1/common";
-import {
-  Project,
-  TenantMode,
-  Workflow,
-} from "@/types/proto/v1/project_service";
-import { Mode } from "./utils";
+import type { Project } from "@/types/proto/v1/project_service";
+import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
+import type { Mode } from "./utils";
 
 withDefaults(
   defineProps<{

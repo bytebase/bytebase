@@ -94,10 +94,8 @@ import {
   useLocalSheetStore,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
-import {
-  Changelist_Change as Change,
-  Changelist,
-} from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import { Changelist } from "@/types/proto/v1/changelist_service";
 import {
   getChangelistChangeSourceType,
   getSheetStatement,

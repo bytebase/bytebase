@@ -69,7 +69,7 @@
 
 <script lang="ts" setup>
 import { reactive } from "vue";
-import { ComposedSchemaGroupTable } from "@/types";
+import type { ComposedSchemaGroupTable } from "@/types";
 import { DatabaseView } from "../v2";
 
 interface LocalState {

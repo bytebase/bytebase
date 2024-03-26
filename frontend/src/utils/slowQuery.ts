@@ -1,6 +1,6 @@
 import type { EngineType, Instance } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { Instance as InstanceV1 } from "@/types/proto/v1/instance_service";
+import type { Instance as InstanceV1 } from "@/types/proto/v1/instance_service";
 import { semverCompare } from "./util";
 
 export const InstanceListSupportSlowQuery: [EngineType, string][] = [

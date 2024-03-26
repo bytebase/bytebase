@@ -27,9 +27,9 @@
 <script setup lang="ts">
 import { CheckIcon, XCircleIcon } from "lucide-vue-next";
 import { computed } from "vue";
-import { ComposedDatabase, ComposedProject } from "@/types";
-import { Branch } from "@/types/proto/v1/branch_service";
-import { RebaseBranchValidationState, RebaseSourceType } from "./types";
+import type { ComposedDatabase, ComposedProject } from "@/types";
+import type { Branch } from "@/types/proto/v1/branch_service";
+import type { RebaseBranchValidationState, RebaseSourceType } from "./types";
 
 const props = defineProps<{
   project: ComposedProject;

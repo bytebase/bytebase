@@ -110,9 +110,10 @@
 
 <script setup lang="ts">
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
-import { computed, unref, Ref, watchEffect } from "vue";
+import type { Ref } from "vue";
+import { computed, unref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouteLocationRaw } from "vue-router";
+import type { RouteLocationRaw } from "vue-router";
 import { ISSUE_ROUTE_DETAIL } from "@/router/dashboard/issue";
 import {
   DATABASE_ROUTE_DASHBOARD,
@@ -128,7 +129,8 @@ import {
   useUIStateStore,
   useProjectV1Store,
 } from "@/store";
-import { WorkspacePermission, UNKNOWN_ID, PresetRoleType } from "@/types";
+import type { WorkspacePermission } from "@/types";
+import { UNKNOWN_ID, PresetRoleType } from "@/types";
 import {
   hasWorkspacePermissionV2,
   hasProjectPermissionV2,

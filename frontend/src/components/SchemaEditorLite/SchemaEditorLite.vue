@@ -24,14 +24,14 @@ import { reactive, computed, onMounted, toRef, watch } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useDatabaseV1Store, useSettingV1Store } from "@/store";
-import { ComposedProject } from "@/types";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { ComposedProject } from "@/types";
+import type { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import Aside from "./Aside";
 import Editor from "./Editor.vue";
 import { useAlgorithm } from "./algorithm";
 import { provideSchemaEditorContext } from "./context";
-import { EditTarget, RolloutObject } from "./types";
+import type { EditTarget, RolloutObject } from "./types";
 
 const props = defineProps<{
   project: ComposedProject;

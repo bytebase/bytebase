@@ -24,14 +24,14 @@ import { PencilIcon, XIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
 import { MiniActionButton } from "@/components/v2";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/v1/setting_service";
+import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/v1/setting_service";
 
 const props = defineProps<{
   db: ComposedDatabase;

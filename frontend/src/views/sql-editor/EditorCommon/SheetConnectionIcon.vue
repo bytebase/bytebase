@@ -9,8 +9,8 @@
 import { computed } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import { useDatabaseV1Store } from "@/store";
-import { SQLEditorTab } from "@/types";
-import { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { SQLEditorTab } from "@/types";
+import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { connectionForSQLEditorTab } from "@/utils";
 
 const props = defineProps<{

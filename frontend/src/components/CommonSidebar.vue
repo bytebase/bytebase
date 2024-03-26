@@ -75,7 +75,8 @@
 
 <script setup lang="ts">
 import { ChevronDown, ChevronRight } from "lucide-vue-next";
-import { computed, VNode, reactive, watch } from "vue";
+import type { VNode } from "vue";
+import { computed, reactive, watch } from "vue";
 
 export interface SidebarItem {
   title?: string;

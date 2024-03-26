@@ -35,12 +35,8 @@
 </template>
 
 <script lang="ts">
-import {
-  useKBarMatches,
-  KBarResults,
-  ActionImpl,
-  useKBarState,
-} from "@bytebase/vue-kbar";
+import type { ActionImpl } from "@bytebase/vue-kbar";
+import { useKBarMatches, KBarResults, useKBarState } from "@bytebase/vue-kbar";
 import { defineComponent } from "vue";
 
 export default defineComponent({

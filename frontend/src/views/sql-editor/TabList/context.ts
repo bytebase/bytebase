@@ -1,6 +1,7 @@
 import Emittery from "emittery";
-import { InjectionKey, Ref, inject, provide, ref } from "vue";
-import { SQLEditorTab } from "@/types";
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide, ref } from "vue";
+import type { SQLEditorTab } from "@/types";
 
 export type CloseTabAction =
   | "CLOSE"

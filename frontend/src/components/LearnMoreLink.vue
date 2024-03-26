@@ -12,7 +12,7 @@
 
 <script lang="ts" setup>
 import { ExternalLinkIcon } from "lucide-vue-next";
-import { PropType } from "vue";
+import type { PropType } from "vue";
 
 defineProps({
   url: {

@@ -95,14 +95,8 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  NPopover,
-  NDivider,
-  NDataTable,
-  DataTableRowKey,
-  NTag,
-  DataTableColumn,
-} from "naive-ui";
+import type { DataTableRowKey, DataTableColumn } from "naive-ui";
+import { NPopover, NDivider, NDataTable, NTag } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
@@ -115,7 +109,7 @@ import {
   useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store/modules";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 
 interface LocalState {
   databaseNameSearch: string;

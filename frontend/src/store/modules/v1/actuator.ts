@@ -1,12 +1,12 @@
-import { RemovableRef } from "@vueuse/core";
+import type { RemovableRef } from "@vueuse/core";
 import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
 import { defineStore, storeToRefs } from "pinia";
 import { watchEffect } from "vue";
 import { actuatorServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
-import { Release, ReleaseInfo } from "@/types";
-import {
+import type { Release, ReleaseInfo } from "@/types";
+import type {
   ActuatorInfo,
   ResourcePackage,
   DebugLog,

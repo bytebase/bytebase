@@ -8,7 +8,7 @@
 </template>
 
 <script lang="ts" setup>
-import { RuleConfigComponent } from "@/types";
+import type { RuleConfigComponent } from "@/types";
 
 defineProps<{
   config: RuleConfigComponent;

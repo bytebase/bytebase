@@ -20,7 +20,8 @@ import {
   useWorkSheetStore,
   useSQLEditorTabStore,
 } from "@/store";
-import { UNKNOWN_ID, SQLEditorTab } from "@/types";
+import type { SQLEditorTab } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import {
   Worksheet,
   Worksheet_Visibility,

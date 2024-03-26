@@ -1,8 +1,6 @@
-import { BBButtonType } from "@/bbkit/types";
-import {
+import type { BBButtonType } from "@/bbkit/types";
+import type {
   Database,
-  empty,
-  EMPTY_ID,
   Environment,
   Pipeline,
   PipelineCreate,
@@ -11,9 +9,8 @@ import {
   Task,
   TaskId,
   TaskStatus,
-  unknown,
-  UNKNOWN_ID,
 } from "../types";
+import { empty, EMPTY_ID, unknown, UNKNOWN_ID } from "../types";
 
 export type PipelineType =
   | "NO_PIPELINE"

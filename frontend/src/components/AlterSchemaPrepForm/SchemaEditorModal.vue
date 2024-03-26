@@ -130,7 +130,8 @@
 import dayjs from "dayjs";
 import { cloneDeep, head, uniq } from "lodash-es";
 import { NTabs, NTabPane, useDialog } from "naive-ui";
-import { computed, onMounted, h, PropType, reactive, ref, watch } from "vue";
+import type { PropType } from "vue";
+import { computed, onMounted, h, reactive, ref, watch } from "vue";
 import { I18nT, useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
@@ -141,24 +142,21 @@ import {
   useDatabaseV1Store,
   useNotificationStore,
 } from "@/store";
+import type { ComposedDatabase } from "@/types";
 import {
-  ComposedDatabase,
   dialectOfEngineV1,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
-  DatabaseMetadata,
-  DatabaseMetadataView,
-} from "@/types/proto/v1/database_service";
+import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { TinyTimer, defer, extractProjectResourceName } from "@/utils";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
+import type { EditTarget, GenerateDiffDDLResult } from "../SchemaEditorLite";
 import SchemaEditorLite, {
-  EditTarget,
-  GenerateDiffDDLResult,
   generateDiffDDL as generateSingleDiffDDL,
 } from "../SchemaEditorLite";
 import MaskSpinner from "../misc/MaskSpinner.vue";

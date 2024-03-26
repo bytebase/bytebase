@@ -1,5 +1,6 @@
 import { computedAsync } from "@vueuse/core";
-import { computed, unref, ComputedRef } from "vue";
+import type { ComputedRef } from "vue";
+import { computed, unref } from "vue";
 import { useRoute } from "vue-router";
 import {
   useProjectV1Store,

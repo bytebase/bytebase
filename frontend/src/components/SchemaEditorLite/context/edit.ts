@@ -1,12 +1,12 @@
 import { computed, ref } from "vue";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { EditStatus } from "../types";
+import type { EditStatus } from "../types";
 import { keyForResource } from "./common";
 
 export const useEditStatus = () => {

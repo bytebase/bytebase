@@ -18,7 +18,8 @@
 </template>
 
 <script setup lang="ts">
-import { NDrawerContent, DrawerContentProps } from "naive-ui";
+import type { DrawerContentProps } from "naive-ui";
+import { NDrawerContent } from "naive-ui";
 
 withDefaults(
   defineProps<{

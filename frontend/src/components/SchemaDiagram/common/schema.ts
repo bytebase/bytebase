@@ -1,4 +1,4 @@
-import {
+import type {
   ColumnMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";

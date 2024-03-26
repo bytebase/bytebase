@@ -1,5 +1,5 @@
-import { SQLResultSetV1 } from "../v1/sql";
-import { SQLEditorConnection, SQLEditorQueryParams } from "./editor";
+import type { SQLResultSetV1 } from "../v1/sql";
+import type { SQLEditorConnection, SQLEditorQueryParams } from "./editor";
 
 export type SQLEditorEditMode = "SQL-EDITOR" | "CHAT-TO-SQL";
 

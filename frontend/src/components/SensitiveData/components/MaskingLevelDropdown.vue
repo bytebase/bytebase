@@ -7,10 +7,12 @@
 </template>
 
 <script lang="ts" setup>
-import { SelectOption, NSelect } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
+import type { MaskingLevel } from "@/types/proto/v1/common";
+import { maskingLevelToJSON } from "@/types/proto/v1/common";
 
 const props = defineProps<{
   level: MaskingLevel;

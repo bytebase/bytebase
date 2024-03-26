@@ -1,4 +1,4 @@
-import { Plan } from "@/types";
+import type { Plan } from "@/types";
 
 export interface LocalPlan extends Plan {
   label: string;

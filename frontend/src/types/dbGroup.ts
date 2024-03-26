@@ -1,7 +1,7 @@
-import { ConditionGroupExpr } from "@/plugins/cel";
-import { ComposedDatabase } from "@/types";
-import { Environment } from "./proto/v1/environment_service";
-import {
+import type { ConditionGroupExpr } from "@/plugins/cel";
+import type { ComposedDatabase } from "@/types";
+import type { Environment } from "./proto/v1/environment_service";
+import type {
   DatabaseGroup,
   Project,
   SchemaGroup,

@@ -102,7 +102,7 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { reactive } from "vue";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { InstanceV1EngineIcon } from "../v2";
 
 interface LocalState {

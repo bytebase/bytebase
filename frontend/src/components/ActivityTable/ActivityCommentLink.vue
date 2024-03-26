@@ -16,11 +16,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
-import { ActivityProjectRepositoryPushPayload } from "../../types";
+import type { PropType } from "vue";
+import { computed } from "vue";
+import type { LogEntity } from "@/types/proto/v1/logging_service";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
+import type { ActivityProjectRepositoryPushPayload } from "../../types";
 import { issueSlug } from "../../utils/slug";
-import { Link } from "./types";
+import type { Link } from "./types";
 
 const props = defineProps({
   activity: {

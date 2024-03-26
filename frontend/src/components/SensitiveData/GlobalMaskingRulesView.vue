@@ -111,7 +111,7 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useBodyLayoutContext } from "@/layouts/common";
-import { Factor } from "@/plugins/cel";
+import type { Factor } from "@/plugins/cel";
 import {
   featureToRef,
   pushNotification,
@@ -119,8 +119,8 @@ import {
   usePolicyV1Store,
 } from "@/store";
 import { MaskingLevel } from "@/types/proto/v1/common";
+import type { Policy } from "@/types/proto/v1/org_policy_service";
 import {
-  Policy,
   PolicyType,
   PolicyResourceType,
   MaskingRulePolicy_MaskingRule,

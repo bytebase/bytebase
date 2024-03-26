@@ -1,4 +1,4 @@
-import { ResourceType } from "../types";
+import type { ResourceType } from "../types";
 
 const resourceToPrefix = new Map([["DATABASE", "/db"]]);
 

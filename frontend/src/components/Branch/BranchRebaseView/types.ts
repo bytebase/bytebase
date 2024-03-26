@@ -1,4 +1,4 @@
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 
 export type RebaseSourceType = "BRANCH" | "DATABASE";
 

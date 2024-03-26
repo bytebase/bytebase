@@ -41,12 +41,10 @@ export default { name: "RepositorySelectionPanel" };
 
 <script setup lang="ts">
 import { reactive, computed, onMounted } from "vue";
-import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "@/types";
+import type { ExternalRepositoryInfo, ProjectRepositoryConfig } from "@/types";
 import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
-import {
-  VCSProvider_Type,
-  SearchVCSProviderProjectsResponse_Project,
-} from "@/types/proto/v1/vcs_provider_service";
+import type { SearchVCSProviderProjectsResponse_Project } from "@/types/proto/v1/vcs_provider_service";
+import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {

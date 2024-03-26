@@ -34,7 +34,8 @@
 </template>
 
 <script setup lang="ts">
-import { ButtonProps, NButton, NTooltip } from "naive-ui";
+import type { ButtonProps } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useSettingV1Store, useSQLEditorTabStore } from "@/store";
 import { useSQLEditorContext } from "../../context";

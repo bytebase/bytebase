@@ -1,6 +1,6 @@
 import { type Ref, computed } from "vue";
+import type { ConditionExpr } from "@/plugins/cel";
 import {
-  ConditionExpr,
   getOperatorListByFactor as getRawOperatorListByFactor,
   type Factor,
   type Operator,

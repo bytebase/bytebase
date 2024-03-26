@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { changelistServiceClient } from "@/grpcweb";
-import {
+import type {
   Changelist,
   Changelist_Change as Change,
   CreateChangelistRequest,

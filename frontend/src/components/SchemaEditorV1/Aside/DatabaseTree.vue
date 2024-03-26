@@ -70,7 +70,8 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { escape, head, isUndefined, pick } from "lodash-es";
-import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
+import type { TreeOption } from "naive-ui";
+import { NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
@@ -87,7 +88,7 @@ import {
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { SchemaEditorTabType } from "@/types/v1/schemaEditor";
-import { Schema, Table } from "@/types/v1/schemaEditor";
+import type { Schema, Table } from "@/types/v1/schemaEditor";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";

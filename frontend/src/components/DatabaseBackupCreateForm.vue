@@ -38,8 +38,9 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { isEmpty } from "lodash-es";
 import slug from "slug";
-import { computed, PropType, reactive } from "vue";
-import { ComposedDatabase } from "../types";
+import type { PropType } from "vue";
+import { computed, reactive } from "vue";
+import type { ComposedDatabase } from "../types";
 
 dayjs.extend(utc);
 

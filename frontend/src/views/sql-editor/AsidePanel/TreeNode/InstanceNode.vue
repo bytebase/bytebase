@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import {
+import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
 } from "@/types";

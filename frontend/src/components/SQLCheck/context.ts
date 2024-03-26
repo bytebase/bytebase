@@ -1,4 +1,5 @@
-import { InjectionKey, Ref, inject, provide, ref } from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide, ref } from "vue";
 
 export type SQLCheckContext = {
   runSQLCheck: Ref<(() => Promise<boolean>) | undefined>;

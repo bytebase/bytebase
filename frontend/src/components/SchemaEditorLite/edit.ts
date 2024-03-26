@@ -1,9 +1,9 @@
 import { pull, pullAt } from "lodash-es";
-import {
+import type {
   ForeignKeyMetadata,
-  IndexMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { IndexMetadata } from "@/types/proto/v1/database_service";
 import { upsertArray } from "@/utils";
 
 export const upsertColumnPrimaryKey = (

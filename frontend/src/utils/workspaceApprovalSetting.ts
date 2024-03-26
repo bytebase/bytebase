@@ -1,36 +1,26 @@
 import { cloneDeep, isNumber } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
-import {
-  buildCELExpr,
-  EqualityExpr,
-  LogicalExpr,
-  resolveCELExpr,
-  SimpleExpr,
-} from "@/plugins/cel";
+import type { EqualityExpr, LogicalExpr, SimpleExpr } from "@/plugins/cel";
+import { buildCELExpr, resolveCELExpr } from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
 import { useSettingV1Store, useUserStore } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
+import type { ParsedApprovalRule, UnrecognizedApprovalRule } from "@/types";
 import {
   DEFAULT_RISK_LEVEL,
-  ParsedApprovalRule,
   SYSTEM_BOT_EMAIL,
   unknownUser,
   UNKNOWN_USER_NAME,
-  UnrecognizedApprovalRule,
 } from "@/types";
-import {
-  LocalApprovalConfig,
-  LocalApprovalRule,
-  PresetRiskLevelList,
-  SupportedSourceList,
-} from "@/types";
+import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
+import { PresetRiskLevelList, SupportedSourceList } from "@/types";
 import {
   ParsedExpr,
   Expr as CELExpr,
 } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
+import type { ApprovalNode } from "@/types/proto/v1/issue_service";
 import {
-  ApprovalNode,
   ApprovalNode_GroupValue,
   approvalNode_GroupValueToJSON,
   ApprovalNode_Type,

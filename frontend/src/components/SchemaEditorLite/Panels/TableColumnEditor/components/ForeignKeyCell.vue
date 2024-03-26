@@ -37,8 +37,8 @@ import { PenSquareIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { engineHasSchema } from "@/components/SchemaEditorLite/engine-specs";
 import { MiniActionButton } from "@/components/v2";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   ForeignKeyMetadata,

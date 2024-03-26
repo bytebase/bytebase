@@ -15,11 +15,12 @@
 
 <script setup lang="ts">
 import { first } from "lodash-es";
-import { NSelect, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { EMPTY_TASK_NAME } from "@/types";
-import { Stage } from "@/types/proto/v1/rollout_service";
+import type { Stage } from "@/types/proto/v1/rollout_service";
 import { activeTaskInStageV1 } from "@/utils";
 import { useIssueContext } from "../../../logic";
 

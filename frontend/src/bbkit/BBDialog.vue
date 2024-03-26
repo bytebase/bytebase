@@ -25,8 +25,10 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, reactive } from "vue";
-import { Defer, defer } from "@/utils";
+import type { PropType } from "vue";
+import { reactive } from "vue";
+import type { Defer } from "@/utils";
+import { defer } from "@/utils";
 
 const props = defineProps({
   title: {

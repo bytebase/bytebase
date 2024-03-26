@@ -808,7 +808,8 @@ import {
   NTooltip,
   NInputNumber,
 } from "naive-ui";
-import { ClientError, Status } from "nice-grpc-common";
+import type { ClientError } from "nice-grpc-common";
+import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -825,7 +826,11 @@ import {
   getIdentityProviderResourceId,
   idpNamePrefix,
 } from "@/store/modules/v1/common";
-import { OAuthWindowEventPayload, ResourceId, ValidatedMessage } from "@/types";
+import type {
+  OAuthWindowEventPayload,
+  ResourceId,
+  ValidatedMessage,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   FieldMapping,
@@ -837,8 +842,8 @@ import {
   OIDCIdentityProviderConfig,
   LDAPIdentityProviderConfig,
 } from "@/types/proto/v1/idp_service";
+import type { IdentityProviderTemplate } from "@/utils";
 import {
-  IdentityProviderTemplate,
   hasWorkspacePermissionV2,
   identityProviderTemplateList,
   identityProviderTypeToString,

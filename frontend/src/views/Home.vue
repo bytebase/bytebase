@@ -150,16 +150,16 @@ import { useRoute, useRouter } from "vue-router";
 import { IssueSearch } from "@/components/IssueV1/components";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
-import { TabFilter, TabFilterItem } from "@/components/v2";
+import type { TabFilterItem } from "@/components/v2";
+import { TabFilter } from "@/components/v2";
 import {
   useSubscriptionV1Store,
   useOnboardingStateStore,
   useCurrentUserV1,
 } from "@/store";
 import { planTypeToString } from "@/types";
+import type { SearchParams, SearchScopeId } from "@/utils";
 import {
-  SearchParams,
-  SearchScopeId,
   buildIssueFilterBySearchParams,
   buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,

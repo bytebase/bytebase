@@ -23,7 +23,7 @@ import { CodeIcon } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import type { ComposedDatabase } from "@/types";
-import {
+import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";

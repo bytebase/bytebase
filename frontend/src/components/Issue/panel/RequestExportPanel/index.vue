@@ -152,14 +152,12 @@ import {
   useProjectV1Store,
   pushNotification,
 } from "@/store";
+import type { DatabaseResource, SQLDialect, ComposedProject } from "@/types";
 import {
-  DatabaseResource,
-  SQLDialect,
   SYSTEM_BOT_EMAIL,
   UNKNOWN_ID,
   dialectOfEngineV1,
   PresetRoleType,
-  ComposedProject,
 } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";

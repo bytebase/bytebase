@@ -77,7 +77,8 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store, useActuatorV1Store } from "@/store";
-import { FeatureType, planTypeToString } from "@/types";
+import type { FeatureType } from "@/types";
+import { planTypeToString } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {

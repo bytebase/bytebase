@@ -15,8 +15,8 @@ import dayjs from "dayjs";
 import { computed } from "vue";
 import { useUserStore } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
-import { User } from "@/types/proto/v1/auth_service";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { User } from "@/types/proto/v1/auth_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 
 const props = defineProps<{
   branch: Branch;

@@ -25,7 +25,8 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, PropType } from "vue";
+import type { PropType } from "vue";
+import { ref, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 

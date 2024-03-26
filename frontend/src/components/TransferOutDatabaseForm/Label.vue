@@ -23,7 +23,7 @@ import { computed } from "vue";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import { getHighlightHTMLByRegExp } from "@/utils";
-import { DatabaseTreeOption } from "./common";
+import type { DatabaseTreeOption } from "./common";
 
 const props = defineProps<{
   option: DatabaseTreeOption;

@@ -8,10 +8,11 @@
 
 <script setup lang="ts">
 import { orderBy, uniqBy } from "lodash-es";
-import { SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
 import { computed, h } from "vue";
-import { AffectedTable, EmptyAffectedTable } from "@/types";
-import { ChangeHistory } from "@/types/proto/v1/database_service";
+import type { AffectedTable } from "@/types";
+import { EmptyAffectedTable } from "@/types";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   getAffectedTableDisplayName,
   getAffectedTablesOfChangeHistory,

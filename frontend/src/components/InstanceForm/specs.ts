@@ -3,7 +3,8 @@ import { Engine } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { instanceV1HasSSH, instanceV1HasSSL } from "@/utils";
 import { defaultPortForEngine } from "./constants";
-import { InstanceFormContext, useInstanceFormContext } from "./context";
+import type { InstanceFormContext } from "./context";
+import { useInstanceFormContext } from "./context";
 
 export const useInstanceSpecs = (
   context: InstanceFormContext | undefined = undefined

@@ -60,10 +60,10 @@
 </template>
 
 <script setup lang="ts">
-import { Table } from "@tanstack/vue-table";
+import type { Table } from "@tanstack/vue-table";
 import { computed } from "vue";
 import { useSubscriptionV1Store } from "@/store";
-import { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import SensitiveDataIcon from "./DataTable/SensitiveDataIcon.vue";
 import TableCell from "./DataTable/TableCell.vue";
 import { useSQLResultViewContext } from "./context";
