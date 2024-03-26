@@ -360,7 +360,7 @@
       }
     },
     "statement-affected-row-limit": {
-      "title": "Restringir el número máximo de filas actualizadas o eliminadas.",
+      "title": "Restringir el número máximo de filas actualizadas o eliminadas (estimada).",
       "description": "Revelar el número de filas a actualizar o eliminar puede ayudar a determinar si la declaración cumple con las expectativas comerciales. Nivel de sugerencia de error: Advertencia",
       "component": {
         "number": {
