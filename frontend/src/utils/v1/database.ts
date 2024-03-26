@@ -40,7 +40,7 @@ export const extractDatabaseResourceName = (
   instanceName: string;
 } => {
   const pattern =
-    /(?:^|\/)instances\/(?<databaseName>[^/]+)\/databases\/(?<instanceName>[^/]+)(?:$|\/)/;
+    /(?:^|\/)instances\/(?<instanceName>[^/]+)\/databases\/(?<databaseName>[^/]+)(?:$|\/)/;
   const matches = resource.match(pattern);
 
   const {
