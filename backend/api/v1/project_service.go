@@ -936,14 +936,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	vcsResourceUID, isNumber := isNumber(vcsResourceID)
-	find := &store.FindVCSProviderMessage{}
-	if isNumber {
-		find.ID = &vcsResourceUID
-	} else {
-		find.ResourceID = &vcsResourceID
-	}
-	vcs, err := s.store.GetVCSProvider(ctx, find)
+	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
