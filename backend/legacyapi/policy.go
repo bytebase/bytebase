@@ -15,9 +15,6 @@ type PipelineApprovalValue string
 // AssigneeGroupValue is the value for assignee group policy.
 type AssigneeGroupValue string
 
-// BackupPlanPolicySchedule is value for backup plan policy.
-type BackupPlanPolicySchedule string
-
 // EnvironmentTierValue is the value for environment tier policy.
 type EnvironmentTierValue string
 
@@ -57,13 +54,6 @@ const (
 	// AssigneeGroupValueProjectOwner means the assignee can be selected from the project owners.
 	AssigneeGroupValueProjectOwner AssigneeGroupValue = "PROJECT_OWNER"
 
-	// BackupPlanPolicyScheduleUnset is NEVER backup plan policy value.
-	BackupPlanPolicyScheduleUnset BackupPlanPolicySchedule = "UNSET"
-	// BackupPlanPolicyScheduleDaily is DAILY backup plan policy value.
-	BackupPlanPolicyScheduleDaily BackupPlanPolicySchedule = "DAILY"
-	// BackupPlanPolicyScheduleWeekly is WEEKLY backup plan policy value.
-	BackupPlanPolicyScheduleWeekly BackupPlanPolicySchedule = "WEEKLY"
-
 	// EnvironmentTierValueProtected is PROTECTED environment tier value.
 	EnvironmentTierValueProtected EnvironmentTierValue = "PROTECTED"
 	// EnvironmentTierValueUnprotected is UNPROTECTED environment tier value.
@@ -97,30 +87,6 @@ var (
 		PolicyTypeRestrictIssueCreationForSQLReview: {PolicyResourceTypeWorkspace},
 	}
 )
-
-// BackupPlanPolicy is the policy configuration for backup plan.
-type BackupPlanPolicy struct {
-	Schedule BackupPlanPolicySchedule `json:"schedule"`
-	// RetentionPeriodTs is the minimum allowed period that backup data is kept for databases in an environment.
-	RetentionPeriodTs int `json:"retentionPeriodTs"`
-}
-
-func (bp *BackupPlanPolicy) String() (string, error) {
-	s, err := json.Marshal(bp)
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
-}
-
-// UnmarshalBackupPlanPolicy will unmarshal payload to backup plan policy.
-func UnmarshalBackupPlanPolicy(payload string) (*BackupPlanPolicy, error) {
-	var bp BackupPlanPolicy
-	if err := json.Unmarshal([]byte(payload), &bp); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal backup plan policy %q", payload)
-	}
-	return &bp, nil
-}
 
 // EnvironmentTierPolicy is the tier of an environment.
 type EnvironmentTierPolicy struct {

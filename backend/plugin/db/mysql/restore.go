@@ -33,7 +33,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
-	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/blang/semver/v4"
@@ -344,88 +343,6 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 		return sorted[i].Seq < sorted[j].Seq
 	})
 	return sorted
-}
-
-// GetLatestBackupBeforeOrEqualTs finds the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
-// The backupList should only contain DONE backups.
-func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*store.BackupMessage, targetTs int64, client *bbs3.Client) (*store.BackupMessage, *api.BinlogInfo, error) {
-	if len(backupList) == 0 {
-		return nil, nil, errors.Errorf("no valid backup")
-	}
-
-	targetBinlogCoordinate, err := driver.getBinlogCoordinateByTs(ctx, targetTs, client)
-	if err != nil {
-		slog.Error("Failed to get binlog coordinate by targetTs", slog.Int64("targetTs", targetTs), log.BBError(err))
-		return nil, nil, errors.Wrapf(err, "failed to get binlog coordinate by targetTs %d", targetTs)
-	}
-	slog.Debug("Got binlog coordinate by targetTs", slog.Int64("targetTs", targetTs), slog.Any("binlogCoordinate", *targetBinlogCoordinate))
-
-	var validBackupList []*store.BackupMessage
-	for _, b := range backupList {
-		if b.Payload.BinlogInfo.IsEmpty() {
-			slog.Debug("Skip parsing binlog event timestamp of the backup where BinlogInfo is empty", slog.Int("backupId", b.UID), slog.String("backupName", b.Name))
-			continue
-		}
-		validBackupList = append(validBackupList, b)
-	}
-
-	backup, err := getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get the latest backup before or equal to binlog coordinate %+v", *targetBinlogCoordinate)
-	}
-	targetBinlogInfo := &api.BinlogInfo{
-		FileName: targetBinlogCoordinate.Name,
-		Position: targetBinlogCoordinate.Pos,
-	}
-
-	return backup, targetBinlogInfo, nil
-}
-
-func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*store.BackupMessage, targetBinlogCoordinate binlogCoordinate) (*store.BackupMessage, error) {
-	type backupBinlogCoordinate struct {
-		binlogCoordinate
-		backup *store.BackupMessage
-	}
-	var backupCoordinateListSorted []backupBinlogCoordinate
-	for _, b := range backupList {
-		c, err := newBinlogCoordinate(b.Payload.BinlogInfo.FileName, b.Payload.BinlogInfo.Position)
-		if err != nil {
-			return nil, err
-		}
-		backupCoordinateListSorted = append(backupCoordinateListSorted, backupBinlogCoordinate{binlogCoordinate: c, backup: b})
-	}
-
-	// Sort in order that latest binlog coordinate comes first.
-	sort.Slice(backupCoordinateListSorted, func(i, j int) bool {
-		return backupCoordinateListSorted[i].Seq > backupCoordinateListSorted[j].Seq ||
-			(backupCoordinateListSorted[i].Seq == backupCoordinateListSorted[j].Seq && backupCoordinateListSorted[i].Pos > backupCoordinateListSorted[j].Pos)
-	})
-
-	var backup *store.BackupMessage
-	for _, bc := range backupCoordinateListSorted {
-		if bc.Seq < targetBinlogCoordinate.Seq || (bc.Seq == targetBinlogCoordinate.Seq && bc.Pos <= targetBinlogCoordinate.Pos) {
-			if bc.backup.Status == api.BackupStatusDone {
-				backup = bc.backup
-				break
-			}
-			if bc.backup.Status == api.BackupStatusFailed && bc.backup.BackupType == api.BackupTypePITR {
-				return nil, errors.Errorf("the backup %q taken after a former PITR cutover is failed, so we cannot recover to a point in time before this backup", bc.backup.Name)
-			}
-			if bc.backup.Status == api.BackupStatusPendingCreate && bc.backup.BackupType == api.BackupTypePITR {
-				return nil, errors.Errorf("the backup %q taken after a former PITR cutover is still in progress, please try again later", bc.backup.Name)
-			}
-		}
-	}
-
-	if backup == nil {
-		oldestBackupBinlogCoordinate := backupCoordinateListSorted[len(backupCoordinateListSorted)-1]
-		slog.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
-			slog.Any("targetBinlogCoordinate", targetBinlogCoordinate),
-			slog.Any("oldestBackupBinlogCoordinate", oldestBackupBinlogCoordinate))
-		return nil, errors.Errorf("the target binlog coordinate %v is earlier than the oldest backup's binlog coordinate %v", targetBinlogCoordinate, oldestBackupBinlogCoordinate)
-	}
-
-	return backup, nil
 }
 
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database

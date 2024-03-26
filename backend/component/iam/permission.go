@@ -52,54 +52,50 @@ const (
 	PermissionSettingsSet                Permission = "bb.settings.set"
 
 	// Project-level permissions.
-	PermissionBackupsCreate                Permission = "bb.backups.create"
-	PermissionBackupsList                  Permission = "bb.backups.list"
-	PermissionBranchesCreate               Permission = "bb.branches.create"
-	PermissionBranchesDelete               Permission = "bb.branches.delete"
-	PermissionBranchesGet                  Permission = "bb.branches.get"
-	PermissionBranchesList                 Permission = "bb.branches.list"
-	PermissionBranchesUpdate               Permission = "bb.branches.update"
-	PermissionChangeHistoriesGet           Permission = "bb.changeHistories.get"
-	PermissionChangeHistoriesList          Permission = "bb.changeHistories.list"
-	PermissionChangelistsCreate            Permission = "bb.changelists.create"
-	PermissionChangelistsDelete            Permission = "bb.changelists.delete"
-	PermissionChangelistsGet               Permission = "bb.changelists.get"
-	PermissionChangelistsList              Permission = "bb.changelists.list"
-	PermissionChangelistsUpdate            Permission = "bb.changelists.update"
-	PermissionDatabaseSecretsDelete        Permission = "bb.databaseSecrets.delete"
-	PermissionDatabaseSecretsList          Permission = "bb.databaseSecrets.list"
-	PermissionDatabaseSecretsUpdate        Permission = "bb.databaseSecrets.update"
-	PermissionDatabasesAdviseIndex         Permission = "bb.databases.adviseIndex"
-	PermissionDatabasesExport              Permission = "bb.databases.export"
-	PermissionDatabasesGet                 Permission = "bb.databases.get"
-	PermissionDatabasesGetBackupSetting    Permission = "bb.databases.getBackupSetting"
-	PermissionDatabasesGetSchema           Permission = "bb.databases.getSchema"
-	PermissionDatabasesList                Permission = "bb.databases.list"
-	PermissionDatabasesQuery               Permission = "bb.databases.query"
-	PermissionDatabasesSync                Permission = "bb.databases.sync"
-	PermissionDatabasesUpdate              Permission = "bb.databases.update"
-	PermissionDatabasesUpdateBackupSetting Permission = "bb.databases.updateBackupSetting"
-	PermissionIssueCommentsCreate          Permission = "bb.issueComments.create"
-	PermissionIssueCommentsUpdate          Permission = "bb.issueComments.update"
-	PermissionIssuesCreate                 Permission = "bb.issues.create"
-	PermissionIssuesGet                    Permission = "bb.issues.get"
-	PermissionIssuesList                   Permission = "bb.issues.list"
-	PermissionIssuesUpdate                 Permission = "bb.issues.update"
-	PermissionPlanCheckRunsList            Permission = "bb.planCheckRuns.list"
-	PermissionPlanCheckRunsRun             Permission = "bb.planCheckRuns.run"
-	PermissionPlansCreate                  Permission = "bb.plans.create"
-	PermissionPlansGet                     Permission = "bb.plans.get"
-	PermissionPlansList                    Permission = "bb.plans.list"
-	PermissionPlansUpdate                  Permission = "bb.plans.update"
-	PermissionProjectsGet                  Permission = "bb.projects.get"
-	PermissionProjectsGetIAMPolicy         Permission = "bb.projects.getIamPolicy"
-	PermissionProjectsSetIAMPolicy         Permission = "bb.projects.setIamPolicy"
-	PermissionProjectsUpdate               Permission = "bb.projects.update"
-	PermissionRolloutsCreate               Permission = "bb.rollouts.create"
-	PermissionRolloutsGet                  Permission = "bb.rollouts.get"
-	PermissionRolloutsPreview              Permission = "bb.rollouts.preview"
-	PermissionSlowQueriesList              Permission = "bb.slowQueries.list"
-	PermissionTaskRunsList                 Permission = "bb.taskRuns.list"
+	PermissionBranchesCreate        Permission = "bb.branches.create"
+	PermissionBranchesDelete        Permission = "bb.branches.delete"
+	PermissionBranchesGet           Permission = "bb.branches.get"
+	PermissionBranchesList          Permission = "bb.branches.list"
+	PermissionBranchesUpdate        Permission = "bb.branches.update"
+	PermissionChangeHistoriesGet    Permission = "bb.changeHistories.get"
+	PermissionChangeHistoriesList   Permission = "bb.changeHistories.list"
+	PermissionChangelistsCreate     Permission = "bb.changelists.create"
+	PermissionChangelistsDelete     Permission = "bb.changelists.delete"
+	PermissionChangelistsGet        Permission = "bb.changelists.get"
+	PermissionChangelistsList       Permission = "bb.changelists.list"
+	PermissionChangelistsUpdate     Permission = "bb.changelists.update"
+	PermissionDatabaseSecretsDelete Permission = "bb.databaseSecrets.delete"
+	PermissionDatabaseSecretsList   Permission = "bb.databaseSecrets.list"
+	PermissionDatabaseSecretsUpdate Permission = "bb.databaseSecrets.update"
+	PermissionDatabasesAdviseIndex  Permission = "bb.databases.adviseIndex"
+	PermissionDatabasesExport       Permission = "bb.databases.export"
+	PermissionDatabasesGet          Permission = "bb.databases.get"
+	PermissionDatabasesGetSchema    Permission = "bb.databases.getSchema"
+	PermissionDatabasesList         Permission = "bb.databases.list"
+	PermissionDatabasesQuery        Permission = "bb.databases.query"
+	PermissionDatabasesSync         Permission = "bb.databases.sync"
+	PermissionDatabasesUpdate       Permission = "bb.databases.update"
+	PermissionIssueCommentsCreate   Permission = "bb.issueComments.create"
+	PermissionIssueCommentsUpdate   Permission = "bb.issueComments.update"
+	PermissionIssuesCreate          Permission = "bb.issues.create"
+	PermissionIssuesGet             Permission = "bb.issues.get"
+	PermissionIssuesList            Permission = "bb.issues.list"
+	PermissionIssuesUpdate          Permission = "bb.issues.update"
+	PermissionPlanCheckRunsList     Permission = "bb.planCheckRuns.list"
+	PermissionPlanCheckRunsRun      Permission = "bb.planCheckRuns.run"
+	PermissionPlansCreate           Permission = "bb.plans.create"
+	PermissionPlansGet              Permission = "bb.plans.get"
+	PermissionPlansList             Permission = "bb.plans.list"
+	PermissionPlansUpdate           Permission = "bb.plans.update"
+	PermissionProjectsGet           Permission = "bb.projects.get"
+	PermissionProjectsGetIAMPolicy  Permission = "bb.projects.getIamPolicy"
+	PermissionProjectsSetIAMPolicy  Permission = "bb.projects.setIamPolicy"
+	PermissionProjectsUpdate        Permission = "bb.projects.update"
+	PermissionRolloutsCreate        Permission = "bb.rollouts.create"
+	PermissionRolloutsGet           Permission = "bb.rollouts.get"
+	PermissionRolloutsPreview       Permission = "bb.rollouts.preview"
+	PermissionSlowQueriesList       Permission = "bb.slowQueries.list"
+	PermissionTaskRunsList          Permission = "bb.taskRuns.list"
 )
 
 func (p Permission) String() string {
@@ -110,8 +106,6 @@ func PermissionExist(p Permission) bool {
 	//exhaustive:enforce
 	switch p {
 	case
-		PermissionBackupsCreate,
-		PermissionBackupsList,
 		PermissionBranchesCreate,
 		PermissionBranchesDelete,
 		PermissionBranchesGet,
@@ -130,13 +124,11 @@ func PermissionExist(p Permission) bool {
 		PermissionDatabasesAdviseIndex,
 		PermissionDatabasesExport,
 		PermissionDatabasesGet,
-		PermissionDatabasesGetBackupSetting,
 		PermissionDatabasesGetSchema,
 		PermissionDatabasesList,
 		PermissionDatabasesQuery,
 		PermissionDatabasesSync,
 		PermissionDatabasesUpdate,
-		PermissionDatabasesUpdateBackupSetting,
 		PermissionEnvironmentsCreate,
 		PermissionEnvironmentsDelete,
 		PermissionEnvironmentsGet,
@@ -281,8 +273,6 @@ func GetPermissionLevel(permission Permission) PermissionLevel {
 		PermissionSettingsSet:
 		return PermissionLevelWorkspace
 	case
-		PermissionBackupsCreate,
-		PermissionBackupsList,
 		PermissionBranchesCreate,
 		PermissionBranchesDelete,
 		PermissionBranchesGet,
@@ -301,13 +291,11 @@ func GetPermissionLevel(permission Permission) PermissionLevel {
 		PermissionDatabasesAdviseIndex,
 		PermissionDatabasesExport,
 		PermissionDatabasesGet,
-		PermissionDatabasesGetBackupSetting,
 		PermissionDatabasesGetSchema,
 		PermissionDatabasesList,
 		PermissionDatabasesQuery,
 		PermissionDatabasesSync,
 		PermissionDatabasesUpdate,
-		PermissionDatabasesUpdateBackupSetting,
 		PermissionIssueCommentsCreate,
 		PermissionIssueCommentsUpdate,
 		PermissionIssuesCreate,

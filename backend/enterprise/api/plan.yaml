@@ -10,7 +10,6 @@ categoryList:
       - terraform-provider
       - schedule-change
       - rollout-policy
-      - disaster-recovery
       - sync-schema
       - custom-approval
       - database-group
@@ -36,7 +35,6 @@ categoryList:
       - rbac
       - slow-query
       - archiving
-      - backup-policy
       - sso
       - 2fa
       - ssh-tunnel
@@ -79,9 +77,6 @@ planList:
       - type: state-based-change
       - type: migration-based-change
       - type: sql-check
-      - type: disaster-recovery
-        content: disaster-recovery-basic
-        tooltip: disaster-recovery-basic-tooltip
       - type: batch-change
         content: batch-change-basic
         tooltip: batch-change-basic-tooltip
@@ -128,7 +123,6 @@ planList:
       - rbac
       - batch-change-multi-environment
       - sql-editor
-      - database-backup-restore
       - webhook-integration
   - type: 1
     title: team
@@ -153,9 +147,6 @@ planList:
       - type: state-based-change
       - type: migration-based-change
       - type: sql-check
-      - type: disaster-recovery
-        content: disaster-recovery-advanced
-        tooltip: disaster-recovery-advanced-tooltip
       - type: batch-change
         content: batch-change-basic
         tooltip: batch-change-basic-tooltip
@@ -193,7 +184,6 @@ planList:
         content: anomaly-detection-basic
         tooltip: anomaly-detection-basic-tooltip
       - type: rbac
-      - type: backup-policy
       # Bespoke
       - type: support
         content: support-email
@@ -201,7 +191,6 @@ planList:
       - email-support
       - everything-in-free-plan
       - sql-check-anomaly-detection
-      - backup-policy
       - online-schema-migration
   - type: 2
     title: enterprise
@@ -226,9 +215,6 @@ planList:
       - type: state-based-change
       - type: migration-based-change
       - type: sql-check
-      - type: disaster-recovery
-        content: disaster-recovery-advanced
-        tooltip: disaster-recovery-advanced-tooltip
       - type: batch-change
         content: batch-change-advanced
         tooltip: batch-change-advanced-tooltip
@@ -269,7 +255,6 @@ planList:
         content: anomaly-detection-advanced
         tooltip: anomaly-detection-advanced-tooltip
       - type: rbac
-      - type: backup-policy
       - type: sso
       - type: 2fa
       - type: ssh-tunnel
