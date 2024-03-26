@@ -13,9 +13,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
@@ -170,6 +173,108 @@ func TestSimpleVCS(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:               "GitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            v1pb.VCSProvider_GITHUB,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) any {
+				var commits []github.WebhookCommit
+				for i := range added {
+					commits = append(commits, github.WebhookCommit{
+						ID:        "fake_github_commit_id",
+						Distinct:  true,
+						Message:   "Fake GitHub commit message",
+						Timestamp: time.Now(),
+						URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
+						Author: github.WebhookCommitAuthor{
+							Name:  "fake_github_author",
+							Email: "fake_github_author@localhost",
+						},
+						Added:    added[i],
+						Modified: modified[i],
+					})
+				}
+				return github.WebhookPushEvent{
+					Ref:    "refs/heads/feature/foo",
+					Before: beforeSHA,
+					After:  afterSHA,
+					Repository: github.WebhookRepository{
+						ID:       211,
+						FullName: "octocat/Hello-World",
+						HTMLURL:  "https://github.com/octocat/Hello-World",
+					},
+					Sender: github.WebhookSender{
+						Login: "fake_github_author",
+					},
+					Commits: commits,
+				}
+			},
+		},
+		{
+			name:               "Bitbucket",
+			vcsProviderCreator: fake.NewBitbucket,
+			vcsType:            v1pb.VCSProvider_BITBUCKET,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			newWebhookPushEvent: func(added, _ [][]string, beforeSHA, afterSHA string) any {
+				var commits []bitbucket.WebhookCommit
+				for range added {
+					commits = append(commits, bitbucket.WebhookCommit{
+						Hash: afterSHA,
+						Date: time.Now(),
+						Author: bitbucket.Author{
+							Raw: "fake_bitbucket_author <fake_bitbucket_author@localhost>",
+							User: bitbucket.User{
+								Nickname: "fake_bitbucket_author",
+							},
+						},
+						Message: "Fake Bitbucket commit message",
+						Links: bitbucket.Links{
+							HTML: bitbucket.Link{
+								Href: "https://bitbucket.org/octocat/Hello-World/commits/fake_github_commit_id",
+							},
+						},
+						Parents: []bitbucket.Target{
+							{Hash: beforeSHA},
+						},
+					})
+				}
+				return bitbucket.WebhookPushEvent{
+					Push: bitbucket.WebhookPush{
+						Changes: []bitbucket.WebhookPushChange{
+							{
+								Old: bitbucket.Branch{
+									Name: "feature/foo",
+									Target: bitbucket.Target{
+										Hash: beforeSHA,
+									},
+								},
+								New: bitbucket.Branch{
+									Name: "feature/foo",
+									Target: bitbucket.Target{
+										Hash: afterSHA,
+									},
+								},
+								Commits: commits,
+							},
+						},
+					},
+					Repository: bitbucket.Repository{
+						FullName: "octocat/Hello-World",
+						Links: bitbucket.Links{
+							HTML: bitbucket.Link{
+								Href: "https://bitbuket.org/octocat/Hello-World",
+							},
+						},
+					},
+					Actor: bitbucket.User{
+						Nickname: "fake_bitbucket_author",
+					},
+				}
+			},
+		},
 	}
 	for _, test := range tests {
 		// Fix the problem that closure in a for loop will always use the last element.
@@ -206,20 +311,29 @@ func TestSimpleVCS(t *testing.T) {
 			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
 			a.NoError(err)
 
-			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
-				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
-					Name:          fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
-					Vcs:           evcs.Name,
-					Title:         "Test Repository",
+			oldVcsConnector, err := ctl.vcsConnectorServiceClient.CreateVCSConnector(ctx, &v1pb.CreateVCSConnectorRequest{
+				Parent: ctl.project.Name,
+				VcsConnector: &v1pb.VCSConnector{
+					VcsProvider:   evcs.Name,
+					Title:         "Test VCS Connector",
 					FullPath:      test.repositoryFullPath,
 					WebUrl:        fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
-					Branch:        "feature/foo",
+					Branch:        "feature/bar",
 					BaseDirectory: baseDirectory,
 					ExternalId:    test.externalID,
 				},
-				AllowMissing: true,
+				VcsConnectorId: "default",
 			})
 			a.NoError(err)
+			vcsConnector, err := ctl.vcsConnectorServiceClient.UpdateVCSConnector(ctx, &v1pb.UpdateVCSConnectorRequest{
+				VcsConnector: &v1pb.VCSConnector{
+					Name:   oldVcsConnector.Name,
+					Branch: "feature/foo",
+				},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"branch"}},
+			})
+			a.NoError(err)
+			a.Equal("feature/foo", vcsConnector.Branch)
 
 			// Provision an instance.
 			instanceName := "testInstance1"
@@ -415,6 +529,9 @@ func TestSimpleVCS(t *testing.T) {
 			a.Equal("0003-ddl", histories[2].Version)
 			a.Equal("0002-ddl", histories[3].Version)
 			a.Equal("0001-ddl", histories[4].Version)
+
+			_, err = ctl.vcsConnectorServiceClient.DeleteVCSConnector(ctx, &v1pb.DeleteVCSConnectorRequest{Name: vcsConnector.Name})
+			a.NoError(err)
 		})
 	}
 }
