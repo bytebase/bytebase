@@ -54,7 +54,7 @@ var cannotCreateDatabase = map[storepb.Engine]bool{
 }
 
 // RunOnce will run the database create task executor once.
-func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
 		state.TaskRunExecutionStatus{
 			ExecutionStatus: v1pb.TaskRun_PRE_EXECUTING,
@@ -241,7 +241,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 			log.BBError(err),
 		)
 	}
-	return true, &api.TaskRunResultPayload{
+	return true, &storepb.TaskRunResult{
 		Detail:  fmt.Sprintf("Created database %q", payload.DatabaseName),
 		Version: storedVersion,
 	}, nil
