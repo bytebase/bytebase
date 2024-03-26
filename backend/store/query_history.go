@@ -73,7 +73,6 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 	if err := tx.QueryRowContext(ctx, `
 		INSERT INTO query_history (
 			creator_id,
-			updater_id,
 			project_id,
 			database,
 			statement,
@@ -85,7 +84,6 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 			id,
 			created_ts
 	`,
-		create.CreatorUID,
 		create.CreatorUID,
 		create.ProjectID,
 		create.Database,
