@@ -11,6 +11,7 @@ import (
 
 // nolint:revive
 const (
+	WorkspacePrefix            = "workspaces/"
 	ProjectNamePrefix          = "projects/"
 	EnvironmentNamePrefix      = "environments/"
 	InstanceNamePrefix         = "instances/"
@@ -45,6 +46,7 @@ const (
 	BranchPrefix               = "branches/"
 	DeploymentConfigPrefix     = "deploymentConfigs/"
 	ChangelistsPrefix          = "changelists/"
+	VCSConnectorPrefix         = "vcsConnectors/"
 
 	SchemaSuffix          = "/schema"
 	MetadataSuffix        = "/metadata"
@@ -500,6 +502,15 @@ func GetProjectAndBranchID(name string) (string, string, error) {
 		return "", "", errors.Errorf("invalid branch name %q", name)
 	}
 	return matches[1], matches[2], nil
+}
+
+// GetWorkspaceProjectVCSConnectorID returns the workspace, project, and VCS connector ID from a resource name.
+func GetWorkspaceProjectVCSConnectorID(name string) (string, string, string, error) {
+	tokens, err := GetNameParentTokens(name, WorkspacePrefix, ProjectNamePrefix, VCSConnectorPrefix)
+	if err != nil {
+		return "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], nil
 }
 
 // TrimSuffix trims the suffix from the name and returns the trimmed name.
