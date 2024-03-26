@@ -210,7 +210,7 @@ const handleRemoveChange = (change: Change) => {
 const handleClickChange = (change: Change) => {
   const changeHistoryName = change.source;
   const database = useDatabaseV1Store().getDatabaseByName(
-    extractDatabaseResourceName(changeHistoryName).full
+    extractDatabaseResourceName(changeHistoryName).database
   );
   state.databaseUID = database.uid;
   state.detailChangeHistoryName = changeHistoryName;

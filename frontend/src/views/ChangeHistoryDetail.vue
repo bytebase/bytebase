@@ -345,10 +345,6 @@ import {
   useInstanceV1Store,
   useSettingV1Store,
 } from "@/store";
-import {
-  databaseNamePrefix,
-  instanceNamePrefix,
-} from "@/store/modules/v1/common";
 import type { AffectedTable } from "@/types/changeHistory";
 import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
@@ -378,8 +374,8 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  instanceId: string;
-  databaseName: string;
+  instance: string;
+  database: string;
   changeHistoryId: string;
 }>();
 
@@ -397,9 +393,7 @@ const changeHistoryStore = useChangeHistoryStore();
 const selectedAffectedTable = ref<AffectedTable | undefined>();
 
 const v1Instance = computed(() => {
-  return instanceStore.getInstanceByName(
-    `${instanceNamePrefix}${props.instanceId}`
-  );
+  return instanceStore.getInstanceByName(props.instance);
 });
 
 // eslint-disable-next-line vue/no-dupe-keys
@@ -422,7 +416,7 @@ const classificationConfig = computed(() => {
 });
 
 const changeHistoryParent = computed(() => {
-  return `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`;
+  return props.database;
 });
 
 const changeHistoryName = computed(() => {

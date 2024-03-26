@@ -36,12 +36,13 @@ const detailBindings = computed(() => {
   if (!changeHistory.value) {
     return undefined;
   }
-  const { instance: instanceId, database: databaseName } =
-    extractDatabaseResourceName(changeHistory.value.name);
+  const { instance, database } = extractDatabaseResourceName(
+    changeHistory.value.name
+  );
   const { uid } = changeHistory.value;
   return {
-    instanceId,
-    databaseName,
+    instance,
+    database,
     changeHistoryId: uid,
   };
 });
