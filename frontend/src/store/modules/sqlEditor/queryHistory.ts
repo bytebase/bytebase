@@ -11,8 +11,9 @@ export const useSQLEditorQueryHistoryStore = defineStore(
 
     const fetchQueryHistoryList = async () => {
       isFetching.value = true;
-      const resp = await sqlServiceClient.listQueryHistories({
+      const resp = await sqlServiceClient.searchQueryHistories({
         pageSize: 20,
+        filter: `type = "QUERY"`,
       });
       queryHistoryList.value = resp.queryHistories;
       isFetching.value = false;
