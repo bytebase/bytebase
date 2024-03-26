@@ -1,4 +1,5 @@
-import { Ref, reactive, ref } from "vue";
+import type { Ref } from "vue";
+import { reactive, ref } from "vue";
 
 export type UseDelayedValueOptions = {
   delayBefore?: number;

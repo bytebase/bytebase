@@ -6,7 +6,7 @@
 import dayjs from "dayjs";
 import { defineComponent, h } from "vue";
 import { Translation, useI18n } from "vue-i18n";
-import {
+import type {
   ActivityIssueCommentCreatePayload,
   ActivityPipelineTaskRunStatusUpdatePayload,
   ActivityStageStatusUpdatePayload,
@@ -16,10 +16,10 @@ import {
   ActivityTaskStatusUpdatePayload,
   ActivityTaskPriorBackup,
   ComposedIssue,
-  SYSTEM_BOT_EMAIL,
-  UNKNOWN_ID,
 } from "@/types";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
+import type { LogEntity } from "@/types/proto/v1/logging_service";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import {
   findStageByUID,
   findTaskByUID,

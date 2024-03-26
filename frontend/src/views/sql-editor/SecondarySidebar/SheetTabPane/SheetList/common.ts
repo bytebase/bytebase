@@ -1,6 +1,6 @@
 import { escape } from "lodash-es";
-import { SQLEditorTab } from "@/types";
-import { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { SQLEditorTab } from "@/types";
+import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { extractWorksheetUID, getHighlightHTMLByRegExp } from "@/utils";
 
 export type TabItem = {

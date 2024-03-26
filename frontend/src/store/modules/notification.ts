@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { v1 as uuidv1 } from "uuid";
-import {
+import type {
   Notification,
   NotificationCreate,
   NotificationFilter,

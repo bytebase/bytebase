@@ -48,7 +48,7 @@ import { File, GitBranch, History } from "lucide-vue-next";
 import { computed } from "vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useBranchStore } from "@/store";
-import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import {
   extractIssueUID,
   extractProjectResourceName,

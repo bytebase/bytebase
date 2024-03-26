@@ -30,7 +30,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive } from "vue";
 import { useSQLEditorTabStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import AdminLabel from "./AdminLabel.vue";

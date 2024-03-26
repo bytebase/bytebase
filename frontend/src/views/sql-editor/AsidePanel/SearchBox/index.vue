@@ -20,12 +20,14 @@
 
 <script lang="ts" setup>
 import { SearchIcon } from "lucide-vue-next";
-import { NAutoComplete, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NAutoComplete } from "naive-ui";
 import { computed, watchEffect, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { CoreSQLEditorTab, DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
+import type { CoreSQLEditorTab } from "@/types";
+import { DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
 import {
   emptySQLEditorConnection,
   tryConnectToCoreSQLEditorTab,

@@ -1,6 +1,6 @@
 import { computed, unref, watch } from "vue";
 import { useSQLEditorTabStore, useWebTerminalStore } from "@/store";
-import { WebTerminalQueryItemV1 } from "@/types";
+import type { WebTerminalQueryItemV1 } from "@/types";
 import { minmax } from "@/utils";
 
 const MAX_HISTORY_ITEM_COUNT = 1000;

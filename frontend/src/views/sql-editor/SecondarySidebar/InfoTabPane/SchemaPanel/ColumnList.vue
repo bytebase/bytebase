@@ -35,8 +35,8 @@ import { escape } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick } from "vue";
 import { VirtualList } from "vueuc";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,

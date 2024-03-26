@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Issue, IssueType, StageId } from "@/types";
+import type { Issue, IssueType, StageId } from "@/types";
 
 export function stageName(issue: Issue, stageId: StageId): string {
   for (const stage of issue.pipeline?.stageList ?? []) {

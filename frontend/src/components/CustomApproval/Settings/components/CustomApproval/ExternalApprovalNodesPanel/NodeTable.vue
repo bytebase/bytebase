@@ -44,10 +44,8 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { pushNotification, useSettingV1Store } from "@/store";
-import {
-  ExternalApprovalSetting,
-  ExternalApprovalSetting_Node,
-} from "@/types/proto/v1/setting_service";
+import type { ExternalApprovalSetting_Node } from "@/types/proto/v1/setting_service";
+import { ExternalApprovalSetting } from "@/types/proto/v1/setting_service";
 import { SpinnerButton } from "../../common";
 import { useCustomApprovalContext } from "../context";
 

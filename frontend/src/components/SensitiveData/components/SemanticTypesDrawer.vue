@@ -25,8 +25,9 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
-import SemanticTypesTable, { SemanticItem } from "./SemanticTypesTable.vue";
+import type { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
+import type { SemanticItem } from "./SemanticTypesTable.vue";
+import SemanticTypesTable from "./SemanticTypesTable.vue";
 
 const props = defineProps<{
   show: boolean;

@@ -22,25 +22,18 @@
 
 <script setup lang="ts">
 import { orderBy } from "lodash-es";
-import {
-  NTransfer,
-  TransferRenderSourceList,
-  NTree,
-  TreeOption,
-} from "naive-ui";
+import type { TransferRenderSourceList, TreeOption } from "naive-ui";
+import { NTransfer, NTree } from "naive-ui";
 import { computed, h, ref, watch } from "vue";
 import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useProjectV1Store,
 } from "@/store";
-import { DatabaseResource } from "@/types";
+import type { DatabaseResource } from "@/types";
 import Label from "./Label.vue";
-import {
-  flattenTreeOptions,
-  mapTreeOptions,
-  DatabaseTreeOption,
-} from "./common";
+import type { DatabaseTreeOption } from "./common";
+import { flattenTreeOptions, mapTreeOptions } from "./common";
 
 const props = defineProps<{
   projectId: string;

@@ -62,7 +62,8 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { DataTableColumn, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
@@ -74,13 +75,10 @@ import {
   useSettingV1Store,
   useSchemaEditorV1Store,
 } from "@/store";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import type { Table, DatabaseTabContext } from "@/types/v1/schemaEditor";
 import {
-  SchemaTemplateSetting_TableTemplate,
-  DataClassificationSetting_DataClassificationConfig as DataClassificationConfig,
-} from "@/types/proto/v1/setting_service";
-import {
-  Table,
-  DatabaseTabContext,
   SchemaEditorTabType,
   convertTableMetadataToTable,
 } from "@/types/v1/schemaEditor";

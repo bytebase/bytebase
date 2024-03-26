@@ -27,7 +27,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useCurrentUserV1, useSQLEditorTabStore } from "@/store";
-import { ComposedInstance, UNKNOWN_ID } from "@/types";
+import type { ComposedInstance } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

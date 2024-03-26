@@ -31,11 +31,12 @@
 
 <script lang="ts" setup>
 import { omit } from "lodash-es";
-import { NButton, type SelectProps, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NButton, type SelectProps } from "naive-ui";
 import { computed, useAttrs } from "vue";
 import { useI18n } from "vue-i18n";
 import { useWorkspaceApprovalSettingStore } from "@/store";
-import { VueClass, VueStyle } from "@/utils";
+import type { VueClass, VueStyle } from "@/utils";
 import { SpinnerSelect } from "../../common";
 import { useCustomApprovalContext } from "../context";
 

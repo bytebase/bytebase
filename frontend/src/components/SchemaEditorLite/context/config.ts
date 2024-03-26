@@ -1,16 +1,19 @@
 import { pick } from "lodash-es";
-import { Ref, reactive, watch } from "vue";
-import { ComposedDatabase } from "@/types";
-import {
-  ColumnConfig,
+import type { Ref } from "vue";
+import { reactive, watch } from "vue";
+import type { ComposedDatabase } from "@/types";
+import type {
   ColumnMetadata,
   DatabaseMetadata,
-  SchemaConfig,
   SchemaMetadata,
-  TableConfig,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { EditTarget } from "../types";
+import {
+  ColumnConfig,
+  SchemaConfig,
+  TableConfig,
+} from "@/types/proto/v1/database_service";
+import type { EditTarget } from "../types";
 import { keyForResource, keyForResourceName } from "./common";
 
 export const useEditConfigs = (targets: Ref<EditTarget[]>) => {

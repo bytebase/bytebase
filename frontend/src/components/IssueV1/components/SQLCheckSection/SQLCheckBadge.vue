@@ -43,7 +43,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { SQLCheckPanel } from "@/components/SQLCheck";
-import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
+import type { Advice } from "@/types/proto/v1/sql_service";
+import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { databaseForTask, useIssueContext } from "../../logic";
 import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
 

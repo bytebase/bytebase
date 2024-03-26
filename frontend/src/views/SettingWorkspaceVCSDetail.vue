@@ -115,8 +115,8 @@ import {
   useRepositoryV1Store,
   useVCSV1Store,
 } from "@/store";
-import { VCSUIType } from "@/types";
-import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
+import type { VCSUIType } from "@/types";
+import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { getVCSUIType, hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {

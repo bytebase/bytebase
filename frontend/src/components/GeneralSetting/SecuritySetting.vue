@@ -135,7 +135,7 @@ import {
   usePolicyV1Store,
 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { FeatureType } from "@/types";
+import type { FeatureType } from "@/types";
 import {
   PolicyResourceType,
   PolicyType,

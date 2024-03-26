@@ -3,16 +3,11 @@ import utc from "dayjs/plugin/utc";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { loggingServiceClient } from "@/grpcweb";
+import type { IdType, FindActivityMessage, ComposedIssue } from "@/types";
+import { UNKNOWN_ID, EMPTY_ID } from "@/types";
+import type { ExportFormat } from "@/types/proto/v1/common";
+import type { LogEntity } from "@/types/proto/v1/logging_service";
 import {
-  IdType,
-  FindActivityMessage,
-  UNKNOWN_ID,
-  EMPTY_ID,
-  ComposedIssue,
-} from "@/types";
-import { ExportFormat } from "@/types/proto/v1/common";
-import {
-  LogEntity,
   logEntity_ActionToJSON,
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";

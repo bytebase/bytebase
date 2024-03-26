@@ -13,12 +13,12 @@
 </template>
 
 <script lang="ts" setup>
-import { BinaryLike } from "node:crypto";
-import { ExportOption } from "@/components/DataExportButton.vue";
+import type { BinaryLike } from "node:crypto";
+import type { ExportOption } from "@/components/DataExportButton.vue";
 import { useProjectIamPolicyStore } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import { ExportFormat } from "@/types/proto/v1/common";
-import { ExportRecord } from "./types";
+import type { ExportRecord } from "./types";
 
 const props = defineProps<{
   exportRecord: ExportRecord;

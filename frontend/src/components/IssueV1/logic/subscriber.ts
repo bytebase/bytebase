@@ -2,7 +2,7 @@ import { pull } from "lodash-es";
 import { issueServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
-import { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import { Issue } from "@/types/proto/v1/issue_service";
 
 export const updateIssueSubscribers = async (

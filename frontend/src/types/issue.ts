@@ -1,5 +1,5 @@
-import { DatabaseResource } from "@/types";
-import {
+import type { DatabaseResource } from "@/types";
+import type {
   DatabaseId,
   InstanceId,
   IssueId,
@@ -8,12 +8,12 @@ import {
   SheetId,
   TaskId,
 } from "./id";
-import { MigrationType } from "./instance";
-import { Pipeline, PipelineCreate } from "./pipeline";
-import { Principal } from "./principal";
-import { Project } from "./project";
-import { Expr } from "./proto/google/type/expr";
-import { IssuePayload as IssueProtoPayload } from "./proto/store/issue";
+import type { MigrationType } from "./instance";
+import type { Pipeline, PipelineCreate } from "./pipeline";
+import type { Principal } from "./principal";
+import type { Project } from "./project";
+import type { Expr } from "./proto/google/type/expr";
+import type { IssuePayload as IssueProtoPayload } from "./proto/store/issue";
 
 type IssueTypeGeneral = "bb.issue.general";
 

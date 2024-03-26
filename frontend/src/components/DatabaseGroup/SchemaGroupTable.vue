@@ -24,11 +24,11 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBGridColumn } from "@/bbkit";
+import type { BBGridColumn } from "@/bbkit";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { getProjectNameAndDatabaseGroupNameAndSchemaGroupName } from "@/store/modules/v1/common";
-import { ComposedSchemaGroup } from "@/types";
-import { SchemaGroup } from "@/types/proto/v1/project_service";
+import type { ComposedSchemaGroup } from "@/types";
+import type { SchemaGroup } from "@/types/proto/v1/project_service";
 
 defineProps<{
   schemaGroupList: SchemaGroup[];

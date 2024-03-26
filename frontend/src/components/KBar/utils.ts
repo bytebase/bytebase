@@ -1,4 +1,4 @@
-import { Action, CompareFn } from "@bytebase/vue-kbar";
+import type { Action, CompareFn } from "@bytebase/vue-kbar";
 import { findLastIndex } from "lodash-es";
 
 const MAX_RANKING = Infinity;

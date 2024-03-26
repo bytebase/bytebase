@@ -1,11 +1,7 @@
 import { uniq } from "lodash-es";
 import type { SelectOption } from "naive-ui";
-import {
-  Factor,
-  Operator,
-  EqualityOperatorList,
-  CollectionOperatorList,
-} from "@/plugins/cel";
+import type { Factor, Operator } from "@/plugins/cel";
+import { EqualityOperatorList, CollectionOperatorList } from "@/plugins/cel";
 import {
   useEnvironmentV1Store,
   useInstanceV1List,
@@ -13,7 +9,7 @@ import {
   useSettingV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
-import { MaskingAlgorithmSetting_Algorithm } from "@/types/proto/v1/setting_service";
+import type { MaskingAlgorithmSetting_Algorithm } from "@/types/proto/v1/setting_service";
 import {
   extractEnvironmentResourceName,
   extractInstanceResourceName,

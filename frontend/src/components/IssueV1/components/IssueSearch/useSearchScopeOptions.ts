@@ -1,5 +1,6 @@
 import { orderBy } from "lodash-es";
-import { Ref, RenderFunction, VNode, computed, h, ref } from "vue";
+import type { Ref, RenderFunction, VNode } from "vue";
+import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import GitIcon from "@/components/GitIcon.vue";
@@ -23,9 +24,8 @@ import {
 import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
 import { Workflow } from "@/types/proto/v1/project_service";
+import type { SearchParams, SearchScopeId } from "@/utils";
 import {
-  SearchParams,
-  SearchScopeId,
   environmentV1Name,
   extractEnvironmentResourceName,
   extractInstanceResourceName,

@@ -1,5 +1,5 @@
-import { ComposedIssue } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { ComposedIssue } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 

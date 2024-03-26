@@ -1,15 +1,15 @@
 import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
 import { EMPTY_ID, UNKNOWN_ID } from "./const";
-import { DataSource } from "./dataSource";
-import { Database } from "./database";
-import { Environment } from "./environment";
-import { CommandId, CommandRegisterId } from "./id";
-import { Instance } from "./instance";
-import { Issue } from "./issue";
-import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
-import { Principal } from "./principal";
-import { Project, ProjectMember } from "./project";
-import { SQLReviewPolicy } from "./sqlReview";
+import type { DataSource } from "./dataSource";
+import type { Database } from "./database";
+import type { Environment } from "./environment";
+import type { CommandId, CommandRegisterId } from "./id";
+import type { Instance } from "./instance";
+import type { Issue } from "./issue";
+import type { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
+import type { Principal } from "./principal";
+import type { Project, ProjectMember } from "./project";
+import type { SQLReviewPolicy } from "./sqlReview";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;

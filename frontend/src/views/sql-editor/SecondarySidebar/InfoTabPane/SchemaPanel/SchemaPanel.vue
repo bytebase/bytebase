@@ -66,12 +66,12 @@ import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
 } from "@/store";
-import {
+import type {
   SchemaMetadata,
   TableMetadata,
-  DatabaseMetadataView,
   ExternalTableMetadata,
 } from "@/types/proto/v1/database_service";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import DatabaseSchema from "./DatabaseSchema.vue";
 import ExternalTableSchema from "./ExternalTableSchema.vue";

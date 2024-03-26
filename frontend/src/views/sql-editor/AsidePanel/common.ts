@@ -1,4 +1,4 @@
-import { RenderFunction } from "vue";
+import type { RenderFunction } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
@@ -6,13 +6,13 @@ import {
   useDBSchemaV1Store,
   mapTreeNodeByType,
 } from "@/store";
-import {
+import type {
   ComposedDatabase,
   SQLEditorTreeNode,
   SQLEditorTreeNodeType,
   TextTarget,
 } from "@/types";
-import {
+import type {
   SchemaMetadata,
   TableMetadata,
   TablePartitionMetadata,

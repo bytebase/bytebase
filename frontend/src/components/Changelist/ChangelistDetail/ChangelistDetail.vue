@@ -47,10 +47,8 @@ import { useRoute } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PROJECT_V1_ROUTE_CHANGELIST_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification, useChangelistStore } from "@/store";
-import {
-  Changelist_Change as Change,
-  Changelist,
-} from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import { Changelist } from "@/types/proto/v1/changelist_service";
 import { getChangelistChangeSourceType } from "@/utils";
 import AddChangePanel from "./AddChangePanel";
 import ApplyToDatabasePanel from "./ApplyToDatabasePanel";

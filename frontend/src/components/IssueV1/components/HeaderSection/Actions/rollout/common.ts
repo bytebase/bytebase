@@ -1,8 +1,8 @@
-import {
+import type {
   StageRolloutAction,
   TaskRolloutAction,
 } from "@/components/IssueV1/logic";
-import { ContextMenuButtonAction } from "@/components/v2";
+import type { ContextMenuButtonAction } from "@/components/v2";
 
 export type RolloutAction<T = "TASK" | "STAGE"> = {
   target: T;

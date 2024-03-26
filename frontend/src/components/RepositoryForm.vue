@@ -82,8 +82,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
-import { Project } from "@/types/proto/v1/project_service";
+import type { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
+import type { Project } from "@/types/proto/v1/project_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 
 defineEmits<{

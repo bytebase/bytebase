@@ -11,8 +11,9 @@
 import { UserCircle, Building, Archive } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouteRecordRaw, useRoute, useRouter } from "vue-router";
-import { SidebarItem } from "@/components/CommonSidebar.vue";
+import type { RouteRecordRaw } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import workspaceSettingRoutes, {
   SETTING_ROUTE_PROFILE,
   SETTING_ROUTE_PROFILE_TWO_FACTOR,

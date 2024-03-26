@@ -39,7 +39,7 @@ export default { name: "RepositoryVCSProviderPanel" };
 import { reactive, computed, watchEffect } from "vue";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useCurrentUserV1, useVCSV1Store } from "@/store";
-import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
+import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 
 interface LocalState {
   selectedVCS?: VCSProvider;

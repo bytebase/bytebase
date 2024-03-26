@@ -67,11 +67,13 @@
 <script lang="ts" setup>
 import { NRadio, NRadioGroup } from "naive-ui";
 import { reactive, watch } from "vue";
-import { computed, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useRepositoryV1Store, useVCSV1Store } from "@/store";
-import { Project, Workflow } from "@/types/proto/v1/project_service";
-import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
+import type { Project } from "@/types/proto/v1/project_service";
+import { Workflow } from "@/types/proto/v1/project_service";
+import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 
 interface LocalState {
   workflowType: Workflow;

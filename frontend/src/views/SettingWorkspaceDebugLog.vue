@@ -90,7 +90,7 @@ import {
   useActuatorV1Store,
   useNotificationStore,
 } from "@/store";
-import { DebugLog } from "@/types/proto/v1/actuator_service";
+import type { DebugLog } from "@/types/proto/v1/actuator_service";
 
 const dialog = ref<InstanceType<typeof BBDialog> | null>(null);
 

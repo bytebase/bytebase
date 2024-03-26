@@ -32,12 +32,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import DefinitionView from "@/components/DefinitionView.vue";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
+import type { StreamMetadata } from "@/types/proto/v1/database_service";
 import {
-  StreamMetadata,
   StreamMetadata_Mode,
   StreamMetadata_Type,
 } from "@/types/proto/v1/database_service";

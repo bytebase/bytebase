@@ -29,11 +29,11 @@
 </template>
 
 <script lang="ts" setup>
-import { Issue } from "@/types";
-import { LogEntity } from "@/types/proto/v1/logging_service";
+import type { Issue } from "@/types";
+import type { LogEntity } from "@/types/proto/v1/logging_service";
 import ActionIcon from "./ActionIcon.vue";
 import ActivityAction from "./ActivityAction.vue";
-import { DistinctActivity } from "./common";
+import type { DistinctActivity } from "./common";
 
 defineProps<{
   issue: Issue;

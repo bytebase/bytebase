@@ -31,15 +31,13 @@
 <script lang="ts" setup>
 import { useSessionStorage } from "@vueuse/core";
 import { isEqual } from "lodash-es";
-import { computed, PropType, reactive, watch } from "vue";
-import {
-  ListIssueParams,
-  useIsLoggedIn,
-  useIssueV1Store,
-  useRefreshIssueList,
-} from "@/store";
-import { IssueFilter, ComposedIssue } from "@/types";
-import { applyUIIssueFilter, UIIssueFilter } from "@/utils";
+import type { PropType } from "vue";
+import { computed, reactive, watch } from "vue";
+import type { ListIssueParams } from "@/store";
+import { useIsLoggedIn, useIssueV1Store, useRefreshIssueList } from "@/store";
+import type { IssueFilter, ComposedIssue } from "@/types";
+import type { UIIssueFilter } from "@/utils";
+import { applyUIIssueFilter } from "@/utils";
 
 type LocalState = {
   loading: boolean;

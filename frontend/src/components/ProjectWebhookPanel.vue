@@ -40,10 +40,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_WEBHOOK_CREATE } from "@/router/dashboard/projectV1";
-import { Project } from "@/types/proto/v1/project_service";
+import type { Project } from "@/types/proto/v1/project_service";
 import ProjectWebhookCard from "./ProjectWebhookCard.vue";
 
 const props = defineProps({

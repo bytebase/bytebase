@@ -59,7 +59,8 @@
 import dayjs from "dayjs";
 import { computed, onMounted, reactive, ref } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
-import { DatabaseResource, PresetRoleType } from "@/types";
+import type { DatabaseResource } from "@/types";
+import { PresetRoleType } from "@/types";
 import { convertFromCELString } from "@/utils/issue/cel";
 import { useIssueContext } from "../../logic";
 import DatabaseResourceTable from "./DatabaseResourceTable.vue";

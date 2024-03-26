@@ -57,28 +57,22 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { cloneDeep, pick } from "lodash-es";
-import {
-  DataTableColumn,
-  DataTableInst,
-  NCheckbox,
-  NDataTable,
-} from "naive-ui";
+import type { DataTableColumn, DataTableInst } from "naive-ui";
+import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
 import { hasFeature, useSettingV1Store } from "@/store";
-import { ComposedDatabase } from "@/types";
-import {
+import type { ComposedDatabase } from "@/types";
+import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import {
-  SchemaTemplateSetting_TableTemplate,
-  DataClassificationSetting_DataClassificationConfig as DataClassificationConfig,
-} from "@/types/proto/v1/setting_service";
+import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../../context";
 import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";

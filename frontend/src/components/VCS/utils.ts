@@ -1,6 +1,6 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { VCSUIType } from "@/types";
+import type { VCSUIType } from "@/types";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 
 export const vcsListByUIType = computed(

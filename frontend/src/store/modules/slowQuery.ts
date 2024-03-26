@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { databaseServiceClient, instanceServiceClient } from "@/grpcweb";
-import { ComposedSlowQueryLog, ComposedDatabase } from "@/types";
-import {
+import type { ComposedSlowQueryLog, ComposedDatabase } from "@/types";
+import type {
   ListSlowQueriesRequest,
   SlowQueryLog,
 } from "@/types/proto/v1/database_service";

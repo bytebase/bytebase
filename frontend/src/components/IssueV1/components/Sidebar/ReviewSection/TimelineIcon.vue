@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { WrappedReviewStep } from "@/types";
+import type { WrappedReviewStep } from "@/types";
 
 const props = defineProps<{
   step: WrappedReviewStep;

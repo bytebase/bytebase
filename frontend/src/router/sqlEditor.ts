@@ -1,4 +1,4 @@
-import { RouteRecordRaw } from "vue-router";
+import type { RouteRecordRaw } from "vue-router";
 import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
 
 export const SQL_EDITOR_HOME_MODULE = "sql-editor.home";

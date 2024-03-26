@@ -1,5 +1,5 @@
-import { PipelineId } from "../id";
-import { Stage, StageCreate } from "./stage";
+import type { PipelineId } from "../id";
+import type { Stage, StageCreate } from "./stage";
 
 /*
  An example

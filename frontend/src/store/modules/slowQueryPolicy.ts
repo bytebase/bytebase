@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import { computed, ref, watchEffect } from "vue";
 import { UNKNOWN_USER_NAME } from "@/types";
+import type { Policy } from "@/types/proto/v1/org_policy_service";
 import {
-  Policy,
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";

@@ -43,9 +43,9 @@
 import { CheckIcon, XCircleIcon } from "lucide-vue-next";
 import { Status } from "nice-grpc-common";
 import { PROJECT_V1_ROUTE_BRANCH_REBASE } from "@/router/dashboard/projectV1";
-import { ComposedProject } from "@/types";
-import { Branch } from "@/types/proto/v1/branch_service";
-import { MergeBranchValidationState } from "./types";
+import type { ComposedProject } from "@/types";
+import type { Branch } from "@/types/proto/v1/branch_service";
+import type { MergeBranchValidationState } from "./types";
 
 defineProps<{
   project: ComposedProject;

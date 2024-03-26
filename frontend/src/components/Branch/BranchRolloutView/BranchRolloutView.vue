@@ -127,8 +127,8 @@ import { computed, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { MonacoEditor } from "@/components/MonacoEditor";
+import type { RolloutObject } from "@/components/SchemaEditorLite";
 import SchemaEditorLite, {
-  RolloutObject,
   generateDiffDDL,
 } from "@/components/SchemaEditorLite";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
@@ -140,10 +140,11 @@ import {
   useEnvironmentV1Store,
   useSheetV1Store,
 } from "@/store";
-import { ComposedDatabase, ComposedProject, UNKNOWN_ID } from "@/types";
+import type { ComposedDatabase, ComposedProject } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import { Sheet, SheetPayload_Type } from "@/types/proto/v1/sheet_service";
 import {
   defer,

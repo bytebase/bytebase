@@ -9,8 +9,9 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { SlowQueryPanel } from "@/components/SlowQuery";
-import { Project } from "@/types/proto/v1/project_service";
-import { SearchScope, extractProjectResourceName } from "@/utils";
+import type { Project } from "@/types/proto/v1/project_service";
+import type { SearchScope } from "@/utils";
+import { extractProjectResourceName } from "@/utils";
 
 const props = defineProps<{
   project: Project;

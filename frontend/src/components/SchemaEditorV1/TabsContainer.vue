@@ -65,7 +65,8 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSchemaEditorV1Store } from "@/store";
-import { SchemaEditorTabType, TabContext } from "@/types/v1/schemaEditor";
+import type { TabContext } from "@/types/v1/schemaEditor";
+import { SchemaEditorTabType } from "@/types/v1/schemaEditor";
 import { isTableChanged } from "./utils";
 
 const emit = defineEmits<{

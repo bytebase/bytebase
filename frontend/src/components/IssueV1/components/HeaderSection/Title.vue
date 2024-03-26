@@ -18,7 +18,8 @@
 
 <script setup lang="ts">
 import { NInput } from "naive-ui";
-import { CSSProperties, computed, reactive, watch } from "vue";
+import type { CSSProperties } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { issueServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";

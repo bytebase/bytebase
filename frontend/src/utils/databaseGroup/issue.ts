@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { ComposedDatabaseGroup } from "@/types";
+import type { ComposedDatabaseGroup } from "@/types";
 import { extractProjectResourceName } from "../v1";
 
 export const generateDatabaseGroupIssueRoute = (

@@ -1,12 +1,13 @@
 import { orderBy } from "lodash-es";
-import { SimpleExpr } from "@/plugins/cel";
+import type { SimpleExpr } from "@/plugins/cel";
 import {
   hasFeature,
   useCurrentUserIamPolicy,
   useSubscriptionV1Store,
 } from "@/store";
-import { ComposedDatabase, UNKNOWN_ID } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { ComposedDatabase } from "@/types";
+import { UNKNOWN_ID } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import {

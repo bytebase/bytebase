@@ -31,7 +31,7 @@ import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
 import { useProjectV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 
 const props = defineProps<{
   projectId: string;

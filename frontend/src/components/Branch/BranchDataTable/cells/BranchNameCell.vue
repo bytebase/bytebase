@@ -28,7 +28,7 @@ import {
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { useProjectBranchProtectionRules } from "@/store/modules/v1/projectProtectionRoles";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 import { wildcardToRegex } from "../../utils";
 
 const props = defineProps<{

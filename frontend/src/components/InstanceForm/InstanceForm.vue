@@ -334,15 +334,8 @@
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import { NButton, NInput, NSwitch } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import {
-  computed,
-  reactive,
-  PropType,
-  ref,
-  watch,
-  onMounted,
-  toRef,
-} from "vue";
+import type { PropType } from "vue";
+import { computed, reactive, ref, watch, onMounted, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { InstanceArchiveRestoreButton } from "@/components/Instance";
@@ -365,19 +358,13 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
-import {
-  UNKNOWN_ID,
-  ResourceId,
-  ValidatedMessage,
-  unknownEnvironment,
-  ComposedInstance,
-} from "@/types";
-import { Duration } from "@/types/proto/google/protobuf/duration";
+import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
+import { UNKNOWN_ID, unknownEnvironment } from "@/types";
+import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";
+import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import {
-  DataSource,
   DataSourceType,
-  Instance,
   InstanceOptions,
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -394,11 +381,8 @@ import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
 import OracleSyncModeInput from "./OracleSyncModeInput.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
-import {
-  EditDataSource,
-  extractBasicInfo,
-  extractDataSourceEditState,
-} from "./common";
+import type { EditDataSource } from "./common";
+import { extractBasicInfo, extractDataSourceEditState } from "./common";
 import {
   MongoDBConnectionStringSchemaList,
   SnowflakeExtraLinkPlaceHolder,

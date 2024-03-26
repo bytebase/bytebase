@@ -34,17 +34,18 @@ import Emittery from "emittery";
 import { uniqueId } from "lodash-es";
 import { computed, nextTick, ref, toRef, watch } from "vue";
 import type { ComposedDatabase } from "@/types";
-import {
+import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import Canvas from "./Canvas";
-import { TableNode, autoLayout, GraphNodeItem, GraphEdgeItem } from "./ER";
+import type { GraphNodeItem, GraphEdgeItem } from "./ER";
+import { TableNode, autoLayout } from "./ER";
 import Navigator from "./Navigator";
 import { provideSchemaDiagramContext } from "./common";
-import {
+import type {
   Point,
   Rect,
   Size,

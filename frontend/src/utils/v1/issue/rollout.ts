@@ -1,20 +1,16 @@
 import { last } from "lodash-es";
 import { stringify } from "qs";
 import slug from "slug";
+import type { ComposedIssue } from "@/types";
 import {
   EMPTY_TASK_NAME,
   emptyStage,
   emptyTask,
   unknownTask,
   unknownStage,
-  ComposedIssue,
 } from "@/types";
-import {
-  Rollout,
-  Stage,
-  Task,
-  Task_Status,
-} from "@/types/proto/v1/rollout_service";
+import type { Rollout, Stage, Task } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { extractProjectResourceName } from "../project";
 import { flattenTaskV1List, issueV1Slug } from "./issue";
 

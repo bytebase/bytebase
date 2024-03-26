@@ -1,9 +1,11 @@
-import Long from "long";
+import type Long from "long";
 import { v1 as uuidv1 } from "uuid";
-import {
+import type {
   SchemaMetadata,
   TableMetadata,
   ColumnMetadata,
+} from "@/types/proto/v1/database_service";
+import {
   ColumnConfig,
   TableConfig,
   SchemaConfig,

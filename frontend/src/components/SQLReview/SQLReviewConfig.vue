@@ -17,16 +17,17 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, toRef } from "vue";
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import { RuleTemplate } from "@/types/sqlReview";
+import type { PropType } from "vue";
+import { toRef } from "vue";
+import type { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import type { RuleTemplate } from "@/types/sqlReview";
 import {
   SQLRuleTable,
   SQLRuleFilter,
   useSQLRuleFilter,
   payloadValueListToComponentList,
 } from "./components/";
-import { PayloadForEngine } from "./components/RuleConfigComponents";
+import type { PayloadForEngine } from "./components/RuleConfigComponents";
 
 const props = defineProps({
   selectedRuleList: {

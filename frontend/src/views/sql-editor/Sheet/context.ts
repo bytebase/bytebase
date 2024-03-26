@@ -1,6 +1,7 @@
 import Emittery from "emittery";
 import { storeToRefs } from "pinia";
-import { InjectionKey, Ref, inject, provide, ref, computed } from "vue";
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide, ref, computed } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
@@ -9,16 +10,16 @@ import {
   useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
-import { SQLEditorTab } from "@/types";
-import { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { SQLEditorTab } from "@/types";
+import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 import {
   emptySQLEditorConnection,
   getSheetStatement,
   isWorksheetReadableV1,
   suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
-import { SQLEditorContext } from "../context";
-import { SheetViewMode } from "./types";
+import type { SQLEditorContext } from "../context";
+import type { SheetViewMode } from "./types";
 
 type SheetEvents = Emittery<{
   refresh: { views: SheetViewMode[] };

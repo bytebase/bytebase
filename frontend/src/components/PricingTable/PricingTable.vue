@@ -279,15 +279,11 @@ import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useLanguage } from "@/composables/useLanguage";
 import { useSubscriptionV1Store } from "@/store";
-import {
-  Plan,
-  PLANS,
-  FEATURE_SECTIONS,
-  ENTERPRISE_INQUIRE_LINK,
-} from "@/types";
+import type { Plan } from "@/types";
+import { PLANS, FEATURE_SECTIONS, ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import FeatureItem from "./FeatureItem.vue";
-import { LocalPlan } from "./types";
+import type { LocalPlan } from "./types";
 
 interface LocalState {
   isMonthly: boolean;

@@ -224,7 +224,8 @@ import { useEventListener } from "@vueuse/core";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
 import { NButton, NCheckbox, NInput } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, reactive, PropType, watch, ref, onMounted } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive, watch, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { DrawerContent, Switch } from "@/components/v2";
@@ -251,12 +252,10 @@ import type {
   WorkspacePermission,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import type { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import type { Policy } from "@/types/proto/v1/org_policy_service";
 import {
-  Environment,
-  EnvironmentTier,
-} from "@/types/proto/v1/environment_service";
-import {
-  Policy,
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";

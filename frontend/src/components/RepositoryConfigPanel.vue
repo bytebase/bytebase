@@ -10,9 +10,9 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType } from "vue";
-import { Project } from "@/types/proto/v1/project_service";
-import { ProjectRepositoryConfig } from "../types";
+import type { PropType } from "vue";
+import type { Project } from "@/types/proto/v1/project_service";
+import type { ProjectRepositoryConfig } from "../types";
 
 defineProps({
   config: {

@@ -249,8 +249,9 @@ import {
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
 import { DEFAULT_PROJECT_V1_NAME, defaultProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { PolicyType, MaskData } from "@/types/proto/v1/org_policy_service";
-import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import type { MaskData } from "@/types/proto/v1/org_policy_service";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import {
   bytesToString,
   hasProjectPermissionV2,

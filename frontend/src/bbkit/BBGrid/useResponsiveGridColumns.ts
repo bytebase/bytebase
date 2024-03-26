@@ -1,7 +1,7 @@
 import { useStyleTag } from "@vueuse/core";
 import { uniqueId } from "lodash-es";
 import { computed, onUnmounted, unref } from "vue";
-import { MaybeRef } from "@/types";
+import type { MaybeRef } from "@/types";
 
 const breakpoints = {
   default: "0",
