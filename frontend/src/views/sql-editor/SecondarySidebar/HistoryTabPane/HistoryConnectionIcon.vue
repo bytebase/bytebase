@@ -20,9 +20,7 @@ const props = defineProps<{
 }>();
 
 const instance = computed(() => {
-  const resourceId = extractDatabaseResourceName(
-    props.queryHistory.database
-  ).instance;
-  return useInstanceV1Store().getInstanceByName(`instances/${resourceId}`);
+  const { instance } = extractDatabaseResourceName(props.queryHistory.database);
+  return useInstanceV1Store().getInstanceByName(instance);
 });
 </script>

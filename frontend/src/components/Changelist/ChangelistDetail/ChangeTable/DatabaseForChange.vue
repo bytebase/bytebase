@@ -28,7 +28,7 @@ const database = asyncComputed(async () => {
   const { change } = props;
   const { source } = change;
   if (isChangeHistoryChangeSource(change)) {
-    const { full: database } = extractDatabaseResourceName(source);
+    const { database } = extractDatabaseResourceName(source);
     return useDatabaseV1Store().getDatabaseByName(database);
   } else if (isBranchChangeSource(change)) {
     const branch = await useBranchStore().fetchBranchByName(

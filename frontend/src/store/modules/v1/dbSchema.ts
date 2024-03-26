@@ -237,7 +237,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       skipCache = false,
       silent = false,
     } = params;
-    const { database: databaseName } = extractDatabaseResourceName(database);
+    const { databaseName } = extractDatabaseResourceName(database);
     if (
       databaseName === String(UNKNOWN_ID) ||
       databaseName === String(EMPTY_ID)
@@ -505,7 +505,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 });
 
 const ensureDatabaseResourceName = (name: string) => {
-  return extractDatabaseResourceName(name).full;
+  return extractDatabaseResourceName(name).database;
 };
 const ensureDatabaseMetadataResourceName = (name: string) => {
   const database = ensureDatabaseResourceName(name);
@@ -519,9 +519,7 @@ export const useMetadata = (
 ) => {
   const store = useDBSchemaV1Store();
   watchEffect(() => {
-    const { database: databaseName } = extractDatabaseResourceName(
-      unref(database)
-    );
+    const { databaseName } = extractDatabaseResourceName(unref(database));
     if (
       databaseName === String(UNKNOWN_ID) ||
       databaseName === String(EMPTY_ID)
