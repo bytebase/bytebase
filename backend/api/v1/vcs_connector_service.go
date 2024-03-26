@@ -13,8 +13,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/iam"
 	vcsplugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/store"
@@ -24,17 +22,13 @@ import (
 // VCSConnectorService implements the vcs connector service.
 type VCSConnectorService struct {
 	v1pb.UnimplementedVCSConnectorServiceServer
-	store      *store.Store
-	profile    *config.Profile
-	iamManager *iam.Manager
+	store *store.Store
 }
 
 // NewVCSConnectorService creates a new VCSConnectorService.
-func NewVCSConnectorService(store *store.Store, profile *config.Profile, iamManager *iam.Manager) *VCSConnectorService {
+func NewVCSConnectorService(store *store.Store) *VCSConnectorService {
 	return &VCSConnectorService{
-		store:      store,
-		profile:    profile,
-		iamManager: iamManager,
+		store: store,
 	}
 }
 
@@ -244,16 +238,12 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "vcs connector %q not found", vcsConnectorID)
 	}
 
-	vcsResourceID, err := common.GetVCSProviderID(request.GetVcsConnector().GetVcsProvider())
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsResourceID})
+	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
 	if vcs == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs %s not found", vcsResourceID)
+		return nil, status.Errorf(codes.NotFound, "vcs %s not found", vcsConnector.VCSResourceID)
 	}
 
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
@@ -367,11 +357,19 @@ func (s *VCSConnectorService) convertStoreVCSConnector(ctx context.Context, vcsC
 	}
 
 	v1VCSConnector := &v1pb.VCSConnector{
-		Name:       fmt.Sprintf("projects/%s/vcs connectors/%s", vcsConnector.ProjectID, vcsConnector.ResourceID),
-		CreateTime: timestamppb.New(vcsConnector.CreatedTime),
-		UpdateTime: timestamppb.New(vcsConnector.UpdatedTime),
-		Creator:    fmt.Sprintf("users/%s", creator.Email),
-		Updater:    fmt.Sprintf("users/%s", updater.Email),
+		Name:              fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, vcsConnector.ProjectID, common.VCSConnectorPrefix, vcsConnector.ResourceID),
+		CreateTime:        timestamppb.New(vcsConnector.CreatedTime),
+		UpdateTime:        timestamppb.New(vcsConnector.UpdatedTime),
+		Creator:           fmt.Sprintf("users/%s", creator.Email),
+		Updater:           fmt.Sprintf("users/%s", updater.Email),
+		Title:             vcsConnector.Title,
+		VcsProvider:       fmt.Sprintf("%s%s", common.VCSProviderPrefix, vcsConnector.VCSResourceID),
+		ExternalId:        vcsConnector.ExternalID,
+		BaseDirectory:     vcsConnector.BaseDirectory,
+		Branch:            vcsConnector.Branch,
+		WebhookEndpointId: vcsConnector.WebhookEndpointID,
+		FullPath:          vcsConnector.FullPath,
+		WebUrl:            vcsConnector.WebURL,
 	}
 	return v1VCSConnector, nil
 }

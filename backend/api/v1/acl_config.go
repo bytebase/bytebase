@@ -100,6 +100,12 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.RoleService_UpdateRole_FullMethodName: iam.PermissionRolesUpdate,
 	v1pb.RoleService_DeleteRole_FullMethodName: iam.PermissionRolesDelete,
 
+	v1pb.VCSConnectorService_ListVCSConnectors_FullMethodName:  iam.PermissionVCSConnectorsList,
+	v1pb.VCSConnectorService_GetVCSConnector_FullMethodName:    iam.PermissionVCSConnectorsGet,
+	v1pb.VCSConnectorService_CreateVCSConnector_FullMethodName: iam.PermissionVCSConnectorsCreate,
+	v1pb.VCSConnectorService_UpdateVCSConnector_FullMethodName: iam.PermissionVCSConnectorsUpdate,
+	v1pb.VCSConnectorService_DeleteVCSConnector_FullMethodName: iam.PermissionVCSConnectorsDelete,
+
 	v1pb.ChangelistService_ListChangelists_FullMethodName:  iam.PermissionChangelistsList,
 	v1pb.ChangelistService_GetChangelist_FullMethodName:    iam.PermissionChangelistsGet,
 	v1pb.ChangelistService_CreateChangelist_FullMethodName: iam.PermissionChangelistsCreate,

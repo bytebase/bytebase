@@ -164,6 +164,7 @@ type controller struct {
 	rolloutServiceClient      v1pb.RolloutServiceClient
 	orgPolicyServiceClient    v1pb.OrgPolicyServiceClient
 	projectServiceClient      v1pb.ProjectServiceClient
+	vcsConnectorServiceClient v1pb.VCSConnectorServiceClient
 	authServiceClient         v1pb.AuthServiceClient
 	settingServiceClient      v1pb.SettingServiceClient
 	environmentServiceClient  v1pb.EnvironmentServiceClient
@@ -423,6 +424,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.rolloutServiceClient = v1pb.NewRolloutServiceClient(ctl.grpcConn)
 	ctl.orgPolicyServiceClient = v1pb.NewOrgPolicyServiceClient(ctl.grpcConn)
 	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
+	ctl.vcsConnectorServiceClient = v1pb.NewVCSConnectorServiceClient(ctl.grpcConn)
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)
 	ctl.settingServiceClient = v1pb.NewSettingServiceClient(ctl.grpcConn)
 	ctl.environmentServiceClient = v1pb.NewEnvironmentServiceClient(ctl.grpcConn)
