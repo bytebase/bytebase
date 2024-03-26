@@ -70,7 +70,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.LoggingService_GetLog_FullMethodName,
 		v1pb.LoggingService_ExportLogs_FullMethodName,
 		v1pb.SQLService_Query_FullMethodName,
-		v1pb.SQLService_ListQueryHistories_FullMethodName,
+		v1pb.SQLService_SearchQueryHistories_FullMethodName,
 		v1pb.SQLService_Export_FullMethodName,
 		v1pb.SQLService_DifferPreview_FullMethodName,
 		v1pb.SQLService_Check_FullMethodName,

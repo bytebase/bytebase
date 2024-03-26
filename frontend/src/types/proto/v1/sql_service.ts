@@ -312,7 +312,7 @@ export interface StringifyMetadataResponse {
   schema: string;
 }
 
-export interface ListQueryHistoriesRequest {
+export interface SearchQueryHistoriesRequest {
   /**
    * Not used. The maximum number of histories to return.
    * The service may return fewer than this value.
@@ -328,14 +328,18 @@ export interface ListQueryHistoriesRequest {
   /**
    * filter is the filter to apply on the search query history,
    * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-   * Only support filter by database for now.
-   * For example:
-   * database = "instances/{instance}/databases/{database}"
+   * Support filter by:
+   * - database, for example:
+   *    database = "instances/{instance}/databases/{database}"
+   * - instance, for example:
+   *    instance = "instance/{instance}"
+   * - type, for example:
+   *    type = "QUERY"
    */
   filter: string;
 }
 
-export interface ListQueryHistoriesResponse {
+export interface SearchQueryHistoriesResponse {
   /** The list of history. */
   queryHistories: QueryHistory[];
   /**
@@ -2380,12 +2384,12 @@ export const StringifyMetadataResponse = {
   },
 };
 
-function createBaseListQueryHistoriesRequest(): ListQueryHistoriesRequest {
+function createBaseSearchQueryHistoriesRequest(): SearchQueryHistoriesRequest {
   return { pageSize: 0, pageToken: "", filter: "" };
 }
 
-export const ListQueryHistoriesRequest = {
-  encode(message: ListQueryHistoriesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const SearchQueryHistoriesRequest = {
+  encode(message: SearchQueryHistoriesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.pageSize !== 0) {
       writer.uint32(8).int32(message.pageSize);
     }
@@ -2398,10 +2402,10 @@ export const ListQueryHistoriesRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListQueryHistoriesRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchQueryHistoriesRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListQueryHistoriesRequest();
+    const message = createBaseSearchQueryHistoriesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2435,7 +2439,7 @@ export const ListQueryHistoriesRequest = {
     return message;
   },
 
-  fromJSON(object: any): ListQueryHistoriesRequest {
+  fromJSON(object: any): SearchQueryHistoriesRequest {
     return {
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
@@ -2443,7 +2447,7 @@ export const ListQueryHistoriesRequest = {
     };
   },
 
-  toJSON(message: ListQueryHistoriesRequest): unknown {
+  toJSON(message: SearchQueryHistoriesRequest): unknown {
     const obj: any = {};
     if (message.pageSize !== 0) {
       obj.pageSize = Math.round(message.pageSize);
@@ -2457,11 +2461,11 @@ export const ListQueryHistoriesRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListQueryHistoriesRequest>): ListQueryHistoriesRequest {
-    return ListQueryHistoriesRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<SearchQueryHistoriesRequest>): SearchQueryHistoriesRequest {
+    return SearchQueryHistoriesRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<ListQueryHistoriesRequest>): ListQueryHistoriesRequest {
-    const message = createBaseListQueryHistoriesRequest();
+  fromPartial(object: DeepPartial<SearchQueryHistoriesRequest>): SearchQueryHistoriesRequest {
+    const message = createBaseSearchQueryHistoriesRequest();
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.filter = object.filter ?? "";
@@ -2469,12 +2473,12 @@ export const ListQueryHistoriesRequest = {
   },
 };
 
-function createBaseListQueryHistoriesResponse(): ListQueryHistoriesResponse {
+function createBaseSearchQueryHistoriesResponse(): SearchQueryHistoriesResponse {
   return { queryHistories: [], nextPageToken: "" };
 }
 
-export const ListQueryHistoriesResponse = {
-  encode(message: ListQueryHistoriesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const SearchQueryHistoriesResponse = {
+  encode(message: SearchQueryHistoriesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.queryHistories) {
       QueryHistory.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -2484,10 +2488,10 @@ export const ListQueryHistoriesResponse = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListQueryHistoriesResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchQueryHistoriesResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListQueryHistoriesResponse();
+    const message = createBaseSearchQueryHistoriesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2514,7 +2518,7 @@ export const ListQueryHistoriesResponse = {
     return message;
   },
 
-  fromJSON(object: any): ListQueryHistoriesResponse {
+  fromJSON(object: any): SearchQueryHistoriesResponse {
     return {
       queryHistories: globalThis.Array.isArray(object?.queryHistories)
         ? object.queryHistories.map((e: any) => QueryHistory.fromJSON(e))
@@ -2523,7 +2527,7 @@ export const ListQueryHistoriesResponse = {
     };
   },
 
-  toJSON(message: ListQueryHistoriesResponse): unknown {
+  toJSON(message: SearchQueryHistoriesResponse): unknown {
     const obj: any = {};
     if (message.queryHistories?.length) {
       obj.queryHistories = message.queryHistories.map((e) => QueryHistory.toJSON(e));
@@ -2534,11 +2538,11 @@ export const ListQueryHistoriesResponse = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListQueryHistoriesResponse>): ListQueryHistoriesResponse {
-    return ListQueryHistoriesResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<SearchQueryHistoriesResponse>): SearchQueryHistoriesResponse {
+    return SearchQueryHistoriesResponse.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<ListQueryHistoriesResponse>): ListQueryHistoriesResponse {
-    const message = createBaseListQueryHistoriesResponse();
+  fromPartial(object: DeepPartial<SearchQueryHistoriesResponse>): SearchQueryHistoriesResponse {
+    const message = createBaseSearchQueryHistoriesResponse();
     message.queryHistories = object.queryHistories?.map((e) => QueryHistory.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
@@ -2818,19 +2822,19 @@ export const SQLServiceDefinition = {
         },
       },
     },
-    listQueryHistories: {
-      name: "ListQueryHistories",
-      requestType: ListQueryHistoriesRequest,
+    searchQueryHistories: {
+      name: "SearchQueryHistories",
+      requestType: SearchQueryHistoriesRequest,
       requestStream: false,
-      responseType: ListQueryHistoriesResponse,
+      responseType: SearchQueryHistoriesResponse,
       responseStream: false,
       options: {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              20,
+              27,
               18,
-              18,
+              25,
               47,
               118,
               49,
@@ -2849,6 +2853,13 @@ export const SQLServiceDefinition = {
               105,
               101,
               115,
+              58,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
             ]),
           ],
         },
