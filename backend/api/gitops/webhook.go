@@ -71,7 +71,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		if project == nil || project.Deleted {
 			return c.String(http.StatusBadRequest, fmt.Sprintf("project %q does not exist or has been deleted", projectID))
 		}
-		vcsConnector, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{ProjectResourceID: &projectID, ResourceID: &vcsConnectorID})
+		vcsConnector, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{ProjectID: &projectID, ResourceID: &vcsConnectorID})
 		if err != nil {
 			return c.String(http.StatusServiceUnavailable, fmt.Sprintf("failed to get project %q VCS connector %q, error %v", projectID, vcsConnectorID, err))
 		}
@@ -918,32 +918,12 @@ func getIgnoredFileActivityCreate(project *store.ProjectMessage, pushEvent vcs.P
 }
 
 // readFileContent reads the content of the given file from the given repository.
-func (s *Service) readFileContent(ctx context.Context, oauthContext *common.OauthContext, pushEvent vcs.PushEvent, repoInfo *repoInfo, file string) (string, error) {
-	// Retrieve the latest AccessToken and RefreshToken as the previous
-	// ReadFileContent call may have updated the stored token pair. ReadFileContent
-	// will fetch and store the new token pair if the existing token pair has
-	// expired.
-	repos, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{WebhookEndpointID: &repoInfo.repository.WebhookEndpointID})
-	if err != nil {
-		return "", errors.Wrapf(err, "get repository by webhook endpoint %q", repoInfo.repository.WebhookEndpointID)
-	} else if len(repos) == 0 {
-		return "", errors.Wrapf(err, "repository not found by webhook endpoint %q", repoInfo.repository.WebhookEndpointID)
-	}
-
-	repo := repos[0]
-	externalVCS, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ID: &repo.VCSUID})
-	if err != nil {
-		return "", err
-	}
-	if externalVCS == nil {
-		return "", errors.Errorf("cannot found vcs with id %d", repo.VCSUID)
-	}
-
-	content, err := vcs.Get(externalVCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+func readFileContent(ctx context.Context, oauthContext *common.OauthContext, pushEvent vcs.PushEvent, repo *repoInfo, file string) (string, error) {
+	content, err := vcs.Get(repo.vcs.Type, vcs.ProviderConfig{}).ReadFileContent(
 		ctx,
 		oauthContext,
-		externalVCS.InstanceURL,
-		repo.ExternalID,
+		repo.vcs.InstanceURL,
+		repo.repository.ExternalID,
 		file,
 		vcs.RefInfo{
 			RefType: vcs.RefTypeCommit,
@@ -965,7 +945,7 @@ func (s *Service) prepareIssueFromFile(
 	pushEvent vcs.PushEvent,
 	fileInfo fileInfo,
 ) ([]*migrationDetail, []*store.ActivityMessage) {
-	content, err := s.readFileContent(ctx, oauthContext, pushEvent, repoInfo, fileInfo.item.FileName)
+	content, err := readFileContent(ctx, oauthContext, pushEvent, repoInfo, fileInfo.item.FileName)
 	if err != nil {
 		return nil, []*store.ActivityMessage{
 			getIgnoredFileActivityCreate(
