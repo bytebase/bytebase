@@ -34,8 +34,17 @@ func init() {
 
 // Completion is the entry point of PostgreSQL code completion.
 func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, l base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
-	completer := NewCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, l)
-	return completer.completion()
+	completer := NewStandardCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, l)
+	result, err := completer.completion()
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		return result, nil
+	}
+
+	trickyCompleter := NewTrickyCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, l)
+	return trickyCompleter.completion()
 }
 
 func newIgnoredTokens() map[int]bool {
@@ -160,7 +169,36 @@ type Completer struct {
 	caretTokenIsQuoted bool
 }
 
-func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc) *Completer {
+func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc) *Completer {
+	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
+	// For all PostgreSQL completers, we use one global follow sets by state.
+	// The FollowSetsByState is the thread-safe struct.
+	core := base.NewCodeCompletionCore(
+		parser,
+		newIgnoredTokens(),
+		newPreferredRules(),
+		&globalFollowSetsByState,
+		pg.PostgreSQLParserRULE_simple_select_pramary,
+		pg.PostgreSQLParserRULE_select_no_parens,
+		pg.PostgreSQLParserRULE_target_alias,
+		pg.PostgreSQLParserRULE_with_clause,
+	)
+	return &Completer{
+		ctx:                 ctx,
+		core:                core,
+		parser:              parser,
+		lexer:               lexer,
+		scanner:             scanner,
+		defaultDatabase:     defaultDatabase,
+		getMetadata:         getMetadata,
+		metadataCache:       make(map[string]*model.DatabaseMetadata),
+		noSeparatorRequired: newNoSeparatorRequired(),
+		cteCache:            make(map[int][]*base.VirtualTableReference),
+	}
+
+}
+
+func NewStandardCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	// For all PostgreSQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
@@ -1048,10 +1086,23 @@ func normalizeTableAlias(ctx pg.IOpt_alias_clauseContext) (string, []string) {
 
 	return tableAlias, columnAliases
 }
+func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*pg.PostgreSQLParser, *pg.PostgreSQLLexer, *base.Scanner) {
+	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
+	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
+	input := antlr.NewInputStream(statement)
+	lexer := pg.NewPostgreSQLLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := pg.NewPostgreSQLParser(stream)
+	parser.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	scanner := base.NewScanner(stream, true /* fillInput */)
+	scanner.SeekPosition(caretLine, caretOffset)
+	scanner.Push()
+	return parser, lexer, scanner
+}
 
 func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*pg.PostgreSQLParser, *pg.PostgreSQLLexer, *base.Scanner) {
 	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
 	input := antlr.NewInputStream(statement)
 	lexer := pg.NewPostgreSQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)

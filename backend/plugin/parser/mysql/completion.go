@@ -34,8 +34,17 @@ func init() {
 
 // Completion is the entry point of MySQL code completion.
 func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
-	completer := NewCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, listDatabaseNames)
-	return completer.completion()
+	completer := NewStandardCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, listDatabaseNames)
+	result, err := completer.completion()
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		return result, nil
+	}
+
+	trickyCompleter := NewTrickyCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, listDatabaseNames)
+	return trickyCompleter.completion()
 }
 
 func newIgnoredTokens() map[int]bool {
@@ -223,8 +232,37 @@ type Completer struct {
 	caretTokenIsQuoted bool
 }
 
-func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) *Completer {
+func NewStandardCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
+	// For all MySQL completers, we use one global follow sets by state.
+	// The FollowSetsByState is the thread-safe struct.
+	core := base.NewCodeCompletionCore(
+		parser,
+		newIgnoredTokens(),
+		newPreferredRules(),
+		&globalFollowSetsByState,
+		mysql.MySQLParserRULE_querySpecification,
+		mysql.MySQLParserRULE_queryExpression,
+		mysql.MySQLParserRULE_selectAlias,
+		mysql.MySQLParserRULE_withClause,
+	)
+	return &Completer{
+		ctx:                 ctx,
+		core:                core,
+		parser:              parser,
+		lexer:               lexer,
+		scanner:             scanner,
+		defaultDatabase:     defaultDatabase,
+		getMetadata:         metadata,
+		listDatabaseNames:   listDatabaseNames,
+		metadataCache:       make(map[string]*model.DatabaseMetadata),
+		noSeparatorRequired: newNoSeparatorRequired(),
+		cteCache:            make(map[int][]*base.VirtualTableReference),
+	}
+}
+
+func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) *Completer {
+	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
 	// For all MySQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
 	core := base.NewCodeCompletionCore(
@@ -1042,6 +1080,20 @@ func (l *TableRefListener) ExitSubquery(_ *mysql.SubqueryContext) {
 }
 
 func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*mysql.MySQLParser, *mysql.MySQLLexer, *base.Scanner) {
+	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
+	input := antlr.NewInputStream(statement)
+	lexer := mysql.NewMySQLLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := mysql.NewMySQLParser(stream)
+	parser.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	scanner := base.NewScanner(stream, true /* fillInput */)
+	scanner.SeekPosition(caretLine, caretOffset)
+	scanner.Push()
+	return parser, lexer, scanner
+}
+
+func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*mysql.MySQLParser, *mysql.MySQLLexer, *base.Scanner) {
 	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
 	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
 	input := antlr.NewInputStream(statement)
