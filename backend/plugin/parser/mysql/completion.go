@@ -1125,6 +1125,9 @@ func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset
 		}
 		tree := p.SimpleStatement()
 		if lexerErrorListener.Err != nil || parserErrorListener.Err != nil {
+			if num == 0 {
+				return statement, caretLine, caretOffset
+			}
 			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
 			newCaretOffset := caretOffset
 			if caretLine == lastLine {
