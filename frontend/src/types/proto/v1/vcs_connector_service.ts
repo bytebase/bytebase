@@ -129,8 +129,6 @@ export interface VCSConnector {
   baseDirectory: string;
   /** The branch Bytebase listens to for changes. For example: main. */
   branch: string;
-  /** The webhook endpoint ID of the repository. */
-  webhookEndpointId: string;
   /**
    * TODO(d): move these to create VCS connector API.
    * The full_path of the repository. For example: bytebase/sample.
@@ -598,7 +596,6 @@ function createBaseVCSConnector(): VCSConnector {
     externalId: "",
     baseDirectory: "",
     branch: "",
-    webhookEndpointId: "",
     fullPath: "",
     webUrl: "",
   };
@@ -635,9 +632,6 @@ export const VCSConnector = {
     }
     if (message.branch !== "") {
       writer.uint32(82).string(message.branch);
-    }
-    if (message.webhookEndpointId !== "") {
-      writer.uint32(90).string(message.webhookEndpointId);
     }
     if (message.fullPath !== "") {
       writer.uint32(98).string(message.fullPath);
@@ -725,13 +719,6 @@ export const VCSConnector = {
 
           message.branch = reader.string();
           continue;
-        case 11:
-          if (tag !== 90) {
-            break;
-          }
-
-          message.webhookEndpointId = reader.string();
-          continue;
         case 12:
           if (tag !== 98) {
             break;
@@ -767,7 +754,6 @@ export const VCSConnector = {
       externalId: isSet(object.externalId) ? globalThis.String(object.externalId) : "",
       baseDirectory: isSet(object.baseDirectory) ? globalThis.String(object.baseDirectory) : "",
       branch: isSet(object.branch) ? globalThis.String(object.branch) : "",
-      webhookEndpointId: isSet(object.webhookEndpointId) ? globalThis.String(object.webhookEndpointId) : "",
       fullPath: isSet(object.fullPath) ? globalThis.String(object.fullPath) : "",
       webUrl: isSet(object.webUrl) ? globalThis.String(object.webUrl) : "",
     };
@@ -805,9 +791,6 @@ export const VCSConnector = {
     if (message.branch !== "") {
       obj.branch = message.branch;
     }
-    if (message.webhookEndpointId !== "") {
-      obj.webhookEndpointId = message.webhookEndpointId;
-    }
     if (message.fullPath !== "") {
       obj.fullPath = message.fullPath;
     }
@@ -832,7 +815,6 @@ export const VCSConnector = {
     message.externalId = object.externalId ?? "";
     message.baseDirectory = object.baseDirectory ?? "";
     message.branch = object.branch ?? "";
-    message.webhookEndpointId = object.webhookEndpointId ?? "";
     message.fullPath = object.fullPath ?? "";
     message.webUrl = object.webUrl ?? "";
     return message;
