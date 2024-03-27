@@ -40,7 +40,10 @@
         <div class="w-full border-t border-control-border"></div>
       </div>
       <div class="relative flex justify-center text-sm">
-        <router-link to="/auth" class="accent-link bg-white px-2">
+        <router-link
+          :to="{ name: AUTH_SIGNIN_MODULE }"
+          class="accent-link bg-white px-2"
+        >
           {{ $t("auth.password-forget.return-to-sign-in") }}
         </router-link>
       </div>
@@ -52,6 +55,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
+import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useActuatorV1Store } from "@/store";
 
 const route = useRoute();
