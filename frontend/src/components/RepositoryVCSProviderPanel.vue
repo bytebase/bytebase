@@ -18,10 +18,12 @@
     <template v-if="canManageVCSProvider">
       <i18n-t keypath="repository.choose-git-provider-visit-workspace">
         <template #workspace>
-          <router-link class="normal-link" to="/gitops"
-            >{{ $t("common.workspace") }} -
-            {{ $t("common.gitops") }}</router-link
+          <router-link
+            class="normal-link"
+            :to="{ name: WORKSPACE_ROUTE_GITOPS }"
           >
+            {{ $t("common.workspace") }} - {{ $t("common.gitops") }}
+          </router-link>
         </template>
       </i18n-t>
     </template>
@@ -40,6 +42,7 @@ import { reactive, computed, watchEffect } from "vue";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useCurrentUserV1, useVCSV1Store } from "@/store";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
+import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
 
 interface LocalState {
   selectedVCS?: VCSProvider;

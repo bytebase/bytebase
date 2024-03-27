@@ -5,7 +5,7 @@
       <NButton v-if="state.oAuthState?.popup" @click="window.close()">
         Close
       </NButton>
-      <router-link v-else to="/auth" class="btn-normal">
+      <router-link v-else :to="{ name: AUTH_SIGNIN_MODULE }" class="btn-normal">
         Back to Sign in
       </router-link>
     </div>
@@ -16,7 +16,7 @@
 import { parse } from "qs";
 import { onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { AUTH_MFA_MODULE } from "@/router/auth";
+import { AUTH_MFA_MODULE, AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 import type { OAuthState, OAuthWindowEventPayload } from "../types";
 

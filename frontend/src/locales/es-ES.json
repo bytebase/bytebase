@@ -273,7 +273,8 @@
     "cutover": "transición",
     "baseline": "Base",
     "project-member": "Miembro del proyecto",
-    "leave-without-saving": "¿Salir sin ahorrar?"
+    "leave-without-saving": "¿Salir sin ahorrar?",
+    "configure-now": "Configurar ahora"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -425,8 +426,7 @@
     "cloud": "Cloud",
     "request-demo": "Reserva una demo de producto de 30 minutos.",
     "readonly": "Bytebase está en modo de solo lectura. Todavía puede ver la consola, pero cualquier intento de cambio fallará.",
-    "external-url": "Bytebase no ha configurado --external-url",
-    "configure-now": "Configurar ahora"
+    "external-url": "Bytebase no ha configurado --external-url"
   },
   "intro": {
     "doc": "doc",
