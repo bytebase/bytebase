@@ -1043,6 +1043,7 @@ func (l *TableRefListener) ExitSubquery(_ *mysql.SubqueryContext) {
 
 func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*mysql.MySQLParser, *mysql.MySQLLexer, *base.Scanner) {
 	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
+	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
 	input := antlr.NewInputStream(statement)
 	lexer := mysql.NewMySQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -1100,6 +1101,55 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 	}
 
 	return buf.String(), newCaretLine, newCaretOffset
+}
+
+// caretLine is 1-based and caretOffset is 0-based.
+func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
+	input := antlr.NewInputStream(statement)
+	lexer := mysql.NewMySQLLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	p := mysql.NewMySQLParser(stream)
+	p.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	lexerErrorListener := &base.ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{}
+	lexer.AddErrorListener(lexerErrorListener)
+	p.AddErrorListener(parserErrorListener)
+
+	lastLine, lastColumn, lastIndex := 0, 0, 0
+	num := 0
+	for {
+		if num > 10 {
+			// We only skip at most 10 SQL statements.
+			return statement, caretLine, caretOffset
+		}
+		tree := p.SimpleStatement()
+		if lexerErrorListener.Err != nil || parserErrorListener.Err != nil {
+			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
+			newCaretOffset := caretOffset
+			if caretLine == lastLine {
+				newCaretOffset = caretOffset - lastColumn - 1 // convert to 0-based.
+			}
+			return stream.GetTextFromInterval(antlr.NewInterval(lastIndex+1, stream.Size())), newCaretLine, newCaretOffset
+		}
+		if tree.GetStop().GetLine() > caretLine || (tree.GetStop().GetLine() == caretLine && tree.GetStop().GetColumn() >= caretOffset) {
+			if num == 0 {
+				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
+				return statement, caretLine, caretOffset
+			}
+
+			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
+			newCaretOffset := caretOffset
+			if caretLine == lastLine {
+				newCaretOffset = caretOffset - lastColumn - 1 // convert to 0-based.
+			}
+			return stream.GetTextFromInterval(antlr.NewInterval(tree.GetStart().GetTokenIndex(), stream.Size())), newCaretLine, newCaretOffset
+		}
+		num++
+		lastLine = tree.GetStop().GetLine()
+		lastColumn = tree.GetStop().GetColumn()
+		lastIndex = tree.GetStop().GetTokenIndex()
+	}
 }
 
 func unquote(s string) string {
