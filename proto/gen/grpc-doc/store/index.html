@@ -604,6 +604,10 @@
                   <a href="#bytebase.store.PushEvent"><span class="badge">M</span>PushEvent</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.VCSConnector"><span class="badge">M</span>VCSConnector</a>
+                </li>
+              
               
               
               
@@ -4898,6 +4902,83 @@ The default is 10 if the value is unset or zero. </p></td>
                   <td><a href="#bytebase.store.FileCommit">FileCommit</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.VCSConnector">VCSConnector</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The title or display name of the VCS connector. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Full path from the corresponding VCS provider.
+For GitLab, this is the project full path. e.g. group1/project-1 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>web_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Web url from the corresponding VCS provider.
+For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Branch to listen to. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>base_directory</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Base working directory we are interested. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>external_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Repository id from the corresponding VCS provider.
+For GitLab, this is the project id. e.g. 123 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>external_webhook_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Push webhook id from the corresponding VCS provider.
+For GitLab, this is the project webhook id. e.g. 123 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>webhook_secret_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>For GitLab, webhook request contains this in the &#39;X-Gitlab-Token&#34; header and we compare it with the one stored in db to validate it sends to the expected endpoint. </p></td>
                 </tr>
               
             </tbody>
