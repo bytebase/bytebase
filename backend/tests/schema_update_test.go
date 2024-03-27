@@ -318,8 +318,8 @@ func TestSimpleVCS(t *testing.T) {
 					Title:         "Test VCS Connector",
 					FullPath:      test.repositoryFullPath,
 					WebUrl:        fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
-					Branch:        "feature/bar",
-					BaseDirectory: baseDirectory,
+					Branch:        "feature/foo",
+					BaseDirectory: baseDirectory + "+invalid",
 					ExternalId:    test.externalID,
 				},
 				VcsConnectorId: "default",
@@ -327,13 +327,13 @@ func TestSimpleVCS(t *testing.T) {
 			a.NoError(err)
 			vcsConnector, err := ctl.vcsConnectorServiceClient.UpdateVCSConnector(ctx, &v1pb.UpdateVCSConnectorRequest{
 				VcsConnector: &v1pb.VCSConnector{
-					Name:   oldVcsConnector.Name,
-					Branch: "feature/foo",
+					Name:          oldVcsConnector.Name,
+					BaseDirectory: baseDirectory,
 				},
-				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"branch"}},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"base_directory"}},
 			})
 			a.NoError(err)
-			a.Equal("feature/foo", vcsConnector.Branch)
+			a.Equal(baseDirectory, vcsConnector.BaseDirectory)
 
 			// Provision an instance.
 			instanceName := "testInstance1"

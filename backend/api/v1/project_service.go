@@ -488,7 +488,8 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		}
 	}
 
-	if v := patch.Branch; v != nil && vcsConnector.Payload.Branch != *v {
+	// Check branch existence.
+	if v := patch.Branch; v != nil {
 		if *v == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
 		}
@@ -967,7 +968,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		},
 	}
 
-	// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
+	// Check branch existence.
 	notFound, err := isBranchNotFound(
 		ctx,
 		vcs,
