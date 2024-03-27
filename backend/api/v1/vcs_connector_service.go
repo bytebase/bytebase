@@ -88,6 +88,21 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "vcs %s not found", vcsResourceID)
 	}
 
+	// Check branch existence.
+	notFound, err := isBranchNotFound(
+		ctx,
+		vcs,
+		vcs.AccessToken,
+		request.GetVcsConnector().ExternalId,
+		request.GetVcsConnector().Branch,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check branch %s with error: %v", request.GetVcsConnector().Branch, err.Error())
+	}
+	if notFound {
+		return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", request.GetVcsConnector().Branch, request.GetVcsConnector().FullPath)
+	}
+
 	baseDir := request.GetVcsConnector().BaseDirectory
 	// Azure DevOps base directory should start with /.
 	if vcs.Type == vcsplugin.AzureDevOps {
@@ -275,6 +290,27 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 			update.BaseDirectory = &baseDir
 		}
 	}
+
+	// Check branch existence.
+	if v := update.Branch; v != nil {
+		if *v == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
+		}
+		notFound, err := isBranchNotFound(
+			ctx,
+			vcs,
+			vcs.AccessToken,
+			vcsConnector.Payload.ExternalId,
+			*v,
+		)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
+		}
+		if notFound {
+			return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", *v, vcsConnector.Payload.FullPath)
+		}
+	}
+
 	if err := s.store.UpdateVCSConnector(ctx, update); err != nil {
 		return nil, err
 	}
