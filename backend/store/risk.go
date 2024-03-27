@@ -23,6 +23,9 @@ const (
 	RiskSourceDatabaseSchemaUpdate RiskSource = "bb.risk.database.schema.update"
 	// RiskSourceDatabaseDataUpdate is for DML.
 	RiskSourceDatabaseDataUpdate RiskSource = "bb.risk.database.data.update"
+	// RiskSourceDatabaseDataExport is for database data export.
+	// TODO(steven): implement me.
+	RiskSourceDatabaseDataExport RiskSource = "bb.risk.database.data.export"
 	// RiskSourceDatabaseCreate is for creating databases.
 	RiskSourceDatabaseCreate RiskSource = "bb.risk.database.create"
 	// RiskRequestQuery is for requesting query grant.
