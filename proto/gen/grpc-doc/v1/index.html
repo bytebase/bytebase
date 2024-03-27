@@ -2005,6 +2005,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Plan.VCSSource"><span class="badge">M</span>Plan.VCSSource</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.PlanCheckRun"><span class="badge">M</span>PlanCheckRun</a>
                 </li>
               
@@ -3567,6 +3571,12 @@ e.g. the database schema had been changed without bytebase migration.</p></td>
               <tr>
                 <td>DORIS</td>
                 <td>19</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>HIVE</td>
+                <td>20</td>
                 <td><p></p></td>
               </tr>
             
@@ -16513,13 +16523,6 @@ Format: vcsProviders/{vcsProvider} </p></td>
                 </tr>
               
                 <tr>
-                  <td>webhook_endpoint_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The webhook endpoint ID of the repository. </p></td>
-                </tr>
-              
-                <tr>
                   <td>full_path</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -21439,13 +21442,6 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
-                  <td>max_rows</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The max number of rows to export. </p></td>
-                </tr>
-              
-                <tr>
                   <td>format</td>
                   <td><a href="#bytebase.v1.ExportFormat">ExportFormat</a></td>
                   <td></td>
@@ -21520,6 +21516,13 @@ Must be a subset of the specs in the same step. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>vcs_source</td>
+                  <td><a href="#bytebase.v1.Plan.VCSSource">Plan.VCSSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -21548,6 +21551,46 @@ Must be a subset of the specs in the same step. </p></td>
                   <td>specs</td>
                   <td><a href="#bytebase.v1.Plan.Spec">Plan.Spec</a></td>
                   <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.VCSSource">Plan.VCSSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>vcs_connector</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Optional.
+If present, we will update the pull request for rollout status.
+Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pull_request_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
                   <td><p> </p></td>
                 </tr>
               
@@ -22203,13 +22246,6 @@ Format: instances/{instance-id}/databases/{database-name} </p></td>
                   <td></td>
                   <td><p>The resource name of the sheet.
 Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>max_rows</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The max number of rows to export. </p></td>
                 </tr>
               
                 <tr>

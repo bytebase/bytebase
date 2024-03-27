@@ -477,6 +477,7 @@
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.Spec](#bytebase-v1-Plan-Spec)
     - [Plan.Step](#bytebase-v1-Plan-Step)
+    - [Plan.VCSSource](#bytebase-v1-Plan-VCSSource)
     - [PlanCheckRun](#bytebase-v1-PlanCheckRun)
     - [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result)
     - [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport)
@@ -1010,6 +1011,7 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 | OCEANBASE_ORACLE | 17 |  |
 | STARROCKS | 18 |  |
 | DORIS | 19 |  |
+| HIVE | 20 |  |
 
 
 
@@ -5752,7 +5754,6 @@ The vcsConnector&#39;s `name` field is used to identify the vcsConnector to upda
 | external_id | [string](#string) |  | The reposition external id in target VCS. |
 | base_directory | [string](#string) |  | The root directory where Bytebase observes the file change. If empty, then it observes the entire repository. |
 | branch | [string](#string) |  | The branch Bytebase listens to for changes. For example: main. |
-| webhook_endpoint_id | [string](#string) |  | The webhook endpoint ID of the repository. |
 | full_path | [string](#string) |  | TODO(d): move these to create VCS connector API. The full_path of the repository. For example: bytebase/sample. |
 | web_url | [string](#string) |  | The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. |
 
@@ -7723,7 +7724,6 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name} |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
-| max_rows | [int32](#int32) |  | The max number of rows to export. |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The format of the exported file. |
 | password | [string](#string) | optional | The zip password provide by users. Leave it empty if no needs to encrypt the zip file. |
 
@@ -7746,6 +7746,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
 | change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
 | export_data_config | [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig) |  |  |
+| vcs_source | [Plan.VCSSource](#bytebase-v1-Plan-VCSSource) |  |  |
 
 
 
@@ -7762,6 +7763,23 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) |  | TODO: implement |
 | specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-VCSSource"></a>
+
+### Plan.VCSSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_connector | [string](#string) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
+| pull_request_url | [string](#string) |  |  |
+| commit_url | [string](#string) |  |  |
 
 
 
@@ -8002,7 +8020,6 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name} |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
-| max_rows | [int32](#int32) |  | The max number of rows to export. |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The format of the exported file. |
 | password | [string](#string) | optional | The zip password provide by users. Leave it empty if no needs to encrypt the zip file. |
 
