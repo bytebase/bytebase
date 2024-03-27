@@ -74,7 +74,7 @@ import {
   extractUserResourceName,
   extractUserUID,
   hasProjectPermissionV2,
-  isDatabaseRelatedIssue,
+  isDatabaseChangeRelatedIssue,
 } from "@/utils";
 
 const { t } = useI18n();
@@ -89,7 +89,7 @@ const shouldShowAssignee = computed(() => {
   return (
     !isCreating.value &&
     pageMode.value === "BUNDLED" &&
-    isDatabaseRelatedIssue(issue.value)
+    isDatabaseChangeRelatedIssue(issue.value)
   );
 });
 

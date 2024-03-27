@@ -1175,7 +1175,12 @@
     "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
     "preview": "Preview issue",
     "missing-sql-statement": "SQL statement missing. To apply this change to all tasks, click the @:{'issue.apply-to-other-tasks'} button.",
-    "task-summary-tooltip": "{failed} task failed | {failed} tasks failed"
+    "task-summary-tooltip": "{failed} task failed | {failed} tasks failed",
+    "data-export": {
+      "options": "Options",
+      "format": "Format",
+      "encrypt": "Encrypt"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1559,6 +1564,7 @@
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key",
     "change-data": "Change Data",
     "change-data-in-vcs": "Change Data in VCS",
+    "export-data": "Export Data",
     "branch": "Branch",
     "branches": "Branches",
     "branching": "Branching",

@@ -1,0 +1,54 @@
+<template>
+  <NSwitch
+    v-model:value="state.encryptEnabled"
+    :disabled="!isCreating"
+    size="small"
+  />
+  <tempalte v-if="isCreating && state.encryptEnabled">
+    <span class="textinfolabel pl-4 pr-2">Password</span>
+    <NInput
+      v-model:value="state.password"
+      class="!w-auto"
+      size="small"
+      type="password"
+      placeholder="Basic Input"
+    />
+  </tempalte>
+</template>
+
+<script setup lang="ts">
+import { NSwitch, NInput } from "naive-ui";
+import { reactive, watch } from "vue";
+import { useIssueContext } from "@/components/IssueV1";
+
+interface LocalState {
+  encryptEnabled: boolean;
+  password: string;
+}
+
+const props = defineProps<{
+  password?: string;
+}>();
+
+const emit = defineEmits<{
+  (event: "update:password", value: string): void;
+}>();
+
+const { isCreating } = useIssueContext();
+const state = reactive<LocalState>({
+  encryptEnabled: Boolean(props.password),
+  password: props.password || "",
+});
+
+watch(
+  () => state,
+  () => {
+    if (!state.encryptEnabled) {
+      emit("update:password", "");
+    } else {
+      emit("update:password", state.password);
+    }
+  },
+  { deep: true }
+);
+</script>

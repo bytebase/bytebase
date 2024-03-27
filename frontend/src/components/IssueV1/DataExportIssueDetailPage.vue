@@ -10,19 +10,11 @@
       <div
         class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden"
       >
-        <StageSection />
-
-        <TaskListSection />
-
-        <TaskRunSection v-if="!isCreating" />
-
+        <DataExportSection />
         <SQLCheckSection v-if="isCreating" />
         <PlanCheckSection v-if="!isCreating" />
-
         <StatementSection />
-
         <DescriptionSection />
-
         <ActivitySection v-if="!isCreating" />
       </div>
 
@@ -81,9 +73,6 @@ import { Drawer } from "../v2";
 import {
   BannerSection,
   HeaderSection,
-  StageSection,
-  TaskListSection,
-  TaskRunSection,
   PlanCheckSection,
   StatementSection,
   DescriptionSection,
@@ -93,6 +82,7 @@ import {
   IssueStatusActionPanel,
   TaskRolloutActionPanel,
   SQLCheckSection,
+  DataExportSection,
 } from "./components";
 import type {
   IssueReviewAction,

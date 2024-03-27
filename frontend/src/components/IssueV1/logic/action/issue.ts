@@ -7,7 +7,7 @@ import {
   extractUserResourceName,
   flattenTaskV1List,
   hasProjectPermissionV2,
-  isDatabaseRelatedIssue,
+  isDatabaseChangeRelatedIssue,
   isGrantRequestIssue,
 } from "@/utils";
 import { isTaskFinished } from "..";
@@ -47,7 +47,7 @@ export const getApplicableIssueStatusActionList = (
         return false;
       }
     }
-    if (isDatabaseRelatedIssue(issue) && action === "RESOLVE") {
+    if (isDatabaseChangeRelatedIssue(issue) && action === "RESOLVE") {
       const tasks = flattenTaskV1List(issue.rolloutEntity);
       // Ths issue cannot be resolved if some tasks are not finished yet.
       if (tasks.some((task) => !isTaskFinished(task))) {
