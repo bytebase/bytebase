@@ -5,13 +5,13 @@
     size="small"
   />
   <tempalte v-if="isCreating && state.encryptEnabled">
-    <span class="textinfolabel pl-4 pr-2">Password</span>
+    <span class="textinfolabel pl-4 pr-2">{{ $t("common.password") }}</span>
     <NInput
       v-model:value="state.password"
       class="!w-auto"
       size="small"
       type="password"
-      placeholder="Basic Input"
+      :placeholder="$t('common.password')"
     />
   </tempalte>
 </template>
