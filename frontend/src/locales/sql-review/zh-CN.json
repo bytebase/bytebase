@@ -360,7 +360,7 @@
       }
     },
     "statement-affected-row-limit": {
-      "title": "限制最大更新或删除行数",
+      "title": "限制最大更新或删除行数(预估)",
       "description": "通过提示更新或删除的行数辅助判断语句是否符合业务预期。建议错误等级：警告",
       "component": {
         "number": {

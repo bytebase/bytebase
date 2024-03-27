@@ -360,7 +360,7 @@
       }
     },
     "statement-affected-row-limit": {
-      "title": "Hạn chế số lượng hàng được cập nhật hoặc xóa tối đa.",
+      "title": "Hạn chế số lượng hàng được cập nhật hoặc xóa tối đa (ước lượng).",
       "description": "Tiết lộ số hàng cần cập nhật hoặc xóa có thể giúp xác định xem câu lệnh có đáp ứng được kỳ vọng kinh doanh hay không. Mức độ lỗi đề xuất: Cảnh báo",
       "component": {
         "number": {

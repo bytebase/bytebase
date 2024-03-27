@@ -31,6 +31,8 @@ export const defaultPortForEngine = (engine: Engine) => {
     return "9030";
   } else if (engine === Engine.DORIS) {
     return "9030";
+  } else if (engine == Engine.HIVE) {
+    return "10000";
   }
   return "3306";
 };
@@ -68,6 +70,7 @@ export const EngineIconPath: Record<number, string> = {
   [Engine.STARROCKS]: new URL("@/assets/db-starrocks.png", import.meta.url)
     .href,
   [Engine.DORIS]: new URL("@/assets/db-doris.png", import.meta.url).href,
+  [Engine.HIVE]: new URL("@/assets/db-hive.svg", import.meta.url).href,
 };
 
 export const MongoDBConnectionStringSchemaList = [

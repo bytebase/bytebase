@@ -200,7 +200,10 @@
         <span class="pl-2 bg-white text-control">
           {{ $t("auth.sign-up.existing-user") }}
         </span>
-        <router-link to="/auth/signin" class="accent-link px-2 bg-white">
+        <router-link
+          :to="{ name: AUTH_SIGNIN_MODULE }"
+          class="accent-link px-2 bg-white"
+        >
           {{ $t("common.sign-in") }}
         </router-link>
       </div>
@@ -215,6 +218,7 @@ import { NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { useRouter } from "vue-router";
+import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import {
   useActuatorV1Store,
   useAuthStore,

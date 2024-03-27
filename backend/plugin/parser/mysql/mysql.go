@@ -141,18 +141,22 @@ func RestoreDelimiter(statement string) (string, error) {
 	return result.String(), nil
 }
 
-func parseSingleStatement(statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {
+func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	input := antlr.NewInputStream(statement)
 	lexer := parser.NewMySQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
 	p := parser.NewMySQLParser(stream)
 
-	lexerErrorListener := &base.ParseErrorListener{}
+	lexerErrorListener := &base.ParseErrorListener{
+		BaseLine: baseLine,
+	}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
 
-	parserErrorListener := &base.ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{
+		BaseLine: baseLine,
+	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(parserErrorListener)
 
@@ -216,8 +220,9 @@ func parseInputStream(input *antlr.InputStream) ([]*ParseResult, error) {
 		list[len(list)-1].Text = mysqlAddSemicolonIfNeeded(list[len(list)-1].Text)
 	}
 
+	baseLine := 0
 	for _, s := range list {
-		tree, tokens, err := parseSingleStatement(s.Text)
+		tree, tokens, err := parseSingleStatement(baseLine, s.Text)
 		if err != nil {
 			return nil, err
 		}
@@ -231,6 +236,7 @@ func parseInputStream(input *antlr.InputStream) ([]*ParseResult, error) {
 			Tokens:   tokens,
 			BaseLine: s.BaseLine,
 		})
+		baseLine = s.LastLine
 	}
 
 	return result, nil

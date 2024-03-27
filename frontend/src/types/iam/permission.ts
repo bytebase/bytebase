@@ -90,6 +90,11 @@ export type ProjectPermission =
   | "bb.rollouts.get"
   | "bb.rollouts.preview"
   | "bb.slowQueries.list"
-  | "bb.taskRuns.list";
+  | "bb.taskRuns.list"
+  | "bb.vcsConnectors.create"
+  | "bb.vcsConnectors.delete"
+  | "bb.vcsConnectors.get"
+  | "bb.vcsConnectors.list"
+  | "bb.vcsConnectors.update";
 
 export type Permission = WorkspacePermission | ProjectPermission;

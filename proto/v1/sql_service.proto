@@ -20,8 +20,8 @@ service SQLService {
       body: "*"
     };
   }
-  rpc ListQueryHistories(ListQueryHistoriesRequest) returns (ListQueryHistoriesResponse) {
-    option (google.api.http) = {get: "/v1/queryHistories"};
+  rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
+    option (google.api.http) = {get: "/v1/queryHistories:search"};
   }
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
@@ -303,7 +303,7 @@ message StringifyMetadataResponse {
   string schema = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-message ListQueryHistoriesRequest {
+message SearchQueryHistoriesRequest {
   // Not used. The maximum number of histories to return.
   // The service may return fewer than this value.
   // If unspecified, at most 100 history entries will be returned.
@@ -316,13 +316,17 @@ message ListQueryHistoriesRequest {
 
   // filter is the filter to apply on the search query history,
   // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-  // Only support filter by database for now.
-  // For example:
-  // database = "instances/{instance}/databases/{database}"
+  // Support filter by:
+  // - database, for example:
+  //    database = "instances/{instance}/databases/{database}"
+  // - instance, for example:
+  //    instance = "instance/{instance}"
+  // - type, for example:
+  //    type = "QUERY"
   string filter = 3;
 }
 
-message ListQueryHistoriesResponse {
+message SearchQueryHistoriesResponse {
   // The list of history.
   repeated QueryHistory query_histories = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -350,4 +354,12 @@ message QueryHistory {
   optional string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.protobuf.Duration duration = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    QUERY = 1;
+    EXPORT = 2;
+  }
+
+  Type type = 8;
 }

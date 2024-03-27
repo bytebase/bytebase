@@ -42,7 +42,8 @@ func (e *SyntaxError) Error() string {
 
 // ParseErrorListener is a custom error listener for PLSQL parser.
 type ParseErrorListener struct {
-	Err *SyntaxError
+	BaseLine int
+	Err      *SyntaxError
 }
 
 // SyntaxError returns the errors.
@@ -62,9 +63,9 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 			errMessage = fmt.Sprintf("related text: %s", stream.GetTextFromInterval(antlr.NewInterval(start, stop)))
 		}
 		l.Err = &SyntaxError{
-			Line:    line,
+			Line:    line + l.BaseLine,
 			Column:  column,
-			Message: fmt.Sprintf("Syntax error at line %d:%d \n%s", line, column, errMessage),
+			Message: fmt.Sprintf("Syntax error at line %d:%d \n%s", line+l.BaseLine, column, errMessage),
 		}
 	}
 }

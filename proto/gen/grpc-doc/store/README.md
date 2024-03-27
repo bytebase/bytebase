@@ -109,6 +109,7 @@
     - [Commit](#bytebase-store-Commit)
     - [FileCommit](#bytebase-store-FileCommit)
     - [PushEvent](#bytebase-store-PushEvent)
+    - [VCSConnector](#bytebase-store-VCSConnector)
   
 - [store/instance_change_history.proto](#store_instance_change_history-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
@@ -169,6 +170,9 @@
   
     - [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource)
     - [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target)
+  
+- [store/query_history.proto](#store_query_history-proto)
+    - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
   
 - [store/role.proto](#store_role-proto)
     - [RolePermissions](#bytebase-store-RolePermissions)
@@ -1797,6 +1801,28 @@ InstanceOptions is the option for instances.
 
 
 
+
+<a name="bytebase-store-VCSConnector"></a>
+
+### VCSConnector
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  | The title or display name of the VCS connector. |
+| full_path | [string](#string) |  | Full path from the corresponding VCS provider. For GitLab, this is the project full path. e.g. group1/project-1 |
+| web_url | [string](#string) |  | Web url from the corresponding VCS provider. For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1 |
+| branch | [string](#string) |  | Branch to listen to. |
+| base_directory | [string](#string) |  | Base working directory we are interested. |
+| external_id | [string](#string) |  | Repository id from the corresponding VCS provider. For GitLab, this is the project id. e.g. 123 |
+| external_webhook_id | [string](#string) |  | Push webhook id from the corresponding VCS provider. For GitLab, this is the project webhook id. e.g. 123 |
+| webhook_secret_token | [string](#string) |  | For GitLab, webhook request contains this in the &#39;X-Gitlab-Token&#34; header and we compare it with the one stored in db to validate it sends to the expected endpoint. |
+
+
+
+
+
  
 
  
@@ -2093,7 +2119,6 @@ InstanceOptions is the option for instances.
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name} |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
-| max_rows | [int32](#int32) |  | The max number of rows to export. |
 | format | [ExportFormat](#bytebase-store-ExportFormat) |  | The format of the exported file. |
 | password | [string](#string) | optional | The zip password provide by users. Leave it empty if no needs to encrypt the zip file. |
 
@@ -2631,6 +2656,38 @@ The type of target.
 | BRANCH | 1 |  |
 | CHANGELIST | 2 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_query_history-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/query_history.proto
+
+
+
+<a name="bytebase-store-QueryHistoryPayload"></a>
+
+### QueryHistoryPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) | optional |  |
+| duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+
+
+
+
+
+ 
 
  
 

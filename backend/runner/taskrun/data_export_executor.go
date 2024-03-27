@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -55,6 +56,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 			UpdateTime:      time.Now(),
 		})
 
+	ctx = context.WithValue(ctx, common.PrincipalIDContextKey, task.CreatorID)
 	payload := &api.TaskDatabaseDataExportPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database data export payload")
@@ -78,14 +80,6 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	statement, err := exec.store.GetSheetStatementByID(ctx, payload.SheetID)
 	if err != nil {
 		return true, nil, err
-	}
-	exportRequest := &v1pb.ExportRequest{
-		Name:               fmt.Sprintf("instances/%s", instance.ResourceID),
-		ConnectionDatabase: database.DatabaseName,
-		Statement:          statement,
-		Limit:              int32(payload.MaxRows),
-		Format:             v1pb.ExportFormat(payload.Format),
-		Password:           payload.Password,
 	}
 
 	schemaName := ""
@@ -121,6 +115,13 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Wrap(err, "failed to get query span")
 	}
 
+	exportRequest := &v1pb.ExportRequest{
+		Name:               fmt.Sprintf("instances/%s", instance.ResourceID),
+		ConnectionDatabase: database.DatabaseName,
+		Statement:          statement,
+		Format:             v1pb.ExportFormat(payload.Format),
+		Password:           payload.Password,
+	}
 	bytes, durationNs, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, instance, database, spans)
 	if exportErr != nil {
 		return true, nil, errors.Wrap(exportErr, "failed to export data")

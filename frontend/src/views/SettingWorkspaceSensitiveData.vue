@@ -47,6 +47,7 @@ import {
   SensitiveColumnView,
   GlobalMaskingRulesView,
   SemanticTypesView,
+  ClassificationView,
 } from "@/components/SensitiveData";
 import { featureToRef } from "@/store";
 
