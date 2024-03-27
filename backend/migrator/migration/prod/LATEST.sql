@@ -880,10 +880,8 @@ UPDATE
     ON vcs FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
--- repository table stores the repository setting for a project
--- A vcs is associated with many repositories.
--- A project can only link one repository (at least for now).
-CREATE TABLE repository (
+-- vcs_connector table stores vcs connectors for a project
+CREATE TABLE vcs_connector (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
@@ -893,41 +891,17 @@ CREATE TABLE repository (
     vcs_id INTEGER NOT NULL REFERENCES vcs (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
     resource_id TEXT NOT NULL,
-    -- Name from the corresponding VCS provider.
-    -- For GitLab, this is the project name. e.g. project 1
-    name TEXT NOT NULL,
-    -- Full path from the corresponding VCS provider.
-    -- For GitLab, this is the project full path. e.g. group1/project-1
-    full_path TEXT NOT NULL,
-    -- Web url from the corresponding VCS provider.
-    -- For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1
-    web_url TEXT NOT NULL,
-    -- Branch to listen to.
-    branch TEXT NOT NULL DEFAULT '',
-    -- Base working directory we are interested.
-    base_directory TEXT NOT NULL DEFAULT '',
-    -- Repository id from the corresponding VCS provider.
-    -- For GitLab, this is the project id. e.g. 123
-    external_id TEXT NOT NULL,
-    -- Push webhook id from the corresponding VCS provider.
-    -- For GitLab, this is the project webhook id. e.g. 123
-    external_webhook_id TEXT NOT NULL,
-    -- Identify the host of the webhook url where the webhook event sends. We store this to identify stale webhook url whose url doesn't match the current bytebase --external-url.
-    webhook_url_host TEXT NOT NULL,
-    -- Identify the target repository receiving the webhook event. This is a random string.
-    webhook_endpoint_id TEXT NOT NULL,
-    -- For GitLab, webhook request contains this in the 'X-Gitlab-Token" header and we compare it with the one stored in db to validate it sends to the expected endpoint.
-    webhook_secret_token TEXT NOT NULL
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_repository_unique_project_id_resource_id ON repository(project_id, resource_id);
+CREATE UNIQUE INDEX idx_vcs_connector_unique_project_id_resource_id ON vcs_connector(project_id, resource_id);
 
-ALTER SEQUENCE repository_id_seq RESTART WITH 101;
+ALTER SEQUENCE vcs_connector_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_repository_updated_ts
+CREATE TRIGGER update_vcs_connector_updated_ts
 BEFORE
 UPDATE
-    ON repository FOR EACH ROW
+    ON vcs_connector FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Anomaly

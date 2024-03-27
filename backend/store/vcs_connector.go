@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // VCSConnectorMessage is the message for a VCS connector.
@@ -18,17 +21,7 @@ type VCSConnectorMessage struct {
 	ProjectID     string
 	ResourceID    string
 
-	// Domain specific fields
-	Title              string
-	FullPath           string
-	WebURL             string
-	Branch             string
-	BaseDirectory      string
-	ExternalID         string
-	ExternalWebhookID  string
-	WebhookURLHost     string
-	WebhookEndpointID  string
-	WebhookSecretToken string
+	Payload *storepb.VCSConnector
 
 	// Output only fields
 	UID         int
@@ -76,10 +69,10 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 	where, args := []string{"TRUE"}, []any{}
 
 	if v := find.VCSUID; v != nil {
-		where, args = append(where, fmt.Sprintf("repository.vcs_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("vcs_connector.vcs_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("repository.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("vcs_connector.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
@@ -93,26 +86,17 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			repository.id AS id,
+			vcs_connector.id AS id,
 			vcs_id,
 			vcs.resource_id,
 			project.resource_id AS project_resource_id,
-			repository.resource_id,
-			repository.name AS name,
-			repository.creator_id,
-			repository.updater_id,
-			full_path,
-			web_url,
-			branch,
-			base_directory,
-			external_id,
-			external_webhook_id,
-			webhook_url_host,
-			webhook_endpoint_id,
-			webhook_secret_token
-		FROM repository
-		LEFT JOIN project ON project.id = repository.project_id
-		LEFT JOIN vcs ON vcs.id = repository.vcs_id
+			vcs_connector.resource_id,
+			vcs_connector.creator_id,
+			vcs_connector.updater_id,
+			vcs_connector.payload
+		FROM vcs_connector
+		LEFT JOIN project ON project.id = vcs_connector.project_id
+		LEFT JOIN vcs ON vcs.id = vcs_connector.vcs_id
 		WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
@@ -124,27 +108,24 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 	var vcsConnectors []*VCSConnectorMessage
 	for rows.Next() {
 		var vcsConnector VCSConnectorMessage
+		var payloadStr string
 		if err := rows.Scan(
 			&vcsConnector.UID,
 			&vcsConnector.VCSUID,
 			&vcsConnector.VCSResourceID,
 			&vcsConnector.ProjectID,
 			&vcsConnector.ResourceID,
-			&vcsConnector.Title,
 			&vcsConnector.CreatorID,
 			&vcsConnector.UpdaterID,
-			&vcsConnector.FullPath,
-			&vcsConnector.WebURL,
-			&vcsConnector.Branch,
-			&vcsConnector.BaseDirectory,
-			&vcsConnector.ExternalID,
-			&vcsConnector.ExternalWebhookID,
-			&vcsConnector.WebhookURLHost,
-			&vcsConnector.WebhookEndpointID,
-			&vcsConnector.WebhookSecretToken,
+			&payloadStr,
 		); err != nil {
 			return nil, err
 		}
+		var payload storepb.VCSConnector
+		if err := protojson.Unmarshal([]byte(payloadStr), &payload); err != nil {
+			return nil, err
+		}
+		vcsConnector.Payload = &payload
 		vcsConnectors = append(vcsConnectors, &vcsConnector)
 	}
 	if err := rows.Err(); err != nil {
@@ -165,6 +146,11 @@ func (s *Store) CreateVCSConnector(ctx context.Context, create *VCSConnectorMess
 	}
 	create.UpdaterID = create.CreatorID
 
+	payload, err := protojson.Marshal(create.Payload)
+	if err != nil {
+		return nil, err
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -172,24 +158,15 @@ func (s *Store) CreateVCSConnector(ctx context.Context, create *VCSConnectorMess
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO repository (
+		INSERT INTO vcs_connector (
 			creator_id,
 			updater_id,
 			vcs_id,
 			project_id,
 			resource_id,
-			name,
-			full_path,
-			web_url,
-			branch,
-			base_directory,
-			external_id,
-			external_webhook_id,
-			webhook_url_host,
-			webhook_endpoint_id,
-			webhook_secret_token
+			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
 	if err := tx.QueryRowContext(ctx, query,
@@ -198,16 +175,7 @@ func (s *Store) CreateVCSConnector(ctx context.Context, create *VCSConnectorMess
 		create.VCSUID,
 		project.UID,
 		create.ResourceID,
-		create.Title,
-		create.FullPath,
-		create.WebURL,
-		create.Branch,
-		create.BaseDirectory,
-		create.ExternalID,
-		create.ExternalWebhookID,
-		create.WebhookURLHost,
-		create.WebhookEndpointID,
-		create.WebhookSecretToken,
+		payload,
 	).Scan(
 		&create.UID,
 	); err != nil {
@@ -225,14 +193,20 @@ func (s *Store) CreateVCSConnector(ctx context.Context, create *VCSConnectorMess
 // UpdateVCSConnector updates a VCS connector.
 func (s *Store) UpdateVCSConnector(ctx context.Context, update *UpdateVCSConnectorMessage) error {
 	set, args := []string{"updater_id = $1"}, []any{update.UpdaterID}
+
+	var payloadSet []string
 	if v := update.Branch; v != nil {
-		set, args = append(set, fmt.Sprintf("branch = $%d", len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf("jsonb_build_object('branch', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
 	}
 	if v := update.BaseDirectory; v != nil {
-		set, args = append(set, fmt.Sprintf("base_directory = $%d", len(args)+1)), append(args, *v)
+		payloadSet, args = append(payloadSet, fmt.Sprintf("jsonb_build_object('baseDirectory', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
 	}
+	if len(payloadSet) != 0 {
+		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))
+	}
+
 	where := []string{}
-	where, args = append(where, fmt.Sprintf("repository.id = $%d", len(args)+1)), append(args, update.UID)
+	where, args = append(where, fmt.Sprintf("vcs_connector.id = $%d", len(args)+1)), append(args, update.UID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -240,10 +214,10 @@ func (s *Store) UpdateVCSConnector(ctx context.Context, update *UpdateVCSConnect
 	}
 
 	query := `
-		UPDATE repository
+		UPDATE vcs_connector
 		SET ` + strings.Join(set, ", ") + `
 		FROM project, vcs
-		WHERE project.id = repository.project_id AND vcs.id = repository.vcs_id AND ` + strings.Join(where, " AND ")
+		WHERE project.id = vcs_connector.project_id AND vcs.id = vcs_connector.vcs_id AND ` + strings.Join(where, " AND ")
 
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
@@ -261,9 +235,9 @@ func (s *Store) DeleteVCSConnector(ctx context.Context, projectID, resourceID st
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM repository
+		DELETE FROM vcs_connector
 		USING project
-		WHERE repository.project_id = project.id AND project.resource_id = $1 AND repository.resource_id = $2;`,
+		WHERE vcs_connector.project_id = project.id AND project.resource_id = $1 AND vcs_connector.resource_id = $2;`,
 		projectID, resourceID); err != nil {
 		return err
 	}

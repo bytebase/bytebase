@@ -95,7 +95,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		switch vcsProvider.Type {
 		case vcs.GitHub:
 			secretToken := c.Request().Header.Get("X-Hub-Signature-256")
-			ok, err := validateGitHubWebhookSignature256(secretToken, vcsConnector.WebhookSecretToken, body)
+			ok, err := validateGitHubWebhookSignature256(secretToken, vcsConnector.Payload.WebhookSecretToken, body)
 			if err != nil {
 				return c.String(http.StatusBadRequest, fmt.Sprintf("failed to validate webhook signature %q, error %v", secretToken, err))
 			}
@@ -104,7 +104,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			}
 		case vcs.GitLab:
 			secretToken := c.Request().Header.Get("X-Gitlab-Token")
-			if secretToken != vcsConnector.WebhookSecretToken {
+			if secretToken != vcsConnector.Payload.WebhookSecretToken {
 				return c.String(http.StatusBadRequest, fmt.Sprintf("invalid webhook secret token %q", secretToken))
 			}
 		}
@@ -131,12 +131,12 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			}
 
 			// Check webhook branch.
-			ok, err := isWebhookEventBranch(pushEvent.Ref, vcsConnector.Branch)
+			ok, err := isWebhookEventBranch(pushEvent.Ref, vcsConnector.Payload.Branch)
 			if err != nil {
 				return err
 			}
 			if !ok {
-				return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", pushEvent.Ref, vcsConnector.Branch))
+				return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", pushEvent.Ref, vcsConnector.Payload.Branch))
 			}
 
 			// Squash commits.
@@ -167,12 +167,12 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			}
 
 			// Check webhook branch.
-			ok, err := isWebhookEventBranch(pushEvent.Ref, vcsConnector.Branch)
+			ok, err := isWebhookEventBranch(pushEvent.Ref, vcsConnector.Payload.Branch)
 			if err != nil {
 				return err
 			}
 			if !ok {
-				return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", pushEvent.Ref, vcsConnector.Branch))
+				return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", pushEvent.Ref, vcsConnector.Payload.Branch))
 			}
 
 			// Squash commits.
@@ -228,12 +228,12 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 
 				// Check webhook branch.
 				ref := "refs/heads/" + change.New.Name
-				ok, err := isWebhookEventBranch(ref, vcsConnector.Branch)
+				ok, err := isWebhookEventBranch(ref, vcsConnector.Payload.Branch)
 				if err != nil {
 					return err
 				}
 				if !ok {
-					return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", ref, vcsConnector.Branch))
+					return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", ref, vcsConnector.Payload.Branch))
 				}
 
 				// Squash commits.
@@ -250,7 +250,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 						ctx,
 						oauthContext,
 						vcsProvider.InstanceURL,
-						vcsConnector.ExternalID,
+						vcsConnector.Payload.ExternalId,
 						before,
 						commit.Hash,
 					)
@@ -330,12 +330,12 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 
 			// Check webhook branch.
 			refUpdate := pushEvent.Resource.RefUpdates[0]
-			ok, err := isWebhookEventBranch(refUpdate.Name, vcsConnector.Branch)
+			ok, err := isWebhookEventBranch(refUpdate.Name, vcsConnector.Payload.Branch)
 			if err != nil {
 				return err
 			}
 			if !ok {
-				return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", refUpdate, vcsConnector.Branch))
+				return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", refUpdate, vcsConnector.Payload.Branch))
 			}
 
 			// Squash commits.
@@ -349,7 +349,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				// then we need to query the queryPullRequest API to find out if the updateRef.newObjectId
 				// is the last commit of the Pull Request, and then we can use the PullRef.newObjectId API
 				// to find out if it is the last commit of the Pull Request. Request ID to list the corresponding commits.
-				probablePullRequests, err := azure.QueryPullRequest(ctx, oauthContext, vcsConnector.ExternalID, pushEvent.Resource.RefUpdates[0].NewObjectID)
+				probablePullRequests, err := azure.QueryPullRequest(ctx, oauthContext, vcsConnector.Payload.ExternalId, pushEvent.Resource.RefUpdates[0].NewObjectID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to query pull request").SetInternal(err)
 				}
@@ -374,7 +374,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				}
 				// We should backfill the commit list by the commits in the pull request.
 				pullRequest := filterOutPullRequestList[0]
-				commitsInPullRequest, err := azure.GetPullRequestCommits(ctx, oauthContext, vcsConnector.ExternalID, pullRequest.ID)
+				commitsInPullRequest, err := azure.GetPullRequestCommits(ctx, oauthContext, vcsConnector.Payload.ExternalId, pullRequest.ID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get pull request commits").SetInternal(err)
 				}
@@ -397,7 +397,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				}
 				slog.Debug("all commits are created by Bytebase",
 					slog.String("repoURL", pushEvent.Resource.Repository.URL),
-					slog.String("repoID", vcsConnector.ExternalID),
+					slog.String("repoID", vcsConnector.Payload.ExternalId),
 					slog.String("repoName", pushEvent.Resource.Repository.Name),
 					slog.String("commits", strings.Join(commitIDs, ", ")),
 				)
@@ -412,7 +412,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			// NOTE: We presume that the sequence of the commits in the code push event is the reverse order of the commit sequence(aka. stack sequence, commit first, appear last) in the repository.
 			backfillCommits := make([]vcs.Commit, 0, len(nonBytebaseCommitList))
 			for _, commit := range nonBytebaseCommitList {
-				changes, err := azure.GetChangesByCommit(ctx, oauthContext, vcsConnector.ExternalID, commit.CommitID)
+				changes, err := azure.GetChangesByCommit(ctx, oauthContext, vcsConnector.Payload.ExternalId, commit.CommitID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get changes by commit %q", commit.CommitID)).SetInternal(err)
 				}
@@ -443,15 +443,15 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				})
 			}
 			if len(backfillCommits) == 1 && len(backfillCommits[0].AddedList) == 1 && strings.HasSuffix(backfillCommits[0].AddedList[0], azure.SQLReviewPipelineFilePath) {
-				slog.Debug("start to setup pipeline", slog.String("repository", vcsConnector.ExternalID))
+				slog.Debug("start to setup pipeline", slog.String("repository", vcsConnector.Payload.ExternalId))
 				// Use workspaceID instead of repo secret as SQL review pipeline token, so that we don't need to re-create the pipeline if users disable then enable the CI.
 				workspaceID, err := s.store.GetWorkspaceID(ctx)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get workspace id with error").SetInternal(err)
 				}
 				// Setup SQL review pipeline and policy.
-				if err := azure.EnableSQLReviewCI(ctx, oauthContext, vcsConnector.Title, vcsConnector.ExternalID, vcsConnector.Branch, workspaceID); err != nil {
-					slog.Error("failed to setup pipeline", log.BBError(err), slog.String("repository", vcsConnector.ExternalID))
+				if err := azure.EnableSQLReviewCI(ctx, oauthContext, vcsConnector.Payload.Title, vcsConnector.Payload.ExternalId, vcsConnector.Payload.Branch, workspaceID); err != nil {
+					slog.Error("failed to setup pipeline", log.BBError(err), slog.String("repository", vcsConnector.Payload.ExternalId))
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to setup SQL review pipeline").SetInternal(err)
 				}
 				return c.String(http.StatusOK, "OK")
@@ -459,7 +459,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 
 			// Backfill web url for commits.
 			if pushEvent.Resource.PushID != 0 {
-				commitsInPush, err := azure.GetPushCommitsByPushID(ctx, oauthContext, vcsConnector.ExternalID, pushEvent.Resource.PushID)
+				commitsInPush, err := azure.GetPushCommitsByPushID(ctx, oauthContext, vcsConnector.Payload.ExternalId, pushEvent.Resource.PushID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get push commits by push id %d", pushEvent.Resource.PushID)).SetInternal(err)
 				}
@@ -480,9 +480,9 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				Ref:                pushEvent.Resource.RefUpdates[0].Name,
 				Before:             pushEvent.Resource.RefUpdates[0].OldObjectID,
 				After:              pushEvent.Resource.RefUpdates[0].NewObjectID,
-				RepositoryID:       vcsConnector.ExternalID,
-				RepositoryURL:      vcsConnector.WebURL,
-				RepositoryFullPath: vcsConnector.ExternalID,
+				RepositoryID:       vcsConnector.Payload.ExternalId,
+				RepositoryURL:      vcsConnector.Payload.WebUrl,
+				RepositoryFullPath: vcsConnector.Payload.ExternalId,
 				AuthorName:         pushEvent.Resource.PushedBy.DisplayName,
 				CommitList:         backfillCommits,
 			})
@@ -598,7 +598,7 @@ func (s *Service) processPushEvent(ctx context.Context, oauthContext *common.Oau
 		activityCreateList = append(activityCreateList, activityCreateListForFile...)
 		migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
 		if len(migrationDetailListForFile) != 0 {
-			fileNameList = append(fileNameList, strings.TrimPrefix(fileInfo.item.FileName, repo.repository.BaseDirectory+"/"))
+			fileNameList = append(fileNameList, strings.TrimPrefix(fileInfo.item.FileName, repo.repository.Payload.BaseDirectory+"/"))
 		}
 	}
 	if len(migrationDetailList) == 0 {
@@ -644,12 +644,12 @@ func filterFilesByCommitsDiff(
 		ctx,
 		oauthContext,
 		repoInfo.vcs.InstanceURL,
-		repoInfo.repository.ExternalID,
+		repoInfo.repository.Payload.ExternalId,
 		beforeCommit,
 		afterCommit,
 	)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "failed to get file diff list for repository %s", repoInfo.repository.ExternalID)
+		return nil, errors.WithMessagef(err, "failed to get file diff list for repository %s", repoInfo.repository.Payload.ExternalId)
 	}
 	var filteredDistinctFileList []vcs.DistinctFileItem
 	for _, file := range distinctFileList {
@@ -673,7 +673,7 @@ func getFileInfoList(distinctFileList []vcs.DistinctFileItem, repo *repoInfo) []
 	for _, item := range distinctFileList {
 		slog.Debug("Processing file", slog.String("file", item.FileName), slog.String("commit", item.Commit.ID))
 		var migrationInfo *db.MigrationInfo
-		if filepath.Dir(item.FileName) != repo.repository.BaseDirectory {
+		if filepath.Dir(item.FileName) != repo.repository.Payload.BaseDirectory {
 			continue
 		}
 		filename := filepath.Base(item.FileName)
@@ -923,7 +923,7 @@ func readFileContent(ctx context.Context, oauthContext *common.OauthContext, pus
 		ctx,
 		oauthContext,
 		repo.vcs.InstanceURL,
-		repo.repository.ExternalID,
+		repo.repository.Payload.ExternalId,
 		file,
 		vcs.RefInfo{
 			RefType: vcs.RefTypeCommit,
