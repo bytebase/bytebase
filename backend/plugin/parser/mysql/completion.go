@@ -34,8 +34,17 @@ func init() {
 
 // Completion is the entry point of MySQL code completion.
 func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
-	completer := NewCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, listDatabaseNames)
-	return completer.completion()
+	completer := NewStandardCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, listDatabaseNames)
+	result, err := completer.completion()
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		return result, nil
+	}
+
+	trickyCompleter := NewTrickyCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, listDatabaseNames)
+	return trickyCompleter.completion()
 }
 
 func newIgnoredTokens() map[int]bool {
@@ -223,8 +232,37 @@ type Completer struct {
 	caretTokenIsQuoted bool
 }
 
-func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) *Completer {
+func NewStandardCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
+	// For all MySQL completers, we use one global follow sets by state.
+	// The FollowSetsByState is the thread-safe struct.
+	core := base.NewCodeCompletionCore(
+		parser,
+		newIgnoredTokens(),
+		newPreferredRules(),
+		&globalFollowSetsByState,
+		mysql.MySQLParserRULE_querySpecification,
+		mysql.MySQLParserRULE_queryExpression,
+		mysql.MySQLParserRULE_selectAlias,
+		mysql.MySQLParserRULE_withClause,
+	)
+	return &Completer{
+		ctx:                 ctx,
+		core:                core,
+		parser:              parser,
+		lexer:               lexer,
+		scanner:             scanner,
+		defaultDatabase:     defaultDatabase,
+		getMetadata:         metadata,
+		listDatabaseNames:   listDatabaseNames,
+		metadataCache:       make(map[string]*model.DatabaseMetadata),
+		noSeparatorRequired: newNoSeparatorRequired(),
+		cteCache:            make(map[int][]*base.VirtualTableReference),
+	}
+}
+
+func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) *Completer {
+	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
 	// For all MySQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
 	core := base.NewCodeCompletionCore(
@@ -1055,6 +1093,21 @@ func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (
 	return parser, lexer, scanner
 }
 
+func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*mysql.MySQLParser, *mysql.MySQLLexer, *base.Scanner) {
+	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
+	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
+	input := antlr.NewInputStream(statement)
+	lexer := mysql.NewMySQLLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := mysql.NewMySQLParser(stream)
+	parser.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	scanner := base.NewScanner(stream, true /* fillInput */)
+	scanner.SeekPosition(caretLine, caretOffset)
+	scanner.Push()
+	return parser, lexer, scanner
+}
+
 func notEmptySQLCount(list []base.SingleSQL) int {
 	count := 0
 	for _, sql := range list {
@@ -1100,6 +1153,58 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 	}
 
 	return buf.String(), newCaretLine, newCaretOffset
+}
+
+// caretLine is 1-based and caretOffset is 0-based.
+func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
+	input := antlr.NewInputStream(statement)
+	lexer := mysql.NewMySQLLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	p := mysql.NewMySQLParser(stream)
+	p.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	lexerErrorListener := &base.ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{}
+	lexer.AddErrorListener(lexerErrorListener)
+	p.AddErrorListener(parserErrorListener)
+
+	lastLine, lastColumn, lastIndex := 0, 0, 0
+	num := 0
+	for {
+		if num > 10 {
+			// We only skip at most 10 SQL statements.
+			return statement, caretLine, caretOffset
+		}
+		tree := p.SimpleStatement()
+		if lexerErrorListener.Err != nil || parserErrorListener.Err != nil {
+			if num == 0 {
+				return statement, caretLine, caretOffset
+			}
+			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
+			newCaretOffset := caretOffset
+			if caretLine == lastLine {
+				newCaretOffset = caretOffset - lastColumn - 1 // convert to 0-based.
+			}
+			return stream.GetTextFromInterval(antlr.NewInterval(lastIndex+1, stream.Size())), newCaretLine, newCaretOffset
+		}
+		if tree.GetStop().GetLine() > caretLine || (tree.GetStop().GetLine() == caretLine && tree.GetStop().GetColumn() >= caretOffset) {
+			if num == 0 {
+				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
+				return statement, caretLine, caretOffset
+			}
+
+			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
+			newCaretOffset := caretOffset
+			if caretLine == lastLine {
+				newCaretOffset = caretOffset - lastColumn - 1 // convert to 0-based.
+			}
+			return stream.GetTextFromInterval(antlr.NewInterval(tree.GetStart().GetTokenIndex(), stream.Size())), newCaretLine, newCaretOffset
+		}
+		num++
+		lastLine = tree.GetStop().GetLine()
+		lastColumn = tree.GetStop().GetColumn()
+		lastIndex = tree.GetStop().GetTokenIndex()
+	}
 }
 
 func unquote(s string) string {
