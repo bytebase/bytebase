@@ -119,7 +119,7 @@
             <i18n-t keypath="subscription.trial-start-modal.subscription">
               <template #page>
                 <router-link
-                  to="/setting/subscription"
+                  :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
                   class="normal-link"
                   exact-active-class=""
                 >
@@ -140,7 +140,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useLocalStorage } from "@vueuse/core";
+import { useLocalStorage, type UseStorageOptions } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { ChevronDownIcon, SearchIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
@@ -152,6 +152,7 @@ import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useSubscriptionV1Store,
   useOnboardingStateStore,
@@ -236,7 +237,7 @@ const storedTab = useLocalStorage<TabValue>(
         return value;
       },
     },
-  }
+  } as UseStorageOptions<TabValue>
 );
 const keyForTab = (tab: TabValue) => {
   if (tab === "CREATED") return "my-issues-created";

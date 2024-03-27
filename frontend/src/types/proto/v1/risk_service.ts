@@ -78,8 +78,9 @@ export enum Risk_Source {
   DDL = 1,
   DML = 2,
   CREATE_DATABASE = 3,
-  QUERY = 4,
-  EXPORT = 5,
+  REQUEST_QUERY = 4,
+  REQUEST_EXPORT = 5,
+  DATA_EXPORT = 6,
   UNRECOGNIZED = -1,
 }
 
@@ -98,11 +99,14 @@ export function risk_SourceFromJSON(object: any): Risk_Source {
     case "CREATE_DATABASE":
       return Risk_Source.CREATE_DATABASE;
     case 4:
-    case "QUERY":
-      return Risk_Source.QUERY;
+    case "REQUEST_QUERY":
+      return Risk_Source.REQUEST_QUERY;
     case 5:
-    case "EXPORT":
-      return Risk_Source.EXPORT;
+    case "REQUEST_EXPORT":
+      return Risk_Source.REQUEST_EXPORT;
+    case 6:
+    case "DATA_EXPORT":
+      return Risk_Source.DATA_EXPORT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -120,10 +124,12 @@ export function risk_SourceToJSON(object: Risk_Source): string {
       return "DML";
     case Risk_Source.CREATE_DATABASE:
       return "CREATE_DATABASE";
-    case Risk_Source.QUERY:
-      return "QUERY";
-    case Risk_Source.EXPORT:
-      return "EXPORT";
+    case Risk_Source.REQUEST_QUERY:
+      return "REQUEST_QUERY";
+    case Risk_Source.REQUEST_EXPORT:
+      return "REQUEST_EXPORT";
+    case Risk_Source.DATA_EXPORT:
+      return "DATA_EXPORT";
     case Risk_Source.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

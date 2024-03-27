@@ -26,6 +26,8 @@ export const PROJECT_V1_ROUTE_SLOW_QUERIES = `${PROJECT_V1_ROUTE_DASHBOARD}.slow
 export const PROJECT_V1_ROUTE_ANOMALIES = `${PROJECT_V1_ROUTE_DASHBOARD}.anomalies`;
 export const PROJECT_V1_ROUTE_ACTIVITIES = `${PROJECT_V1_ROUTE_DASHBOARD}.activities`;
 export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
+export const PROJECT_V1_ROUTE_GITOPS_CREATE = `${PROJECT_V1_ROUTE_GITOPS}.create`;
+export const PROJECT_V1_ROUTE_GITOPS_DETAIL = `${PROJECT_V1_ROUTE_GITOPS}.detail`;
 export const PROJECT_V1_ROUTE_WEBHOOKS = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.dashboard`;
 export const PROJECT_V1_ROUTE_WEBHOOK_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.create`;
 export const PROJECT_V1_ROUTE_WEBHOOK_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.detail`;
@@ -307,7 +309,10 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_GITOPS,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => ["bb.projects.get"],
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.vcsConnectors.list",
+          ],
         },
         component: () =>
           import("@/views/project/ProjectVersionControlPanel.vue"),

@@ -65,6 +65,7 @@
         <template #table="{ issueList, loading }">
           <IssueTableV1
             mode="PROJECT"
+            :bordered="true"
             :loading="loading"
             :issue-list="issueList"
             :highlight-text="state.params.query"
@@ -76,7 +77,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useLocalStorage } from "@vueuse/core";
+import { useLocalStorage, type UseStorageOptions } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { ChevronDownIcon, SearchIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
@@ -147,7 +148,7 @@ const storedTab = useLocalStorage<TabValue>(
         return value;
       },
     },
-  }
+  } as UseStorageOptions<TabValue>
 );
 
 const keyForTab = (tab: TabValue) => {

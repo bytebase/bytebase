@@ -543,3 +543,30 @@ func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContex
 		partitions: partitionDefinitions,
 	}
 }
+
+func (t *mysqlTransformer) EnterCreateView(ctx *mysql.CreateViewContext) {
+	if t.err != nil {
+		return
+	}
+
+	databaseName, viewName := mysqlparser.NormalizeMySQLViewName(ctx.ViewName())
+	if databaseName != "" && t.state.name != "" && databaseName != t.state.name {
+		t.err = errors.New("multiple database names found: " + t.state.name + ", " + databaseName)
+		return
+	}
+
+	schema, ok := t.state.schemas[""]
+	if !ok || schema == nil {
+		t.state.schemas[""] = newSchemaState()
+	}
+
+	definition := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: ctx.ViewTail().ViewSelect().GetStart().GetTokenIndex(),
+		Stop:  ctx.ViewTail().ViewSelect().GetStop().GetTokenIndex(),
+	})
+	schema.views[viewName] = &viewState{
+		id:         len(schema.views),
+		name:       viewName,
+		definition: definition,
+	}
+}

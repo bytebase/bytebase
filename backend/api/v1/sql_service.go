@@ -174,7 +174,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		result, durationNs, queryErr := s.doAdminExecute(ctx, driver, conn, request)
 		sanitizeResults(result)
 
-		if err := s.postAdminExecute(ctx, activity, durationNs, queryErr); err != nil {
+		if err := s.postQuery(ctx, database, activity, durationNs, queryErr); err != nil {
 			slog.Error("failed to post admin execute activity", log.BBError(err))
 		}
 
@@ -201,43 +201,6 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			return status.Errorf(codes.Internal, "failed to send response: %v", err)
 		}
 	}
-}
-
-func (s *SQLService) postAdminExecute(ctx context.Context, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
-	var payload api.ActivitySQLEditorQueryPayload
-	if err := json.Unmarshal([]byte(activity.Payload), &payload); err != nil {
-		return status.Errorf(codes.Internal, "failed to unmarshal activity payload: %v", err)
-	}
-
-	var newLevel *api.ActivityLevel
-	payload.DurationNs = durationNs
-	if queryErr != nil {
-		payload.Error = queryErr.Error()
-		errorLevel := api.ActivityError
-		newLevel = &errorLevel
-	}
-
-	// TODO: update the advice list
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		slog.Warn("Failed to marshal activity after executing sql statement",
-			slog.String("database_name", payload.DatabaseName),
-			slog.Int("instance_id", payload.InstanceID),
-			slog.String("statement", payload.Statement),
-			log.BBError(err))
-		return status.Errorf(codes.Internal, "Failed to marshal activity after executing sql statement: %v", err)
-	}
-
-	payloadString := string(payloadBytes)
-	if _, err := s.store.UpdateActivityV2(ctx, &store.UpdateActivityMessage{
-		UID:     activity.UID,
-		Level:   newLevel,
-		Payload: &payloadString,
-	}); err != nil {
-		return status.Errorf(codes.Internal, "Failed to update activity after executing sql statement: %v", err)
-	}
-
-	return nil
 }
 
 func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *sql.Conn, request *v1pb.AdminExecuteRequest) ([]*v1pb.QueryResult, int64, error) {
@@ -353,7 +316,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 
 	bytes, durationNs, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, instance, database, spans)
 
-	if err := s.postExport(ctx, activity, durationNs, exportErr); err != nil {
+	if err := s.postExport(ctx, database, activity, durationNs, exportErr); err != nil {
 		return nil, err
 	}
 
@@ -445,7 +408,7 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	return content, durationNs, nil
 }
 
-func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
+func (s *SQLService) postExport(ctx context.Context, database *store.DatabaseMessage, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
 	// Update the activity
 	var payload api.ActivitySQLExportPayload
 	if err := json.Unmarshal([]byte(activity.Payload), &payload); err != nil {
@@ -479,6 +442,20 @@ func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMes
 		Payload: &payloadString,
 	}); err != nil {
 		return status.Errorf(codes.Internal, "Failed to update activity after exporting sql statement: %v", err)
+	}
+
+	if _, err := s.store.CreateQueryHistory(ctx, &store.QueryHistoryMessage{
+		CreatorUID: activity.CreatorUID,
+		ProjectID:  database.ProjectID,
+		Database:   common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		Statement:  payload.Statement,
+		Type:       store.QueryHistoryTypeExport,
+		Payload: &storepb.QueryHistoryPayload{
+			Error:    &payload.Error,
+			Duration: durationpb.New(time.Duration(durationNs)),
+		},
+	}); err != nil {
+		return status.Errorf(codes.Internal, "Failed to create export history with error: %v", err)
 	}
 
 	return nil
@@ -902,7 +879,7 @@ func convertValueToStringInXLSX(value *v1pb.RowValue) string {
 	}
 }
 
-func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, database *store.DatabaseMessage, payload api.ActivitySQLExportPayload) (*store.ActivityMessage, error) {
+func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, instanceUID int, database *store.DatabaseMessage, payload api.ActivitySQLExportPayload) (*store.ActivityMessage, error) {
 	// TODO: use v1 activity API instead of
 	activityBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -918,7 +895,7 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 		CreatorUID:        user.ID,
 		Type:              api.ActivitySQLExport,
 		ResourceContainer: fmt.Sprintf("projects/%s", database.ProjectID),
-		ContainerUID:      containerID,
+		ContainerUID:      instanceUID,
 		Level:             level,
 		Comment: fmt.Sprintf("Export `%q` in database %q of instance %d.",
 			payload.Statement, payload.DatabaseName, payload.InstanceID),
@@ -932,8 +909,8 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 	return activity, nil
 }
 
-// ListQueryHistories lists query histories.
-func (s *SQLService) ListQueryHistories(ctx context.Context, request *v1pb.ListQueryHistoriesRequest) (*v1pb.ListQueryHistoriesResponse, error) {
+// SearchQueryHistories lists query histories.
+func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.SearchQueryHistoriesRequest) (*v1pb.SearchQueryHistoriesResponse, error) {
 	var pageToken storepb.PageToken
 	if request.PageToken != "" {
 		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
@@ -958,20 +935,10 @@ func (s *SQLService) ListQueryHistories(ctx context.Context, request *v1pb.ListQ
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 
-	order := api.DESC
-	activityFind := &store.FindActivityMessage{
-		Order: &order,
-		TypeList: []api.ActivityType{
-			api.ActivitySQLQuery,
-		},
+	find := &store.FindQueryHistoryMessage{
 		CreatorUID: &principalID,
-		LevelList: []api.ActivityLevel{
-			api.ActivityInfo,
-			api.ActivityWarn,
-			api.ActivityError,
-		},
-		Limit:  &limitPlusOne,
-		Offset: &offset,
+		Limit:      &limitPlusOne,
+		Offset:     &offset,
 	}
 
 	filters, err := parseFilter(request.Filter)
@@ -979,40 +946,33 @@ func (s *SQLService) ListQueryHistories(ctx context.Context, request *v1pb.ListQ
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	var instanceName string
-	var databaseName string
 	for _, spec := range filters {
+		if spec.operator != comparatorTypeEqual {
+			return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%v" filter`, spec.key)
+		}
 		switch spec.key {
 		case "database":
-			instanceID, _, err := common.GetInstanceDatabaseID(spec.value)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
-			databaseName = spec.value
-			instanceName = fmt.Sprintf("%s%s", common.InstanceNamePrefix, instanceID)
+			database := spec.value
+			find.Database = &database
 		case "instance":
-			instanceName = spec.value
+			instance := spec.value
+			find.Instance = &instance
+		case "type":
+			historyType := store.QueryHistoryType(spec.value)
+			find.Type = &historyType
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid filter %s", spec.key)
 		}
 	}
 
-	if instanceName != "" {
-		instance, err := getInstanceMessage(ctx, s.store, instanceName)
-		if err != nil {
-			return nil, err
-		}
-		activityFind.ContainerUID = &instance.UID
-	}
-
-	activityList, err := s.store.ListActivityV2(ctx, activityFind)
+	historyList, err := s.store.ListQueryHistories(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list activity: %v", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to list history: %v", err.Error())
 	}
 
 	nextPageToken := ""
-	if len(activityList) == limitPlusOne {
-		activityList = activityList[:limit]
+	if len(historyList) == limitPlusOne {
+		historyList = historyList[:limit]
 		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
 			Limit:  int32(limit),
 			Offset: int32(limit + offset),
@@ -1021,16 +981,15 @@ func (s *SQLService) ListQueryHistories(ctx context.Context, request *v1pb.ListQ
 		}
 	}
 
-	resp := &v1pb.ListQueryHistoriesResponse{
+	resp := &v1pb.SearchQueryHistoriesResponse{
 		NextPageToken: nextPageToken,
 	}
-	for _, activity := range activityList {
-		queryHistory, err := s.convertToQueryHistory(ctx, activity)
+	for _, history := range historyList {
+		queryHistory, err := s.convertToV1QueryHistory(ctx, history)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert log entity, error: %v", err)
 		}
-		// TODO: set database in activity query.
-		if databaseName != "" && queryHistory.Database != databaseName {
+		if queryHistory == nil {
 			continue
 		}
 		resp.QueryHistories = append(resp.QueryHistories, queryHistory)
@@ -1039,38 +998,32 @@ func (s *SQLService) ListQueryHistories(ctx context.Context, request *v1pb.ListQ
 	return resp, nil
 }
 
-func (s *SQLService) convertToQueryHistory(ctx context.Context, activity *store.ActivityMessage) (*v1pb.QueryHistory, error) {
-	var payload api.ActivitySQLEditorQueryPayload
-	if err := json.Unmarshal([]byte(activity.Payload), &payload); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to unmarshal payload for activity %v: %v", activity.UID, err.Error())
-	}
-
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		UID: &payload.DatabaseID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", payload.DatabaseID)
-	}
-
-	user, err := s.store.GetUserByID(ctx, activity.CreatorUID)
+func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store.QueryHistoryMessage) (*v1pb.QueryHistory, error) {
+	user, err := s.store.GetUserByID(ctx, history.CreatorUID)
 	if err != nil {
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.Errorf("cannot found user with id %d", activity.ContainerUID)
+		return nil, errors.Errorf("cannot found user with id %d", history.CreatorUID)
+	}
+
+	historyType := v1pb.QueryHistory_TYPE_UNSPECIFIED
+	switch history.Type {
+	case store.QueryHistoryTypeExport:
+		historyType = v1pb.QueryHistory_EXPORT
+	case store.QueryHistoryTypeQuery:
+		historyType = v1pb.QueryHistory_QUERY
 	}
 
 	return &v1pb.QueryHistory{
-		Name:       fmt.Sprintf("queryHistories/%d", activity.UID),
-		Statement:  payload.Statement,
-		Error:      &payload.Error,
-		Database:   common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		Name:       fmt.Sprintf("queryHistories/%d", history.UID),
+		Statement:  history.Statement,
+		Error:      history.Payload.Error,
+		Database:   history.Database,
 		Creator:    fmt.Sprintf("%s%s", common.UserNamePrefix, user.Email),
-		CreateTime: timestamppb.New(time.Unix(activity.CreatedTs, 0)),
-		Duration:   durationpb.New(time.Duration(payload.DurationNs)),
+		CreateTime: timestamppb.New(history.CreatedTime),
+		Duration:   history.Payload.Duration,
+		Type:       historyType,
 	}, nil
 }
 
@@ -1175,7 +1128,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	// Update activity.
-	if err = s.postQuery(ctx, activity, durationNs, queryErr); err != nil {
+	if err = s.postQuery(ctx, database, activity, durationNs, queryErr); err != nil {
 		return nil, err
 	}
 	if queryErr != nil {
@@ -1255,7 +1208,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 // postQuery does the following:
 //  1. Check index hit Explain statements
 //  2. Update SQL query activity
-func (s *SQLService) postQuery(ctx context.Context, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
+func (s *SQLService) postQuery(ctx context.Context, database *store.DatabaseMessage, activity *store.ActivityMessage, durationNs int64, queryErr error) error {
 	newLevel := activity.Level
 
 	// Update the activity
@@ -1287,6 +1240,20 @@ func (s *SQLService) postQuery(ctx context.Context, activity *store.ActivityMess
 		Payload: &payloadString,
 	}); err != nil {
 		return status.Errorf(codes.Internal, "Failed to update activity after executing sql statement: %v", err)
+	}
+
+	if _, err := s.store.CreateQueryHistory(ctx, &store.QueryHistoryMessage{
+		CreatorUID: activity.CreatorUID,
+		ProjectID:  database.ProjectID,
+		Database:   common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		Statement:  payload.Statement,
+		Type:       store.QueryHistoryTypeQuery,
+		Payload: &storepb.QueryHistoryPayload{
+			Error:    &payload.Error,
+			Duration: durationpb.New(time.Duration(durationNs)),
+		},
+	}); err != nil {
+		return status.Errorf(codes.Internal, "Failed to create export history with error: %v", err)
 	}
 
 	return nil
@@ -1465,7 +1432,7 @@ func sanitizeResults(results []*v1pb.QueryResult) {
 	}
 }
 
-func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, containerID int, database *store.DatabaseMessage, payload api.ActivitySQLEditorQueryPayload) (*store.ActivityMessage, error) {
+func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, instanceUID int, database *store.DatabaseMessage, payload api.ActivitySQLEditorQueryPayload) (*store.ActivityMessage, error) {
 	// TODO: use v1 activity API instead of
 	activityBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -1481,7 +1448,7 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 		CreatorUID:        user.ID,
 		Type:              api.ActivitySQLQuery,
 		ResourceContainer: fmt.Sprintf("projects/%s", database.ProjectID),
-		ContainerUID:      containerID,
+		ContainerUID:      instanceUID,
 		Level:             level,
 		Comment: fmt.Sprintf("Executed `%q` in database %q of instance %d.",
 			payload.Statement, payload.DatabaseName, payload.InstanceID),
@@ -1492,6 +1459,7 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create activity: %v", err)
 	}
+
 	return activity, nil
 }
 

@@ -20,7 +20,7 @@
       <template #trigger>
         <router-link
           v-if="clickable"
-          to="/setting/subscription"
+          :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
           exact-active-class=""
         >
           <heroicons-solid:sparkles class="w-5 h-5" />
@@ -53,6 +53,7 @@
 import { NTooltip } from "naive-ui";
 import type { PropType } from "vue";
 import { reactive, computed } from "vue";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
 import type { FeatureType } from "@/types";
 import { planTypeToString } from "@/types";

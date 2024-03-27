@@ -40,6 +40,10 @@ func getPlanCheckRunsFromSpec(ctx context.Context, s *store.Store, plan *store.P
 		if _, _, err := common.GetProjectIDDeploymentConfigID(config.ChangeDatabaseConfig.Target); err == nil {
 			return getPlanCheckRunsFromChangeDatabaseConfigDeploymentConfigTarget(ctx, s, plan, config.ChangeDatabaseConfig)
 		}
+	case *storepb.PlanConfig_Spec_ExportDataConfig:
+		if _, _, err := common.GetInstanceDatabaseID(config.ExportDataConfig.Target); err == nil {
+			return getPlanCheckRunsFromExportDataConfigDatabaseTarget(ctx, s, plan, config.ExportDataConfig)
+		}
 	default:
 		return nil, errors.Errorf("unknown spec config type %T", config)
 	}
@@ -300,6 +304,75 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		})
 	}
 
+	return planCheckRuns, nil
+}
+
+func getPlanCheckRunsFromExportDataConfigDatabaseTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ExportDataConfig) ([]*store.PlanCheckRunMessage, error) {
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(config.Target)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance and database from target %q", config.Target)
+	}
+	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", instanceID)
+	}
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+	}
+	if database == nil {
+		return nil, errors.Errorf("database %q not found", databaseName)
+	}
+
+	_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.Sheet)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
+	}
+
+	return getPlanCheckRunsFromExportDataConfigForDatabase(ctx, s, plan, config, sheetUID, database)
+}
+
+func getPlanCheckRunsFromExportDataConfigForDatabase(ctx context.Context, s *store.Store, plan *store.PlanMessage, _ *storepb.PlanConfig_ExportDataConfig, sheetUID int, database *store.DatabaseMessage) ([]*store.PlanCheckRunMessage, error) {
+	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &database.InstanceID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", database.InstanceID)
+	}
+
+	planCheckRunTypes := []store.PlanCheckRunType{
+		store.PlanCheckDatabaseConnect,
+		store.PlanCheckDatabaseStatementType,
+		store.PlanCheckDatabaseStatementAdvise,
+	}
+	planCheckRuns := []*store.PlanCheckRunMessage{}
+	for _, planCheckRunType := range planCheckRunTypes {
+		planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+			CreatorUID: api.SystemBotID,
+			UpdaterUID: api.SystemBotID,
+			PlanUID:    plan.UID,
+			Status:     store.PlanCheckRunStatusRunning,
+			Type:       planCheckRunType,
+			Config: &storepb.PlanCheckRunConfig{
+				SheetUid:           int32(sheetUID),
+				ChangeDatabaseType: storepb.PlanCheckRunConfig_DML,
+				InstanceUid:        int32(instance.UID),
+				DatabaseName:       database.DatabaseName,
+			},
+		})
+	}
 	return planCheckRuns, nil
 }
 

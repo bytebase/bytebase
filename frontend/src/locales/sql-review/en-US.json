@@ -360,7 +360,7 @@
       }
     },
     "statement-affected-row-limit": {
-      "title": "Restrict the maximum number of updated or deleted rows.",
+      "title": "Restrict the maximum number of updated or deleted rows (estimated).",
       "description": "Reveal the number of rows to be updated or deleted can help determine whether the statement meets business expectations. Suggestion error level: Warning",
       "component": {
         "number": {

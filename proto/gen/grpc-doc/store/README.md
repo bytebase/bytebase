@@ -45,6 +45,7 @@
     - [IndexMetadata](#bytebase-store-IndexMetadata)
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
     - [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata)
+    - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
     - [SchemaConfig](#bytebase-store-SchemaConfig)
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [SecretItem](#bytebase-store-SecretItem)
@@ -108,6 +109,7 @@
     - [Commit](#bytebase-store-Commit)
     - [FileCommit](#bytebase-store-FileCommit)
     - [PushEvent](#bytebase-store-PushEvent)
+    - [VCSConnector](#bytebase-store-VCSConnector)
   
 - [store/instance_change_history.proto](#store_instance_change_history-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
@@ -168,6 +170,9 @@
   
     - [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource)
     - [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target)
+  
+- [store/query_history.proto](#store_query_history-proto)
+    - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
   
 - [store/role.proto](#store_role-proto)
     - [RolePermissions](#bytebase-store-RolePermissions)
@@ -796,8 +801,8 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a view. |
-| definition | [string](#string) |  | The definition is the definition of a view. |
+| name | [string](#string) |  | The name is the name of a function. |
+| definition | [string](#string) |  | The definition is the definition of a function. |
 
 
 
@@ -861,6 +866,22 @@ MaterializedViewMetadata is the metadata for materialized views.
 
 
 
+<a name="bytebase-store-ProcedureMetadata"></a>
+
+### ProcedureMetadata
+ProcedureMetadata is the metadata for procedures.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a procedure. |
+| definition | [string](#string) |  | The definition is the definition of a procedure. |
+
+
+
+
+
+
 <a name="bytebase-store-SchemaConfig"></a>
 
 ### SchemaConfig
@@ -891,6 +912,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | external_tables | [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata) | repeated | The external_tables is the list of external tables in a schema. |
 | views | [ViewMetadata](#bytebase-store-ViewMetadata) | repeated | The views is the list of views in a schema. |
 | functions | [FunctionMetadata](#bytebase-store-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
+| procedures | [ProcedureMetadata](#bytebase-store-ProcedureMetadata) | repeated | The procedures is the list of procedures in a schema. |
 | streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
 | tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
 | materialized_views | [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
@@ -1779,6 +1801,28 @@ InstanceOptions is the option for instances.
 
 
 
+
+<a name="bytebase-store-VCSConnector"></a>
+
+### VCSConnector
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  | The title or display name of the VCS connector. |
+| full_path | [string](#string) |  | Full path from the corresponding VCS provider. For GitLab, this is the project full path. e.g. group1/project-1 |
+| web_url | [string](#string) |  | Web url from the corresponding VCS provider. For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1 |
+| branch | [string](#string) |  | Branch to listen to. |
+| base_directory | [string](#string) |  | Base working directory we are interested. |
+| external_id | [string](#string) |  | Repository id from the corresponding VCS provider. For GitLab, this is the project id. e.g. 123 |
+| external_webhook_id | [string](#string) |  | Push webhook id from the corresponding VCS provider. For GitLab, this is the project webhook id. e.g. 123 |
+| webhook_secret_token | [string](#string) |  | For GitLab, webhook request contains this in the &#39;X-Gitlab-Token&#34; header and we compare it with the one stored in db to validate it sends to the expected endpoint. |
+
+
+
+
+
  
 
  
@@ -2613,6 +2657,38 @@ The type of target.
 | BRANCH | 1 |  |
 | CHANGELIST | 2 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_query_history-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/query_history.proto
+
+
+
+<a name="bytebase-store-QueryHistoryPayload"></a>
+
+### QueryHistoryPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) | optional |  |
+| duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+
+
+
+
+
+ 
 
  
 
