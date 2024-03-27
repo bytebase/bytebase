@@ -2775,6 +2775,7 @@
     "role": "Role",
     "database-group": "Database Group",
     "schema-group": "Table Group",
+    "changelist": "Changelist",
     "vcs-provider": "GitOps Provider",
     "vcs-connector": "GitOps Connector"
   },
