@@ -894,14 +894,14 @@ CREATE TABLE vcs_connector (
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_repository_unique_project_id_resource_id ON repository(project_id, resource_id);
+CREATE UNIQUE INDEX idx_vcs_connector_unique_project_id_resource_id ON vcs_connector(project_id, resource_id);
 
-ALTER SEQUENCE repository_id_seq RESTART WITH 101;
+ALTER SEQUENCE vcs_connector_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_repository_updated_ts
+CREATE TRIGGER update_vcs_connector_updated_ts
 BEFORE
 UPDATE
-    ON repository FOR EACH ROW
+    ON vcs_connector FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Anomaly
