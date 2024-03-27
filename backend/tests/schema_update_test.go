@@ -330,7 +330,7 @@ func TestSimpleVCS(t *testing.T) {
 					Name:          oldVcsConnector.Name,
 					BaseDirectory: baseDirectory + "+invalid",
 				},
-				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"branch"}},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"base_directory"}},
 			})
 			a.NoError(err)
 			a.Equal(baseDirectory, vcsConnector.BaseDirectory)
