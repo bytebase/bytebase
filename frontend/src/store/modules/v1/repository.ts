@@ -128,7 +128,7 @@ const getUpdateMaskForRepository = (
     updateMask.push("title");
   }
   if (!isUndefined(update.branch) && !isEqual(origin.branch, update.branch)) {
-    updateMask.push("branch_filter");
+    updateMask.push("branch");
   }
   if (
     !isUndefined(update.baseDirectory) &&
