@@ -17,6 +17,7 @@ export const SupportedSourceList = [
   Risk_Source.DDL,
   Risk_Source.DML,
   Risk_Source.CREATE_DATABASE,
-  Risk_Source.QUERY,
-  Risk_Source.EXPORT,
+  Risk_Source.REQUEST_QUERY,
+  Risk_Source.REQUEST_EXPORT,
+  // TODO(steven): Add data export source.
 ];

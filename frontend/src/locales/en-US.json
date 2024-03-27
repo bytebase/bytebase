@@ -2907,8 +2907,8 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Create Database",
-          "query": "Request Query",
-          "export": "Request Export"
+          "request_query": "Request Query",
+          "request_export": "Request Export"
         }
       },
       "template": {

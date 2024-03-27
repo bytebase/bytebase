@@ -2907,8 +2907,8 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Tạo nên cơ sở dữ liệu",
-          "query": "Yêu cầu truy vấn",
-          "export": "Yêu cầu xuất"
+          "request_query": "Yêu cầu truy vấn",
+          "request_export": "Yêu cầu xuất"
         }
       },
       "template": {
