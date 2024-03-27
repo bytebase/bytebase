@@ -353,6 +353,8 @@ func getIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise
 		return getGrantRequestIssueRisk(ctx, s, issue, risks)
 	case api.IssueDatabaseGeneral:
 		return getDatabaseGeneralIssueRisk(ctx, s, licenseService, dbFactory, issue, risks)
+	case api.IssueDatabaseDataExport:
+		return getDatabaseDataExportIssueRisk(ctx, s, licenseService, dbFactory, issue, risks)
 	default:
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("unknown issue type %v", issue.Type)
 	}
@@ -557,6 +559,114 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 								}
 							}
 						}
+					}
+				}
+				return 0, nil
+			}()
+			if err != nil {
+				return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to evaluate risk expression for risk source %v", riskSource)
+			}
+
+			if maxRiskLevel < risk {
+				maxRiskLevel = risk
+			}
+		}
+	}
+
+	return maxRiskLevel, riskSource, true, nil
+}
+
+func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+	if issue.PlanUID == nil {
+		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
+	}
+	plan, err := s.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+	}
+	if plan == nil {
+		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+	}
+
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, licenseService, dbFactory, plan.Config.Steps, issue.Project)
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
+	}
+
+	riskSource := store.RiskSourceDatabaseDataExport
+
+	e, err := cel.NewEnv(common.RiskFactors...)
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, err
+	}
+
+	var maxRiskLevel int32
+	for _, stage := range pipelineCreate.Stages {
+		for _, task := range stage.TaskList {
+			if task.Type != api.TaskDatabaseDataExport {
+				continue
+			}
+			instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+				UID: &task.InstanceID,
+			})
+			if err != nil {
+				return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
+			}
+			if instance.Deleted {
+				continue
+			}
+
+			payload := &api.TaskDatabaseDataExportPayload{}
+			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+				return 0, store.RiskSourceUnknown, false, err
+			}
+
+			database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				UID: task.DatabaseID,
+			})
+			if err != nil {
+				return 0, store.RiskSourceUnknown, false, err
+			}
+			databaseName := database.DatabaseName
+			environmentID := database.EffectiveEnvironmentID
+
+			risk, err := func() (int32, error) {
+				for _, risk := range risks {
+					if !risk.Active {
+						continue
+					}
+					if risk.Source != riskSource {
+						continue
+					}
+					if risk.Expression == nil || risk.Expression.Expression == "" {
+						continue
+					}
+					ast, issues := e.Parse(risk.Expression.Expression)
+					if issues != nil && issues.Err() != nil {
+						return 0, errors.Errorf("failed to parse expression: %v", issues.Err())
+					}
+					prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
+					if err != nil {
+						return 0, err
+					}
+					args := map[string]any{
+						"environment_id": environmentID,
+						"project_id":     issue.Project.ResourceID,
+						"database_name":  databaseName,
+						"db_engine":      instance.Engine.String(),
+						"export_rows":    payload.MaxRows,
+					}
+
+					vars, err := e.PartialVars(args)
+					if err != nil {
+						return 0, errors.Wrapf(err, "failed to get vars")
+					}
+					out, _, err := prg.Eval(vars)
+					if err != nil {
+						return 0, errors.Wrapf(err, "failed to eval expression")
+					}
+					if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
+						return risk.Level, nil
 					}
 				}
 				return 0, nil
