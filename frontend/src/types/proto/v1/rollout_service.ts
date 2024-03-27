@@ -283,8 +283,6 @@ export interface Plan_ExportDataConfig {
    * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
-  /** The max number of rows to export. */
-  maxRows: number;
   /** The format of the exported file. */
   format: ExportFormat;
   /**
@@ -997,8 +995,6 @@ export interface Task_DatabaseDataExport {
    * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
-  /** The max number of rows to export. */
-  maxRows: number;
   /** The format of the exported file. */
   format: ExportFormat;
   /**
@@ -2591,7 +2587,7 @@ export const Plan_ChangeDatabaseConfig_PreUpdateBackupDetail = {
 };
 
 function createBasePlan_ExportDataConfig(): Plan_ExportDataConfig {
-  return { target: "", sheet: "", maxRows: 0, format: 0, password: undefined };
+  return { target: "", sheet: "", format: 0, password: undefined };
 }
 
 export const Plan_ExportDataConfig = {
@@ -2602,14 +2598,11 @@ export const Plan_ExportDataConfig = {
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
     }
-    if (message.maxRows !== 0) {
-      writer.uint32(24).int32(message.maxRows);
-    }
     if (message.format !== 0) {
-      writer.uint32(32).int32(message.format);
+      writer.uint32(24).int32(message.format);
     }
     if (message.password !== undefined) {
-      writer.uint32(42).string(message.password);
+      writer.uint32(34).string(message.password);
     }
     return writer;
   },
@@ -2640,17 +2633,10 @@ export const Plan_ExportDataConfig = {
             break;
           }
 
-          message.maxRows = reader.int32();
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
           message.format = reader.int32() as any;
           continue;
-        case 5:
-          if (tag !== 42) {
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
@@ -2669,7 +2655,6 @@ export const Plan_ExportDataConfig = {
     return {
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      maxRows: isSet(object.maxRows) ? globalThis.Number(object.maxRows) : 0,
       format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
       password: isSet(object.password) ? globalThis.String(object.password) : undefined,
     };
@@ -2682,9 +2667,6 @@ export const Plan_ExportDataConfig = {
     }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
-    }
-    if (message.maxRows !== 0) {
-      obj.maxRows = Math.round(message.maxRows);
     }
     if (message.format !== 0) {
       obj.format = exportFormatToJSON(message.format);
@@ -2702,7 +2684,6 @@ export const Plan_ExportDataConfig = {
     const message = createBasePlan_ExportDataConfig();
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
-    message.maxRows = object.maxRows ?? 0;
     message.format = object.format ?? 0;
     message.password = object.password ?? undefined;
     return message;
@@ -5386,7 +5367,7 @@ export const Task_DatabaseDataUpdate = {
 };
 
 function createBaseTask_DatabaseDataExport(): Task_DatabaseDataExport {
-  return { target: "", sheet: "", maxRows: 0, format: 0, password: undefined };
+  return { target: "", sheet: "", format: 0, password: undefined };
 }
 
 export const Task_DatabaseDataExport = {
@@ -5397,14 +5378,11 @@ export const Task_DatabaseDataExport = {
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
     }
-    if (message.maxRows !== 0) {
-      writer.uint32(24).int32(message.maxRows);
-    }
     if (message.format !== 0) {
-      writer.uint32(32).int32(message.format);
+      writer.uint32(24).int32(message.format);
     }
     if (message.password !== undefined) {
-      writer.uint32(42).string(message.password);
+      writer.uint32(34).string(message.password);
     }
     return writer;
   },
@@ -5435,17 +5413,10 @@ export const Task_DatabaseDataExport = {
             break;
           }
 
-          message.maxRows = reader.int32();
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
           message.format = reader.int32() as any;
           continue;
-        case 5:
-          if (tag !== 42) {
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
@@ -5464,7 +5435,6 @@ export const Task_DatabaseDataExport = {
     return {
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      maxRows: isSet(object.maxRows) ? globalThis.Number(object.maxRows) : 0,
       format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
       password: isSet(object.password) ? globalThis.String(object.password) : undefined,
     };
@@ -5477,9 +5447,6 @@ export const Task_DatabaseDataExport = {
     }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
-    }
-    if (message.maxRows !== 0) {
-      obj.maxRows = Math.round(message.maxRows);
     }
     if (message.format !== 0) {
       obj.format = exportFormatToJSON(message.format);
@@ -5497,7 +5464,6 @@ export const Task_DatabaseDataExport = {
     const message = createBaseTask_DatabaseDataExport();
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
-    message.maxRows = object.maxRows ?? 0;
     message.format = object.format ?? 0;
     message.password = object.password ?? undefined;
     return message;

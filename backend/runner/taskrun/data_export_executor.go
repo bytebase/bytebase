@@ -81,14 +81,6 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	if err != nil {
 		return true, nil, err
 	}
-	exportRequest := &v1pb.ExportRequest{
-		Name:               fmt.Sprintf("instances/%s", instance.ResourceID),
-		ConnectionDatabase: database.DatabaseName,
-		Statement:          statement,
-		Limit:              int32(payload.MaxRows),
-		Format:             v1pb.ExportFormat(payload.Format),
-		Password:           payload.Password,
-	}
 
 	schemaName := ""
 	if instance.Engine == storepb.Engine_ORACLE {
@@ -123,6 +115,13 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Wrap(err, "failed to get query span")
 	}
 
+	exportRequest := &v1pb.ExportRequest{
+		Name:               fmt.Sprintf("instances/%s", instance.ResourceID),
+		ConnectionDatabase: database.DatabaseName,
+		Statement:          statement,
+		Format:             v1pb.ExportFormat(payload.Format),
+		Password:           payload.Password,
+	}
 	bytes, durationNs, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, instance, database, spans)
 	if exportErr != nil {
 		return true, nil, errors.Wrap(exportErr, "failed to export data")

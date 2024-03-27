@@ -654,7 +654,6 @@ func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, license
 						"project_id":     issue.Project.ResourceID,
 						"database_name":  databaseName,
 						"db_engine":      instance.Engine.String(),
-						"export_rows":    payload.MaxRows,
 					}
 
 					vars, err := e.PartialVars(args)
