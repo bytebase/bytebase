@@ -273,7 +273,8 @@
     "cutover": "Chuyển đổi",
     "baseline": "Đường cơ sở",
     "project-member": "Thành viên dự án",
-    "leave-without-saving": "Rời đi mà không lưu?"
+    "leave-without-saving": "Rời đi mà không lưu?",
+    "configure-now": "Cấu hình ngay bây giờ"
   },
   "error-page": {
     "go-back-home": "Trở về nhà"
@@ -425,8 +426,7 @@
     "cloud": "Đám mây",
     "request-demo": "Đặt bản demo sản phẩm trong 30 phút.",
     "readonly": "Bytebase ở chế độ chỉ đọc. Bạn vẫn có thể xem bảng điều khiển nhưng mọi nỗ lực thay đổi sẽ không thành công.",
-    "external-url": "Bytebase chưa được định cấu hình --external-url",
-    "configure-now": "Cấu hình ngay bây giờ"
+    "external-url": "Bytebase chưa được định cấu hình --external-url"
   },
   "intro": {
     "doc": "bác sĩ",

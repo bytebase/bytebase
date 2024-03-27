@@ -273,7 +273,8 @@
     "cutover": "切换",
     "baseline": "基线",
     "project-member": "项目成员",
-    "leave-without-saving": "不保存变动？"
+    "leave-without-saving": "不保存变动？",
+    "configure-now": "现在配置"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -425,8 +426,7 @@
     "cloud": "云服务",
     "request-demo": "预约一个 30 分钟的产品演示。",
     "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
-    "external-url": "Bytebase 还没有配置 --external-url",
-    "configure-now": "现在配置"
+    "external-url": "Bytebase 还没有配置 --external-url"
   },
   "intro": {
     "doc": "文档",

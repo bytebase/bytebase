@@ -45,7 +45,10 @@
           >
             <label for="activation" class="textlabel block">
               {{ $t("subscription.instance-assignment.assign-license") }}
-              (<router-link to="/setting/subscription" class="accent-link">
+              (<router-link
+                :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
+                class="accent-link"
+              >
                 {{
                   $t("subscription.instance-assignment.n-license-remain", {
                     n: availableLicenseCountText,
@@ -347,6 +350,7 @@ import {
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { instanceServiceClient } from "@/grpcweb";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   pushNotification,
   useSettingV1Store,

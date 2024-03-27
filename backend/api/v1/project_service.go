@@ -667,14 +667,6 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 
 // AddWebhook adds a webhook to a given project.
 func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhookRequest) (*v1pb.Project, error) {
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
-	}
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
-	}
-
 	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())

@@ -16,10 +16,12 @@ ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 
 INSERT INTO query_history(creator_id, created_ts, project_id, database, statement, type)
 SELECT
-	creator_id,
-	created_ts,
-	REPLACE(resource_container, 'projects/', ''),
-	(SELECT 'instances/' || instance.resource_id || '/databases/' || db.name FROM instance JOIN db ON instance.id = db.instance_id WHERE (db.id)::text = (activity.payload->'databaseId')::text),
-	TRIM('"' FROM (activity.payload->'statement')::text),
-	'QUERY'
-FROM activity WHERE type = 'bb.sql.query';
+    activity.creator_id,
+    activity.created_ts,
+    REPLACE(activity.resource_container, 'projects/', ''),
+    (SELECT 'instances/' || instance.resource_id || '/databases/' || db.name FROM instance JOIN db ON instance.id = db.instance_id WHERE (db.id)::text = (activity.payload->'databaseId')::text),
+    TRIM('"' FROM (activity.payload->'statement')::text),
+    'QUERY'
+FROM activity
+JOIN db ON (db.id)::text = (activity.payload->'databaseId')::text
+WHERE activity.type = 'bb.sql.query'

@@ -26,7 +26,10 @@
         <template #link>
           <router-link
             class="flex items-center light-link text-sm"
-            to="/sensitive-data#global-masking-rule"
+            :to="{
+              name: WORKSPACE_ROUTE_SENSITIVE_DATA,
+              hash: 'global-masking-rule',
+            }"
           >
             {{ $t("settings.sensitive-data.global-rules.check-rules") }}
           </router-link>
@@ -64,6 +67,7 @@
 import { computed } from "vue";
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { WORKSPACE_ROUTE_SENSITIVE_DATA } from "@/router/dashboard/workspaceRoutes";
 import { useSubscriptionV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
