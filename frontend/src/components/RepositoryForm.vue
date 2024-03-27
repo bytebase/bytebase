@@ -32,13 +32,6 @@
         <label for="repository" class="textlabel">
           {{ $t("common.repository") }}
         </label>
-        <div
-          v-if="!create && allowEdit"
-          class="ml-1 normal-link text-sm"
-          @click.prevent="$emit('change-repository')"
-        >
-          {{ $t("common.change") }}
-        </div>
       </div>
       <BBTextField
         id="repository"
@@ -48,6 +41,14 @@
         :value="repositoryInfo.fullPath"
       />
     </div>
+    <ResourceIdField
+      v-model:value="repositoryConfig.resourceId"
+      class="max-w-full flex-nowrap"
+      resource-type="vcs-connector"
+      :resource-title="repositoryInfo.name"
+      :validate="validateResourceId"
+      :readonly="!create || !allowEdit"
+    />
     <div>
       <div class="textlabel">
         {{ $t("common.branch") }} <span class="text-red-600">*</span>
@@ -81,14 +82,15 @@
 </template>
 
 <script lang="ts" setup>
+import { Status } from "nice-grpc-common";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { useVCSConnectorStore } from "@/store";
 import type { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
+import type { ResourceId, ValidatedMessage } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
-
-defineEmits<{
-  (event: "change-repository"): void;
-}>();
+import { getErrorCode } from "@/utils/grpcweb";
 
 const props = withDefaults(
   defineProps<{
@@ -106,6 +108,9 @@ const props = withDefaults(
   }
 );
 
+const { t } = useI18n();
+const vcsConnectorStore = useVCSConnectorStore();
+
 const getWebhookLink = computed(() => {
   if (props.vcsType === VCSProvider_Type.AZURE_DEVOPS) {
     const parts = props.repositoryInfo.externalId.split("/");
@@ -117,4 +122,34 @@ const getWebhookLink = computed(() => {
   }
   return "";
 });
+
+const validateResourceId = async (
+  resourceId: ResourceId
+): Promise<ValidatedMessage[]> => {
+  if (!resourceId) {
+    return [];
+  }
+
+  try {
+    const instance = await vcsConnectorStore.getOrFetchConnector(
+      props.project.name,
+      resourceId
+    );
+    if (instance) {
+      return [
+        {
+          type: "error",
+          message: t("resource-id.validation.duplicated", {
+            resource: t("resource.instance"),
+          }),
+        },
+      ];
+    }
+  } catch (error) {
+    if (getErrorCode(error) !== Status.NOT_FOUND) {
+      throw error;
+    }
+  }
+  return [];
+};
 </script>

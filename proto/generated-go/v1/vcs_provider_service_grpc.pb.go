@@ -20,13 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	VCSProviderService_GetVCSProvider_FullMethodName            = "/bytebase.v1.VCSProviderService/GetVCSProvider"
-	VCSProviderService_ListVCSProviders_FullMethodName          = "/bytebase.v1.VCSProviderService/ListVCSProviders"
-	VCSProviderService_CreateVCSProvider_FullMethodName         = "/bytebase.v1.VCSProviderService/CreateVCSProvider"
-	VCSProviderService_UpdateVCSProvider_FullMethodName         = "/bytebase.v1.VCSProviderService/UpdateVCSProvider"
-	VCSProviderService_DeleteVCSProvider_FullMethodName         = "/bytebase.v1.VCSProviderService/DeleteVCSProvider"
-	VCSProviderService_SearchVCSProviderProjects_FullMethodName = "/bytebase.v1.VCSProviderService/SearchVCSProviderProjects"
-	VCSProviderService_ListProjectGitOpsInfo_FullMethodName     = "/bytebase.v1.VCSProviderService/ListProjectGitOpsInfo"
+	VCSProviderService_GetVCSProvider_FullMethodName              = "/bytebase.v1.VCSProviderService/GetVCSProvider"
+	VCSProviderService_ListVCSProviders_FullMethodName            = "/bytebase.v1.VCSProviderService/ListVCSProviders"
+	VCSProviderService_CreateVCSProvider_FullMethodName           = "/bytebase.v1.VCSProviderService/CreateVCSProvider"
+	VCSProviderService_UpdateVCSProvider_FullMethodName           = "/bytebase.v1.VCSProviderService/UpdateVCSProvider"
+	VCSProviderService_DeleteVCSProvider_FullMethodName           = "/bytebase.v1.VCSProviderService/DeleteVCSProvider"
+	VCSProviderService_SearchVCSProviderProjects_FullMethodName   = "/bytebase.v1.VCSProviderService/SearchVCSProviderProjects"
+	VCSProviderService_ListVCSConnectorsInProvider_FullMethodName = "/bytebase.v1.VCSProviderService/ListVCSConnectorsInProvider"
 )
 
 // VCSProviderServiceClient is the client API for VCSProviderService service.
@@ -39,7 +39,7 @@ type VCSProviderServiceClient interface {
 	UpdateVCSProvider(ctx context.Context, in *UpdateVCSProviderRequest, opts ...grpc.CallOption) (*VCSProvider, error)
 	DeleteVCSProvider(ctx context.Context, in *DeleteVCSProviderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	SearchVCSProviderProjects(ctx context.Context, in *SearchVCSProviderProjectsRequest, opts ...grpc.CallOption) (*SearchVCSProviderProjectsResponse, error)
-	ListProjectGitOpsInfo(ctx context.Context, in *ListProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ListProjectGitOpsInfoResponse, error)
+	ListVCSConnectorsInProvider(ctx context.Context, in *ListVCSConnectorsInProviderRequest, opts ...grpc.CallOption) (*ListVCSConnectorsInProviderResponse, error)
 }
 
 type vCSProviderServiceClient struct {
@@ -104,9 +104,9 @@ func (c *vCSProviderServiceClient) SearchVCSProviderProjects(ctx context.Context
 	return out, nil
 }
 
-func (c *vCSProviderServiceClient) ListProjectGitOpsInfo(ctx context.Context, in *ListProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ListProjectGitOpsInfoResponse, error) {
-	out := new(ListProjectGitOpsInfoResponse)
-	err := c.cc.Invoke(ctx, VCSProviderService_ListProjectGitOpsInfo_FullMethodName, in, out, opts...)
+func (c *vCSProviderServiceClient) ListVCSConnectorsInProvider(ctx context.Context, in *ListVCSConnectorsInProviderRequest, opts ...grpc.CallOption) (*ListVCSConnectorsInProviderResponse, error) {
+	out := new(ListVCSConnectorsInProviderResponse)
+	err := c.cc.Invoke(ctx, VCSProviderService_ListVCSConnectorsInProvider_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ type VCSProviderServiceServer interface {
 	UpdateVCSProvider(context.Context, *UpdateVCSProviderRequest) (*VCSProvider, error)
 	DeleteVCSProvider(context.Context, *DeleteVCSProviderRequest) (*emptypb.Empty, error)
 	SearchVCSProviderProjects(context.Context, *SearchVCSProviderProjectsRequest) (*SearchVCSProviderProjectsResponse, error)
-	ListProjectGitOpsInfo(context.Context, *ListProjectGitOpsInfoRequest) (*ListProjectGitOpsInfoResponse, error)
+	ListVCSConnectorsInProvider(context.Context, *ListVCSConnectorsInProviderRequest) (*ListVCSConnectorsInProviderResponse, error)
 	mustEmbedUnimplementedVCSProviderServiceServer()
 }
 
@@ -149,8 +149,8 @@ func (UnimplementedVCSProviderServiceServer) DeleteVCSProvider(context.Context, 
 func (UnimplementedVCSProviderServiceServer) SearchVCSProviderProjects(context.Context, *SearchVCSProviderProjectsRequest) (*SearchVCSProviderProjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchVCSProviderProjects not implemented")
 }
-func (UnimplementedVCSProviderServiceServer) ListProjectGitOpsInfo(context.Context, *ListProjectGitOpsInfoRequest) (*ListProjectGitOpsInfoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListProjectGitOpsInfo not implemented")
+func (UnimplementedVCSProviderServiceServer) ListVCSConnectorsInProvider(context.Context, *ListVCSConnectorsInProviderRequest) (*ListVCSConnectorsInProviderResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListVCSConnectorsInProvider not implemented")
 }
 func (UnimplementedVCSProviderServiceServer) mustEmbedUnimplementedVCSProviderServiceServer() {}
 
@@ -273,20 +273,20 @@ func _VCSProviderService_SearchVCSProviderProjects_Handler(srv interface{}, ctx 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _VCSProviderService_ListProjectGitOpsInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListProjectGitOpsInfoRequest)
+func _VCSProviderService_ListVCSConnectorsInProvider_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListVCSConnectorsInProviderRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(VCSProviderServiceServer).ListProjectGitOpsInfo(ctx, in)
+		return srv.(VCSProviderServiceServer).ListVCSConnectorsInProvider(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: VCSProviderService_ListProjectGitOpsInfo_FullMethodName,
+		FullMethod: VCSProviderService_ListVCSConnectorsInProvider_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VCSProviderServiceServer).ListProjectGitOpsInfo(ctx, req.(*ListProjectGitOpsInfoRequest))
+		return srv.(VCSProviderServiceServer).ListVCSConnectorsInProvider(ctx, req.(*ListVCSConnectorsInProviderRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -323,8 +323,8 @@ var VCSProviderService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _VCSProviderService_SearchVCSProviderProjects_Handler,
 		},
 		{
-			MethodName: "ListProjectGitOpsInfo",
-			Handler:    _VCSProviderService_ListProjectGitOpsInfo_Handler,
+			MethodName: "ListVCSConnectorsInProvider",
+			Handler:    _VCSProviderService_ListVCSConnectorsInProvider_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

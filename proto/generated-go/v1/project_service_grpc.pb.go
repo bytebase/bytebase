@@ -36,9 +36,6 @@ const (
 	ProjectService_UpdateWebhook_FullMethodName                = "/bytebase.v1.ProjectService/UpdateWebhook"
 	ProjectService_RemoveWebhook_FullMethodName                = "/bytebase.v1.ProjectService/RemoveWebhook"
 	ProjectService_TestWebhook_FullMethodName                  = "/bytebase.v1.ProjectService/TestWebhook"
-	ProjectService_UpdateProjectGitOpsInfo_FullMethodName      = "/bytebase.v1.ProjectService/UpdateProjectGitOpsInfo"
-	ProjectService_UnsetProjectGitOpsInfo_FullMethodName       = "/bytebase.v1.ProjectService/UnsetProjectGitOpsInfo"
-	ProjectService_GetProjectGitOpsInfo_FullMethodName         = "/bytebase.v1.ProjectService/GetProjectGitOpsInfo"
 	ProjectService_ListDatabaseGroups_FullMethodName           = "/bytebase.v1.ProjectService/ListDatabaseGroups"
 	ProjectService_GetDatabaseGroup_FullMethodName             = "/bytebase.v1.ProjectService/GetDatabaseGroup"
 	ProjectService_CreateDatabaseGroup_FullMethodName          = "/bytebase.v1.ProjectService/CreateDatabaseGroup"
@@ -73,9 +70,6 @@ type ProjectServiceClient interface {
 	UpdateWebhook(ctx context.Context, in *UpdateWebhookRequest, opts ...grpc.CallOption) (*Project, error)
 	RemoveWebhook(ctx context.Context, in *RemoveWebhookRequest, opts ...grpc.CallOption) (*Project, error)
 	TestWebhook(ctx context.Context, in *TestWebhookRequest, opts ...grpc.CallOption) (*TestWebhookResponse, error)
-	UpdateProjectGitOpsInfo(ctx context.Context, in *UpdateProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error)
-	UnsetProjectGitOpsInfo(ctx context.Context, in *UnsetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	GetProjectGitOpsInfo(ctx context.Context, in *GetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error)
 	ListDatabaseGroups(ctx context.Context, in *ListDatabaseGroupsRequest, opts ...grpc.CallOption) (*ListDatabaseGroupsResponse, error)
 	GetDatabaseGroup(ctx context.Context, in *GetDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
 	CreateDatabaseGroup(ctx context.Context, in *CreateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
@@ -242,33 +236,6 @@ func (c *projectServiceClient) TestWebhook(ctx context.Context, in *TestWebhookR
 	return out, nil
 }
 
-func (c *projectServiceClient) UpdateProjectGitOpsInfo(ctx context.Context, in *UpdateProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error) {
-	out := new(ProjectGitOpsInfo)
-	err := c.cc.Invoke(ctx, ProjectService_UpdateProjectGitOpsInfo_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) UnsetProjectGitOpsInfo(ctx context.Context, in *UnsetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, ProjectService_UnsetProjectGitOpsInfo_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) GetProjectGitOpsInfo(ctx context.Context, in *GetProjectGitOpsInfoRequest, opts ...grpc.CallOption) (*ProjectGitOpsInfo, error) {
-	out := new(ProjectGitOpsInfo)
-	err := c.cc.Invoke(ctx, ProjectService_GetProjectGitOpsInfo_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *projectServiceClient) ListDatabaseGroups(ctx context.Context, in *ListDatabaseGroupsRequest, opts ...grpc.CallOption) (*ListDatabaseGroupsResponse, error) {
 	out := new(ListDatabaseGroupsResponse)
 	err := c.cc.Invoke(ctx, ProjectService_ListDatabaseGroups_FullMethodName, in, out, opts...)
@@ -397,9 +364,6 @@ type ProjectServiceServer interface {
 	UpdateWebhook(context.Context, *UpdateWebhookRequest) (*Project, error)
 	RemoveWebhook(context.Context, *RemoveWebhookRequest) (*Project, error)
 	TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error)
-	UpdateProjectGitOpsInfo(context.Context, *UpdateProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error)
-	UnsetProjectGitOpsInfo(context.Context, *UnsetProjectGitOpsInfoRequest) (*emptypb.Empty, error)
-	GetProjectGitOpsInfo(context.Context, *GetProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error)
 	ListDatabaseGroups(context.Context, *ListDatabaseGroupsRequest) (*ListDatabaseGroupsResponse, error)
 	GetDatabaseGroup(context.Context, *GetDatabaseGroupRequest) (*DatabaseGroup, error)
 	CreateDatabaseGroup(context.Context, *CreateDatabaseGroupRequest) (*DatabaseGroup, error)
@@ -466,15 +430,6 @@ func (UnimplementedProjectServiceServer) RemoveWebhook(context.Context, *RemoveW
 }
 func (UnimplementedProjectServiceServer) TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TestWebhook not implemented")
-}
-func (UnimplementedProjectServiceServer) UpdateProjectGitOpsInfo(context.Context, *UpdateProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectGitOpsInfo not implemented")
-}
-func (UnimplementedProjectServiceServer) UnsetProjectGitOpsInfo(context.Context, *UnsetProjectGitOpsInfoRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UnsetProjectGitOpsInfo not implemented")
-}
-func (UnimplementedProjectServiceServer) GetProjectGitOpsInfo(context.Context, *GetProjectGitOpsInfoRequest) (*ProjectGitOpsInfo, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProjectGitOpsInfo not implemented")
 }
 func (UnimplementedProjectServiceServer) ListDatabaseGroups(context.Context, *ListDatabaseGroupsRequest) (*ListDatabaseGroupsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListDatabaseGroups not implemented")
@@ -813,60 +768,6 @@ func _ProjectService_TestWebhook_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_UpdateProjectGitOpsInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateProjectGitOpsInfoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).UpdateProjectGitOpsInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_UpdateProjectGitOpsInfo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).UpdateProjectGitOpsInfo(ctx, req.(*UpdateProjectGitOpsInfoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_UnsetProjectGitOpsInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UnsetProjectGitOpsInfoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).UnsetProjectGitOpsInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_UnsetProjectGitOpsInfo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).UnsetProjectGitOpsInfo(ctx, req.(*UnsetProjectGitOpsInfoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_GetProjectGitOpsInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetProjectGitOpsInfoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).GetProjectGitOpsInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_GetProjectGitOpsInfo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).GetProjectGitOpsInfo(ctx, req.(*GetProjectGitOpsInfoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ProjectService_ListDatabaseGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListDatabaseGroupsRequest)
 	if err := dec(in); err != nil {
@@ -1153,18 +1054,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TestWebhook",
 			Handler:    _ProjectService_TestWebhook_Handler,
-		},
-		{
-			MethodName: "UpdateProjectGitOpsInfo",
-			Handler:    _ProjectService_UpdateProjectGitOpsInfo_Handler,
-		},
-		{
-			MethodName: "UnsetProjectGitOpsInfo",
-			Handler:    _ProjectService_UnsetProjectGitOpsInfo_Handler,
-		},
-		{
-			MethodName: "GetProjectGitOpsInfo",
-			Handler:    _ProjectService_GetProjectGitOpsInfo_Handler,
 		},
 		{
 			MethodName: "ListDatabaseGroups",

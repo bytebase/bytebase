@@ -14,6 +14,7 @@ export const worksheetNamePrefix = "worksheets/";
 export const databaseGroupNamePrefix = "databaseGroups/";
 export const schemaGroupNamePrefix = "schemaGroups/";
 export const vcsProviderPrefix = "vcsProviders/";
+export const vcsConnectorPrefix = "vcsConnectors/";
 export const logNamePrefix = "logs/";
 export const issueNamePrefix = "issues/";
 export const secretNamePrefix = "secrets/";
@@ -153,7 +154,21 @@ export const getProjectPathFromRepoName = (repoName: string): string => {
   return repoName.split("/gitOpsInfo")[0];
 };
 
-export const getVCSId = (name: string): string => {
+export const getVCSProviderId = (name: string): string => {
   const tokens = getNameParentTokens(name, [vcsProviderPrefix]);
   return tokens[0];
+};
+
+export const getVCSConnectorId = (
+  name: string
+): { projectId: string; vcsConnectorId: string } => {
+  const tokens = getNameParentTokens(name, [
+    projectNamePrefix,
+    vcsConnectorPrefix,
+  ]);
+  if (tokens.length !== 2) {
+    return { projectId: "", vcsConnectorId: "" };
+  }
+
+  return { projectId: tokens[0], vcsConnectorId: tokens[1] };
 };

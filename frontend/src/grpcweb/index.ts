@@ -27,6 +27,7 @@ import { SettingServiceDefinition } from "@/types/proto/v1/setting_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
 import { SubscriptionServiceDefinition } from "@/types/proto/v1/subscription_service";
+import { VCSConnectorServiceDefinition } from "@/types/proto/v1/vcs_connector_service";
 import { VCSProviderServiceDefinition } from "@/types/proto/v1/vcs_provider_service";
 import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
 import {
@@ -165,6 +166,11 @@ export const actuatorServiceClient = clientFactory.create(
 
 export const vcsProviderServiceClient = clientFactory.create(
   VCSProviderServiceDefinition,
+  channel
+);
+
+export const vcsConnectorServiceClient = clientFactory.create(
+  VCSConnectorServiceDefinition,
   channel
 );
 

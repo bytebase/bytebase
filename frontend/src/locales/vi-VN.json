@@ -1970,7 +1970,15 @@
     },
     "successfully-updated-db-name-template": "Đã cập nhật thành công mẫu tên cơ sở dữ liệu.",
     "all": "Tất cả dự án",
-    "key-hint": "Các chữ cái chữ và số mô tả ngắn để xác định dự án này."
+    "key-hint": "Các chữ cái chữ và số mô tả ngắn để xác định dự án này.",
+    "gitops-connector": {
+      "self": "Trình kết nối GitOps",
+      "add": "Thêm trình kết nối GitOps",
+      "delete": "Xóa trình kết nối GitOps",
+      "update-success": "Đã cập nhật thành công trình kết nối GitOps",
+      "create-success": "Đã tạo thành công trình kết nối GitOps",
+      "delete-success": "Trình kết nối GitOps bị xóa"
+    }
   },
   "gitops": {
     "setting": {
@@ -2767,7 +2775,9 @@
     "role": "Vai trò",
     "database-group": "Nhóm cơ sở dữ liệu",
     "schema-group": "Nhóm bảng",
-    "changelist": "Danh sách thay đổi"
+    "changelist": "Danh sách thay đổi",
+    "vcs-provider": "Nhà cung cấp GitOps",
+    "vcs-connector": "Trình kết nối GitOps"
   },
   "resource-id": {
     "self": "ID {resource}",
