@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -55,6 +56,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 			UpdateTime:      time.Now(),
 		})
 
+	ctx = context.WithValue(ctx, common.PrincipalIDContextKey, task.CreatorID)
 	payload := &api.TaskDatabaseDataExportPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database data export payload")

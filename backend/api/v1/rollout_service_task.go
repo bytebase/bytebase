@@ -104,6 +104,8 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, licenseService 
 		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, licenseService, dbFactory, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig, project, registerEnvironmentID)
+	case *storepb.PlanConfig_Spec_ExportDataConfig:
+		return getTaskCreatesFromExportDataConfig(ctx, s, spec, config.ExportDataConfig, project, registerEnvironmentID)
 	}
 
 	return nil, nil, errors.Errorf("invalid spec config type %T", spec.Config)
@@ -268,6 +270,66 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 	}
 
 	return nil, nil, errors.Errorf("unknown target %q", c.Target)
+}
+
+func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ExportDataConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get instance and database from target %q", c.Target)
+	}
+
+	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
+	}
+	if instance == nil {
+		return nil, nil, errors.Errorf("instance %q not found", instanceID)
+	}
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+	}
+	if database == nil {
+		return nil, nil, errors.Errorf("database %q not found", databaseName)
+	}
+
+	if err := registerEnvironmentID(database.EffectiveEnvironmentID); err != nil {
+		return nil, nil, err
+	}
+
+	_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+	}
+	payload := api.TaskDatabaseDataExportPayload{
+		SpecID:  spec.Id,
+		SheetID: sheetUID,
+		MaxRows: int(c.MaxRows),
+		Format:  c.Format,
+	}
+	if c.Password != nil {
+		payload.Password = *c.Password
+	}
+	bytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to marshal task database data export payload")
+	}
+	payloadString := string(bytes)
+	taskCreate := &store.TaskMessage{
+		Name:              fmt.Sprintf("Export data from database %q", database.DatabaseName),
+		InstanceID:        instance.UID,
+		DatabaseID:        &database.UID,
+		Type:              api.TaskDatabaseDataExport,
+		EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
+		Payload:           payloadString,
+	}
+	return []*store.TaskMessage{taskCreate}, nil, nil
 }
 
 func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
