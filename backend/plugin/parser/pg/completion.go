@@ -195,7 +195,6 @@ func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, ca
 		noSeparatorRequired: newNoSeparatorRequired(),
 		cteCache:            make(map[int][]*base.VirtualTableReference),
 	}
-
 }
 
 func NewStandardCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc) *Completer {
