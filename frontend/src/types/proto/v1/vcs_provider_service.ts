@@ -194,8 +194,6 @@ export interface ProjectGitOpsInfo {
   baseDirectory: string;
   /** The branch Bytebase listens to for changes. For example: main. */
   branch: string;
-  /** The webhook endpoint ID of the repository. */
-  webhookEndpointId: string;
   /**
    * TODO(d): move these to create VCS connector API.
    * The full_path of the repository. For example: bytebase/sample.
@@ -1083,17 +1081,7 @@ export const VCSProvider = {
 };
 
 function createBaseProjectGitOpsInfo(): ProjectGitOpsInfo {
-  return {
-    name: "",
-    vcs: "",
-    title: "",
-    externalId: "",
-    baseDirectory: "",
-    branch: "",
-    webhookEndpointId: "",
-    fullPath: "",
-    webUrl: "",
-  };
+  return { name: "", vcs: "", title: "", externalId: "", baseDirectory: "", branch: "", fullPath: "", webUrl: "" };
 }
 
 export const ProjectGitOpsInfo = {
@@ -1115,9 +1103,6 @@ export const ProjectGitOpsInfo = {
     }
     if (message.branch !== "") {
       writer.uint32(50).string(message.branch);
-    }
-    if (message.webhookEndpointId !== "") {
-      writer.uint32(58).string(message.webhookEndpointId);
     }
     if (message.fullPath !== "") {
       writer.uint32(66).string(message.fullPath);
@@ -1177,13 +1162,6 @@ export const ProjectGitOpsInfo = {
 
           message.branch = reader.string();
           continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.webhookEndpointId = reader.string();
-          continue;
         case 8:
           if (tag !== 66) {
             break;
@@ -1215,7 +1193,6 @@ export const ProjectGitOpsInfo = {
       externalId: isSet(object.externalId) ? globalThis.String(object.externalId) : "",
       baseDirectory: isSet(object.baseDirectory) ? globalThis.String(object.baseDirectory) : "",
       branch: isSet(object.branch) ? globalThis.String(object.branch) : "",
-      webhookEndpointId: isSet(object.webhookEndpointId) ? globalThis.String(object.webhookEndpointId) : "",
       fullPath: isSet(object.fullPath) ? globalThis.String(object.fullPath) : "",
       webUrl: isSet(object.webUrl) ? globalThis.String(object.webUrl) : "",
     };
@@ -1241,9 +1218,6 @@ export const ProjectGitOpsInfo = {
     if (message.branch !== "") {
       obj.branch = message.branch;
     }
-    if (message.webhookEndpointId !== "") {
-      obj.webhookEndpointId = message.webhookEndpointId;
-    }
     if (message.fullPath !== "") {
       obj.fullPath = message.fullPath;
     }
@@ -1264,7 +1238,6 @@ export const ProjectGitOpsInfo = {
     message.externalId = object.externalId ?? "";
     message.baseDirectory = object.baseDirectory ?? "";
     message.branch = object.branch ?? "";
-    message.webhookEndpointId = object.webhookEndpointId ?? "";
     message.fullPath = object.fullPath ?? "";
     message.webUrl = object.webUrl ?? "";
     return message;

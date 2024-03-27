@@ -151,9 +151,6 @@ message VCSConnector {
   // The branch Bytebase listens to for changes. For example: main.
   string branch = 10;
 
-  // The webhook endpoint ID of the repository.
-  string webhook_endpoint_id = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // TODO(d): move these to create VCS connector API.
   // The full_path of the repository. For example: bytebase/sample.
   string full_path = 12;
