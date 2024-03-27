@@ -197,7 +197,6 @@ type TaskDatabaseDataExportPayload struct {
 	SpecID string `json:"specId,omitempty"`
 
 	SheetID  int                  `json:"sheetId,omitempty"`
-	MaxRows  int                  `json:"maxRows,omitempty"`
 	Format   storepb.ExportFormat `json:"format,omitempty"`
 	Password string               `json:"password,omitempty"`
 }

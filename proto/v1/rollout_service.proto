@@ -284,13 +284,11 @@ message Plan {
     // The resource name of the sheet.
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 2;
-    // The max number of rows to export.
-    int32 max_rows = 3;
     // The format of the exported file.
-    ExportFormat format = 4;
+    ExportFormat format = 3;
     // The zip password provide by users.
     // Leave it empty if no needs to encrypt the zip file.
-    optional string password = 5;
+    optional string password = 4;
   }
 }
 
@@ -651,13 +649,11 @@ message Task {
     // The resource name of the sheet.
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 2;
-    // The max number of rows to export.
-    int32 max_rows = 3;
     // The format of the exported file.
-    ExportFormat format = 4;
+    ExportFormat format = 3;
     // The zip password provide by users.
     // Leave it empty if no needs to encrypt the zip file.
-    optional string password = 5;
+    optional string password = 4;
   }
 }
 
