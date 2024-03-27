@@ -162,7 +162,6 @@ func convertToPlanSpecExportDataConfig(config *storepb.PlanConfig_Spec_ExportDat
 		ExportDataConfig: &v1pb.Plan_ExportDataConfig{
 			Target:   c.Target,
 			Sheet:    c.Sheet,
-			MaxRows:  c.MaxRows,
 			Format:   convertExportFormat(c.Format),
 			Password: c.Password,
 		},
@@ -257,7 +256,6 @@ func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *s
 		ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
 			Target:   c.Target,
 			Sheet:    c.Sheet,
-			MaxRows:  c.MaxRows,
 			Format:   convertToExportFormat(c.Format),
 			Password: c.Password,
 		},
@@ -822,7 +820,6 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 		DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
 			Target:   targetDatabaseName,
 			Sheet:    sheet,
-			MaxRows:  int32(payload.MaxRows),
 			Format:   convertExportFormat(payload.Format),
 			Password: &payload.Password,
 		},

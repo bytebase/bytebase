@@ -56,8 +56,8 @@ import (
 
 const (
 	// The maximum number of bytes for sql results in response body.
-	// 10 MB.
-	maximumSQLResultSize = 10 * 1024 * 1024
+	// 100 MB.
+	maximumSQLResultSize = 100 * 1024 * 1024
 	// defaultTimeout is the default timeout for query and admin execution.
 	defaultTimeout = 10 * time.Minute
 )
@@ -352,14 +352,17 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 		defer conn.Close()
 	}
 
-	start := time.Now().UnixNano()
-	result, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
-		Limit:               int(request.Limit),
+	queryContext := &db.QueryContext{
 		ReadOnly:            true,
 		CurrentDatabase:     database.DatabaseName,
 		SensitiveSchemaInfo: nil,
 		EnableSensitive:     licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
-	})
+	}
+	if request.Limit != 0 {
+		queryContext.Limit = int(request.Limit)
+	}
+	start := time.Now().UnixNano()
+	result, err := driver.QueryConn(ctx, conn, request.Statement, queryContext)
 	durationNs := time.Now().UnixNano() - start
 	if err != nil {
 		return nil, durationNs, err

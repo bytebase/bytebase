@@ -310,7 +310,6 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 	payload := api.TaskDatabaseDataExportPayload{
 		SpecID:  spec.Id,
 		SheetID: sheetUID,
-		MaxRows: int(c.MaxRows),
 		Format:  c.Format,
 	}
 	if c.Password != nil {
