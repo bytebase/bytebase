@@ -284,7 +284,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			key,
 			tenant_mode,
 			data_classification_config_id,
-			(SELECT COUNT(1) FROM repository WHERE project.id = repository.project_id) AS connectors,
+			(SELECT COUNT(1) FROM vcs_connector WHERE project.id = vcs_connector.project_id) AS connectors,
 			setting,
 			row_status
 		FROM project
