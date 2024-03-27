@@ -25,12 +25,9 @@
 <script lang="ts" setup>
 import { useClipboard } from "@vueuse/core";
 import hljs from "highlight.js/lib/core";
-import json from "highlight.js/lib/languages/json";
 import { NCode, NConfigProvider } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
-
-hljs.registerLanguage("json", json);
 
 defineEmits<{
   (event: "dismiss"): void;
