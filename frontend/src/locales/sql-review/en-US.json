@@ -378,7 +378,7 @@
     },
     "statement-add-check-not-valid": {
       "title": "Enforce including \"NOT VALID\" option when adding \"CHECK\" constraints",
-      "description": "Before PostgreSQL 11, adding a CHECK constraint need to verify the existing data and lock the table. This blocks read and write, which may cause business interruption. It is recommended to add the \"NOT VALID\" option to validate new data and manually validate existing data after the change is completed. In PostgreSQL 11 and above, this issue has been optimized and there is no need to pay attention to this rule. Suggestion error level: Warning"
+      "description": "Adding a CHECK constraint needs to verify the existing data and requires ACCESS EXCLUSIVE table lock. This blocks read and write, which may cause business interruption. It is recommended to add the \"NOT VALID\" option to validate new data and manually validate existing data after the change is completed. Suggestion error level: Warning"
     },
     "statement-disallow-add-not-null": {
       "title": "Restrict adding \"NOT NULL\" constraint to existing columns",
@@ -592,7 +592,7 @@
     },
     "statement-add-foreign-key-not-valid": {
       "title": "Enforce including \"NOT VALID\" option when adding foreign keys",
-      "description": "Adding foreign keys needs to verify the existing data and lock the table. This blocks read and write, which may cause business interruption. It is recommended to add the \"NOT VALID\" option to validate new data and validate existing data after the change is completed. Suggestion error level: Warning"
+      "description": "Adding foreign keys needs to verify the existing data and requires SHARE ROW EXCLUSIVE table lock. This blocks write, which may cause business interruption. It is recommended to add the \"NOT VALID\" option to validate new data and validate existing data after the change is completed. Suggestion error level: Warning"
     },
     "statement-non-transactional": {
       "title": "Detect and report non-transactional statements",
