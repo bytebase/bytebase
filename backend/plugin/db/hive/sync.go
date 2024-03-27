@@ -28,6 +28,11 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}
 
 	// roles.
+	// TODO(tommy): hard code 'SetRole()'.
+	adminRoleName := "admin"
+	if err := d.SetRole(ctx, adminRoleName); err != nil {
+		return nil, errors.Wrapf(err, "failed to switch role to %s", adminRoleName)
+	}
 	rolesMetadata, err := d.getRoles(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get role metadata")

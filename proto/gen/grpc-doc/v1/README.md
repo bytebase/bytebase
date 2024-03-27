@@ -1014,6 +1014,7 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 | OCEANBASE_ORACLE | 17 |  |
 | STARROCKS | 18 |  |
 | DORIS | 19 |  |
+| HIVE | 20 |  |
 
 
 
