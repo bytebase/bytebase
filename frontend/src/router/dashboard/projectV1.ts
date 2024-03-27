@@ -4,22 +4,22 @@ import { t } from "@/plugins/i18n";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
 export const PROJECT_V1_ROUTE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.detail`;
-export const PROJECT_V1_ROUTE_DATABASES = `${PROJECT_V1_ROUTE_DASHBOARD}.database.dashboard`;
+export const PROJECT_V1_ROUTE_DATABASES = `${PROJECT_V1_ROUTE_DASHBOARD}.database`;
 export const PROJECT_V1_ROUTE_DATABASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.change-history.detail`;
-export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.dashboard`;
+export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.table-group.detail`;
 export const PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG = `${PROJECT_V1_ROUTE_DASHBOARD}.deployment-config`;
-export const PROJECT_V1_ROUTE_BRANCHES = `${PROJECT_V1_ROUTE_DASHBOARD}.branch.dashboard`;
+export const PROJECT_V1_ROUTE_BRANCHES = `${PROJECT_V1_ROUTE_DASHBOARD}.branch`;
 export const PROJECT_V1_ROUTE_BRANCH_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.branch.detail`;
 export const PROJECT_V1_ROUTE_BRANCH_ROLLOUT = `${PROJECT_V1_ROUTE_DASHBOARD}.branch.rollout`;
 export const PROJECT_V1_ROUTE_BRANCH_MERGE = `${PROJECT_V1_ROUTE_DASHBOARD}.branch.merge`;
 export const PROJECT_V1_ROUTE_BRANCH_REBASE = `${PROJECT_V1_ROUTE_DASHBOARD}.branch.rebase`;
-export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.dashboard`;
+export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
 export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.detail`;
-export const PROJECT_V1_ROUTE_CHANGE_HISTORIES = `${PROJECT_V1_ROUTE_DASHBOARD}.change-histories.dashboard`;
-export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist.dashboard`;
+export const PROJECT_V1_ROUTE_CHANGE_HISTORIES = `${PROJECT_V1_ROUTE_DASHBOARD}.change-histories`;
+export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist`;
 export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist.detail`;
 export const PROJECT_V1_ROUTE_SYNC_SCHEMA = `${PROJECT_V1_ROUTE_DASHBOARD}.sync-schema`;
 export const PROJECT_V1_ROUTE_SLOW_QUERIES = `${PROJECT_V1_ROUTE_DASHBOARD}.slow-queries`;
@@ -28,7 +28,7 @@ export const PROJECT_V1_ROUTE_ACTIVITIES = `${PROJECT_V1_ROUTE_DASHBOARD}.activi
 export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
 export const PROJECT_V1_ROUTE_GITOPS_CREATE = `${PROJECT_V1_ROUTE_GITOPS}.create`;
 export const PROJECT_V1_ROUTE_GITOPS_DETAIL = `${PROJECT_V1_ROUTE_GITOPS}.detail`;
-export const PROJECT_V1_ROUTE_WEBHOOKS = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.dashboard`;
+export const PROJECT_V1_ROUTE_WEBHOOKS = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook`;
 export const PROJECT_V1_ROUTE_WEBHOOK_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.create`;
 export const PROJECT_V1_ROUTE_WEBHOOK_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.detail`;
 export const PROJECT_V1_ROUTE_MEMBERS = `${PROJECT_V1_ROUTE_DASHBOARD}.members`;
@@ -306,17 +306,51 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "gitops",
-        name: PROJECT_V1_ROUTE_GITOPS,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.vcsConnectors.list",
-          ],
         },
-        component: () =>
-          import("@/views/project/ProjectVersionControlPanel.vue"),
         props: true,
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_ROUTE_GITOPS,
+            meta: {
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.vcsConnectors.list",
+              ],
+            },
+            component: () =>
+              import("@/views/project/ProjectVersionControlPanel.vue"),
+            props: true,
+          },
+          {
+            path: "new",
+            name: PROJECT_V1_ROUTE_GITOPS_CREATE,
+            meta: {
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.vcsConnectors.create",
+              ],
+            },
+            component: () =>
+              import("@/views/project/ProjectVersionControlCreate.vue"),
+            props: true,
+          },
+          {
+            path: ":vcsConnectorId",
+            name: PROJECT_V1_ROUTE_GITOPS_DETAIL,
+            meta: {
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.vcsConnectors.get",
+              ],
+            },
+            component: () =>
+              import("@/views/project/ProjectVersionControlDetail.vue"),
+            props: true,
+          },
+        ],
       },
       {
         path: "webhooks",

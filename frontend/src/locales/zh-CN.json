@@ -1970,7 +1970,15 @@
     },
     "successfully-updated-db-name-template": "成功更新数据库名称模板。",
     "all": "所有项目",
-    "key-hint": "简短且有辨识度的字母数字组合用于识别该项目。"
+    "key-hint": "简短且有辨识度的字母数字组合用于识别该项目。",
+    "gitops-connector": {
+      "self": "GitOps 连接",
+      "add": "新增 GitOps 连接",
+      "delete": "删除 GitOps 连接",
+      "update-success": "GitOps 连接已更新",
+      "create-success": "GitOps 连接已创建",
+      "delete-success": "GitOps 连接已删除"
+    }
   },
   "gitops": {
     "setting": {
@@ -2767,7 +2775,9 @@
     "role": "角色",
     "database-group": "数据库分组",
     "schema-group": "表分组",
-    "changelist": "变更列表"
+    "changelist": "变更列表",
+    "vcs-provider": "GitOps 提供方",
+    "vcs-connector": "GitOps 连接"
   },
   "resource-id": {
     "self": "{resource} ID",
