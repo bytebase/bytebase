@@ -111,7 +111,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		apiv1.BuildListDatabaseNamesFunc(exec.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
-	if err != nil {
+	if err != nil && errors.Is(err, base.UnsupportedError) {
 		return true, nil, errors.Wrap(err, "failed to get query span")
 	}
 

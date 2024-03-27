@@ -187,7 +187,7 @@ func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
 func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, database, schema string, getMetadataFunc GetDatabaseMetadataFunc, listDatabaseNamesFunc ListDatabaseNamesFunc, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
 	f, ok := spans[engine]
 	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
+		return nil, &unsupportedError{engine: engine.String()}
 	}
 	statements, err := SplitMultiSQL(engine, statement)
 	if err != nil {
@@ -252,4 +252,14 @@ func TransformDMLToSelect(engine storepb.Engine, statement string, sourceDatabas
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(statement, sourceDatabase, targetDatabase, tableSuffix)
+}
+
+var UnsupportedError error = &unsupportedError{}
+
+type unsupportedError struct {
+	engine string
+}
+
+func (e *unsupportedError) Error() string {
+	return fmt.Sprintf("unsupported engine %s", e.engine)
 }
