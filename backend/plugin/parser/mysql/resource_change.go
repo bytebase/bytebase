@@ -122,3 +122,141 @@ func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTa
 		}
 	}
 }
+
+func (l *resourceChangedListener) EnterInsertStatement(ctx *parser.InsertStatementContext) {
+	if !IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
+	if ctx.TableRef() == nil {
+		return
+	}
+	resource := base.SchemaResource{
+		Database: l.currentDatabase,
+	}
+	db, table := NormalizeMySQLTableRef(ctx.TableRef())
+	if db != "" {
+		resource.Database = db
+	}
+	resource.Table = table
+	l.resourceMap[resource.String()] = resource
+}
+
+func (l *resourceChangedListener) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
+	if !IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
+	for _, tableRefCtx := range ctx.TableReferenceList().AllTableReference() {
+		resources := l.extractTableReference(tableRefCtx)
+		for _, resource := range resources {
+			l.resourceMap[resource.String()] = resource
+		}
+	}
+}
+
+func (l *resourceChangedListener) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
+	if !IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
+	var allResources []base.SchemaResource
+	if ctx.TableRef() != nil {
+		resources := l.extractTableRef(ctx.TableRef())
+		allResources = append(allResources, resources...)
+	}
+	if ctx.TableReferenceList() != nil {
+		resources := l.extractTableReferenceList(ctx.TableReferenceList())
+		allResources = append(allResources, resources...)
+	}
+
+	for _, resource := range allResources {
+		l.resourceMap[resource.String()] = resource
+	}
+}
+
+func (l *resourceChangedListener) extractTableReference(ctx parser.ITableReferenceContext) []base.SchemaResource {
+	if ctx.TableFactor() == nil {
+		return nil
+	}
+	res := l.extractTableFactor(ctx.TableFactor())
+	for _, joinedTableCtx := range ctx.AllJoinedTable() {
+		tables := l.extractJoinedTable(joinedTableCtx)
+		res = append(res, tables...)
+	}
+
+	return res
+}
+
+func (l *resourceChangedListener) extractTableRef(ctx parser.ITableRefContext) []base.SchemaResource {
+	if ctx == nil {
+		return nil
+	}
+	resource := base.SchemaResource{
+		Database: l.currentDatabase,
+	}
+	db, table := NormalizeMySQLTableRef(ctx)
+	if db != "" {
+		resource.Database = db
+	}
+	resource.Table = table
+
+	return []base.SchemaResource{resource}
+}
+
+func (l *resourceChangedListener) extractTableReferenceList(ctx parser.ITableReferenceListContext) []base.SchemaResource {
+	var res []base.SchemaResource
+	for _, tableRefCtx := range ctx.AllTableReference() {
+		tables := l.extractTableReference(tableRefCtx)
+		res = append(res, tables...)
+	}
+	return res
+}
+
+func (l *resourceChangedListener) extractTableReferenceListParens(ctx parser.ITableReferenceListParensContext) []base.SchemaResource {
+	if ctx.TableReferenceList() != nil {
+		return l.extractTableReferenceList(ctx.TableReferenceList())
+	}
+	if ctx.TableReferenceListParens() != nil {
+		return l.extractTableReferenceListParens(ctx.TableReferenceListParens())
+	}
+	return nil
+}
+
+func (l *resourceChangedListener) extractTableFactor(ctx parser.ITableFactorContext) []base.SchemaResource {
+	switch {
+	case ctx.SingleTable() != nil:
+		return l.extractSingleTable(ctx.SingleTable())
+	case ctx.SingleTableParens() != nil:
+		return l.extractSingleTableParens(ctx.SingleTableParens())
+	case ctx.DerivedTable() != nil:
+		return nil
+	case ctx.TableReferenceListParens() != nil:
+		return l.extractTableReferenceListParens(ctx.TableReferenceListParens())
+	case ctx.TableFunction() != nil:
+		return nil
+	default:
+		return nil
+	}
+}
+
+func (l *resourceChangedListener) extractSingleTable(ctx parser.ISingleTableContext) []base.SchemaResource {
+	return l.extractTableRef(ctx.TableRef())
+}
+
+func (l *resourceChangedListener) extractSingleTableParens(ctx parser.ISingleTableParensContext) []base.SchemaResource {
+	if ctx.SingleTable() != nil {
+		return l.extractSingleTable(ctx.SingleTable())
+	}
+	if ctx.SingleTableParens() != nil {
+		return l.extractSingleTableParens(ctx.SingleTableParens())
+	}
+	return nil
+}
+
+func (l *resourceChangedListener) extractJoinedTable(ctx parser.IJoinedTableContext) []base.SchemaResource {
+	if ctx.TableFactor() != nil {
+		return l.extractTableFactor(ctx.TableFactor())
+	}
+	if ctx.TableReference() != nil {
+		return l.extractTableReference(ctx.TableReference())
+	}
+	return nil
+}
