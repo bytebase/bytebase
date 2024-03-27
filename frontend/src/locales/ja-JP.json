@@ -2907,8 +2907,8 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "データベースの作成",
-          "query": "クエリのリクエスト",
-          "export": "エクスポートのリクエスト"
+          "request_query": "クエリのリクエスト",
+          "request_export": "エクスポートのリクエスト"
         }
       },
       "template": {
