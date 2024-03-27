@@ -139,22 +139,6 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", pushEvent.Ref, vcsConnector.Payload.Branch))
 			}
 
-			// Squash commits.
-			nonBytebaseCommitList := filterGitHubBytebaseCommit(pushEvent.Commits)
-			if len(nonBytebaseCommitList) == 0 {
-				var commitList []string
-				for _, commit := range pushEvent.Commits {
-					commitList = append(commitList, commit.ID)
-				}
-				slog.Debug("all commits are created by Bytebase",
-					slog.String("repoURL", pushEvent.Repository.HTMLURL),
-					slog.String("repoName", pushEvent.Repository.FullName),
-					slog.String("commits", strings.Join(commitList, ", ")),
-				)
-				return c.String(http.StatusOK, "OK")
-			}
-			pushEvent.Commits = nonBytebaseCommitList
-
 			baseVCSPushEvents = append(baseVCSPushEvents, pushEvent.ToVCS())
 		case vcs.GitLab:
 			var pushEvent gitlab.WebhookPushEvent
@@ -175,22 +159,6 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				return c.String(http.StatusOK, fmt.Sprintf("committed to branch %q, want branch %q", pushEvent.Ref, vcsConnector.Payload.Branch))
 			}
 
-			// Squash commits.
-			nonBytebaseCommitList := filterGitLabBytebaseCommit(pushEvent.CommitList)
-			if len(nonBytebaseCommitList) == 0 {
-				var commitList []string
-				for _, commit := range pushEvent.CommitList {
-					commitList = append(commitList, commit.ID)
-				}
-				slog.Debug("all commits are created by Bytebase",
-					slog.String("repoURL", pushEvent.Project.WebURL),
-					slog.String("repoName", pushEvent.Project.FullPath),
-					slog.String("commits", strings.Join(commitList, ", ")),
-				)
-				return c.String(http.StatusOK, "OK")
-			}
-			pushEvent.CommitList = nonBytebaseCommitList
-
 			baseVCSPushEvent, err := pushEvent.ToVCS()
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
@@ -209,23 +177,6 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			}
 
 			for _, change := range pushEvent.Push.Changes {
-				var nonBytebaseCommitList []bitbucket.WebhookCommit
-				nonBytebaseCommitList = append(nonBytebaseCommitList, filterBitbucketBytebaseCommit(change.Commits)...)
-				if len(nonBytebaseCommitList) == 0 {
-					var commitList []string
-					for _, change := range pushEvent.Push.Changes {
-						for _, commit := range change.Commits {
-							commitList = append(commitList, commit.Hash)
-						}
-					}
-					slog.Debug("all commits are created by Bytebase",
-						slog.String("repoURL", pushEvent.Repository.Links.HTML.Href),
-						slog.String("repoName", pushEvent.Repository.FullName),
-						slog.String("commits", strings.Join(commitList, ", ")),
-					)
-					continue
-				}
-
 				// Check webhook branch.
 				ref := "refs/heads/" + change.New.Name
 				ok, err := isWebhookEventBranch(ref, vcsConnector.Payload.Branch)
@@ -241,7 +192,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 					AccessToken: vcsProvider.AccessToken,
 				}
 				var commitList []vcs.Commit
-				for _, commit := range nonBytebaseCommitList {
+				for _, commit := range change.Commits {
 					before := strings.Repeat("0", 40)
 					if len(commit.Parents) > 0 {
 						before = commit.Parents[0].Hash
@@ -388,30 +339,14 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, "Presumption failed: the commit id is all zero")
 				}
 			}
-			// Filter out all the commits created by Bytebase(e.g. write-back the latest schema) to avoid infinite loop.
-			nonBytebaseCommitList := filterAzureBytebaseCommit(pushEvent.Resource.Commits)
-			if len(nonBytebaseCommitList) == 0 {
-				var commitIDs []string
-				for _, commit := range pushEvent.Resource.Commits {
-					commitIDs = append(commitIDs, commit.CommitID)
-				}
-				slog.Debug("all commits are created by Bytebase",
-					slog.String("repoURL", pushEvent.Resource.Repository.URL),
-					slog.String("repoID", vcsConnector.Payload.ExternalId),
-					slog.String("repoName", pushEvent.Resource.Repository.Name),
-					slog.String("commits", strings.Join(commitIDs, ", ")),
-				)
-				return c.String(http.StatusOK, "OK")
-			}
-			pushEvent.Resource.Commits = nonBytebaseCommitList
 			// Azure DevOps' service hook does not contain the file diff information for each commit, so we need to backfill
 			// the file diff information by ourselves.
 			// We will use the previous commit id as the base commit id and the current commit id as the target commit id to
 			// get the file diff information commit by commit. We use the oldObjectId in resources.refUpdates as the base commit id
 			// for the first commit.
 			// NOTE: We presume that the sequence of the commits in the code push event is the reverse order of the commit sequence(aka. stack sequence, commit first, appear last) in the repository.
-			backfillCommits := make([]vcs.Commit, 0, len(nonBytebaseCommitList))
-			for _, commit := range nonBytebaseCommitList {
+			var backfillCommits []vcs.Commit
+			for _, commit := range pushEvent.Resource.Commits {
 				changes, err := azure.GetChangesByCommit(ctx, oauthContext, vcsConnector.Payload.ExternalId, commit.CommitID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get changes by commit %q", commit.CommitID)).SetInternal(err)
@@ -1153,49 +1088,4 @@ func patchTask(ctx context.Context, stores *store.Store, activityManager *activi
 		}
 	}
 	return nil
-}
-
-func filterAzureBytebaseCommit(list []azure.ServiceHookCodePushEventResourceCommit) []azure.ServiceHookCodePushEventResourceCommit {
-	var result []azure.ServiceHookCodePushEventResourceCommit
-	for _, commit := range list {
-		if commit.Author.Name == vcs.BytebaseAuthorName && commit.Author.Email == vcs.BytebaseAuthorEmail {
-			continue
-		}
-		result = append(result, commit)
-	}
-	return result
-}
-
-func filterGitHubBytebaseCommit(list []github.WebhookCommit) []github.WebhookCommit {
-	var result []github.WebhookCommit
-	for _, commit := range list {
-		if commit.Author.Name == vcs.BytebaseAuthorName && commit.Author.Email == vcs.BytebaseAuthorEmail {
-			continue
-		}
-		result = append(result, commit)
-	}
-	return result
-}
-
-func filterGitLabBytebaseCommit(list []gitlab.WebhookCommit) []gitlab.WebhookCommit {
-	var result []gitlab.WebhookCommit
-	for _, commit := range list {
-		if commit.Author.Name == vcs.BytebaseAuthorName && commit.Author.Email == vcs.BytebaseAuthorEmail {
-			continue
-		}
-		result = append(result, commit)
-	}
-	return result
-}
-
-func filterBitbucketBytebaseCommit(list []bitbucket.WebhookCommit) []bitbucket.WebhookCommit {
-	bytebaseRaw := fmt.Sprintf("%s <%s>", vcs.BytebaseAuthorName, vcs.BytebaseAuthorEmail)
-	var result []bitbucket.WebhookCommit
-	for _, commit := range list {
-		if commit.Author.Raw == bytebaseRaw {
-			continue
-		}
-		result = append(result, commit)
-	}
-	return result
 }
