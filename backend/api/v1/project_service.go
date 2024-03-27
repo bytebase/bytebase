@@ -716,30 +716,6 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 	return resp, nil
 }
 
-func (s *ProjectService) getDefaultVCSConnector(ctx context.Context, projectName string) (*store.VCSConnectorMessage, error) {
-	project, err := s.getProjectMessage(ctx, projectName)
-	if err != nil {
-		return nil, err
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %s has been deleted", projectName)
-	}
-
-	defaultResourceID := "default"
-	vcsConnector, err := s.store.GetVCSConnector(ctx, &store.FindVCSConnectorMessage{
-		ProjectID:  &project.ResourceID,
-		ResourceID: &defaultResourceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if vcsConnector == nil {
-		return nil, status.Errorf(codes.NotFound, "VCS connector not found")
-	}
-
-	return vcsConnector, nil
-}
-
 // CreateDatabaseGroup creates a database group.
 func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.CreateDatabaseGroupRequest) (*v1pb.DatabaseGroup, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureDatabaseGrouping); err != nil {

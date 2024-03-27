@@ -521,7 +521,7 @@ func (*ACLInterceptor) getProjectIDsForBranchService(_ context.Context, req any)
 }
 
 func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any) ([]string, error) {
-	var projects, projectDeploymentConfigs, projectWebhooks, projectGitopsInfos, databaseGroups, schemaGroups, protectionRules []string
+	var projects, projectDeploymentConfigs, projectWebhooks, databaseGroups, schemaGroups, protectionRules []string
 
 	switch r := req.(type) {
 	case *v1pb.GetProjectRequest:
@@ -588,13 +588,6 @@ func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any
 		projectID, _, err := common.GetProjectIDWebhookID(projectWebhook)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse %q", projectWebhook)
-		}
-		projectIDs = append(projectIDs, projectID)
-	}
-	for _, projectGitopsInfo := range projectGitopsInfos {
-		projectID, err := common.TrimSuffixAndGetProjectID(projectGitopsInfo, common.GitOpsInfoSuffix)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse %q", projectGitopsInfo)
 		}
 		projectIDs = append(projectIDs, projectID)
 	}
