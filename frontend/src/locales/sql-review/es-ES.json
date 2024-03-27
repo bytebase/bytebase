@@ -378,7 +378,7 @@
     },
     "statement-add-check-not-valid": {
       "title": "Obligar a incluir la opción \"NOT VALID\" al agregar restricciones \"CHECK\"",
-      "description": "Antes de PostgreSQL 11, agregar una restricción CHECK requería verificar los datos existentes y bloquear la tabla. Esto bloqueaba la lectura y escritura, lo que podía causar interrupciones comerciales. Se recomienda agregar la opción \"NOT VALID\" para validar nuevos datos y validar manualmente los datos existentes después de completar el cambio. En PostgreSQL 11 y versiones posteriores, este problema se ha optimizado y no es necesario prestar atención a esta regla. Nivel de sugerencia de error: Advertencia"
+      "description": "Agregar una restricción CHECK necesita verificar los datos existentes y requiere el bloqueo de tabla ACCESS EXCLUSIVE. Esto bloquea la lectura y la escritura, lo que puede provocar la interrupción del negocio. Se recomienda agregar la opción \"NOT VALID\" para validar nuevos datos y validar manualmente los datos existentes después de completar el cambio. Nivel de sugerencia de error: Advertencia"
     },
     "statement-disallow-add-not-null": {
       "title": "Restricción de agregar restricción \"NOT NULL\" a columnas existentes",
@@ -591,7 +591,7 @@
       }
     },
     "statement-add-foreign-key-not-valid": {
-      "description": "Agregar claves externas debe verificar los datos existentes y bloquear la tabla. \nEsto bloquea la lectura y la escritura, lo que puede provocar la interrupción del negocio. \nSe recomienda agregar la opción \"NO VÁLIDO\" para validar datos nuevos y validar los datos existentes una vez completado el cambio. \nNivel de error de sugerencia: Advertencia",
+      "description": "Agregar claves externas necesita verificar los datos existentes y requiere el bloqueo de tabla SHARE ROW EXCLUSIVE. \nEsto bloquea la escritura, lo que puede provocar la interrupción del negocio. \nSe recomienda agregar la opción \"NO VÁLIDO\" para validar datos nuevos y validar los datos existentes una vez completado el cambio. \nNivel de error de sugerencia: Advertencia",
       "title": "Aplicar la opción \"NO VÁLIDO\" al agregar claves externas"
     },
     "statement-non-transactional": {
