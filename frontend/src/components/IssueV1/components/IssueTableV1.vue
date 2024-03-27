@@ -11,7 +11,7 @@
       :columns="columnList"
       :data="issueList"
       :striped="true"
-      :bordered="true"
+      :bordered="bordered"
       :loading="loading"
       :row-key="(issue: ComposedIssue) => issue.uid"
       :default-expand-all="true"
@@ -31,7 +31,7 @@
   <div
     v-if="isTableInViewport && selectedIssueList.length > 0"
     class="sticky bottom-0 w-full bg-white flex items-center gap-x-2 px-4 py-2 border-b"
-    :class="isGridXBordered && 'border-x'"
+    :class="bordered && 'border-x'"
   >
     <BatchIssueActionsV1 :issue-list="selectedIssueList" />
   </div>
@@ -194,12 +194,14 @@ const props = withDefaults(
     mode?: Mode;
     highlightText?: string;
     loading?: boolean;
+    bordered: boolean;
   }>(),
   {
     title: "",
     mode: "ALL",
     highlightText: "",
     loading: true,
+    bordered: false,
   }
 );
 
@@ -216,11 +218,6 @@ const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
 const { width: tableWidth } = useElementSize(tableRef);
 const showExtendedColumns = computed(() => {
   return tableWidth.value > 800;
-});
-const isGridXBordered = computed(() => {
-  const grid = tableRef.value?.querySelector(".bb-grid");
-  if (!grid) return false;
-  return parseInt(getComputedStyle(grid).borderLeftWidth, 10) > 0;
 });
 
 const selectedIssueList = computed(() => {
