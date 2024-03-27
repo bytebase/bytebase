@@ -16,6 +16,7 @@ import (
 	vcsplugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -87,6 +88,21 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "vcs %s not found", vcsResourceID)
 	}
 
+	// Check branch existence.
+	notFound, err := isBranchNotFound(
+		ctx,
+		vcs,
+		vcs.AccessToken,
+		request.GetVcsConnector().ExternalId,
+		request.GetVcsConnector().Branch,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check branch %s with error: %v", request.GetVcsConnector().Branch, err.Error())
+	}
+	if notFound {
+		return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", request.GetVcsConnector().Branch, request.GetVcsConnector().FullPath)
+	}
+
 	baseDir := request.GetVcsConnector().BaseDirectory
 	// Azure DevOps base directory should start with /.
 	if vcs.Type == vcsplugin.AzureDevOps {
@@ -110,17 +126,17 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 		ResourceID: request.VcsConnectorId,
 		CreatorID:  principalID,
 
-		VCSUID:             vcs.ID,
-		VCSResourceID:      vcs.ResourceID,
-		WebhookURLHost:     "setting.ExternalUrl",
-		Title:              request.GetVcsConnector().Title,
-		FullPath:           request.GetVcsConnector().FullPath,
-		WebURL:             request.GetVcsConnector().WebUrl,
-		Branch:             request.GetVcsConnector().Branch,
-		BaseDirectory:      baseDir,
-		ExternalID:         request.GetVcsConnector().ExternalId,
-		WebhookEndpointID:  fmt.Sprintf("workspaces/%s/projects/%s/vcsConnectors/%s", workspaceID, project.ResourceID, request.VcsConnectorId),
-		WebhookSecretToken: secretToken,
+		VCSUID:        vcs.ID,
+		VCSResourceID: vcs.ResourceID,
+		Payload: &storepb.VCSConnector{
+			Title:              request.GetVcsConnector().Title,
+			FullPath:           request.GetVcsConnector().FullPath,
+			WebUrl:             request.GetVcsConnector().WebUrl,
+			Branch:             request.GetVcsConnector().Branch,
+			BaseDirectory:      baseDir,
+			ExternalId:         request.GetVcsConnector().ExternalId,
+			WebhookSecretToken: secretToken,
+		},
 	}
 
 	// Create the webhook.
@@ -128,11 +144,12 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 	if bytebaseEndpointURL == "" {
 		bytebaseEndpointURL = setting.ExternalUrl
 	}
-	webhookID, err := createVCSWebhook(ctx, vcs.Type, vcsConnectorCreate.WebhookEndpointID, secretToken, vcs.AccessToken, vcs.InstanceURL, vcsConnectorCreate.ExternalID, bytebaseEndpointURL)
+	webhookEndpointID := fmt.Sprintf("workspaces/%s/projects/%s/vcsConnectors/%s", workspaceID, project.ResourceID, request.VcsConnectorId)
+	webhookID, err := createVCSWebhook(ctx, vcs.Type, webhookEndpointID, secretToken, vcs.AccessToken, vcs.InstanceURL, vcsConnectorCreate.Payload.ExternalId, bytebaseEndpointURL)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create webhook for project %s with error: %v", vcsConnectorCreate.ProjectID, err.Error())
 	}
-	vcsConnectorCreate.ExternalWebhookID = webhookID
+	vcsConnectorCreate.Payload.ExternalWebhookId = webhookID
 
 	vcsConnector, err = s.store.CreateVCSConnector(ctx, vcsConnectorCreate)
 	if err != nil {
@@ -273,6 +290,27 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 			update.BaseDirectory = &baseDir
 		}
 	}
+
+	// Check branch existence.
+	if v := update.Branch; v != nil {
+		if *v == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
+		}
+		notFound, err := isBranchNotFound(
+			ctx,
+			vcs,
+			vcs.AccessToken,
+			vcsConnector.Payload.ExternalId,
+			*v,
+		)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
+		}
+		if notFound {
+			return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", *v, vcsConnector.Payload.FullPath)
+		}
+	}
+
 	if err := s.store.UpdateVCSConnector(ctx, update); err != nil {
 		return nil, err
 	}
@@ -331,8 +369,8 @@ func (s *VCSConnectorService) DeleteVCSConnector(ctx context.Context, request *v
 			AccessToken: vcs.AccessToken,
 		},
 		vcs.InstanceURL,
-		vcsConnector.ExternalID,
-		vcsConnector.ExternalWebhookID,
+		vcsConnector.Payload.ExternalId,
+		vcsConnector.Payload.ExternalWebhookId,
 	); err != nil {
 		slog.Error("failed to delete webhook for VCS connector", slog.String("project", projectID), slog.String("VCS connector", vcsConnector.ResourceID), log.BBError(err))
 	}
@@ -357,19 +395,17 @@ func convertStoreVCSConnector(ctx context.Context, stores *store.Store, vcsConne
 	}
 
 	v1VCSConnector := &v1pb.VCSConnector{
-		Name:              fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, vcsConnector.ProjectID, common.VCSConnectorPrefix, vcsConnector.ResourceID),
-		CreateTime:        timestamppb.New(vcsConnector.CreatedTime),
-		UpdateTime:        timestamppb.New(vcsConnector.UpdatedTime),
-		Creator:           fmt.Sprintf("users/%s", creator.Email),
-		Updater:           fmt.Sprintf("users/%s", updater.Email),
-		Title:             vcsConnector.Title,
-		VcsProvider:       fmt.Sprintf("%s%s", common.VCSProviderPrefix, vcsConnector.VCSResourceID),
-		ExternalId:        vcsConnector.ExternalID,
-		BaseDirectory:     vcsConnector.BaseDirectory,
-		Branch:            vcsConnector.Branch,
-		WebhookEndpointId: vcsConnector.WebhookEndpointID,
-		FullPath:          vcsConnector.FullPath,
-		WebUrl:            vcsConnector.WebURL,
+		Name:          fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, vcsConnector.ProjectID, common.VCSConnectorPrefix, vcsConnector.ResourceID),
+		CreateTime:    timestamppb.New(vcsConnector.CreatedTime),
+		UpdateTime:    timestamppb.New(vcsConnector.UpdatedTime),
+		Creator:       fmt.Sprintf("users/%s", creator.Email),
+		Updater:       fmt.Sprintf("users/%s", updater.Email),
+		Title:         vcsConnector.Payload.Title,
+		VcsProvider:   fmt.Sprintf("%s%s", common.VCSProviderPrefix, vcsConnector.VCSResourceID),
+		ExternalId:    vcsConnector.Payload.ExternalId,
+		BaseDirectory: vcsConnector.Payload.BaseDirectory,
+		Branch:        vcsConnector.Payload.Branch,
+		FullPath:      vcsConnector.Payload.FullPath,
 	}
 	return v1VCSConnector, nil
 }

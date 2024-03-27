@@ -1,0 +1,6 @@
+***********************************************************************
+ Welcome to use bytebase
+ Chart version: {{ .Chart.Version }}
+***********************************************************************
+
+The bytebase is starting, use `kubectl get statefulset bytebase -n {{ .Release.Namespace }}` to check status.
