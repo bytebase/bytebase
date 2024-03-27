@@ -356,7 +356,6 @@ func getPlanCheckRunsFromExportDataConfigForDatabase(ctx context.Context, s *sto
 		store.PlanCheckDatabaseConnect,
 		store.PlanCheckDatabaseStatementType,
 		store.PlanCheckDatabaseStatementAdvise,
-		store.PlanCheckDatabaseStatementSummaryReport,
 	}
 	planCheckRuns := []*store.PlanCheckRunMessage{}
 	for _, planCheckRunType := range planCheckRunTypes {
