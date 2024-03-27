@@ -273,7 +273,8 @@
     "cutover": "カットオーバー",
     "baseline": "ベースライン",
     "project-member": "プロジェクトメンバー",
-    "leave-without-saving": "保存せずに終了しますか?"
+    "leave-without-saving": "保存せずに終了しますか?",
+    "configure-now": "今すぐ設定する"
   },
   "error-page": {
     "go-back-home": "ホームに戻る"
@@ -425,8 +426,7 @@
     "cloud": "クラウド",
     "request-demo": "30分の製品デモを予約する",
     "readonly": "Bytebase は読み取り専用モードです。コンソールを表示することはできますが、変更の試みは失敗します。",
-    "external-url": "Bytebase は --external-url を設定していません",
-    "configure-now": "今すぐ設定する"
+    "external-url": "Bytebase は --external-url を設定していません"
   },
   "intro": {
     "doc": "ドキュメント",

@@ -119,7 +119,7 @@
             <i18n-t keypath="subscription.trial-start-modal.subscription">
               <template #page>
                 <router-link
-                  to="/setting/subscription"
+                  :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
                   class="normal-link"
                   exact-active-class=""
                 >
@@ -152,6 +152,7 @@ import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useSubscriptionV1Store,
   useOnboardingStateStore,

@@ -29,7 +29,7 @@
           </span>
         </p>
         <router-link
-          to="/setting/subscription"
+          :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
           class="flex items-center justify-center py-1 text-base font-medium cursor-pointer text-white underline hover:opacity-80"
           exact-active-class=""
         >
@@ -51,6 +51,7 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 

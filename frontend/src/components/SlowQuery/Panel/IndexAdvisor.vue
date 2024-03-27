@@ -37,9 +37,12 @@
     </NButton>
   </div>
   <div v-else-if="!hasOpenAIKeySetup">
-    <router-link class="normal-link" to="/setting/general">{{
-      $t("slow-query.advise-index.setup-openai-key-to-enable")
-    }}</router-link>
+    <router-link
+      class="normal-link"
+      :to="{ name: SETTING_ROUTE_WORKSPACE_GENERAL }"
+    >
+      {{ $t("slow-query.advise-index.setup-openai-key-to-enable") }}
+    </router-link>
   </div>
 
   <FeatureModal
@@ -57,6 +60,7 @@ import { computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
 import { databaseServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { featureToRef, hasFeature } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import type { ComposedSlowQueryLog } from "@/types";

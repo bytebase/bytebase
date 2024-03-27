@@ -45,7 +45,7 @@
           >
             <label for="activation" class="textlabel block">
               {{ $t("subscription.instance-assignment.assign-license") }}
-              (<router-link to="/setting/subscription" class="accent-link">
+              (<router-link :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }" class="accent-link">
                 {{
                   $t("subscription.instance-assignment.n-license-remain", {
                     n: availableLicenseCountText,
@@ -391,6 +391,7 @@ import {
 } from "./constants";
 import { provideInstanceFormContext } from "./context";
 import { useInstanceSpecs } from "./specs";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 
 const props = defineProps({
   instance: {

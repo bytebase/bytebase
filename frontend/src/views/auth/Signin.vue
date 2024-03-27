@@ -115,7 +115,10 @@
                   <span>
                     {{ $t("auth.sign-in.new-user") }}
                   </span>
-                  <router-link to="/auth/signup" class="accent-link px-2">
+                  <router-link
+                    :to="{ name: AUTH_SIGNUP_MODULE }"
+                    class="accent-link px-2"
+                  >
                     {{ $t("common.sign-up") }}
                   </router-link>
                 </template>
