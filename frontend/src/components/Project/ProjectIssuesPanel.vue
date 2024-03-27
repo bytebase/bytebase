@@ -65,6 +65,7 @@
         <template #table="{ issueList, loading }">
           <IssueTableV1
             mode="PROJECT"
+            :bordered="true"
             :loading="loading"
             :issue-list="issueList"
             :highlight-text="state.params.query"

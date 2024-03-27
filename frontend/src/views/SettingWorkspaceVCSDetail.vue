@@ -216,6 +216,7 @@ const doUpdate = () => {
     if (!updatedVCS) {
       return;
     }
+    resetState();
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
