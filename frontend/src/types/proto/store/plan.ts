@@ -8,6 +8,7 @@ export const protobufPackage = "bytebase.store";
 
 export interface PlanConfig {
   steps: PlanConfig_Step[];
+  vcsSource: PlanConfig_VCSSource | undefined;
 }
 
 export interface PlanConfig_Step {
@@ -224,14 +225,27 @@ export interface PlanConfig_ExportDataConfig {
   password?: string | undefined;
 }
 
+export interface PlanConfig_VCSSource {
+  /**
+   * Optional.
+   * If present, we will update the pull request for rollout status.
+   * Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
+   */
+  vcsConnector: string;
+  pullRequestUrl: string;
+}
+
 function createBasePlanConfig(): PlanConfig {
-  return { steps: [] };
+  return { steps: [], vcsSource: undefined };
 }
 
 export const PlanConfig = {
   encode(message: PlanConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.steps) {
       PlanConfig_Step.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.vcsSource !== undefined) {
+      PlanConfig_VCSSource.encode(message.vcsSource, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -250,6 +264,13 @@ export const PlanConfig = {
 
           message.steps.push(PlanConfig_Step.decode(reader, reader.uint32()));
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.vcsSource = PlanConfig_VCSSource.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -262,6 +283,7 @@ export const PlanConfig = {
   fromJSON(object: any): PlanConfig {
     return {
       steps: globalThis.Array.isArray(object?.steps) ? object.steps.map((e: any) => PlanConfig_Step.fromJSON(e)) : [],
+      vcsSource: isSet(object.vcsSource) ? PlanConfig_VCSSource.fromJSON(object.vcsSource) : undefined,
     };
   },
 
@@ -269,6 +291,9 @@ export const PlanConfig = {
     const obj: any = {};
     if (message.steps?.length) {
       obj.steps = message.steps.map((e) => PlanConfig_Step.toJSON(e));
+    }
+    if (message.vcsSource !== undefined) {
+      obj.vcsSource = PlanConfig_VCSSource.toJSON(message.vcsSource);
     }
     return obj;
   },
@@ -279,6 +304,9 @@ export const PlanConfig = {
   fromPartial(object: DeepPartial<PlanConfig>): PlanConfig {
     const message = createBasePlanConfig();
     message.steps = object.steps?.map((e) => PlanConfig_Step.fromPartial(e)) || [];
+    message.vcsSource = (object.vcsSource !== undefined && object.vcsSource !== null)
+      ? PlanConfig_VCSSource.fromPartial(object.vcsSource)
+      : undefined;
     return message;
   },
 };
@@ -1353,6 +1381,80 @@ export const PlanConfig_ExportDataConfig = {
     message.sheet = object.sheet ?? "";
     message.format = object.format ?? 0;
     message.password = object.password ?? undefined;
+    return message;
+  },
+};
+
+function createBasePlanConfig_VCSSource(): PlanConfig_VCSSource {
+  return { vcsConnector: "", pullRequestUrl: "" };
+}
+
+export const PlanConfig_VCSSource = {
+  encode(message: PlanConfig_VCSSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.vcsConnector !== "") {
+      writer.uint32(10).string(message.vcsConnector);
+    }
+    if (message.pullRequestUrl !== "") {
+      writer.uint32(18).string(message.pullRequestUrl);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanConfig_VCSSource {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlanConfig_VCSSource();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.vcsConnector = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pullRequestUrl = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlanConfig_VCSSource {
+    return {
+      vcsConnector: isSet(object.vcsConnector) ? globalThis.String(object.vcsConnector) : "",
+      pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
+    };
+  },
+
+  toJSON(message: PlanConfig_VCSSource): unknown {
+    const obj: any = {};
+    if (message.vcsConnector !== "") {
+      obj.vcsConnector = message.vcsConnector;
+    }
+    if (message.pullRequestUrl !== "") {
+      obj.pullRequestUrl = message.pullRequestUrl;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PlanConfig_VCSSource>): PlanConfig_VCSSource {
+    return PlanConfig_VCSSource.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PlanConfig_VCSSource>): PlanConfig_VCSSource {
+    const message = createBasePlanConfig_VCSSource();
+    message.vcsConnector = object.vcsConnector ?? "";
+    message.pullRequestUrl = object.pullRequestUrl ?? "";
     return message;
   },
 };
