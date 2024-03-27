@@ -295,13 +295,14 @@ const renderActionSentence = () => {
       ) as ActivityTaskEarliestAllowedTimeUpdatePayload;
       const newVal = payload.newEarliestAllowedTs;
       const oldVal = payload.oldEarliestAllowedTs;
+      const timeFormat = "YYYY-MM-DD HH:mm:ss UTCZZ";
       return h(
         "span",
         {},
         t("activity.sentence.changed-from-to", {
           name: t("task.rollout-time"),
-          oldValue: oldVal ? dayjs(oldVal * 1000) : "Unset",
-          newValue: newVal ? dayjs(newVal * 1000) : "Unset",
+          oldValue: oldVal ? dayjs(oldVal * 1000).format(timeFormat) : "Unset",
+          newValue: newVal ? dayjs(newVal * 1000).format(timeFormat) : "Unset",
         })
       );
     }
