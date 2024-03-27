@@ -288,7 +288,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
-	if err != nil && errors.Is(err, base.UnsupportedError) {
+	if err != nil && !errors.Is(err, base.UnsupportedError) {
 		return nil, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
 	}
 
@@ -1083,7 +1083,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
-	if err != nil && errors.Is(err, base.UnsupportedError) {
+	if err != nil && !errors.Is(err, base.UnsupportedError) {
 		return nil, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
 	}
 
