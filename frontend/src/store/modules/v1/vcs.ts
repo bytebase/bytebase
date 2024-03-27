@@ -1,13 +1,26 @@
+import { uniqBy } from "lodash-es";
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
-import { reactive } from "vue";
+import { computed } from "vue";
 import { vcsProviderServiceClient } from "@/grpcweb";
+import { useCache } from "@/store/cache";
 import type { VCSId } from "@/types";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { vcsProviderPrefix } from "./common";
 
+type VCSProviderCacheKey = [string /* vcs name */];
+
 export const useVCSV1Store = defineStore("vcs_v1", () => {
-  const vcsMapByName = reactive(new Map<string, VCSProvider>());
+  const cacheByName = useCache<VCSProviderCacheKey, VCSProvider | undefined>(
+    "bb.vcs-provider.by-name"
+  );
+
+  const vcsList = computed(() => {
+    const list = Array.from(cacheByName.entityCacheMap.values())
+      .map((entry) => entry.entity)
+      .filter((vcs): vcs is VCSProvider => vcs !== undefined);
+    return uniqBy(list, (vcs) => vcs.name);
+  });
 
   const listVCSExternalProjects = async (vcsName: string) => {
     const resp = await vcsProviderServiceClient.searchVCSProviderProjects({
@@ -18,47 +31,66 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
 
   const fetchVCSList = async () => {
     const resp = await vcsProviderServiceClient.listVCSProviders({});
-    for (const vcs of resp.vcsProviders) {
-      vcsMapByName.set(vcs.name, vcs);
-    }
     return resp.vcsProviders;
   };
 
-  const fetchVCSByName = async (name: string, silent = false) => {
-    const vcs = await vcsProviderServiceClient.getVCSProvider({
-      name,
-    });
+  const getOrFetchVCSList = async () => {
+    if (vcsList.value.length > 0) {
+      return vcsList.value;
+    }
+    const list = await fetchVCSList();
+    for (const vcs of list) {
+      cacheByName.setEntity([vcs.name], vcs);
+    }
+    return list;
+  };
 
-    vcsMapByName.set(vcs.name, vcs);
+  const fetchVCSByName = async (name: string, silent = false) => {
+    const vcs = await vcsProviderServiceClient.getVCSProvider(
+      {
+        name,
+      },
+      { silent }
+    );
+
     return vcs;
   };
 
-  const fetchVCSById = async (vcsId: VCSId) => {
-    return fetchVCSByName(`${vcsProviderPrefix}${vcsId}`);
+  const getOrFetchVCSByName = async (name: string) => {
+    const entity = cacheByName.getEntity([name]);
+    if (entity) {
+      return entity;
+    }
+
+    const vcs = await vcsProviderServiceClient.getVCSProvider({
+      name,
+    });
+    cacheByName.setEntity([vcs.name], vcs);
+    return vcs;
   };
 
   const getVCSById = (vcsId: VCSId) => {
-    return vcsMapByName.get(`${vcsProviderPrefix}${vcsId}`);
+    return getVCSByName(`${vcsProviderPrefix}${vcsId}`);
   };
 
-  const getVCSList = () => {
-    return [...vcsMapByName.values()];
+  const getVCSByName = (vcs: string) => {
+    return cacheByName.getEntity([vcs]);
   };
 
   const deleteVCS = async (name: string) => {
     await vcsProviderServiceClient.deleteVCSProvider({
       name,
     });
-    vcsMapByName.delete(name);
+    cacheByName.invalidateEntity([name]);
   };
 
   const createVCS = async (resourceId: string, vcs: VCSProvider) => {
-    const resp = await vcsProviderServiceClient.createVCSProvider({
+    const provider = await vcsProviderServiceClient.createVCSProvider({
       vcsProvider: vcs,
       vcsProviderId: resourceId,
     });
-    vcsMapByName.set(resp.name, resp);
-    return resp;
+    cacheByName.setEntity([provider.name], provider);
+    return provider;
   };
 
   const updateVCS = async (vcs: Partial<VCSProvider>) => {
@@ -70,21 +102,21 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
     if (updateMask.length === 0) {
       return existed;
     }
-    const resp = await vcsProviderServiceClient.updateVCSProvider({
+    const provider = await vcsProviderServiceClient.updateVCSProvider({
       vcsProvider: vcs,
       updateMask,
     });
-    vcsMapByName.set(resp.name, resp);
-    return resp;
+    cacheByName.setEntity([provider.name], provider);
+    return provider;
   };
 
   return {
+    vcsList,
     listVCSExternalProjects,
     getVCSById,
-    getVCSList,
-    fetchVCSByName,
-    fetchVCSById,
-    fetchVCSList,
+    getVCSByName,
+    getOrFetchVCSByName,
+    getOrFetchVCSList,
     deleteVCS,
     createVCS,
     updateVCS,

@@ -1970,7 +1970,15 @@
     },
     "successfully-updated-db-name-template": "Successfully updated database name template.",
     "all": "All projects",
-    "key-hint": "Short descriptive alphanumberic letters to identify this project."
+    "key-hint": "Short descriptive alphanumberic letters to identify this project.",
+    "gitops-connector": {
+      "self": "GitOps connector",
+      "add": "Add GitOps connector",
+      "delete": "Delete GitOps connector",
+      "update-success": "Successfully updated GitOps connector",
+      "create-success": "Successfully created GitOps connector",
+      "delete-success": "The GitOps connector is removed"
+    }
   },
   "gitops": {
     "setting": {
@@ -2767,7 +2775,9 @@
     "role": "Role",
     "database-group": "Database Group",
     "schema-group": "Table Group",
-    "changelist": "Changelist"
+    "changelist": "Changelist",
+    "vcs-provider": "GitOps Provider",
+    "vcs-connector": "GitOps Connector"
   },
   "resource-id": {
     "self": "{resource} ID",

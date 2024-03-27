@@ -1970,7 +1970,15 @@
     },
     "successfully-updated-db-name-template": "Plantilla de nombre de base de datos actualizada con éxito.",
     "all": "Todos los proyectos",
-    "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto.."
+    "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto..",
+    "gitops-connector": {
+      "self": "Conector GitOps",
+      "add": "Agregar conector GitOps",
+      "delete": "Eliminar conector GitOps",
+      "update-success": "Conector GitOps actualizado correctamente",
+      "create-success": "Conector GitOps creado correctamente",
+      "delete-success": "Se elimina el conector GitOps"
+    }
   },
   "gitops": {
     "setting": {
@@ -2767,7 +2775,9 @@
     "role": "Rol",
     "database-group": "grupo de bases de datos",
     "schema-group": "grupo de mesas",
-    "changelist": "Lista de cambios"
+    "changelist": "Lista de cambios",
+    "vcs-provider": "Proveedor GitOps",
+    "vcs-connector": "Conector GitOps"
   },
   "resource-id": {
     "self": "ID de {resource}",
