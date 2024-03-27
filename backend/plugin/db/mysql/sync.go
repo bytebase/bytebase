@@ -337,47 +337,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		}
 	}
 
-	// Query functions and procedure info.
-	routinesQuery := `
-		SELECT
-			ROUTINE_NAME,
-			ROUTINE_DEFINITION,
-			ROUTINE_TYPE
-		FROM
-			INFORMATION_SCHEMA.ROUTINES
-		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE IN ('FUNCTION', 'PROCEDURE')
-		ORDER BY ROUTINE_TYPE, ROUTINE_NAME;
-	`
-	routineRows, err := driver.db.QueryContext(ctx, routinesQuery, driver.databaseName)
+	functions, procedures, err := driver.syncRoutines(ctx, driver.databaseName)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, routinesQuery)
-	}
-	defer routineRows.Close()
-	var functions []*storepb.FunctionMetadata
-	var procedures []*storepb.ProcedureMetadata
-	for routineRows.Next() {
-		var name, definition, routineType string
-		if err := routineRows.Scan(
-			&name,
-			&definition,
-			&routineType,
-		); err != nil {
-			return nil, err
-		}
-		if strings.EqualFold(routineType, "PROCEDURE") {
-			procedures = append(procedures, &storepb.ProcedureMetadata{
-				Name:       name,
-				Definition: definition,
-			})
-		} else {
-			functions = append(functions, &storepb.FunctionMetadata{
-				Name:       name,
-				Definition: definition,
-			})
-		}
-	}
-	if err := routineRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, routinesQuery)
+		return nil, err
 	}
 	schemaMetadata.Functions = functions
 	schemaMetadata.Procedures = procedures
@@ -489,6 +451,161 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	return databaseMetadata, err
+}
+
+func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*storepb.FunctionMetadata, []*storepb.ProcedureMetadata, error) {
+	// Query functions and procedure info.
+	routinesQuery := `
+		SELECT
+			ROUTINE_NAME,
+			ROUTINE_TYPE
+		FROM
+			INFORMATION_SCHEMA.ROUTINES
+		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE IN ('FUNCTION', 'PROCEDURE')
+		ORDER BY ROUTINE_TYPE, ROUTINE_NAME;
+	`
+	routineRows, err := driver.db.QueryContext(ctx, routinesQuery, driver.databaseName)
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, routinesQuery)
+	}
+	defer routineRows.Close()
+	var functions []*storepb.FunctionMetadata
+	var procedures []*storepb.ProcedureMetadata
+	for routineRows.Next() {
+		var name, routineType string
+		if err := routineRows.Scan(
+			&name,
+			&routineType,
+		); err != nil {
+			return nil, nil, err
+		}
+		if strings.EqualFold(routineType, "PROCEDURE") {
+			procedureDef, err := driver.getCreateProcedureStmt(ctx, databaseName, name)
+			if err != nil {
+				return nil, nil, err
+			}
+			procedures = append(procedures, &storepb.ProcedureMetadata{
+				Name:       name,
+				Definition: procedureDef,
+			})
+		} else {
+			functionDef, err := driver.getCreateFunctionStmt(ctx, databaseName, name)
+			if err != nil {
+				return nil, nil, err
+			}
+			functions = append(functions, &storepb.FunctionMetadata{
+				Name:       name,
+				Definition: functionDef,
+			})
+		}
+	}
+	if err := routineRows.Err(); err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, routinesQuery)
+	}
+
+	return functions, procedures, nil
+}
+
+func (driver *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, functionName string) (string, error) {
+	query := fmt.Sprintf("SHOW CREATE FUNCTION `%s`.`%s`", databaseName, functionName)
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+
+	type ResultRow struct {
+		CreateFunction string
+	}
+	resultRow := ResultRow{}
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
+	defIdx := -1
+	for i, column := range columns {
+		if strings.EqualFold(column, "Create Function") {
+			defIdx = i
+			break
+		}
+	}
+
+	if defIdx == -1 {
+		return "", errors.Errorf("failed to find column Create Function")
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		dests := make([]any, len(columns))
+		for i := 0; i < len(columns); i++ {
+			if i == defIdx {
+				dests[i] = &resultRow.CreateFunction
+				continue
+			}
+			dests[i] = new(string)
+		}
+
+		if err := rows.Scan(dests...); err != nil {
+			return "", err
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+
+	return resultRow.CreateFunction, nil
+}
+
+func (driver *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, functionName string) (string, error) {
+	query := fmt.Sprintf("SHOW CREATE PROCEDURE `%s`.`%s`", databaseName, functionName)
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+
+	type ResultRow struct {
+		CreateProcedure string
+	}
+	resultRow := ResultRow{}
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
+	defIdx := -1
+	for i, column := range columns {
+		if strings.EqualFold(column, "Create Procedure") {
+			defIdx = i
+			break
+		}
+	}
+
+	if defIdx == -1 {
+		return "", errors.Errorf("failed to find column Create Procedure")
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		dests := make([]any, len(columns))
+		for i := 0; i < len(columns); i++ {
+			if i == defIdx {
+				dests[i] = &resultRow.CreateProcedure
+				continue
+			}
+			dests[i] = new(string)
+		}
+
+		if err := rows.Scan(dests...); err != nil {
+			return "", err
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+
+	return resultRow.CreateProcedure, nil
 }
 
 func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string) {
