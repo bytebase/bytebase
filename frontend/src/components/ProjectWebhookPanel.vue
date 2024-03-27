@@ -9,6 +9,7 @@
         {{ $t("project.webhook.add-a-webhook") }}
       </NButton>
     </div>
+    <!-- TODO(ed): use data table -->
     <div v-if="projectWebhookList.length > 0" class="space-y-6">
       <template
         v-for="(projectWebhook, index) in projectWebhookList"

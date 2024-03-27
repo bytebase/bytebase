@@ -118,9 +118,9 @@ export const getFactorList = (source: Risk_Source) => {
       return [...FactorList.DML];
     case Risk_Source.CREATE_DATABASE:
       return [...FactorList.CreateDatabase];
-    case Risk_Source.QUERY:
+    case Risk_Source.REQUEST_QUERY:
       return [...FactorList.RequestQuery];
-    case Risk_Source.EXPORT:
+    case Risk_Source.REQUEST_EXPORT:
       return [...FactorList.RequestExport];
     default:
       // unsupported namespace

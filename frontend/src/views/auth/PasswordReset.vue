@@ -49,7 +49,10 @@
         <div class="w-full border-t border-control-border"></div>
       </div>
       <div class="relative flex justify-center text-sm">
-        <router-link to="/auth/signin" class="accent-link bg-white px-2">
+        <router-link
+          :to="{ name: AUTH_SIGNIN_MODULE }"
+          class="accent-link bg-white px-2"
+        >
           {{ $t("auth.password-reset.return-to-sign-in") }}
         </router-link>
       </div>
@@ -57,28 +60,22 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { computed, reactive } from "vue";
+import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { isValidEmail } from "../../utils";
 
 interface LocalState {
   email: string;
 }
 
-export default {
-  name: "PasswordReset",
-  setup() {
-    const state = reactive<LocalState>({
-      email: "",
-    });
+const state = reactive<LocalState>({
+  email: "",
+});
 
-    const allowReset = computed(() => {
-      return isValidEmail(state.email);
-    });
+const allowReset = computed(() => {
+  return isValidEmail(state.email);
+});
 
-    const tryReset = () => {};
-
-    return { state, allowReset, tryReset };
-  },
-};
+const tryReset = () => {};
 </script>

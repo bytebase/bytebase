@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "google/protobuf/duration.proto";
+
+option go_package = "generated-go/store";
+
+message QueryHistoryPayload {
+  optional string error = 1;
+  google.protobuf.Duration duration = 2;
+}

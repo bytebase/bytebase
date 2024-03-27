@@ -59,7 +59,7 @@ func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 func ValidateSQLForEditor(engine storepb.Engine, statement string) (bool, error) {
 	f, ok := queryValidators[engine]
 	if !ok {
-		return false, errors.Errorf("engine %s is not supported", engine)
+		return true, nil
 	}
 	return f(statement)
 }
@@ -187,7 +187,7 @@ func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
 func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, database, schema string, getMetadataFunc GetDatabaseMetadataFunc, listDatabaseNamesFunc ListDatabaseNamesFunc, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
 	f, ok := spans[engine]
 	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
+		return nil, nil
 	}
 	statements, err := SplitMultiSQL(engine, statement)
 	if err != nil {

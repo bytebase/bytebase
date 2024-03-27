@@ -8,8 +8,8 @@
             target="_blank"
             class="normal-link"
           >
-            {{ $t("common.detailed-guide") }}</a
-          >
+            {{ $t("common.detailed-guide") }}
+          </a>
         </template>
       </i18n-t>
     </div>
@@ -46,19 +46,14 @@
 
 <script lang="ts" setup>
 import isEmpty from "lodash-es/isEmpty";
-import type { PropType } from "vue";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
-import { PROJECT_V1_ROUTE_GITOPS } from "@/router/dashboard/projectV1";
-import { useRepositoryV1Store } from "@/store";
-import type { Project } from "@/types/proto/v1/project_service";
-import type {
-  ProjectGitOpsInfo,
-  VCSProvider,
-} from "@/types/proto/v1/vcs_provider_service";
+import { useVCSConnectorStore, useCurrentUserV1 } from "@/store";
+import type { ComposedProject } from "@/types";
+import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
+import { hasProjectPermissionV2 } from "@/utils";
 import type { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
 
 const CHOOSE_PROVIDER_STEP = 0;
@@ -72,17 +67,9 @@ interface LocalState {
   processing: boolean;
 }
 
-const props = defineProps({
-  // If false, then we intend to change the existing linked repository intead of just linking a new repository.
-  create: {
-    type: Boolean,
-    default: false,
-  },
-  project: {
-    required: true,
-    type: Object as PropType<Project>,
-  },
-});
+const props = defineProps<{
+  project: ComposedProject;
+}>();
 
 const emit = defineEmits<{
   (event: "cancel"): void;
@@ -90,9 +77,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-
-const router = useRouter();
-const repositoryV1Store = useRepositoryV1Store();
+const vcsConnectorStore = useVCSConnectorStore();
+const currentUser = useCurrentUserV1();
 
 const stepList = [
   { title: t("repository.choose-git-provider"), hideNext: true },
@@ -113,6 +99,7 @@ const state = reactive<LocalState>({
     repositoryConfig: {
       baseDirectory: "bytebase",
       branch: "main",
+      resourceId: "",
     },
   },
   currentStep: CHOOSE_PROVIDER_STEP,
@@ -120,10 +107,21 @@ const state = reactive<LocalState>({
   processing: false,
 });
 
+const hasPermission = computed(() => {
+  return hasProjectPermissionV2(
+    props.project,
+    currentUser.value,
+    "bb.vcsConnectors.create"
+  );
+});
+
 const allowNext = computed((): boolean => {
   if (state.currentStep == CONFIGURE_DEPLOY_STEP) {
     return (
-      !isEmpty(state.config.repositoryConfig.branch.trim()) && !state.processing
+      !isEmpty(state.config.repositoryConfig.branch.trim()) &&
+      !isEmpty(state.config.repositoryConfig.resourceId.trim()) &&
+      !state.processing &&
+      hasPermission.value
     );
   }
   return true;
@@ -151,31 +149,24 @@ const tryFinishSetup = async () => {
       externalId = state.config.repositoryInfo.fullPath;
     }
 
-    const repositoryCreate: Partial<ProjectGitOpsInfo> = {
-      vcs: state.config.vcs.name,
-      title: state.config.repositoryInfo.name,
-      externalId: externalId,
-      baseDirectory: state.config.repositoryConfig.baseDirectory,
-      branch: state.config.repositoryConfig.branch,
-      // TODO(d): move these to create VCS connector.
-      fullPath: state.config.repositoryInfo.fullPath,
-      webUrl: state.config.repositoryInfo.webUrl,
-    };
-    await repositoryV1Store.upsertRepository(
+    await vcsConnectorStore.createConnector(
       props.project.name,
-      repositoryCreate
+      state.config.repositoryConfig.resourceId,
+      {
+        title: state.config.repositoryInfo.name,
+        externalId,
+        vcsProvider: state.config.vcs.name,
+        baseDirectory: state.config.repositoryConfig.baseDirectory,
+        branch: state.config.repositoryConfig.branch,
+        fullPath: state.config.repositoryInfo.fullPath,
+        webUrl: state.config.repositoryInfo.webUrl,
+      }
     );
 
     emit("finish");
   };
 
   try {
-    if (!props.create) {
-      // It's simple to implement change behavior as delete followed by create.
-      // Though the delete can succeed while the create fails, this is rare, and
-      // even it happens, user can still configure it again.
-      await repositoryV1Store.deleteRepository(props.project.name);
-    }
     await createFunc();
   } finally {
     state.processing = false;
@@ -183,10 +174,8 @@ const tryFinishSetup = async () => {
 };
 
 const cancel = () => {
+  // TODO(ed): processing
   emit("cancel");
-  router.push({
-    name: PROJECT_V1_ROUTE_GITOPS,
-  });
 };
 
 const setCode = (code: string) => {

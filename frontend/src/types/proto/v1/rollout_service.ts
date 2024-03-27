@@ -114,6 +114,7 @@ export interface Plan_Spec {
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
   exportDataConfig?: Plan_ExportDataConfig | undefined;
+  vcsSource: Plan_VCSSource | undefined;
 }
 
 export interface Plan_CreateDatabaseConfig {
@@ -283,8 +284,6 @@ export interface Plan_ExportDataConfig {
    * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
-  /** The max number of rows to export. */
-  maxRows: number;
   /** The format of the exported file. */
   format: ExportFormat;
   /**
@@ -292,6 +291,17 @@ export interface Plan_ExportDataConfig {
    * Leave it empty if no needs to encrypt the zip file.
    */
   password?: string | undefined;
+}
+
+export interface Plan_VCSSource {
+  /**
+   * Optional.
+   * If present, we will update the pull request for rollout status.
+   * Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
+   */
+  vcsConnector: string;
+  pullRequestUrl: string;
+  commitUrl: string;
 }
 
 export interface ListPlanCheckRunsRequest {
@@ -997,8 +1007,6 @@ export interface Task_DatabaseDataExport {
    * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
-  /** The max number of rows to export. */
-  maxRows: number;
   /** The format of the exported file. */
   format: ExportFormat;
   /**
@@ -1737,6 +1745,7 @@ function createBasePlan_Spec(): Plan_Spec {
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
     exportDataConfig: undefined,
+    vcsSource: undefined,
   };
 }
 
@@ -1759,6 +1768,9 @@ export const Plan_Spec = {
     }
     if (message.exportDataConfig !== undefined) {
       Plan_ExportDataConfig.encode(message.exportDataConfig, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.vcsSource !== undefined) {
+      Plan_VCSSource.encode(message.vcsSource, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -1812,6 +1824,13 @@ export const Plan_Spec = {
 
           message.exportDataConfig = Plan_ExportDataConfig.decode(reader, reader.uint32());
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.vcsSource = Plan_VCSSource.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1839,6 +1858,7 @@ export const Plan_Spec = {
       exportDataConfig: isSet(object.exportDataConfig)
         ? Plan_ExportDataConfig.fromJSON(object.exportDataConfig)
         : undefined,
+      vcsSource: isSet(object.vcsSource) ? Plan_VCSSource.fromJSON(object.vcsSource) : undefined,
     };
   },
 
@@ -1862,6 +1882,9 @@ export const Plan_Spec = {
     if (message.exportDataConfig !== undefined) {
       obj.exportDataConfig = Plan_ExportDataConfig.toJSON(message.exportDataConfig);
     }
+    if (message.vcsSource !== undefined) {
+      obj.vcsSource = Plan_VCSSource.toJSON(message.vcsSource);
+    }
     return obj;
   },
 
@@ -1881,6 +1904,9 @@ export const Plan_Spec = {
       : undefined;
     message.exportDataConfig = (object.exportDataConfig !== undefined && object.exportDataConfig !== null)
       ? Plan_ExportDataConfig.fromPartial(object.exportDataConfig)
+      : undefined;
+    message.vcsSource = (object.vcsSource !== undefined && object.vcsSource !== null)
+      ? Plan_VCSSource.fromPartial(object.vcsSource)
       : undefined;
     return message;
   },
@@ -2591,7 +2617,7 @@ export const Plan_ChangeDatabaseConfig_PreUpdateBackupDetail = {
 };
 
 function createBasePlan_ExportDataConfig(): Plan_ExportDataConfig {
-  return { target: "", sheet: "", maxRows: 0, format: 0, password: undefined };
+  return { target: "", sheet: "", format: 0, password: undefined };
 }
 
 export const Plan_ExportDataConfig = {
@@ -2602,14 +2628,11 @@ export const Plan_ExportDataConfig = {
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
     }
-    if (message.maxRows !== 0) {
-      writer.uint32(24).int32(message.maxRows);
-    }
     if (message.format !== 0) {
-      writer.uint32(32).int32(message.format);
+      writer.uint32(24).int32(message.format);
     }
     if (message.password !== undefined) {
-      writer.uint32(42).string(message.password);
+      writer.uint32(34).string(message.password);
     }
     return writer;
   },
@@ -2640,17 +2663,10 @@ export const Plan_ExportDataConfig = {
             break;
           }
 
-          message.maxRows = reader.int32();
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
           message.format = reader.int32() as any;
           continue;
-        case 5:
-          if (tag !== 42) {
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
@@ -2669,7 +2685,6 @@ export const Plan_ExportDataConfig = {
     return {
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      maxRows: isSet(object.maxRows) ? globalThis.Number(object.maxRows) : 0,
       format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
       password: isSet(object.password) ? globalThis.String(object.password) : undefined,
     };
@@ -2682,9 +2697,6 @@ export const Plan_ExportDataConfig = {
     }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
-    }
-    if (message.maxRows !== 0) {
-      obj.maxRows = Math.round(message.maxRows);
     }
     if (message.format !== 0) {
       obj.format = exportFormatToJSON(message.format);
@@ -2702,9 +2714,97 @@ export const Plan_ExportDataConfig = {
     const message = createBasePlan_ExportDataConfig();
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
-    message.maxRows = object.maxRows ?? 0;
     message.format = object.format ?? 0;
     message.password = object.password ?? undefined;
+    return message;
+  },
+};
+
+function createBasePlan_VCSSource(): Plan_VCSSource {
+  return { vcsConnector: "", pullRequestUrl: "", commitUrl: "" };
+}
+
+export const Plan_VCSSource = {
+  encode(message: Plan_VCSSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.vcsConnector !== "") {
+      writer.uint32(10).string(message.vcsConnector);
+    }
+    if (message.pullRequestUrl !== "") {
+      writer.uint32(18).string(message.pullRequestUrl);
+    }
+    if (message.commitUrl !== "") {
+      writer.uint32(26).string(message.commitUrl);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_VCSSource {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlan_VCSSource();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.vcsConnector = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pullRequestUrl = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.commitUrl = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Plan_VCSSource {
+    return {
+      vcsConnector: isSet(object.vcsConnector) ? globalThis.String(object.vcsConnector) : "",
+      pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
+      commitUrl: isSet(object.commitUrl) ? globalThis.String(object.commitUrl) : "",
+    };
+  },
+
+  toJSON(message: Plan_VCSSource): unknown {
+    const obj: any = {};
+    if (message.vcsConnector !== "") {
+      obj.vcsConnector = message.vcsConnector;
+    }
+    if (message.pullRequestUrl !== "") {
+      obj.pullRequestUrl = message.pullRequestUrl;
+    }
+    if (message.commitUrl !== "") {
+      obj.commitUrl = message.commitUrl;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Plan_VCSSource>): Plan_VCSSource {
+    return Plan_VCSSource.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Plan_VCSSource>): Plan_VCSSource {
+    const message = createBasePlan_VCSSource();
+    message.vcsConnector = object.vcsConnector ?? "";
+    message.pullRequestUrl = object.pullRequestUrl ?? "";
+    message.commitUrl = object.commitUrl ?? "";
     return message;
   },
 };
@@ -5386,7 +5486,7 @@ export const Task_DatabaseDataUpdate = {
 };
 
 function createBaseTask_DatabaseDataExport(): Task_DatabaseDataExport {
-  return { target: "", sheet: "", maxRows: 0, format: 0, password: undefined };
+  return { target: "", sheet: "", format: 0, password: undefined };
 }
 
 export const Task_DatabaseDataExport = {
@@ -5397,14 +5497,11 @@ export const Task_DatabaseDataExport = {
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
     }
-    if (message.maxRows !== 0) {
-      writer.uint32(24).int32(message.maxRows);
-    }
     if (message.format !== 0) {
-      writer.uint32(32).int32(message.format);
+      writer.uint32(24).int32(message.format);
     }
     if (message.password !== undefined) {
-      writer.uint32(42).string(message.password);
+      writer.uint32(34).string(message.password);
     }
     return writer;
   },
@@ -5435,17 +5532,10 @@ export const Task_DatabaseDataExport = {
             break;
           }
 
-          message.maxRows = reader.int32();
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
           message.format = reader.int32() as any;
           continue;
-        case 5:
-          if (tag !== 42) {
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
@@ -5464,7 +5554,6 @@ export const Task_DatabaseDataExport = {
     return {
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      maxRows: isSet(object.maxRows) ? globalThis.Number(object.maxRows) : 0,
       format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
       password: isSet(object.password) ? globalThis.String(object.password) : undefined,
     };
@@ -5477,9 +5566,6 @@ export const Task_DatabaseDataExport = {
     }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
-    }
-    if (message.maxRows !== 0) {
-      obj.maxRows = Math.round(message.maxRows);
     }
     if (message.format !== 0) {
       obj.format = exportFormatToJSON(message.format);
@@ -5497,7 +5583,6 @@ export const Task_DatabaseDataExport = {
     const message = createBaseTask_DatabaseDataExport();
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
-    message.maxRows = object.maxRows ?? 0;
     message.format = object.format ?? 0;
     message.password = object.password ?? undefined;
     return message;

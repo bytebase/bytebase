@@ -47,7 +47,7 @@
                 </div>
                 <router-link
                   v-else-if="!isFreePlan || !hasPermission"
-                  to="/setting/subscription"
+                  :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
                   exact-active-class=""
                   class="text-sm flex"
                 >
@@ -111,7 +111,7 @@
               </div>
               <router-link
                 v-else-if="!isFreePlan || !hasPermission"
-                to="/setting/subscription"
+                :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
                 exact-active-class=""
                 class="text-sm flex whitespace-nowrap mr-1"
               >
@@ -243,6 +243,7 @@ import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useActuatorV1Store,
   useCurrentUserV1,

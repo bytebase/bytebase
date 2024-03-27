@@ -604,6 +604,10 @@
                   <a href="#bytebase.store.PushEvent"><span class="badge">M</span>PushEvent</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.VCSConnector"><span class="badge">M</span>VCSConnector</a>
+                </li>
+              
               
               
               
@@ -703,6 +707,10 @@
               
                 <li>
                   <a href="#bytebase.store.PlanConfig.Step"><span class="badge">M</span>PlanConfig.Step</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig.VCSSource"><span class="badge">M</span>PlanConfig.VCSSource</a>
                 </li>
               
               
@@ -846,6 +854,21 @@
                 <li>
                   <a href="#bytebase.store.ProtectionRule.Target"><span class="badge">E</span>ProtectionRule.Target</a>
                 </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#store%2fquery_history.proto">store/query_history.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.QueryHistoryPayload"><span class="badge">M</span>QueryHistoryPayload</a>
+                </li>
+              
               
               
               
@@ -4892,6 +4915,83 @@ The default is 10 if the value is unset or zero. </p></td>
 
         
       
+        <h3 id="bytebase.store.VCSConnector">VCSConnector</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The title or display name of the VCS connector. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Full path from the corresponding VCS provider.
+For GitLab, this is the project full path. e.g. group1/project-1 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>web_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Web url from the corresponding VCS provider.
+For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Branch to listen to. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>base_directory</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Base working directory we are interested. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>external_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Repository id from the corresponding VCS provider.
+For GitLab, this is the project id. e.g. 123 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>external_webhook_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Push webhook id from the corresponding VCS provider.
+For GitLab, this is the project webhook id. e.g. 123 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>webhook_secret_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>For GitLab, webhook request contains this in the &#39;X-Gitlab-Token&#34; header and we compare it with the one stored in db to validate it sends to the expected endpoint. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
 
       
 
@@ -5174,6 +5274,13 @@ Format: users/{userUID}. </p></td>
                   <td>steps</td>
                   <td><a href="#bytebase.store.PlanConfig.Step">PlanConfig.Step</a></td>
                   <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vcs_source</td>
+                  <td><a href="#bytebase.store.PlanConfig.VCSSource">PlanConfig.VCSSource</a></td>
+                  <td></td>
                   <td><p> </p></td>
                 </tr>
               
@@ -5501,13 +5608,6 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
-                  <td>max_rows</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The max number of rows to export. </p></td>
-                </tr>
-              
-                <tr>
                   <td>format</td>
                   <td><a href="#bytebase.store.ExportFormat">ExportFormat</a></td>
                   <td></td>
@@ -5611,6 +5711,46 @@ Use a generated title if empty. </p></td>
                   <td>specs</td>
                   <td><a href="#bytebase.store.PlanConfig.Spec">PlanConfig.Spec</a></td>
                   <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanConfig.VCSSource">PlanConfig.VCSSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>vcs_connector</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Optional.
+If present, we will update the pull request for rollout status.
+Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pull_request_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
                   <td><p> </p></td>
                 </tr>
               
@@ -6704,6 +6844,51 @@ Format: roles/projectOwner. </p></td>
             
           </tbody>
         </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/query_history.proto">store/query_history.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.QueryHistoryPayload">QueryHistoryPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>duration</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
       
 
       

@@ -70,7 +70,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.LoggingService_GetLog_FullMethodName,
 		v1pb.LoggingService_ExportLogs_FullMethodName,
 		v1pb.SQLService_Query_FullMethodName,
-		v1pb.SQLService_ListQueryHistories_FullMethodName,
+		v1pb.SQLService_SearchQueryHistories_FullMethodName,
 		v1pb.SQLService_Export_FullMethodName,
 		v1pb.SQLService_DifferPreview_FullMethodName,
 		v1pb.SQLService_Check_FullMethodName,
@@ -244,7 +244,7 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.VCSProviderService_UpdateVCSProvider_FullMethodName,
 		v1pb.VCSProviderService_DeleteVCSProvider_FullMethodName,
 		v1pb.VCSProviderService_SearchVCSProviderProjects_FullMethodName,
-		v1pb.VCSProviderService_ListProjectGitOpsInfo_FullMethodName,
+		v1pb.VCSProviderService_ListVCSConnectorsInProvider_FullMethodName,
 		v1pb.RiskService_ListRisks_FullMethodName,
 		v1pb.RiskService_CreateRisk_FullMethodName,
 		v1pb.RiskService_UpdateRisk_FullMethodName,
@@ -274,6 +274,14 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.DatabaseService_GetChangeHistory_FullMethodName:
 
 		projectIDsGetter = in.getProjectIDsForDatabaseService
+	case
+		v1pb.VCSConnectorService_CreateVCSConnector_FullMethodName,
+		v1pb.VCSConnectorService_GetVCSConnector_FullMethodName,
+		v1pb.VCSConnectorService_ListVCSConnectors_FullMethodName,
+		v1pb.VCSConnectorService_UpdateVCSConnector_FullMethodName,
+		v1pb.VCSConnectorService_DeleteVCSConnector_FullMethodName:
+
+		projectIDsGetter = in.getProjectIDsForVCSConnectorService
 	case
 		v1pb.ChangelistService_CreateChangelist_FullMethodName,
 		v1pb.ChangelistService_GetChangelist_FullMethodName:
@@ -308,9 +316,6 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.ProjectService_UpdateWebhook_FullMethodName,
 		v1pb.ProjectService_RemoveWebhook_FullMethodName,
 		v1pb.ProjectService_TestWebhook_FullMethodName,
-		v1pb.ProjectService_UpdateProjectGitOpsInfo_FullMethodName,
-		v1pb.ProjectService_UnsetProjectGitOpsInfo_FullMethodName,
-		v1pb.ProjectService_GetProjectGitOpsInfo_FullMethodName,
 
 		v1pb.ProjectService_GetDatabaseGroup_FullMethodName,
 		v1pb.ProjectService_CreateDatabaseGroup_FullMethodName,
@@ -368,6 +373,40 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 		return nil, errors.Errorf("database %q not found", databaseResourceName)
 	}
 	return database, nil
+}
+
+func (*ACLInterceptor) getProjectIDsForVCSConnectorService(_ context.Context, req any) ([]string, error) {
+	var projects, vcsConnectors []string
+	switch r := req.(type) {
+	case *v1pb.CreateVCSConnectorRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.ListVCSConnectorsRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.GetVCSConnectorRequest:
+		vcsConnectors = append(vcsConnectors, r.GetName())
+	case *v1pb.UpdateVCSConnectorRequest:
+		vcsConnectors = append(vcsConnectors, r.GetVcsConnector().GetName())
+	case *v1pb.DeleteVCSConnectorRequest:
+		vcsConnectors = append(vcsConnectors, r.GetName())
+	}
+
+	var projectIDs []string
+	for _, vcsConnector := range vcsConnectors {
+		projectID, _, err := common.GetProjectVCSConnectorID(vcsConnector)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse vcsConnector %q", vcsConnector)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, project := range projects {
+		projectID, err := common.GetProjectID(project)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse project %q", project)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+
+	return uniq(projectIDs), nil
 }
 
 func (*ACLInterceptor) getProjectIDsForChangelistService(_ context.Context, req any) ([]string, error) {
@@ -482,7 +521,7 @@ func (*ACLInterceptor) getProjectIDsForBranchService(_ context.Context, req any)
 }
 
 func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any) ([]string, error) {
-	var projects, projectDeploymentConfigs, projectWebhooks, projectGitopsInfos, databaseGroups, schemaGroups, protectionRules []string
+	var projects, projectDeploymentConfigs, projectWebhooks, databaseGroups, schemaGroups, protectionRules []string
 
 	switch r := req.(type) {
 	case *v1pb.GetProjectRequest:
@@ -507,12 +546,6 @@ func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any
 		projectWebhooks = append(projectWebhooks, r.GetWebhook().GetName())
 	case *v1pb.TestWebhookRequest:
 		projects = append(projects, r.GetProject())
-	case *v1pb.UpdateProjectGitOpsInfoRequest:
-		projectGitopsInfos = append(projectGitopsInfos, r.GetProjectGitopsInfo().GetName())
-	case *v1pb.UnsetProjectGitOpsInfoRequest:
-		projectGitopsInfos = append(projectGitopsInfos, r.GetName())
-	case *v1pb.GetProjectGitOpsInfoRequest:
-		projectGitopsInfos = append(projectGitopsInfos, r.GetName())
 	case *v1pb.GetDatabaseGroupRequest:
 		databaseGroups = append(databaseGroups, r.GetName())
 	case *v1pb.CreateDatabaseGroupRequest:
@@ -555,13 +588,6 @@ func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any
 		projectID, _, err := common.GetProjectIDWebhookID(projectWebhook)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse %q", projectWebhook)
-		}
-		projectIDs = append(projectIDs, projectID)
-	}
-	for _, projectGitopsInfo := range projectGitopsInfos {
-		projectID, err := common.TrimSuffixAndGetProjectID(projectGitopsInfo, common.GitOpsInfoSuffix)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse %q", projectGitopsInfo)
 		}
 		projectIDs = append(projectIDs, projectID)
 	}

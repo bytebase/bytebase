@@ -994,20 +994,31 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 			// Sheet
 			if err := func() error {
 				switch task.Type {
-				case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
+				case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate, api.TaskDatabaseDataExport:
 					var taskPayload struct {
 						SheetID int `json:"sheetId"`
 					}
 					if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
 						return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
 					}
-					config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
-					if !ok {
-						return nil
+
+					var oldSheetName string
+					if task.Type == api.TaskDatabaseDataExport {
+						config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
+						if !ok {
+							return nil
+						}
+						oldSheetName = config.ExportDataConfig.Sheet
+					} else {
+						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
+						if !ok {
+							return nil
+						}
+						oldSheetName = config.ChangeDatabaseConfig.Sheet
 					}
-					_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.ChangeDatabaseConfig.Sheet)
+					_, sheetUID, err := common.GetProjectResourceIDSheetUID(oldSheetName)
 					if err != nil {
-						return status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", config.ChangeDatabaseConfig.Sheet, err)
+						return status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", oldSheetName, err)
 					}
 					if taskPayload.SheetID == sheetUID {
 						return nil
@@ -1017,10 +1028,10 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 						UID: &sheetUID,
 					})
 					if err != nil {
-						return status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
+						return status.Errorf(codes.Internal, "failed to get sheet %q: %v", oldSheetName, err)
 					}
 					if sheet == nil {
-						return status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
+						return status.Errorf(codes.NotFound, "sheet %q not found", oldSheetName)
 					}
 					doUpdate = true
 					// TODO(p0ny): update schema version

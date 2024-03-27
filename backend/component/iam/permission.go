@@ -59,6 +59,11 @@ const (
 	PermissionBranchesUpdate        Permission = "bb.branches.update"
 	PermissionChangeHistoriesGet    Permission = "bb.changeHistories.get"
 	PermissionChangeHistoriesList   Permission = "bb.changeHistories.list"
+	PermissionVCSConnectorsCreate   Permission = "bb.vcsConnectors.create"
+	PermissionVCSConnectorsDelete   Permission = "bb.vcsConnectors.delete"
+	PermissionVCSConnectorsGet      Permission = "bb.vcsConnectors.get"
+	PermissionVCSConnectorsList     Permission = "bb.vcsConnectors.list"
+	PermissionVCSConnectorsUpdate   Permission = "bb.vcsConnectors.update"
 	PermissionChangelistsCreate     Permission = "bb.changelists.create"
 	PermissionChangelistsDelete     Permission = "bb.changelists.delete"
 	PermissionChangelistsGet        Permission = "bb.changelists.get"
@@ -113,6 +118,11 @@ func PermissionExist(p Permission) bool {
 		PermissionBranchesUpdate,
 		PermissionChangeHistoriesGet,
 		PermissionChangeHistoriesList,
+		PermissionVCSConnectorsCreate,
+		PermissionVCSConnectorsDelete,
+		PermissionVCSConnectorsGet,
+		PermissionVCSConnectorsList,
+		PermissionVCSConnectorsUpdate,
 		PermissionChangelistsCreate,
 		PermissionChangelistsDelete,
 		PermissionChangelistsGet,
@@ -280,6 +290,11 @@ func GetPermissionLevel(permission Permission) PermissionLevel {
 		PermissionBranchesUpdate,
 		PermissionChangeHistoriesGet,
 		PermissionChangeHistoriesList,
+		PermissionVCSConnectorsCreate,
+		PermissionVCSConnectorsDelete,
+		PermissionVCSConnectorsGet,
+		PermissionVCSConnectorsList,
+		PermissionVCSConnectorsUpdate,
 		PermissionChangelistsCreate,
 		PermissionChangelistsDelete,
 		PermissionChangelistsGet,

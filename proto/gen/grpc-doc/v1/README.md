@@ -335,25 +335,6 @@
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
-- [v1/vcs_provider_service.proto](#v1_vcs_provider_service-proto)
-    - [CreateVCSProviderRequest](#bytebase-v1-CreateVCSProviderRequest)
-    - [DeleteVCSProviderRequest](#bytebase-v1-DeleteVCSProviderRequest)
-    - [GetVCSProviderRequest](#bytebase-v1-GetVCSProviderRequest)
-    - [ListProjectGitOpsInfoRequest](#bytebase-v1-ListProjectGitOpsInfoRequest)
-    - [ListProjectGitOpsInfoResponse](#bytebase-v1-ListProjectGitOpsInfoResponse)
-    - [ListVCSProvidersRequest](#bytebase-v1-ListVCSProvidersRequest)
-    - [ListVCSProvidersResponse](#bytebase-v1-ListVCSProvidersResponse)
-    - [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo)
-    - [SearchVCSProviderProjectsRequest](#bytebase-v1-SearchVCSProviderProjectsRequest)
-    - [SearchVCSProviderProjectsResponse](#bytebase-v1-SearchVCSProviderProjectsResponse)
-    - [SearchVCSProviderProjectsResponse.Project](#bytebase-v1-SearchVCSProviderProjectsResponse-Project)
-    - [UpdateVCSProviderRequest](#bytebase-v1-UpdateVCSProviderRequest)
-    - [VCSProvider](#bytebase-v1-VCSProvider)
-  
-    - [VCSProvider.Type](#bytebase-v1-VCSProvider-Type)
-  
-    - [VCSProviderService](#bytebase-v1-VCSProviderService)
-  
 - [v1/project_service.proto](#v1_project_service-proto)
     - [Activity](#bytebase-v1-Activity)
     - [AddWebhookRequest](#bytebase-v1-AddWebhookRequest)
@@ -373,7 +354,6 @@
     - [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest)
     - [GetDeploymentConfigRequest](#bytebase-v1-GetDeploymentConfigRequest)
     - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
-    - [GetProjectGitOpsInfoRequest](#bytebase-v1-GetProjectGitOpsInfoRequest)
     - [GetProjectProtectionRulesRequest](#bytebase-v1-GetProjectProtectionRulesRequest)
     - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
     - [GetSchemaGroupRequest](#bytebase-v1-GetSchemaGroupRequest)
@@ -399,10 +379,8 @@
     - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
     - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
     - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
-    - [UnsetProjectGitOpsInfoRequest](#bytebase-v1-UnsetProjectGitOpsInfoRequest)
     - [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest)
     - [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest)
-    - [UpdateProjectGitOpsInfoRequest](#bytebase-v1-UpdateProjectGitOpsInfoRequest)
     - [UpdateProjectProtectionRulesRequest](#bytebase-v1-UpdateProjectProtectionRulesRequest)
     - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
     - [UpdateSchemaGroupRequest](#bytebase-v1-UpdateSchemaGroupRequest)
@@ -470,6 +448,7 @@
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.Spec](#bytebase-v1-Plan-Spec)
     - [Plan.Step](#bytebase-v1-Plan-Step)
+    - [Plan.VCSSource](#bytebase-v1-Plan-VCSSource)
     - [PlanCheckRun](#bytebase-v1-PlanCheckRun)
     - [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result)
     - [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport)
@@ -582,8 +561,6 @@
     - [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
-    - [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest)
-    - [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse)
     - [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest)
     - [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse)
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
@@ -594,13 +571,45 @@
     - [QueryResult](#bytebase-v1-QueryResult)
     - [QueryRow](#bytebase-v1-QueryRow)
     - [RowValue](#bytebase-v1-RowValue)
+    - [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest)
+    - [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse)
     - [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest)
     - [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
     - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
+    - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
   
     - [SQLService](#bytebase-v1-SQLService)
+  
+- [v1/vcs_connector_service.proto](#v1_vcs_connector_service-proto)
+    - [CreateVCSConnectorRequest](#bytebase-v1-CreateVCSConnectorRequest)
+    - [DeleteVCSConnectorRequest](#bytebase-v1-DeleteVCSConnectorRequest)
+    - [GetVCSConnectorRequest](#bytebase-v1-GetVCSConnectorRequest)
+    - [ListVCSConnectorsRequest](#bytebase-v1-ListVCSConnectorsRequest)
+    - [ListVCSConnectorsResponse](#bytebase-v1-ListVCSConnectorsResponse)
+    - [UpdateVCSConnectorRequest](#bytebase-v1-UpdateVCSConnectorRequest)
+    - [VCSConnector](#bytebase-v1-VCSConnector)
+  
+    - [VCSConnectorService](#bytebase-v1-VCSConnectorService)
+  
+- [v1/vcs_provider_service.proto](#v1_vcs_provider_service-proto)
+    - [CreateVCSProviderRequest](#bytebase-v1-CreateVCSProviderRequest)
+    - [DeleteVCSProviderRequest](#bytebase-v1-DeleteVCSProviderRequest)
+    - [GetVCSProviderRequest](#bytebase-v1-GetVCSProviderRequest)
+    - [ListVCSConnectorsInProviderRequest](#bytebase-v1-ListVCSConnectorsInProviderRequest)
+    - [ListVCSConnectorsInProviderResponse](#bytebase-v1-ListVCSConnectorsInProviderResponse)
+    - [ListVCSProvidersRequest](#bytebase-v1-ListVCSProvidersRequest)
+    - [ListVCSProvidersResponse](#bytebase-v1-ListVCSProvidersResponse)
+    - [SearchVCSProviderProjectsRequest](#bytebase-v1-SearchVCSProviderProjectsRequest)
+    - [SearchVCSProviderProjectsResponse](#bytebase-v1-SearchVCSProviderProjectsResponse)
+    - [SearchVCSProviderProjectsResponse.Project](#bytebase-v1-SearchVCSProviderProjectsResponse-Project)
+    - [UpdateVCSProviderRequest](#bytebase-v1-UpdateVCSProviderRequest)
+    - [VCSProvider](#bytebase-v1-VCSProvider)
+  
+    - [VCSProvider.Type](#bytebase-v1-VCSProvider-Type)
+  
+    - [VCSProviderService](#bytebase-v1-VCSProviderService)
   
 - [v1/worksheet_service.proto](#v1_worksheet_service-proto)
     - [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest)
@@ -1002,6 +1011,7 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 | OCEANBASE_ORACLE | 17 |  |
 | STARROCKS | 18 |  |
 | DORIS | 19 |  |
+| HIVE | 20 |  |
 
 
 
@@ -5617,269 +5627,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 
 
-<a name="v1_vcs_provider_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/vcs_provider_service.proto
-
-
-
-<a name="bytebase-v1-CreateVCSProviderRequest"></a>
-
-### CreateVCSProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| vcs_provider | [VCSProvider](#bytebase-v1-VCSProvider) |  |  |
-| vcs_provider_id | [string](#string) |  | The ID to use for the VCS provider, which will become the final component of the VCS provider&#39;s name.
-
-This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteVCSProviderRequest"></a>
-
-### DeleteVCSProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the vcs provider to delete. Format: vcsProviders/{vcsProvider} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetVCSProviderRequest"></a>
-
-### GetVCSProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the vcs provider to retrieve. Format: vcsProviders/{vcsProvider} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListProjectGitOpsInfoRequest"></a>
-
-### ListProjectGitOpsInfoRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the vcs provider to retrieve the linked projects. Format: vcsProviders/{vcsProvider} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListProjectGitOpsInfoResponse"></a>
-
-### ListProjectGitOpsInfoResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) | repeated | The binding between vcs provider and project. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListVCSProvidersRequest"></a>
-
-### ListVCSProvidersRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Not used. The maximum number of vcs provider to return. The service may return fewer than this value. If unspecified, at most 100 vcs provider will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListVCSProviders` call. Provide this to retrieve the subsequent page. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListVCSProvidersResponse"></a>
-
-### ListVCSProvidersResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| vcs_providers | [VCSProvider](#bytebase-v1-VCSProvider) | repeated | The list of vcs providers. |
-| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-ProjectGitOpsInfo"></a>
-
-### ProjectGitOpsInfo
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the linked repository, generated by the server, and also is the unique identifier. Format: projects/{project}/gitOpsInfo |
-| vcs | [string](#string) |  | The name of the VCS. |
-| title | [string](#string) |  | The title of the repository. For axample: sample. |
-| external_id | [string](#string) |  | The reposition external id in target VCS. |
-| base_directory | [string](#string) |  | The root directory where Bytebase observes the file change. If empty, then it observes the entire repository. |
-| branch | [string](#string) |  | The branch Bytebase listens to for changes. For example: main. |
-| webhook_endpoint_id | [string](#string) |  | The webhook endpoint ID of the repository. |
-| full_path | [string](#string) |  | TODO(d): move these to create VCS connector API. The full_path of the repository. For example: bytebase/sample. |
-| web_url | [string](#string) |  | The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchVCSProviderProjectsRequest"></a>
-
-### SearchVCSProviderProjectsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the vcs provider to retrieve the vcs provider repositories. Format: vcsProviders/{vcsProvider} |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchVCSProviderProjectsResponse"></a>
-
-### SearchVCSProviderProjectsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| projects | [SearchVCSProviderProjectsResponse.Project](#bytebase-v1-SearchVCSProviderProjectsResponse-Project) | repeated | The list of project in vcs provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchVCSProviderProjectsResponse-Project"></a>
-
-### SearchVCSProviderProjectsResponse.Project
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The id of the project in vcs provider. |
-| title | [string](#string) |  | The title of the project in vcs provider. |
-| fullpath | [string](#string) |  | The fullpath of the project in vcs provider. |
-| web_url | [string](#string) |  | Web url of the project in vcs provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateVCSProviderRequest"></a>
-
-### UpdateVCSProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| vcs_provider | [VCSProvider](#bytebase-v1-VCSProvider) |  |  |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
-
-
-
-
-
-
-<a name="bytebase-v1-VCSProvider"></a>
-
-### VCSProvider
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the vcs provider. Format: vcsProviders/{vcsProvider} |
-| title | [string](#string) |  | The title of the vcs provider. It is used to display in the UI. Specified by the client. |
-| type | [VCSProvider.Type](#bytebase-v1-VCSProvider-Type) |  |  |
-| url | [string](#string) |  | The url of the vcs provider. Specified by the client. For example: github.com, gitlab.com, gitlab.bytebase.com. |
-| access_token | [string](#string) |  | The access token of the vcs provider. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-VCSProvider-Type"></a>
-
-### VCSProvider.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
-| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
-| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
-| AZURE_DEVOPS | 4 | Azure DevOps. Using for Azure DevOps GitOps workflow. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-VCSProviderService"></a>
-
-### VCSProviderService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetVCSProvider | [GetVCSProviderRequest](#bytebase-v1-GetVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
-| ListVCSProviders | [ListVCSProvidersRequest](#bytebase-v1-ListVCSProvidersRequest) | [ListVCSProvidersResponse](#bytebase-v1-ListVCSProvidersResponse) |  |
-| CreateVCSProvider | [CreateVCSProviderRequest](#bytebase-v1-CreateVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
-| UpdateVCSProvider | [UpdateVCSProviderRequest](#bytebase-v1-UpdateVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
-| DeleteVCSProvider | [DeleteVCSProviderRequest](#bytebase-v1-DeleteVCSProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| SearchVCSProviderProjects | [SearchVCSProviderProjectsRequest](#bytebase-v1-SearchVCSProviderProjectsRequest) | [SearchVCSProviderProjectsResponse](#bytebase-v1-SearchVCSProviderProjectsResponse) |  |
-| ListProjectGitOpsInfo | [ListProjectGitOpsInfoRequest](#bytebase-v1-ListProjectGitOpsInfoRequest) | [ListProjectGitOpsInfoResponse](#bytebase-v1-ListProjectGitOpsInfoResponse) |  |
-
- 
-
-
-
 <a name="v1_project_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -6170,21 +5917,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | project | [string](#string) |  | The name of the project to get the IAM policy. Format: projects/{project} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetProjectGitOpsInfoRequest"></a>
-
-### GetProjectGitOpsInfoRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the GitOps info. Format: projects/{project}/gitOpsInfo |
 
 
 
@@ -6608,21 +6340,6 @@ All the expressions will be used to filter the schema objects in DatabaseSchema.
 
 
 
-<a name="bytebase-v1-UnsetProjectGitOpsInfoRequest"></a>
-
-### UnsetProjectGitOpsInfoRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the GitOps info. Format: projects/{project}/gitOpsInfo |
-
-
-
-
-
-
 <a name="bytebase-v1-UpdateDatabaseGroupRequest"></a>
 
 ### UpdateDatabaseGroupRequest
@@ -6650,23 +6367,6 @@ The database group&#39;s `name` field is used to identify the database group to 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | config | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateProjectGitOpsInfoRequest"></a>
-
-### UpdateProjectGitOpsInfoRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project_gitops_info | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  | The binding for the project and vcs provider. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
-| allow_missing | [bool](#bool) |  | If true, the gitops will be created if it does not exist. |
 
 
 
@@ -6937,9 +6637,6 @@ The type of target.
 | UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
-| UpdateProjectGitOpsInfo | [UpdateProjectGitOpsInfoRequest](#bytebase-v1-UpdateProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
-| UnsetProjectGitOpsInfo | [UnsetProjectGitOpsInfoRequest](#bytebase-v1-UnsetProjectGitOpsInfoRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| GetProjectGitOpsInfo | [GetProjectGitOpsInfoRequest](#bytebase-v1-GetProjectGitOpsInfoRequest) | [ProjectGitOpsInfo](#bytebase-v1-ProjectGitOpsInfo) |  |
 | ListDatabaseGroups | [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest) | [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse) |  |
 | GetDatabaseGroup | [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
 | CreateDatabaseGroup | [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) |  |
@@ -7080,8 +6777,9 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 | DDL | 1 |  |
 | DML | 2 |  |
 | CREATE_DATABASE | 3 |  |
-| QUERY | 4 |  |
-| EXPORT | 5 |  |
+| REQUEST_QUERY | 4 |  |
+| REQUEST_EXPORT | 5 |  |
+| DATA_EXPORT | 6 |  |
 
 
  
@@ -7628,7 +7326,6 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name} |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
-| max_rows | [int32](#int32) |  | The max number of rows to export. |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The format of the exported file. |
 | password | [string](#string) | optional | The zip password provide by users. Leave it empty if no needs to encrypt the zip file. |
 
@@ -7651,6 +7348,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
 | change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
 | export_data_config | [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig) |  |  |
+| vcs_source | [Plan.VCSSource](#bytebase-v1-Plan-VCSSource) |  |  |
 
 
 
@@ -7667,6 +7365,23 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) |  | TODO: implement |
 | specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-VCSSource"></a>
+
+### Plan.VCSSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_connector | [string](#string) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
+| pull_request_url | [string](#string) |  |  |
+| commit_url | [string](#string) |  |  |
 
 
 
@@ -7907,7 +7622,6 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name} |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
-| max_rows | [int32](#int32) |  | The max number of rows to export. |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The format of the exported file. |
 | password | [string](#string) | optional | The zip password provide by users. Leave it empty if no needs to encrypt the zip file. |
 
@@ -9374,39 +9088,6 @@ Type of the SheetPayload.
 
 
 
-<a name="bytebase-v1-ListQueryHistoriesRequest"></a>
-
-### ListQueryHistoriesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Not used. The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 100 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
-| filter | [string](#string) |  | filter is the filter to apply on the search query history, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Only support filter by database for now. For example: database = &#34;instances/{instance}/databases/{database}&#34; |
-
-
-
-
-
-
-<a name="bytebase-v1-ListQueryHistoriesResponse"></a>
-
-### ListQueryHistoriesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| query_histories | [QueryHistory](#bytebase-v1-QueryHistory) | repeated | The list of history. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of history. Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method to retrieve the next page of history. |
-
-
-
-
-
-
 <a name="bytebase-v1-ParseMyBatisMapperRequest"></a>
 
 ### ParseMyBatisMapperRequest
@@ -9485,6 +9166,7 @@ Type of the SheetPayload.
 | statement | [string](#string) |  |  |
 | error | [string](#string) | optional |  |
 | duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+| type | [QueryHistory.Type](#bytebase-v1-QueryHistory-Type) |  |  |
 
 
 
@@ -9590,6 +9272,39 @@ Type of the SheetPayload.
 
 
 
+<a name="bytebase-v1-SearchQueryHistoriesRequest"></a>
+
+### SearchQueryHistoriesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | Not used. The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 100 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
+| filter | [string](#string) |  | filter is the filter to apply on the search query history, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by: - database, for example: database = &#34;instances/{instance}/databases/{database}&#34; - instance, for example: instance = &#34;instance/{instance}&#34; - type, for example: type = &#34;QUERY&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchQueryHistoriesResponse"></a>
+
+### SearchQueryHistoriesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| query_histories | [QueryHistory](#bytebase-v1-QueryHistory) | repeated | The list of history. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of history. Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method to retrieve the next page of history. |
+
+
+
+
+
+
 <a name="bytebase-v1-StringifyMetadataRequest"></a>
 
 ### StringifyMetadataRequest
@@ -9650,6 +9365,19 @@ Type of the SheetPayload.
 | DML | 3 |  |
 
 
+
+<a name="bytebase-v1-QueryHistory-Type"></a>
+
+### QueryHistory.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| QUERY | 1 |  |
+| EXPORT | 2 |  |
+
+
  
 
  
@@ -9663,7 +9391,7 @@ Type of the SheetPayload.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
-| ListQueryHistories | [ListQueryHistoriesRequest](#bytebase-v1-ListQueryHistoriesRequest) | [ListQueryHistoriesResponse](#bytebase-v1-ListQueryHistoriesResponse) |  |
+| SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) |  |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
 | DifferPreview | [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest) | [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse) |  |
@@ -9671,6 +9399,404 @@ Type of the SheetPayload.
 | ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
+
+ 
+
+
+
+<a name="v1_vcs_connector_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/vcs_connector_service.proto
+
+
+
+<a name="bytebase-v1-CreateVCSConnectorRequest"></a>
+
+### CreateVCSConnectorRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where this vcsConnector will be created. Format: projects/{project} |
+| vcs_connector | [VCSConnector](#bytebase-v1-VCSConnector) |  | The vcsConnector to create. |
+| vcs_connector_id | [string](#string) |  | The ID to use for the vcsConnector, which will become the final component of the vcsConnector&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteVCSConnectorRequest"></a>
+
+### DeleteVCSConnectorRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcsConnector to delete. Format: projects/{project}/vcsConnectors/{vcsConnector} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetVCSConnectorRequest"></a>
+
+### GetVCSConnectorRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcsConnector to retrieve. Format: projects/{project}/vcsConnectors/{vcsConnector} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListVCSConnectorsRequest"></a>
+
+### ListVCSConnectorsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of vcsConnectors. Format: projects/{project} Use &#34;projects/-&#34; to list all vcsConnectors. |
+| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListVCSConnectorsResponse"></a>
+
+### ListVCSConnectorsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_connectors | [VCSConnector](#bytebase-v1-VCSConnector) | repeated | The vcsConnectors from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateVCSConnectorRequest"></a>
+
+### UpdateVCSConnectorRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_connector | [VCSConnector](#bytebase-v1-VCSConnector) |  | The vcsConnector to update.
+
+The vcsConnector&#39;s `name` field is used to identify the vcsConnector to update. Format: projects/{project}/vcsConnectors/{vcsConnector} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
+
+
+
+
+
+
+<a name="bytebase-v1-VCSConnector"></a>
+
+### VCSConnector
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcsConnector resource. Canonical parent is project. Format: projects/{project}/vcsConnectors/{vcsConnector} |
+| title | [string](#string) |  | The title of the vcs connector. |
+| creator | [string](#string) |  | The creator of the vcsConnector. Format: users/{email} |
+| updater | [string](#string) |  | The updater of the vcsConnector. Format: users/{email} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the vcsConnector. |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the vcsConnector. |
+| vcs_provider | [string](#string) |  | The name of the VCS. Format: vcsProviders/{vcsProvider} |
+| external_id | [string](#string) |  | The reposition external id in target VCS. |
+| base_directory | [string](#string) |  | The root directory where Bytebase observes the file change. If empty, then it observes the entire repository. |
+| branch | [string](#string) |  | The branch Bytebase listens to for changes. For example: main. |
+| full_path | [string](#string) |  | TODO(d): move these to create VCS connector API. The full_path of the repository. For example: bytebase/sample. |
+| web_url | [string](#string) |  | The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-VCSConnectorService"></a>
+
+### VCSConnectorService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| CreateVCSConnector | [CreateVCSConnectorRequest](#bytebase-v1-CreateVCSConnectorRequest) | [VCSConnector](#bytebase-v1-VCSConnector) |  |
+| GetVCSConnector | [GetVCSConnectorRequest](#bytebase-v1-GetVCSConnectorRequest) | [VCSConnector](#bytebase-v1-VCSConnector) |  |
+| ListVCSConnectors | [ListVCSConnectorsRequest](#bytebase-v1-ListVCSConnectorsRequest) | [ListVCSConnectorsResponse](#bytebase-v1-ListVCSConnectorsResponse) |  |
+| UpdateVCSConnector | [UpdateVCSConnectorRequest](#bytebase-v1-UpdateVCSConnectorRequest) | [VCSConnector](#bytebase-v1-VCSConnector) |  |
+| DeleteVCSConnector | [DeleteVCSConnectorRequest](#bytebase-v1-DeleteVCSConnectorRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+
+ 
+
+
+
+<a name="v1_vcs_provider_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/vcs_provider_service.proto
+
+
+
+<a name="bytebase-v1-CreateVCSProviderRequest"></a>
+
+### CreateVCSProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_provider | [VCSProvider](#bytebase-v1-VCSProvider) |  |  |
+| vcs_provider_id | [string](#string) |  | The ID to use for the VCS provider, which will become the final component of the VCS provider&#39;s name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteVCSProviderRequest"></a>
+
+### DeleteVCSProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcs provider to delete. Format: vcsProviders/{vcsProvider} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetVCSProviderRequest"></a>
+
+### GetVCSProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcs provider to retrieve. Format: vcsProviders/{vcsProvider} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListVCSConnectorsInProviderRequest"></a>
+
+### ListVCSConnectorsInProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcs provider to retrieve the linked projects. Format: vcsProviders/{vcsProvider} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListVCSConnectorsInProviderResponse"></a>
+
+### ListVCSConnectorsInProviderResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_connectors | [VCSConnector](#bytebase-v1-VCSConnector) | repeated | The vcsConnectors from the specified request. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListVCSProvidersRequest"></a>
+
+### ListVCSProvidersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | Not used. The maximum number of vcs provider to return. The service may return fewer than this value. If unspecified, at most 100 vcs provider will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListVCSProviders` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListVCSProvidersResponse"></a>
+
+### ListVCSProvidersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_providers | [VCSProvider](#bytebase-v1-VCSProvider) | repeated | The list of vcs providers. |
+| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchVCSProviderProjectsRequest"></a>
+
+### SearchVCSProviderProjectsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcs provider to retrieve the vcs provider repositories. Format: vcsProviders/{vcsProvider} |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchVCSProviderProjectsResponse"></a>
+
+### SearchVCSProviderProjectsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| projects | [SearchVCSProviderProjectsResponse.Project](#bytebase-v1-SearchVCSProviderProjectsResponse-Project) | repeated | The list of project in vcs provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchVCSProviderProjectsResponse-Project"></a>
+
+### SearchVCSProviderProjectsResponse.Project
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The id of the project in vcs provider. |
+| title | [string](#string) |  | The title of the project in vcs provider. |
+| fullpath | [string](#string) |  | The fullpath of the project in vcs provider. |
+| web_url | [string](#string) |  | Web url of the project in vcs provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateVCSProviderRequest"></a>
+
+### UpdateVCSProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_provider | [VCSProvider](#bytebase-v1-VCSProvider) |  |  |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
+
+
+
+
+
+
+<a name="bytebase-v1-VCSProvider"></a>
+
+### VCSProvider
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the vcs provider. Format: vcsProviders/{vcsProvider} |
+| title | [string](#string) |  | The title of the vcs provider. It is used to display in the UI. Specified by the client. |
+| type | [VCSProvider.Type](#bytebase-v1-VCSProvider-Type) |  |  |
+| url | [string](#string) |  | The url of the vcs provider. Specified by the client. For example: github.com, gitlab.com, gitlab.bytebase.com. |
+| access_token | [string](#string) |  | The access token of the vcs provider. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-VCSProvider-Type"></a>
+
+### VCSProvider.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
+| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
+| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
+| AZURE_DEVOPS | 4 | Azure DevOps. Using for Azure DevOps GitOps workflow. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-VCSProviderService"></a>
+
+### VCSProviderService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetVCSProvider | [GetVCSProviderRequest](#bytebase-v1-GetVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
+| ListVCSProviders | [ListVCSProvidersRequest](#bytebase-v1-ListVCSProvidersRequest) | [ListVCSProvidersResponse](#bytebase-v1-ListVCSProvidersResponse) |  |
+| CreateVCSProvider | [CreateVCSProviderRequest](#bytebase-v1-CreateVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
+| UpdateVCSProvider | [UpdateVCSProviderRequest](#bytebase-v1-UpdateVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
+| DeleteVCSProvider | [DeleteVCSProviderRequest](#bytebase-v1-DeleteVCSProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| SearchVCSProviderProjects | [SearchVCSProviderProjectsRequest](#bytebase-v1-SearchVCSProviderProjectsRequest) | [SearchVCSProviderProjectsResponse](#bytebase-v1-SearchVCSProviderProjectsResponse) |  |
+| ListVCSConnectorsInProvider | [ListVCSConnectorsInProviderRequest](#bytebase-v1-ListVCSConnectorsInProviderRequest) | [ListVCSConnectorsInProviderResponse](#bytebase-v1-ListVCSConnectorsInProviderResponse) |  |
 
  
 
