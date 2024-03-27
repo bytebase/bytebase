@@ -196,6 +196,8 @@ message Plan {
       ChangeDatabaseConfig change_database_config = 2;
       ExportDataConfig export_data_config = 7;
     }
+
+    VCSSource vcs_source = 8;
   }
 
   message CreateDatabaseConfig {
@@ -289,6 +291,15 @@ message Plan {
     // The zip password provide by users.
     // Leave it empty if no needs to encrypt the zip file.
     optional string password = 4;
+  }
+
+  message VCSSource {
+    // Optional.
+    // If present, we will update the pull request for rollout status.
+    // Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
+    string vcs_connector = 1;
+    string pull_request_url = 2;
+    string commit_url = 3;
   }
 }
 
