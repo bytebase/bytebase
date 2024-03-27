@@ -133,6 +133,7 @@
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
     - [PlanConfig.Step](#bytebase-store-PlanConfig-Step)
+    - [PlanConfig.VCSSource](#bytebase-store-PlanConfig-VCSSource)
   
     - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
   
@@ -1994,6 +1995,7 @@ InstanceOptions is the option for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | steps | [PlanConfig.Step](#bytebase-store-PlanConfig-Step) | repeated |  |
+| vcs_source | [PlanConfig.VCSSource](#bytebase-store-PlanConfig-VCSSource) |  |  |
 
 
 
@@ -2157,6 +2159,22 @@ InstanceOptions is the option for instances.
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) |  | Use the title if set. Use a generated title if empty. |
 | specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanConfig-VCSSource"></a>
+
+### PlanConfig.VCSSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_connector | [string](#string) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
+| pull_request_url | [string](#string) |  |  |
 
 
 
