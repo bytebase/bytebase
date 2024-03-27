@@ -59,7 +59,7 @@ func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 func ValidateSQLForEditor(engine storepb.Engine, statement string) (bool, error) {
 	f, ok := queryValidators[engine]
 	if !ok {
-		return false, errors.Errorf("engine %s is not supported", engine)
+		return true, nil
 	}
 	return f(statement)
 }
