@@ -92,7 +92,7 @@ export const supportedEngineV1List = () => {
     Engine.MARIADB,
     Engine.STARROCKS,
     Engine.RISINGWAVE,
-    Engine.HIVE
+    Engine.HIVE,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
@@ -274,7 +274,7 @@ export const engineNameV1 = (type: Engine): string => {
     case Engine.DORIS:
       return "Doris";
     case Engine.HIVE:
-      return "Apache Hive" 
+      return "Apache Hive" ;
   }
   return "";
 };
