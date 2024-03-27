@@ -37,22 +37,10 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_MEMBERS,
   PROJECT_V1_ROUTE_SETTINGS,
   PROJECT_V1_ROUTE_WEBHOOKS,
-  PROJECT_V1_ROUTE_WEBHOOK_CREATE,
-  PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
   PROJECT_V1_ROUTE_BRANCHES,
-  PROJECT_V1_ROUTE_BRANCH_DETAIL,
-  PROJECT_V1_ROUTE_BRANCH_ROLLOUT,
-  PROJECT_V1_ROUTE_BRANCH_MERGE,
-  PROJECT_V1_ROUTE_BRANCH_REBASE,
   PROJECT_V1_ROUTE_CHANGELISTS,
-  PROJECT_V1_ROUTE_CHANGELIST_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
-  PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
-  PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
-  PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_DATABASE_DETAIL,
-  PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -284,53 +272,15 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
 
 const getItemClass = (item: SidebarItem) => {
   const list = ["outline-item"];
-  if (route.name === item.path) {
+  const { name: current } = route;
+
+  const isActiveRoute =
+    item.path === current?.toString() ||
+    current?.toString().startsWith(`${item.path}.`);
+
+  if (isActiveRoute) {
     list.push("router-link-active", "bg-link-hover");
     return list;
-  }
-
-  switch (route.name) {
-    case PROJECT_V1_ROUTE_WEBHOOK_CREATE:
-    case PROJECT_V1_ROUTE_WEBHOOK_DETAIL:
-      if (item.path === PROJECT_V1_ROUTE_WEBHOOKS) {
-        list.push("router-link-active", "bg-link-hover");
-      }
-      break;
-    case PROJECT_V1_ROUTE_BRANCH_DETAIL:
-    case PROJECT_V1_ROUTE_BRANCH_ROLLOUT:
-    case PROJECT_V1_ROUTE_BRANCH_MERGE:
-    case PROJECT_V1_ROUTE_BRANCH_REBASE:
-      if (item.path === PROJECT_V1_ROUTE_BRANCHES) {
-        list.push("router-link-active", "bg-link-hover");
-      }
-      break;
-    case PROJECT_V1_ROUTE_CHANGELIST_DETAIL:
-      if (item.path === PROJECT_V1_ROUTE_CHANGELISTS) {
-        list.push("router-link-active", "bg-link-hover");
-      }
-      break;
-    case PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL:
-    case PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL:
-      if (item.path === PROJECT_V1_ROUTE_DATABASE_GROUPS) {
-        list.push("router-link-active", "bg-link-hover");
-      }
-      break;
-    case "workspace.issue.detail":
-    case PROJECT_V1_ROUTE_ISSUE_DETAIL:
-      if (item.path === PROJECT_V1_ROUTE_ISSUES) {
-        list.push("router-link-active", "bg-link-hover");
-      }
-      break;
-    case PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL:
-      if (item.path === PROJECT_V1_ROUTE_CHANGE_HISTORIES) {
-        list.push("router-link-active", "bg-link-hover");
-      }
-      break;
-    case PROJECT_V1_ROUTE_DATABASE_DETAIL:
-      if (item.path === PROJECT_V1_ROUTE_DATABASES) {
-        list.push("router-link-active", "bg-link-hover");
-      }
-      break;
   }
   return list;
 };

@@ -244,7 +244,7 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.VCSProviderService_UpdateVCSProvider_FullMethodName,
 		v1pb.VCSProviderService_DeleteVCSProvider_FullMethodName,
 		v1pb.VCSProviderService_SearchVCSProviderProjects_FullMethodName,
-		v1pb.VCSProviderService_ListProjectGitOpsInfo_FullMethodName,
+		v1pb.VCSProviderService_ListVCSConnectorsInProvider_FullMethodName,
 		v1pb.RiskService_ListRisks_FullMethodName,
 		v1pb.RiskService_CreateRisk_FullMethodName,
 		v1pb.RiskService_UpdateRisk_FullMethodName,
@@ -316,9 +316,6 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.ProjectService_UpdateWebhook_FullMethodName,
 		v1pb.ProjectService_RemoveWebhook_FullMethodName,
 		v1pb.ProjectService_TestWebhook_FullMethodName,
-		v1pb.ProjectService_UpdateProjectGitOpsInfo_FullMethodName,
-		v1pb.ProjectService_UnsetProjectGitOpsInfo_FullMethodName,
-		v1pb.ProjectService_GetProjectGitOpsInfo_FullMethodName,
 
 		v1pb.ProjectService_GetDatabaseGroup_FullMethodName,
 		v1pb.ProjectService_CreateDatabaseGroup_FullMethodName,
@@ -549,12 +546,6 @@ func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any
 		projectWebhooks = append(projectWebhooks, r.GetWebhook().GetName())
 	case *v1pb.TestWebhookRequest:
 		projects = append(projects, r.GetProject())
-	case *v1pb.UpdateProjectGitOpsInfoRequest:
-		projectGitopsInfos = append(projectGitopsInfos, r.GetProjectGitopsInfo().GetName())
-	case *v1pb.UnsetProjectGitOpsInfoRequest:
-		projectGitopsInfos = append(projectGitopsInfos, r.GetName())
-	case *v1pb.GetProjectGitOpsInfoRequest:
-		projectGitopsInfos = append(projectGitopsInfos, r.GetName())
 	case *v1pb.GetDatabaseGroupRequest:
 		databaseGroups = append(databaseGroups, r.GetName())
 	case *v1pb.CreateDatabaseGroupRequest:

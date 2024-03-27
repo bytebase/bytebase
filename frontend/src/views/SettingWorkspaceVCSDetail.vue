@@ -40,6 +40,7 @@
       <BBTextField
         id="name"
         v-model:value="state.title"
+        :disabled="!hasUpdateVCSPermission"
         name="name"
         class="mt-1 w-full"
       />
@@ -50,6 +51,7 @@
       <BBTextField
         id="secret"
         v-model:value="state.accessToken"
+        :disabled="!hasUpdateVCSPermission"
         name="secret"
         class="mt-1 w-full"
         :placeholder="$t('common.sensitive-placeholder')"
@@ -57,7 +59,7 @@
     </div>
 
     <div class="pt-4 flex border-t justify-between">
-      <template v-if="repositoryList.length == 0">
+      <template v-if="connectorList.length == 0">
         <BBButtonConfirm
           :style="'DELETE'"
           :button-text="$t('gitops.setting.git-provider.delete')"
@@ -94,10 +96,10 @@
 
   <div class="py-6">
     <div class="text-lg leading-6 font-medium text-main">
-      {{ $t("repository.linked") + ` (${repositoryList.length})` }}
+      {{ $t("repository.linked") + ` (${connectorList.length})` }}
     </div>
     <div class="mt-4">
-      <RepositoryTable :repository-list="repositoryList" />
+      <VCSConnectorTable :connector-list="connectorList" />
     </div>
   </div>
 </template>
@@ -106,15 +108,16 @@
 import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
-import RepositoryTable from "@/components/RepositoryTable.vue";
 import { vcsListByUIType } from "@/components/VCS/utils";
+import VCSConnectorTable from "@/components/VCSConnectorTable.vue";
 import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
   useCurrentUserV1,
-  useRepositoryV1Store,
+  useVCSConnectorStore,
   useVCSV1Store,
 } from "@/store";
+import { vcsProviderPrefix } from "@/store/modules/v1/common";
 import type { VCSUIType } from "@/types";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { getVCSUIType, hasWorkspacePermissionV2 } from "@/utils";
@@ -131,7 +134,7 @@ const props = defineProps<{
 const router = useRouter();
 const currentUser = useCurrentUserV1();
 const vcsV1Store = useVCSV1Store();
-const repositoryV1Store = useRepositoryV1Store();
+const vcsConnectorStore = useVCSConnectorStore();
 
 const vcs = computed((): VCSProvider | undefined => {
   return vcsV1Store.getVCSById(props.vcsResourceId);
@@ -167,7 +170,9 @@ const hasDeleteVCSPermission = computed(() => {
 });
 
 watchEffect(async () => {
-  const vcs = await vcsV1Store.fetchVCSById(props.vcsResourceId);
+  const vcs = await vcsV1Store.getOrFetchVCSByName(
+    `${vcsProviderPrefix}${props.vcsResourceId}`
+  );
   resetState();
   if (vcs) {
     if (
@@ -183,12 +188,12 @@ watchEffect(async () => {
       });
       return;
     }
-    await repositoryV1Store.fetchRepositoryListByVCS(vcs.name);
+    await vcsConnectorStore.fetchConnectorsInProvider(vcs.name);
   }
 });
 
-const repositoryList = computed(() => {
-  return repositoryV1Store.getRepositoryListByVCS(vcs.value?.name ?? "");
+const connectorList = computed(() => {
+  return vcsConnectorStore.getConnectorsInProvider(vcs.value?.name ?? "");
 });
 
 const allowUpdate = computed(() => {
