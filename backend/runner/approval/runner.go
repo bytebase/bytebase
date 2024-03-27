@@ -588,35 +588,6 @@ func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, license
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-		PlanUID: &plan.UID,
-		Type:    &[]store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport},
-	})
-	if err != nil {
-		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to list plan check runs for plan %v", plan.UID)
-	}
-	type Key struct {
-		InstanceUID  int
-		DatabaseName string
-	}
-	latestPlanCheckRun := map[Key]*store.PlanCheckRunMessage{}
-	for _, run := range planCheckRuns {
-		key := Key{
-			InstanceUID:  int(run.Config.InstanceUid),
-			DatabaseName: run.Config.DatabaseName,
-		}
-		oldValue, ok := latestPlanCheckRun[key]
-		if !ok || oldValue.UID < run.UID {
-			latestPlanCheckRun[key] = run
-		}
-	}
-	for _, run := range latestPlanCheckRun {
-		// the latest plan check run is not done yet, return done=false
-		if run.Status != store.PlanCheckRunStatusDone {
-			return 0, store.RiskSourceUnknown, false, nil
-		}
-	}
-
 	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, licenseService, dbFactory, plan.Config.Steps, issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
