@@ -109,6 +109,7 @@
     - [Commit](#bytebase-store-Commit)
     - [FileCommit](#bytebase-store-FileCommit)
     - [PushEvent](#bytebase-store-PushEvent)
+    - [VCSConnector](#bytebase-store-VCSConnector)
   
 - [store/instance_change_history.proto](#store_instance_change_history-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
@@ -1795,6 +1796,28 @@ InstanceOptions is the option for instances.
 | author_name | [string](#string) |  |  |
 | commits | [Commit](#bytebase-store-Commit) | repeated |  |
 | file_commit | [FileCommit](#bytebase-store-FileCommit) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-VCSConnector"></a>
+
+### VCSConnector
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  | The title or display name of the VCS connector. |
+| full_path | [string](#string) |  | Full path from the corresponding VCS provider. For GitLab, this is the project full path. e.g. group1/project-1 |
+| web_url | [string](#string) |  | Web url from the corresponding VCS provider. For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1 |
+| branch | [string](#string) |  | Branch to listen to. |
+| base_directory | [string](#string) |  | Base working directory we are interested. |
+| external_id | [string](#string) |  | Repository id from the corresponding VCS provider. For GitLab, this is the project id. e.g. 123 |
+| external_webhook_id | [string](#string) |  | Push webhook id from the corresponding VCS provider. For GitLab, this is the project webhook id. e.g. 123 |
+| webhook_secret_token | [string](#string) |  | For GitLab, webhook request contains this in the &#39;X-Gitlab-Token&#34; header and we compare it with the one stored in db to validate it sends to the expected endpoint. |
 
 
 

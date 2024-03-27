@@ -42,3 +42,26 @@ message FileCommit {
   string author_email = 7;
   string added = 8;
 }
+
+message VCSConnector {
+  // The title or display name of the VCS connector.
+  string title = 1;
+  // Full path from the corresponding VCS provider.
+  // For GitLab, this is the project full path. e.g. group1/project-1
+  string full_path = 2;
+  // Web url from the corresponding VCS provider.
+  // For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1
+  string web_url = 3;
+  // Branch to listen to.
+  string branch = 4;
+  // Base working directory we are interested.
+  string base_directory = 5;
+  // Repository id from the corresponding VCS provider.
+  // For GitLab, this is the project id. e.g. 123
+  string external_id = 6;
+  // Push webhook id from the corresponding VCS provider.
+  // For GitLab, this is the project webhook id. e.g. 123
+  string external_webhook_id = 7;
+  // For GitLab, webhook request contains this in the 'X-Gitlab-Token" header and we compare it with the one stored in db to validate it sends to the expected endpoint.
+  string webhook_secret_token = 8;
+}
