@@ -73,11 +73,12 @@
       </div>
     </div>
     <ChangeHistoryTable
+      v-model:selected-change-history-names="
+        state.selectedChangeHistoryNameList
+      "
       :mode="'DATABASE'"
       :database-section-list="[database]"
       :history-section-list="changeHistorySectionList"
-      :selected-change-history-name-list="state.selectedChangeHistoryNameList"
-      @update:selected="state.selectedChangeHistoryNameList = $event"
     />
   </div>
 
