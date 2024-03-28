@@ -1,5 +1,6 @@
 {
   "extends": "./tsconfig.app.json",
+  "includes": ["src/**/__tests__/*"],
   "exclude": [],
   "compilerOptions": {
     "composite": true,
@@ -9,6 +10,10 @@
     "lib": ["WebWorker", "ES2022"],
     "types": ["node", "jsdom", "unplugin-icons/types/vue", "vite/client"],
     "jsx": "preserve",
-    "jsxImportSource": "vue"
+    "jsxImportSource": "vue",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@sql-lsp/*": ["./src/plugins/sql-lsp/*"]
+    }
   }
 }

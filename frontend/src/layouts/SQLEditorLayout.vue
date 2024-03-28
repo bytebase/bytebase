@@ -2,7 +2,7 @@
   <div class="relative h-screen overflow-hidden flex flex-col">
     <ul
       id="sql-editor-debug"
-      class="hidden text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400 z-[999999]"
+      class="text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400 z-[999999]"
     ></ul>
 
     <BannersWrapper v-if="showBanners" />
@@ -32,7 +32,6 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { provideSecondarySidebarContext } from "@/views/sql-editor/SecondarySidebar";
 import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
 
@@ -43,7 +42,6 @@ const pageMode = usePageMode();
 provideSQLEditorContext();
 // provide context for sheets
 provideSheetContext();
-provideSecondarySidebarContext();
 
 const showBanners = computed(() => {
   return pageMode.value === "BUNDLED";
