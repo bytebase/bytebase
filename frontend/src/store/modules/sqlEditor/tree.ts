@@ -175,7 +175,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     databaseList,
     factorList,
     filteredFactorList,
-    currentProject: currentProject,
+    currentProject,
     state,
     tree,
     collectNode,
