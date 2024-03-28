@@ -1,81 +1,33 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="w-full flex flex-row justify-between items-center">
-      <div class="textinfolabel mr-4">
-        {{ $t("settings.sso.description") }}
-        <a
-          href="https://bytebase.com/docs/administration/sso/overview?source=console"
-          class="normal-link inline-flex flex-row items-center"
-          target="_blank"
-        >
-          {{ $t("common.learn-more") }}
-          <heroicons-outline:external-link class="w-4 h-4" />
-        </a>
-      </div>
-      <div>
-        <NButton
-          v-if="identityProviderList.length > 0"
-          type="primary"
-          :disabled="!allowCreateSSO"
-          @click="handleCreateSSO"
-        >
-          {{ $t("common.create") }}
-          <FeatureBadge :feature="'bb.feature.sso'" custom-class="ml-2" />
-        </NButton>
-      </div>
+    <div class="textinfolabel mr-4">
+      {{ $t("settings.sso.description") }}
+      <a
+        href="https://bytebase.com/docs/administration/sso/overview?source=console"
+        class="normal-link inline-flex flex-row items-center"
+        target="_blank"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4" />
+      </a>
     </div>
-    <NoDataPlaceholder v-if="identityProviderList.length === 0">
+    <div class="w-full flex flex-row justify-end items-center">
       <NButton
         type="primary"
         :disabled="!allowCreateSSO"
         @click="handleCreateSSO"
       >
         {{ $t("settings.sso.create") }}
-        <FeatureBadge
-          :feature="'bb.feature.sso'"
-          custom-class="ml-2 !text-white"
-        />
+        <FeatureBadge :feature="'bb.feature.sso'" custom-class="ml-2" />
       </NButton>
-    </NoDataPlaceholder>
-    <template v-else>
-      <div class="w-full flex flex-col justify-start items-start space-y-4">
-        <div
-          v-for="identityProvider in identityProviderList"
-          :key="identityProvider.name"
-          class="w-full flex flex-col justify-start items-start border p-4"
-          @click="state.selectedIdentityProviderName = identityProvider.name"
-        >
-          <div class="w-full flex flex-row justify-between items-center">
-            <span class="truncate">{{ identityProvider.title }}</span>
-            <NButton
-              :disabled="!allowGetSSO"
-              @click="handleViewSSO(identityProvider)"
-            >
-              {{ $t("common.view") }}
-            </NButton>
-          </div>
+    </div>
 
-          <div
-            class="mt-3 pt-3 border-t w-full flex flex-row justify-start items-center"
-          >
-            <span class="textlabel w-48 opacity-60">{{
-              $t("settings.sso.form.type")
-            }}</span>
-            <span>{{
-              identityProviderTypeToString(identityProvider.type)
-            }}</span>
-          </div>
-          <div
-            class="mt-3 pt-3 border-t w-full flex flex-row justify-start items-center"
-          >
-            <span class="textlabel w-48 opacity-60">{{
-              $t("settings.sso.form.domain")
-            }}</span>
-            <span>{{ identityProvider.domain }}</span>
-          </div>
-        </div>
-      </div>
-    </template>
+    <NDataTable
+      :data="identityProviderList"
+      :columns="columnList"
+      :striped="true"
+      :bordered="true"
+    />
   </div>
 
   <FeatureModal
@@ -86,8 +38,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
-import { computed, onMounted, reactive } from "vue";
+import { NButton, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
+import { computed, onMounted, reactive, h } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
   WORKSPACE_ROUTE_SSO_CREATE,
@@ -95,6 +49,7 @@ import {
 } from "@/router/dashboard/workspaceRoutes";
 import { featureToRef, useCurrentUserV1 } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
+import { getSSOId } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import {
   hasWorkspacePermissionV2,
@@ -107,6 +62,7 @@ interface LocalState {
   selectedIdentityProviderName: string;
 }
 
+const { t } = useI18n();
 const router = useRouter();
 const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
@@ -159,8 +115,49 @@ const handleViewSSO = (identityProvider: IdentityProvider) => {
   router.push({
     name: WORKSPACE_ROUTE_SSO_DETAIL,
     params: {
-      ssoName: identityProvider.name,
+      ssoId: getSSOId(identityProvider.name),
     },
   });
 };
+
+const columnList = computed((): DataTableColumn<IdentityProvider>[] => {
+  const list: DataTableColumn<IdentityProvider>[] = [
+    {
+      key: "name",
+      title: t("settings.sso.form.name"),
+      render: (identityProvider) => identityProvider.title,
+    },
+    {
+      key: "type",
+      title: t("settings.sso.form.type"),
+      render: (identityProvider) =>
+        identityProviderTypeToString(identityProvider.type),
+    },
+    {
+      key: "domain",
+      title: t("settings.sso.form.domain"),
+      render: (identityProvider) => identityProvider.domain,
+    },
+  ];
+  if (allowGetSSO.value) {
+    list.push({
+      key: "view",
+      title: "",
+      render: (identityProvider) =>
+        h(
+          "div",
+          { class: "flex justify-end" },
+          h(
+            NButton,
+            {
+              size: "small",
+              onClick: () => handleViewSSO(identityProvider),
+            },
+            t("common.view")
+          )
+        ),
+    });
+  }
+  return list;
+});
 </script>

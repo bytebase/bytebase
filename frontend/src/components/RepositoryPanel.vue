@@ -49,7 +49,7 @@
     />
     <div v-if="allowEdit" class="ml-3 flex items-center space-x-3">
       <NButton @click.prevent="$emit('cancel')">
-        {{ $t("common.back") }}
+        {{ $t("common.cancel") }}
       </NButton>
       <NButton
         type="primary"

@@ -46,6 +46,13 @@
       />
     </div>
 
+    <ResourceIdField
+      :value="props.vcsResourceId"
+      class="max-w-full flex-nowrap"
+      resource-type="vcs-provider"
+      :readonly="true"
+    />
+
     <div>
       <label for="secret" class="textlabel"> Access Token </label>
       <BBTextField
