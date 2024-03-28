@@ -225,10 +225,6 @@ const icon = computed((): ActionIconType => {
       }
     }
   } else if (
-    activity.action == LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT
-  ) {
-    return "commit";
-  } else if (
     activity.action == LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE
   ) {
     return "update";

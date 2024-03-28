@@ -32,8 +32,6 @@ export function activityName(action: LogEntity_Action): string {
       return t("activity.type.pipeline-task-status-update");
     case LogEntity_Action.ACTION_PIPELINE_TASK_PRIOR_BACKUP:
       return t("activity.type.pipeline-task-prior-backup");
-    case LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT:
-      return t("activity.type.pipeline-task-file-commit");
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
       return t("activity.type.pipeline-task-statement-update");
     case LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
@@ -116,15 +114,6 @@ export type ActivityPipelineTaskRunStatusUpdatePayload = {
   taskName: string;
 };
 
-export type ActivityTaskFileCommitPayload = {
-  taskId: TaskId;
-  vcsInstanceUrl: string;
-  repositoryFullPath: string;
-  branch: string;
-  filePath: string;
-  commitId: string;
-};
-
 export type ActivityTaskStatementUpdatePayload = {
   taskId: TaskId;
   oldStatement: string;
@@ -195,7 +184,6 @@ export type ActionPayloadType =
   | ActivityIssueFieldUpdatePayload
   | ActivityIssueStatusUpdatePayload
   | ActivityTaskStatusUpdatePayload
-  | ActivityTaskFileCommitPayload
   | ActivityTaskStatementUpdatePayload
   | ActivityTaskEarliestAllowedTimeUpdatePayload
   | ActivityMemberCreatePayload
