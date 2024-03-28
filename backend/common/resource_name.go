@@ -23,7 +23,6 @@ const (
 	SettingNamePrefix          = "settings/"
 	VCSProviderPrefix          = "vcsProviders/"
 	RiskPrefix                 = "risks/"
-	IssuePrefix                = "issues/"
 	RolloutPrefix              = "rollouts/"
 	StagePrefix                = "stages/"
 	TaskPrefix                 = "tasks/"
@@ -264,7 +263,7 @@ func GetRiskID(name string) (int64, error) {
 
 // GetProjectIDIssueID returns the project ID and issue ID from the issue name.
 func GetProjectIDIssueID(name string) (string, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssuePrefix)
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix)
 	if err != nil {
 		return "", "", err
 	}
@@ -273,7 +272,7 @@ func GetProjectIDIssueID(name string) (string, string, error) {
 
 // GetIssueID returns the issue ID from a resource name.
 func GetIssueID(name string) (int, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssuePrefix)
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix)
 	if err != nil {
 		return 0, err
 	}

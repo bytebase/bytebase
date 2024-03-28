@@ -1174,7 +1174,13 @@
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "preview": "Problema de vista previa",
     "missing-sql-statement": "Sentencia SQL faltante. Para aplicar este cambio a todas las tareas, haz clic en el botón '@:{'issue.apply-to-other-tasks'}'.",
-    "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas"
+    "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas",
+    "data-export": {
+      "options": "Opciones de exportación",
+      "format": "Formato",
+      "encrypt": "Cifrar",
+      "exported-file-downloaded": "Archivo exportado descargado"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",

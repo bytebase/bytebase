@@ -435,8 +435,12 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTas
 		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
 	}
 
+	taskRunsV1, err := convertToTaskRuns(ctx, s.store, s.stateCfg, taskRuns)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to task runs, error: %v", err)
+	}
 	return &v1pb.ListTaskRunsResponse{
-		TaskRuns:      convertToTaskRuns(s.stateCfg, taskRuns),
+		TaskRuns:      taskRunsV1,
 		NextPageToken: "",
 	}, nil
 }

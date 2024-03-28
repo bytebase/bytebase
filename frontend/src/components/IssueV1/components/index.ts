@@ -1,9 +1,11 @@
 import ActivitySection from "./ActivitySection";
 import BannerSection from "./BannerSection.vue";
+import DataExportSection from "./DataExportSection";
 import DescriptionSection from "./DescriptionSection";
 import HeaderSection from "./HeaderSection";
 import IssueSearch from "./IssueSearch";
 import PlanCheckSection from "./PlanCheckSection";
+import SQLCheckSection from "./SQLCheckSection";
 import Sidebar from "./Sidebar";
 import StageSection from "./StageSection";
 import StatementSection from "./StatementSection";
@@ -24,4 +26,6 @@ export {
   ActivitySection,
   IssueSearch,
   Sidebar,
+  SQLCheckSection,
+  DataExportSection,
 };

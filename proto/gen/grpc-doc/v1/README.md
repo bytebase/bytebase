@@ -478,6 +478,7 @@
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
     - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
+    - [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
   
     - [RolloutService](#bytebase-v1-RolloutService)
@@ -7704,6 +7705,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | execution_status_update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Last execution status update timestamp. |
 | execution_detail | [TaskRun.ExecutionDetail](#bytebase-v1-TaskRun-ExecutionDetail) |  |  |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| export_archive_status | [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus) |  |  |
 
 
 
@@ -7890,6 +7892,19 @@ Type is the database change type.
 | PRE_EXECUTING | 1 |  |
 | EXECUTING | 2 |  |
 | POST_EXECUTING | 3 |  |
+
+
+
+<a name="bytebase-v1-TaskRun-ExportArchiveStatus"></a>
+
+### TaskRun.ExportArchiveStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EXPORT_ARCHIVE_STATUS_UNSPECIFIED | 0 |  |
+| READY | 1 |  |
+| EXPORTED | 2 |  |
 
 
 

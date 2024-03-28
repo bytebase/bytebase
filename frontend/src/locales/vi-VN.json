@@ -1174,7 +1174,13 @@
     "some-tasks-are-not-executed-successfully": "(Một số tác vụ không được thực hiện thành công)",
     "preview": "Vấn đề xem trước",
     "missing-sql-statement": "Câu lệnh SQL không tồn tại. Để áp dụng thay đổi này cho tất cả các nhiệm vụ, nhấn vào nút '@:{'issue.apply-to-other-tasks'}'.",
-    "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công"
+    "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công",
+    "data-export": {
+      "options": "Tùy chọn xuất",
+      "format": "Định dạng",
+      "encrypt": "Mã hóa",
+      "exported-file-downloaded": "Tệp đã xuất đã được tải xuống"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Dự án này đã kích hoạt tính năng kiểm soát phiên bản dựa trên VCS và việc chọn cơ sở dữ liệu bên dưới sẽ điều hướng bạn đến kho lưu trữ Git tương ứng để bắt đầu quá trình thay đổi.",
