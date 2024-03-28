@@ -861,7 +861,6 @@
       "issue-status-update": "Cập nhật trạng thái sự cố",
       "pipeline-stage-status-update": "Cập nhật trạng thái giai đoạn vấn đề",
       "pipeline-task-status-update": "Cập nhật trạng thái nhiệm vụ sự cố",
-      "pipeline-task-file-commit": "Tệp cam kết",
       "pipeline-task-statement-update": "Cập nhật SQL",
       "pipeline-task-prior-backup": "Sao lưu dữ liệu trước",
       "member-create": "Tạo thành viên",

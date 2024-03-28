@@ -167,8 +167,6 @@ message LogEntity {
     ACTION_PIPELINE_STAGE_STATUS_UPDATE = 31;
     // ACTION_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now.
     ACTION_PIPELINE_TASK_STATUS_UPDATE = 32;
-    // ACTION_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement.
-    ACTION_PIPELINE_TASK_FILE_COMMIT = 33;
     // ACTION_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement.
     ACTION_PIPELINE_TASK_STATEMENT_UPDATE = 34;
     // ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time.

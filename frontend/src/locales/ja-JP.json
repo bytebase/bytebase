@@ -861,7 +861,6 @@
       "issue-status-update": "課題ステータスを更新する",
       "pipeline-stage-status-update": "課題ステージステータスを更新する",
       "pipeline-task-status-update": "課題タスクステータスを更新する",
-      "pipeline-task-file-commit": "ファイルをコミットする",
       "pipeline-task-statement-update": "SQLを更新する",
       "pipeline-task-prior-backup": "データをバックアップする",
       "member-create": "メンバーを作成する",

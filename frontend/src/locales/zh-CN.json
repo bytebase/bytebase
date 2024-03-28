@@ -861,7 +861,6 @@
       "issue-status-update": "更新工单状态",
       "pipeline-stage-status-update": "更新工单阶段状态",
       "pipeline-task-status-update": "更新工单任务状态",
-      "pipeline-task-file-commit": "提交文件",
       "pipeline-task-statement-update": "更新 SQL",
       "pipeline-task-prior-backup": "数据预前备份",
       "member-create": "创建成员",
