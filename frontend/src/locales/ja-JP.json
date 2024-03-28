@@ -2246,7 +2246,11 @@
     "next-row": "次の行",
     "copy-success": "コピーが成功しました",
     "missing-permission-to-load-db-metadata": "データベース {db} のメタデータをロードするために必要な権限がありません。",
-    "connect-in-new-tab": "新しいタブで接続する"
+    "connect-in-new-tab": "新しいタブで接続する",
+    "copy-name": "名前をコピーする",
+    "copy-select-statement": "SELECT ステートメントをコピーする",
+    "preview-table-data": "テーブルデータのプレビュー",
+    "view-table-detail": "テーブルの詳細を表示する"
   },
   "schema-editor": {
     "self": "スキーマエディター",

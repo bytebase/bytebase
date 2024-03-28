@@ -2246,7 +2246,11 @@
     "next-row": "Hàng tiếp theo",
     "copy-success": "Sao chép thành công",
     "missing-permission-to-load-db-metadata": "Thiếu quyền cần thiết để tải siêu dữ liệu của db {db}.",
-    "connect-in-new-tab": "Kết nối trong tab mới"
+    "connect-in-new-tab": "Kết nối trong tab mới",
+    "copy-name": "Sao chép tên",
+    "copy-select-statement": "Sao chép câu lệnh CHỌN",
+    "preview-table-data": "Xem trước dữ liệu bảng",
+    "view-table-detail": "Xem chi tiết bảng"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",

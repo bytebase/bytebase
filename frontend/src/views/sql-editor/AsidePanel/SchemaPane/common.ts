@@ -62,7 +62,7 @@ export type ErrorTarget = TextTarget<false, false> & {
   error?: unknown;
 };
 
-export type NodeTarget<T extends NodeType = any> = T extends "database"
+export type NodeTarget<T extends NodeType = NodeType> = T extends "database"
   ? RichDatabaseMetadata
   : T extends "schema"
     ? RichSchemaMetadata
@@ -84,12 +84,12 @@ export type NodeTarget<T extends NodeType = any> = T extends "database"
 
 export type TreeState = "UNSET" | "LOADING" | "READY";
 
-export type NodeMeta<T extends NodeType = any> = {
+export type NodeMeta<T extends NodeType = NodeType> = {
   type: T;
   target: NodeTarget<T>;
 };
 
-export type TreeNode<T extends NodeType = any> = TreeOption & {
+export type TreeNode<T extends NodeType = NodeType> = TreeOption & {
   key: string;
   meta: NodeMeta<T>;
   parent?: TreeNode;

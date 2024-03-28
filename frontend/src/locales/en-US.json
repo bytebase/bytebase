@@ -2246,7 +2246,11 @@
     "next-row": "Next row",
     "copy-success": "Copy success",
     "missing-permission-to-load-db-metadata": "Missing required permissions to load metadata of db {db}.",
-    "connect-in-new-tab": "Connect in new tab"
+    "connect-in-new-tab": "Connect in new tab",
+    "copy-name": "Copy name",
+    "copy-select-statement": "Copy SELECT statement",
+    "preview-table-data": "Preview table data",
+    "view-table-detail": "View table detail"
   },
   "schema-editor": {
     "self": "Schema Editor",

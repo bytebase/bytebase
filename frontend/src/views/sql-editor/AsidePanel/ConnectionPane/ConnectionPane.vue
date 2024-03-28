@@ -82,6 +82,7 @@ import {
 import type {
   ComposedDatabase,
   CoreSQLEditorTab,
+  Position,
   SQLEditorTabMode,
   SQLEditorTreeNode,
   SQLEditorTreeNodeTarget,
@@ -110,11 +111,6 @@ import SearchBox from "./SearchBox/index.vue";
 import useSearchHistory from "./SearchBox/useSearchHistory";
 import { Label } from "./TreeNode";
 import { provideHoverStateContext } from "./hover-state";
-
-type Position = {
-  x: number;
-  y: number;
-};
 
 type DropdownOptionWithTreeNode = DropdownOption & {
   onSelect: () => void;

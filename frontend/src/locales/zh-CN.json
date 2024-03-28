@@ -2246,7 +2246,11 @@
     "next-row": "下一行",
     "copy-success": "复制成功",
     "missing-permission-to-load-db-metadata": "缺少加载数据库 {db} 元数据所需的权限。",
-    "connect-in-new-tab": "在新选项卡中连接"
+    "connect-in-new-tab": "在新选项卡中连接",
+    "copy-name": "复制名称",
+    "copy-select-statement": "复制 SELECT 语句",
+    "preview-table-data": "预览表数据",
+    "view-table-detail": "查看表详情"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

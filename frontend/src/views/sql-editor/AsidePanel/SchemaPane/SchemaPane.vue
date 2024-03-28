@@ -6,6 +6,7 @@
       <li>[SchemaPane]typeof metadata: {{ typeof metadata }}</li>
       <li>[SchemaPane]typeof tree: {{ typeof tree }}</li>
       <li>[SchemaPane]treeContainerHeight: {{ treeContainerHeight }}</li>
+      <li>[SchemaPane]hoverNode?.meta.type: {{ hoverNode?.meta.type }}</li>
     </teleport>
 
     <div class="px-1">
@@ -32,26 +33,41 @@
         :render-label="renderLabel"
       />
     </div>
+
+    <NDropdown
+      v-if="!isFetchingMetadata"
+      placement="bottom-start"
+      trigger="manual"
+      :x="dropdownPosition.x"
+      :y="dropdownPosition.y"
+      :options="dropdownOptions"
+      :show="showDropdown"
+      :on-clickoutside="handleDropdownClickoutside"
+      @select="handleDropdownSelect"
+    />
   </div>
 </template>
 
 <script setup lang="tsx">
 import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
-import type { TreeOption } from "naive-ui";
-import { computed, ref } from "vue";
+import { NDropdown, type TreeOption } from "naive-ui";
+import { computed, nextTick, ref, watch } from "vue";
 import { SearchBox } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, type Position } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
+import { findAncestor } from "@/utils";
 import { Label } from "./TreeNode";
+import { useDropdown } from "./actions";
 import {
   type NodeTarget,
   type TreeNode,
   buildDatabaseSchemaTree,
 } from "./common";
+import { provideHoverStateContext } from "./hover-state";
 
 const mounted = useMounted();
 const treeContainerElRef = ref<HTMLElement>();
@@ -63,6 +79,19 @@ const { height: treeContainerHeight } = useElementSize(
   }
 );
 const searchPattern = ref("");
+const { node: hoverNode, update: updateHoverNode } = provideHoverStateContext();
+const hoverPanelPosition = ref<Position>({
+  x: 0,
+  y: 0,
+});
+const {
+  show: showDropdown,
+  context: dropdownContext,
+  position: dropdownPosition,
+  options: dropdownOptions,
+  handleSelect: handleDropdownSelect,
+  handleClickoutside: handleDropdownClickoutside,
+} = useDropdown();
 const { database } = useConnectionOfCurrentSQLEditorTab();
 const isFetchingMetadata = ref(false);
 const metadata = computedAsync(
@@ -114,6 +143,45 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
       //   selectAllFromTableOrView(node);
       // }
     },
+    onmouseenter(e: MouseEvent) {
+      const { type } = node.meta;
+      if (type === "table" || type === "column" || type === "view") {
+        if (hoverNode.value) {
+          updateHoverNode(node, "before", 0 /* overrideDelay */);
+        } else {
+          updateHoverNode(node, "before");
+        }
+        nextTick().then(() => {
+          // Find the node element and put the database panel to the right corner
+          // of the node
+          const wrapper = findAncestor(e.target as HTMLElement, ".n-tree-node");
+          if (!wrapper) {
+            updateHoverNode(undefined, "after", 0 /* overrideDelay */);
+            return;
+          }
+          const bounding = wrapper.getBoundingClientRect();
+          hoverPanelPosition.value.x = bounding.right;
+          hoverPanelPosition.value.y = bounding.top;
+        });
+      }
+    },
+    onmouseleave() {
+      updateHoverNode(undefined, "after");
+    },
+    oncontextmenu(e: MouseEvent) {
+      e.preventDefault();
+      showDropdown.value = false;
+      if (node && node.key) {
+        dropdownContext.value = node;
+      }
+
+      nextTick().then(() => {
+        showDropdown.value = true;
+        dropdownPosition.value.x = e.clientX;
+        dropdownPosition.value.y = e.clientY;
+      });
+    },
+    // attrs below for trouble-shooting
     "data-node-meta-type": node.meta.type,
     "data-node-key": node.key,
   };
@@ -125,89 +193,10 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
   return <Label node={node} keyword={searchPattern.value} />;
 };
 
-// const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
-//   const { type, target } = (node as SQLEditorTreeNode<"table" | "view">).meta;
-//   const { database } = target;
-//   const { engine } = database.instanceEntity;
-//   const LIMIT = 50; // default pagesize of SQL Editor
-
-//   const language = languageOfEngineV1(engine);
-//   if (language === "redis") {
-//     return; // not supported
-//   }
-//   const schema = target.schema.name;
-//   const tableOrViewName =
-//     type === "table"
-//       ? (target as SQLEditorTreeNodeTarget<"table">).table.name
-//       : type === "view"
-//         ? (target as SQLEditorTreeNodeTarget<"view">).view.name
-//         : "";
-//   if (!tableOrViewName) {
-//     return;
-//   }
-
-//   const runQuery = async (statement: string) => {
-//     const tab: CoreSQLEditorTab = {
-//       connection: {
-//         instance: database.instance,
-//         database: database.name,
-//         schema,
-//         table: tableOrViewName,
-//       },
-//       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-//       sheet: "",
-//     };
-//     if (
-//       tabStore.currentTab &&
-//       (tabStore.currentTab.status === "NEW" || !tabStore.currentTab.sheet)
-//     ) {
-//       // If the current tab is "fresh new" or unsaved, update its connection directly.
-//       tabStore.updateCurrentTab({
-//         ...tab,
-//         title: suggestedTabTitleForSQLEditorConnection(tab.connection),
-//         status: "DIRTY",
-//         statement,
-//       });
-//     } else {
-//       // Otherwise select or add a new tab and set its connection
-//       tabStore.addTab(
-//         {
-//           ...tab,
-//           title: suggestedTabTitleForSQLEditorConnection(tab.connection),
-//           statement,
-//           status: "DIRTY",
-//         },
-//         /* beside */ true
-//       );
-//     }
-//     await nextTick();
-//     executeReadonly({
-//       statement,
-//       connection: { ...tab.connection },
-//       explain: false,
-//       engine: database.instanceEntity.engine,
-//     });
-//   };
-
-//   if (language === "javascript" && type === "table") {
-//     // mongodb
-//     const query = `db["${tableOrViewName}"].find().limit(${LIMIT});`;
-//     runQuery(query);
-//     return;
-//   }
-
-//   if (type === "table") {
-//     maybeSelectTable(node);
-//   }
-
-//   const query = generateSimpleSelectAllStatement(
-//     engine,
-//     schema,
-//     tableOrViewName,
-//     LIMIT
-//   );
-//   runQuery(query);
-// };
+watch(tree, () => {
+  showDropdown.value = false;
+  dropdownContext.value = undefined;
+});
 </script>
 
 <style lang="postcss" scoped>

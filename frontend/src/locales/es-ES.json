@@ -2246,7 +2246,11 @@
     "next-row": "siguiente fila",
     "copy-success": "Copiado al portapapeles",
     "missing-permission-to-load-db-metadata": "Faltan los permisos necesarios para cargar metadatos de db {db}.",
-    "connect-in-new-tab": "Conéctate en una nueva pestaña"
+    "connect-in-new-tab": "Conéctate en una nueva pestaña",
+    "copy-name": "Copiar nombre",
+    "copy-select-statement": "Copiar declaración SELECT",
+    "preview-table-data": "Vista previa de datos de la tabla",
+    "view-table-detail": "Ver detalle de la tabla"
   },
   "schema-editor": {
     "self": "Editor de esquema",
