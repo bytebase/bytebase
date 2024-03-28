@@ -119,6 +119,7 @@ export const sheetNameOfTaskV1 = (task: Task): string => {
     task.databaseCreate?.sheet ??
     task.databaseDataUpdate?.sheet ??
     task.databaseSchemaUpdate?.sheet ??
+    task.databaseDataExport?.sheet ??
     ""
   );
 };
@@ -130,6 +131,8 @@ export const setSheetNameForTask = (task: Task, sheetName: string) => {
     task.databaseDataUpdate.sheet = sheetName;
   } else if (task.databaseSchemaUpdate) {
     task.databaseSchemaUpdate.sheet = sheetName;
+  } else if (task.databaseDataExport) {
+    task.databaseDataExport.sheet = sheetName;
   }
 };
 

@@ -20,6 +20,9 @@ export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
   if (spec.changeDatabaseConfig !== undefined) {
     return true;
   }
+  if (spec.exportDataConfig !== undefined) {
+    return true;
+  }
   return false;
 };
 

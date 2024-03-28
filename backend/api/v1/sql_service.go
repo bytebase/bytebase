@@ -242,6 +242,10 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
+	// Prehandle the issue export.
+	if strings.Contains(request.Name, common.IssueNamePrefix) {
+		return s.DataExportIssueExport(ctx, request.Name)
+	}
 	// Prepare related message.
 	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
@@ -331,6 +335,58 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 
 	return &v1pb.ExportResponse{
 		Content: content,
+	}, nil
+}
+
+func (s *SQLService) DataExportIssueExport(ctx context.Context, issueName string) (*v1pb.ExportResponse, error) {
+	issueUID, err := common.GetIssueID(issueName)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get issue ID: %v", err)
+	}
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueUID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
+	}
+	if issue.PipelineUID == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "issue %s has no pipeline", issueName)
+	}
+	rollout, err := s.store.GetRollout(ctx, *issue.PipelineUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get rollout: %v", err)
+	}
+	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &rollout.ID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get tasks: %v", err)
+	}
+	if len(tasks) != 1 {
+		return nil, status.Errorf(codes.InvalidArgument, "issue %s has unmatched tasks", issueName)
+	}
+	task := tasks[0]
+	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{TaskUID: &task.ID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get task run: %v", err)
+	}
+	if len(taskRuns) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "issue %s has no task run", issueName)
+	}
+	taskRun := taskRuns[len(taskRuns)-1]
+	exportArchiveUID := int(taskRun.ResultProto.ExportArchiveUid)
+	if exportArchiveUID == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "issue %s has no export archive", issueName)
+	}
+	exportArchive, err := s.store.GetExportArchive(ctx, &store.FindExportArchiveMessage{UID: &exportArchiveUID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get export archive: %v", err)
+	}
+	if exportArchive == nil {
+		return nil, status.Errorf(codes.NotFound, "export archive %d not found", exportArchiveUID)
+	}
+	// Delete the export archive after it's fetched.
+	if err := s.store.DeleteExportArchive(ctx, exportArchiveUID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete export archive: %v", err)
+	}
+	return &v1pb.ExportResponse{
+		Content: exportArchive.Bytes,
 	}, nil
 }
 

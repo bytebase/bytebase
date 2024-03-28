@@ -143,7 +143,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	}
 
 	return true, &storepb.TaskRunResult{
-		Detail:           fmt.Sprintf("Exported successfully in %v", time.Duration(durationNs).String()),
+		Detail:           fmt.Sprintf("Data export succeeded within %v", time.Duration(durationNs).String()),
 		ExportArchiveUid: int32(exportArchive.UID),
 	}, nil
 }

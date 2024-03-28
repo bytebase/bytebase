@@ -2012,6 +2012,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TaskRun.ExportArchiveStatus"><span class="badge">E</span>TaskRun.ExportArchiveStatus</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TaskRun.Status"><span class="badge">E</span>TaskRun.Status</a>
                 </li>
               
@@ -21483,6 +21487,13 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>export_archive_status</td>
+                  <td><a href="#bytebase.v1.TaskRun.ExportArchiveStatus">TaskRun.ExportArchiveStatus</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -21980,6 +21991,35 @@ Format: projects/{project}/plans/{plan} </p></td>
               <tr>
                 <td>POST_EXECUTING</td>
                 <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.TaskRun.ExportArchiveStatus">TaskRun.ExportArchiveStatus</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>EXPORT_ARCHIVE_STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>READY</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EXPORTED</td>
+                <td>2</td>
                 <td><p></p></td>
               </tr>
             
@@ -25935,6 +25975,13 @@ to retrieve the next page of history. </p></td>
                 <td>Export</td>
                 <td>POST</td>
                 <td>/v1/{name=instances/*}:export</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>Export</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/issues/*}:export</td>
                 <td></td>
               </tr>
               

@@ -55,7 +55,7 @@ import {
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { activeTaskInRollout, isDatabaseRelatedIssue } from "@/utils";
+import { activeTaskInRollout, isDatabaseChangeRelatedIssue } from "@/utils";
 import {
   useIssueContext,
   isUnfinishedResolvedTask as checkUnfinishedResolvedTask,
@@ -86,7 +86,7 @@ const showSuccessBanner = computed(() => {
 
 const showPendingRollout = computed(() => {
   if (issue.value.status !== IssueStatus.OPEN) return false;
-  if (!isDatabaseRelatedIssue(issue.value)) {
+  if (!isDatabaseChangeRelatedIssue(issue.value)) {
     return false;
   }
 
@@ -96,7 +96,7 @@ const showPendingRollout = computed(() => {
 
 const showEarliestAllowedTimeBanner = computed(() => {
   if (issue.value.status !== IssueStatus.OPEN) return false;
-  if (!isDatabaseRelatedIssue(issue.value)) {
+  if (!isDatabaseChangeRelatedIssue(issue.value)) {
     return false;
   }
 

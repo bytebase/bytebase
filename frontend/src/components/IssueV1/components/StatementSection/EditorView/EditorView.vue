@@ -255,6 +255,8 @@ import {
   sheetNameOfTaskV1,
   useInstanceV1EditorLanguage,
   getStatementSize,
+  isDatabaseChangeRelatedIssue,
+  isDatabaseDataExportIssue,
 } from "@/utils";
 import { readFileAsync } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
@@ -681,7 +683,12 @@ const updateStatement = async (statement: string) => {
 
   for (let i = 0; i < specsToPatch.length; i++) {
     const spec = specsToPatch[i];
-    const config = spec.changeDatabaseConfig;
+    let config = undefined;
+    if (isDatabaseChangeRelatedIssue(issue.value)) {
+      config = spec.changeDatabaseConfig;
+    } else if (isDatabaseDataExportIssue(issue.value)) {
+      config = spec.exportDataConfig;
+    }
     if (!config) continue;
     config.sheet = createdSheet.name;
   }

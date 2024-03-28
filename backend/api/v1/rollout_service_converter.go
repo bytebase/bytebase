@@ -46,7 +46,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", plan.UID)
 	}
 	if issue != nil {
-		p.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssuePrefix, issue.UID)
+		p.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssueNamePrefix, issue.UID)
 	}
 	return p, nil
 }
@@ -419,34 +419,19 @@ func convertToPlanCheckRunResultStatus(status storepb.PlanCheckRunResult_Result_
 	return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
 }
 
-func convertToTaskRuns(stateCfg *state.State, taskRuns []*store.TaskRunMessage) []*v1pb.TaskRun {
+func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.State, taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
 	var taskRunsV1 []*v1pb.TaskRun
 	for _, taskRun := range taskRuns {
-		taskRunsV1 = append(taskRunsV1, convertToTaskRun(stateCfg, taskRun))
+		taskRunV1, err := convertToTaskRun(ctx, s, stateCfg, taskRun)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert task run")
+		}
+		taskRunsV1 = append(taskRunsV1, taskRunV1)
 	}
-	return taskRunsV1
+	return taskRunsV1, nil
 }
 
-func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
-	switch status {
-	case api.TaskRunUnknown:
-		return v1pb.TaskRun_STATUS_UNSPECIFIED
-	case api.TaskRunPending:
-		return v1pb.TaskRun_PENDING
-	case api.TaskRunRunning:
-		return v1pb.TaskRun_RUNNING
-	case api.TaskRunDone:
-		return v1pb.TaskRun_DONE
-	case api.TaskRunFailed:
-		return v1pb.TaskRun_FAILED
-	case api.TaskRunCanceled:
-		return v1pb.TaskRun_CANCELED
-	default:
-		return v1pb.TaskRun_STATUS_UNSPECIFIED
-	}
-}
-
-func convertToTaskRun(stateCfg *state.State, taskRun *store.TaskRunMessage) *v1pb.TaskRun {
+func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
 	t := &v1pb.TaskRun{
 		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
 		Uid:           fmt.Sprintf("%d", taskRun.ID),
@@ -483,7 +468,38 @@ func convertToTaskRun(stateCfg *state.State, taskRun *store.TaskRunMessage) *v1p
 		}
 	}
 
-	return t
+	if taskRun.ResultProto.ExportArchiveUid != 0 {
+		t.ExportArchiveStatus = v1pb.TaskRun_EXPORTED
+		exportArchiveUID := int(taskRun.ResultProto.ExportArchiveUid)
+		exportArchive, err := s.GetExportArchive(ctx, &store.FindExportArchiveMessage{UID: &exportArchiveUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get export archive")
+		}
+		if exportArchive != nil {
+			t.ExportArchiveStatus = v1pb.TaskRun_READY
+		}
+	}
+
+	return t, nil
+}
+
+func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
+	switch status {
+	case api.TaskRunUnknown:
+		return v1pb.TaskRun_STATUS_UNSPECIFIED
+	case api.TaskRunPending:
+		return v1pb.TaskRun_PENDING
+	case api.TaskRunRunning:
+		return v1pb.TaskRun_RUNNING
+	case api.TaskRunDone:
+		return v1pb.TaskRun_DONE
+	case api.TaskRunFailed:
+		return v1pb.TaskRun_FAILED
+	case api.TaskRunCanceled:
+		return v1pb.TaskRun_CANCELED
+	default:
+		return v1pb.TaskRun_STATUS_UNSPECIFIED
+	}
 }
 
 func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PipelineMessage) (*v1pb.Rollout, error) {
@@ -791,7 +807,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get rollback task %q", payload.RollbackFromTaskID)
 		}
-		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromIssue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.IssuePrefix, rollbackFromIssue.UID)
+		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromIssue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.IssueNamePrefix, rollbackFromIssue.UID)
 		v1pbTaskPayload.DatabaseDataUpdate.RollbackFromTask = fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, rollbackFromIssue.Project.ResourceID, common.RolloutPrefix, rollbackFromTask.PipelineID, common.StagePrefix, rollbackFromTask.StageID, common.TaskPrefix, rollbackFromTask.ID)
 	}
 

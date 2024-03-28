@@ -110,7 +110,7 @@ import type { ComposedIssue, ComposedProject } from "@/types";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import {
   activeTaskInRollout,
-  isDatabaseRelatedIssue,
+  isDatabaseChangeRelatedIssue,
   sizeToFit,
 } from "@/utils";
 import IssueStatusIcon from "../IssueV1/components/IssueStatusIcon.vue";
@@ -442,7 +442,7 @@ const onIssueSelect = (issue: ComposedIssue) => {
 
 const issueTaskStatus = (issue: ComposedIssue) => {
   // For grant request issue, we always show the status as "NOT_STARTED" as task status.
-  if (!isDatabaseRelatedIssue(issue)) {
+  if (!isDatabaseChangeRelatedIssue(issue)) {
     return Task_Status.NOT_STARTED;
   }
 

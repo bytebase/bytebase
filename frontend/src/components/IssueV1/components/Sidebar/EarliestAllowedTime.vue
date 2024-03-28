@@ -80,7 +80,7 @@ import {
 import {
   extractUserResourceName,
   hasProjectPermissionV2,
-  isDatabaseRelatedIssue,
+  isDatabaseChangeRelatedIssue,
 } from "@/utils";
 
 dayjs.extend(isSameOrAfter);
@@ -92,7 +92,7 @@ const isUpdating = ref(false);
 const showFeatureModal = ref(false);
 
 const shouldShowEarliestAllowedTime = computed(() => {
-  if (!isDatabaseRelatedIssue(issue.value)) {
+  if (!isDatabaseChangeRelatedIssue(issue.value)) {
     return false;
   }
   if (isDeploymentConfigChangeTaskV1(issue.value, selectedTask.value)) {
