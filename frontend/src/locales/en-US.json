@@ -861,7 +861,6 @@
       "issue-status-update": "Update issue status",
       "pipeline-stage-status-update": "Update issue stage status",
       "pipeline-task-status-update": "Update issue task status",
-      "pipeline-task-file-commit": "Commit file",
       "pipeline-task-statement-update": "SQL update",
       "pipeline-task-prior-backup": "Data prior backup",
       "member-create": "Create member",

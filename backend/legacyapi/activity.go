@@ -37,8 +37,6 @@ const (
 	ActivityPipelineTaskStatusUpdate ActivityType = "bb.pipeline.task.status.update"
 	// ActivityPipelineTaskRunStatusUpdate is the type for updating pipeline task run status.
 	ActivityPipelineTaskRunStatusUpdate ActivityType = "bb.pipeline.taskrun.status.update"
-	// ActivityPipelineTaskFileCommit is the type for committing pipeline task file.
-	ActivityPipelineTaskFileCommit ActivityType = "bb.pipeline.task.file.commit"
 	// ActivityPipelineTaskStatementUpdate is the type for updating pipeline task SQL statement.
 	ActivityPipelineTaskStatementUpdate ActivityType = "bb.pipeline.task.statement.update"
 	// ActivityPipelineTaskEarliestAllowedTimeUpdate is the type for updating pipeline task the earliest allowed time.
@@ -168,16 +166,6 @@ type ActivityPipelineTaskRunStatusUpdatePayload struct {
 	NewStatus TaskRunStatus `json:"newStatus,omitempty"`
 	IssueName string        `json:"issueName"`
 	TaskName  string        `json:"taskName"`
-}
-
-// ActivityPipelineTaskFileCommitPayload is the API message payloads for committing pipeline task files.
-type ActivityPipelineTaskFileCommitPayload struct {
-	TaskID             int    `json:"taskId"`
-	VCSInstanceURL     string `json:"vcsInstanceUrl,omitempty"`
-	RepositoryFullPath string `json:"repositoryFullPath,omitempty"`
-	Branch             string `json:"branch,omitempty"`
-	FilePath           string `json:"filePath,omitempty"`
-	CommitID           string `json:"commitId,omitempty"`
 }
 
 // ActivityPipelineTaskStatementUpdatePayload is the API message payloads for pipeline task statement updates.

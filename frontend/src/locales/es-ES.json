@@ -861,7 +861,6 @@
       "issue-status-update": "actualizar estado de la incidencia",
       "pipeline-stage-status-update": "actualizar estado de la etapa de la incidencia",
       "pipeline-task-status-update": "actualizar estado de la tarea de la incidencia",
-      "pipeline-task-file-commit": "commit al archivo",
       "pipeline-task-statement-update": "actualización SQL",
       "pipeline-task-prior-backup": "Respaldo Previo",
       "member-create": "crear miembro",

@@ -1517,8 +1517,6 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 			result = append(result, string(api.ActivityPipelineTaskStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
 			result = append(result, string(api.ActivityPipelineTaskRunStatusUpdate))
-		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT:
-			result = append(result, string(api.ActivityPipelineTaskFileCommit))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE:
 			result = append(result, string(api.ActivityPipelineTaskStatementUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
@@ -1572,8 +1570,6 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE)
 		case string(api.ActivityPipelineTaskRunStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE)
-		case string(api.ActivityPipelineTaskFileCommit):
-			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT)
 		case string(api.ActivityPipelineTaskStatementUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE)
 		case string(api.ActivityPipelineTaskEarliestAllowedTimeUpdate):
