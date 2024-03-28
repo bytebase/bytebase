@@ -23,6 +23,7 @@ import {
   pushNotification,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { Workflow } from "@/types/proto/v1/project_service";
 import { VCSConnector } from "@/types/proto/v1/vcs_connector_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
@@ -88,9 +89,11 @@ const onCancel = () => {
 
 const onDelete = () => {
   if (vcsConnectorList.value.length === 0) {
-    // refresh project
-    // TODO(ed): we can only update the frontend data, don't need to call API.
-    projectV1Store.fetchProjectByName(project.value.name);
+    // Update workflow type in local cache.
+    projectV1Store.updateProjectCache({
+      ...project.value,
+      workflow: Workflow.UI,
+    });
   }
 
   pushNotification({
