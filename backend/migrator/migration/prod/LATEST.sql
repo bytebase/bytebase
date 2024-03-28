@@ -815,46 +815,6 @@ CREATE INDEX idx_query_history_creator_id_created_ts_project_id ON query_history
 
 ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 
--- inbox table stores the inbox entry for the corresponding activity.
--- Unlike other tables, it doesn't have row_status/creator_id/created_ts/updater_id/updated_ts.
--- We design in this way because:
--- 1. The table may potentially contain a lot of rows (an issue activity will generate one inbox record per issue subscriber)
--- 2. Does not provide much value besides what's contained in the related activity record.
-CREATE TABLE inbox (
-    id SERIAL PRIMARY KEY,
-    receiver_id INTEGER NOT NULL REFERENCES principal (id),
-    activity_id INTEGER NOT NULL REFERENCES activity (id),
-    status TEXT NOT NULL CHECK (status IN ('UNREAD', 'READ'))
-);
-
-CREATE INDEX idx_inbox_receiver_id_activity_id ON inbox(receiver_id, activity_id);
-
-CREATE INDEX idx_inbox_receiver_id_status ON inbox(receiver_id, status);
-
-ALTER SEQUENCE inbox_id_seq RESTART WITH 101;
-
--- bookmark table stores the bookmark for the user
-CREATE TABLE bookmark (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    name TEXT NOT NULL,
-    link TEXT NOT NULL
-);
-
-CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON bookmark(creator_id, link);
-
-ALTER SEQUENCE bookmark_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_bookmark_updated_ts
-BEFORE
-UPDATE
-    ON bookmark FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- vcs table stores the version control provider config
 CREATE TABLE vcs (
     id SERIAL PRIMARY KEY,
