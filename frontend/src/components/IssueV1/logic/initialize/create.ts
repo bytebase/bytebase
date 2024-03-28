@@ -21,6 +21,7 @@ import {
   Plan,
   Plan_ChangeDatabaseConfig,
   Plan_ChangeDatabaseConfig_Type,
+  Plan_ExportDataConfig,
   Plan_Spec,
   Plan_Step,
   Rollout,
@@ -55,35 +56,23 @@ type CreateIssueParams = {
 };
 
 export const createIssueSkeleton = async (query: Record<string, string>) => {
-  const issue = emptyIssue();
-  const me = useCurrentUserV1();
-  issue.creator = `users/${me.value.email}`;
-  issue.creatorEntity = me.value;
-
   const project = await useProjectV1Store().getOrFetchProjectByUID(
     query.project
   );
-  issue.project = project.name;
-  issue.projectEntity = project;
-  issue.uid = nextUID();
-  issue.name = `${project.name}/issues/${issue.uid}`;
-  issue.title = query.name;
-  issue.type = Issue_Type.DATABASE_CHANGE;
-  issue.status = IssueStatus.OPEN;
-
   const databaseUIDList = (query.databaseList ?? "")
     .split(",")
     .filter((uid) => uid && uid !== String(UNKNOWN_ID));
   await prepareDatabaseList(databaseUIDList, project.uid);
-  const branch = query.branch || undefined;
 
   const params: CreateIssueParams = {
     databaseUIDList,
     project,
     query,
     initialSQL: extractInitialSQLListFromQuery(query),
-    branch,
+    branch: query.branch || undefined,
   };
+
+  const issue = await buildIssue(params);
 
   // Prepare params context for building plan.
   await prepareParamsContext(params);
@@ -108,6 +97,29 @@ const prepareParamsContext = async (params: CreateIssueParams) => {
   if (params.branch) {
     await useBranchStore().fetchBranchByName(params.branch);
   }
+};
+
+const buildIssue = async (params: CreateIssueParams) => {
+  const { project, query } = params;
+  const issue = emptyIssue();
+  const me = useCurrentUserV1();
+  issue.creator = `users/${me.value.email}`;
+  issue.creatorEntity = me.value;
+  issue.project = project.name;
+  issue.projectEntity = project;
+  issue.uid = nextUID();
+  issue.name = `${project.name}/issues/${issue.uid}`;
+  issue.title = query.name;
+  issue.status = IssueStatus.OPEN;
+
+  const template = query.template as TemplateType | undefined;
+  if (template === "bb.issue.database.data.export") {
+    issue.type = Issue_Type.DATABASE_DATA_EXPORT;
+  } else {
+    issue.type = Issue_Type.DATABASE_CHANGE;
+  }
+
+  return issue;
 };
 
 export const buildPlan = async (params: CreateIssueParams) => {
@@ -364,6 +376,12 @@ export const buildSpecForTarget = async (
     spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
       target,
       type: Plan_ChangeDatabaseConfig_Type.BASELINE,
+    });
+  }
+  if (template === "bb.issue.database.data.export") {
+    spec.exportDataConfig = Plan_ExportDataConfig.fromJSON({
+      target,
+      sheet,
     });
   }
 

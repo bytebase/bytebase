@@ -14,10 +14,6 @@ export const extractIssueUID = (name: string) => {
   return matches?.[1] ?? "";
 };
 
-export const isGrantRequestIssue = (issue: ComposedIssue): boolean => {
-  return issue.type === Issue_Type.GRANT_REQUEST;
-};
-
 export const flattenTaskV1List = (rollout: Rollout) => {
   return rollout.stages.flatMap((stage) => stage.tasks);
 };
@@ -26,7 +22,7 @@ export const flattenSpecList = (plan: Plan) => {
   return plan.steps.flatMap((step) => step.specs);
 };
 
-export const isDatabaseRelatedIssue = (issue: ComposedIssue): boolean => {
+export const isDatabaseChangeRelatedIssue = (issue: ComposedIssue): boolean => {
   return flattenTaskV1List(issue.rolloutEntity).some((task) => {
     const DATABASE_RELATED_TASK_TYPE_LIST = [
       Task_Type.DATABASE_CREATE,
@@ -39,4 +35,12 @@ export const isDatabaseRelatedIssue = (issue: ComposedIssue): boolean => {
     ];
     return DATABASE_RELATED_TASK_TYPE_LIST.includes(task.type);
   });
+};
+
+export const isGrantRequestIssue = (issue: ComposedIssue): boolean => {
+  return issue.type === Issue_Type.GRANT_REQUEST;
+};
+
+export const isDatabaseDataExportIssue = (issue: ComposedIssue): boolean => {
+  return issue.type === Issue_Type.DATABASE_DATA_EXPORT;
 };

@@ -10,7 +10,7 @@ import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import type { StageStatusTransition, TaskStatusTransition } from "@/utils";
 import {
-  isDatabaseRelatedIssue,
+  isDatabaseChangeRelatedIssue,
   flattenTaskV1List,
   isGrantRequestIssue,
   activeTaskInRollout,
@@ -60,7 +60,7 @@ export const calcApplicableIssueStatusTransitionList = (
       }
     }
 
-    if (isDatabaseRelatedIssue(issue)) {
+    if (isDatabaseChangeRelatedIssue(issue)) {
       const currentTask = activeTaskInRollout(issue.rolloutEntity);
       const flattenTaskList = flattenTaskV1List(issue.rolloutEntity);
       if (flattenTaskList.some((task) => task.status === Task_Status.RUNNING)) {

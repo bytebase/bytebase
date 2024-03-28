@@ -1174,7 +1174,13 @@
     "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
     "preview": "Preview issue",
     "missing-sql-statement": "SQL statement missing. To apply this change to all tasks, click the @:{'issue.apply-to-other-tasks'} button.",
-    "task-summary-tooltip": "{failed} task failed | {failed} tasks failed"
+    "task-summary-tooltip": "{failed} task failed | {failed} tasks failed",
+    "data-export": {
+      "options": "Options",
+      "format": "Format",
+      "encrypt": "Encrypt",
+      "exported-file-downloaded": "Exported file downloaded"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
