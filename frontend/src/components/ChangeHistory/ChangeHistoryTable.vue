@@ -89,12 +89,6 @@ const columnList = computed(() => {
       type: "selection",
       hide: props.mode !== "DATABASE",
       width: "2rem",
-      // cellProps: () => ({
-      //   onClick: (e) => {
-      //     // debugger;
-      //     // e.stopPropagation();
-      //   },
-      // }),
       disabled: (history) => {
         return !allowToSelectChangeHistory(history);
       },
