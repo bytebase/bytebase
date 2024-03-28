@@ -5,7 +5,10 @@
     size="small"
   />
   <tempalte v-if="isCreating && state.encryptEnabled">
-    <span class="textinfolabel pl-4 pr-2">{{ $t("common.password") }}</span>
+    <span class="textinfolabel pl-4 pr-2"
+      >{{ $t("common.password") }}
+      <RequiredStar />
+    </span>
     <NInput
       v-model:value="state.password"
       class="!w-auto"
@@ -20,6 +23,7 @@
 import { NSwitch, NInput } from "naive-ui";
 import { reactive, watch } from "vue";
 import { useIssueContext } from "@/components/IssueV1";
+import RequiredStar from "@/components/RequiredStar.vue";
 
 interface LocalState {
   encryptEnabled: boolean;

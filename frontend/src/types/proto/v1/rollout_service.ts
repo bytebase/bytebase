@@ -1042,6 +1042,7 @@ export interface TaskRun {
   executionStatusUpdateTime: Date | undefined;
   executionDetail: TaskRun_ExecutionDetail | undefined;
   startTime: Date | undefined;
+  exportArchiveStatus: TaskRun_ExportArchiveStatus;
 }
 
 export enum TaskRun_Status {
@@ -1141,6 +1142,45 @@ export function taskRun_ExecutionStatusToJSON(object: TaskRun_ExecutionStatus): 
     case TaskRun_ExecutionStatus.POST_EXECUTING:
       return "POST_EXECUTING";
     case TaskRun_ExecutionStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum TaskRun_ExportArchiveStatus {
+  EXPORT_ARCHIVE_STATUS_UNSPECIFIED = 0,
+  READY = 1,
+  EXPORTED = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function taskRun_ExportArchiveStatusFromJSON(object: any): TaskRun_ExportArchiveStatus {
+  switch (object) {
+    case 0:
+    case "EXPORT_ARCHIVE_STATUS_UNSPECIFIED":
+      return TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED;
+    case 1:
+    case "READY":
+      return TaskRun_ExportArchiveStatus.READY;
+    case 2:
+    case "EXPORTED":
+      return TaskRun_ExportArchiveStatus.EXPORTED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return TaskRun_ExportArchiveStatus.UNRECOGNIZED;
+  }
+}
+
+export function taskRun_ExportArchiveStatusToJSON(object: TaskRun_ExportArchiveStatus): string {
+  switch (object) {
+    case TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED:
+      return "EXPORT_ARCHIVE_STATUS_UNSPECIFIED";
+    case TaskRun_ExportArchiveStatus.READY:
+      return "READY";
+    case TaskRun_ExportArchiveStatus.EXPORTED:
+      return "EXPORTED";
+    case TaskRun_ExportArchiveStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -5606,6 +5646,7 @@ function createBaseTaskRun(): TaskRun {
     executionStatusUpdateTime: undefined,
     executionDetail: undefined,
     startTime: undefined,
+    exportArchiveStatus: 0,
   };
 }
 
@@ -5655,6 +5696,9 @@ export const TaskRun = {
     }
     if (message.startTime !== undefined) {
       Timestamp.encode(toTimestamp(message.startTime), writer.uint32(114).fork()).ldelim();
+    }
+    if (message.exportArchiveStatus !== 0) {
+      writer.uint32(128).int32(message.exportArchiveStatus);
     }
     return writer;
   },
@@ -5771,6 +5815,13 @@ export const TaskRun = {
 
           message.startTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 16:
+          if (tag !== 128) {
+            break;
+          }
+
+          message.exportArchiveStatus = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5801,6 +5852,9 @@ export const TaskRun = {
         ? TaskRun_ExecutionDetail.fromJSON(object.executionDetail)
         : undefined,
       startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
+      exportArchiveStatus: isSet(object.exportArchiveStatus)
+        ? taskRun_ExportArchiveStatusFromJSON(object.exportArchiveStatus)
+        : 0,
     };
   },
 
@@ -5851,6 +5905,9 @@ export const TaskRun = {
     if (message.startTime !== undefined) {
       obj.startTime = message.startTime.toISOString();
     }
+    if (message.exportArchiveStatus !== 0) {
+      obj.exportArchiveStatus = taskRun_ExportArchiveStatusToJSON(message.exportArchiveStatus);
+    }
     return obj;
   },
 
@@ -5876,6 +5933,7 @@ export const TaskRun = {
       ? TaskRun_ExecutionDetail.fromPartial(object.executionDetail)
       : undefined;
     message.startTime = object.startTime ?? undefined;
+    message.exportArchiveStatus = object.exportArchiveStatus ?? 0;
     return message;
   },
 };

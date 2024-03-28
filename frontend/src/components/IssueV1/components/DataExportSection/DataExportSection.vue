@@ -2,7 +2,7 @@
   <div class="w-full flex flex-col divide-y">
     <template v-if="stageList.length > 0">
       <div class="w-full flex flex-row items-center py-2 px-2 sm:px-4">
-        <span class="textlabel mr-4">Database</span>
+        <span class="textlabel mr-4">{{ $t("common.database") }}</span>
         <DatabaseInfo />
       </div>
       <div class="w-full py-2 px-2 sm:px-4">

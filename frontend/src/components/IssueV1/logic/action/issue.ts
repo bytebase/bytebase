@@ -8,6 +8,7 @@ import {
   flattenTaskV1List,
   hasProjectPermissionV2,
   isDatabaseChangeRelatedIssue,
+  isDatabaseDataExportIssue,
   isGrantRequestIssue,
 } from "@/utils";
 import { isTaskFinished } from "..";
@@ -41,7 +42,7 @@ export const getApplicableIssueStatusActionList = (
 ): IssueStatusAction[] => {
   const list = PossibleIssueStatusActionMap[issue.status];
   return list.filter((action) => {
-    if (isGrantRequestIssue(issue)) {
+    if (isGrantRequestIssue(issue) || isDatabaseDataExportIssue(issue)) {
       // Don't show RESOLVE or REOPEN for request granting issues.
       if (action === "RESOLVE" || action === "REOPEN") {
         return false;
