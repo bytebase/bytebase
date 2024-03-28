@@ -143,7 +143,7 @@ import {
   instanceV1HasReadonlyMode,
 } from "@/utils";
 import AccessDenied from "./AccessDenied.vue";
-import AsidePanel from "./AsidePanel/AsidePanel.vue";
+import AsidePanel from "./AsidePanel";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import ReadonlyModeNotSupported from "./ReadonlyModeNotSupported.vue";
 import ResultPanel from "./ResultPanel";

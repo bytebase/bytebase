@@ -27,7 +27,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useSQLEditorTreeStore } from "@/store";
 import type { SQLEditorTreeFactor as Factor } from "@/types";
-import { useSQLEditorContext } from "../../context";
+import { useSQLEditorContext } from "@/views/sql-editor/context";
 import FactorItem from "./FactorItem.vue";
 import FactorTags from "./FactorTags.vue";
 

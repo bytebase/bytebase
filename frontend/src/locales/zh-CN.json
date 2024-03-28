@@ -274,7 +274,8 @@
     "baseline": "基线",
     "project-member": "项目成员",
     "leave-without-saving": "不保存变动？",
-    "configure-now": "现在配置"
+    "configure-now": "现在配置",
+    "connection": "连接"
   },
   "error-page": {
     "go-back-home": "回到主页"

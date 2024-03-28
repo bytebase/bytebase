@@ -118,7 +118,7 @@ import {
   extractProjectResourceName,
   extractInstanceResourceName,
 } from "@/utils";
-import { useSQLEditorContext } from "../context";
+import { useSQLEditorContext } from "../../context";
 import DatabaseHoverPanel from "./DatabaseHoverPanel.vue";
 import GroupingBar from "./GroupingBar";
 import SearchBox from "./SearchBox/index.vue";

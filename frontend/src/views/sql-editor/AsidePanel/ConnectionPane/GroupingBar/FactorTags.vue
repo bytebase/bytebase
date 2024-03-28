@@ -15,7 +15,7 @@
 import { storeToRefs } from "pinia";
 import { useSQLEditorTreeStore } from "@/store";
 import type { StatefulSQLEditorTreeFactor as StatefulFactor } from "@/types";
-import { useSQLEditorContext } from "../../context";
+import { useSQLEditorContext } from "@/views/sql-editor/context";
 import FactorTag from "./FactorTag.vue";
 
 const treeStore = useSQLEditorTreeStore();

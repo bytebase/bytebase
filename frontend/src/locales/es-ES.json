@@ -274,7 +274,8 @@
     "baseline": "Base",
     "project-member": "Miembro del proyecto",
     "leave-without-saving": "¿Salir sin ahorrar?",
-    "configure-now": "Configurar ahora"
+    "configure-now": "Configurar ahora",
+    "connection": "Conexión"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

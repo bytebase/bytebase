@@ -274,7 +274,8 @@
     "baseline": "Đường cơ sở",
     "project-member": "Thành viên dự án",
     "leave-without-saving": "Rời đi mà không lưu?",
-    "configure-now": "Cấu hình ngay bây giờ"
+    "configure-now": "Cấu hình ngay bây giờ",
+    "connection": "Sự liên quan"
   },
   "error-page": {
     "go-back-home": "Trở về nhà"

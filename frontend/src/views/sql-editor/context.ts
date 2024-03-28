@@ -10,6 +10,8 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 
+export type AsidePanelTab = "CONNECTION" | "SCHEMA" | "WORKSHEET" | "HISTORY";
+
 type SQLEditorEvents = Emittery<{
   "save-sheet": { tab: SQLEditorTab; editTitle?: boolean };
   "alter-schema": {
@@ -33,6 +35,7 @@ export type SelectedDatabaseSchema = {
 };
 
 export type SQLEditorContext = {
+  asidePanelTab: Ref<AsidePanelTab>;
   showAIChatBox: Ref<boolean>;
   selectedDatabaseSchemaByDatabaseName: Ref<
     Map<string, SelectedDatabaseSchema>
@@ -54,6 +57,7 @@ export const useSQLEditorContext = () => {
 export const provideSQLEditorContext = () => {
   const editorStore = useSQLEditorStore();
   const context: SQLEditorContext = {
+    asidePanelTab: ref("WORKSHEET"),
     showAIChatBox: ref(false),
     selectedDatabaseSchemaByDatabaseName: ref(new Map()),
     events: new Emittery(),

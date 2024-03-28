@@ -274,7 +274,8 @@
     "baseline": "ベースライン",
     "project-member": "プロジェクトメンバー",
     "leave-without-saving": "保存せずに終了しますか?",
-    "configure-now": "今すぐ設定する"
+    "configure-now": "今すぐ設定する",
+    "connection": "繋がり"
   },
   "error-page": {
     "go-back-home": "ホームに戻る"
