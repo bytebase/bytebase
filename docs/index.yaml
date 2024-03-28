@@ -2,11 +2,11 @@ apiVersion: v1
 entries:
   bytebase:
   - apiVersion: v2
-    created: "2024-03-26T16:56:15.522719+08:00"
+    created: "2024-03-28T11:28:07.799798+08:00"
     description: Safe database schema change and version control for DevOps teams.
-    digest: 146d4dbf97c77e99f96c5cd78d392c74749554f69165ef267983aff154d0f432
+    digest: 07e164a75c313b5fbddb9a7c62c52e79e351fccae1a3a50a66e999386536bc5b
     home: https://bytebase.com/
-    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/public/images/logo-full.svg
+    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/public/images/logo.svg
     maintainers:
     - email: support@bytebase.com
       name: Bytebase
@@ -22,7 +22,7 @@ entries:
     description: Safe database schema change and version control for DevOps teams.
     digest: 5b8f271f7e851ef4b4d3844924fc5f2d4c7e0b6e61c5010abb3d4ab15218792b
     home: https://bytebase.com/
-    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/public/images/logo-full.svg
+    icon: https://raw.githubusercontent.com/bytebase/bytebase.com/main/public/images/logo.svg
     maintainers:
     - email: support@bytebase.com
       name: Bytebase
@@ -33,4 +33,4 @@ entries:
     urls:
     - bytebase-1.1.0.tgz
     version: 1.1.0
-generated: "2024-03-04T14:13:49.250043+08:00"
+generated: "2024-03-28T11:28:07.799397+08:00"
