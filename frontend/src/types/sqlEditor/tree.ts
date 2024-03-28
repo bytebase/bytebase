@@ -1,15 +1,7 @@
 import type { TreeOption } from "naive-ui";
-import type { RenderFunction } from "vue";
 import { t } from "@/plugins/i18n";
 import { useSQLEditorTreeStore } from "@/store";
 import { Engine } from "../proto/v1/common";
-import type {
-  ExternalTableMetadata,
-  SchemaMetadata,
-  TableMetadata,
-  TablePartitionMetadata,
-  ViewMetadata,
-} from "../proto/v1/database_service";
 import type { Environment } from "../proto/v1/environment_service";
 import type {
   ComposedDatabase,
@@ -33,57 +25,11 @@ export type SQLEditorTreeNodeType =
   | "instance"
   | "environment"
   | "database"
-  | "schema"
-  | "table"
-  | "external-table"
-  | "label"
-  | "view"
-  | "partition-table"
-  | "expandable-text" // Text nodes to display "Tables / Views / Functions / Triggers" etc.
-  | "dummy"; // Dummy nodes to display "<Empty>" etc.
+  | "label";
 
-export type RichSchemaMetadata = {
-  database: ComposedDatabase;
-  schema: SchemaMetadata;
-};
-export type RichTableMetadata = {
-  database: ComposedDatabase;
-  schema: SchemaMetadata;
-  table: TableMetadata;
-};
-export type RichExternalTableMetadata = {
-  database: ComposedDatabase;
-  schema: SchemaMetadata;
-  externalTable: ExternalTableMetadata;
-};
-export type RichPartitionTableMetadata = {
-  database: ComposedDatabase;
-  schema: SchemaMetadata;
-  table: TableMetadata;
-  parentPartition?: TablePartitionMetadata;
-  partition: TablePartitionMetadata;
-};
-export type RichViewMetadata = {
-  database: ComposedDatabase;
-  schema: SchemaMetadata;
-  view: ViewMetadata;
-};
-export type TextTarget<E extends boolean> = {
-  expandable: E;
-  id: string;
-  type: SQLEditorTreeNodeType;
-  text: string | (() => string);
-  render?: RenderFunction;
-  searchable?: boolean;
-};
 export type LabelTarget = {
   key: string;
   value: string;
-};
-export type DummyTarget = {
-  id: string;
-  type: SQLEditorTreeNodeType;
-  error?: unknown;
 };
 
 export type SQLEditorTreeNodeTarget<T extends SQLEditorTreeNodeType = any> =
@@ -95,23 +41,9 @@ export type SQLEditorTreeNodeTarget<T extends SQLEditorTreeNodeType = any> =
         ? Environment
         : T extends "database"
           ? ComposedDatabase
-          : T extends "schema"
-            ? RichSchemaMetadata
-            : T extends "table"
-              ? RichTableMetadata
-              : T extends "external-table"
-                ? RichExternalTableMetadata
-                : T extends "partition-table"
-                  ? RichPartitionTableMetadata
-                  : T extends "view"
-                    ? RichViewMetadata
-                    : T extends "label"
-                      ? LabelTarget
-                      : T extends "expandable-text"
-                        ? TextTarget<true>
-                        : T extends "dummy"
-                          ? DummyTarget
-                          : never;
+          : T extends "label"
+            ? LabelTarget
+            : never;
 
 export type SQLEditorTreeState = "UNSET" | "LOADING" | "READY";
 
@@ -140,25 +72,17 @@ export const isValidSQLEditorTreeFactor = (
 
 export const ExpandableTreeNodeTypes: readonly SQLEditorTreeNodeType[] = [
   "instance",
-  "database",
-  "schema",
   "environment",
   "project",
-  "table",
-  "external-table",
-  "partition-table",
-  "expandable-text",
   "label",
 ] as const;
 
 export const ConnectableTreeNodeTypes: readonly SQLEditorTreeNodeType[] = [
-  "instance",
   "database",
 ] as const;
 
 export const LeafTreeNodeTypes: readonly SQLEditorTreeNodeType[] = [
-  "view",
-  "dummy",
+  "database",
 ] as const;
 
 export const extractSQLEditorLabelFactor = (factor: string) => {

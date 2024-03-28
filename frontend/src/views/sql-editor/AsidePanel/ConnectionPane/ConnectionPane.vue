@@ -25,7 +25,6 @@
         :virtual-scroll="true"
         :theme-overrides="{ nodeHeight: '21px' }"
         :render-label="renderLabel"
-        @load="handleLoadSubTree"
       />
     </div>
 
@@ -56,7 +55,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useElementSize, useMounted, useClipboard } from "@vueuse/core";
+import { useElementSize, useMounted } from "@vueuse/core";
 import { head } from "lodash-es";
 import {
   NTree,
@@ -67,18 +66,13 @@ import {
 import { storeToRefs } from "pinia";
 import { ref, computed, nextTick, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import {
   useActuatorV1Store,
   useCurrentUserV1,
-  useDBSchemaV1Store,
   useDatabaseV1Store,
   useInstanceV1Store,
   useIsLoggedIn,
-  pushNotification,
   useSQLEditorTabStore,
   resolveOpeningDatabaseListFromSQLEditorTabList,
   useSQLEditorTreeStore,
@@ -89,7 +83,6 @@ import type {
   ComposedDatabase,
   ComposedInstance,
   CoreSQLEditorTab,
-  RichTableMetadata,
   SQLEditorTabMode,
   SQLEditorTreeNode,
   SQLEditorTreeNodeTarget,
@@ -102,7 +95,6 @@ import {
   UNKNOWN_ID,
   instanceOfSQLEditorTreeNode,
   isConnectableSQLEditorTreeNode,
-  languageOfEngineV1,
 } from "@/types";
 import {
   findAncestor,
@@ -111,12 +103,8 @@ import {
   instanceV1HasAlterSchema,
   instanceV1HasReadonlyMode,
   isDescendantOf,
-  generateSimpleSelectAllStatement,
   tryConnectToCoreSQLEditorTab,
   emptySQLEditorConnection,
-  suggestedTabTitleForSQLEditorConnection,
-  extractProjectResourceName,
-  extractInstanceResourceName,
 } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import DatabaseHoverPanel from "./DatabaseHoverPanel.vue";
@@ -124,7 +112,6 @@ import GroupingBar from "./GroupingBar";
 import SearchBox from "./SearchBox/index.vue";
 import useSearchHistory from "./SearchBox/useSearchHistory";
 import { Label } from "./TreeNode";
-import { fetchDatabaseSubTree } from "./common";
 import { provideHoverStateContext } from "./hover-state";
 
 type Position = {
@@ -137,18 +124,14 @@ type DropdownOptionWithTreeNode = DropdownOption & {
 };
 
 const { t } = useI18n();
-const router = useRouter();
 const { pageMode } = storeToRefs(useActuatorV1Store());
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useSQLEditorTabStore();
 const databaseStore = useDatabaseV1Store();
 const instanceStore = useInstanceV1Store();
-const dbSchemaV1Store = useDBSchemaV1Store();
 const isLoggedIn = useIsLoggedIn();
 const me = useCurrentUserV1();
-const { executeReadonly } = useExecuteSQL();
-const { selectedDatabaseSchemaByDatabaseName, events: editorEvents } =
-  useSQLEditorContext();
+const { events: editorEvents } = useSQLEditorContext();
 const searchHistory = useSearchHistory();
 const { node: hoverNode, update: updateHoverNode } = provideHoverStateContext();
 const hoverPanelPosition = ref<Position>({
@@ -225,41 +208,6 @@ const dropdownOptions = computed((): DropdownOptionWithTreeNode[] => {
             },
           });
         }
-      } else if (type === "table") {
-        const { database, schema, table } = target as RichTableMetadata;
-        items.push({
-          key: "copy-url",
-          label: t("sql-editor.copy-url"),
-          onSelect: () => {
-            const { copy, copied } = useClipboard({
-              source: computed(() => {
-                const route = router.resolve({
-                  name: SQL_EDITOR_DATABASE_MODULE,
-                  params: {
-                    project: extractProjectResourceName(database.project),
-                    instance: extractInstanceResourceName(database.instance),
-                    database: database.databaseName,
-                  },
-                  query: {
-                    table: table.name,
-                    schema: schema.name,
-                  },
-                });
-                return new URL(route.href, window.location.origin).href;
-              }),
-              legacy: true,
-            });
-            copy().then(() => {
-              if (copied.value) {
-                pushNotification({
-                  module: "bytebase",
-                  style: "INFO",
-                  title: t("common.copied"),
-                });
-              }
-            });
-          },
-        });
       }
     }
     return items;
@@ -277,35 +225,6 @@ const selectedKeys = computed(() => {
     const database = databaseStore.getDatabaseByName(connection.database);
     const node = head(treeStore.nodesByTarget("database", database));
     if (!node) return [];
-    const selected = selectedDatabaseSchemaByDatabaseName.value.get(
-      database.name
-    );
-    if (selected) {
-      const { schema, table, externalTable } = selected;
-      if (table) {
-        const tableNode = head(
-          treeStore.nodesByTarget("table", {
-            database,
-            schema,
-            table,
-          })
-        );
-        if (tableNode) {
-          return [tableNode.key];
-        }
-      } else if (externalTable) {
-        const externalTableNode = head(
-          treeStore.nodesByTarget("external-table", {
-            database,
-            schema,
-            externalTable,
-          })
-        );
-        if (externalTableNode) {
-          return [externalTableNode.key];
-        }
-      }
-    }
     return [node.key];
   } else if (connection.instance) {
     const instance = instanceStore.getInstanceByName(connection.instance);
@@ -420,171 +339,10 @@ const handleSelect = (key: string) => {
   }
   option.onSelect();
   showDropdown.value = false;
-  console.log("handleSelect", key);
 };
 
 const handleClickoutside = () => {
   showDropdown.value = false;
-  console.log("handleClickoutside");
-};
-
-const maybeSelectTable = async (node: SQLEditorTreeNode) => {
-  const target = node.meta.target as SQLEditorTreeNodeTarget<"table">;
-  const { database, schema, table } = target;
-  if (
-    !tabStore.currentTab ||
-    tabStore.currentTab.connection.database !== database.name
-  ) {
-    const coreTab: CoreSQLEditorTab = {
-      connection: {
-        instance: database.instance,
-        database: database.name,
-        schema: schema.name,
-        table: table.name,
-      },
-      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-      sheet: "",
-    };
-    tryConnectToCoreSQLEditorTab(coreTab);
-    await nextTick();
-  }
-
-  const tableMetadata = await dbSchemaV1Store.getOrFetchTableMetadata({
-    database: database.name,
-    schema: schema.name,
-    table: table.name,
-  });
-  const databaseMetadata = dbSchemaV1Store.getDatabaseMetadata(database.name);
-
-  selectedDatabaseSchemaByDatabaseName.value.set(database.name, {
-    db: database,
-    database: databaseMetadata,
-    schema,
-    table: tableMetadata,
-  });
-
-  if (tabStore.currentTab) {
-    tabStore.updateCurrentTab({
-      connection: {
-        ...tabStore.currentTab.connection,
-        schema: schema.name,
-        table: table.name,
-      },
-    });
-  }
-};
-
-const maybeSelectExternalTable = async (node: SQLEditorTreeNode) => {
-  const target = node.meta.target as SQLEditorTreeNodeTarget<"external-table">;
-  const { database, schema, externalTable } = target;
-
-  if (
-    !tabStore.currentTab ||
-    tabStore.currentTab.connection.database !== database.name
-  ) {
-    const coreTab: CoreSQLEditorTab = {
-      connection: {
-        instance: database.instance,
-        database: database.name,
-      },
-      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-      sheet: "",
-    };
-    tryConnectToCoreSQLEditorTab(coreTab);
-    await nextTick();
-  }
-
-  const databaseMetadata = dbSchemaV1Store.getDatabaseMetadata(database.name);
-  selectedDatabaseSchemaByDatabaseName.value.set(database.name, {
-    db: database,
-    database: databaseMetadata,
-    schema,
-    externalTable,
-  });
-};
-
-const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
-  const { type, target } = (node as SQLEditorTreeNode<"table" | "view">).meta;
-  const { database } = target;
-  const { engine } = database.instanceEntity;
-  const LIMIT = 50; // default pagesize of SQL Editor
-
-  const language = languageOfEngineV1(engine);
-  if (language === "redis") {
-    return; // not supported
-  }
-  const schema = target.schema.name;
-  const tableOrViewName =
-    type === "table"
-      ? (target as SQLEditorTreeNodeTarget<"table">).table.name
-      : type === "view"
-        ? (target as SQLEditorTreeNodeTarget<"view">).view.name
-        : "";
-  if (!tableOrViewName) {
-    return;
-  }
-
-  const runQuery = async (statement: string) => {
-    const tab: CoreSQLEditorTab = {
-      connection: {
-        instance: database.instance,
-        database: database.name,
-        schema,
-        table: tableOrViewName,
-      },
-      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-      sheet: "",
-    };
-    if (
-      tabStore.currentTab &&
-      (tabStore.currentTab.status === "NEW" || !tabStore.currentTab.sheet)
-    ) {
-      // If the current tab is "fresh new" or unsaved, update its connection directly.
-      tabStore.updateCurrentTab({
-        ...tab,
-        title: suggestedTabTitleForSQLEditorConnection(tab.connection),
-        status: "DIRTY",
-        statement,
-      });
-    } else {
-      // Otherwise select or add a new tab and set its connection
-      tabStore.addTab(
-        {
-          ...tab,
-          title: suggestedTabTitleForSQLEditorConnection(tab.connection),
-          statement,
-          status: "DIRTY",
-        },
-        /* beside */ true
-      );
-    }
-    await nextTick();
-    executeReadonly({
-      statement,
-      connection: { ...tab.connection },
-      explain: false,
-      engine: database.instanceEntity.engine,
-    });
-  };
-
-  if (language === "javascript" && type === "table") {
-    // mongodb
-    const query = `db["${tableOrViewName}"].find().limit(${LIMIT});`;
-    runQuery(query);
-    return;
-  }
-
-  if (type === "table") {
-    maybeSelectTable(node);
-  }
-
-  const query = generateSimpleSelectAllStatement(
-    engine,
-    schema,
-    tableOrViewName,
-    LIMIT
-  );
-  runQuery(query);
 };
 
 const nodeProps = ({ option }: { option: TreeOption }) => {
@@ -600,12 +358,6 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         if (type === "instance" || type === "database") {
           setConnection(node);
         }
-        if (type === "table" || type === "partition-table") {
-          maybeSelectTable(node);
-        }
-        if (type === "external-table") {
-          maybeSelectExternalTable(node);
-        }
 
         // If the search pattern is not empty, append the selected database name to
         // the search history.
@@ -620,14 +372,12 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
     onContextmenu(e: MouseEvent) {
       e.preventDefault();
       showDropdown.value = false;
-      console.log("onContextmenu", false);
       if (node && node.key) {
         dropdownContext.value = node;
       }
 
       nextTick().then(() => {
         showDropdown.value = true;
-        console.log("onContextmenu", true);
         dropdownPosition.value.x = e.clientX;
         dropdownPosition.value.y = e.clientY;
       });
@@ -656,11 +406,6 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
     onmouseleave() {
       updateHoverNode(undefined, "after");
     },
-    ondblclick() {
-      if (node.meta.type === "table" || node.meta.type === "view") {
-        selectAllFromTableOrView(node);
-      }
-    },
     // attrs below for trouble-shooting
     "data-node-meta-type": node.meta.type,
     "data-node-meta-id": idForSQLEditorTreeNodeTarget(
@@ -669,112 +414,6 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
     ),
     "data-node-key": node.key,
   };
-};
-
-const handleLoadSubTree = (option: TreeOption) => {
-  const node = option as any as SQLEditorTreeNode;
-  const { type } = node.meta;
-  if (type === "database") {
-    const request = fetchDatabaseSubTree(node);
-    request
-      .then(() => nextTick())
-      .then(() => {
-        if ((node.children?.length ?? 0) > 0) {
-          expandNode(node);
-          if (expandSchemaAndTableNodes(node)) {
-            // if a specified schema node is expanded we stop here
-            return;
-          }
-          // we expand the first schema node otherwise
-          expandFirstSchemaNode(node);
-        }
-      });
-    return request;
-  }
-  return Promise.resolve();
-};
-
-/**
- * returns true if successfully expanded, false if not expanded
- */
-const expandSchemaAndTableNodes = (
-  databaseNode: SQLEditorTreeNode<"database">
-): boolean => {
-  const tab = tabStore.currentTab;
-  if (!tab) {
-    return false;
-  }
-  const { database, schema, table } = tab.connection;
-  const db = databaseNode.meta.target;
-  if (db.name !== database) {
-    return false;
-  }
-  const schemaMetadata = dbSchemaV1Store.getSchemaByName(db.name, schema ?? "");
-  if (!schemaMetadata) {
-    return false;
-  }
-
-  const schemaNode = databaseNode.children?.find(
-    (
-      node: SQLEditorTreeNode
-    ): node is
-      | SQLEditorTreeNode<"schema">
-      | SQLEditorTreeNode<"expandable-text"> => {
-      if (node.meta.type === "schema") {
-        return (
-          (node.meta.target as SQLEditorTreeNodeTarget<"schema">).schema
-            .name === schemaMetadata.name
-        );
-      }
-      if (node.meta.type === "expandable-text") {
-        return schemaMetadata.name === "";
-      }
-      return false;
-    }
-  );
-
-  if (!schemaNode) {
-    return false;
-  }
-  expandNode(schemaNode);
-  if (schemaNode.meta.type === "schema") {
-    // a schema node contains a "Tables" `expandable-text` node
-    // so we should also expand the first child
-    expandNode(head(schemaNode.children));
-  }
-
-  if (!table) {
-    return true;
-  }
-  const tableMetadata = dbSchemaV1Store.getTableByName(db.name, table, schema);
-  if (!tableMetadata) {
-    return true;
-  }
-
-  const databaseMetadata = dbSchemaV1Store.getDatabaseMetadata(db.name);
-  selectedDatabaseSchemaByDatabaseName.value.set(db.name, {
-    db: db,
-    database: databaseMetadata,
-    schema: schemaMetadata,
-    table: tableMetadata,
-  });
-  return true;
-};
-
-/**
- * returns true if successfully expanded, false if not expanded
- */
-const expandFirstSchemaNode = (
-  databaseNode: SQLEditorTreeNode<"database">,
-  keys?: Set<string>
-) => {
-  const firstChild = head(databaseNode.children) as SQLEditorTreeNode;
-  expandNode(firstChild);
-  if (firstChild && firstChild.meta.type === "schema") {
-    // a schema node contains a "Tables" `expandable-text` node
-    // so we should also expand the first child
-    expandNode(head(firstChild.children));
-  }
 };
 
 // Open corresponding tree node when the connection changed.
