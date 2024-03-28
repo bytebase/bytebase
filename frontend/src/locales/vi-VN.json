@@ -2437,6 +2437,10 @@
       "instance-count-exceeds": "Số lượng phiên bản {count} vượt quá giới hạn {limit}"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "Đặt bí mật bên ngoài",
+        "desc": "Sử dụng Vault hoặc URL tùy chỉnh làm bí mật bên ngoài cho mật khẩu cơ sở dữ liệu."
+      },
       "bb-feature-task-schedule-time": {
         "title": "Đặt thời gian thực hiện nhiệm vụ",
         "desc": "Đặt thời gian lập lịch tác vụ cho phép bạn đặt thời gian cụ thể để thực hiện các tác vụ của mình."
