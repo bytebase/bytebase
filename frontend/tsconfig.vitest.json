@@ -7,6 +7,8 @@
 
     "verbatimModuleSyntax": true,
     "lib": ["WebWorker", "ES2022"],
-    "types": ["node", "jsdom", "unplugin-icons/types/vue", "vite/client"]
+    "types": ["node", "jsdom", "unplugin-icons/types/vue", "vite/client"],
+    "jsx": "preserve",
+    "jsxImportSource": "vue"
   }
 }

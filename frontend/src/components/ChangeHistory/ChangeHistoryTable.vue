@@ -1,133 +1,44 @@
 <template>
-  <BBTable
-    :column-list="columnList"
-    :section-data-source="historySectionList"
-    :compact-section="mode == 'DATABASE'"
-    :show-header="true"
-    :left-bordered="true"
-    :right-bordered="true"
-    data-label="bb-change-history-table"
-    @click-row="clickHistory"
+  <div
+    ref="containerRef"
+    class="overflow-x-hidden flex flex-col gap-y-4"
+    :data-width="containerWidth"
   >
-    <template #header>
-      <template v-if="mode == 'DATABASE'">
-        <BBTableHeaderCell class="w-12" :left-padding="4" @click.stop="">
-          <NCheckbox
-            v-if="historySectionList.length > 0"
-            v-bind="allSelectionState"
-            @update:checked="toggleAllChangeHistorySelection"
-          />
-        </BBTableHeaderCell>
-        <BBTableHeaderCell class="w-8" :title="columnList[1].title" />
-        <BBTableHeaderCell class="w-12" :title="columnList[2].title" />
-        <BBTableHeaderCell class="w-56" :title="columnList[3].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[4].title" />
-        <BBTableHeaderCell :title="columnList[5].title" />
-        <BBTableHeaderCell :title="columnList[6].title" />
-        <BBTableHeaderCell class="w-28" :title="columnList[7].title" />
-        <BBTableHeaderCell class="w-28" :title="columnList[8].title" />
-        <BBTableHeaderCell class="w-28" :title="columnList[9].title" />
-      </template>
-      <template v-else>
-        <BBTableHeaderCell
-          :left-padding="4"
-          class="w-8"
-          :title="columnList[0].title"
-        />
-        <BBTableHeaderCell class="w-56" :title="columnList[1].title" />
-        <BBTableHeaderCell class="w-16" :title="columnList[2].title" />
-        <BBTableHeaderCell :title="columnList[3].title" />
-        <BBTableHeaderCell class="w-28" :title="columnList[4].title" />
-        <BBTableHeaderCell class="w-28" :title="columnList[5].title" />
-        <BBTableHeaderCell class="w-28" :title="columnList[6].title" />
-      </template>
-    </template>
-    <template #body="{ rowData: history }: { rowData: ChangeHistory }">
-      <BBTableCell
-        v-if="mode == 'DATABASE'"
-        class="table-cell"
-        :left-padding="4"
-        @click.stop=""
-      >
-        <NCheckbox
-          :disabled="!allowToSelectChangeHistory(history)"
-          :checked="selectedChangeHistoryNameList?.includes(history.name)"
-          @update:checked="handleToggleChangeHistorySelected(history)"
-        />
-      </BBTableCell>
-      <BBTableCell :left-padding="mode !== 'DATABASE' ? 4 : undefined">
-        <ChangeHistoryStatusIcon class="mx-auto" :status="history.status" />
-      </BBTableCell>
-      <BBTableCell v-if="mode === 'DATABASE'">
-        <div class="flex items-center gap-x-1">
-          {{ getHistoryChangeType(history.type) }}
-          <GitIcon v-if="history.pushEvent" class="w-4 h-4 text-control" />
-        </div>
-      </BBTableCell>
-      <BBTableCell>
-        {{ history.version }}
-        <span
-          v-if="
-            history.type === ChangeHistory_Type.BASELINE ||
-            history.type === ChangeHistory_Type.BRANCH
-          "
-          class="textinfolabel"
-          >({{ changeHistory_TypeToJSON(history.type) }})</span
-        >
-      </BBTableCell>
-      <BBTableCell>
-        <template v-if="extractIssueUID(history.issue)">
-          <!--Short circuit the click event to prevent propagating to row click-->
-          <router-link
-            :to="{
-              name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-              params: {
-                projectId: extractProjectResourceName(history.issue),
-                issueSlug: extractIssueUID(history.issue),
-              },
-            }"
-            class="normal-link"
-            @click.stop=""
-            >{{ extractIssueUID(history.issue) }}
-          </router-link>
-        </template>
-      </BBTableCell>
-      <BBTableCell v-if="mode === 'DATABASE'">
-        <TextOverflowPopover
-          :content="
-            getAffectedTablesOfChangeHistory(history)
-              .map(getAffectedTableDisplayName)
-              .join(', ')
-          "
-          :max-length="100"
-          placement="bottom"
-        />
-      </BBTableCell>
-      <BBTableCell>
-        <TextOverflowPopover
-          :content="history.statement"
-          :max-length="100"
-          placement="bottom"
-        />
-      </BBTableCell>
-      <BBTableCell>
-        {{ humanizeDurationV1(history.executionDuration) }}
-      </BBTableCell>
-      <BBTableCell>
-        {{ humanizeDate(history.createTime) }}
-      </BBTableCell>
-      <BBTableCell>
-        {{ creatorOfChangeHistory(history)?.title }}
-      </BBTableCell>
-    </template>
-  </BBTable>
+    <div
+      v-for="(section, i) in historySectionList"
+      :key="i"
+      class="flex flex-col gap-y-1"
+    >
+      <h1 v-if="historySectionList.length > 1">
+        {{ section.title }}
+      </h1>
+      <NDataTable
+        :columns="columnList"
+        :data="section.list"
+        :row-key="(history: ChangeHistory) => history.name"
+        :striped="true"
+        :scroll-x="containerWidth - 2"
+        :scrollbar-props="{
+          trigger: 'none',
+        }"
+        :row-props="rowProps"
+        :checked-row-keys="selectedChangeHistoryNames"
+        row-class-name="cursor-pointer"
+        style="--n-td-padding: 0.375rem 0.5rem; --n-th-padding: 0.375rem 0.5rem"
+        @update:checked-row-keys="
+        (keys: string[]) => $emit('update:selected-change-history-names', keys)"
+      />
+    </div>
+  </div>
 </template>
 
-<script lang="ts" setup>
-import { NCheckbox } from "naive-ui";
-import { computed } from "vue";
+<script lang="tsx" setup>
+import { useElementSize } from "@vueuse/core";
+import { type DataTableColumn } from "naive-ui";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { RouterLink } from "vue-router";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
@@ -142,13 +53,16 @@ import {
 } from "@/types/proto/v1/database_service";
 import {
   extractIssueUID,
-  humanizeDate,
   extractUserResourceName,
   changeHistoryLink,
   getAffectedTablesOfChangeHistory,
   getHistoryChangeType,
   extractProjectResourceName,
+  humanizeDurationV1,
+  isDescendantOf,
 } from "@/utils";
+import GitIcon from "../GitIcon.vue";
+import HumanizeDate from "../misc/HumanizeDate.vue";
 import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
 
 type Mode = "DATABASE" | "PROJECT";
@@ -157,81 +71,191 @@ const props = defineProps<{
   mode?: Mode;
   databaseSectionList: ComposedDatabase[];
   historySectionList: BBTableSectionDataSource<ChangeHistory>[];
-  selectedChangeHistoryNameList?: string[];
+  selectedChangeHistoryNames?: string[];
 }>();
 
-const emit = defineEmits<{
-  (event: "update:selected", value: string[]): void;
+defineEmits<{
+  (event: "update:selected-change-history-names", value: string[]): void;
 }>();
 
+const containerRef = ref<HTMLDivElement>();
 const router = useRouter();
-
 const { t } = useI18n();
+const { width: containerWidth } = useElementSize(containerRef);
 
 const columnList = computed(() => {
-  if (props.mode === "DATABASE") {
-    return [
-      {
-        title: "",
+  const columns: (DataTableColumn<ChangeHistory> & { hide?: boolean })[] = [
+    {
+      type: "selection",
+      hide: props.mode !== "DATABASE",
+      width: "2rem",
+      disabled: (history) => {
+        return !allowToSelectChangeHistory(history);
       },
-      {
-        title: "",
+    },
+    {
+      key: "status",
+      width: "2rem",
+      render: (history) => {
+        return (
+          <ChangeHistoryStatusIcon class="mx-auto" status={history.status} />
+        );
       },
-      {
-        title: t("change-history.change-type"),
+    },
+    {
+      key: "type",
+      hide: props.mode !== "DATABASE",
+      title: t("change-history.change-type"),
+      width: "4rem",
+      render: (history) => {
+        return (
+          <div class="flex items-center gap-x-1">
+            {getHistoryChangeType(history.type)}
+            {history.pushEvent && <GitIcon class="w-4 h-4 text-control" />}
+          </div>
+        );
       },
-      {
-        title: t("common.version"),
+    },
+    {
+      key: "version",
+      title: t("common.version"),
+      width: "15rem",
+      resizable: true,
+      render: (history) => {
+        const historyType =
+          history.type === ChangeHistory_Type.BASELINE ||
+          history.type === ChangeHistory_Type.BRANCH ? (
+            <span class="textinfolabel">
+              ({changeHistory_TypeToJSON(history.type)})
+            </span>
+          ) : null;
+        return (
+          <>
+            <span>{history.version}</span>
+            {historyType}
+          </>
+        );
       },
-      {
-        title: t("common.issue"),
+    },
+    {
+      key: "issue",
+      title: t("common.issue"),
+      width: "5rem",
+      resizable: true,
+      render: (history) => {
+        const uid = extractIssueUID(history.issue);
+        if (!uid) return null;
+        return (
+          <RouterLink
+            to={{
+              name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+              params: {
+                projectId: extractProjectResourceName(history.issue),
+                issueSlug: extractIssueUID(history.issue),
+              },
+            }}
+            custom={true}
+          >
+            {{
+              default: ({ href }: { href: string }) => (
+                <a
+                  href={href}
+                  class="normal-link"
+                  onClick={(e: MouseEvent) => e.stopPropagation()}
+                >
+                  {uid}
+                </a>
+              ),
+            }}
+          </RouterLink>
+        );
       },
-      {
-        title: t("db.tables"),
+    },
+    {
+      key: "tables",
+      hide: props.mode !== "DATABASE",
+      title: t("db.tables"),
+      width: "15rem",
+      resizable: true,
+      ellipsis: true,
+      render: (history) => {
+        const tables = getAffectedTablesOfChangeHistory(history);
+        const content = tables.map(getAffectedTableDisplayName).join(", ");
+        return (
+          <TextOverflowPopover
+            content={content}
+            maxLength={100}
+            placement="bottom"
+            class="inline-flex items-center truncate max-w-full"
+          />
+        );
       },
-      {
-        title: "SQL",
+    },
+    {
+      key: "SQL",
+      title: "SQL",
+      resizable: true,
+      minWidth: "13rem",
+      ellipsis: true,
+      render: (history) => {
+        return (
+          <TextOverflowPopover
+            content={history.statement}
+            maxLength={100}
+            placement="bottom"
+            class="inline-flex items-center truncate max-w-full"
+          />
+        );
       },
-      {
-        title: t("common.duration"),
+    },
+    {
+      key: "duration",
+      title: t("common.duration"),
+      width: "7rem",
+      resizable: true,
+      ellipsis: true,
+      render: (history) => {
+        return humanizeDurationV1(history.executionDuration);
       },
-      {
-        title: t("common.created-at"),
+    },
+    {
+      key: "created",
+      title: t("common.created-at"),
+      width: "7rem",
+      resizable: true,
+      ellipsis: true,
+      render: (history) => {
+        return <HumanizeDate date={history.createTime} />;
       },
-      {
-        title: t("common.creator"),
+    },
+    {
+      key: "creator",
+      title: t("common.creator"),
+      width: "7rem",
+      resizable: true,
+      ellipsis: true,
+      render: (history) => {
+        return creatorOfChangeHistory(history)?.title;
       },
-    ];
-  } else if (props.mode === "PROJECT") {
-    return [
-      { title: "" },
-      {
-        title: t("common.version"),
-      },
-      {
-        title: t("common.issue"),
-      },
-      {
-        title: "SQL",
-      },
-      {
-        title: t("common.duration"),
-      },
-      {
-        title: t("common.created-at"),
-      },
-      {
-        title: t("common.creator"),
-      },
-    ];
-  } else {
-    return [];
-  }
+    },
+  ];
+  return columns.filter((col) => !col.hide);
 });
 
-const clickHistory = (section: number, row: number) => {
-  const history = props.historySectionList[section].list[row];
-  router.push(changeHistoryLink(history));
+const rowProps = (history: ChangeHistory) => {
+  return {
+    onClick: (e: MouseEvent) => {
+      if (isDescendantOf(e.target as HTMLElement, ".n-checkbox, a")) {
+        return;
+      }
+      const url = changeHistoryLink(history);
+      if (e.ctrlKey || e.metaKey) {
+        window.open(url, "_blank");
+      } else {
+        router.push(url);
+      }
+    },
+  };
 };
 
 const creatorOfChangeHistory = (history: ChangeHistory) => {
@@ -251,46 +275,6 @@ const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
   return name;
 };
 
-const allSelectionState = computed(() => {
-  const set = props.selectedChangeHistoryNameList || [];
-  const list = props.historySectionList
-    .map((t) => t.list)
-    .flat()
-    .filter(
-      (changeHistory) => allowToSelectChangeHistory(changeHistory) === true
-    );
-
-  const checked =
-    set.length > 0 &&
-    list.every((changeHistory) => set.includes(changeHistory.name));
-
-  const indeterminate =
-    !checked && list.some((changeHistory) => set.includes(changeHistory.name));
-
-  return {
-    checked,
-    indeterminate,
-  };
-});
-
-const toggleAllChangeHistorySelection = (): void => {
-  const list = props.historySectionList
-    .map((t) => t.list)
-    .flat()
-    .filter(
-      (changeHistory) => allowToSelectChangeHistory(changeHistory) === true
-    );
-
-  if (allSelectionState.value.checked === false) {
-    emit(
-      "update:selected",
-      list.map((i) => i.name)
-    );
-  } else {
-    emit("update:selected", []);
-  }
-};
-
 const allowToSelectChangeHistory = (history: ChangeHistory) => {
   return (
     history.status === ChangeHistory_Status.DONE &&
@@ -299,17 +283,5 @@ const allowToSelectChangeHistory = (history: ChangeHistory) => {
       history.type === ChangeHistory_Type.MIGRATE_SDL ||
       history.type === ChangeHistory_Type.DATA)
   );
-};
-
-const handleToggleChangeHistorySelected = (history: ChangeHistory) => {
-  const selected = props.selectedChangeHistoryNameList ?? [];
-  if (selected.includes(history.name)) {
-    emit(
-      "update:selected",
-      selected.filter((name) => name !== history.name)
-    );
-  } else {
-    emit("update:selected", [...selected, history.name]);
-  }
 };
 </script>
