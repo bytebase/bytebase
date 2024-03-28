@@ -19,6 +19,7 @@ export const logNamePrefix = "logs/";
 export const issueNamePrefix = "issues/";
 export const secretNamePrefix = "secrets/";
 export const branchNamePrefix = "branches/";
+export const ssoNamePrefix = "idps/";
 
 export const protectionRulesSuffix = "/protectionRules";
 
@@ -171,4 +172,9 @@ export const getVCSConnectorId = (
   }
 
   return { projectId: tokens[0], vcsConnectorId: tokens[1] };
+};
+
+export const getSSOId = (name: string) => {
+  const tokens = getNameParentTokens(name, [ssoNamePrefix]);
+  return tokens[0];
 };
