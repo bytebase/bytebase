@@ -2436,6 +2436,10 @@
       "instance-count-exceeds": "实例数量 {count} 超出了限制 {limit}"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "设置外部密钥",
+        "desc": "设置 Vault 或自定义 URL 作为数据库密码的外部密钥"
+      },
       "bb-feature-task-schedule-time": {
         "title": "设定任务执行时间",
         "desc": "「设定任务执行时间」可以将任务设定在特定时间执行"
