@@ -41,15 +41,13 @@
         class="mt-2 w-full"
         :placeholder="namePlaceholder"
       />
-      <div>
-        <ResourceIdField
-          v-model:value="config.resourceId"
-          class="max-w-full flex-nowrap"
-          resource-type="vcs-provider"
-          :resource-title="config.name"
-          :validate="validateResourceId"
-        />
-      </div>
+      <ResourceIdField
+        v-model:value="config.resourceId"
+        class="max-w-full flex-nowrap mt-4"
+        resource-type="vcs-provider"
+        :resource-title="config.name"
+        :validate="validateResourceId"
+      />
     </div>
     <div>
       <div class="mt-6 pt-6 border-t border-block-border textlabel">

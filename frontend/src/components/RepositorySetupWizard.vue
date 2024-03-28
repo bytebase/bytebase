@@ -174,7 +174,9 @@ const tryFinishSetup = async () => {
 };
 
 const cancel = () => {
-  // TODO(ed): processing
+  if (state.processing) {
+    return;
+  }
   emit("cancel");
 };
 

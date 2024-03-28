@@ -9,64 +9,105 @@
         {{ $t("project.webhook.add-a-webhook") }}
       </NButton>
     </div>
-    <!-- TODO(ed): use data table -->
-    <div v-if="projectWebhookList.length > 0" class="space-y-6">
-      <template
-        v-for="(projectWebhook, index) in projectWebhookList"
-        :key="index"
-      >
-        <ProjectWebhookCard :project-webhook="projectWebhook" />
-      </template>
-    </div>
-    <NoDataPlaceholder v-else>
-      <div class="text-center">
-        <h3 class="mt-2 text-sm font-medium text-main">
-          {{ $t("project.webhook.no-webhook.title") }}
-        </h3>
-        <p class="mt-1 text-sm text-control-light">
-          {{ $t("project.webhook.no-webhook.content") }}
-        </p>
-        <div v-if="allowEdit" class="mt-4">
-          <NButton
-            size="small"
-            type="primary"
-            @click.prevent="addProjectWebhook"
-          >
-            {{ $t("project.webhook.add-a-webhook") }}
-          </NButton>
-        </div>
-      </div>
-    </NoDataPlaceholder>
+    <NDataTable
+      :data="project.webhooks"
+      :columns="columnList"
+      :striped="true"
+      :bordered="true"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from "vue";
-import { computed } from "vue";
+import { NButton, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
+import { computed, h } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { PROJECT_V1_ROUTE_WEBHOOK_CREATE } from "@/router/dashboard/projectV1";
-import type { Project } from "@/types/proto/v1/project_service";
-import ProjectWebhookCard from "./ProjectWebhookCard.vue";
+import WebhookTypeIcon from "@/components/Project/WebhookTypeIcon.vue";
+import {
+  PROJECT_V1_ROUTE_WEBHOOK_CREATE,
+  PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
+} from "@/router/dashboard/projectV1";
+import { projectWebhookV1ActivityItemList } from "@/types";
+import type { Project, Webhook } from "@/types/proto/v1/project_service";
+import { activity_TypeToJSON } from "@/types/proto/v1/project_service";
+import { projectWebhookV1Slug } from "@/utils";
 
-const props = defineProps({
-  project: {
-    required: true,
-    type: Object as PropType<Project>,
-  },
-  allowEdit: {
-    default: true,
-    type: Boolean,
-  },
-});
+defineProps<{
+  project: Project;
+  allowEdit: boolean;
+}>();
 const router = useRouter();
-
-const projectWebhookList = computed(() => {
-  return props.project.webhooks;
-});
+const { t } = useI18n();
 
 const addProjectWebhook = () => {
   router.push({
     name: PROJECT_V1_ROUTE_WEBHOOK_CREATE,
   });
 };
+
+const columnList = computed((): DataTableColumn<Webhook>[] => {
+  return [
+    {
+      key: "title",
+      title: t("common.name"),
+      resizable: true,
+      render: (webhook) =>
+        h("div", { class: "flex items-center gap-x-1" }, [
+          h(WebhookTypeIcon, { type: webhook.type, class: "w-5 h-5" }),
+          webhook.title,
+        ]),
+    },
+    {
+      key: "url",
+      title: "URL",
+      resizable: true,
+      render: (webhook) => webhook.url,
+    },
+    {
+      key: "triggering",
+      title: t("project.webhook.triggering-activity"),
+      resizable: true,
+      render: (webhook) => {
+        const wellknownActivityItemList = projectWebhookV1ActivityItemList();
+        const list = webhook.notificationTypes.map((activity) => {
+          const item = wellknownActivityItemList.find(
+            (item) => item.activity === activity
+          );
+          if (item) {
+            return item.title;
+          }
+          return activity_TypeToJSON(activity);
+        });
+
+        return list.join(", ");
+      },
+    },
+    {
+      key: "view",
+      title: "",
+      render: (webhook) =>
+        h(
+          "div",
+          { class: "flex justify-end" },
+          h(
+            NButton,
+            {
+              size: "small",
+              onClick: () => {
+                router.push({
+                  name: PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
+                  params: {
+                    projectWebhookSlug: projectWebhookV1Slug(webhook),
+                  },
+                });
+              },
+            },
+            t("common.view")
+          )
+        ),
+    },
+  ];
+});
 </script>

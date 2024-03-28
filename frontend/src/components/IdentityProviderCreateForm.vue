@@ -29,6 +29,20 @@
           </NRadio>
         </NRadioGroup>
       </div>
+
+      <BBAttention
+        v-if="!externalUrl && redirectUrl"
+        class="mt-4 w-full border-none"
+        type="error"
+        :title="$t('banner.external-url')"
+        :description="$t('settings.general.workspace.external-url.description')"
+      >
+        <template #action>
+          <NButton type="primary" @click="configureSetting">
+            {{ $t("common.configure-now") }}
+          </NButton>
+        </template>
+      </BBAttention>
     </div>
 
     <!-- OAuth2 templates group -->
@@ -128,7 +142,9 @@
             {{ $t("settings.sso.form.redirect-url") }}
           </p>
           <div class="w-full relative break-all pr-8 text-sm">
-            {{ redirectUrl }}
+            <div class="bg-gray-100 p-1 border border-gray-300 rounded">
+              {{ redirectUrl }}
+            </div>
             <button
               tabindex="-1"
               class="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-control-light rounded hover:bg-gray-100"
@@ -370,7 +386,9 @@
             {{ $t("settings.sso.form.redirect-url") }}
           </p>
           <div class="w-full relative break-all pr-8 text-sm">
-            {{ redirectUrl }}
+            <div class="bg-gray-100 p-1 border border-gray-300 rounded">
+              {{ redirectUrl }}
+            </div>
             <button
               tabindex="-1"
               class="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-control-light rounded hover:bg-gray-100"
@@ -732,14 +750,19 @@
     <div
       class="mt-4 space-x-4 w-full flex flex-row justify-between items-center"
     >
+      <NButton
+        v-if="!isDeleted"
+        :disabled="!allowTestConnection"
+        @click="testConnection"
+      >
+        {{ $t("identity-provider.test-connection") }}
+      </NButton>
+    </div>
+
+    <div
+      class="mt-4 space-x-4 w-full flex flex-row justify-between items-center"
+    >
       <div class="space-x-4 flex flex-row justify-start items-center">
-        <NButton
-          v-if="!isDeleted"
-          :disabled="!allowTestConnection"
-          @click="testConnection"
-        >
-          {{ $t("identity-provider.test-connection") }}
-        </NButton>
         <template v-if="!isCreating">
           <BBButtonConfirm
             v-if="!isDeleted"
@@ -765,7 +788,7 @@
       </div>
       <div
         v-if="!isDeleted"
-        class="space-x-4 flex flex-row justify-end items-center"
+        class="space-x-3 flex flex-row justify-end items-center"
       >
         <template v-if="isCreating">
           <NButton @click="handleCancelButtonClick">
@@ -787,7 +810,7 @@
             {{ $t("common.discard-changes") }}
           </NButton>
           <NButton
-            class="primary"
+            type="primary"
             :disabled="!allowUpdate"
             @click="handleUpdateButtonClick"
           >
@@ -816,6 +839,7 @@ import { useRouter } from "vue-router";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { identityProviderClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SSO } from "@/router/dashboard/workspaceRoutes";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -864,6 +888,7 @@ const { t } = useI18n();
 const router = useRouter();
 const currentUser = useCurrentUserV1();
 const identityProviderStore = useIdentityProviderStore();
+
 const state = reactive<LocalState>({
   type: IdentityProviderType.OAUTH2,
 });
@@ -905,17 +930,25 @@ const identityProviderTypeList = computed(() => {
   ];
 });
 
+const configureSetting = () => {
+  router.push({
+    name: SETTING_ROUTE_WORKSPACE_GENERAL,
+  });
+};
+
+const externalUrl = computed(
+  () => useActuatorV1Store().serverInfo?.externalUrl ?? ""
+);
+
 const redirectUrl = computed(() => {
-  if (state.type === IdentityProviderType.OAUTH2) {
-    return `${
-      useActuatorV1Store().serverInfo?.externalUrl || window.origin
-    }/oauth/callback`;
-  } else if (state.type === IdentityProviderType.OIDC) {
-    return `${
-      useActuatorV1Store().serverInfo?.externalUrl || window.origin
-    }/oidc/callback`;
-  } else {
-    throw new Error(`identity provider type ${state.type} is invalid`);
+  const url = externalUrl.value || window.origin;
+  switch (state.type) {
+    case IdentityProviderType.OAUTH2:
+      return `${url}/oauth/callback`;
+    case IdentityProviderType.OIDC:
+      return `${url}/oidc/callback`;
+    default:
+      return "";
   }
 });
 

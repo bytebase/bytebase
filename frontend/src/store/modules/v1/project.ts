@@ -31,10 +31,14 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   });
 
   // Actions
+  const updateProjectCache = (project: ComposedProject) => {
+    projectMapByName.set(project.name, project);
+  };
+
   const upsertProjectMap = async (projectList: Project[]) => {
     const composedProjectList = await batchComposeProjectIamPolicy(projectList);
     composedProjectList.forEach((project) => {
-      projectMapByName.set(project.name, project);
+      updateProjectCache(project);
     });
   };
   const fetchProjectList = async (showDeleted = false) => {
@@ -145,6 +149,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     updateProject,
     archiveProject,
     restoreProject,
+    updateProjectCache,
   };
 });
 
