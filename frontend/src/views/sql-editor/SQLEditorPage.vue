@@ -51,28 +51,8 @@
             :dbl-click-splitter="false"
           >
             <Pane class="flex flex-row overflow-hidden">
-              <div class="h-full flex-1 overflow-hidden">
-                <Splitpanes
-                  vertical
-                  class="default-theme"
-                  :dbl-click-splitter="false"
-                >
-                  <Pane>
-                    <EditorPanel v-if="isDisconnected || allowReadonlyMode" />
-                    <ReadonlyModeNotSupported v-else />
-                  </Pane>
-                  <Pane
-                    v-if="showSecondarySidebar && windowWidth >= 1024"
-                    :size="25"
-                  >
-                    <SecondarySidebar />
-                  </Pane>
-                </Splitpanes>
-              </div>
-
-              <div v-if="windowWidth >= 1024" class="h-full border-l shrink-0">
-                <SecondaryGutterBar />
-              </div>
+              <EditorPanel v-if="isDisconnected || allowReadonlyMode" />
+              <ReadonlyModeNotSupported v-else />
             </Pane>
             <Pane
               v-if="!isDisconnected && allowReadonlyMode"
@@ -147,11 +127,6 @@ import AsidePanel from "./AsidePanel";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import ReadonlyModeNotSupported from "./ReadonlyModeNotSupported.vue";
 import ResultPanel from "./ResultPanel";
-import {
-  default as SecondarySidebar,
-  useSecondarySidebarContext,
-} from "./SecondarySidebar";
-import { SecondaryGutterBar } from "./SecondarySidebar";
 import { useSheetContext } from "./Sheet";
 import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";
@@ -177,7 +152,6 @@ const actuatorStore = useActuatorV1Store();
 const tabStore = useSQLEditorTabStore();
 const { events: editorEvents } = useSQLEditorContext();
 const { showPanel: showSheetPanel } = useSheetContext();
-const { show: showSecondarySidebar } = useSecondarySidebarContext();
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 const showQuickstart = computed(() => actuatorStore.pageMode === "BUNDLED");
@@ -263,10 +237,6 @@ useEmitteryEventListener(
 .splitpanes.default-theme .splitpanes__splitter:hover::before,
 .splitpanes.default-theme .splitpanes__splitter:hover::after {
   @apply bg-white opacity-100;
-}
-
-.secondary-sidebar-gutter .n-tabs-wrapper {
-  @apply pt-0;
 }
 </style>
 
