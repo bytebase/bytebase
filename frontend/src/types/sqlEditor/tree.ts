@@ -1,7 +1,6 @@
 import type { TreeOption } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import { useSQLEditorTreeStore } from "@/store";
-import { Engine } from "../proto/v1/common";
 import type { Environment } from "../proto/v1/environment_service";
 import type {
   ComposedDatabase,
@@ -120,16 +119,8 @@ export const isConnectableSQLEditorTreeNode = (
   if (node.disabled) {
     return false;
   }
-  const { type, target } = node.meta;
-  if (type === "database") {
-    return true;
-  }
-  if (type === "instance") {
-    const instance = target as ComposedInstance;
-    const { engine } = instance;
-    return engine === Engine.MYSQL || engine === Engine.TIDB;
-  }
-  return false;
+  const { type } = node.meta;
+  return type === "database";
 };
 
 export const instanceOfSQLEditorTreeNode = (node: SQLEditorTreeNode) => {

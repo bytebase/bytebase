@@ -116,9 +116,14 @@ export const isDisconnectedSQLEditorTab = (tab: SQLEditorTab) => {
 
 export const tryConnectToCoreSQLEditorTab = (
   tab: CoreSQLEditorTab,
-  overrideTitle = true
+  overrideTitle = true,
+  newTab = false
 ) => {
   const tabStore = useSQLEditorTabStore();
+  if (newTab) {
+    tabStore.addTab({}, true);
+  }
+
   const currentTab = tabStore.currentTab;
   if (currentTab) {
     if (isSimilarSQLEditorTab(tab, currentTab)) {

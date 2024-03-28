@@ -2245,7 +2245,8 @@
     "previous-row": "Hàng trước",
     "next-row": "Hàng tiếp theo",
     "copy-success": "Sao chép thành công",
-    "missing-permission-to-load-db-metadata": "Thiếu quyền cần thiết để tải siêu dữ liệu của db {db}."
+    "missing-permission-to-load-db-metadata": "Thiếu quyền cần thiết để tải siêu dữ liệu của db {db}.",
+    "connect-in-new-tab": "Kết nối trong tab mới"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",

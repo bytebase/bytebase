@@ -2245,7 +2245,8 @@
     "previous-row": "上一行",
     "next-row": "下一行",
     "copy-success": "复制成功",
-    "missing-permission-to-load-db-metadata": "缺少加载数据库 {db} 元数据所需的权限。"
+    "missing-permission-to-load-db-metadata": "缺少加载数据库 {db} 元数据所需的权限。",
+    "connect-in-new-tab": "在新选项卡中连接"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

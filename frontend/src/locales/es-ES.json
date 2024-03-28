@@ -2245,7 +2245,8 @@
     "previous-row": "Fila anterior",
     "next-row": "siguiente fila",
     "copy-success": "Copiado al portapapeles",
-    "missing-permission-to-load-db-metadata": "Faltan los permisos necesarios para cargar metadatos de db {db}."
+    "missing-permission-to-load-db-metadata": "Faltan los permisos necesarios para cargar metadatos de db {db}.",
+    "connect-in-new-tab": "Conéctate en una nueva pestaña"
   },
   "schema-editor": {
     "self": "Editor de esquema",

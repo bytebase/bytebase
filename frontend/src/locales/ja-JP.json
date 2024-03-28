@@ -2245,7 +2245,8 @@
     "previous-row": "前の行",
     "next-row": "次の行",
     "copy-success": "コピーが成功しました",
-    "missing-permission-to-load-db-metadata": "データベース {db} のメタデータをロードするために必要な権限がありません。"
+    "missing-permission-to-load-db-metadata": "データベース {db} のメタデータをロードするために必要な権限がありません。",
+    "connect-in-new-tab": "新しいタブで接続する"
   },
   "schema-editor": {
     "self": "スキーマエディター",

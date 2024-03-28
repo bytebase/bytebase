@@ -81,7 +81,6 @@ import {
 } from "@/store";
 import type {
   ComposedDatabase,
-  ComposedInstance,
   CoreSQLEditorTab,
   SQLEditorTabMode,
   SQLEditorTreeNode,
@@ -89,7 +88,6 @@ import type {
   SQLEditorTreeNodeType,
 } from "@/types";
 import {
-  ConnectableTreeNodeTypes,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   ExpandableTreeNodeTypes,
   UNKNOWN_ID,
@@ -99,7 +97,6 @@ import {
 import {
   findAncestor,
   hasWorkspacePermissionV2,
-  instanceV1AllowsCrossDatabaseQuery,
   instanceV1HasAlterSchema,
   instanceV1HasReadonlyMode,
   isDescendantOf,
@@ -181,6 +178,16 @@ const dropdownOptions = computed((): DropdownOptionWithTreeNode[] => {
           key: "connect",
           label: t("sql-editor.connect"),
           onSelect: () => setConnection(node),
+        });
+        items.push({
+          key: "connect-in-new-tab",
+          label: t("sql-editor.connect-in-new-tab"),
+          onSelect: () =>
+            setConnection(
+              node,
+              { sheet: "", mode: DEFAULT_SQL_EDITOR_TAB_MODE },
+              /* newTab */ true
+            ),
         });
       }
       if (allowAdmin.value) {
@@ -285,41 +292,29 @@ const allowAdmin = computed(() =>
 );
 
 const setConnection = (
-  node: SQLEditorTreeNode,
+  node: SQLEditorTreeNode<"database">,
   extra: { sheet: string; mode: SQLEditorTabMode } = {
     sheet: "",
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-  }
+  },
+  newTab = false
 ) => {
-  if (node) {
-    const { type } = node.meta;
-    if (!ConnectableTreeNodeTypes.includes(type)) {
-      return;
-    }
-    if (type === "instance") {
-      const instance = node.meta.target as ComposedInstance;
-      if (!instanceV1AllowsCrossDatabaseQuery(instance)) {
-        return;
-      }
-    }
-    const coreTab: CoreSQLEditorTab = {
-      connection: emptySQLEditorConnection(),
-      ...extra,
-    };
-    const conn = coreTab.connection;
-    // If selected item is instance node
-    if (type === "instance") {
-      const instance = node.meta.target as ComposedInstance;
-      conn.instance = instance.name;
-    }
-    // If selected item is database node
-    if (type === "database") {
-      const database = node.meta.target as ComposedDatabase;
-      conn.instance = database.instance;
-      conn.database = database.name;
-    }
-    tryConnectToCoreSQLEditorTab(coreTab);
+  if (!node) {
+    return;
   }
+  if (!isConnectableSQLEditorTreeNode(node)) {
+    // one more guard
+    return;
+  }
+  const coreTab: CoreSQLEditorTab = {
+    connection: emptySQLEditorConnection(),
+    ...extra,
+  };
+  const conn = coreTab.connection;
+  const database = node.meta.target as ComposedDatabase;
+  conn.instance = database.instance;
+  conn.database = database.name;
+  tryConnectToCoreSQLEditorTab(coreTab, /* overrideTitle */ true, newTab);
 };
 
 // dynamic render the highlight keywords
@@ -355,7 +350,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         const { type } = node.meta;
         // Check if clicked on the content part.
         // And ignore the fold/unfold arrow.
-        if (type === "instance" || type === "database") {
+        if (type === "database") {
           setConnection(node);
         }
 
