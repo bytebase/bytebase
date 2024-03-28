@@ -1,0 +1,11 @@
+[
+"Transfer_(index_topic_1 address Too index_topic_2 address ,uint256_ value)
+   “index_topic_1 address”
+“172c302165ba4bceadde8b486c95df70a6e7281432ae0268621f4fa07e9a1644”
+   “index_topic_2 address”
+“0x103534523984980140A657fec76b53A53AF8236b”
+ erc-20
+“String”=“true”
+   “uint256_value”
+     “25000000”
+]
