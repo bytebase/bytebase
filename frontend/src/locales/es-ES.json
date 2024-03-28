@@ -2437,6 +2437,10 @@
       "instance-count-exceeds": "El número de instancias {count} excedió el límite {limit}"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "Establecer secreto externo",
+        "desc": "Utilice Vault o una URL personalizada como secreto externo para la contraseña de la base de datos."
+      },
       "bb-feature-task-schedule-time": {
         "title": "Establecer horario de tareas",
         "desc": "Establecer horario de tareas te permite programar una hora específica para ejecutar tus tareas."

@@ -316,10 +316,11 @@
   </component>
 
   <FeatureModal
-    feature="bb.feature.read-replica-connection"
-    :open="showReadOnlyDataSourceFeatureModal"
+    v-if="missingFeature"
+    :feature="missingFeature"
+    :open="true"
     :instance="instance"
-    @cancel="showReadOnlyDataSourceFeatureModal = false"
+    @cancel="missingFeature = undefined"
   />
 
   <BBAlert
@@ -424,7 +425,6 @@ const cancel = () => {
 
 interface LocalState {
   editingDataSourceId: string | undefined;
-  showFeatureModal: boolean;
   isTestingConnection: boolean;
   isRequesting: boolean;
   showCreateInstanceWarningModal: boolean;
@@ -444,7 +444,6 @@ const state = reactive<LocalState>({
   editingDataSourceId: props.instance?.dataSources.find(
     (ds) => ds.type === DataSourceType.ADMIN
   )?.id,
-  showFeatureModal: false,
   isTestingConnection: false,
   isRequesting: false,
   showCreateInstanceWarningModal: false,
@@ -462,7 +461,7 @@ const {
   editingDataSource,
   readonlyDataSourceList,
   hasReadonlyReplicaFeature,
-  showReadOnlyDataSourceFeatureModal,
+  missingFeature,
 } = context;
 const {
   showDatabase,
@@ -738,6 +737,10 @@ const tryCreate = async () => {
   }
 };
 
+const hasExternalSecretFeature = computed(() =>
+  subscriptionStore.hasFeature("bb.feature.external-secret-manager")
+);
+
 // We will also create the database * denoting all databases
 // and its RW data source. The username, password is actually
 // stored in that data source object instead of in the instance self.
@@ -756,6 +759,11 @@ const doCreate = async () => {
     adminDataSource.value
   );
   instanceCreate.dataSources = [adminDataSourceCreate];
+
+  if (!checkExternalSecretFeature(instanceCreate)) {
+    missingFeature.value = "bb.feature.external-secret-manager";
+    return;
+  }
 
   state.isRequesting = true;
   try {
@@ -784,7 +792,11 @@ const doUpdate = async () => {
     return;
   }
   if (!checkRODataSourceFeature(instance)) {
-    showReadOnlyDataSourceFeatureModal.value = true;
+    missingFeature.value = "bb.feature.read-replica-connection";
+    return;
+  }
+  if (!checkExternalSecretFeature(instance)) {
+    missingFeature.value = "bb.feature.external-secret-manager";
     return;
   }
   // When clicking **Update** we may have more than one thing to do (if needed)
@@ -1106,6 +1118,16 @@ const extractDataSourceFromEdit = (
   }
 
   return ds;
+};
+
+const checkExternalSecretFeature = (instance: Instance) => {
+  if (hasExternalSecretFeature.value) {
+    return true;
+  }
+
+  return instance.dataSources.every((ds) => {
+    return !ds.externalSecret && !/^{{.+}}$/.test(ds.password);
+  });
 };
 
 const checkRODataSourceFeature = (instance: Instance) => {

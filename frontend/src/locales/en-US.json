@@ -2437,6 +2437,10 @@
       "instance-count-exceeds": "Instance count {count} exceeds the limit {limit}"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "Set external secret",
+        "desc": "Use Vault or a custom URL as the external secret for the database password."
+      },
       "bb-feature-task-schedule-time": {
         "title": "Set task schedule time",
         "desc": "Set task schedule time allows you to set a specific time to run your tasks."

@@ -2437,6 +2437,10 @@
       "instance-count-exceeds": "インスタンス数が制限{limit}を超えています"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "外部シークレットを設定する",
+        "desc": "データベース パスワードの外部シークレットとして Vault またはカスタム URL を使用します。"
+      },
       "bb-feature-task-schedule-time": {
         "title": "タスクスケジュール時間の設定",
         "desc": "タスクスケジュール時間の設定を使用すると、タスクを実行する特定の時間を設定できます。"
