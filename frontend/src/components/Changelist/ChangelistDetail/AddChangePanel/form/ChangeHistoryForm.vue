@@ -47,7 +47,6 @@
       :change-history-list="filteredChangeHistoryList"
       :is-fetching="state.isLoading"
       :keyword="state.keyword"
-      class="w-full"
       @click-item="state.detailChangeHistoryName = $event.name"
     />
 
