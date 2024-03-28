@@ -175,8 +175,6 @@ export enum LogEntity_Action {
   ACTION_PIPELINE_STAGE_STATUS_UPDATE = 31,
   /** ACTION_PIPELINE_TASK_STATUS_UPDATE - ACTION_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. */
   ACTION_PIPELINE_TASK_STATUS_UPDATE = 32,
-  /** ACTION_PIPELINE_TASK_FILE_COMMIT - ACTION_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. */
-  ACTION_PIPELINE_TASK_FILE_COMMIT = 33,
   /** ACTION_PIPELINE_TASK_STATEMENT_UPDATE - ACTION_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. */
   ACTION_PIPELINE_TASK_STATEMENT_UPDATE = 34,
   /** ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE - ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. */
@@ -248,9 +246,6 @@ export function logEntity_ActionFromJSON(object: any): LogEntity_Action {
     case 32:
     case "ACTION_PIPELINE_TASK_STATUS_UPDATE":
       return LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE;
-    case 33:
-    case "ACTION_PIPELINE_TASK_FILE_COMMIT":
-      return LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT;
     case 34:
     case "ACTION_PIPELINE_TASK_STATEMENT_UPDATE":
       return LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE;
@@ -314,8 +309,6 @@ export function logEntity_ActionToJSON(object: LogEntity_Action): string {
       return "ACTION_PIPELINE_STAGE_STATUS_UPDATE";
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE:
       return "ACTION_PIPELINE_TASK_STATUS_UPDATE";
-    case LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT:
-      return "ACTION_PIPELINE_TASK_FILE_COMMIT";
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
       return "ACTION_PIPELINE_TASK_STATEMENT_UPDATE";
     case LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
