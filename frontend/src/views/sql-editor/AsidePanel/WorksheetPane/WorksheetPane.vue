@@ -2,7 +2,7 @@
   <NTabs
     v-model:value="sheetTab"
     size="small"
-    class="bb-sql-editor--sheet-tab-pane--tabs h-full px-1"
+    class="bb-sql-editor--sheet-tab-pane--tabs h-full"
     pane-style="height: calc(100% - 29px); padding: 0;"
     justify-content="start"
   >

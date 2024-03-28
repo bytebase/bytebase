@@ -23,7 +23,7 @@
       </NButton>
     </div>
     <div
-      class="flex-1 flex flex-col h-full overflow-y-auto sheet-tree"
+      class="flex-1 flex flex-col h-full overflow-y-auto sheet-tree px-1"
       @scroll="dropdown = undefined"
     >
       <NTree
