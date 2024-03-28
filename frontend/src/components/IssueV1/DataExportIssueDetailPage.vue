@@ -11,6 +11,7 @@
         class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden"
       >
         <DataExportSection />
+        <TaskRunSection v-if="!isCreating" />
         <SQLCheckSection v-if="isCreating" />
         <PlanCheckSection v-if="!isCreating" />
         <StatementSection />
@@ -83,6 +84,7 @@ import {
   TaskRolloutActionPanel,
   SQLCheckSection,
   DataExportSection,
+  TaskRunSection,
 } from "./components";
 import type {
   IssueReviewAction,
