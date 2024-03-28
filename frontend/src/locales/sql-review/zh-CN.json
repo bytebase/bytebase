@@ -378,7 +378,7 @@
     },
     "statement-add-check-not-valid": {
       "title": "强制添加 \"CHECK\" 约束时附带 \"NOT VALID\" 选项",
-      "description": "在 PostgreSQL 11 之前的版本中，添加 CHECK 约束将对已有数据进行校验并导致全表锁定无法读写，这可能导致业务中断。建议附带 \"NOT VALID\" 选项只对新数据进行校验，变更完成后再手动校验已有数据。在 PostgreSQL 11 及以上版本中该问题已得到优化，无需关注此规范。建议错误等级：警告"
+      "description": "添加 CHECK 约束将对已有数据进行校验并要求 ACCESS EXCLUSIVE 表锁，阻塞读写，这可能导致业务中断。建议附带 \"NOT VALID\" 选项只对新数据进行校验，变更完成后再手动校验已有数据。建议错误等级：警告"
     },
     "statement-disallow-add-not-null": {
       "title": "限制向已有列添加 \"NOT NULL\" 约束",
@@ -592,7 +592,7 @@
     },
     "statement-add-foreign-key-not-valid": {
       "title": "强制添加外键时附带 \"NOT VALID\" 选项",
-      "description": "添加外键会校验已有数据并导致全表锁定无法读写，这可能导致业务中断。建议附带 \"NOT VALID\" 选项只对新数据进行校验，变更完成后再校验已有数据。建议错误等级：警告"
+      "description": "添加外键会校验已有数据并要求 SHARE ROW EXCLUSIVE 表锁，阻塞写入，这可能导致业务中断。建议附带 \"NOT VALID\" 选项只对新数据进行校验，变更完成后再校验已有数据。建议错误等级：警告"
     },
     "statement-non-transactional": {
       "description": "",
