@@ -8,6 +8,7 @@ import {
   ref,
 } from "vue";
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
+import type { FeatureType } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
@@ -22,7 +23,7 @@ export type InstanceFormContext = {
   basicInfo: Ref<BasicInfo>;
   dataSourceEditState: Ref<DataSourceEditState>;
   hasReadonlyReplicaFeature: ComputedRef<boolean>;
-  showReadOnlyDataSourceFeatureModal: Ref<boolean>;
+  missingFeature: Ref<FeatureType | undefined>;
 
   // derived states
   adminDataSource: ComputedRef<EditDataSource>;
@@ -78,7 +79,7 @@ export const provideInstanceFormContext = (
     );
   });
 
-  const showReadOnlyDataSourceFeatureModal = ref(false);
+  const missingFeature = ref<FeatureType | undefined>(undefined);
 
   const context: InstanceFormContext = {
     ...baseContext,
@@ -91,7 +92,7 @@ export const provideInstanceFormContext = (
     readonlyDataSourceList,
     hasReadOnlyDataSource,
     hasReadonlyReplicaFeature,
-    showReadOnlyDataSourceFeatureModal,
+    missingFeature,
   };
   provide(KEY, context);
 
