@@ -378,7 +378,7 @@
     },
     "statement-add-check-not-valid": {
       "title": "Thực thi bao gồm tùy chọn \"KHÔNG CÓ GIÁ TRỊ\" khi thêm các ràng buộc \"KIỂM TRA\"",
-      "description": "Trước PostgreSQL 11, việc thêm ràng buộc CHECK cần phải xác minh dữ liệu hiện có và khóa bảng. Điều này chặn việc đọc và viết, có thể gây gián đoạn hoạt động kinh doanh. Bạn nên thêm tùy chọn \"KHÔNG CÓ GIÁ TRỊ\" để xác thực dữ liệu mới và xác thực dữ liệu hiện có theo cách thủ công sau khi thay đổi hoàn tất. Ở PostgreSQL 11 trở lên vấn đề này đã được tối ưu hóa nên không cần để ý đến quy tắc này. Mức độ lỗi đề xuất: Cảnh báo"
+      "description": "Việc thêm ràng buộc CHECK cần phải xác minh dữ liệu hiện có và yêu cầu khóa bảng ACCESS EXCLUSIVE. Điều này chặn việc đọc và viết, có thể gây gián đoạn hoạt động kinh doanh. Bạn nên thêm tùy chọn \"KHÔNG CÓ GIÁ TRỊ\" để xác thực dữ liệu mới và xác thực dữ liệu hiện có theo cách thủ công sau khi thay đổi hoàn tất. Mức độ lỗi đề xuất: Cảnh báo"
     },
     "statement-disallow-add-not-null": {
       "title": "Hạn chế thêm ràng buộc \"NOT NULL\" vào các cột hiện có",
@@ -591,7 +591,7 @@
       }
     },
     "statement-add-foreign-key-not-valid": {
-      "description": "Việc thêm khóa ngoại cần xác minh dữ liệu hiện có và khóa bảng. \nĐiều này chặn việc đọc và viết, có thể gây gián đoạn hoạt động kinh doanh. \nBạn nên thêm tùy chọn \"KHÔNG CÓ GIÁ TRỊ\" để xác thực dữ liệu mới và xác thực dữ liệu hiện có sau khi thay đổi hoàn tất. \nMức độ lỗi đề xuất: Cảnh báo",
+      "description": "Việc thêm khóa ngoại cần xác minh dữ liệu hiện có và yêu cầu khóa bảng SHARE ROW EXCLUSIVE. \nKhối này ghi, có thể gây gián đoạn kinh doanh. \nBạn nên thêm tùy chọn \"KHÔNG CÓ GIÁ TRỊ\" để xác thực dữ liệu mới và xác thực dữ liệu hiện có sau khi thay đổi hoàn tất. \nMức độ lỗi đề xuất: Cảnh báo",
       "title": "Thực thi bao gồm tùy chọn \"KHÔNG CÓ GIÁ TRỊ\" khi thêm khóa ngoại"
     },
     "statement-non-transactional": {

@@ -10,7 +10,6 @@ import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/common.proto";
 import "v1/iam_policy.proto";
-import "v1/vcs_provider_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -111,22 +110,6 @@ service ProjectService {
       post: "/v1/{project=projects/*}:testWebhook"
       body: "*"
     };
-  }
-
-  rpc UpdateProjectGitOpsInfo(UpdateProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
-    option (google.api.http) = {
-      patch: "/v1/{project_gitops_info.name=projects/*/gitOpsInfo}"
-      body: "*"
-    };
-  }
-
-  rpc UnsetProjectGitOpsInfo(UnsetProjectGitOpsInfoRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=projects/*/gitOpsInfo}"};
-    option (google.api.method_signature) = "name";
-  }
-
-  rpc GetProjectGitOpsInfo(GetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
-    option (google.api.http) = {get: "/v1/{name=projects/*/gitOpsInfo}"};
   }
 
   rpc ListDatabaseGroups(ListDatabaseGroupsRequest) returns (ListDatabaseGroupsResponse) {
@@ -322,29 +305,6 @@ message GetDeploymentConfigRequest {
 
 message UpdateDeploymentConfigRequest {
   DeploymentConfig config = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message UpdateProjectGitOpsInfoRequest {
-  // The binding for the project and vcs provider.
-  ProjectGitOpsInfo project_gitops_info = 2 [(google.api.field_behavior) = REQUIRED];
-
-  // The mask of the fields to be updated.
-  google.protobuf.FieldMask update_mask = 3;
-
-  // If true, the gitops will be created if it does not exist.
-  bool allow_missing = 4;
-}
-
-message UnsetProjectGitOpsInfoRequest {
-  // The name of the GitOps info.
-  // Format: projects/{project}/gitOpsInfo
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message GetProjectGitOpsInfoRequest {
-  // The name of the GitOps info.
-  // Format: projects/{project}/gitOpsInfo
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Project {

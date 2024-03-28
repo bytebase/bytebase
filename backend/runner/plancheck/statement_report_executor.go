@@ -426,13 +426,11 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 
 		sqlType := mysqlparser.GetStatementType(stmts[0])
 		sqlTypeSet[sqlType] = struct{}{}
-		if !isDML(sqlType) {
-			resources, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, stmt.Text)
-			if err != nil {
-				slog.Error("failed to extract changed resources", slog.String("statement", stmt.Text), log.BBError(err))
-			} else {
-				changedResources = append(changedResources, resources...)
-			}
+		resources, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, stmt.Text)
+		if err != nil {
+			slog.Error("failed to extract changed resources", slog.String("statement", stmt.Text), log.BBError(err))
+		} else {
+			changedResources = append(changedResources, resources...)
 		}
 
 		affectedRows, err := base.GetAffectedRows(ctx, engine, stmts[0], buildGetRowsCountByQueryForMySQL(sqlDB, engine), buildGetTableDataSizeFuncForMySQL(dbMetadata))
@@ -461,15 +459,6 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 			},
 		},
 	}, nil
-}
-
-func isDML(tp string) bool {
-	switch tp {
-	case "REPLACE", "INSERT", "UPDATE", "DELETE":
-		return true
-	default:
-		return false
-	}
 }
 
 func convertToChangedResources(dbMetadata *model.DBSchema, resources []base.SchemaResource) *storepb.ChangedResources {

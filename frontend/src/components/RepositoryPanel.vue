@@ -1,20 +1,8 @@
 <template>
-  <div class="flex justify-between">
-    <div class="text-lg leading-6 font-medium text-main">
-      <i18n-t keypath="repository.gitops-status">
-        <template #status>
-          <span class="text-success"> {{ $t("common.enabled") }} </span>
-        </template>
-      </i18n-t>
-    </div>
-    <TroubleshootLink
-      url="https://www.bytebase.com/docs/vcs-integration/troubleshoot/?source=console"
-    />
-  </div>
   <div class="mt-2 textinfolabel">
     <i18n-t keypath="repository.gitops-description-file-path">
       <template #fullPath>
-        <a class="normal-link" :href="repository.webUrl" target="_blank">
+        <a class="normal-link" :href="vcsConnector.webUrl" target="_blank">
           {{ repositoryFormattedFullPath }}
         </a>
       </template>
@@ -32,28 +20,37 @@
         </span>
       </template>
     </i18n-t>
+    <span>&nbsp;</span>
+    <TroubleshootLink
+      url="https://www.bytebase.com/docs/vcs-integration/troubleshoot/?source=console"
+    />
   </div>
   <RepositoryForm
     class="mt-4"
     :allow-edit="allowEdit"
-    :vcs-type="vcs.type"
-    :vcs-name="vcs.title"
+    :vcs-type="vcsProvider.type"
+    :vcs-name="vcsProvider.title"
     :repository-info="repositoryInfo"
     :repository-config="state.repositoryConfig"
     :project="project"
-    @change-repository="$emit('change-repository')"
   />
-  <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">
+  <div
+    v-if="allowEdit || allowDelete"
+    class="mt-4 pt-4 flex border-t justify-between"
+  >
     <BBButtonConfirm
-      :style="'RESTORE'"
-      :button-text="$t('repository.restore-to-ui-workflow')"
+      v-if="allowDelete"
+      :style="'DELETE'"
+      :button-text="$t('project.gitops-connector.delete')"
       :require-confirm="true"
-      :ok-text="$t('common.restore')"
-      :confirm-title="$t('repository.restore-to-ui-workflow') + '?'"
-      :confirm-description="$t('repository.restore-ui-workflow-description')"
-      @confirm="() => restoreToUIWorkflowType(true)"
+      :ok-text="$t('common.delete')"
+      :confirm-title="$t('project.gitops-connector.delete') + '?'"
+      @confirm="deleteConnector"
     />
-    <div class="ml-3">
+    <div v-if="allowEdit" class="ml-3 flex items-center space-x-3">
+      <NButton @click.prevent="$emit('cancel')">
+        {{ $t("common.back") }}
+      </NButton>
       <NButton
         type="primary"
         :disabled="!allowUpdate"
@@ -72,19 +69,12 @@
 
 <script lang="ts" setup>
 import isEmpty from "lodash-es/isEmpty";
-import type { PropType } from "vue";
 import { computed, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import {
-  pushNotification,
-  useProjectV1Store,
-  useRepositoryV1Store,
-} from "@/store";
+import { useVCSV1Store, useVCSConnectorStore } from "@/store";
+import { getVCSConnectorId } from "@/store/modules/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
-import type {
-  ProjectGitOpsInfo,
-  VCSProvider,
-} from "@/types/proto/v1/vcs_provider_service";
+import { VCSConnector } from "@/types/proto/v1/vcs_connector_service";
+import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import type { ExternalRepositoryInfo, RepositoryConfig } from "../types";
 
@@ -94,55 +84,53 @@ interface LocalState {
   processing: boolean;
 }
 
-const props = defineProps({
-  project: {
-    required: true,
-    type: Object as PropType<Project>,
-  },
-  repository: {
-    required: true,
-    type: Object as PropType<ProjectGitOpsInfo>,
-  },
-  vcs: {
-    required: true,
-    type: Object as PropType<VCSProvider>,
-  },
-  allowEdit: {
-    default: true,
-    type: Boolean,
-  },
-});
-
-const emit = defineEmits<{
-  (event: "change-repository"): void;
-  (event: "restore"): void;
+const props = defineProps<{
+  project: Project;
+  vcsConnector: VCSConnector;
+  allowEdit: boolean;
+  allowDelete: boolean;
 }>();
 
-const { t } = useI18n();
-const repositoryV1Store = useRepositoryV1Store();
-const projectV1Store = useProjectV1Store();
+const emit = defineEmits<{
+  (event: "delete"): void;
+  (event: "update"): void;
+  (event: "cancel"): void;
+}>();
+
+const vcsV1Store = useVCSV1Store();
+const vcsConnectorStore = useVCSConnectorStore();
+
 const state = reactive<LocalState>({
   repositoryConfig: {
-    baseDirectory: props.repository.baseDirectory,
-    branch: props.repository.branch,
+    resourceId: "",
+    baseDirectory: "",
+    branch: "",
   },
   showFeatureModal: false,
   processing: false,
 });
 
 watch(
-  () => props.repository,
+  () => props.vcsConnector,
   (cur) => {
     state.repositoryConfig = {
+      resourceId: getVCSConnectorId(props.vcsConnector.name).vcsConnectorId,
       baseDirectory: cur.baseDirectory,
       branch: cur.branch,
     };
-  }
+  },
+  { deep: true, immediate: true }
+);
+
+const vcsProvider = computed(
+  () =>
+    vcsV1Store.getVCSByName(props.vcsConnector.vcsProvider) ??
+    VCSProvider.fromPartial({})
 );
 
 const repositoryFormattedFullPath = computed(() => {
-  const fullPath = props.repository.fullPath;
-  if (props.vcs.type !== VCSProvider_Type.AZURE_DEVOPS) {
+  const fullPath = props.vcsConnector.fullPath;
+  if (vcsProvider.value.type !== VCSProvider_Type.AZURE_DEVOPS) {
     return fullPath;
   }
   if (!fullPath.includes("@dev.azure.com")) {
@@ -153,10 +141,10 @@ const repositoryFormattedFullPath = computed(() => {
 
 const repositoryInfo = computed((): ExternalRepositoryInfo => {
   return {
-    externalId: props.repository.externalId,
-    name: props.repository.name,
-    fullPath: props.repository.fullPath,
-    webUrl: props.repository.webUrl,
+    externalId: props.vcsConnector.externalId,
+    name: props.vcsConnector.title,
+    fullPath: props.vcsConnector.fullPath,
+    webUrl: props.vcsConnector.webUrl,
   };
 });
 
@@ -164,28 +152,20 @@ const allowUpdate = computed(() => {
   return (
     !state.processing &&
     !isEmpty(state.repositoryConfig.branch) &&
-    (props.repository.branch !== state.repositoryConfig.branch ||
-      props.repository.baseDirectory !== state.repositoryConfig.baseDirectory)
+    (props.vcsConnector.branch !== state.repositoryConfig.branch ||
+      props.vcsConnector.baseDirectory !== state.repositoryConfig.baseDirectory)
   );
 });
 
-const restoreToUIWorkflowType = async (checkSQLReviewCI: boolean) => {
+const deleteConnector = async () => {
   if (state.processing) {
     return;
   }
   state.processing = true;
 
   try {
-    await repositoryV1Store.deleteRepository(props.project.name);
-    await projectV1Store.fetchProjectByName(props.project.name);
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("repository.restore-ui-workflow-success"),
-    });
-
-    emit("restore");
+    await vcsConnectorStore.deleteConnector(props.vcsConnector.name);
+    emit("delete");
   } finally {
     state.processing = false;
   }
@@ -197,28 +177,16 @@ const doUpdate = async () => {
   }
   state.processing = true;
 
-  const repositoryPatch: Partial<ProjectGitOpsInfo> = {};
-
-  repositoryPatch.vcs = props.vcs.name;
-
-  if (props.repository.branch != state.repositoryConfig.branch) {
-    repositoryPatch.branch = state.repositoryConfig.branch;
-  }
-  if (props.repository.baseDirectory != state.repositoryConfig.baseDirectory) {
-    repositoryPatch.baseDirectory = state.repositoryConfig.baseDirectory;
-  }
-
   try {
-    await repositoryV1Store.upsertRepository(
-      props.project.name,
-      repositoryPatch
+    await vcsConnectorStore.updateConnector(
+      VCSConnector.fromPartial({
+        ...props.vcsConnector,
+        branch: state.repositoryConfig.branch,
+        baseDirectory: state.repositoryConfig.baseDirectory,
+      }),
+      ["branch", "base_directory"]
     );
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("repository.update-gitops-config-success"),
-    });
+    emit("update");
   } finally {
     state.processing = false;
   }
