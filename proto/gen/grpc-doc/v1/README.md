@@ -478,6 +478,7 @@
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
     - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
+    - [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
   
     - [RolloutService](#bytebase-v1-RolloutService)
@@ -5152,7 +5153,6 @@ ACTION_ISSUE_CREATE is the type for creating a new issue. |
 | ACTION_ISSUE_APPROVAL_NOTIFY | 25 | ACTION_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
 | ACTION_PIPELINE_STAGE_STATUS_UPDATE | 31 | ACTION_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
 | ACTION_PIPELINE_TASK_STATUS_UPDATE | 32 | ACTION_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
-| ACTION_PIPELINE_TASK_FILE_COMMIT | 33 | ACTION_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. |
 | ACTION_PIPELINE_TASK_STATEMENT_UPDATE | 34 | ACTION_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. |
 | ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE | 35 | ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. |
 | ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE | 36 | ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
@@ -6483,7 +6483,6 @@ TYPE_ISSUE_CREATE represents creating an issue. |
 | TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
 | TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE | 6 | TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
 | TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 22 | TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
-| TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT | 7 | TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. |
 | TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE | 8 | TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. |
 | TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE | 9 | TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. |
 | TYPE_MEMBER_CREATE | 10 | Member related activity types.
@@ -7706,6 +7705,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | execution_status_update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Last execution status update timestamp. |
 | execution_detail | [TaskRun.ExecutionDetail](#bytebase-v1-TaskRun-ExecutionDetail) |  |  |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| export_archive_status | [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus) |  |  |
 
 
 
@@ -7892,6 +7892,19 @@ Type is the database change type.
 | PRE_EXECUTING | 1 |  |
 | EXECUTING | 2 |  |
 | POST_EXECUTING | 3 |  |
+
+
+
+<a name="bytebase-v1-TaskRun-ExportArchiveStatus"></a>
+
+### TaskRun.ExportArchiveStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EXPORT_ARCHIVE_STATUS_UNSPECIFIED | 0 |  |
+| READY | 1 |  |
+| EXPORTED | 2 |  |
 
 
 

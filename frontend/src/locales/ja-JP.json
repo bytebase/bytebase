@@ -861,7 +861,6 @@
       "issue-status-update": "課題ステータスを更新する",
       "pipeline-stage-status-update": "課題ステージステータスを更新する",
       "pipeline-task-status-update": "課題タスクステータスを更新する",
-      "pipeline-task-file-commit": "ファイルをコミットする",
       "pipeline-task-statement-update": "SQLを更新する",
       "pipeline-task-prior-backup": "データをバックアップする",
       "member-create": "メンバーを作成する",
@@ -1175,7 +1174,13 @@
     "some-tasks-are-not-executed-successfully": "（一部のタスクが正常に実行されていません）",
     "preview": "問題のプレビュー",
     "missing-sql-statement": "SQLステートメントが見つかりません。この変更をすべてのタスクに適用するには、「@:{'issue.apply-to-other-tasks'}」ボタンをクリックしてください。",
-    "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました"
+    "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました",
+    "data-export": {
+      "options": "エクスポートオプション",
+      "format": "フォーマット",
+      "encrypt": "暗号化",
+      "exported-file-downloaded": "エクスポートされたファイルがダウンロードされました"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "このプロジェクトはVCSベースのバージョン管理が有効になっており、以下のデータベースを選択すると、対応するGitリポジトリに移動して変更プロセスを開始できます。",

@@ -20,31 +20,38 @@ service SQLService {
       body: "*"
     };
   }
+
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
     option (google.api.http) = {get: "/v1/queryHistories:search"};
   }
+
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:export"
       additional_bindings {post: "/v1/{name=instances/*}:export"}
+      additional_bindings {post: "/v1/{name=projects/*/issues/*}:export"}
       body: "*"
     };
   }
+
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     option (google.api.http) = {get: "/v1:adminExecute"};
   }
+
   rpc DifferPreview(DifferPreviewRequest) returns (DifferPreviewResponse) {
     option (google.api.http) = {
       post: "/v1/sql/differPreview"
       body: "*"
     };
   }
+
   rpc Check(CheckRequest) returns (CheckResponse) {
     option (google.api.http) = {
       post: "/v1/sql/check"
       body: "*"
     };
   }
+
   rpc ParseMyBatisMapper(ParseMyBatisMapperRequest) returns (ParseMyBatisMapperResponse) {
     option (google.api.http) = {
       post: "/v1/sql/parseMyBatisMapper"
