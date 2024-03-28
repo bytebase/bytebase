@@ -2,15 +2,11 @@
 <template>
   <div class="relative w-full h-full flex flex-col justify-start items-start">
     <div class="w-full px-1">
-      <NInput
+      <SearchBox
         v-model:value="state.search"
         size="small"
         :placeholder="$t('sql-editor.search-history')"
-      >
-        <template #prefix>
-          <heroicons-outline:search class="h-5 w-5 text-gray-300" />
-        </template>
-      </NInput>
+      />
     </div>
     <div class="w-full flex flex-col justify-start items-start overflow-y-auto">
       <div
@@ -65,6 +61,7 @@ import { escape } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { SearchBox } from "@/components/v2";
 import {
   pushNotification,
   useSQLEditorQueryHistoryStore,

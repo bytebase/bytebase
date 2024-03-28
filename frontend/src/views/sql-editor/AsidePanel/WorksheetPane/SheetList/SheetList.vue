@@ -1,17 +1,13 @@
 <template>
   <div class="flex flex-col h-full py-1 gap-y-2">
     <div class="flex items-center gap-x-1 px-1 pt-1">
-      <NInput
+      <SearchBox
         v-model:value="keyword"
         size="small"
         :disabled="isLoading"
         :placeholder="$t('sheet.search-sheets')"
         :clearable="true"
-      >
-        <template #prefix>
-          <heroicons-outline:search class="h-5 w-5 text-gray-300" />
-        </template>
-      </NInput>
+      />
       <NButton
         quaternary
         style="--n-padding: 0 5px; --n-height: 28px"
@@ -68,7 +64,7 @@
 <script lang="ts" setup>
 import { orderBy, escape } from "lodash-es";
 import type { TreeOption } from "naive-ui";
-import { NButton, NInput, NTree, NEllipsis } from "naive-ui";
+import { NButton, NTree, NEllipsis } from "naive-ui";
 import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, onMounted, ref, watch, h } from "vue";
@@ -77,6 +73,7 @@ import {
   InstanceV1EngineIcon,
   ProjectV1Name,
   DatabaseV1Name,
+  SearchBox,
 } from "@/components/v2";
 import {
   useWorkSheetAndTabStore,
