@@ -2250,7 +2250,8 @@
     "copy-name": "复制名称",
     "copy-select-statement": "复制 SELECT 语句",
     "preview-table-data": "预览表数据",
-    "view-table-detail": "查看表详情"
+    "view-table-detail": "查看表详情",
+    "view-database-detail": "查看数据库详情"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

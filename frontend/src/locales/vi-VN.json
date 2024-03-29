@@ -2250,7 +2250,8 @@
     "copy-name": "Sao chép tên",
     "copy-select-statement": "Sao chép câu lệnh CHỌN",
     "preview-table-data": "Xem trước dữ liệu bảng",
-    "view-table-detail": "Xem chi tiết bảng"
+    "view-table-detail": "Xem chi tiết bảng",
+    "view-database-detail": "Xem chi tiết cơ sở dữ liệu"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",

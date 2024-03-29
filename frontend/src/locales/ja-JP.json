@@ -2250,7 +2250,8 @@
     "copy-name": "名前をコピーする",
     "copy-select-statement": "SELECT ステートメントをコピーする",
     "preview-table-data": "テーブルデータのプレビュー",
-    "view-table-detail": "テーブルの詳細を表示する"
+    "view-table-detail": "テーブルの詳細を表示する",
+    "view-database-detail": "データベースの詳細を表示する"
   },
   "schema-editor": {
     "self": "スキーマエディター",

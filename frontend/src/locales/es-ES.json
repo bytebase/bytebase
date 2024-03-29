@@ -2250,7 +2250,8 @@
     "copy-name": "Copiar nombre",
     "copy-select-statement": "Copiar declaración SELECT",
     "preview-table-data": "Vista previa de datos de la tabla",
-    "view-table-detail": "Ver detalle de la tabla"
+    "view-table-detail": "Ver detalle de la tabla",
+    "view-database-detail": "Ver detalle de la base de datos"
   },
   "schema-editor": {
     "self": "Editor de esquema",

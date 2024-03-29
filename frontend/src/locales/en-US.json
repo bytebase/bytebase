@@ -2250,7 +2250,8 @@
     "copy-name": "Copy name",
     "copy-select-statement": "Copy SELECT statement",
     "preview-table-data": "Preview table data",
-    "view-table-detail": "View table detail"
+    "view-table-detail": "View table detail",
+    "view-database-detail": "View database detail"
   },
   "schema-editor": {
     "self": "Schema Editor",

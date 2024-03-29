@@ -35,8 +35,8 @@
       :y="dropdownPosition.y"
       :options="dropdownOptions"
       :show="showDropdown"
-      :on-clickoutside="handleClickoutside"
-      @select="handleSelect"
+      :on-clickoutside="handleDropdownClickoutside"
+      @select="handleDropdownSelect"
     />
 
     <DatabaseHoverPanel :offset-x="4" :offset-y="4" :margin="4" />
@@ -52,19 +52,10 @@
 <script lang="ts" setup>
 import { useElementSize, useMounted } from "@vueuse/core";
 import { head } from "lodash-es";
-import {
-  NTree,
-  NDropdown,
-  type DropdownOption,
-  type TreeOption,
-} from "naive-ui";
-import { storeToRefs } from "pinia";
+import { NTree, NDropdown, type TreeOption } from "naive-ui";
 import { ref, computed, nextTick, watch, h } from "vue";
-import { useI18n } from "vue-i18n";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  useActuatorV1Store,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useInstanceV1Store,
   useIsLoggedIn,
@@ -76,29 +67,12 @@ import {
 } from "@/store";
 import type {
   ComposedDatabase,
-  CoreSQLEditorTab,
-  Position,
-  SQLEditorTabMode,
   SQLEditorTreeNode,
   SQLEditorTreeNodeTarget,
   SQLEditorTreeNodeType,
 } from "@/types";
-import {
-  DEFAULT_SQL_EDITOR_TAB_MODE,
-  ExpandableTreeNodeTypes,
-  UNKNOWN_ID,
-  instanceOfSQLEditorTreeNode,
-  isConnectableSQLEditorTreeNode,
-} from "@/types";
-import {
-  findAncestor,
-  hasWorkspacePermissionV2,
-  instanceV1HasAlterSchema,
-  instanceV1HasReadonlyMode,
-  isDescendantOf,
-  tryConnectToCoreSQLEditorTab,
-  emptySQLEditorConnection,
-} from "@/utils";
+import { ExpandableTreeNodeTypes, UNKNOWN_ID } from "@/types";
+import { findAncestor, isDescendantOf } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import {
   DatabaseHoverPanel,
@@ -108,19 +82,13 @@ import GroupingBar from "./GroupingBar";
 import SearchBox from "./SearchBox/index.vue";
 import useSearchHistory from "./SearchBox/useSearchHistory";
 import { Label } from "./TreeNode";
+import { setConnection, useDropdown } from "./actions";
 
-type DropdownOptionWithTreeNode = DropdownOption & {
-  onSelect: () => void;
-};
-
-const { t } = useI18n();
-const { pageMode } = storeToRefs(useActuatorV1Store());
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useSQLEditorTabStore();
 const databaseStore = useDatabaseV1Store();
 const instanceStore = useInstanceV1Store();
 const isLoggedIn = useIsLoggedIn();
-const me = useCurrentUserV1();
 const { events: editorEvents } = useSQLEditorContext();
 const searchHistory = useSearchHistory();
 const {
@@ -128,6 +96,14 @@ const {
   position: hoverPosition,
   update: updateHoverNode,
 } = provideHoverStateContext();
+const {
+  show: showDropdown,
+  context: dropdownContext,
+  position: dropdownPosition,
+  options: dropdownOptions,
+  handleSelect: handleDropdownSelect,
+  handleClickoutside: handleDropdownClickoutside,
+} = useDropdown();
 
 const mounted = useMounted();
 const treeContainerElRef = ref<HTMLElement>();
@@ -140,79 +116,6 @@ const { height: treeContainerHeight } = useElementSize(
 );
 const treeRef = ref<InstanceType<typeof NTree>>();
 const searchPattern = ref("");
-const showDropdown = ref(false);
-const dropdownPosition = ref<Position>({
-  x: 0,
-  y: 0,
-});
-const dropdownContext = ref<SQLEditorTreeNode>();
-
-const dropdownOptions = computed((): DropdownOptionWithTreeNode[] => {
-  const node = dropdownContext.value;
-  if (!node) {
-    return [];
-  }
-  const { type, target } = node.meta;
-  if (type === "project") {
-    return [];
-  } else {
-    // Don't show any context menu actions for disabled
-    // instances/databases
-    if (node.disabled) {
-      return [];
-    }
-
-    const items: DropdownOptionWithTreeNode[] = [];
-
-    if (isConnectableSQLEditorTreeNode(node)) {
-      const instance = instanceOfSQLEditorTreeNode(node);
-      if (instance && instanceV1HasReadonlyMode(instance)) {
-        items.push({
-          key: "connect",
-          label: t("sql-editor.connect"),
-          onSelect: () => setConnection(node),
-        });
-        items.push({
-          key: "connect-in-new-tab",
-          label: t("sql-editor.connect-in-new-tab"),
-          onSelect: () =>
-            setConnection(
-              node,
-              { sheet: "", mode: DEFAULT_SQL_EDITOR_TAB_MODE },
-              /* newTab */ true
-            ),
-        });
-      }
-      if (allowAdmin.value) {
-        items.push({
-          key: "connect-in-admin-mode",
-          label: t("sql-editor.connect-in-admin-mode"),
-          onSelect: () => setConnection(node, { sheet: "", mode: "ADMIN" }),
-        });
-      }
-    }
-    if (pageMode.value === "BUNDLED") {
-      if (type === "database") {
-        const database = target as ComposedDatabase;
-        if (instanceV1HasAlterSchema(database.instanceEntity)) {
-          items.push({
-            key: "alter-schema",
-            label: t("database.edit-schema"),
-            onSelect: () => {
-              const db = node.meta.target as ComposedDatabase;
-              editorEvents.emit("alter-schema", {
-                databaseUID: db.uid,
-                schema: "",
-                table: "",
-              });
-            },
-          });
-        }
-      }
-    }
-    return items;
-  }
-});
 
 // Highlight the current tab's connection node.
 const selectedKeys = computed(() => {
@@ -280,35 +183,6 @@ const expandNodesByType = <T extends SQLEditorTreeNodeType>(
 
   return nodes;
 };
-const allowAdmin = computed(() =>
-  hasWorkspacePermissionV2(me.value, "bb.instances.adminExecute")
-);
-
-const setConnection = (
-  node: SQLEditorTreeNode<"database">,
-  extra: { sheet: string; mode: SQLEditorTabMode } = {
-    sheet: "",
-    mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-  },
-  newTab = false
-) => {
-  if (!node) {
-    return;
-  }
-  if (!isConnectableSQLEditorTreeNode(node)) {
-    // one more guard
-    return;
-  }
-  const coreTab: CoreSQLEditorTab = {
-    connection: emptySQLEditorConnection(),
-    ...extra,
-  };
-  const conn = coreTab.connection;
-  const database = node.meta.target as ComposedDatabase;
-  conn.instance = database.instance;
-  conn.database = database.name;
-  tryConnectToCoreSQLEditorTab(coreTab, /* overrideTitle */ true, newTab);
-};
 
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
@@ -318,19 +192,6 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     factors: treeStore.filteredFactorList,
     keyword: searchPattern.value ?? "",
   });
-};
-
-const handleSelect = (key: string) => {
-  const option = dropdownOptions.value.find((item) => item.key === key);
-  if (!option) {
-    return;
-  }
-  option.onSelect();
-  showDropdown.value = false;
-};
-
-const handleClickoutside = () => {
-  showDropdown.value = false;
 };
 
 const nodeProps = ({ option }: { option: TreeOption }) => {
