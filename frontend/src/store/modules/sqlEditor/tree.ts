@@ -1,5 +1,5 @@
 import { useLocalStorage } from "@vueuse/core";
-import { cloneDeep, isFunction, orderBy } from "lodash-es";
+import { cloneDeep, orderBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watch } from "vue";
@@ -12,13 +12,7 @@ import type {
   SQLEditorTreeNodeTarget as NodeTarget,
   SQLEditorTreeNodeType as NodeType,
   SQLEditorTreeState as TreeState,
-  RichSchemaMetadata,
-  RichTableMetadata,
   StatefulSQLEditorTreeFactor as StatefulFactor,
-  RichViewMetadata,
-  TextTarget,
-  RichPartitionTableMetadata,
-  RichExternalTableMetadata,
 } from "@/types";
 import {
   isValidSQLEditorTreeFactor as isValidFactor,
@@ -181,7 +175,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     databaseList,
     factorList,
     filteredFactorList,
-    currentProject: currentProject,
+    currentProject,
     state,
     tree,
     collectNode,
@@ -220,45 +214,9 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
         | ComposedDatabase
     ).name;
   }
-  if (type === "schema") {
-    const { database, schema } = target as RichSchemaMetadata;
-    return `${database.name}/schemas/${schema.name || "-"}`;
-  }
-  if (type === "table") {
-    const { database, schema, table } = target as RichTableMetadata;
-    return `${database.name}/schemas/${schema.name || "-"}/tables/${
-      table.name
-    }`;
-  }
-  if (type === "external-table") {
-    const { database, schema, externalTable } =
-      target as RichExternalTableMetadata;
-    return `${database.name}/schemas/${schema.name || "-"}/externalTables/${
-      externalTable.name
-    }`;
-  }
-  if (type === "partition-table") {
-    const { database, schema, table, partition } =
-      target as RichPartitionTableMetadata;
-    return `${database.name}/schemas/${schema.name || "-"}/tables/${
-      table.name
-    }/partitions/${partition.name}`;
-  }
-  if (type === "view") {
-    const { database, schema, view } = target as RichViewMetadata;
-    return `${database.name}/schemas/${schema.name || "-"}/views/${view.name}`;
-  }
   if (type === "label") {
     const kv = target as NodeTarget<"label">;
     return `labels/${kv.key}:${kv.value}`;
-  }
-  if (type === "expandable-text") {
-    const { text, id, type } = target as NodeTarget<"expandable-text">;
-    return `texts-${type}/${id}/${typeof text === "function" ? text() : text}`;
-  }
-  if (type === "dummy") {
-    const { type, id } = target as NodeTarget<"dummy">;
-    return `dummy-${type}/${id}`;
   }
 
   throw new Error(
@@ -417,30 +375,6 @@ const readableTargetByType = <T extends NodeType>(
   }
   if (type === "database") {
     return (target as ComposedDatabase).databaseName;
-  }
-  if (type === "schema") {
-    return (target as RichSchemaMetadata).schema.name;
-  }
-  if (type === "table") {
-    return (target as RichTableMetadata).table.name;
-  }
-  if (type === "external-table") {
-    return (target as RichExternalTableMetadata).externalTable.name;
-  }
-  if (type === "partition-table") {
-    return (target as RichPartitionTableMetadata).partition.name;
-  }
-  if (type === "view") {
-    return (target as RichViewMetadata).view.name;
-  }
-  if (type === "expandable-text") {
-    const { text, searchable } = target as TextTarget<true>;
-    if (!searchable) return "";
-    return isFunction(text) ? text() : text;
-  }
-  if (type === "dummy") {
-    // Use empty strings for dummy nodes to make them unsearchable
-    return "";
   }
   return (target as NodeTarget<"label">).value;
 };

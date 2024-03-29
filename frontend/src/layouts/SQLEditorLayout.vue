@@ -32,7 +32,6 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { provideSecondarySidebarContext } from "@/views/sql-editor/SecondarySidebar";
 import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
 
@@ -43,7 +42,6 @@ const pageMode = usePageMode();
 provideSQLEditorContext();
 // provide context for sheets
 provideSheetContext();
-provideSecondarySidebarContext();
 
 const showBanners = computed(() => {
   return pageMode.value === "BUNDLED";

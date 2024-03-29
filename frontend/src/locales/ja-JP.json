@@ -274,7 +274,8 @@
     "baseline": "ベースライン",
     "project-member": "プロジェクトメンバー",
     "leave-without-saving": "保存せずに終了しますか?",
-    "configure-now": "今すぐ設定する"
+    "configure-now": "今すぐ設定する",
+    "connection": "繋がり"
   },
   "error-page": {
     "go-back-home": "ホームに戻る"
@@ -2250,7 +2251,15 @@
     "previous-row": "前の行",
     "next-row": "次の行",
     "copy-success": "コピーが成功しました",
-    "missing-permission-to-load-db-metadata": "データベース {db} のメタデータをロードするために必要な権限がありません。"
+    "missing-permission-to-load-db-metadata": "データベース {db} のメタデータをロードするために必要な権限がありません。",
+    "connect-in-new-tab": "新しいタブで接続する",
+    "copy-name": "名前をコピーする",
+    "copy-select-statement": "SELECT ステートメントをコピーする",
+    "preview-table-data": "テーブルデータのプレビュー",
+    "view-table-detail": "テーブルの詳細を表示する",
+    "view-database-detail": "データベースの詳細を表示する",
+    "copy-all-column-names": "すべての列名をコピーします",
+    "view-schema-text": "スキーマテキストの表示"
   },
   "schema-editor": {
     "self": "スキーマエディター",

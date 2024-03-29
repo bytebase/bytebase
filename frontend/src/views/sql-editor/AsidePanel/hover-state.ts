@@ -1,37 +1,37 @@
-import type { InjectionKey, Ref } from "vue";
-import { inject, provide } from "vue";
+import type { Ref } from "vue";
+import { inject, provide, ref } from "vue";
 import { useDelayedValue } from "@/composables/useDelayedValue";
-import type { SQLEditorTreeNode } from "@/types";
+import type { Position } from "@/types";
 
-type UpdateFn = ReturnType<
-  typeof useDelayedValue<SQLEditorTreeNode | undefined>
->["update"];
+type UpdateFn<T> = ReturnType<typeof useDelayedValue<T | undefined>>["update"];
 
-export type HoverStateContext = {
-  node: Ref<SQLEditorTreeNode | undefined>;
-  update: UpdateFn;
+export type HoverStateContext<S> = {
+  state: Ref<S | undefined>;
+  position: Ref<Position>;
+  update: UpdateFn<S>;
 };
 
-export const KEY = Symbol(
-  "bb.sql-editor.tree.hover-state"
-) as InjectionKey<HoverStateContext>;
-
-export const useHoverStateContext = () => {
-  return inject(KEY)!;
+export const useHoverStateContext = <S>(key: string) => {
+  const KEY = `bb.sql-editor.${key}.hover-state`;
+  return inject(KEY)! as HoverStateContext<S>;
 };
 
-export const provideHoverStateContext = () => {
-  const { value: node, update } = useDelayedValue<
-    SQLEditorTreeNode | undefined
-  >(undefined, {
+export const provideHoverStateContext = <S>(key: string) => {
+  const { value: state, update } = useDelayedValue<S | undefined>(undefined, {
     delayBefore: 500,
     delayAfter: 500,
   });
-  const context: HoverStateContext = {
-    node,
+  const position = ref<Position>({
+    x: 0,
+    y: 0,
+  });
+  const context: HoverStateContext<S> = {
+    state,
+    position,
     update,
   };
 
+  const KEY = `bb.sql-editor.${key}.hover-state`;
   provide(KEY, context);
 
   return context;
