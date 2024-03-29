@@ -24,7 +24,7 @@ func init() {
 
 func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
-	list, err := mysqlparser.ParseMySQL(baselineSchema, tokenizer.KeepEmptyBlocks())
+	list, err := mysqlparser.ParseMySQL(baselineSchema, tokenizer.KeepEmptyBlocks(), tokenizer.SplitCommentBeforeDelimiter())
 	if err != nil {
 		return "", err
 	}
@@ -1391,6 +1391,12 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTriggers(*mysql.CreateTriggerCon
 // to provide the better user experience, we generate the remaining tables before the set statement mentioned above.
 func (g *mysqlDesignSchemaGenerator) EnterSetStatement(ctx *mysql.SetStatementContext) {
 	if g.err != nil {
+		return
+	}
+	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
+		return
+	}
+	if _, ok := ctx.GetParent().GetParent().(*mysql.QueryContext); !ok {
 		return
 	}
 	if g.inDeleteFunctionBlock || g.inDeleteProcedureBlock {

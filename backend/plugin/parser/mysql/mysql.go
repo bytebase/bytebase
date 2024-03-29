@@ -55,7 +55,7 @@ func DealWithDelimiter(statement string, options ...tokenizer.Option) (string, e
 				continue
 			}
 			// TODO(rebelice): after deal with delimiter, we may cannot get the right line number, fix it.
-			if delimiter != ";" {
+			if delimiter != ";" && !sql.Empty {
 				result = append(result, fmt.Sprintf("%s;", strings.TrimSuffix(sql.Text, delimiter)))
 			} else {
 				result = append(result, sql.Text)
