@@ -183,7 +183,7 @@ export const useDropdown = () => {
 
         if (instanceV1HasAlterSchema(db.instanceEntity)) {
           items.push({
-            key: "alter-schema",
+            key: "edit-schema",
             label: t("database.edit-schema"),
             icon: () => <SquarePenIcon class="w-4 h-4" />,
             onSelect: () => {
