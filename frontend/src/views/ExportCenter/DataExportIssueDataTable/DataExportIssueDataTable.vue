@@ -72,6 +72,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
     {
       key: "database",
       title: t("common.database"),
+      width: 300,
       resizable: true,
       hide: !showExtendedColumns.value,
       render: (issue) => {
@@ -79,29 +80,18 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
         if (!database) {
           return "-";
         }
-        return h(
-          NPerformantEllipsis,
-          {
-            class: `flex-1 truncate`,
-          },
-          h(DatabaseInfo, { database })
-        );
+        return h(DatabaseInfo, { database });
       },
     },
     {
       key: "statement",
       title: t("common.statement"),
       resizable: true,
+      ellipsis: true,
       hide: !showExtendedColumns.value,
       render: (issue) => {
         const statement = issueRelatedStatement(issue);
-        return h(
-          NPerformantEllipsis,
-          {
-            class: `flex-1 truncate`,
-          },
-          statement || "-"
-        );
+        return statement || "-";
       },
     },
     {
