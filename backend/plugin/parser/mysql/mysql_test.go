@@ -365,6 +365,25 @@ DELIMITER ;
 DROP FUNCTION hello3;
 `,
 		},
+
+		// Ignore redundant DELIMITER statements.
+		{
+			input: `
+-- DELIMITER ;;
+CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+	DETERMINISTIC
+RETURN CONCAT('Hello, ',s,'!') ;
+-- DELIMITER ;
+-- DELIMITER ;
+`,
+			want: `
+DELIMITER ;;
+CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+	DETERMINISTIC
+RETURN CONCAT('Hello, ',s,'!') ;;
+DELIMITER ;
+`,
+		},
 	}
 
 	for i, tc := range testCases {

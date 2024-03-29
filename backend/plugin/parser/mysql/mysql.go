@@ -75,6 +75,7 @@ func DealWithDelimiter(statement string, options ...tokenizer.Option) (string, e
 // SELECT 1;
 // SELECT 2;
 // -- DELIMITER ;.
+// If the current delimiter is `;`, and meet `-- DELIMITER ;`, we would skip this delimiter comment.
 func RestoreDelimiter(statement string) (string, error) {
 	delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
 	lines := strings.Split(statement, "\n")
@@ -126,8 +127,10 @@ func RestoreDelimiter(statement string) (string, error) {
 			}
 		}
 
-		if _, err := result.WriteString(fmt.Sprintf("DELIMITER %s\n", matchList[1])); err != nil {
-			return "", errors.Wrapf(err, "failed to write string %q into builder", line)
+		if matchList[1] != previousDelimiter {
+			if _, err := result.WriteString(fmt.Sprintf("DELIMITER %s\n", matchList[1])); err != nil {
+				return "", errors.Wrapf(err, "failed to write string %q into builder", line)
+			}
 		}
 		previousDelimiter = matchList[1]
 	}
