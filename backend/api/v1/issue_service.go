@@ -231,6 +231,10 @@ func (s *IssueService) getIssueFind(ctx context.Context, permissionFilter *store
 				issueFind.TaskTypes = &[]api.TaskType{
 					api.TaskDatabaseDataUpdate,
 				}
+			case "DATA_EXPORT":
+				issueFind.TaskTypes = &[]api.TaskType{
+					api.TaskDatabaseDataExport,
+				}
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, `unknown value %q`, spec.value)
 			}
