@@ -17,8 +17,11 @@
         :disabled="!allowCreateSSO"
         @click="handleCreateSSO"
       >
+        <FeatureBadge
+          :feature="'bb.feature.sso'"
+          custom-class="mr-2 text-white"
+        />
         {{ $t("settings.sso.create") }}
-        <FeatureBadge :feature="'bb.feature.sso'" custom-class="ml-2" />
       </NButton>
     </div>
 
@@ -107,11 +110,6 @@ const handleCreateSSO = () => {
 };
 
 const handleViewSSO = (identityProvider: IdentityProvider) => {
-  if (!hasSSOFeature.value) {
-    state.showFeatureModal = true;
-    return;
-  }
-
   router.push({
     name: WORKSPACE_ROUTE_SSO_DETAIL,
     params: {
