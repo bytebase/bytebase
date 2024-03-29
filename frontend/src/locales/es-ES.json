@@ -1578,6 +1578,7 @@
     "batch-action-permission-denied": "No tengo permiso para {action} para bases de datos",
     "batch-action-disabled": "No se puede {action} para las bases de datos de diferentes proyectos",
     "batch-action-disabled-for-unassigned": "No se puede {action} para una base de datos no asignada",
+    "data-export-action-disabled": "No se puede exportar datos de más de una base de datos",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Se transfirió correctamente '{0}' al proyecto '{1}'.",
     "last-sync-status": "Estado de sincronización anterior",

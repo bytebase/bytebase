@@ -1578,6 +1578,7 @@
     "batch-action-permission-denied": "Don't have permission to {action} for databases",
     "batch-action-disabled": "Can not {action} for the databases from different projects",
     "batch-action-disabled-for-unassigned": "Can not {action} for unassigned database",
+    "data-export-action-disabled": "Can not export data for more than one database",
     "successfully-transferred-databases": "Successfully transferred databases",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
     "last-sync-status": "Last sync status",
