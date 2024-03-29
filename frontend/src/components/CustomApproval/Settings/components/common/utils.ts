@@ -87,6 +87,18 @@ const FactorList = {
     "expiration_days",
     "export_rows"
   ),
+  DataExport: uniq(
+    without(
+      [...StringFactorList, ...NumberFactorList],
+      "level",
+      "affected_rows",
+      "table_rows",
+      "source",
+      "sql_type",
+      "expiration_days",
+      "export_rows"
+    )
+  ),
   RequestQuery: uniq(
     without(
       [...StringFactorList, ...NumberFactorList],
@@ -118,6 +130,8 @@ export const getFactorList = (source: Risk_Source) => {
       return [...FactorList.DML];
     case Risk_Source.CREATE_DATABASE:
       return [...FactorList.CreateDatabase];
+    case Risk_Source.DATA_EXPORT:
+      return [...FactorList.DataExport];
     case Risk_Source.REQUEST_QUERY:
       return [...FactorList.RequestQuery];
     case Risk_Source.REQUEST_EXPORT:
