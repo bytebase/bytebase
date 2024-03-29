@@ -2,8 +2,9 @@
   <NTabs
     v-model:value="sheetTab"
     size="small"
-    class="bb-sql-editor--sheet-tab-pane--tabs h-full"
+    class="bb-sql-editor--sheet-tab-pane--tabs h-full pt-0"
     pane-style="height: calc(100% - 29px); padding: 0;"
+    tab-style="padding-top: 0;"
     justify-content="start"
   >
     <NTabPane name="my" :tab="$t('sheet.mine')">
