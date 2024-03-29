@@ -1578,6 +1578,7 @@
     "batch-action-permission-denied": "没有权限对数据库{action}",
     "batch-action-disabled": "无法对来自不同项目的数据库{action}",
     "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
+    "data-export-action-disabled": "无法对多个数据库进行数据导出",
     "successfully-transferred-databases": "数据库转移完成",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "成功将'{0}'转移到项目'{1}'。",
     "last-sync-status": "最后一次同步状态",

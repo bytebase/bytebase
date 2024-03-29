@@ -89,6 +89,7 @@ import {
   PencilIcon,
   PenSquareIcon,
   ArrowRightLeftIcon,
+  DownloadIcon,
 } from "lucide-vue-next";
 import type { VNode } from "vue";
 import { computed, h, reactive, ref } from "vue";
@@ -251,6 +252,10 @@ const allowTransferProject = computed(() => {
   );
 });
 
+const allowDataExport = computed(() => {
+  return props.databases.length === 1;
+});
+
 const allowEditLabels = computed(() => {
   return props.databases.every((db) => {
     const project = db.projectEntity;
@@ -278,7 +283,10 @@ const selectedDatabaseUidList = computed(() => {
 });
 
 const generateMultiDb = async (
-  type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
+  type:
+    | "bb.issue.database.schema.update"
+    | "bb.issue.database.data.update"
+    | "bb.issue.database.data.export"
 ) => {
   if (
     type === "bb.issue.database.schema.update" &&
@@ -387,6 +395,18 @@ const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
   if (!isStandaloneMode.value) {
     resp.push(
+      {
+        icon: h(DownloadIcon),
+        text: t("issue.data-export.title"),
+        disabled: !allowDataExport.value,
+        click: () => generateMultiDb("bb.issue.database.data.export"),
+        tooltip: () => {
+          if (props.databases.length === 0 || allowDataExport.value) {
+            return "";
+          }
+          return t("database.data-export-action-disabled");
+        },
+      },
       {
         icon: h(RefreshCcwIcon),
         text: t("common.sync"),

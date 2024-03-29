@@ -1578,6 +1578,7 @@
     "batch-action-permission-denied": "データベースの{action}の権限がありません",
     "batch-action-disabled": "異なるプロジェクトのデータベースに対して{action}することはできません",
     "batch-action-disabled-for-unassigned": "アンアサインされたデータベースに対して{action}することはできません",
+    "data-export-action-disabled": "複数のデータベースに対してデータをエクスポートすることはできません",
     "successfully-transferred-databases": "データベースが正常に転送されました",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "'{0}'がプロジェクト'{1}'に正常に転送されました",
     "last-sync-status": "最後の同期ステータス",
