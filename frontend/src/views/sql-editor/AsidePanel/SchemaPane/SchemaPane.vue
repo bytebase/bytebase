@@ -38,7 +38,7 @@
       @select="handleDropdownSelect"
     />
 
-    <MaskSpinner class="!bg-white/75" />
+    <MaskSpinner v-if="isFetchingMetadata" class="!bg-white/75" />
 
     <HoverPanel :offset-x="4" :offset-y="0" :margin="4" />
   </div>
