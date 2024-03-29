@@ -2251,7 +2251,8 @@
     "copy-select-statement": "Copy SELECT statement",
     "preview-table-data": "Preview table data",
     "view-table-detail": "View table detail",
-    "view-database-detail": "View database detail"
+    "view-database-detail": "View database detail",
+    "copy-all-column-names": "Copy all column names"
   },
   "schema-editor": {
     "self": "Schema Editor",

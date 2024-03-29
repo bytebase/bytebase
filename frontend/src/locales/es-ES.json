@@ -2251,7 +2251,8 @@
     "copy-select-statement": "Copiar declaración SELECT",
     "preview-table-data": "Vista previa de datos de la tabla",
     "view-table-detail": "Ver detalle de la tabla",
-    "view-database-detail": "Ver detalle de la base de datos"
+    "view-database-detail": "Ver detalle de la base de datos",
+    "copy-all-column-names": "Copiar todos los nombres de las columnas"
   },
   "schema-editor": {
     "self": "Editor de esquema",

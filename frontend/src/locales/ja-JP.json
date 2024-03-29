@@ -2251,7 +2251,8 @@
     "copy-select-statement": "SELECT ステートメントをコピーする",
     "preview-table-data": "テーブルデータのプレビュー",
     "view-table-detail": "テーブルの詳細を表示する",
-    "view-database-detail": "データベースの詳細を表示する"
+    "view-database-detail": "データベースの詳細を表示する",
+    "copy-all-column-names": "すべての列名をコピーします"
   },
   "schema-editor": {
     "self": "スキーマエディター",

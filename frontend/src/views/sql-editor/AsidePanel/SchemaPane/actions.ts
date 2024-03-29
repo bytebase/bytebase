@@ -87,6 +87,15 @@ export const useDropdown = () => {
             copyToClipboard(url);
           },
         });
+
+        items.push({
+          key: "copy-all-column-names",
+          label: t("sql-editor.copy-all-column-names"),
+          onSelect: () => {
+            const names = table.columns.map((col) => col.name).join(", ");
+            copyToClipboard(names);
+          },
+        });
       }
       if (targetSupportsSelectAll(target)) {
         items.push({
