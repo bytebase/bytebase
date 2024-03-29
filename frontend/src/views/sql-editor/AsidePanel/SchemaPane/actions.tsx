@@ -1,6 +1,13 @@
+import {
+  CopyIcon,
+  ExternalLinkIcon,
+  LinkIcon,
+  SquarePenIcon,
+} from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
 import { computed, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
+import TableIcon from "@/components/Icon/TableIcon.vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { t } from "@/plugins/i18n";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
@@ -18,6 +25,7 @@ import {
   extractProjectResourceName,
   generateSimpleSelectAllStatement,
   instanceV1HasAlterSchema,
+  sortByDictionary,
   suggestedTabTitleForSQLEditorConnection,
   toClipboard,
 } from "@/utils";
@@ -60,6 +68,7 @@ export const useDropdown = () => {
       items.push({
         key: "copy-name",
         label: t("sql-editor.copy-name"),
+        icon: () => <CopyIcon class="w-4 h-4" />,
         onSelect: () => {
           const name = schema ? `${schema}.${tableOrView}` : tableOrView;
           copyToClipboard(name);
@@ -70,6 +79,7 @@ export const useDropdown = () => {
         items.push({
           key: "copy-url",
           label: t("sql-editor.copy-url"),
+          icon: () => <LinkIcon class="w-4 h-4" />,
           onSelect: () => {
             const route = router.resolve({
               name: SQL_EDITOR_DATABASE_MODULE,
@@ -91,6 +101,7 @@ export const useDropdown = () => {
         items.push({
           key: "copy-all-column-names",
           label: t("sql-editor.copy-all-column-names"),
+          icon: () => <CopyIcon class="w-4 h-4" />,
           onSelect: () => {
             const names = table.columns.map((col) => col.name).join(", ");
             copyToClipboard(names);
@@ -101,6 +112,7 @@ export const useDropdown = () => {
         items.push({
           key: "copy-select-statement",
           label: t("sql-editor.copy-select-statement"),
+          icon: () => <CopyIcon class="w-4 h-4" />,
           onSelect: () => {
             const statement = generateSimpleSelectAllStatement(
               engineForTarget(target),
@@ -114,6 +126,7 @@ export const useDropdown = () => {
         items.push({
           key: "preview-table-data",
           label: t("sql-editor.preview-table-data"),
+          icon: () => <TableIcon class="w-4 h-4" />,
           onSelect: () => {
             const statement = generateSimpleSelectAllStatement(
               engineForTarget(target),
@@ -135,6 +148,7 @@ export const useDropdown = () => {
         items.push({
           key: "view-table-detail",
           label: t("sql-editor.view-table-detail"),
+          icon: () => <ExternalLinkIcon class="w-4 h-4" />,
           onSelect: () => {
             const route = router.resolve({
               name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
@@ -157,6 +171,7 @@ export const useDropdown = () => {
           items.push({
             key: "alter-schema",
             label: t("database.edit-schema"),
+            icon: () => <SquarePenIcon class="w-4 h-4" />,
             onSelect: () => {
               editorEvents.emit("alter-schema", {
                 databaseUID: db.uid,
@@ -168,6 +183,16 @@ export const useDropdown = () => {
         }
       }
     }
+    const ORDERS = [
+      "copy-name",
+      "copy-all-column-names",
+      "copy-select-statement",
+      "preview-table-data",
+      "view-table-detail",
+      "edit-schema",
+      "copy-url",
+    ];
+    sortByDictionary(items, ORDERS, (item) => item.key as string);
     return items;
   });
 
