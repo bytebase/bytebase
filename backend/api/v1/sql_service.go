@@ -1410,7 +1410,6 @@ func (s *SQLService) accessCheck(
 				"resource.database": databaseResourceURL,
 				"resource.schema":   column.Schema,
 				"resource.table":    column.Table,
-				"request.statement": encodeToBase64String(statement),
 				"request.row_limit": limit,
 			}
 
