@@ -24,16 +24,13 @@
         :issue-filter="mergedIssueFilter"
         :ui-issue-filter="mergedUIIssueFilter"
         :page-size="50"
+        :compose-issue-config="{ withRollout: true }"
       >
         <template #table="{ issueList, loading }">
-          <!-- TODO(steven): Implement data export issue's specific data table -->
-          <IssueTableV1
-            mode="PROJECT"
-            :bordered="true"
+          <DataExportIssueDataTable
             :loading="loading"
             :issue-list="issueList"
             :highlight-text="state.params.query"
-            :show-selection="false"
           />
         </template>
       </PagedIssueTableV1>
@@ -53,7 +50,6 @@
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import DataExportPrepForm from "@/components/DataExportPrepForm";
-import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { Drawer } from "@/components/v2";
 import { useCurrentUserV1 } from "@/store";
@@ -63,6 +59,7 @@ import {
   type SearchParams,
   type SearchScopeId,
 } from "@/utils";
+import DataExportIssueDataTable from "./DataExportIssueDataTable";
 import type { ExportRecord } from "./types";
 
 interface LocalState {
@@ -79,7 +76,12 @@ const state = reactive<LocalState>({
   showRequestExportPanel: false,
   params: {
     query: "",
-    scopes: [],
+    scopes: [
+      {
+        id: "status",
+        value: "OPEN",
+      },
+    ],
   },
   loading: false,
   loadingMore: false,
@@ -115,5 +117,6 @@ const supportOptionIdList = computed((): SearchScopeId[] => [
   "project",
   "instance",
   "database",
+  "status",
 ]);
 </script>

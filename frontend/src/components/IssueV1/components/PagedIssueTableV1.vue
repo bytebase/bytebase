@@ -33,7 +33,7 @@ import { useSessionStorage } from "@vueuse/core";
 import { isEqual } from "lodash-es";
 import type { PropType } from "vue";
 import { computed, reactive, watch } from "vue";
-import type { ListIssueParams } from "@/store";
+import type { ComposeIssueConfig, ListIssueParams } from "@/store";
 import { useIsLoggedIn, useIssueV1Store, useRefreshIssueList } from "@/store";
 import type { IssueFilter, ComposedIssue } from "@/types";
 import type { UIIssueFilter } from "@/utils";
@@ -92,6 +92,10 @@ const props = defineProps({
   loadingMore: {
     type: Boolean,
     default: false,
+  },
+  composeIssueConfig: {
+    type: Object as PropType<ComposeIssueConfig>,
+    default: undefined,
   },
 });
 const emit = defineEmits<{
@@ -156,7 +160,7 @@ const fetchData = (refresh = false) => {
     pageSize: props.pageSize,
     pageToken: state.paginationToken,
   };
-  const request = issueStore.listIssues(params);
+  const request = issueStore.listIssues(params, props.composeIssueConfig);
 
   request
     .then(({ nextPageToken, issues }) => {
