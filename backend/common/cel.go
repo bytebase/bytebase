@@ -198,7 +198,6 @@ func ValidateProjectMemberCELExpr(expression *expr.Expr) (cel.Program, error) {
 type QueryExportFactors struct {
 	DatabaseNames []string
 	ExportRows    int64
-	Statement     string
 }
 
 // GetQueryExportFactors is used to get risk factors from query and export expressions.

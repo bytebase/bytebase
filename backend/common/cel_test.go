@@ -89,7 +89,6 @@ func TestGetQueryExportFactors(t *testing.T) {
 			want: QueryExportFactors{
 				DatabaseNames: []string{"instances/postgres-sample/databases/employee"},
 				ExportRows:    1000,
-				Statement:     "select * from employee;",
 			},
 		},
 		{
