@@ -1176,6 +1176,7 @@
     "missing-sql-statement": "SQL 语句缺失。要将此更改应用于所有任务，请单击 “@:{'issue.apply-to-other-tasks'}” 按钮。",
     "task-summary-tooltip": "{failed} 个任务失败",
     "data-export": {
+      "title": "数据导出",
       "options": "配置项",
       "format": "导出格式",
       "encrypt": "加密",

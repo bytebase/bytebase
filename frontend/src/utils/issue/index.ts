@@ -1,7 +1,10 @@
 import dayjs from "dayjs";
 
 export const generateIssueName = (
-  type: "bb.issue.database.schema.update" | "bb.issue.database.data.update",
+  type:
+    | "bb.issue.database.schema.update"
+    | "bb.issue.database.data.update"
+    | "bb.issue.database.data.export",
   databaseNameList: string[],
   isOnlineMode = false
 ) => {
@@ -16,7 +19,11 @@ export const generateIssueName = (
     issueNameParts.push("Online schema change");
   } else {
     issueNameParts.push(
-      type === "bb.issue.database.schema.update" ? `Edit schema` : `Change data`
+      type === "bb.issue.database.schema.update"
+        ? `Edit schema`
+        : type === "bb.issue.database.data.update"
+          ? `Change data`
+          : "Export data"
     );
   }
   const datetime = dayjs().format("@MM-DD HH:mm");
