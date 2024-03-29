@@ -1546,7 +1546,12 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 
 // canUserRunStageTasks returns if a user can run the tasks in a stage.
 func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
-	// the workspace owner and DBA roles can always run tasks.
+	// For data export issues, only the creator can run tasks.
+	if issue.Type == api.IssueDatabaseDataExport {
+		return issue.Creator.ID == user.ID, nil
+	}
+
+	// The workspace owner and DBA roles can always run tasks.
 	if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
 		return true, nil
 	}
