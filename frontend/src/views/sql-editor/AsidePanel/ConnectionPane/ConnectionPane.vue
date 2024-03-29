@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-if="treeStore.state === 'READY'"
-    class="sql-editor-tree gap-y-1 h-full flex flex-col"
-  >
+  <div class="sql-editor-tree gap-y-1 h-full flex flex-col relative">
     <div class="flex flex-row gap-x-0.5 px-1 items-center">
       <SearchBox v-model:searchPattern="searchPattern" class="flex-1" />
       <GroupingBar class="shrink-0" />
@@ -13,6 +10,7 @@
       :data-height="treeContainerHeight"
     >
       <NTree
+        v-if="treeStore.state === 'READY'"
         ref="treeRef"
         v-model:expanded-keys="expandedKeys"
         :block-line="true"
@@ -29,6 +27,7 @@
     </div>
 
     <NDropdown
+      v-if="treeStore.state === 'READY'"
       placement="bottom-start"
       trigger="manual"
       :x="dropdownPosition.x"
@@ -40,12 +39,12 @@
     />
 
     <DatabaseHoverPanel :offset-x="4" :offset-y="4" :margin="4" />
-  </div>
-  <div v-else class="flex justify-center items-center h-full space-x-2">
-    <BBSpin />
-    <span class="text-control text-sm">{{
-      $t("sql-editor.loading-databases")
-    }}</span>
+
+    <MaskSpinner v-if="treeStore.state !== 'READY'" class="!bg-white/75">
+      <span class="text-control text-sm">{{
+        $t("sql-editor.loading-databases")
+      }}</span>
+    </MaskSpinner>
   </div>
 </template>
 
@@ -54,6 +53,7 @@ import { useElementSize, useMounted } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NTree, NDropdown, type TreeOption } from "naive-ui";
 import { ref, computed, nextTick, watch, h } from "vue";
+import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useDatabaseV1Store,
