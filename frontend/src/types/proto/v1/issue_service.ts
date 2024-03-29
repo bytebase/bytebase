@@ -620,6 +620,35 @@ export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): 
   }
 }
 
+export interface ListIssueCommentsRequest {
+  /** Format: projects/{projects}/issues/{issue} */
+  parent: string;
+  /**
+   * The maximum number of issues to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 50 issues will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ListIssues` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListIssues` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListIssueCommentsResponse {
+  issueComments: IssueComment[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
 export interface CreateIssueCommentRequest {
   /**
    * The issue name
@@ -2816,6 +2845,171 @@ export const ApprovalNode = {
   },
 };
 
+function createBaseListIssueCommentsRequest(): ListIssueCommentsRequest {
+  return { parent: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListIssueCommentsRequest = {
+  encode(message: ListIssueCommentsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListIssueCommentsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListIssueCommentsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListIssueCommentsRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListIssueCommentsRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListIssueCommentsRequest>): ListIssueCommentsRequest {
+    return ListIssueCommentsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListIssueCommentsRequest>): ListIssueCommentsRequest {
+    const message = createBaseListIssueCommentsRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListIssueCommentsResponse(): ListIssueCommentsResponse {
+  return { issueComments: [], nextPageToken: "" };
+}
+
+export const ListIssueCommentsResponse = {
+  encode(message: ListIssueCommentsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.issueComments) {
+      IssueComment.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListIssueCommentsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListIssueCommentsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.issueComments.push(IssueComment.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListIssueCommentsResponse {
+    return {
+      issueComments: globalThis.Array.isArray(object?.issueComments)
+        ? object.issueComments.map((e: any) => IssueComment.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListIssueCommentsResponse): unknown {
+    const obj: any = {};
+    if (message.issueComments?.length) {
+      obj.issueComments = message.issueComments.map((e) => IssueComment.toJSON(e));
+    }
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListIssueCommentsResponse>): ListIssueCommentsResponse {
+    return ListIssueCommentsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListIssueCommentsResponse>): ListIssueCommentsResponse {
+    const message = createBaseListIssueCommentsResponse();
+    message.issueComments = object.issueComments?.map((e) => IssueComment.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
 function createBaseCreateIssueCommentRequest(): CreateIssueCommentRequest {
   return { parent: "", issueComment: undefined };
 }
@@ -4164,6 +4358,71 @@ export const IssueServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    listIssueComments: {
+      name: "ListIssueComments",
+      requestType: ListIssueCommentsRequest,
+      requestStream: false,
+      responseType: ListIssueCommentsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              48,
+              18,
+              46,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              115,
+              115,
+              117,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              105,
+              115,
+              115,
+              117,
+              101,
+              67,
+              111,
+              109,
+              109,
+              101,
+              110,
+              116,
+              115,
             ]),
           ],
         },
