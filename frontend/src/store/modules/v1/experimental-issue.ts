@@ -50,7 +50,7 @@ export const composeIssue = async (
     creatorEntity,
   };
 
-  if (config?.withPlan && issue.plan) {
+  if (config.withPlan && issue.plan) {
     if (issue.plan) {
       if (hasProjectPermissionV2(projectEntity, me.value, "bb.plans.get")) {
         const plan = await rolloutServiceClient.getPlan({
@@ -68,7 +68,7 @@ export const composeIssue = async (
       }
     }
   }
-  if (config?.withRollout && issue.rollout) {
+  if (config.withRollout && issue.rollout) {
     if (hasProjectPermissionV2(projectEntity, me.value, "bb.rollouts.get")) {
       issue.rolloutEntity = await rolloutServiceClient.getRollout({
         name: issue.rollout,
@@ -98,7 +98,10 @@ export const shallowComposeIssue = async (
   rawIssue: Issue,
   config?: ComposeIssueConfig
 ): Promise<ComposedIssue> => {
-  return composeIssue(rawIssue, config);
+  return composeIssue(
+    rawIssue,
+    config || { withPlan: false, withRollout: false }
+  );
 };
 
 export const experimentalFetchIssueByUID = async (
