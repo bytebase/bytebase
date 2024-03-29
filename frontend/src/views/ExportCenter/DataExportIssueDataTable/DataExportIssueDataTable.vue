@@ -186,6 +186,7 @@ const issueRelatedStatement = (issue: ComposedIssue) => {
 watch(
   () => props.issueList,
   (list) => {
+    // Prepare the sheet for each issue.
     for (const issue of list) {
       const task = head(flattenTaskV1List(issue.rolloutEntity));
       const sheetName = task?.databaseDataExport?.sheet;
