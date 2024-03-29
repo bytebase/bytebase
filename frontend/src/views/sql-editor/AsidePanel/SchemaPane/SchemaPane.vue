@@ -1,15 +1,5 @@
 <template>
-  <div class="gap-y-1 h-full flex flex-col">
-    <teleport to="#sql-editor-debug">
-      <li>[SchemaPane]database: {{ database.name }}</li>
-      <li>[SchemaPane]isFetchingMetadata: {{ isFetchingMetadata }}</li>
-      <li>[SchemaPane]typeof metadata: {{ typeof metadata }}</li>
-      <li>[SchemaPane]typeof tree: {{ typeof tree }}</li>
-      <li>[SchemaPane]treeContainerHeight: {{ treeContainerHeight }}</li>
-      <li>[SchemaPane]typeof hoverState: {{ typeof hoverState }}</li>
-      <li>[SchemaPane]hoverPosition: {{ hoverPosition }}</li>
-    </teleport>
-
+  <div class="gap-y-1 h-full flex flex-col relative">
     <div class="px-1">
       <SearchBox size="small" style="width: 100%; max-width: 100%" />
     </div>
@@ -23,6 +13,7 @@
         v-if="tree"
         ref="treeRef"
         :default-expanded-keys="defaultExpandedKeys"
+        :selected-keys="selectedKeys"
         :block-line="true"
         :data="tree"
         :show-irrelevant-nodes="false"
@@ -47,6 +38,8 @@
       @select="handleDropdownSelect"
     />
 
+    <MaskSpinner class="!bg-white/75" />
+
     <HoverPanel :offset-x="4" :offset-y="0" :margin="4" />
   </div>
 </template>
@@ -56,6 +49,7 @@ import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
 import { NDropdown, type TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
+import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -99,7 +93,7 @@ const {
   handleClickoutside: handleDropdownClickoutside,
 } = useDropdown();
 const { currentTab } = storeToRefs(useSQLEditorTabStore());
-const { database } = useConnectionOfCurrentSQLEditorTab();
+const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 const isFetchingMetadata = ref(false);
 const metadata = computedAsync(
   async () => {
@@ -152,12 +146,14 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         const { type, target } = node.meta;
         // Check if clicked on the content part.
         // And ignore the fold/unfold arrow.
-        if (type === "table") {
-          const tab = currentTab.value;
-          if (tab) {
-            const { schema, table } = target as NodeTarget<"table">;
-            tab.connection.schema = schema.name;
-            tab.connection.table = table.name;
+        const tab = currentTab.value;
+        if (tab) {
+          if (type === "table" || type === "column") {
+            if ("table" in target) {
+              const { schema, table } = target as NodeTarget<"table">;
+              tab.connection.schema = schema.name;
+              tab.connection.table = table.name;
+            }
           }
         }
       }
@@ -224,6 +220,14 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
   const node = option as any as TreeNode;
   return <Label node={node} keyword={searchPattern.value} />;
 };
+
+const selectedKeys = computed(() => {
+  const db = database.value;
+  if (db.uid === String(UNKNOWN_ID)) return [];
+  const { schema, table } = connection.value;
+  if (!table) return [];
+  return [`${db.name}/schemas/${schema}/tables/${table}`];
+});
 
 watch(tree, () => {
   showDropdown.value = false;
