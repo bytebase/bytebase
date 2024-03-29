@@ -6,7 +6,8 @@
       <li>[SchemaPane]typeof metadata: {{ typeof metadata }}</li>
       <li>[SchemaPane]typeof tree: {{ typeof tree }}</li>
       <li>[SchemaPane]treeContainerHeight: {{ treeContainerHeight }}</li>
-      <li>[SchemaPane]hoverNode?.meta.type: {{ hoverNode?.meta.type }}</li>
+      <li>[SchemaPane]typeof hoverState: {{ typeof hoverState }}</li>
+      <li>[SchemaPane]hoverPosition: {{ hoverPosition }}</li>
     </teleport>
 
     <div class="px-1">
@@ -45,29 +46,34 @@
       :on-clickoutside="handleDropdownClickoutside"
       @select="handleDropdownSelect"
     />
+
+    <HoverPanel :offset-x="4" :offset-y="0" :margin="4" />
   </div>
 </template>
 
 <script setup lang="tsx">
 import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
 import { NDropdown, type TreeOption } from "naive-ui";
+import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
 import { SearchBox } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
+  useSQLEditorTabStore,
 } from "@/store";
-import { UNKNOWN_ID, type Position } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { findAncestor } from "@/utils";
+import { findAncestor, isDescendantOf } from "@/utils";
+import { provideHoverStateContext } from "./HoverPanel";
+import HoverPanel from "./HoverPanel";
 import { Label } from "./TreeNode";
-import { useDropdown } from "./actions";
+import { selectAllFromTableOrView, useDropdown } from "./actions";
 import {
   type NodeTarget,
   type TreeNode,
   buildDatabaseSchemaTree,
 } from "./common";
-import { provideHoverStateContext } from "./hover-state";
 
 const mounted = useMounted();
 const treeContainerElRef = ref<HTMLElement>();
@@ -79,11 +85,11 @@ const { height: treeContainerHeight } = useElementSize(
   }
 );
 const searchPattern = ref("");
-const { node: hoverNode, update: updateHoverNode } = provideHoverStateContext();
-const hoverPanelPosition = ref<Position>({
-  x: 0,
-  y: 0,
-});
+const {
+  state: hoverState,
+  position: hoverPosition,
+  update: updateHoverState,
+} = provideHoverStateContext();
 const {
   show: showDropdown,
   context: dropdownContext,
@@ -92,6 +98,7 @@ const {
   handleSelect: handleDropdownSelect,
   handleClickoutside: handleDropdownClickoutside,
 } = useDropdown();
+const { currentTab } = storeToRefs(useSQLEditorTabStore());
 const { database } = useConnectionOfCurrentSQLEditorTab();
 const isFetchingMetadata = ref(false);
 const metadata = computedAsync(
@@ -138,35 +145,60 @@ const defaultExpandedKeys = computed(() => {
 const nodeProps = ({ option }: { option: TreeOption }) => {
   const node = option as any as TreeNode;
   return {
+    onClick(e: MouseEvent) {
+      if (node.disabled) return;
+
+      if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
+        const { type, target } = node.meta;
+        // Check if clicked on the content part.
+        // And ignore the fold/unfold arrow.
+        if (type === "table") {
+          const tab = currentTab.value;
+          if (tab) {
+            const { schema, table } = target as NodeTarget<"table">;
+            tab.connection.schema = schema.name;
+            tab.connection.table = table.name;
+          }
+        }
+      }
+    },
     ondblclick() {
-      // if (node.meta.type === "table" || node.meta.type === "view") {
-      //   selectAllFromTableOrView(node);
-      // }
+      if (node.meta.type === "table" || node.meta.type === "view") {
+        selectAllFromTableOrView(node);
+      }
     },
     onmouseenter(e: MouseEvent) {
       const { type } = node.meta;
-      if (type === "table" || type === "column" || type === "view") {
-        if (hoverNode.value) {
-          updateHoverNode(node, "before", 0 /* overrideDelay */);
+      if (
+        type === "table" ||
+        type === "external-table" ||
+        type === "column" ||
+        type === "view"
+      ) {
+        const target = node.meta.target as NodeTarget<
+          "table" | "external-table" | "column" | "view"
+        >;
+        if (hoverState.value) {
+          updateHoverState(target, "before", 0 /* overrideDelay */);
         } else {
-          updateHoverNode(node, "before");
+          updateHoverState(target, "before");
         }
         nextTick().then(() => {
           // Find the node element and put the database panel to the right corner
           // of the node
           const wrapper = findAncestor(e.target as HTMLElement, ".n-tree-node");
           if (!wrapper) {
-            updateHoverNode(undefined, "after", 0 /* overrideDelay */);
+            updateHoverState(undefined, "after", 0 /* overrideDelay */);
             return;
           }
           const bounding = wrapper.getBoundingClientRect();
-          hoverPanelPosition.value.x = bounding.right;
-          hoverPanelPosition.value.y = bounding.top;
+          hoverPosition.value.x = bounding.right;
+          hoverPosition.value.y = bounding.top;
         });
       }
     },
     onmouseleave() {
-      updateHoverNode(undefined, "after");
+      updateHoverState(undefined, "after");
     },
     oncontextmenu(e: MouseEvent) {
       e.preventDefault();
