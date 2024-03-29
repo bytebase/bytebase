@@ -8,6 +8,7 @@
   </div>
   <div ref="tableRef">
     <NDataTable
+      size="small"
       :columns="columnList"
       :data="issueList"
       :striped="true"
@@ -77,6 +78,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
           },
         };
       },
+      hide: !props.showSelection,
     },
     {
       type: "expand",
@@ -189,12 +191,13 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    title?: string;
     issueList: ComposedIssue[];
+    bordered: boolean;
+    title?: string;
     mode?: Mode;
     highlightText?: string;
     loading?: boolean;
-    bordered: boolean;
+    showSelection?: boolean;
   }>(),
   {
     title: "",
@@ -202,6 +205,7 @@ const props = withDefaults(
     highlightText: "",
     loading: true,
     bordered: false,
+    showSelection: true,
   }
 );
 
@@ -370,10 +374,3 @@ const isIssueExpanded = (issue: ComposedIssue): boolean => {
   return sections.some((item) => item.highlight);
 };
 </script>
-
-<style lang="postcss" scoped>
-.issue-table-list :deep(.n-data-table-td),
-.issue-table-list :deep(.n-data-table-th) {
-  @apply !py-1.5;
-}
-</style>

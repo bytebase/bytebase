@@ -106,7 +106,6 @@ type TabValue = (typeof TABS)[number];
 
 interface LocalState {
   params: SearchParams;
-  isFetchingActivityList: boolean;
   advanced: boolean;
   loading: boolean;
   loadingMore: boolean;
@@ -244,7 +243,6 @@ const initializeSearchParamsFromQueryOrLocalStorage = () => {
 };
 
 const state = reactive<LocalState>({
-  isFetchingActivityList: false,
   ...initializeSearchParamsFromQueryOrLocalStorage(),
   loading: false,
   loadingMore: false,
