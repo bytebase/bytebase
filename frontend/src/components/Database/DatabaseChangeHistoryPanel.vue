@@ -46,7 +46,7 @@
           </template>
         </TooltipButton>
         <TooltipButton
-          v-if="allowMigrate"
+          v-if="allowEstablishBaseline"
           tooltip-mode="DISABLED-ONLY"
           :disabled="false"
           type="primary"
@@ -127,7 +127,6 @@ import {
   ChangeHistory_Type,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   getAffectedTablesOfChangeHistory,
   getHistoryChangeType,
@@ -179,20 +178,11 @@ const prepareChangeHistoryList = async () => {
 
 onBeforeMount(prepareChangeHistoryList);
 
-const isTenantProject = computed(() => {
-  return (
-    props.database.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
-  );
-});
-
 const allowExportChangeHistory = computed(() => {
   return state.selectedChangeHistoryNameList.length > 0;
 });
 
-const allowMigrate = computed(() => {
-  // Migrating single database in tenant mode is not allowed
-  // Since this will probably cause different migration version across a group of tenant databases
-  if (isTenantProject.value) return false;
+const allowEstablishBaseline = computed(() => {
   return allowAlterSchema.value;
 });
 
