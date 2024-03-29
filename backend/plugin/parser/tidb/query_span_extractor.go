@@ -571,13 +571,10 @@ func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName st
 
 func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, fieldName string) (base.SourceColumnSet, bool) {
 	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
-		if databaseName != "" && databaseName != tableSource.GetDatabaseName() {
+		if databaseName != "" && !strings.EqualFold(databaseName, tableSource.GetDatabaseName()) {
 			return nil, false
 		}
-		if databaseName == "" && tableSource.GetDatabaseName() != "" && tableSource.GetDatabaseName() != q.connectedDB {
-			return nil, false
-		}
-		if tableName != "" && tableName != tableSource.GetTableName() {
+		if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
 			return nil, false
 		}
 		// If the table name is empty, we should check if there are ambiguous fields,
