@@ -28,7 +28,6 @@ export const StringFactorList = [
   "resource.database",
   "resource.schema",
   "resource.table",
-  "request.statement",
   // Deprecated
   "request.export_format",
 

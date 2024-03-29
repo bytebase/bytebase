@@ -1,7 +1,6 @@
 package common
 
 import (
-	"encoding/base64"
 	"time"
 
 	"github.com/google/cel-go/cel"
@@ -46,7 +45,6 @@ var IAMPolicyConditionCELAttributes = []cel.EnvOption{
 	cel.Variable("resource.database", cel.StringType),
 	cel.Variable("resource.schema", cel.StringType),
 	cel.Variable("resource.table", cel.StringType),
-	cel.Variable("request.statement", cel.StringType),
 	cel.Variable("request.row_limit", cel.IntType),
 	cel.Variable("request.time", cel.TimestampType),
 	cel.ParserExpressionSizeLimit(celLimit),
@@ -200,7 +198,6 @@ func ValidateProjectMemberCELExpr(expression *expr.Expr) (cel.Program, error) {
 type QueryExportFactors struct {
 	DatabaseNames []string
 	ExportRows    int64
-	Statement     string
 }
 
 // GetQueryExportFactors is used to get risk factors from query and export expressions.
@@ -242,14 +239,6 @@ func findField(callExpr *exprproto.Expr_Call, factors *QueryExportFactors) {
 				for _, element := range list.Elements {
 					factors.DatabaseNames = append(factors.DatabaseNames, element.GetConstExpr().GetStringValue())
 				}
-			}
-			if idExpr.Name == "request.statement" && callExpr.Function == "_==_" {
-				encodedStatment := callExpr.Args[1].GetConstExpr().GetStringValue()
-				statement, err := base64.StdEncoding.DecodeString(encodedStatment)
-				if err != nil {
-					return
-				}
-				factors.Statement = string(statement)
 			}
 			return
 		}
