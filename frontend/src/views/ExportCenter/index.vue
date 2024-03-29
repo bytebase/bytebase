@@ -26,6 +26,7 @@
         :page-size="50"
       >
         <template #table="{ issueList, loading }">
+          <!-- TODO(steven): Implement data export issue's specific data table -->
           <IssueTableV1
             mode="PROJECT"
             :bordered="true"
