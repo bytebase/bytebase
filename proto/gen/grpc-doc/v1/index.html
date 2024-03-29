@@ -1229,6 +1229,34 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.IssueComment.Approval"><span class="badge">M</span>IssueComment.Approval</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.IssueUpdate"><span class="badge">M</span>IssueComment.IssueUpdate</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.StageEnd"><span class="badge">M</span>IssueComment.StageEnd</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.TaskPriorBackup"><span class="badge">M</span>IssueComment.TaskPriorBackup</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.TaskPriorBackup.Table"><span class="badge">M</span>IssueComment.TaskPriorBackup.Table</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.TaskRunUpdate"><span class="badge">M</span>IssueComment.TaskRunUpdate</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.TaskUpdate"><span class="badge">M</span>IssueComment.TaskUpdate</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListIssuesRequest"><span class="badge">M</span>ListIssuesRequest</a>
                 </li>
               
@@ -1283,6 +1311,14 @@
               
                 <li>
                   <a href="#bytebase.v1.Issue.Type"><span class="badge">E</span>Issue.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.Approval.Status"><span class="badge">E</span>IssueComment.Approval.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.TaskRunUpdate.Status"><span class="badge">E</span>IssueComment.TaskRunUpdate.Status</a>
                 </li>
               
                 <li>
@@ -13627,6 +13663,328 @@ Keys are the following:
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creator</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>approval</td>
+                  <td><a href="#bytebase.v1.IssueComment.Approval">IssueComment.Approval</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>issue_update</td>
+                  <td><a href="#bytebase.v1.IssueComment.IssueUpdate">IssueComment.IssueUpdate</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>stage_end</td>
+                  <td><a href="#bytebase.v1.IssueComment.StageEnd">IssueComment.StageEnd</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>task_run_update</td>
+                  <td><a href="#bytebase.v1.IssueComment.TaskRunUpdate">IssueComment.TaskRunUpdate</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>task_update</td>
+                  <td><a href="#bytebase.v1.IssueComment.TaskUpdate">IssueComment.TaskUpdate</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>task_prior_backup</td>
+                  <td><a href="#bytebase.v1.IssueComment.TaskPriorBackup">IssueComment.TaskPriorBackup</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.IssueComment.Approval">IssueComment.Approval</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#bytebase.v1.IssueComment.Approval.Status">IssueComment.Approval.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.IssueComment.IssueUpdate">IssueComment.IssueUpdate</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>from_title</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_title</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from_description</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_description</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from_status</td>
+                  <td><a href="#bytebase.v1.IssueStatus">IssueStatus</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_status</td>
+                  <td><a href="#bytebase.v1.IssueStatus">IssueStatus</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from_assignee</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_assignee</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Format: users/{email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.IssueComment.StageEnd">IssueComment.StageEnd</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>stage</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.IssueComment.TaskPriorBackup">IssueComment.TaskPriorBackup</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>task</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tables</td>
+                  <td><a href="#bytebase.v1.IssueComment.TaskPriorBackup.Table">IssueComment.TaskPriorBackup.Table</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.IssueComment.TaskPriorBackup.Table">IssueComment.TaskPriorBackup.Table</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.IssueComment.TaskRunUpdate">IssueComment.TaskRunUpdate</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>task_runs</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_status</td>
+                  <td><a href="#bytebase.v1.IssueComment.TaskRunUpdate.Status">IssueComment.TaskRunUpdate.Status</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.IssueComment.TaskUpdate">IssueComment.TaskUpdate</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tasks</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from_sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from_earliest_allowed_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_earliest_allowed_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -14151,6 +14509,82 @@ Format: projects/{project}/issues/{issue} </p></td>
               <tr>
                 <td>DATABASE_DATA_EXPORT</td>
                 <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.IssueComment.Approval.Status">IssueComment.Approval.Status</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PENDING</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>APPROVED</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REJECTED</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.IssueComment.TaskRunUpdate.Status">IssueComment.TaskRunUpdate.Status</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PENDING</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RUNNING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DONE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FAILED</td>
+                <td>4</td>
                 <td><p></p></td>
               </tr>
             

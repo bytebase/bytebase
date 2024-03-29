@@ -648,7 +648,167 @@ export interface IssueComment {
   /** TODO: use struct message instead. */
   payload: string;
   createTime: Date | undefined;
-  updateTime: Date | undefined;
+  updateTime:
+    | Date
+    | undefined;
+  /** Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid} */
+  name: string;
+  /** Format: users/{email} */
+  creator: string;
+  approval?: IssueComment_Approval | undefined;
+  issueUpdate?: IssueComment_IssueUpdate | undefined;
+  stageEnd?: IssueComment_StageEnd | undefined;
+  taskRunUpdate?: IssueComment_TaskRunUpdate | undefined;
+  taskUpdate?: IssueComment_TaskUpdate | undefined;
+  taskPriorBackup?: IssueComment_TaskPriorBackup | undefined;
+}
+
+export interface IssueComment_Approval {
+  status: IssueComment_Approval_Status;
+}
+
+export enum IssueComment_Approval_Status {
+  STATUS_UNSPECIFIED = 0,
+  PENDING = 1,
+  APPROVED = 2,
+  REJECTED = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function issueComment_Approval_StatusFromJSON(object: any): IssueComment_Approval_Status {
+  switch (object) {
+    case 0:
+    case "STATUS_UNSPECIFIED":
+      return IssueComment_Approval_Status.STATUS_UNSPECIFIED;
+    case 1:
+    case "PENDING":
+      return IssueComment_Approval_Status.PENDING;
+    case 2:
+    case "APPROVED":
+      return IssueComment_Approval_Status.APPROVED;
+    case 3:
+    case "REJECTED":
+      return IssueComment_Approval_Status.REJECTED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return IssueComment_Approval_Status.UNRECOGNIZED;
+  }
+}
+
+export function issueComment_Approval_StatusToJSON(object: IssueComment_Approval_Status): string {
+  switch (object) {
+    case IssueComment_Approval_Status.STATUS_UNSPECIFIED:
+      return "STATUS_UNSPECIFIED";
+    case IssueComment_Approval_Status.PENDING:
+      return "PENDING";
+    case IssueComment_Approval_Status.APPROVED:
+      return "APPROVED";
+    case IssueComment_Approval_Status.REJECTED:
+      return "REJECTED";
+    case IssueComment_Approval_Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface IssueComment_IssueUpdate {
+  fromTitle?: string | undefined;
+  toTitle?: string | undefined;
+  fromDescription?: string | undefined;
+  toDescription?: string | undefined;
+  fromStatus?: IssueStatus | undefined;
+  toStatus?:
+    | IssueStatus
+    | undefined;
+  /** Format: users/{email} */
+  fromAssignee?:
+    | string
+    | undefined;
+  /** Format: users/{email} */
+  toAssignee?: string | undefined;
+}
+
+export interface IssueComment_StageEnd {
+  stage: string;
+}
+
+export interface IssueComment_TaskRunUpdate {
+  taskRuns: string[];
+  toStatus?: IssueComment_TaskRunUpdate_Status | undefined;
+}
+
+export enum IssueComment_TaskRunUpdate_Status {
+  STATUS_UNSPECIFIED = 0,
+  PENDING = 1,
+  RUNNING = 2,
+  DONE = 3,
+  FAILED = 4,
+  UNRECOGNIZED = -1,
+}
+
+export function issueComment_TaskRunUpdate_StatusFromJSON(object: any): IssueComment_TaskRunUpdate_Status {
+  switch (object) {
+    case 0:
+    case "STATUS_UNSPECIFIED":
+      return IssueComment_TaskRunUpdate_Status.STATUS_UNSPECIFIED;
+    case 1:
+    case "PENDING":
+      return IssueComment_TaskRunUpdate_Status.PENDING;
+    case 2:
+    case "RUNNING":
+      return IssueComment_TaskRunUpdate_Status.RUNNING;
+    case 3:
+    case "DONE":
+      return IssueComment_TaskRunUpdate_Status.DONE;
+    case 4:
+    case "FAILED":
+      return IssueComment_TaskRunUpdate_Status.FAILED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return IssueComment_TaskRunUpdate_Status.UNRECOGNIZED;
+  }
+}
+
+export function issueComment_TaskRunUpdate_StatusToJSON(object: IssueComment_TaskRunUpdate_Status): string {
+  switch (object) {
+    case IssueComment_TaskRunUpdate_Status.STATUS_UNSPECIFIED:
+      return "STATUS_UNSPECIFIED";
+    case IssueComment_TaskRunUpdate_Status.PENDING:
+      return "PENDING";
+    case IssueComment_TaskRunUpdate_Status.RUNNING:
+      return "RUNNING";
+    case IssueComment_TaskRunUpdate_Status.DONE:
+      return "DONE";
+    case IssueComment_TaskRunUpdate_Status.FAILED:
+      return "FAILED";
+    case IssueComment_TaskRunUpdate_Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface IssueComment_TaskUpdate {
+  tasks: string[];
+  /** Format: projects/{project}/sheets/{sheet} */
+  fromSheet?:
+    | string
+    | undefined;
+  /** Format: projects/{project}/sheets/{sheet} */
+  toSheet?: string | undefined;
+  fromEarliestAllowedTime?: Date | undefined;
+  toEarliestAllowedTime?: Date | undefined;
+}
+
+export interface IssueComment_TaskPriorBackup {
+  task: string;
+  tables: IssueComment_TaskPriorBackup_Table[];
+}
+
+export interface IssueComment_TaskPriorBackup_Table {
+  schema: string;
+  table: string;
 }
 
 function createBaseGetIssueRequest(): GetIssueRequest {
@@ -2824,7 +2984,21 @@ export const UpdateIssueCommentRequest = {
 };
 
 function createBaseIssueComment(): IssueComment {
-  return { uid: "", comment: "", payload: "", createTime: undefined, updateTime: undefined };
+  return {
+    uid: "",
+    comment: "",
+    payload: "",
+    createTime: undefined,
+    updateTime: undefined,
+    name: "",
+    creator: "",
+    approval: undefined,
+    issueUpdate: undefined,
+    stageEnd: undefined,
+    taskRunUpdate: undefined,
+    taskUpdate: undefined,
+    taskPriorBackup: undefined,
+  };
 }
 
 export const IssueComment = {
@@ -2843,6 +3017,30 @@ export const IssueComment = {
     }
     if (message.updateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.name !== "") {
+      writer.uint32(50).string(message.name);
+    }
+    if (message.creator !== "") {
+      writer.uint32(58).string(message.creator);
+    }
+    if (message.approval !== undefined) {
+      IssueComment_Approval.encode(message.approval, writer.uint32(66).fork()).ldelim();
+    }
+    if (message.issueUpdate !== undefined) {
+      IssueComment_IssueUpdate.encode(message.issueUpdate, writer.uint32(74).fork()).ldelim();
+    }
+    if (message.stageEnd !== undefined) {
+      IssueComment_StageEnd.encode(message.stageEnd, writer.uint32(82).fork()).ldelim();
+    }
+    if (message.taskRunUpdate !== undefined) {
+      IssueComment_TaskRunUpdate.encode(message.taskRunUpdate, writer.uint32(90).fork()).ldelim();
+    }
+    if (message.taskUpdate !== undefined) {
+      IssueComment_TaskUpdate.encode(message.taskUpdate, writer.uint32(98).fork()).ldelim();
+    }
+    if (message.taskPriorBackup !== undefined) {
+      IssueComment_TaskPriorBackup.encode(message.taskPriorBackup, writer.uint32(106).fork()).ldelim();
     }
     return writer;
   },
@@ -2889,6 +3087,62 @@ export const IssueComment = {
 
           message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.approval = IssueComment_Approval.decode(reader, reader.uint32());
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.issueUpdate = IssueComment_IssueUpdate.decode(reader, reader.uint32());
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.stageEnd = IssueComment_StageEnd.decode(reader, reader.uint32());
+          continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.taskRunUpdate = IssueComment_TaskRunUpdate.decode(reader, reader.uint32());
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.taskUpdate = IssueComment_TaskUpdate.decode(reader, reader.uint32());
+          continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.taskPriorBackup = IssueComment_TaskPriorBackup.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2905,6 +3159,18 @@ export const IssueComment = {
       payload: isSet(object.payload) ? globalThis.String(object.payload) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      approval: isSet(object.approval) ? IssueComment_Approval.fromJSON(object.approval) : undefined,
+      issueUpdate: isSet(object.issueUpdate) ? IssueComment_IssueUpdate.fromJSON(object.issueUpdate) : undefined,
+      stageEnd: isSet(object.stageEnd) ? IssueComment_StageEnd.fromJSON(object.stageEnd) : undefined,
+      taskRunUpdate: isSet(object.taskRunUpdate)
+        ? IssueComment_TaskRunUpdate.fromJSON(object.taskRunUpdate)
+        : undefined,
+      taskUpdate: isSet(object.taskUpdate) ? IssueComment_TaskUpdate.fromJSON(object.taskUpdate) : undefined,
+      taskPriorBackup: isSet(object.taskPriorBackup)
+        ? IssueComment_TaskPriorBackup.fromJSON(object.taskPriorBackup)
+        : undefined,
     };
   },
 
@@ -2925,6 +3191,30 @@ export const IssueComment = {
     if (message.updateTime !== undefined) {
       obj.updateTime = message.updateTime.toISOString();
     }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.approval !== undefined) {
+      obj.approval = IssueComment_Approval.toJSON(message.approval);
+    }
+    if (message.issueUpdate !== undefined) {
+      obj.issueUpdate = IssueComment_IssueUpdate.toJSON(message.issueUpdate);
+    }
+    if (message.stageEnd !== undefined) {
+      obj.stageEnd = IssueComment_StageEnd.toJSON(message.stageEnd);
+    }
+    if (message.taskRunUpdate !== undefined) {
+      obj.taskRunUpdate = IssueComment_TaskRunUpdate.toJSON(message.taskRunUpdate);
+    }
+    if (message.taskUpdate !== undefined) {
+      obj.taskUpdate = IssueComment_TaskUpdate.toJSON(message.taskUpdate);
+    }
+    if (message.taskPriorBackup !== undefined) {
+      obj.taskPriorBackup = IssueComment_TaskPriorBackup.toJSON(message.taskPriorBackup);
+    }
     return obj;
   },
 
@@ -2938,6 +3228,666 @@ export const IssueComment = {
     message.payload = object.payload ?? "";
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
+    message.name = object.name ?? "";
+    message.creator = object.creator ?? "";
+    message.approval = (object.approval !== undefined && object.approval !== null)
+      ? IssueComment_Approval.fromPartial(object.approval)
+      : undefined;
+    message.issueUpdate = (object.issueUpdate !== undefined && object.issueUpdate !== null)
+      ? IssueComment_IssueUpdate.fromPartial(object.issueUpdate)
+      : undefined;
+    message.stageEnd = (object.stageEnd !== undefined && object.stageEnd !== null)
+      ? IssueComment_StageEnd.fromPartial(object.stageEnd)
+      : undefined;
+    message.taskRunUpdate = (object.taskRunUpdate !== undefined && object.taskRunUpdate !== null)
+      ? IssueComment_TaskRunUpdate.fromPartial(object.taskRunUpdate)
+      : undefined;
+    message.taskUpdate = (object.taskUpdate !== undefined && object.taskUpdate !== null)
+      ? IssueComment_TaskUpdate.fromPartial(object.taskUpdate)
+      : undefined;
+    message.taskPriorBackup = (object.taskPriorBackup !== undefined && object.taskPriorBackup !== null)
+      ? IssueComment_TaskPriorBackup.fromPartial(object.taskPriorBackup)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseIssueComment_Approval(): IssueComment_Approval {
+  return { status: 0 };
+}
+
+export const IssueComment_Approval = {
+  encode(message: IssueComment_Approval, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.status !== 0) {
+      writer.uint32(8).int32(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IssueComment_Approval {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIssueComment_Approval();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IssueComment_Approval {
+    return { status: isSet(object.status) ? issueComment_Approval_StatusFromJSON(object.status) : 0 };
+  },
+
+  toJSON(message: IssueComment_Approval): unknown {
+    const obj: any = {};
+    if (message.status !== 0) {
+      obj.status = issueComment_Approval_StatusToJSON(message.status);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<IssueComment_Approval>): IssueComment_Approval {
+    return IssueComment_Approval.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<IssueComment_Approval>): IssueComment_Approval {
+    const message = createBaseIssueComment_Approval();
+    message.status = object.status ?? 0;
+    return message;
+  },
+};
+
+function createBaseIssueComment_IssueUpdate(): IssueComment_IssueUpdate {
+  return {
+    fromTitle: undefined,
+    toTitle: undefined,
+    fromDescription: undefined,
+    toDescription: undefined,
+    fromStatus: undefined,
+    toStatus: undefined,
+    fromAssignee: undefined,
+    toAssignee: undefined,
+  };
+}
+
+export const IssueComment_IssueUpdate = {
+  encode(message: IssueComment_IssueUpdate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.fromTitle !== undefined) {
+      writer.uint32(10).string(message.fromTitle);
+    }
+    if (message.toTitle !== undefined) {
+      writer.uint32(18).string(message.toTitle);
+    }
+    if (message.fromDescription !== undefined) {
+      writer.uint32(26).string(message.fromDescription);
+    }
+    if (message.toDescription !== undefined) {
+      writer.uint32(34).string(message.toDescription);
+    }
+    if (message.fromStatus !== undefined) {
+      writer.uint32(40).int32(message.fromStatus);
+    }
+    if (message.toStatus !== undefined) {
+      writer.uint32(48).int32(message.toStatus);
+    }
+    if (message.fromAssignee !== undefined) {
+      writer.uint32(58).string(message.fromAssignee);
+    }
+    if (message.toAssignee !== undefined) {
+      writer.uint32(66).string(message.toAssignee);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IssueComment_IssueUpdate {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIssueComment_IssueUpdate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fromTitle = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.toTitle = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fromDescription = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.toDescription = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.fromStatus = reader.int32() as any;
+          continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.toStatus = reader.int32() as any;
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.fromAssignee = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.toAssignee = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IssueComment_IssueUpdate {
+    return {
+      fromTitle: isSet(object.fromTitle) ? globalThis.String(object.fromTitle) : undefined,
+      toTitle: isSet(object.toTitle) ? globalThis.String(object.toTitle) : undefined,
+      fromDescription: isSet(object.fromDescription) ? globalThis.String(object.fromDescription) : undefined,
+      toDescription: isSet(object.toDescription) ? globalThis.String(object.toDescription) : undefined,
+      fromStatus: isSet(object.fromStatus) ? issueStatusFromJSON(object.fromStatus) : undefined,
+      toStatus: isSet(object.toStatus) ? issueStatusFromJSON(object.toStatus) : undefined,
+      fromAssignee: isSet(object.fromAssignee) ? globalThis.String(object.fromAssignee) : undefined,
+      toAssignee: isSet(object.toAssignee) ? globalThis.String(object.toAssignee) : undefined,
+    };
+  },
+
+  toJSON(message: IssueComment_IssueUpdate): unknown {
+    const obj: any = {};
+    if (message.fromTitle !== undefined) {
+      obj.fromTitle = message.fromTitle;
+    }
+    if (message.toTitle !== undefined) {
+      obj.toTitle = message.toTitle;
+    }
+    if (message.fromDescription !== undefined) {
+      obj.fromDescription = message.fromDescription;
+    }
+    if (message.toDescription !== undefined) {
+      obj.toDescription = message.toDescription;
+    }
+    if (message.fromStatus !== undefined) {
+      obj.fromStatus = issueStatusToJSON(message.fromStatus);
+    }
+    if (message.toStatus !== undefined) {
+      obj.toStatus = issueStatusToJSON(message.toStatus);
+    }
+    if (message.fromAssignee !== undefined) {
+      obj.fromAssignee = message.fromAssignee;
+    }
+    if (message.toAssignee !== undefined) {
+      obj.toAssignee = message.toAssignee;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<IssueComment_IssueUpdate>): IssueComment_IssueUpdate {
+    return IssueComment_IssueUpdate.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<IssueComment_IssueUpdate>): IssueComment_IssueUpdate {
+    const message = createBaseIssueComment_IssueUpdate();
+    message.fromTitle = object.fromTitle ?? undefined;
+    message.toTitle = object.toTitle ?? undefined;
+    message.fromDescription = object.fromDescription ?? undefined;
+    message.toDescription = object.toDescription ?? undefined;
+    message.fromStatus = object.fromStatus ?? undefined;
+    message.toStatus = object.toStatus ?? undefined;
+    message.fromAssignee = object.fromAssignee ?? undefined;
+    message.toAssignee = object.toAssignee ?? undefined;
+    return message;
+  },
+};
+
+function createBaseIssueComment_StageEnd(): IssueComment_StageEnd {
+  return { stage: "" };
+}
+
+export const IssueComment_StageEnd = {
+  encode(message: IssueComment_StageEnd, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.stage !== "") {
+      writer.uint32(10).string(message.stage);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IssueComment_StageEnd {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIssueComment_StageEnd();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.stage = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IssueComment_StageEnd {
+    return { stage: isSet(object.stage) ? globalThis.String(object.stage) : "" };
+  },
+
+  toJSON(message: IssueComment_StageEnd): unknown {
+    const obj: any = {};
+    if (message.stage !== "") {
+      obj.stage = message.stage;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<IssueComment_StageEnd>): IssueComment_StageEnd {
+    return IssueComment_StageEnd.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<IssueComment_StageEnd>): IssueComment_StageEnd {
+    const message = createBaseIssueComment_StageEnd();
+    message.stage = object.stage ?? "";
+    return message;
+  },
+};
+
+function createBaseIssueComment_TaskRunUpdate(): IssueComment_TaskRunUpdate {
+  return { taskRuns: [], toStatus: undefined };
+}
+
+export const IssueComment_TaskRunUpdate = {
+  encode(message: IssueComment_TaskRunUpdate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.taskRuns) {
+      writer.uint32(10).string(v!);
+    }
+    if (message.toStatus !== undefined) {
+      writer.uint32(16).int32(message.toStatus);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IssueComment_TaskRunUpdate {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIssueComment_TaskRunUpdate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.taskRuns.push(reader.string());
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.toStatus = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IssueComment_TaskRunUpdate {
+    return {
+      taskRuns: globalThis.Array.isArray(object?.taskRuns) ? object.taskRuns.map((e: any) => globalThis.String(e)) : [],
+      toStatus: isSet(object.toStatus) ? issueComment_TaskRunUpdate_StatusFromJSON(object.toStatus) : undefined,
+    };
+  },
+
+  toJSON(message: IssueComment_TaskRunUpdate): unknown {
+    const obj: any = {};
+    if (message.taskRuns?.length) {
+      obj.taskRuns = message.taskRuns;
+    }
+    if (message.toStatus !== undefined) {
+      obj.toStatus = issueComment_TaskRunUpdate_StatusToJSON(message.toStatus);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<IssueComment_TaskRunUpdate>): IssueComment_TaskRunUpdate {
+    return IssueComment_TaskRunUpdate.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<IssueComment_TaskRunUpdate>): IssueComment_TaskRunUpdate {
+    const message = createBaseIssueComment_TaskRunUpdate();
+    message.taskRuns = object.taskRuns?.map((e) => e) || [];
+    message.toStatus = object.toStatus ?? undefined;
+    return message;
+  },
+};
+
+function createBaseIssueComment_TaskUpdate(): IssueComment_TaskUpdate {
+  return {
+    tasks: [],
+    fromSheet: undefined,
+    toSheet: undefined,
+    fromEarliestAllowedTime: undefined,
+    toEarliestAllowedTime: undefined,
+  };
+}
+
+export const IssueComment_TaskUpdate = {
+  encode(message: IssueComment_TaskUpdate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.tasks) {
+      writer.uint32(10).string(v!);
+    }
+    if (message.fromSheet !== undefined) {
+      writer.uint32(18).string(message.fromSheet);
+    }
+    if (message.toSheet !== undefined) {
+      writer.uint32(26).string(message.toSheet);
+    }
+    if (message.fromEarliestAllowedTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.fromEarliestAllowedTime), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.toEarliestAllowedTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.toEarliestAllowedTime), writer.uint32(42).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IssueComment_TaskUpdate {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIssueComment_TaskUpdate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tasks.push(reader.string());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fromSheet = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.toSheet = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.fromEarliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.toEarliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IssueComment_TaskUpdate {
+    return {
+      tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => globalThis.String(e)) : [],
+      fromSheet: isSet(object.fromSheet) ? globalThis.String(object.fromSheet) : undefined,
+      toSheet: isSet(object.toSheet) ? globalThis.String(object.toSheet) : undefined,
+      fromEarliestAllowedTime: isSet(object.fromEarliestAllowedTime)
+        ? fromJsonTimestamp(object.fromEarliestAllowedTime)
+        : undefined,
+      toEarliestAllowedTime: isSet(object.toEarliestAllowedTime)
+        ? fromJsonTimestamp(object.toEarliestAllowedTime)
+        : undefined,
+    };
+  },
+
+  toJSON(message: IssueComment_TaskUpdate): unknown {
+    const obj: any = {};
+    if (message.tasks?.length) {
+      obj.tasks = message.tasks;
+    }
+    if (message.fromSheet !== undefined) {
+      obj.fromSheet = message.fromSheet;
+    }
+    if (message.toSheet !== undefined) {
+      obj.toSheet = message.toSheet;
+    }
+    if (message.fromEarliestAllowedTime !== undefined) {
+      obj.fromEarliestAllowedTime = message.fromEarliestAllowedTime.toISOString();
+    }
+    if (message.toEarliestAllowedTime !== undefined) {
+      obj.toEarliestAllowedTime = message.toEarliestAllowedTime.toISOString();
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<IssueComment_TaskUpdate>): IssueComment_TaskUpdate {
+    return IssueComment_TaskUpdate.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<IssueComment_TaskUpdate>): IssueComment_TaskUpdate {
+    const message = createBaseIssueComment_TaskUpdate();
+    message.tasks = object.tasks?.map((e) => e) || [];
+    message.fromSheet = object.fromSheet ?? undefined;
+    message.toSheet = object.toSheet ?? undefined;
+    message.fromEarliestAllowedTime = object.fromEarliestAllowedTime ?? undefined;
+    message.toEarliestAllowedTime = object.toEarliestAllowedTime ?? undefined;
+    return message;
+  },
+};
+
+function createBaseIssueComment_TaskPriorBackup(): IssueComment_TaskPriorBackup {
+  return { task: "", tables: [] };
+}
+
+export const IssueComment_TaskPriorBackup = {
+  encode(message: IssueComment_TaskPriorBackup, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.task !== "") {
+      writer.uint32(10).string(message.task);
+    }
+    for (const v of message.tables) {
+      IssueComment_TaskPriorBackup_Table.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IssueComment_TaskPriorBackup {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIssueComment_TaskPriorBackup();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.task = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tables.push(IssueComment_TaskPriorBackup_Table.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IssueComment_TaskPriorBackup {
+    return {
+      task: isSet(object.task) ? globalThis.String(object.task) : "",
+      tables: globalThis.Array.isArray(object?.tables)
+        ? object.tables.map((e: any) => IssueComment_TaskPriorBackup_Table.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: IssueComment_TaskPriorBackup): unknown {
+    const obj: any = {};
+    if (message.task !== "") {
+      obj.task = message.task;
+    }
+    if (message.tables?.length) {
+      obj.tables = message.tables.map((e) => IssueComment_TaskPriorBackup_Table.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<IssueComment_TaskPriorBackup>): IssueComment_TaskPriorBackup {
+    return IssueComment_TaskPriorBackup.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<IssueComment_TaskPriorBackup>): IssueComment_TaskPriorBackup {
+    const message = createBaseIssueComment_TaskPriorBackup();
+    message.task = object.task ?? "";
+    message.tables = object.tables?.map((e) => IssueComment_TaskPriorBackup_Table.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseIssueComment_TaskPriorBackup_Table(): IssueComment_TaskPriorBackup_Table {
+  return { schema: "", table: "" };
+}
+
+export const IssueComment_TaskPriorBackup_Table = {
+  encode(message: IssueComment_TaskPriorBackup_Table, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schema !== "") {
+      writer.uint32(10).string(message.schema);
+    }
+    if (message.table !== "") {
+      writer.uint32(18).string(message.table);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): IssueComment_TaskPriorBackup_Table {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIssueComment_TaskPriorBackup_Table();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.table = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IssueComment_TaskPriorBackup_Table {
+    return {
+      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
+      table: isSet(object.table) ? globalThis.String(object.table) : "",
+    };
+  },
+
+  toJSON(message: IssueComment_TaskPriorBackup_Table): unknown {
+    const obj: any = {};
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.table !== "") {
+      obj.table = message.table;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<IssueComment_TaskPriorBackup_Table>): IssueComment_TaskPriorBackup_Table {
+    return IssueComment_TaskPriorBackup_Table.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<IssueComment_TaskPriorBackup_Table>): IssueComment_TaskPriorBackup_Table {
+    const message = createBaseIssueComment_TaskPriorBackup_Table();
+    message.schema = object.schema ?? "";
+    message.table = object.table ?? "";
     return message;
   },
 };
