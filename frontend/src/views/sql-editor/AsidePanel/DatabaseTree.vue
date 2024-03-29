@@ -420,12 +420,10 @@ const handleSelect = (key: string) => {
   }
   option.onSelect();
   showDropdown.value = false;
-  console.log("handleSelect", key);
 };
 
 const handleClickoutside = () => {
   showDropdown.value = false;
-  console.log("handleClickoutside");
 };
 
 const maybeSelectTable = async (node: SQLEditorTreeNode) => {
@@ -620,14 +618,12 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
     onContextmenu(e: MouseEvent) {
       e.preventDefault();
       showDropdown.value = false;
-      console.log("onContextmenu", false);
       if (node && node.key) {
         dropdownContext.value = node;
       }
 
       nextTick().then(() => {
         showDropdown.value = true;
-        console.log("onContextmenu", true);
         dropdownPosition.value.x = e.clientX;
         dropdownPosition.value.y = e.clientY;
       });

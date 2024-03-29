@@ -131,14 +131,6 @@ func (s *VCSProviderService) SearchVCSProviderProjects(ctx context.Context, requ
 		return nil, err
 	}
 
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
-	}
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
-	}
-
 	apiExternalProjectList, err := vcs.Get(vcsProvider.Type, vcs.ProviderConfig{}).FetchAllRepositoryList(
 		ctx,
 		&common.OauthContext{

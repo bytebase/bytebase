@@ -22,14 +22,14 @@
           <div class="sm:col-span-2 sm:col-start-1">
             <label for="name" class="textlabel flex flex-row items-center">
               {{ $t("instance.instance-name") }}
-              <span class="text-red-600 mr-2">*</span>
-              <template v-if="props.instance">
+              <span class="text-red-600 ml-0.5">*</span>
+              <div v-if="props.instance" class="ml-2 flex items-center">
                 <InstanceV1EngineIcon
                   :instance="props.instance"
                   :tooltip="false"
                 />
                 <span class="ml-1">{{ props.instance.engineVersion }}</span>
-              </template>
+              </div>
             </label>
             <NInput
               v-model:value="basicInfo.title"
@@ -73,6 +73,7 @@
               ref="resourceIdField"
               v-model:value="resourceId"
               class="max-w-full flex-nowrap"
+              editing-class="mt-4"
               resource-type="instance"
               :readonly="!isCreating"
               :resource-title="basicInfo.title"
@@ -84,7 +85,7 @@
             <label for="environment" class="textlabel">
               {{ $t("common.environment") }}
             </label>
-            <span class="text-red-600 mr-2">*</span>
+            <span class="text-red-600 ml-0.5">*</span>
             <EnvironmentSelect
               class="mt-1 w-full"
               :disabled="!isCreating"

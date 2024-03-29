@@ -43,7 +43,8 @@
       />
       <ResourceIdField
         v-model:value="config.resourceId"
-        class="max-w-full flex-nowrap mt-4"
+        class="max-w-full flex-nowrap mt-1.5"
+        editing-class="mt-4"
         resource-type="vcs-provider"
         :resource-title="config.name"
         :validate="validateResourceId"
