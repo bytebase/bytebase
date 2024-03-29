@@ -2926,8 +2926,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Create Database",
-          "request_query": "Request Query",
-          "request_export": "Request Export"
+          "data_export": "Data Export",
+          "request_query": "Request Querier Role",
+          "request_export": "Request Exporter Role"
         }
       },
       "template": {

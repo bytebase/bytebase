@@ -2926,8 +2926,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Tạo nên cơ sở dữ liệu",
-          "request_query": "Yêu cầu truy vấn",
-          "request_export": "Yêu cầu xuất"
+          "data_export": "Xuất Dữ Liệu",
+          "request_query": "Yêu Cầu Vai Trò Người Truy Vấn",
+          "request_export": "Yêu Cầu Vai Trò Người Xuất khẩu"
         }
       },
       "template": {
