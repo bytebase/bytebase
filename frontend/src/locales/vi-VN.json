@@ -1578,6 +1578,7 @@
     "batch-action-permission-denied": "Không có quyền {action} đối với cơ sở dữ liệu",
     "batch-action-disabled": "Không thể {action} đối với cơ sở dữ liệu từ các dự án khác nhau",
     "batch-action-disabled-for-unassigned": "Không thể {action} đối với cơ sở dữ liệu chưa được chỉ định",
+    "data-export-action-disabled": "Không thể xuất dữ liệu cho nhiều hơn một cơ sở dữ liệu",
     "successfully-transferred-databases": "Đã chuyển cơ sở dữ liệu thành công",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Đã chuyển thành công '{0}' sang dự án '{1}'.",
     "last-sync-status": "Trạng thái đồng bộ hóa lần cuối",
