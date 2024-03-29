@@ -44,14 +44,13 @@
         name="name"
         class="mt-1 w-full"
       />
+      <ResourceIdField
+        :value="props.vcsResourceId"
+        class="max-w-full flex-nowrap mt-1.5"
+        resource-type="vcs-provider"
+        :readonly="true"
+      />
     </div>
-
-    <ResourceIdField
-      :value="props.vcsResourceId"
-      class="max-w-full flex-nowrap"
-      resource-type="vcs-provider"
-      :readonly="true"
-    />
 
     <div>
       <label for="secret" class="textlabel"> Access Token </label>

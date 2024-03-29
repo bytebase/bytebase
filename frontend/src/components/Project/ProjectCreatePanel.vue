@@ -16,10 +16,9 @@
             :required="true"
             :placeholder="$t('project.create-modal.project-name')"
           />
-        </div>
-        <div class="-mt-2">
           <ResourceIdField
             ref="resourceIdField"
+            editing-class="mt-3"
             resource-type="project"
             :value="state.resourceId"
             :resource-title="state.project.title"

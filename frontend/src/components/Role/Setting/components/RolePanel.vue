@@ -22,18 +22,20 @@
               :status="state.role.title?.length === 0 ? 'error' : undefined"
             />
           </div>
+          <div class="-mt-2">
+            <ResourceIdField
+              ref="resourceIdField"
+              v-model:value="resourceId"
+              resource-type="role"
+              :resource-title="state.role.title"
+              :suffix="true"
+              :readonly="mode === 'EDIT'"
+              :validate="validateResourceId"
+              class="flex flex-col mt-1.5"
+              editing-class="mt-4"
+            />
+          </div>
         </div>
-
-        <ResourceIdField
-          ref="resourceIdField"
-          v-model:value="resourceId"
-          resource-type="role"
-          :resource-title="state.role.title"
-          :suffix="true"
-          :readonly="mode === 'EDIT'"
-          :validate="validateResourceId"
-          class="flex flex-col gap-y-2"
-        />
 
         <div class="flex flex-col gap-y-2">
           <div class="textlabel">{{ $t("common.description") }}</div>
