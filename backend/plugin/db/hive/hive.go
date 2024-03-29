@@ -115,7 +115,7 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	}
 
 	for _, statement := range statements {
-		cursor.Execute(ctx, statement.Text, false)
+		cursor.Execute(ctx, strings.TrimRight(statement.Text, ";"), false)
 		if cursor.Err != nil {
 			return 0, errors.Wrapf(cursor.Err, "failed to execute statement %s", statement.Text)
 		}
@@ -132,11 +132,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 		return nil, errors.Errorf("no database connection established")
 	}
 
-	var (
-		results []*v1pb.QueryResult
-		cursor  = d.dbClient.Cursor()
-	)
-	defer cursor.Close()
+	var results []*v1pb.QueryResult
 
 	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
 	if err != nil {
@@ -144,12 +140,12 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 	}
 
 	for _, statement := range statements {
-		statementStr := statement.Text
+		statementStr := strings.TrimRight(statement.Text, ";")
 		if queryCtx != nil && queryCtx.Limit > 0 {
 			statementStr = fmt.Sprintf("%s LIMIT %d", statementStr, queryCtx.Limit)
 		}
 
-		result, err := runSingleQuery(ctx, statementStr, cursor)
+		result, err := d.runSingleQuery(ctx, statementStr)
 		if err != nil {
 			result.Error = err.Error()
 			return nil, err
@@ -160,9 +156,16 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 	return results, nil
 }
 
-// TODO(zp): remove this function from the interface.
-func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
-	return nil, errors.Errorf("Not implemeted")
+// TODO(tommy): this func is used for admin mode.
+func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	if err := d.SetRole(ctx, "admin"); err != nil {
+		return nil, errors.Wrapf(err, "failed to switch role to admin")
+	}
+	results, err := d.QueryConn(ctx, nil, statement, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "")
+	}
+	return results, nil
 }
 
 // This function converts basic types to types that have implemented isRowValue_Kind interface.
@@ -198,19 +201,16 @@ func parseValueType(value any, gohiveType string) (*v1pb.RowValue, error) {
 	return &rowValue, nil
 }
 
-func runSingleQuery(ctx context.Context, statement string, cursor *gohive.Cursor) (*v1pb.QueryResult, error) {
+func (d *Driver) runSingleQuery(ctx context.Context, statement string) (*v1pb.QueryResult, error) {
 	var (
 		result    = v1pb.QueryResult{}
 		startTime = time.Now()
 	)
-	statement = strings.TrimRight(statement, ";")
+	cursor := d.dbClient.Cursor()
+	defer cursor.Close()
 
 	// run query.
 	cursor.Execute(ctx, statement, false)
-	columnNamesAndTypes := cursor.Description()
-	for _, row := range columnNamesAndTypes {
-		result.ColumnNames = append(result.ColumnNames, row[0])
-	}
 
 	// Latency.
 	result.Latency = durationpb.New(time.Since(startTime))
@@ -221,21 +221,29 @@ func runSingleQuery(ctx context.Context, statement string, cursor *gohive.Cursor
 		return &result, errors.Wrapf(cursor.Err, "failed to execute statement")
 	}
 
-	// process query results.
-	for cursor.HasMore(ctx) {
-		var queryRow v1pb.QueryRow
-		rowMap := cursor.RowMap(ctx)
-		for idx, columnName := range result.ColumnNames {
-			gohiveTypeStr := columnNamesAndTypes[idx][1]
-			val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
-			if err != nil {
-				return &result, err
-			}
-			queryRow.Values = append(queryRow.Values, val)
+	columnNamesAndTypes := cursor.Description()
+	if cursor.Err == nil {
+		for _, row := range columnNamesAndTypes {
+			result.ColumnNames = append(result.ColumnNames, row[0])
 		}
 
-		// Rows.
-		result.Rows = append(result.Rows, &queryRow)
+		// process query results.
+		for cursor.HasMore(ctx) {
+			var queryRow v1pb.QueryRow
+			rowMap := cursor.RowMap(ctx)
+			for idx, columnName := range result.ColumnNames {
+				gohiveTypeStr := columnNamesAndTypes[idx][1]
+				val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
+				if err != nil {
+					return &result, err
+				}
+				queryRow.Values = append(queryRow.Values, val)
+			}
+
+			// Rows.
+			result.Rows = append(result.Rows, &queryRow)
+		}
+		return &result, nil
 	}
-	return &result, nil
+	return nil, nil
 }
