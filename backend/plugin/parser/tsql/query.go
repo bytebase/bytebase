@@ -62,6 +62,10 @@ func (q *queryValidateListener) EnterDml_clause(ctx *parser.Dml_clauseContext) {
 	if !q.valid {
 		return
 	}
+	_, ok := ctx.GetParent().(*parser.Sql_clausesContext)
+	if !ok {
+		return
+	}
 	if ctx.Select_statement_standalone() == nil {
 		q.valid = false
 		return
@@ -70,6 +74,10 @@ func (q *queryValidateListener) EnterDml_clause(ctx *parser.Dml_clauseContext) {
 
 func (q *queryValidateListener) EnterSelect_statement_standalone(ctx *parser.Select_statement_standaloneContext) {
 	if !q.valid {
+		return
+	}
+	_, ok := ctx.GetParent().(*parser.Dml_clauseContext)
+	if !ok {
 		return
 	}
 	if ctx.Select_statement() == nil {
