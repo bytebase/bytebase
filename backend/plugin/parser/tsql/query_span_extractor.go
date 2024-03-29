@@ -309,6 +309,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ct
 		return nil, nil
 	}
 
+	var compoundFrom []base.TableSource
 	if from := ctx.GetFrom(); from != nil {
 		fromFieldList, err := q.extractTSqlSensitiveFieldsFromTableSources(ctx.Table_sources())
 		if err != nil {
@@ -316,6 +317,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ct
 		}
 		originalFromFieldList := len(q.tableSourcesFrom)
 		q.tableSourcesFrom = append(q.tableSourcesFrom, fromFieldList...)
+		compoundFrom = fromFieldList
 		defer func() {
 			q.tableSourcesFrom = q.tableSourcesFrom[:originalFromFieldList]
 		}()
@@ -330,11 +332,18 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ct
 			if tableName := asterisk.Table_name(); tableName != nil {
 				normalizedDatabaseName, normalizedSchemaName, normalizedTableName = splitTableNameIntoNormalizedParts(tableName)
 			}
-			left, err := q.tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get all fields of table %s.%s.%s", normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
+			if normalizedDatabaseName == "" && normalizedSchemaName == "" && normalizedTableName == "" {
+				// SELECT * FROM ...
+				for _, tableSource := range compoundFrom {
+					result.Columns = append(result.Columns, tableSource.GetQuerySpanResult()...)
+				}
+			} else {
+				left, err := q.tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get all fields of table %s.%s.%s", normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
+				}
+				result.Columns = append(result.Columns, left...)
 			}
-			result.Columns = append(result.Columns, left...)
 		} else if selectListElem.Udt_elem() != nil {
 			// TODO(zp): handle the UDT.
 			result.Columns = append(result.Columns, base.QuerySpanResult{
@@ -393,6 +402,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSource(ctx parse
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_source_item` in `table_source`")
 	}
+	q.tableSourcesFrom = append(q.tableSourcesFrom, anchor)
 	name := anchor.GetTableName()
 	columns = append(columns, anchor.GetQuerySpanResult()...)
 
@@ -400,12 +410,14 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSource(ctx parse
 		name = ""
 		// https://learn.microsoft.com/en-us/sql/relational-databases/performance/joins?view=sql-server-ver16
 		for _, joinPart := range allJoinParts {
+			var joinTarget base.TableSource
 			if joinOn := joinPart.Join_on(); joinOn != nil {
 				right, err := q.extractTSqlSensitiveFieldsFromTableSource(joinOn.Table_source())
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_source` in `join_on`")
 				}
 				columns = append(columns, right.GetQuerySpanResult()...)
+				joinTarget = right
 			}
 			if crossJoin := joinPart.Cross_join(); crossJoin != nil {
 				right, err := q.extractTSqlSensitiveFieldsFromTableSourceItem(crossJoin.Table_source_item())
@@ -413,6 +425,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSource(ctx parse
 					return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_source` in `cross_join`")
 				}
 				columns = append(columns, right.GetQuerySpanResult()...)
+				joinTarget = right
 			}
 			if apply := joinPart.Apply_(); apply != nil {
 				right, err := q.extractTSqlSensitiveFieldsFromTableSourceItem(apply.Table_source_item())
@@ -420,6 +433,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSource(ctx parse
 					return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_source` in `apply`")
 				}
 				columns = append(columns, right.GetQuerySpanResult()...)
+				joinTarget = right
 			}
 			// TODO(zp): handle pivot and unpivot.
 			if pivot := joinPart.Pivot(); pivot != nil {
@@ -427,6 +441,9 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSource(ctx parse
 			}
 			if unpivot := joinPart.Unpivot(); unpivot != nil {
 				return nil, errors.New("unpivot is not supported yet")
+			}
+			if joinTarget != nil {
+				q.tableSourcesFrom = append(q.tableSourcesFrom, joinTarget)
 			}
 		}
 	}
