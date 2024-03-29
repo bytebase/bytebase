@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full py-1 gap-y-2">
+  <div class="flex flex-col h-full py-1 gap-y-2 relative">
     <div class="flex items-center gap-x-1 px-1 pt-1">
       <SearchBox
         v-model:value="keyword"
@@ -7,6 +7,7 @@
         :disabled="isLoading"
         :placeholder="$t('sheet.search-sheets')"
         :clearable="true"
+        style="max-width: 100%"
       />
       <NButton
         quaternary
@@ -38,9 +39,6 @@
         :node-props="nodeProps"
         :virtual-scroll="false"
       />
-      <div v-if="isLoading" class="flex flex-col items-center py-8">
-        <BBSpin />
-      </div>
 
       <Dropdown
         v-if="dropdown && isSheetItem(dropdown.item)"
@@ -57,6 +55,8 @@
         }"
         @dismiss="dropdown = undefined"
       />
+
+      <MaskSpinner v-if="isLoading" class="!bg-white/75" />
     </div>
   </div>
 </template>
@@ -69,6 +69,7 @@ import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, onMounted, ref, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
+import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import {
   InstanceV1EngineIcon,
   ProjectV1Name,

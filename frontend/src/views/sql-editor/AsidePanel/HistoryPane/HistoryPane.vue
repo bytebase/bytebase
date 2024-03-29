@@ -6,6 +6,7 @@
         v-model:value="state.search"
         size="small"
         :placeholder="$t('sql-editor.search-history')"
+        style="max-width: 100%"
       />
     </div>
     <div class="w-full flex flex-col justify-start items-start overflow-y-auto">
@@ -45,12 +46,10 @@
       {{ notifyMessage }}
     </div>
 
-    <div
+    <MaskSpinner
       v-show="isFetching && queryHistoryList.length === 0"
-      class="absolute w-full h-full flex justify-center items-center"
-    >
-      <BBSpin :title="$t('common.loading')" />
-    </div>
+      class="!bg-white/75"
+    />
   </div>
 </template>
 
@@ -61,6 +60,7 @@ import { escape } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
 import {
   pushNotification,
