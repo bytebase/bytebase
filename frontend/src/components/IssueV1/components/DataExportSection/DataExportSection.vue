@@ -3,7 +3,7 @@
     <template v-if="stageList.length > 0">
       <div class="w-full flex flex-row items-center py-2 px-2 sm:px-4">
         <span class="textlabel mr-4">{{ $t("common.database") }}</span>
-        <DatabaseInfo />
+        <DatabaseInfo :database="database" />
       </div>
       <div class="w-full py-2 px-2 sm:px-4">
         <ExportOptionSection />
@@ -21,20 +21,24 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useIssueContext } from "@/components/IssueV1/logic";
+import DatabaseInfo from "@/components/DatabaseInfo.vue";
+import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { useCurrentUserV1 } from "@/store";
 import { hasProjectPermissionV2 } from "@/utils";
-import DatabaseInfo from "./DatabaseInfo.vue";
 import ExportOptionSection from "./ExportOptionSection";
 
-const { isCreating, issue } = useIssueContext();
+const { isCreating, issue, selectedTask } = useIssueContext();
 const me = useCurrentUserV1();
 
 // For database data export issue, the stageList should always be only 1 stage.
 const stageList = computed(() => {
   return issue.value.rolloutEntity.stages;
+});
+
+const database = computed(() => {
+  return databaseForTask(issue.value, selectedTask.value);
 });
 
 const placeholder = computed(() => {
