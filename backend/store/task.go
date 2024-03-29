@@ -415,7 +415,7 @@ func (s *Store) ListTasksToAutoRollout(ctx context.Context, environmentIDs []int
 		(SELECT 1 AS e FROM task_run WHERE task_run.task_id = task.id LIMIT 1) task_run
 		ON TRUE
 	WHERE task_run.e IS NULL
-	AND issue.type != 'bb.issue.database.data-export'
+	AND task.type != 'bb.task.database.data.export'
 	AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
 	AND COALESCE(issue.status, 'OPEN') = 'OPEN'
 	AND stage.environment_id = ANY($1)
