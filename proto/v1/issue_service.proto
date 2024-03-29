@@ -437,4 +437,80 @@ message IssueComment {
   google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}
+  string name = 6;
+
+  // Format: users/{email}
+  string creator = 7;
+
+  oneof event {
+    Approval approval = 8;
+    IssueUpdate issue_update = 9;
+    StageEnd stage_end = 10;
+    TaskRunUpdate task_run_update = 11;
+    TaskUpdate task_update = 12;
+    TaskPriorBackup task_prior_backup = 13;
+  }
+
+  message Approval {
+    Status status = 1;
+
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      PENDING = 1;
+      APPROVED = 2;
+      REJECTED = 3;
+    }
+  }
+
+  message IssueUpdate {
+    optional string from_title = 1;
+    optional string to_title = 2;
+    optional string from_description = 3;
+    optional string to_description = 4;
+    optional IssueStatus from_status = 5;
+    optional IssueStatus to_status = 6;
+    // Format: users/{email}
+    optional string from_assignee = 7;
+    // Format: users/{email}
+    optional string to_assignee = 8;
+  }
+
+  message StageEnd {
+    string stage = 1;
+  }
+
+  message TaskRunUpdate {
+    repeated string task_runs = 1;
+    optional Status to_status = 2;
+
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      PENDING = 1;
+      RUNNING = 2;
+      DONE = 3;
+      FAILED = 4;
+    }
+  }
+
+  message TaskUpdate {
+    repeated string tasks = 1;
+    // Format: projects/{project}/sheets/{sheet}
+    optional string from_sheet = 2;
+    // Format: projects/{project}/sheets/{sheet}
+    optional string to_sheet = 3;
+    optional google.protobuf.Timestamp from_earliest_allowed_time = 4;
+    optional google.protobuf.Timestamp to_earliest_allowed_time = 5;
+  }
+
+  message TaskPriorBackup {
+    string task = 1;
+    repeated Table tables = 2;
+
+    message Table {
+      string schema = 1;
+      string table = 2;
+    }
+  }
 }
