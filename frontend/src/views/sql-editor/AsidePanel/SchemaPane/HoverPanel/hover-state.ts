@@ -1,6 +1,3 @@
-import type { InjectionKey, Ref } from "vue";
-import { inject, provide, ref } from "vue";
-import { useDelayedValue } from "@/composables/useDelayedValue";
 import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
@@ -10,15 +7,12 @@ import type {
   TableMetadata,
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
+import {
+  useHoverStateContext as _useHoverStateContext,
+  provideHoverStateContext as _provideHoverStateContext,
+} from "../../hover-state";
 
-type UpdateFn = ReturnType<
-  typeof useDelayedValue<HoverState | undefined>
->["update"];
-
-type Position = {
-  x: number;
-  y: number;
-};
+export const KEY = "schema-pane";
 
 export type HoverState = {
   db: ComposedDatabase;
@@ -30,39 +24,10 @@ export type HoverState = {
   column?: ColumnMetadata;
 };
 
-export type HoverStateContext = {
-  state: Ref<HoverState | undefined>;
-  position: Ref<Position>;
-  update: UpdateFn;
-};
-
-export const KEY = Symbol(
-  "bb.sql-editor.schema-panel.hover-state"
-) as InjectionKey<HoverStateContext>;
-
 export const useHoverStateContext = () => {
-  return inject(KEY)!;
+  return _useHoverStateContext<HoverState>(KEY);
 };
 
 export const provideHoverStateContext = () => {
-  const { value: state, update } = useDelayedValue<HoverState | undefined>(
-    undefined,
-    {
-      delayBefore: 500,
-      delayAfter: 500,
-    }
-  );
-  const position = ref<Position>({
-    x: 0,
-    y: 0,
-  });
-  const context: HoverStateContext = {
-    state,
-    position,
-    update,
-  };
-
-  provide(KEY, context);
-
-  return context;
+  return _provideHoverStateContext<HoverState>(KEY);
 };

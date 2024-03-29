@@ -39,12 +39,7 @@
       @select="handleSelect"
     />
 
-    <DatabaseHoverPanel
-      :database="hoverNode?.meta.target as ComposedDatabase"
-      :x="hoverPanelPosition.x"
-      :y="hoverPanelPosition.y"
-      class="ml-3"
-    />
+    <DatabaseHoverPanel :offset-x="4" :offset-y="4" :margin="4" />
   </div>
   <div v-else class="flex justify-center items-center h-full space-x-2">
     <BBSpin />
@@ -105,12 +100,14 @@ import {
   emptySQLEditorConnection,
 } from "@/utils";
 import { useSQLEditorContext } from "../../context";
-import DatabaseHoverPanel from "./DatabaseHoverPanel.vue";
+import {
+  DatabaseHoverPanel,
+  provideHoverStateContext,
+} from "./DatabaseHoverPanel";
 import GroupingBar from "./GroupingBar";
 import SearchBox from "./SearchBox/index.vue";
 import useSearchHistory from "./SearchBox/useSearchHistory";
 import { Label } from "./TreeNode";
-import { provideHoverStateContext } from "./hover-state";
 
 type DropdownOptionWithTreeNode = DropdownOption & {
   onSelect: () => void;
@@ -126,11 +123,11 @@ const isLoggedIn = useIsLoggedIn();
 const me = useCurrentUserV1();
 const { events: editorEvents } = useSQLEditorContext();
 const searchHistory = useSearchHistory();
-const { node: hoverNode, update: updateHoverNode } = provideHoverStateContext();
-const hoverPanelPosition = ref<Position>({
-  x: 0,
-  y: 0,
-});
+const {
+  state: hoverState,
+  position: hoverPosition,
+  update: updateHoverNode,
+} = provideHoverStateContext();
 
 const mounted = useMounted();
 const treeContainerElRef = ref<HTMLElement>();
@@ -375,10 +372,10 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
     },
     onmouseenter(e: MouseEvent) {
       if (node.meta.type === "database") {
-        if (hoverNode.value) {
-          updateHoverNode(node, "before", 0 /* overrideDelay */);
+        if (hoverState.value) {
+          updateHoverNode({ node }, "before", 0 /* overrideDelay */);
         } else {
-          updateHoverNode(node, "before");
+          updateHoverNode({ node }, "before");
         }
         nextTick().then(() => {
           // Find the node element and put the database panel to the right corner
@@ -389,8 +386,8 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
             return;
           }
           const bounding = wrapper.getBoundingClientRect();
-          hoverPanelPosition.value.x = bounding.right;
-          hoverPanelPosition.value.y = bounding.top;
+          hoverPosition.value.x = bounding.right;
+          hoverPosition.value.y = bounding.top;
         });
       }
     },

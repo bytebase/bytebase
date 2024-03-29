@@ -1,13 +1,13 @@
 <template>
   <div
-    v-show="database"
+    v-show="show && database"
     ref="popoverRef"
     v-zindexable="{ enabled: true }"
     class="fixed border border-gray-100 rounded bg-white p-2 shadow transition-all text-sm"
     :class="!show && 'pointer-events-none'"
     :style="{
-      left: `${x}px`,
-      top: `${y}px`,
+      left: `${displayPosition.x}px`,
+      top: `${displayPosition.y}px`,
     }"
   >
     <template v-if="database">
@@ -64,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside, useEventListener } from "@vueuse/core";
+import { onClickOutside, useElementSize, useEventListener } from "@vueuse/core";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref } from "vue";
 import {
@@ -73,13 +73,14 @@ import {
   ProjectV1Name,
 } from "@/components/v2";
 import { useSQLEditorTreeStore } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import type { Position, SQLEditorTreeNodeTarget } from "@/types";
+import { minmax } from "@/utils";
 import { useHoverStateContext } from "./hover-state";
 
 const props = defineProps<{
-  database: ComposedDatabase | undefined;
-  x: number;
-  y: number;
+  offsetX: number;
+  offsetY: number;
+  margin: number;
 }>();
 
 const emit = defineEmits<{
@@ -87,24 +88,48 @@ const emit = defineEmits<{
 }>();
 
 const treeStore = useSQLEditorTreeStore();
-const { node, update } = useHoverStateContext();
+const { state, position, update } = useHoverStateContext();
 
 const popoverRef = ref<HTMLDivElement>();
 onClickOutside(popoverRef, (e) => {
   emit("click-outside", e);
 });
+const { height: popoverHeight } = useElementSize(popoverRef, undefined, {
+  box: "border-box",
+});
 
 const show = computed(
-  () => props.database !== undefined && props.x !== 0 && props.y !== 0
+  () =>
+    state.value !== undefined &&
+    position.value.x !== 0 &&
+    position.value.y !== 0
 );
+const database = computed(() => {
+  if (!state.value?.node) return undefined;
+  const { type, target } = state.value.node.meta;
+  if (type !== "database") return undefined;
+  return target as SQLEditorTreeNodeTarget<"database">;
+});
 
 const hasProjectContext = computed(() => {
   return !!treeStore.currentProject;
 });
 
+const displayPosition = computed(() => {
+  const p: Position = {
+    x: position.value.x + props.offsetX,
+    y: position.value.y + props.offsetY,
+  };
+  const yMin = props.margin;
+  const yMax = window.innerHeight - popoverHeight.value - props.margin;
+  p.y = minmax(p.y, yMin, yMax);
+
+  return p;
+});
+
 useEventListener(popoverRef, "mouseenter", () => {
   // Reset the value immediately to cancel other pending setting values
-  update(node.value, "before", 0 /* overrideDelay */);
+  update(state.value, "before", 0 /* overrideDelay */);
 });
 useEventListener(popoverRef, "mouseleave", () => {
   update(undefined, "before");
