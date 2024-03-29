@@ -6,13 +6,14 @@
     :disabled="isDisconnected"
     @click="enterAdminMode"
   >
-    <heroicons-outline:wrench class="-ml-1" />
+    <WrenchIcon class="-ml-1 w-4 h-4" />
     <span class="ml-1"> {{ $t("sql-editor.admin-mode.self") }} </span>
   </NButton>
 </template>
 
 <script lang="ts" setup>
 import { last } from "lodash-es";
+import { WrenchIcon } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, unref } from "vue";
 import {

@@ -1,3 +1,9 @@
+import {
+  ExternalLinkIcon,
+  LinkIcon,
+  SquarePenIcon,
+  WrenchIcon,
+} from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -69,11 +75,13 @@ export const useDropdown = () => {
           items.push({
             key: "connect",
             label: t("sql-editor.connect"),
+            icon: () => <LinkIcon class="w-4 h-4" />,
             onSelect: () => setConnection(node),
           });
           items.push({
             key: "connect-in-new-tab",
             label: t("sql-editor.connect-in-new-tab"),
+            icon: () => <LinkIcon class="w-4 h-4" />,
             onSelect: () =>
               setConnection(
                 node,
@@ -86,6 +94,7 @@ export const useDropdown = () => {
           items.push({
             key: "connect-in-admin-mode",
             label: t("sql-editor.connect-in-admin-mode"),
+            icon: () => <WrenchIcon class="w-4 h-4" />,
             onSelect: () => setConnection(node, { sheet: "", mode: "ADMIN" }),
           });
         }
@@ -96,6 +105,7 @@ export const useDropdown = () => {
           items.push({
             key: "view-database-detail",
             label: t("sql-editor.view-database-detail"),
+            icon: () => <ExternalLinkIcon class="w-4 h-4" />,
             onSelect: () => {
               const route = router.resolve({
                 name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
@@ -113,6 +123,7 @@ export const useDropdown = () => {
             items.push({
               key: "alter-schema",
               label: t("database.edit-schema"),
+              icon: () => <SquarePenIcon class="w-4 h-4" />,
               onSelect: () => {
                 const db = node.meta.target as ComposedDatabase;
                 editorEvents.emit("alter-schema", {
