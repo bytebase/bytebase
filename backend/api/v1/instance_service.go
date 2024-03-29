@@ -305,14 +305,19 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	patch := &store.UpdateInstanceMessage{
-		UpdaterID:     principalID,
-		EnvironmentID: instance.EnvironmentID,
-		ResourceID:    instance.ResourceID,
+		ResourceID: instance.ResourceID,
+		UpdaterID:  principalID,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "title":
 			patch.Title = &request.Instance.Title
+		case "environment":
+			environmentID, err := common.GetEnvironmentID(request.Instance.Environment)
+			if err != nil {
+				return nil, err
+			}
+			patch.EnvironmentID = &environmentID
 		case "external_link":
 			patch.ExternalLink = &request.Instance.ExternalLink
 		case "data_sources":
@@ -564,10 +569,9 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
-		UpdaterID:     principalID,
-		EnvironmentID: instance.EnvironmentID,
-		ResourceID:    instance.ResourceID,
-		Delete:        &deletePatch,
+		ResourceID: instance.ResourceID,
+		Delete:     &deletePatch,
+		UpdaterID:  principalID,
 	}, -1 /* don't need to pass the instance limition */); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -590,10 +594,9 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
-		UpdaterID:     principalID,
-		EnvironmentID: instance.EnvironmentID,
-		ResourceID:    instance.ResourceID,
-		Delete:        &undeletePatch,
+		ResourceID: instance.ResourceID,
+		Delete:     &undeletePatch,
+		UpdaterID:  principalID,
 	}, -1 /* don't need to pass the instance limition */)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

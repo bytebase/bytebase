@@ -122,6 +122,20 @@
     - [GrantRequest](#bytebase-store-GrantRequest)
     - [IssuePayload](#bytebase-store-IssuePayload)
   
+- [store/issue_comment.proto](#store_issue_comment-proto)
+    - [IssueCommentPayload](#bytebase-store-IssueCommentPayload)
+    - [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval)
+    - [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate)
+    - [IssueCommentPayload.StageEnd](#bytebase-store-IssueCommentPayload-StageEnd)
+    - [IssueCommentPayload.TaskPriorBackup](#bytebase-store-IssueCommentPayload-TaskPriorBackup)
+    - [IssueCommentPayload.TaskPriorBackup.Table](#bytebase-store-IssueCommentPayload-TaskPriorBackup-Table)
+    - [IssueCommentPayload.TaskRunUpdate](#bytebase-store-IssueCommentPayload-TaskRunUpdate)
+    - [IssueCommentPayload.TaskUpdate](#bytebase-store-IssueCommentPayload-TaskUpdate)
+  
+    - [IssueCommentPayload.Approval.Status](#bytebase-store-IssueCommentPayload-Approval-Status)
+    - [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus)
+    - [IssueCommentPayload.TaskRunUpdate.Status](#bytebase-store-IssueCommentPayload-TaskRunUpdate-Status)
+  
 - [store/plan.proto](#store_plan-proto)
     - [PlanConfig](#bytebase-store-PlanConfig)
     - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
@@ -133,6 +147,7 @@
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
     - [PlanConfig.Step](#bytebase-store-PlanConfig-Step)
+    - [PlanConfig.VCSSource](#bytebase-store-PlanConfig-VCSSource)
   
     - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
   
@@ -1978,6 +1993,205 @@ InstanceOptions is the option for instances.
 
 
 
+<a name="store_issue_comment-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/issue_comment.proto
+
+
+
+<a name="bytebase-store-IssueCommentPayload"></a>
+
+### IssueCommentPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment | [string](#string) |  |  |
+| approval | [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval) |  |  |
+| issue_update | [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate) |  |  |
+| stage_end | [IssueCommentPayload.StageEnd](#bytebase-store-IssueCommentPayload-StageEnd) |  |  |
+| task_run_update | [IssueCommentPayload.TaskRunUpdate](#bytebase-store-IssueCommentPayload-TaskRunUpdate) |  |  |
+| task_update | [IssueCommentPayload.TaskUpdate](#bytebase-store-IssueCommentPayload-TaskUpdate) |  |  |
+| task_prior_backup | [IssueCommentPayload.TaskPriorBackup](#bytebase-store-IssueCommentPayload-TaskPriorBackup) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-Approval"></a>
+
+### IssueCommentPayload.Approval
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [IssueCommentPayload.Approval.Status](#bytebase-store-IssueCommentPayload-Approval-Status) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-IssueUpdate"></a>
+
+### IssueCommentPayload.IssueUpdate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| from_title | [string](#string) | optional |  |
+| to_title | [string](#string) | optional |  |
+| from_description | [string](#string) | optional |  |
+| to_description | [string](#string) | optional |  |
+| from_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
+| to_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
+| from_assignee | [string](#string) | optional | Format: users/{email} |
+| to_assignee | [string](#string) | optional | Format: users/{email} |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-StageEnd"></a>
+
+### IssueCommentPayload.StageEnd
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| stage | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-TaskPriorBackup"></a>
+
+### IssueCommentPayload.TaskPriorBackup
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| task | [string](#string) |  |  |
+| tables | [IssueCommentPayload.TaskPriorBackup.Table](#bytebase-store-IssueCommentPayload-TaskPriorBackup-Table) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-TaskPriorBackup-Table"></a>
+
+### IssueCommentPayload.TaskPriorBackup.Table
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-TaskRunUpdate"></a>
+
+### IssueCommentPayload.TaskRunUpdate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| task_runs | [string](#string) | repeated |  |
+| to_status | [IssueCommentPayload.TaskRunUpdate.Status](#bytebase-store-IssueCommentPayload-TaskRunUpdate-Status) | optional |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-TaskUpdate"></a>
+
+### IssueCommentPayload.TaskUpdate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tasks | [string](#string) | repeated |  |
+| from_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
+| to_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
+| from_earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| to_earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-IssueCommentPayload-Approval-Status"></a>
+
+### IssueCommentPayload.Approval.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| APPROVED | 2 |  |
+| REJECTED | 3 |  |
+
+
+
+<a name="bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus"></a>
+
+### IssueCommentPayload.IssueUpdate.IssueStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ISSUE_STATUS_UNSPECIFIED | 0 |  |
+| OPEN | 1 |  |
+| DONE | 2 |  |
+| CANCELED | 3 |  |
+
+
+
+<a name="bytebase-store-IssueCommentPayload-TaskRunUpdate-Status"></a>
+
+### IssueCommentPayload.TaskRunUpdate.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| RUNNING | 2 |  |
+| DONE | 3 |  |
+| FAILED | 4 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_plan-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1994,6 +2208,7 @@ InstanceOptions is the option for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | steps | [PlanConfig.Step](#bytebase-store-PlanConfig-Step) | repeated |  |
+| vcs_source | [PlanConfig.VCSSource](#bytebase-store-PlanConfig-VCSSource) |  |  |
 
 
 
@@ -2157,6 +2372,23 @@ InstanceOptions is the option for instances.
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) |  | Use the title if set. Use a generated title if empty. |
 | specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanConfig-VCSSource"></a>
+
+### PlanConfig.VCSSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_connector | [string](#string) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
+| pull_request_url | [string](#string) |  |  |
+| commit_url | [string](#string) |  |  |
 
 
 

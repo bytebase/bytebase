@@ -20,7 +20,6 @@
       :columns="columnList"
       :striped="true"
       :bordered="true"
-      class="vcs-table-list"
     />
     <VCSSetupWizard v-else :show-cancel="false" />
   </div>
@@ -39,7 +38,7 @@ import {
   WORKSPACE_ROUTE_GITOPS_DETAIL,
 } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1, useVCSV1Store } from "@/store";
-import { getVCSId } from "@/store/modules/v1/common";
+import { getVCSProviderId } from "@/store/modules/v1/common";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -53,13 +52,13 @@ const hasCreateVCSPermission = computed(() => {
 });
 
 const prepareVCSList = () => {
-  vcsV1Store.fetchVCSList();
+  vcsV1Store.getOrFetchVCSList();
 };
 
 watchEffect(prepareVCSList);
 
 const vcsList = computed(() => {
-  return vcsV1Store.getVCSList();
+  return vcsV1Store.vcsList;
 });
 
 const addVCSProvider = () => {
@@ -99,7 +98,7 @@ const columnList = computed((): DataTableColumn<VCSProvider>[] => {
                 router.push({
                   name: WORKSPACE_ROUTE_GITOPS_DETAIL,
                   params: {
-                    vcsResourceId: getVCSId(vcs.name),
+                    vcsResourceId: getVCSProviderId(vcs.name),
                   },
                 });
               },
@@ -111,10 +110,3 @@ const columnList = computed((): DataTableColumn<VCSProvider>[] => {
   ];
 });
 </script>
-
-<style lang="postcss" scoped>
-.vcs-table-list :deep(.n-data-table-td),
-.vcs-table-list :deep(.n-data-table-th) {
-  @apply !py-1.5;
-}
-</style>

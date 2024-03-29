@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -45,11 +44,11 @@ type UpdateInstanceMessage struct {
 	// OptionsUpsert upserts the top-level messages of the instance options.
 	OptionsUpsert *storepb.InstanceOptions
 	Metadata      *storepb.InstanceMetadata
+	EnvironmentID *string
 
 	// Output only.
-	UpdaterID     int
-	EnvironmentID string
-	ResourceID    string
+	UpdaterID  int
+	ResourceID string
 }
 
 // FindInstanceMessage is the message for finding instances.
@@ -241,6 +240,18 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.EnvironmentID; v != nil {
+		environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{
+			ResourceID: v,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if environment == nil {
+			return nil, common.Errorf(common.NotFound, "environment %s not found", *v)
+		}
+		set, args = append(set, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, environment.UID)
+	}
 	if v := patch.ExternalLink; v != nil {
 		set, args = append(set, fmt.Sprintf("external_link = $%d", len(args)+1)), append(args, *v)
 	}
@@ -279,6 +290,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 
 		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadata)
 	}
+	where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, patch.ResourceID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -286,24 +298,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 	defer tx.Rollback()
 
-	// TODO(d): use the same query for environment.
-	environment, err := s.getEnvironmentImplV2(ctx, tx, &FindEnvironmentMessage{
-		ResourceID: &patch.EnvironmentID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if environment == nil {
-		return nil, common.Errorf(common.NotFound, "environment %s not found", patch.EnvironmentID)
-	}
-
-	args = append(args, patch.ResourceID, environment.UID)
-	where = append(where, fmt.Sprintf("resource_id = $%d", len(args)-1), fmt.Sprintf("environment_id = $%d", len(args)))
-
-	instance := &InstanceMessage{
-		EnvironmentID: patch.EnvironmentID,
-	}
+	instance := &InstanceMessage{}
 	var engine string
+	var environmentUID int
 	query := fmt.Sprintf(`
 			UPDATE instance
 			SET `+strings.Join(set, ", ")+`
@@ -311,6 +308,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			RETURNING
 				id,
 				resource_id,
+				environment_id,
 				name,
 				engine,
 				engine_version,
@@ -325,6 +323,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&instance.UID,
 		&instance.ResourceID,
+		&environmentUID,
 		&instance.Title,
 		&engine,
 		&instance.EngineVersion,
@@ -334,9 +333,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		&options,
 		&metadata,
 	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
 		return nil, err
 	}
 	engineTypeValue, ok := storepb.Engine_value[engine]
@@ -377,6 +373,17 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
+
+	environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{
+		UID: &environmentUID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if environment == nil {
+		return nil, common.Errorf(common.NotFound, "environment %d not found", environmentUID)
+	}
+	instance.EnvironmentID = environment.ResourceID
 
 	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
 	s.instanceIDCache.Add(instance.UID, instance)

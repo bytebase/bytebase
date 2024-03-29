@@ -29,6 +29,20 @@
           </NRadio>
         </NRadioGroup>
       </div>
+
+      <BBAttention
+        v-if="!externalUrl && redirectUrl"
+        class="mt-4 w-full border-none"
+        type="error"
+        :title="$t('banner.external-url')"
+        :description="$t('settings.general.workspace.external-url.description')"
+      >
+        <template #action>
+          <NButton type="primary" @click="configureSetting">
+            {{ $t("common.configure-now") }}
+          </NButton>
+        </template>
+      </BBAttention>
     </div>
 
     <!-- OAuth2 templates group -->
@@ -59,7 +73,7 @@
       </div>
     </div>
 
-    <div class="w-full flex flex-col justify-start items-start space-y-3">
+    <div class="w-full flex flex-col justify-start items-start space-y-3 mb-3">
       <p class="text-lg font-medium !mt-4">
         {{ $t("settings.sso.form.basic-information") }}
       </p>
@@ -75,8 +89,11 @@
           class="mt-1 w-full"
           :placeholder="$t('settings.sso.form.name-description')"
         />
+
         <ResourceIdField
           ref="resourceIdField"
+          class="mt-1.5"
+          editing-class="mt-3"
           resource-type="idp"
           :readonly="!isCreating"
           :value="resourceId"
@@ -128,7 +145,9 @@
             {{ $t("settings.sso.form.redirect-url") }}
           </p>
           <div class="w-full relative break-all pr-8 text-sm">
-            {{ redirectUrl }}
+            <div class="bg-gray-100 p-1 border border-gray-300 rounded">
+              {{ redirectUrl }}
+            </div>
             <button
               tabindex="-1"
               class="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-control-light rounded hover:bg-gray-100"
@@ -263,80 +282,6 @@
           />
         </p>
       </div>
-
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="text-lg font-medium mt-2">
-          {{ $t("settings.sso.form.user-information-mapping") }}
-        </p>
-        <p class="textinfolabel">
-          {{ $t("settings.sso.form.user-information-mapping-description") }}
-          <a
-            href="https://www.bytebase.com/docs/administration/sso/oauth2#user-information-field-mapping?source=console"
-            class="normal-link text-sm inline-flex flex-row items-center"
-            target="_blank"
-          >
-            {{ $t("common.learn-more") }}
-            <heroicons-outline:external-link class="w-4 h-4" />
-          </a>
-        </p>
-      </div>
-      <div class="w-full grid grid-cols-[256px_1fr]">
-        <BBTextField
-          v-model:value="configForOAuth2.fieldMapping!.identifier"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. login"
-        />
-        <div class="w-full flex flex-row justify-start items-center text-sm">
-          <heroicons-outline:arrow-right
-            class="mx-1 h-auto w-4 text-gray-300"
-          />
-          <p class="flex flex-row justify-start items-center">
-            {{ $t("settings.sso.form.identifier") }}
-            <span class="text-red-600">*</span>
-            <NTooltip>
-              <template #trigger>
-                <heroicons-outline:information-circle
-                  class="ml-1 w-4 h-auto text-blue-500"
-                />
-              </template>
-              {{ $t("settings.sso.form.identifier-tips") }}
-            </NTooltip>
-          </p>
-        </div>
-      </div>
-      <div class="w-full grid grid-cols-[256px_1fr]">
-        <BBTextField
-          v-model:value="configForOAuth2.fieldMapping!.displayName"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. name"
-        />
-        <div class="w-full flex flex-row justify-start items-center text-sm">
-          <heroicons-outline:arrow-right
-            class="mx-1 h-auto w-4 text-gray-300"
-          />
-          <p>
-            {{ $t("settings.sso.form.display-name") }}
-          </p>
-        </div>
-      </div>
-      <div class="w-full grid grid-cols-[256px_1fr]">
-        <BBTextField
-          v-model:value="configForOAuth2.fieldMapping!.phone"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. phone"
-        />
-        <div class="w-full flex flex-row justify-start items-center text-sm">
-          <heroicons-outline:arrow-right
-            class="mx-1 h-auto w-4 text-gray-300"
-          />
-          <p>
-            {{ $t("settings.sso.form.phone") }}
-          </p>
-        </div>
-      </div>
     </div>
 
     <!-- OIDC form group -->
@@ -370,7 +315,9 @@
             {{ $t("settings.sso.form.redirect-url") }}
           </p>
           <div class="w-full relative break-all pr-8 text-sm">
-            {{ redirectUrl }}
+            <div class="bg-gray-100 p-1 border border-gray-300 rounded">
+              {{ redirectUrl }}
+            </div>
             <button
               tabindex="-1"
               class="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-control-light rounded hover:bg-gray-100"
@@ -453,83 +400,6 @@
             :disabled="!allowEdit"
           />
         </p>
-      </div>
-
-      <div class="w-full flex flex-col justify-start items-start">
-        <p class="text-lg font-medium mt-2">
-          {{ $t("settings.sso.form.user-information-mapping") }}
-        </p>
-        <p class="textinfolabel">
-          {{ $t("settings.sso.form.user-information-mapping-description") }}
-          <a
-            href="https://www.bytebase.com/docs/administration/sso/oidc#configuration?source=console"
-            class="normal-link text-sm inline-flex flex-row items-center"
-            target="_blank"
-          >
-            {{ $t("common.learn-more") }}
-            <heroicons-outline:external-link class="w-4 h-4" />
-          </a>
-        </p>
-      </div>
-      <p class="textinfolabel !mt-4">
-        {{ $t("settings.sso.form.user-information-mapping") }}
-      </p>
-      <div class="w-full grid grid-cols-[256px_1fr]">
-        <BBTextField
-          v-model:value="configForOIDC.fieldMapping!.identifier"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. preferred_username"
-        />
-        <div class="w-full flex flex-row justify-start items-center text-sm">
-          <heroicons-outline:arrow-right
-            class="mx-1 h-auto w-4 text-gray-300"
-          />
-          <p class="flex flex-row justify-start items-center">
-            {{ $t("settings.sso.form.identifier") }}
-            <span class="text-red-600">*</span>
-            <NTooltip>
-              <template #trigger>
-                <heroicons-outline:information-circle
-                  class="ml-1 w-4 h-auto text-blue-500"
-                />
-              </template>
-              {{ $t("settings.sso.form.identifier-tips") }}
-            </NTooltip>
-          </p>
-        </div>
-      </div>
-      <div class="w-full grid grid-cols-[256px_1fr]">
-        <BBTextField
-          v-model:value="configForOIDC.fieldMapping!.displayName"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. name"
-        />
-        <div class="w-full flex flex-row justify-start items-center text-sm">
-          <heroicons-outline:arrow-right
-            class="mx-1 h-auto w-4 text-gray-300"
-          />
-          <p>
-            {{ $t("settings.sso.form.display-name") }}
-          </p>
-        </div>
-      </div>
-      <div class="w-full grid grid-cols-[256px_1fr]">
-        <BBTextField
-          v-model:value="configForOIDC.fieldMapping!.phone"
-          :disabled="!allowEdit"
-          class="mt-1 w-full"
-          placeholder="e.g. phone"
-        />
-        <div class="w-full flex flex-row justify-start items-center text-sm">
-          <heroicons-outline:arrow-right
-            class="mx-1 h-auto w-4 text-gray-300"
-          />
-          <p>
-            {{ $t("settings.sso.form.phone") }}
-          </p>
-        </div>
       </div>
     </div>
 
@@ -649,7 +519,9 @@
           />
         </p>
       </div>
+    </div>
 
+    <div class="w-full flex flex-col justify-start items-start space-y-3 mt-3">
       <div class="w-full flex flex-col justify-start items-start">
         <p class="text-lg font-medium mt-2">
           {{ $t("settings.sso.form.user-information-mapping") }}
@@ -657,7 +529,7 @@
         <p class="textinfolabel">
           {{ $t("settings.sso.form.user-information-mapping-description") }}
           <a
-            href="https://www.bytebase.com/docs/administration/sso/ldap#configuration?source=console"
+            href="https://www.bytebase.com/docs/administration/sso/oauth2#user-information-field-mapping?source=console"
             class="normal-link text-sm inline-flex flex-row items-center"
             target="_blank"
           >
@@ -666,23 +538,20 @@
           </a>
         </p>
       </div>
-      <p class="textinfolabel !mt-4">
-        {{ $t("settings.sso.form.user-information-mapping") }}
-      </p>
       <div class="w-full grid grid-cols-[256px_1fr]">
         <BBTextField
-          v-model:value="configForLDAP.fieldMapping!.identifier"
+          v-model:value="state.fieldMapping.identifier"
           :disabled="!allowEdit"
           class="mt-1 w-full"
-          placeholder="e.g. mail"
+          placeholder="e.g. login"
         />
         <div class="w-full flex flex-row justify-start items-center text-sm">
           <heroicons-outline:arrow-right
             class="mx-1 h-auto w-4 text-gray-300"
           />
           <p class="flex flex-row justify-start items-center">
-            {{ $t("settings.sso.form.identifier")
-            }}<span class="text-red-600">*</span>
+            {{ $t("settings.sso.form.identifier") }}
+            <span class="text-red-600">*</span>
             <NTooltip>
               <template #trigger>
                 <heroicons-outline:information-circle
@@ -696,10 +565,10 @@
       </div>
       <div class="w-full grid grid-cols-[256px_1fr]">
         <BBTextField
-          v-model:value="configForLDAP.fieldMapping!.displayName"
+          v-model:value="state.fieldMapping.displayName"
           :disabled="!allowEdit"
           class="mt-1 w-full"
-          placeholder="e.g. displayName"
+          placeholder="e.g. name"
         />
         <div class="w-full flex flex-row justify-start items-center text-sm">
           <heroicons-outline:arrow-right
@@ -712,7 +581,7 @@
       </div>
       <div class="w-full grid grid-cols-[256px_1fr]">
         <BBTextField
-          v-model:value="configForLDAP.fieldMapping!.phone"
+          v-model:value="state.fieldMapping.phone"
           :disabled="!allowEdit"
           class="mt-1 w-full"
           placeholder="e.g. phone"
@@ -726,13 +595,7 @@
           </p>
         </div>
       </div>
-    </div>
-
-    <!-- Button group -->
-    <div
-      class="mt-4 space-x-4 w-full flex flex-row justify-between items-center"
-    >
-      <div class="space-x-4 flex flex-row justify-start items-center">
+      <div class="mt-4">
         <NButton
           v-if="!isDeleted"
           :disabled="!allowTestConnection"
@@ -740,6 +603,13 @@
         >
           {{ $t("identity-provider.test-connection") }}
         </NButton>
+      </div>
+    </div>
+
+    <div
+      class="mt-4 space-x-4 w-full flex flex-row justify-between items-center"
+    >
+      <div class="space-x-4 flex flex-row justify-start items-center">
         <template v-if="!isCreating">
           <BBButtonConfirm
             v-if="!isDeleted"
@@ -765,7 +635,7 @@
       </div>
       <div
         v-if="!isDeleted"
-        class="space-x-4 flex flex-row justify-end items-center"
+        class="space-x-3 flex flex-row justify-end items-center"
       >
         <template v-if="isCreating">
           <NButton @click="handleCancelButtonClick">
@@ -787,7 +657,7 @@
             {{ $t("common.discard-changes") }}
           </NButton>
           <NButton
-            class="primary"
+            type="primary"
             :disabled="!allowUpdate"
             @click="handleUpdateButtonClick"
           >
@@ -816,6 +686,7 @@ import { useRouter } from "vue-router";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { identityProviderClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SSO } from "@/router/dashboard/workspaceRoutes";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -854,6 +725,7 @@ import { getErrorCode } from "@/utils/grpcweb";
 
 interface LocalState {
   type: IdentityProviderType;
+  fieldMapping: FieldMapping;
 }
 
 const props = defineProps<{
@@ -864,28 +736,26 @@ const { t } = useI18n();
 const router = useRouter();
 const currentUser = useCurrentUserV1();
 const identityProviderStore = useIdentityProviderStore();
+
 const state = reactive<LocalState>({
   type: IdentityProviderType.OAUTH2,
+  fieldMapping: FieldMapping.fromPartial({}),
 });
+
 const identityProvider = ref<IdentityProvider>(
   IdentityProvider.fromPartial({})
 );
 const configForOAuth2 = ref<OAuth2IdentityProviderConfig>(
-  OAuth2IdentityProviderConfig.fromPartial({
-    fieldMapping: FieldMapping.fromPartial({}),
-  })
+  OAuth2IdentityProviderConfig.fromPartial({})
 );
 const scopesStringOfConfig = ref<string>("");
 const configForOIDC = ref<OIDCIdentityProviderConfig>(
-  OIDCIdentityProviderConfig.fromPartial({
-    fieldMapping: FieldMapping.fromPartial({}),
-  })
+  OIDCIdentityProviderConfig.fromPartial({})
 );
 const configForLDAP = ref<LDAPIdentityProviderConfig>(
   LDAPIdentityProviderConfig.fromPartial({
     port: 389,
     securityProtocol: "starttls",
-    fieldMapping: FieldMapping.fromPartial({}),
   })
 );
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
@@ -905,17 +775,25 @@ const identityProviderTypeList = computed(() => {
   ];
 });
 
+const configureSetting = () => {
+  router.push({
+    name: SETTING_ROUTE_WORKSPACE_GENERAL,
+  });
+};
+
+const externalUrl = computed(
+  () => useActuatorV1Store().serverInfo?.externalUrl ?? ""
+);
+
 const redirectUrl = computed(() => {
-  if (state.type === IdentityProviderType.OAUTH2) {
-    return `${
-      useActuatorV1Store().serverInfo?.externalUrl || window.origin
-    }/oauth/callback`;
-  } else if (state.type === IdentityProviderType.OIDC) {
-    return `${
-      useActuatorV1Store().serverInfo?.externalUrl || window.origin
-    }/oidc/callback`;
-  } else {
-    throw new Error(`identity provider type ${state.type} is invalid`);
+  const url = externalUrl.value || window.origin;
+  switch (state.type) {
+    case IdentityProviderType.OAUTH2:
+      return `${url}/oauth/callback`;
+    case IdentityProviderType.OIDC:
+      return `${url}/oidc/callback`;
+    default:
+      return "";
   }
 });
 
@@ -963,6 +841,9 @@ const isFormCompleted = computed(() => {
   if (!identityProvider.value.title) {
     return false;
   }
+  if (!state.fieldMapping.identifier) {
+    return false;
+  }
 
   if (state.type === IdentityProviderType.OAUTH2) {
     if (
@@ -970,7 +851,6 @@ const isFormCompleted = computed(() => {
       !configForOAuth2.value.authUrl ||
       !configForOAuth2.value.tokenUrl ||
       !configForOAuth2.value.userInfoUrl ||
-      !configForOAuth2.value.fieldMapping?.identifier ||
       // Only request client secret when creating.
       (isCreating.value && !configForOAuth2.value.clientSecret)
     ) {
@@ -980,7 +860,6 @@ const isFormCompleted = computed(() => {
     if (
       !configForOIDC.value.clientId ||
       !configForOIDC.value.issuer ||
-      !configForOIDC.value.fieldMapping?.identifier ||
       (isCreating.value && !configForOIDC.value.clientSecret)
     ) {
       return false;
@@ -993,7 +872,6 @@ const isFormCompleted = computed(() => {
       !configForLDAP.value.baseDn ||
       !configForLDAP.value.userFilter ||
       !configForLDAP.value.securityProtocol ||
-      !configForLDAP.value.fieldMapping?.identifier ||
       (isCreating.value && !configForLDAP.value.bindPassword)
     ) {
       return false;
@@ -1049,17 +927,27 @@ const editedIdentityProvider = computed(() => {
   const tempIdentityProvider: IdentityProvider = {
     ...identityProvider.value,
     type: state.type,
+    name:
+      identityProvider.value.name ||
+      (resourceIdField.value?.resourceId as string),
     config: IdentityProviderConfig.fromPartial({}),
   };
   if (tempIdentityProvider.type === IdentityProviderType.OAUTH2) {
     tempIdentityProvider.config!.oauth2Config = {
       ...configForOAuth2.value,
       scopes: scopesStringOfConfig.value.split(" "),
+      fieldMapping: FieldMapping.fromPartial(state.fieldMapping),
     };
   } else if (tempIdentityProvider.type === IdentityProviderType.OIDC) {
-    tempIdentityProvider.config!.oidcConfig = configForOIDC.value;
+    tempIdentityProvider.config!.oidcConfig = {
+      ...configForOIDC.value,
+      fieldMapping: FieldMapping.fromPartial(state.fieldMapping),
+    };
   } else if (tempIdentityProvider.type === IdentityProviderType.LDAP) {
-    tempIdentityProvider.config!.ldapConfig = configForLDAP.value;
+    tempIdentityProvider.config!.ldapConfig = {
+      ...configForLDAP.value,
+      fieldMapping: FieldMapping.fromPartial(state.fieldMapping),
+    };
   } else {
     throw new Error(`identity provider type ${state.type} is invalid`);
   }
@@ -1078,29 +966,7 @@ const allowUpdate = computed(() => {
 
 onMounted(async () => {
   if (originIdentityProvider.value) {
-    const tempIdentityProvider = cloneDeep(originIdentityProvider.value);
-    identityProvider.value = tempIdentityProvider;
-    state.type = tempIdentityProvider.type;
-    if (tempIdentityProvider.type === IdentityProviderType.OAUTH2) {
-      configForOAuth2.value =
-        tempIdentityProvider.config?.oauth2Config ||
-        OAuth2IdentityProviderConfig.fromPartial({
-          fieldMapping: FieldMapping.fromPartial({}),
-        });
-      scopesStringOfConfig.value = configForOAuth2.value.scopes.join(" ");
-    } else if (tempIdentityProvider.type === IdentityProviderType.OIDC) {
-      configForOIDC.value =
-        tempIdentityProvider.config?.oidcConfig ||
-        OIDCIdentityProviderConfig.fromPartial({
-          fieldMapping: FieldMapping.fromPartial({}),
-        });
-    } else if (tempIdentityProvider.type === IdentityProviderType.LDAP) {
-      configForLDAP.value =
-        tempIdentityProvider.config?.ldapConfig ||
-        LDAPIdentityProviderConfig.fromPartial({
-          fieldMapping: FieldMapping.fromPartial({}),
-        });
-    }
+    updateEditState(originIdentityProvider.value);
   }
 });
 
@@ -1286,24 +1152,27 @@ const updateEditState = (updatedIdentityProvider: IdentityProvider) => {
   identityProvider.value = tempIdentityProvider;
   state.type = tempIdentityProvider.type;
   if (tempIdentityProvider.type === IdentityProviderType.OAUTH2) {
+    state.fieldMapping =
+      tempIdentityProvider.config?.oauth2Config?.fieldMapping ??
+      FieldMapping.fromPartial({});
     configForOAuth2.value =
       tempIdentityProvider.config?.oauth2Config ||
-      OAuth2IdentityProviderConfig.fromPartial({
-        fieldMapping: FieldMapping.fromPartial({}),
-      });
+      OAuth2IdentityProviderConfig.fromPartial({});
     scopesStringOfConfig.value = configForOAuth2.value.scopes.join(" ");
   } else if (tempIdentityProvider.type === IdentityProviderType.OIDC) {
+    state.fieldMapping =
+      tempIdentityProvider.config?.oidcConfig?.fieldMapping ??
+      FieldMapping.fromPartial({});
     configForOIDC.value =
       tempIdentityProvider.config?.oidcConfig ||
-      OIDCIdentityProviderConfig.fromPartial({
-        fieldMapping: FieldMapping.fromPartial({}),
-      });
+      OIDCIdentityProviderConfig.fromPartial({});
   } else if (tempIdentityProvider.type === IdentityProviderType.LDAP) {
+    state.fieldMapping =
+      tempIdentityProvider.config?.ldapConfig?.fieldMapping ??
+      FieldMapping.fromPartial({});
     configForLDAP.value =
       tempIdentityProvider.config?.ldapConfig ||
-      LDAPIdentityProviderConfig.fromPartial({
-        fieldMapping: FieldMapping.fromPartial({}),
-      });
+      LDAPIdentityProviderConfig.fromPartial({});
   }
 };
 
@@ -1314,24 +1183,9 @@ const handleDiscardChangesButtonClick = async () => {
 };
 
 const handleCreateButtonClick = async () => {
-  const identityProviderCreate: IdentityProvider = {
-    ...identityProvider.value,
-    name: resourceIdField.value?.resourceId as string,
-    type: state.type,
-    config: {},
-  };
-  if (state.type === IdentityProviderType.OAUTH2) {
-    configForOAuth2.value.scopes = scopesStringOfConfig.value.split(" ");
-    identityProviderCreate.config!.oauth2Config = configForOAuth2.value;
-  } else if (state.type === IdentityProviderType.OIDC) {
-    identityProviderCreate.config!.oidcConfig = configForOIDC.value;
-  } else if (state.type === IdentityProviderType.LDAP) {
-    identityProviderCreate.config!.ldapConfig = configForLDAP.value;
-  } else {
-    throw new Error(`identity provider type ${state.type} is invalid`);
-  }
-
-  await identityProviderStore.createIdentityProvider(identityProviderCreate);
+  await identityProviderStore.createIdentityProvider(
+    editedIdentityProvider.value
+  );
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

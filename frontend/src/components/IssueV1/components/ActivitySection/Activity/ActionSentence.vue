@@ -11,7 +11,6 @@ import type {
   ActivityPipelineTaskRunStatusUpdatePayload,
   ActivityStageStatusUpdatePayload,
   ActivityTaskEarliestAllowedTimeUpdatePayload,
-  ActivityTaskFileCommitPayload,
   ActivityTaskStatementUpdatePayload,
   ActivityTaskStatusUpdatePayload,
   ActivityTaskPriorBackup,
@@ -253,17 +252,6 @@ const renderActionSentence = () => {
       }
       return renderVerbTypeTarget(params, {
         tag: "span",
-      });
-    }
-    case LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT: {
-      const payload = JSON.parse(
-        activity.payload
-      ) as ActivityTaskFileCommitPayload;
-      // return `committed ${payload.filePath} to ${payload.branch}@${payload.repositoryFullPath}`;
-      return t("activity.sentence.committed-to-at", {
-        file: payload.filePath,
-        branch: payload.branch,
-        repo: payload.repositoryFullPath,
       });
     }
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE: {

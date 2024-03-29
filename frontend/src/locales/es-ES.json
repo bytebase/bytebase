@@ -274,7 +274,8 @@
     "baseline": "Base",
     "project-member": "Miembro del proyecto",
     "leave-without-saving": "¿Salir sin ahorrar?",
-    "configure-now": "Configurar ahora"
+    "configure-now": "Configurar ahora",
+    "connection": "Conexión"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -861,7 +862,6 @@
       "issue-status-update": "actualizar estado de la incidencia",
       "pipeline-stage-status-update": "actualizar estado de la etapa de la incidencia",
       "pipeline-task-status-update": "actualizar estado de la tarea de la incidencia",
-      "pipeline-task-file-commit": "commit al archivo",
       "pipeline-task-statement-update": "actualización SQL",
       "pipeline-task-prior-backup": "Respaldo Previo",
       "member-create": "crear miembro",
@@ -1175,7 +1175,14 @@
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "preview": "Problema de vista previa",
     "missing-sql-statement": "Sentencia SQL faltante. Para aplicar este cambio a todas las tareas, haz clic en el botón '@:{'issue.apply-to-other-tasks'}'.",
-    "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas"
+    "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas",
+    "data-export": {
+      "title": "Exportación de Datos",
+      "options": "Opciones de exportación",
+      "format": "Formato",
+      "encrypt": "Cifrar",
+      "exported-file-downloaded": "Archivo exportado descargado"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1970,7 +1977,15 @@
     },
     "successfully-updated-db-name-template": "Plantilla de nombre de base de datos actualizada con éxito.",
     "all": "Todos los proyectos",
-    "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto.."
+    "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto..",
+    "gitops-connector": {
+      "self": "Conector GitOps",
+      "add": "Agregar conector GitOps",
+      "delete": "Eliminar conector GitOps",
+      "update-success": "Conector GitOps actualizado correctamente",
+      "create-success": "Conector GitOps creado correctamente",
+      "delete-success": "Se elimina el conector GitOps"
+    }
   },
   "gitops": {
     "setting": {
@@ -2236,7 +2251,15 @@
     "previous-row": "Fila anterior",
     "next-row": "siguiente fila",
     "copy-success": "Copiado al portapapeles",
-    "missing-permission-to-load-db-metadata": "Faltan los permisos necesarios para cargar metadatos de db {db}."
+    "missing-permission-to-load-db-metadata": "Faltan los permisos necesarios para cargar metadatos de db {db}.",
+    "connect-in-new-tab": "Conéctate en una nueva pestaña",
+    "copy-name": "Copiar nombre",
+    "copy-select-statement": "Copiar declaración SELECT",
+    "preview-table-data": "Vista previa de datos de la tabla",
+    "view-table-detail": "Ver detalle de la tabla",
+    "view-database-detail": "Ver detalle de la base de datos",
+    "copy-all-column-names": "Copiar todos los nombres de las columnas",
+    "view-schema-text": "Ver texto del esquema"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2424,6 +2447,10 @@
       "instance-count-exceeds": "El número de instancias {count} excedió el límite {limit}"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "Establecer secreto externo",
+        "desc": "Utilice Vault o una URL personalizada como secreto externo para la contraseña de la base de datos."
+      },
       "bb-feature-task-schedule-time": {
         "title": "Establecer horario de tareas",
         "desc": "Establecer horario de tareas te permite programar una hora específica para ejecutar tus tareas."
@@ -2767,7 +2794,9 @@
     "role": "Rol",
     "database-group": "grupo de bases de datos",
     "schema-group": "grupo de mesas",
-    "changelist": "Lista de cambios"
+    "changelist": "Lista de cambios",
+    "vcs-provider": "Proveedor GitOps",
+    "vcs-connector": "Conector GitOps"
   },
   "resource-id": {
     "self": "ID de {resource}",
@@ -2907,8 +2936,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Crear base de datos",
-          "request_query": "Solicitar consulta",
-          "request_export": "Solicitar exportación"
+          "data_export": "Exportación de Datos",
+          "request_query": "Solicitar Rol de Consultor",
+          "request_export": "Solicitar Rol de Exportador"
         }
       },
       "template": {

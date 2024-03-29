@@ -53,7 +53,6 @@ var defaultResourceActionTypeMap = map[string][]api.ActivityType{
 		api.ActivityPipelineStageStatusUpdate,
 		api.ActivityPipelineTaskStatusUpdate,
 		api.ActivityPipelineTaskRunStatusUpdate,
-		api.ActivityPipelineTaskFileCommit,
 		api.ActivityPipelineTaskStatementUpdate,
 		api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
 		api.ActivityPipelineTaskPriorBackup,
@@ -389,7 +388,6 @@ func convertToLogEntity(ctx context.Context, stores *store.Store, activity *stor
 		api.ActivityPipelineStageStatusUpdate,
 		api.ActivityPipelineTaskStatusUpdate,
 		api.ActivityPipelineTaskRunStatusUpdate,
-		api.ActivityPipelineTaskFileCommit,
 		api.ActivityPipelineTaskStatementUpdate,
 		api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
 		api.ActivityPipelineTaskPriorBackup:
@@ -473,8 +471,6 @@ func convertToActivityType(action v1pb.LogEntity_Action) (api.ActivityType, erro
 		return api.ActivityPipelineTaskStatusUpdate, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
 		return api.ActivityPipelineTaskRunStatusUpdate, nil
-	case v1pb.LogEntity_ACTION_PIPELINE_TASK_FILE_COMMIT:
-		return api.ActivityPipelineTaskFileCommit, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
 		return api.ActivityPipelineTaskStatementUpdate, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
@@ -528,8 +524,6 @@ func convertToActionType(activityType api.ActivityType) v1pb.LogEntity_Action {
 		return v1pb.LogEntity_ACTION_PIPELINE_TASK_STATUS_UPDATE
 	case api.ActivityPipelineTaskRunStatusUpdate:
 		return v1pb.LogEntity_ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE
-	case api.ActivityPipelineTaskFileCommit:
-		return v1pb.LogEntity_ACTION_PIPELINE_TASK_FILE_COMMIT
 	case api.ActivityPipelineTaskStatementUpdate:
 		return v1pb.LogEntity_ACTION_PIPELINE_TASK_STATEMENT_UPDATE
 	case api.ActivityPipelineTaskEarliestAllowedTimeUpdate:

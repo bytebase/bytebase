@@ -46,7 +46,7 @@
           </template>
         </TooltipButton>
         <TooltipButton
-          v-if="allowMigrate"
+          v-if="allowEstablishBaseline"
           tooltip-mode="DISABLED-ONLY"
           :disabled="false"
           type="primary"
@@ -73,11 +73,12 @@
       </div>
     </div>
     <ChangeHistoryTable
+      v-model:selected-change-history-names="
+        state.selectedChangeHistoryNameList
+      "
       :mode="'DATABASE'"
       :database-section-list="[database]"
       :history-section-list="changeHistorySectionList"
-      :selected-change-history-name-list="state.selectedChangeHistoryNameList"
-      @update:selected="state.selectedChangeHistoryNameList = $event"
     />
   </div>
 
@@ -126,7 +127,6 @@ import {
   ChangeHistory_Type,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   getAffectedTablesOfChangeHistory,
   getHistoryChangeType,
@@ -178,20 +178,11 @@ const prepareChangeHistoryList = async () => {
 
 onBeforeMount(prepareChangeHistoryList);
 
-const isTenantProject = computed(() => {
-  return (
-    props.database.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
-  );
-});
-
 const allowExportChangeHistory = computed(() => {
   return state.selectedChangeHistoryNameList.length > 0;
 });
 
-const allowMigrate = computed(() => {
-  // Migrating single database in tenant mode is not allowed
-  // Since this will probably cause different migration version across a group of tenant databases
-  if (isTenantProject.value) return false;
+const allowEstablishBaseline = computed(() => {
   return allowAlterSchema.value;
 });
 

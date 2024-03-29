@@ -1,8 +1,9 @@
 <template>
   <div class="w-full h-full relative overflow-x-hidden">
     <template v-if="ready">
-      <IssueDetailPage v-if="!isGrantRequestIssue(issue)" />
-      <GrantRequestIssueDetailPage v-else />
+      <GrantRequestIssueDetailPage v-if="isGrantRequestIssue(issue)" />
+      <DataExportIssueDetailPage v-else-if="isDatabaseDataExportIssue(issue)" />
+      <IssueDetailPage v-else />
     </template>
     <div v-else class="w-full h-full flex flex-col items-center justify-center">
       <NSpin />
@@ -21,6 +22,7 @@ import { NSpin } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  DataExportIssueDetailPage,
   GrantRequestIssueDetailPage,
   IssueDetailPage,
   provideIssueContext,
@@ -29,7 +31,7 @@ import {
 } from "@/components/IssueV1";
 import { useUIStateStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { isGrantRequestIssue } from "@/utils";
+import { isGrantRequestIssue, isDatabaseDataExportIssue } from "@/utils";
 
 interface LocalState {
   showFeatureModal: boolean;

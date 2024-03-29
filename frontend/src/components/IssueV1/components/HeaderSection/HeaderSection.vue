@@ -35,7 +35,7 @@ import { MenuIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { activeTaskInRollout, isDatabaseRelatedIssue } from "@/utils";
+import { activeTaskInRollout, isDatabaseChangeRelatedIssue } from "@/utils";
 import { useIssueContext, useIssueSidebarContext } from "../../logic";
 import IssueStatusIcon from "../IssueStatusIcon.vue";
 import Actions from "./Actions";
@@ -45,7 +45,7 @@ const { isCreating, issue } = useIssueContext();
 
 const issueTaskStatus = computed(() => {
   // For grant request issue, we always show the status as "NOT_STARTED" as task status.
-  if (!isDatabaseRelatedIssue(issue.value)) {
+  if (!isDatabaseChangeRelatedIssue(issue.value)) {
     return Task_Status.NOT_STARTED;
   }
 

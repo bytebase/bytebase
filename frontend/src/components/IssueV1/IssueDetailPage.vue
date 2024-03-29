@@ -92,6 +92,7 @@ import {
   IssueReviewActionPanel,
   IssueStatusActionPanel,
   TaskRolloutActionPanel,
+  SQLCheckSection,
 } from "./components";
 import type {
   IssueReviewAction,

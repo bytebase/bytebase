@@ -274,7 +274,8 @@
     "baseline": "ベースライン",
     "project-member": "プロジェクトメンバー",
     "leave-without-saving": "保存せずに終了しますか?",
-    "configure-now": "今すぐ設定する"
+    "configure-now": "今すぐ設定する",
+    "connection": "繋がり"
   },
   "error-page": {
     "go-back-home": "ホームに戻る"
@@ -861,7 +862,6 @@
       "issue-status-update": "課題ステータスを更新する",
       "pipeline-stage-status-update": "課題ステージステータスを更新する",
       "pipeline-task-status-update": "課題タスクステータスを更新する",
-      "pipeline-task-file-commit": "ファイルをコミットする",
       "pipeline-task-statement-update": "SQLを更新する",
       "pipeline-task-prior-backup": "データをバックアップする",
       "member-create": "メンバーを作成する",
@@ -1175,7 +1175,14 @@
     "some-tasks-are-not-executed-successfully": "（一部のタスクが正常に実行されていません）",
     "preview": "問題のプレビュー",
     "missing-sql-statement": "SQLステートメントが見つかりません。この変更をすべてのタスクに適用するには、「@:{'issue.apply-to-other-tasks'}」ボタンをクリックしてください。",
-    "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました"
+    "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました",
+    "data-export": {
+      "title": "データエクスポート",
+      "options": "エクスポートオプション",
+      "format": "フォーマット",
+      "encrypt": "暗号化",
+      "exported-file-downloaded": "エクスポートされたファイルがダウンロードされました"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "このプロジェクトはVCSベースのバージョン管理が有効になっており、以下のデータベースを選択すると、対応するGitリポジトリに移動して変更プロセスを開始できます。",
@@ -1970,7 +1977,15 @@
     },
     "successfully-updated-db-name-template": "データベース名テンプレートが正常に更新されました。",
     "all": "すべてのプロジェクト",
-    "key-hint": "このプロジェクトを識別するための短い説明的な英数字文字列。"
+    "key-hint": "このプロジェクトを識別するための短い説明的な英数字文字列。",
+    "gitops-connector": {
+      "self": "GitOps コネクタ",
+      "add": "GitOpsコネクタの追加",
+      "delete": "GitOpsコネクタの削除",
+      "update-success": "GitOps コネクタが正常に更新されました",
+      "create-success": "GitOps コネクタが正常に作成されました",
+      "delete-success": "GitOps コネクタが削除されました"
+    }
   },
   "gitops": {
     "setting": {
@@ -2236,7 +2251,15 @@
     "previous-row": "前の行",
     "next-row": "次の行",
     "copy-success": "コピーが成功しました",
-    "missing-permission-to-load-db-metadata": "データベース {db} のメタデータをロードするために必要な権限がありません。"
+    "missing-permission-to-load-db-metadata": "データベース {db} のメタデータをロードするために必要な権限がありません。",
+    "connect-in-new-tab": "新しいタブで接続する",
+    "copy-name": "名前をコピーする",
+    "copy-select-statement": "SELECT ステートメントをコピーする",
+    "preview-table-data": "テーブルデータのプレビュー",
+    "view-table-detail": "テーブルの詳細を表示する",
+    "view-database-detail": "データベースの詳細を表示する",
+    "copy-all-column-names": "すべての列名をコピーします",
+    "view-schema-text": "スキーマテキストの表示"
   },
   "schema-editor": {
     "self": "スキーマエディター",
@@ -2424,6 +2447,10 @@
       "instance-count-exceeds": "インスタンス数が制限{limit}を超えています"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "外部シークレットを設定する",
+        "desc": "データベース パスワードの外部シークレットとして Vault またはカスタム URL を使用します。"
+      },
       "bb-feature-task-schedule-time": {
         "title": "タスクスケジュール時間の設定",
         "desc": "タスクスケジュール時間の設定を使用すると、タスクを実行する特定の時間を設定できます。"
@@ -2767,7 +2794,9 @@
     "role": "役割",
     "database-group": "データベースグループ",
     "schema-group": "テーブルグループ",
-    "changelist": "変更リスト"
+    "changelist": "変更リスト",
+    "vcs-provider": "GitOpsプロバイダー",
+    "vcs-connector": "GitOpsコネクタ"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -2907,8 +2936,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "データベースの作成",
-          "request_query": "クエリのリクエスト",
-          "request_export": "エクスポートのリクエスト"
+          "data_export": "データエクスポート",
+          "request_query": "クエリ役割をリクエスト",
+          "request_export": "エクスポーター役割をリクエスト"
         }
       },
       "template": {

@@ -13,6 +13,7 @@
         <div class="mt-2">
           <ResourceIdField
             ref="resourceIdField"
+            editing-class="mt-4"
             :resource-type="formattedResourceType"
             :readonly="!isCreating"
             :value="state.resourceId"

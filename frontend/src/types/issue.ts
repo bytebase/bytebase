@@ -15,7 +15,8 @@ type IssueTypeDatabase =
   | "bb.issue.database.schema.update"
   | "bb.issue.database.data.update"
   | "bb.issue.database.rollback"
-  | "bb.issue.database.schema.update.ghost";
+  | "bb.issue.database.schema.update.ghost"
+  | "bb.issue.database.data.export";
 
 type IssueTypeGrantRequest = "bb.issue.grant.request";
 

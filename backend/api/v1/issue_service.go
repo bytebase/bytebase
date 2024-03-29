@@ -231,6 +231,10 @@ func (s *IssueService) getIssueFind(ctx context.Context, permissionFilter *store
 				issueFind.TaskTypes = &[]api.TaskType{
 					api.TaskDatabaseDataUpdate,
 				}
+			case "DATA_EXPORT":
+				issueFind.TaskTypes = &[]api.TaskType{
+					api.TaskDatabaseDataExport,
+				}
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, `unknown value %q`, spec.value)
 			}
@@ -624,30 +628,6 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		}
 		if _, issues := e.Compile(expression); issues != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "found issues in grant request condition expression, issues: %v", issues.String())
-		}
-
-		factors, err := common.GetQueryExportFactors(expression)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to get query export factors, error: %v", err)
-		}
-		// Validate the statement if it's not empty.
-		if factors.Statement != "" {
-			for _, dbName := range factors.DatabaseNames {
-				instanceID, _, err := common.GetInstanceDatabaseID(dbName)
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid database name %q, error: %v", dbName, err)
-				}
-				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
-				}
-				if instance == nil {
-					return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-				}
-				if err := validateQueryRequest(instance, factors.Statement); err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid statement, error: %v", err)
-				}
-			}
 		}
 	}
 
@@ -1921,7 +1901,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	}
 
 	issueV1 := &v1pb.Issue{
-		Name:                 fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssuePrefix, issue.UID),
+		Name:                 fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssueNamePrefix, issue.UID),
 		Uid:                  fmt.Sprintf("%d", issue.UID),
 		Title:                issue.Title,
 		Description:          issue.Description,

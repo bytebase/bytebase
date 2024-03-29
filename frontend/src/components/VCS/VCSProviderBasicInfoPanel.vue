@@ -41,16 +41,14 @@
         class="mt-2 w-full"
         :placeholder="namePlaceholder"
       />
-      <div>
-        <ResourceIdField
-          ref="resourceIdField"
-          v-model:value="config.resourceId"
-          class="max-w-full flex-nowrap"
-          resource-type="vcsProvider"
-          :resource-title="config.name"
-          :validate="validateResourceId"
-        />
-      </div>
+      <ResourceIdField
+        v-model:value="config.resourceId"
+        class="max-w-full flex-nowrap mt-1.5"
+        editing-class="mt-4"
+        resource-type="vcs-provider"
+        :resource-title="config.name"
+        :validate="validateResourceId"
+      />
     </div>
     <div>
       <div class="mt-6 pt-6 border-t border-block-border textlabel">
@@ -169,9 +167,8 @@
 import isEmpty from "lodash-es/isEmpty";
 import { NRadio, NRadioGroup } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, onUnmounted, reactive, ref } from "vue";
+import { computed, onUnmounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { useVCSV1Store } from "@/store";
 import { vcsProviderPrefix } from "@/store/modules/v1/common";
 import type { VCSConfig } from "@/types";
@@ -197,8 +194,6 @@ const state = reactive<LocalState>({
     !isEmpty(props.config.instanceUrl) && !isUrl(props.config.instanceUrl),
 });
 const vcsV1Store = useVCSV1Store();
-
-const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
 onUnmounted(() => {
   if (state.urlValidationTimer) {
@@ -357,11 +352,10 @@ const validateResourceId = async (
   }
 
   try {
-    const instance = await vcsV1Store.fetchVCSByName(
-      vcsProviderPrefix + resourceId,
-      true /* silent */
+    const vcs = await vcsV1Store.getOrFetchVCSByName(
+      `${vcsProviderPrefix}${resourceId}`
     );
-    if (instance) {
+    if (vcs) {
       return [
         {
           type: "error",

@@ -164,8 +164,8 @@ github.com/bytebase/mysql-parser v0.0.0-20240315091443-ac59cc21115a h1:XThmcLuTw
 github.com/bytebase/mysql-parser v0.0.0-20240315091443-ac59cc21115a/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
 github.com/bytebase/pg_query_go/v4 v4.0.0-20230802100607-2f34e68d96f5 h1:3Ihj6fsBY7rAKzOO2nxJocq9uOxARAwoalhC84ntjec=
 github.com/bytebase/pg_query_go/v4 v4.0.0-20230802100607-2f34e68d96f5/go.mod h1:aEkDNOXNM5j0YGzaAapwJ7LB3dLNj+bvbWcLv1hOVqA=
-github.com/bytebase/plsql-parser v0.0.0-20240322071012-dfb1a879b106 h1:IHP4O2O2vwiPUEuRk1rJj9s65/naGv/ESLYx0BVepfo=
-github.com/bytebase/plsql-parser v0.0.0-20240322071012-dfb1a879b106/go.mod h1:kL1Tk89SNE7wPnUzkVMJ9v012an5z8as7OUmkapJQGs=
+github.com/bytebase/plsql-parser v0.0.0-20240329090454-858d0c0794b4 h1:jM3hM4Y3nLTNq+f02wRsr/5X266VkhVlg7+GtWRXo94=
+github.com/bytebase/plsql-parser v0.0.0-20240329090454-858d0c0794b4/go.mod h1:kL1Tk89SNE7wPnUzkVMJ9v012an5z8as7OUmkapJQGs=
 github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f h1:mwn17HA984i5cz1vIkiF265a6LZplCAqIPqQn7c0V0s=
 github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f/go.mod h1:Jft7oabwuwD+t5BYiUfTjcNVaihZ8F5KT8TsROG0EaE=
 github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535 h1:sgEzM1Y8WUAR8n8fOjVtx62Cz7HuUILtONkPQ8IvFNk=

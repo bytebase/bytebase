@@ -274,7 +274,8 @@
     "baseline": "Đường cơ sở",
     "project-member": "Thành viên dự án",
     "leave-without-saving": "Rời đi mà không lưu?",
-    "configure-now": "Cấu hình ngay bây giờ"
+    "configure-now": "Cấu hình ngay bây giờ",
+    "connection": "Sự liên quan"
   },
   "error-page": {
     "go-back-home": "Trở về nhà"
@@ -861,7 +862,6 @@
       "issue-status-update": "Cập nhật trạng thái sự cố",
       "pipeline-stage-status-update": "Cập nhật trạng thái giai đoạn vấn đề",
       "pipeline-task-status-update": "Cập nhật trạng thái nhiệm vụ sự cố",
-      "pipeline-task-file-commit": "Tệp cam kết",
       "pipeline-task-statement-update": "Cập nhật SQL",
       "pipeline-task-prior-backup": "Sao lưu dữ liệu trước",
       "member-create": "Tạo thành viên",
@@ -1175,7 +1175,14 @@
     "some-tasks-are-not-executed-successfully": "(Một số tác vụ không được thực hiện thành công)",
     "preview": "Vấn đề xem trước",
     "missing-sql-statement": "Câu lệnh SQL không tồn tại. Để áp dụng thay đổi này cho tất cả các nhiệm vụ, nhấn vào nút '@:{'issue.apply-to-other-tasks'}'.",
-    "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công"
+    "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công",
+    "data-export": {
+      "title": "Xuất Dữ Liệu",
+      "options": "Tùy chọn xuất",
+      "format": "Định dạng",
+      "encrypt": "Mã hóa",
+      "exported-file-downloaded": "Tệp đã xuất đã được tải xuống"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Dự án này đã kích hoạt tính năng kiểm soát phiên bản dựa trên VCS và việc chọn cơ sở dữ liệu bên dưới sẽ điều hướng bạn đến kho lưu trữ Git tương ứng để bắt đầu quá trình thay đổi.",
@@ -1970,7 +1977,15 @@
     },
     "successfully-updated-db-name-template": "Đã cập nhật thành công mẫu tên cơ sở dữ liệu.",
     "all": "Tất cả dự án",
-    "key-hint": "Các chữ cái chữ và số mô tả ngắn để xác định dự án này."
+    "key-hint": "Các chữ cái chữ và số mô tả ngắn để xác định dự án này.",
+    "gitops-connector": {
+      "self": "Trình kết nối GitOps",
+      "add": "Thêm trình kết nối GitOps",
+      "delete": "Xóa trình kết nối GitOps",
+      "update-success": "Đã cập nhật thành công trình kết nối GitOps",
+      "create-success": "Đã tạo thành công trình kết nối GitOps",
+      "delete-success": "Trình kết nối GitOps bị xóa"
+    }
   },
   "gitops": {
     "setting": {
@@ -2236,7 +2251,15 @@
     "previous-row": "Hàng trước",
     "next-row": "Hàng tiếp theo",
     "copy-success": "Sao chép thành công",
-    "missing-permission-to-load-db-metadata": "Thiếu quyền cần thiết để tải siêu dữ liệu của db {db}."
+    "missing-permission-to-load-db-metadata": "Thiếu quyền cần thiết để tải siêu dữ liệu của db {db}.",
+    "connect-in-new-tab": "Kết nối trong tab mới",
+    "copy-name": "Sao chép tên",
+    "copy-select-statement": "Sao chép câu lệnh CHỌN",
+    "preview-table-data": "Xem trước dữ liệu bảng",
+    "view-table-detail": "Xem chi tiết bảng",
+    "view-database-detail": "Xem chi tiết cơ sở dữ liệu",
+    "copy-all-column-names": "Sao chép tất cả tên cột",
+    "view-schema-text": "Xem văn bản lược đồ"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",
@@ -2424,6 +2447,10 @@
       "instance-count-exceeds": "Số lượng phiên bản {count} vượt quá giới hạn {limit}"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "Đặt bí mật bên ngoài",
+        "desc": "Sử dụng Vault hoặc URL tùy chỉnh làm bí mật bên ngoài cho mật khẩu cơ sở dữ liệu."
+      },
       "bb-feature-task-schedule-time": {
         "title": "Đặt thời gian thực hiện nhiệm vụ",
         "desc": "Đặt thời gian lập lịch tác vụ cho phép bạn đặt thời gian cụ thể để thực hiện các tác vụ của mình."
@@ -2767,7 +2794,9 @@
     "role": "Vai trò",
     "database-group": "Nhóm cơ sở dữ liệu",
     "schema-group": "Nhóm bảng",
-    "changelist": "Danh sách thay đổi"
+    "changelist": "Danh sách thay đổi",
+    "vcs-provider": "Nhà cung cấp GitOps",
+    "vcs-connector": "Trình kết nối GitOps"
   },
   "resource-id": {
     "self": "ID {resource}",
@@ -2907,8 +2936,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Tạo nên cơ sở dữ liệu",
-          "request_query": "Yêu cầu truy vấn",
-          "request_export": "Yêu cầu xuất"
+          "data_export": "Xuất Dữ Liệu",
+          "request_query": "Yêu Cầu Vai Trò Người Truy Vấn",
+          "request_export": "Yêu Cầu Vai Trò Người Xuất khẩu"
         }
       },
       "template": {

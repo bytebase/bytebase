@@ -155,7 +155,7 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 	if err != nil {
 		return nil, err
 	}
-	v1VCSConnector, err := s.convertStoreVCSConnector(ctx, vcsConnector)
+	v1VCSConnector, err := convertStoreVCSConnector(ctx, s.store, vcsConnector)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (s *VCSConnectorService) GetVCSConnector(ctx context.Context, request *v1pb
 	if vcsConnector == nil {
 		return nil, status.Errorf(codes.NotFound, "vcs connector %q not found", vcsConnectorID)
 	}
-	v1VCSConnector, err := s.convertStoreVCSConnector(ctx, vcsConnector)
+	v1VCSConnector, err := convertStoreVCSConnector(ctx, s.store, vcsConnector)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (s *VCSConnectorService) ListVCSConnectors(ctx context.Context, request *v1
 
 	resp := &v1pb.ListVCSConnectorsResponse{}
 	for _, vcsConnector := range vcsConnectors {
-		v1VCSConnector, err := s.convertStoreVCSConnector(ctx, vcsConnector)
+		v1VCSConnector, err := convertStoreVCSConnector(ctx, s.store, vcsConnector)
 		if err != nil {
 			return nil, err
 		}
@@ -319,7 +319,7 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 		return nil, err
 	}
 
-	v1VCSConnector, err := s.convertStoreVCSConnector(ctx, vcsConnector)
+	v1VCSConnector, err := convertStoreVCSConnector(ctx, s.store, vcsConnector)
 	if err != nil {
 		return nil, err
 	}
@@ -378,15 +378,15 @@ func (s *VCSConnectorService) DeleteVCSConnector(ctx context.Context, request *v
 	return &emptypb.Empty{}, nil
 }
 
-func (s *VCSConnectorService) convertStoreVCSConnector(ctx context.Context, vcsConnector *store.VCSConnectorMessage) (*v1pb.VCSConnector, error) {
-	creator, err := s.store.GetUserByID(ctx, vcsConnector.CreatorID)
+func convertStoreVCSConnector(ctx context.Context, stores *store.Store, vcsConnector *store.VCSConnectorMessage) (*v1pb.VCSConnector, error) {
+	creator, err := stores.GetUserByID(ctx, vcsConnector.CreatorID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
 	}
 	if creator == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the creator: %d", vcsConnector.CreatorID))
 	}
-	updater, err := s.store.GetUserByID(ctx, vcsConnector.UpdaterID)
+	updater, err := stores.GetUserByID(ctx, vcsConnector.UpdaterID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get updater: %v", err))
 	}

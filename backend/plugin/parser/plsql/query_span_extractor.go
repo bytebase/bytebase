@@ -1301,7 +1301,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 	}
 
 	if view != nil && view.Definition != "" {
-		columns, err := q.getColumnsForView(view.Definition)
+		columns, err := q.getColumnsForView(schemaName, view.Definition)
 		if err != nil {
 			return nil, err
 		}
@@ -1312,7 +1312,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 	}
 
 	if materializedView != nil && materializedView.Definition != "" {
-		columns, err := q.getColumnsForMaterializedView(materializedView.Definition)
+		columns, err := q.getColumnsForMaterializedView(schemaName, materializedView.Definition)
 		if err != nil {
 			return nil, err
 		}
@@ -1324,8 +1324,8 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 	return nil, nil
 }
 
-func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDatabase, q.defaultSchema, q.f)
+func (q *querySpanExtractor) getColumnsForView(schemaName, definition string) ([]base.QuerySpanResult, error) {
+	newQ := newQuerySpanExtractor(q.connectedDatabase, schemaName, q.f)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition: %s", definition)
@@ -1333,8 +1333,8 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 	return span.Results, nil
 }
 
-func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDatabase, q.defaultSchema, q.f)
+func (q *querySpanExtractor) getColumnsForMaterializedView(schemaName, definition string) ([]base.QuerySpanResult, error) {
+	newQ := newQuerySpanExtractor(q.connectedDatabase, schemaName, q.f)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for materialized view definition: %s", definition)

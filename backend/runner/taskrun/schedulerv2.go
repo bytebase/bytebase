@@ -645,6 +645,11 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					// Every task in the pipeline has finished.
 					// Resolve the issue.
 					if err := func() error {
+						// For those database data export issues, we don't resolve them automatically.
+						if issue.Type == api.IssueDatabaseDataExport {
+							return nil
+						}
+
 						newStatus := api.IssueDone
 						updatedIssue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus}, api.SystemBotID)
 						if err != nil {

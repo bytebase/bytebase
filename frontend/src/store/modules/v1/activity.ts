@@ -11,7 +11,7 @@ import {
   logEntity_ActionToJSON,
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
-import { isDatabaseRelatedIssue, extractRolloutUID } from "@/utils";
+import { isDatabaseChangeRelatedIssue, extractRolloutUID } from "@/utils";
 import { userNamePrefix, getLogId, logNamePrefix } from "./common";
 
 dayjs.extend(utc);
@@ -74,7 +74,7 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
         pageSize: 1000, // Pagination is complex, and not high priority
       }).then((resp) => resp.logEntities),
     ];
-    if (isDatabaseRelatedIssue(issue) && issue.rollout) {
+    if (isDatabaseChangeRelatedIssue(issue) && issue.rollout) {
       const pipelineUID = extractRolloutUID(issue.rollout);
       requests.push(
         fetchActivityList({

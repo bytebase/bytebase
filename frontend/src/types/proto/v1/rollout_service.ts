@@ -114,6 +114,7 @@ export interface Plan_Spec {
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
   exportDataConfig?: Plan_ExportDataConfig | undefined;
+  vcsSource: Plan_VCSSource | undefined;
 }
 
 export interface Plan_CreateDatabaseConfig {
@@ -290,6 +291,17 @@ export interface Plan_ExportDataConfig {
    * Leave it empty if no needs to encrypt the zip file.
    */
   password?: string | undefined;
+}
+
+export interface Plan_VCSSource {
+  /**
+   * Optional.
+   * If present, we will update the pull request for rollout status.
+   * Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
+   */
+  vcsConnector: string;
+  pullRequestUrl: string;
+  commitUrl: string;
 }
 
 export interface ListPlanCheckRunsRequest {
@@ -1030,6 +1042,7 @@ export interface TaskRun {
   executionStatusUpdateTime: Date | undefined;
   executionDetail: TaskRun_ExecutionDetail | undefined;
   startTime: Date | undefined;
+  exportArchiveStatus: TaskRun_ExportArchiveStatus;
 }
 
 export enum TaskRun_Status {
@@ -1129,6 +1142,45 @@ export function taskRun_ExecutionStatusToJSON(object: TaskRun_ExecutionStatus): 
     case TaskRun_ExecutionStatus.POST_EXECUTING:
       return "POST_EXECUTING";
     case TaskRun_ExecutionStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum TaskRun_ExportArchiveStatus {
+  EXPORT_ARCHIVE_STATUS_UNSPECIFIED = 0,
+  READY = 1,
+  EXPORTED = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function taskRun_ExportArchiveStatusFromJSON(object: any): TaskRun_ExportArchiveStatus {
+  switch (object) {
+    case 0:
+    case "EXPORT_ARCHIVE_STATUS_UNSPECIFIED":
+      return TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED;
+    case 1:
+    case "READY":
+      return TaskRun_ExportArchiveStatus.READY;
+    case 2:
+    case "EXPORTED":
+      return TaskRun_ExportArchiveStatus.EXPORTED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return TaskRun_ExportArchiveStatus.UNRECOGNIZED;
+  }
+}
+
+export function taskRun_ExportArchiveStatusToJSON(object: TaskRun_ExportArchiveStatus): string {
+  switch (object) {
+    case TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED:
+      return "EXPORT_ARCHIVE_STATUS_UNSPECIFIED";
+    case TaskRun_ExportArchiveStatus.READY:
+      return "READY";
+    case TaskRun_ExportArchiveStatus.EXPORTED:
+      return "EXPORTED";
+    case TaskRun_ExportArchiveStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -1733,6 +1785,7 @@ function createBasePlan_Spec(): Plan_Spec {
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
     exportDataConfig: undefined,
+    vcsSource: undefined,
   };
 }
 
@@ -1755,6 +1808,9 @@ export const Plan_Spec = {
     }
     if (message.exportDataConfig !== undefined) {
       Plan_ExportDataConfig.encode(message.exportDataConfig, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.vcsSource !== undefined) {
+      Plan_VCSSource.encode(message.vcsSource, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -1808,6 +1864,13 @@ export const Plan_Spec = {
 
           message.exportDataConfig = Plan_ExportDataConfig.decode(reader, reader.uint32());
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.vcsSource = Plan_VCSSource.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1835,6 +1898,7 @@ export const Plan_Spec = {
       exportDataConfig: isSet(object.exportDataConfig)
         ? Plan_ExportDataConfig.fromJSON(object.exportDataConfig)
         : undefined,
+      vcsSource: isSet(object.vcsSource) ? Plan_VCSSource.fromJSON(object.vcsSource) : undefined,
     };
   },
 
@@ -1858,6 +1922,9 @@ export const Plan_Spec = {
     if (message.exportDataConfig !== undefined) {
       obj.exportDataConfig = Plan_ExportDataConfig.toJSON(message.exportDataConfig);
     }
+    if (message.vcsSource !== undefined) {
+      obj.vcsSource = Plan_VCSSource.toJSON(message.vcsSource);
+    }
     return obj;
   },
 
@@ -1877,6 +1944,9 @@ export const Plan_Spec = {
       : undefined;
     message.exportDataConfig = (object.exportDataConfig !== undefined && object.exportDataConfig !== null)
       ? Plan_ExportDataConfig.fromPartial(object.exportDataConfig)
+      : undefined;
+    message.vcsSource = (object.vcsSource !== undefined && object.vcsSource !== null)
+      ? Plan_VCSSource.fromPartial(object.vcsSource)
       : undefined;
     return message;
   },
@@ -2686,6 +2756,95 @@ export const Plan_ExportDataConfig = {
     message.sheet = object.sheet ?? "";
     message.format = object.format ?? 0;
     message.password = object.password ?? undefined;
+    return message;
+  },
+};
+
+function createBasePlan_VCSSource(): Plan_VCSSource {
+  return { vcsConnector: "", pullRequestUrl: "", commitUrl: "" };
+}
+
+export const Plan_VCSSource = {
+  encode(message: Plan_VCSSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.vcsConnector !== "") {
+      writer.uint32(10).string(message.vcsConnector);
+    }
+    if (message.pullRequestUrl !== "") {
+      writer.uint32(18).string(message.pullRequestUrl);
+    }
+    if (message.commitUrl !== "") {
+      writer.uint32(26).string(message.commitUrl);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Plan_VCSSource {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlan_VCSSource();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.vcsConnector = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pullRequestUrl = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.commitUrl = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Plan_VCSSource {
+    return {
+      vcsConnector: isSet(object.vcsConnector) ? globalThis.String(object.vcsConnector) : "",
+      pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
+      commitUrl: isSet(object.commitUrl) ? globalThis.String(object.commitUrl) : "",
+    };
+  },
+
+  toJSON(message: Plan_VCSSource): unknown {
+    const obj: any = {};
+    if (message.vcsConnector !== "") {
+      obj.vcsConnector = message.vcsConnector;
+    }
+    if (message.pullRequestUrl !== "") {
+      obj.pullRequestUrl = message.pullRequestUrl;
+    }
+    if (message.commitUrl !== "") {
+      obj.commitUrl = message.commitUrl;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Plan_VCSSource>): Plan_VCSSource {
+    return Plan_VCSSource.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Plan_VCSSource>): Plan_VCSSource {
+    const message = createBasePlan_VCSSource();
+    message.vcsConnector = object.vcsConnector ?? "";
+    message.pullRequestUrl = object.pullRequestUrl ?? "";
+    message.commitUrl = object.commitUrl ?? "";
     return message;
   },
 };
@@ -5487,6 +5646,7 @@ function createBaseTaskRun(): TaskRun {
     executionStatusUpdateTime: undefined,
     executionDetail: undefined,
     startTime: undefined,
+    exportArchiveStatus: 0,
   };
 }
 
@@ -5536,6 +5696,9 @@ export const TaskRun = {
     }
     if (message.startTime !== undefined) {
       Timestamp.encode(toTimestamp(message.startTime), writer.uint32(114).fork()).ldelim();
+    }
+    if (message.exportArchiveStatus !== 0) {
+      writer.uint32(128).int32(message.exportArchiveStatus);
     }
     return writer;
   },
@@ -5652,6 +5815,13 @@ export const TaskRun = {
 
           message.startTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 16:
+          if (tag !== 128) {
+            break;
+          }
+
+          message.exportArchiveStatus = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5682,6 +5852,9 @@ export const TaskRun = {
         ? TaskRun_ExecutionDetail.fromJSON(object.executionDetail)
         : undefined,
       startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
+      exportArchiveStatus: isSet(object.exportArchiveStatus)
+        ? taskRun_ExportArchiveStatusFromJSON(object.exportArchiveStatus)
+        : 0,
     };
   },
 
@@ -5732,6 +5905,9 @@ export const TaskRun = {
     if (message.startTime !== undefined) {
       obj.startTime = message.startTime.toISOString();
     }
+    if (message.exportArchiveStatus !== 0) {
+      obj.exportArchiveStatus = taskRun_ExportArchiveStatusToJSON(message.exportArchiveStatus);
+    }
     return obj;
   },
 
@@ -5757,6 +5933,7 @@ export const TaskRun = {
       ? TaskRun_ExecutionDetail.fromPartial(object.executionDetail)
       : undefined;
     message.startTime = object.startTime ?? undefined;
+    message.exportArchiveStatus = object.exportArchiveStatus ?? 0;
     return message;
   },
 };
