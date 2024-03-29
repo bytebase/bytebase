@@ -832,6 +832,8 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 			stmt = fmt.Sprintf("%s WITH\n\t%s", stmt, strings.Join(list, "\n\t"))
 		}
 		return fmt.Sprintf("%s;", stmt), nil
+	case storepb.Engine_HIVE:
+		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
 }
