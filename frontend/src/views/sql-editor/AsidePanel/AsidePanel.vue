@@ -1,8 +1,8 @@
 <template>
-  <div class="aside-panel h-full flex flex-col overflow-hidden">
+  <div class="h-full flex flex-col overflow-hidden">
     <div
       v-if="!strictProject"
-      class="flex flex-row items-center gap-x-1 px-1 pt-1"
+      class="flex flex-row items-center gap-x-1 px-1 py-1 border-b"
     >
       <ProjectSelect
         style="width: 100%"
@@ -14,8 +14,17 @@
         @update:project="handleSwitchProject"
       />
     </div>
-    <div class="flex-1 overflow-hidden pt-1">
-      <DatabaseTree />
+
+    <div class="flex-1 flex flex-row overflow-hidden">
+      <div class="h-full border-r shrink-0">
+        <GutterBar />
+      </div>
+      <div class="h-full flex-1 flex flex-col pt-1 overflow-hidden">
+        <ConnectionPane v-if="asidePanelTab === 'CONNECTION'" />
+        <WorksheetPane v-if="asidePanelTab === 'WORKSHEET'" />
+        <SchemaPane v-if="asidePanelTab === 'SCHEMA'" />
+        <HistoryPane v-if="asidePanelTab === 'HISTORY'" />
+      </div>
     </div>
   </div>
 </template>
@@ -31,11 +40,15 @@ import {
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { useSQLEditorContext } from "../context";
-import DatabaseTree from "./DatabaseTree.vue";
+import ConnectionPane from "./ConnectionPane";
+import GutterBar from "./GutterBar";
+import HistoryPane from "./HistoryPane";
+import SchemaPane from "./SchemaPane";
+import WorksheetPane from "./WorksheetPane";
 
 const editorStore = useSQLEditorStore();
 const treeStore = useSQLEditorTreeStore();
-const { events } = useSQLEditorContext();
+const { events, asidePanelTab } = useSQLEditorContext();
 const { project, projectContextReady, strictProject } =
   storeToRefs(editorStore);
 
@@ -65,6 +78,6 @@ const handleSwitchProject = (uid: string | undefined) => {
 
 <style lang="postcss" scoped>
 .project-select :deep(.n-base-selection) {
-  --n-height: 30px !important;
+  --n-height: 25px !important;
 }
 </style>

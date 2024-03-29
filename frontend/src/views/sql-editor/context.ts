@@ -3,12 +3,8 @@ import type { InjectionKey, Ref } from "vue";
 import { inject, provide, ref } from "vue";
 import { useSQLEditorStore } from "@/store";
 import type { ComposedDatabase, SQLEditorTab } from "@/types";
-import type {
-  DatabaseMetadata,
-  ExternalTableMetadata,
-  SchemaMetadata,
-  TableMetadata,
-} from "@/types/proto/v1/database_service";
+
+export type AsidePanelTab = "CONNECTION" | "SCHEMA" | "WORKSHEET" | "HISTORY";
 
 type SQLEditorEvents = Emittery<{
   "save-sheet": { tab: SQLEditorTab; editTitle?: boolean };
@@ -24,18 +20,16 @@ type SQLEditorEvents = Emittery<{
   };
 }>;
 
-export type SelectedDatabaseSchema = {
-  db: ComposedDatabase;
-  database: DatabaseMetadata;
-  schema: SchemaMetadata;
-  table?: TableMetadata;
-  externalTable?: ExternalTableMetadata;
-};
-
 export type SQLEditorContext = {
+  asidePanelTab: Ref<AsidePanelTab>;
   showAIChatBox: Ref<boolean>;
-  selectedDatabaseSchemaByDatabaseName: Ref<
-    Map<string, SelectedDatabaseSchema>
+  schemaViewer: Ref<
+    | {
+        database: ComposedDatabase;
+        schema?: string;
+        table?: string;
+      }
+    | undefined
   >;
 
   events: SQLEditorEvents;
@@ -54,8 +48,9 @@ export const useSQLEditorContext = () => {
 export const provideSQLEditorContext = () => {
   const editorStore = useSQLEditorStore();
   const context: SQLEditorContext = {
+    asidePanelTab: ref("WORKSHEET"),
     showAIChatBox: ref(false),
-    selectedDatabaseSchemaByDatabaseName: ref(new Map()),
+    schemaViewer: ref(undefined),
     events: new Emittery(),
 
     maybeSwitchProject: (project) => {

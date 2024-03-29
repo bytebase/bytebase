@@ -274,7 +274,8 @@
     "baseline": "基线",
     "project-member": "项目成员",
     "leave-without-saving": "不保存变动？",
-    "configure-now": "现在配置"
+    "configure-now": "现在配置",
+    "connection": "连接"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2250,7 +2251,15 @@
     "previous-row": "上一行",
     "next-row": "下一行",
     "copy-success": "复制成功",
-    "missing-permission-to-load-db-metadata": "缺少加载数据库 {db} 元数据所需的权限。"
+    "missing-permission-to-load-db-metadata": "缺少加载数据库 {db} 元数据所需的权限。",
+    "connect-in-new-tab": "在新选项卡中连接",
+    "copy-name": "复制名称",
+    "copy-select-statement": "复制 SELECT 语句",
+    "preview-table-data": "预览表数据",
+    "view-table-detail": "查看表详情",
+    "view-database-detail": "查看数据库详情",
+    "copy-all-column-names": "复制所有列名",
+    "view-schema-text": "查看文本 Schema"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

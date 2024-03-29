@@ -1,8 +1,8 @@
 import { isEmpty } from "lodash-es";
 import { Status } from "nice-grpc-common";
 import { markRaw } from "vue";
-import { useI18n } from "vue-i18n";
 import { parseSQL } from "@/components/MonacoEditor/sqlParser";
+import { t } from "@/plugins/i18n";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -30,7 +30,6 @@ import {
 } from "@/utils";
 
 const useExecuteSQL = () => {
-  const { t } = useI18n();
   const currentUser = useCurrentUserV1();
   const databaseStore = useDatabaseV1Store();
   const tabStore = useSQLEditorTabStore();

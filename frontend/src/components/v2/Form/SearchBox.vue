@@ -9,12 +9,13 @@
     @update:value="$emit('update:value', $event)"
   >
     <template #prefix>
-      <heroicons-outline:search class="h-4 w-4 text-control-placeholder" />
+      <SearchIcon class="w-4 h-auto text-gray-300" />
     </template>
   </NInput>
 </template>
 
 <script lang="ts" setup>
+import { SearchIcon } from "lucide-vue-next";
 import { NInput } from "naive-ui";
 import { computed, onMounted, ref, useAttrs } from "vue";
 import { useI18n } from "vue-i18n";

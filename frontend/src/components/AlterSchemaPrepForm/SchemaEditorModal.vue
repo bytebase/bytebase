@@ -554,6 +554,7 @@ const handlePreviewIssue = async () => {
   } else {
     router.push(routeInfo);
   }
+  cleanup();
 };
 
 const generateIssueName = (
