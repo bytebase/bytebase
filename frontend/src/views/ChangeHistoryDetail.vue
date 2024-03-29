@@ -435,18 +435,16 @@ const showSchemaSnapshot = computed(() => {
 });
 
 watch(
-  () => [changeHistoryParent.value, changeHistoryName.value],
-  async () => {
-    const database = await databaseStore.getOrFetchDatabaseByName(
-      changeHistoryParent.value
-    );
+  [changeHistoryParent, changeHistoryName],
+  async ([parent, name]) => {
+    const database = await databaseStore.getOrFetchDatabaseByName(parent);
     await Promise.all([
       dbSchemaStore.getOrFetchDatabaseMetadata({
         database: database.name,
         skipCache: false,
       }),
       changeHistoryStore.getOrFetchChangeHistoryByName(
-        changeHistoryName.value,
+        name,
         ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
       ),
     ]);

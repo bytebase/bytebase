@@ -727,4 +727,11 @@ message TaskRun {
   ExecutionDetail execution_detail = 15;
 
   google.protobuf.Timestamp start_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  enum ExportArchiveStatus {
+    EXPORT_ARCHIVE_STATUS_UNSPECIFIED = 0;
+    READY = 1;
+    EXPORTED = 2;
+  }
+  ExportArchiveStatus export_archive_status = 16;
 }

@@ -40,15 +40,16 @@
         :disabled="true"
         :value="repositoryInfo.fullPath"
       />
+      <ResourceIdField
+        v-model:value="repositoryConfig.resourceId"
+        class="max-w-full flex-nowrap mt-1.5"
+        editing-class="mt-4"
+        resource-type="vcs-connector"
+        :resource-title="repositoryInfo.name"
+        :validate="validateResourceId"
+        :readonly="!create || !allowEdit"
+      />
     </div>
-    <ResourceIdField
-      v-model:value="repositoryConfig.resourceId"
-      class="max-w-full flex-nowrap"
-      resource-type="vcs-connector"
-      :resource-title="repositoryInfo.name"
-      :validate="validateResourceId"
-      :readonly="!create || !allowEdit"
-    />
     <div>
       <div class="textlabel">
         {{ $t("common.branch") }} <span class="text-red-600">*</span>

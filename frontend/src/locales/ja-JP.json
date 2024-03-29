@@ -862,7 +862,6 @@
       "issue-status-update": "課題ステータスを更新する",
       "pipeline-stage-status-update": "課題ステージステータスを更新する",
       "pipeline-task-status-update": "課題タスクステータスを更新する",
-      "pipeline-task-file-commit": "ファイルをコミットする",
       "pipeline-task-statement-update": "SQLを更新する",
       "pipeline-task-prior-backup": "データをバックアップする",
       "member-create": "メンバーを作成する",
@@ -1176,7 +1175,13 @@
     "some-tasks-are-not-executed-successfully": "（一部のタスクが正常に実行されていません）",
     "preview": "問題のプレビュー",
     "missing-sql-statement": "SQLステートメントが見つかりません。この変更をすべてのタスクに適用するには、「@:{'issue.apply-to-other-tasks'}」ボタンをクリックしてください。",
-    "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました"
+    "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました",
+    "data-export": {
+      "options": "エクスポートオプション",
+      "format": "フォーマット",
+      "encrypt": "暗号化",
+      "exported-file-downloaded": "エクスポートされたファイルがダウンロードされました"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "このプロジェクトはVCSベースのバージョン管理が有効になっており、以下のデータベースを選択すると、対応するGitリポジトリに移動して変更プロセスを開始できます。",
@@ -2441,6 +2446,10 @@
       "instance-count-exceeds": "インスタンス数が制限{limit}を超えています"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "外部シークレットを設定する",
+        "desc": "データベース パスワードの外部シークレットとして Vault またはカスタム URL を使用します。"
+      },
       "bb-feature-task-schedule-time": {
         "title": "タスクスケジュール時間の設定",
         "desc": "タスクスケジュール時間の設定を使用すると、タスクを実行する特定の時間を設定できます。"
@@ -2926,8 +2935,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "データベースの作成",
-          "request_query": "クエリのリクエスト",
-          "request_export": "エクスポートのリクエスト"
+          "data_export": "データエクスポート",
+          "request_query": "クエリ役割をリクエスト",
+          "request_export": "エクスポーター役割をリクエスト"
         }
       },
       "template": {

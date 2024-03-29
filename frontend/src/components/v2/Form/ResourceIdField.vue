@@ -17,12 +17,12 @@
         </template>
       </div>
     </template>
-    <template v-else>
-      <label for="name" class="textlabel">
+    <div v-else :class="state.manualEdit && editingClass">
+      <label for="name" class="textlabel flex flex-row items-center">
         {{ $t("resource-id.self", { resource: resourceName }) }}
         <span class="ml-0.5 text-error">*</span>
       </label>
-      <div class="textinfolabel my-2">
+      <div class="textinfolabel mb-2 mt-1">
         {{ $t("resource-id.description", { resource: resourceName }) }}
       </div>
       <NInput
@@ -31,7 +31,7 @@
         v-bind="inputProps"
         @update:value="handleResourceIdInput($event)"
       />
-    </template>
+    </div>
     <ul
       v-if="state.validatedMessages.length > 0"
       class="w-full my-2 space-y-2 list-disc list-outside pl-4"
@@ -98,6 +98,7 @@ const props = withDefaults(
     suffix?: boolean;
     readonly?: boolean;
     inputProps?: Partial<InputProps>;
+    editingClass?: string;
     validate?: (resourceId: ResourceId) => Promise<ValidatedMessage[]>;
   }>(),
   {
@@ -106,6 +107,7 @@ const props = withDefaults(
     suffix: false,
     readonly: false,
     inputProps: undefined,
+    editingClass: "",
     validate: () => Promise.resolve([]),
   }
 );

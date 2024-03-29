@@ -862,7 +862,6 @@
       "issue-status-update": "Update issue status",
       "pipeline-stage-status-update": "Update issue stage status",
       "pipeline-task-status-update": "Update issue task status",
-      "pipeline-task-file-commit": "Commit file",
       "pipeline-task-statement-update": "SQL update",
       "pipeline-task-prior-backup": "Data prior backup",
       "member-create": "Create member",
@@ -1176,7 +1175,13 @@
     "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
     "preview": "Preview issue",
     "missing-sql-statement": "SQL statement missing. To apply this change to all tasks, click the @:{'issue.apply-to-other-tasks'} button.",
-    "task-summary-tooltip": "{failed} task failed | {failed} tasks failed"
+    "task-summary-tooltip": "{failed} task failed | {failed} tasks failed",
+    "data-export": {
+      "options": "Options",
+      "format": "Format",
+      "encrypt": "Encrypt",
+      "exported-file-downloaded": "Exported file downloaded"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -2441,6 +2446,10 @@
       "instance-count-exceeds": "Instance count {count} exceeds the limit {limit}"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "Set external secret",
+        "desc": "Use Vault or a custom URL as the external secret for the database password."
+      },
       "bb-feature-task-schedule-time": {
         "title": "Set task schedule time",
         "desc": "Set task schedule time allows you to set a specific time to run your tasks."
@@ -2926,8 +2935,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Create Database",
-          "request_query": "Request Query",
-          "request_export": "Request Export"
+          "data_export": "Data Export",
+          "request_query": "Request Querier Role",
+          "request_export": "Request Exporter Role"
         }
       },
       "template": {

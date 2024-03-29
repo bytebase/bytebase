@@ -234,13 +234,12 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	}
 
 	updateInstance := &store.UpdateInstanceMessage{
-		UpdaterID:     api.SystemBotID,
-		EnvironmentID: instance.EnvironmentID,
-		ResourceID:    instance.ResourceID,
+		ResourceID: instance.ResourceID,
 		Metadata: &storepb.InstanceMetadata{
 			LastSyncTime:             timestamppb.Now(),
 			MysqlLowerCaseTableNames: instanceMeta.Metadata.GetMysqlLowerCaseTableNames(),
 		},
+		UpdaterID: api.SystemBotID,
 	}
 	if instanceMeta.Version != instance.EngineVersion {
 		updateInstance.EngineVersion = &instanceMeta.Version

@@ -36,10 +36,11 @@
 import { computed, reactive, ref, watchEffect } from "vue";
 import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
 import { useIdentityProviderStore } from "@/store/modules/idp";
+import { ssoNamePrefix } from "@/store/modules/v1/common";
 import { State } from "@/types/proto/v1/common";
 
 const props = defineProps<{
-  ssoName?: string;
+  ssoId?: string;
 }>();
 
 interface LocalState {
@@ -52,18 +53,23 @@ const state = reactive<LocalState>({
 const identityProviderStore = useIdentityProviderStore();
 const isLoading = ref<boolean>(true);
 
+const ssoName = computed(() => {
+  if (!props.ssoId) {
+    return "";
+  }
+  return `${ssoNamePrefix}${props.ssoId}`;
+});
+
 watchEffect(async () => {
-  if (props.ssoName) {
+  if (ssoName.value) {
     isLoading.value = true;
-    await identityProviderStore.getOrFetchIdentityProviderByName(
-      unescape(props.ssoName)
-    );
+    await identityProviderStore.getOrFetchIdentityProviderByName(ssoName.value);
   }
   isLoading.value = false;
 });
 
 const currentIdentityProvider = computed(() => {
-  return identityProviderStore.getIdentityProviderByName(props.ssoName ?? "");
+  return identityProviderStore.getIdentityProviderByName(ssoName.value);
 });
 
 const isDeleted = computed(() => {

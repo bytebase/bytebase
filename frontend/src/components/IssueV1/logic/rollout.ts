@@ -56,8 +56,11 @@ export const allowUserToEditStatementForTask = (
     return [];
   }
 
-  if (issue.type !== Issue_Type.DATABASE_CHANGE) {
-    denyReasons.push("Only database change issue type can be changed");
+  if (
+    issue.type !== Issue_Type.DATABASE_CHANGE &&
+    issue.type !== Issue_Type.DATABASE_DATA_EXPORT
+  ) {
+    denyReasons.push("Only database related issue type can be changed");
   }
   if (issue.status !== IssueStatus.OPEN) {
     denyReasons.push("The issue is not open");

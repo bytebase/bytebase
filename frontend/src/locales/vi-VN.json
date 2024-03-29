@@ -862,7 +862,6 @@
       "issue-status-update": "Cập nhật trạng thái sự cố",
       "pipeline-stage-status-update": "Cập nhật trạng thái giai đoạn vấn đề",
       "pipeline-task-status-update": "Cập nhật trạng thái nhiệm vụ sự cố",
-      "pipeline-task-file-commit": "Tệp cam kết",
       "pipeline-task-statement-update": "Cập nhật SQL",
       "pipeline-task-prior-backup": "Sao lưu dữ liệu trước",
       "member-create": "Tạo thành viên",
@@ -1176,7 +1175,13 @@
     "some-tasks-are-not-executed-successfully": "(Một số tác vụ không được thực hiện thành công)",
     "preview": "Vấn đề xem trước",
     "missing-sql-statement": "Câu lệnh SQL không tồn tại. Để áp dụng thay đổi này cho tất cả các nhiệm vụ, nhấn vào nút '@:{'issue.apply-to-other-tasks'}'.",
-    "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công"
+    "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công",
+    "data-export": {
+      "options": "Tùy chọn xuất",
+      "format": "Định dạng",
+      "encrypt": "Mã hóa",
+      "exported-file-downloaded": "Tệp đã xuất đã được tải xuống"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Dự án này đã kích hoạt tính năng kiểm soát phiên bản dựa trên VCS và việc chọn cơ sở dữ liệu bên dưới sẽ điều hướng bạn đến kho lưu trữ Git tương ứng để bắt đầu quá trình thay đổi.",
@@ -2441,6 +2446,10 @@
       "instance-count-exceeds": "Số lượng phiên bản {count} vượt quá giới hạn {limit}"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "Đặt bí mật bên ngoài",
+        "desc": "Sử dụng Vault hoặc URL tùy chỉnh làm bí mật bên ngoài cho mật khẩu cơ sở dữ liệu."
+      },
       "bb-feature-task-schedule-time": {
         "title": "Đặt thời gian thực hiện nhiệm vụ",
         "desc": "Đặt thời gian lập lịch tác vụ cho phép bạn đặt thời gian cụ thể để thực hiện các tác vụ của mình."
@@ -2926,8 +2935,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Tạo nên cơ sở dữ liệu",
-          "request_query": "Yêu cầu truy vấn",
-          "request_export": "Yêu cầu xuất"
+          "data_export": "Xuất Dữ Liệu",
+          "request_query": "Yêu Cầu Vai Trò Người Truy Vấn",
+          "request_export": "Yêu Cầu Vai Trò Người Xuất khẩu"
         }
       },
       "template": {

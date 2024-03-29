@@ -13,7 +13,6 @@
       :columns="columnList"
       :striped="true"
       :bordered="true"
-      class="connector-table-list"
     />
   </div>
 </template>
@@ -159,10 +158,3 @@ watchEffect(async () => {
   ]);
 });
 </script>
-
-<style lang="postcss" scoped>
-.connector-table-list :deep(.n-data-table-td),
-.connector-table-list :deep(.n-data-table-th) {
-  @apply !py-1.5;
-}
-</style>

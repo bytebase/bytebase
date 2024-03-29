@@ -1181,7 +1181,7 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		v1pbHistory.StatementSheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, h.IssueProjectID, common.SheetIDPrefix, *h.SheetID)
 	}
 	if h.IssueUID != nil {
-		v1pbHistory.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, h.IssueProjectID, common.IssuePrefix, *h.IssueUID)
+		v1pbHistory.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, h.IssueProjectID, common.IssueNamePrefix, *h.IssueUID)
 	}
 	if h.Payload != nil && h.Payload.ChangedResources != nil {
 		v1pbHistory.ChangedResources = convertToChangedResources(h.Payload.ChangedResources)

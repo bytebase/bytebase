@@ -29,6 +29,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { WORKSPACE_ROUTE_SSO_DETAIL } from "@/router/dashboard/workspaceRoutes";
+import { getSSOId } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 
 const props = defineProps<{
@@ -59,7 +60,7 @@ const clickIdentityProvider = function (section: number, row: number) {
   router.push({
     name: WORKSPACE_ROUTE_SSO_DETAIL,
     params: {
-      ssoName: identityProvider.name,
+      ssoId: getSSOId(identityProvider.name),
     },
   });
 };

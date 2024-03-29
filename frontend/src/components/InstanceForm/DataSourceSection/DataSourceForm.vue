@@ -34,7 +34,10 @@
           {{ $t("instance.password-type.password") }}
         </NRadio>
         <NRadio value="EXTERNAL_SECRET">
-          {{ $t("instance.password-type.external-secret") }}
+          <div class="flex items-center gap-x-1">
+            <FeatureBadge feature="bb.feature.external-secret-manager" />
+            {{ $t("instance.password-type.external-secret") }}
+          </div>
         </NRadio>
       </NRadioGroup>
       <div v-if="state.passwordType === 'PLAIN'">
@@ -495,7 +498,7 @@ const {
   basicInfo,
   adminDataSource,
   hasReadonlyReplicaFeature,
-  showReadOnlyDataSourceFeatureModal,
+  missingFeature,
 } = useInstanceFormContext();
 
 const {
@@ -609,7 +612,7 @@ const handleHostInput = (value: string) => {
       if (ds.host || ds.port) {
         ds.host = adminDataSource.value.host;
         ds.port = adminDataSource.value.port;
-        showReadOnlyDataSourceFeatureModal.value = true;
+        missingFeature.value = "bb.feature.read-replica-connection";
         return;
       }
     }
@@ -624,7 +627,7 @@ const handlePortInput = (value: string) => {
       if (ds.host || ds.port) {
         ds.host = adminDataSource.value.host;
         ds.port = adminDataSource.value.port;
-        showReadOnlyDataSourceFeatureModal.value = true;
+        missingFeature.value = "bb.feature.read-replica-connection";
         return;
       }
     }

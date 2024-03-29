@@ -862,7 +862,6 @@
       "issue-status-update": "更新工单状态",
       "pipeline-stage-status-update": "更新工单阶段状态",
       "pipeline-task-status-update": "更新工单任务状态",
-      "pipeline-task-file-commit": "提交文件",
       "pipeline-task-statement-update": "更新 SQL",
       "pipeline-task-prior-backup": "数据预前备份",
       "member-create": "创建成员",
@@ -1176,7 +1175,13 @@
     "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）",
     "preview": "预览工单",
     "missing-sql-statement": "SQL 语句缺失。要将此更改应用于所有任务，请单击 “@:{'issue.apply-to-other-tasks'}” 按钮。",
-    "task-summary-tooltip": "{failed} 个任务失败"
+    "task-summary-tooltip": "{failed} 个任务失败",
+    "data-export": {
+      "options": "配置项",
+      "format": "导出格式",
+      "encrypt": "加密",
+      "exported-file-downloaded": "导出结果已下载"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -2440,6 +2445,10 @@
       "instance-count-exceeds": "实例数量 {count} 超出了限制 {limit}"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "设置外部密钥",
+        "desc": "设置 Vault 或自定义 URL 作为数据库密码的外部密钥"
+      },
       "bb-feature-task-schedule-time": {
         "title": "设定任务执行时间",
         "desc": "「设定任务执行时间」可以将任务设定在特定时间执行"
@@ -2926,8 +2935,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "创建数据库",
+          "data_export": "数据导出",
           "request_query": "申请查询权限",
-          "request_export": "申请导出数据"
+          "request_export": "申请导出权限"
         }
       },
       "template": {

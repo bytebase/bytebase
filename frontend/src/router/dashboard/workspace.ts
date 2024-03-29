@@ -296,7 +296,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/SettingWorkspaceSSODetail.vue"),
       },
       {
-        path: ":ssoName",
+        path: ":ssoId",
         name: WORKSPACE_ROUTE_SSO_DETAIL,
         meta: {
           requiredWorkspacePermissionList: () => ["bb.identityProviders.get"],

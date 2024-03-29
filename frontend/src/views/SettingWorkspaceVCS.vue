@@ -20,7 +20,6 @@
       :columns="columnList"
       :striped="true"
       :bordered="true"
-      class="vcs-table-list"
     />
     <VCSSetupWizard v-else :show-cancel="false" />
   </div>
@@ -111,10 +110,3 @@ const columnList = computed((): DataTableColumn<VCSProvider>[] => {
   ];
 });
 </script>
-
-<style lang="postcss" scoped>
-.vcs-table-list :deep(.n-data-table-td),
-.vcs-table-list :deep(.n-data-table-th) {
-  @apply !py-1.5;
-}
-</style>

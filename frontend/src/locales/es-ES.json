@@ -862,7 +862,6 @@
       "issue-status-update": "actualizar estado de la incidencia",
       "pipeline-stage-status-update": "actualizar estado de la etapa de la incidencia",
       "pipeline-task-status-update": "actualizar estado de la tarea de la incidencia",
-      "pipeline-task-file-commit": "commit al archivo",
       "pipeline-task-statement-update": "actualización SQL",
       "pipeline-task-prior-backup": "Respaldo Previo",
       "member-create": "crear miembro",
@@ -1176,7 +1175,13 @@
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "preview": "Problema de vista previa",
     "missing-sql-statement": "Sentencia SQL faltante. Para aplicar este cambio a todas las tareas, haz clic en el botón '@:{'issue.apply-to-other-tasks'}'.",
-    "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas"
+    "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas",
+    "data-export": {
+      "options": "Opciones de exportación",
+      "format": "Formato",
+      "encrypt": "Cifrar",
+      "exported-file-downloaded": "Archivo exportado descargado"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -2441,6 +2446,10 @@
       "instance-count-exceeds": "El número de instancias {count} excedió el límite {limit}"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "Establecer secreto externo",
+        "desc": "Utilice Vault o una URL personalizada como secreto externo para la contraseña de la base de datos."
+      },
       "bb-feature-task-schedule-time": {
         "title": "Establecer horario de tareas",
         "desc": "Establecer horario de tareas te permite programar una hora específica para ejecutar tus tareas."
@@ -2926,8 +2935,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Crear base de datos",
-          "request_query": "Solicitar consulta",
-          "request_export": "Solicitar exportación"
+          "data_export": "Exportación de Datos",
+          "request_query": "Solicitar Rol de Consultor",
+          "request_export": "Solicitar Rol de Exportador"
         }
       },
       "template": {
