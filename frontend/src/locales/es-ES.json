@@ -2926,8 +2926,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Crear base de datos",
-          "request_query": "Solicitar consulta",
-          "request_export": "Solicitar exportación"
+          "data_export": "Exportación de Datos",
+          "request_query": "Solicitar Rol de Consultor",
+          "request_export": "Solicitar Rol de Exportador"
         }
       },
       "template": {
