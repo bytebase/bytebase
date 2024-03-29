@@ -23,57 +23,18 @@
           />
         </div>
 
-        <template v-if="props.statementOnly">
-          <div class="w-full flex flex-col justify-start items-start">
-            <span class="flex items-center textlabel mb-2">
-              {{ $t("common.database") }}
-              <RequiredStar />
-            </span>
-            <div class="flex flex-row justify-start items-center">
-              <EnvironmentSelect
-                class="!w-60 mr-4 shrink-0"
-                :environment="state.environmentId"
-                @update:environment="handleEnvironmentSelect"
-              />
-              <DatabaseSelect
-                class="!w-96"
-                :database="state.databaseId"
-                :environment="state.environmentId"
-                :project="state.projectId"
-                @update:database="handleDatabaseSelect"
-              >
-              </DatabaseSelect>
-            </div>
-          </div>
-          <div class="w-full flex flex-col justify-start items-start">
-            <span class="flex items-center textlabel mb-2">
-              SQL
-              <RequiredStar />
-            </span>
-            <div class="w-full h-[300px]">
-              <MonacoEditor
-                v-model:content="state.statement"
-                class="w-full h-full rounded border"
-                :auto-focus="false"
-                :dialect="dialect"
-              />
-            </div>
-          </div>
-        </template>
-        <template v-else>
-          <div class="w-full flex flex-col justify-start items-start">
-            <span class="flex items-center textlabel mb-2">
-              {{ $t("common.databases") }}
-              <RequiredStar />
-            </span>
-            <DatabaseResourceForm
-              :project-id="state.projectId"
-              :database-resources="state.databaseResources"
-              @update:condition="state.databaseResourceCondition = $event"
-              @update:database-resources="state.databaseResources = $event"
-            />
-          </div>
-        </template>
+        <div class="w-full flex flex-col justify-start items-start">
+          <span class="flex items-center textlabel mb-2">
+            {{ $t("common.databases") }}
+            <RequiredStar />
+          </span>
+          <DatabaseResourceForm
+            :project-id="state.projectId"
+            :database-resources="state.databaseResources"
+            @update:condition="state.databaseResourceCondition = $event"
+            @update:database-resources="state.databaseResources = $event"
+          />
+        </div>
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-center textlabel mb-2">
             {{ $t("issue.grant-request.export-rows") }}
@@ -135,15 +96,8 @@ import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
-import { MonacoEditor } from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
-import {
-  ProjectSelect,
-  EnvironmentSelect,
-  DatabaseSelect,
-  DrawerContent,
-  Drawer,
-} from "@/components/v2";
+import { ProjectSelect, DrawerContent, Drawer } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -152,16 +106,10 @@ import {
   useProjectV1Store,
   pushNotification,
 } from "@/store";
-import type { DatabaseResource, SQLDialect, ComposedProject } from "@/types";
-import {
-  SYSTEM_BOT_EMAIL,
-  UNKNOWN_ID,
-  dialectOfEngineV1,
-  PresetRoleType,
-} from "@/types";
+import type { DatabaseResource, ComposedProject } from "@/types";
+import { SYSTEM_BOT_EMAIL, UNKNOWN_ID, PresetRoleType } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
-import { Engine } from "@/types/proto/v1/common";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
   extractProjectResourceName,
@@ -169,7 +117,6 @@ import {
   issueSlug,
   memberListInProjectV1,
 } from "@/utils";
-import { stringifyDatabaseResources } from "@/utils/issue/cel";
 import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
 
 interface LocalState {
@@ -180,7 +127,6 @@ interface LocalState {
   databaseResources: DatabaseResource[];
   expireDays: number;
   maxRowCount: number;
-  statement: string;
   description: string;
 }
 
@@ -191,8 +137,6 @@ defineOptions({
 const props = defineProps<{
   projectId?: string;
   databaseId?: string;
-  statement?: string;
-  statementOnly?: boolean;
   redirectToIssuePage?: boolean;
 }>();
 
@@ -209,15 +153,7 @@ const state = reactive<LocalState>({
   databaseResources: [],
   expireDays: 1,
   maxRowCount: 1000,
-  statement: "",
   description: "",
-});
-
-const selectedDatabase = computed(() => {
-  if (!state.databaseId || state.databaseId === String(UNKNOWN_ID)) {
-    return undefined;
-  }
-  return databaseStore.getDatabaseByUID(state.databaseId);
 });
 
 const expireDaysOptions = computed(() => [
@@ -239,23 +175,12 @@ const expireDaysOptions = computed(() => [
   },
 ]);
 
-const dialect = computed((): SQLDialect => {
-  const db = selectedDatabase.value;
-  return dialectOfEngineV1(db?.instanceEntity.engine ?? Engine.MYSQL);
-});
-
 const allowCreate = computed(() => {
   if (!state.projectId) {
     return false;
   }
-  if (props.statementOnly) {
-    if (!state.databaseId || !state.statement) {
-      return false;
-    }
-  } else {
-    if (isUndefined(state.databaseResourceCondition)) {
-      return false;
-    }
+  if (isUndefined(state.databaseResourceCondition)) {
+    return false;
   }
   return true;
 });
@@ -266,9 +191,6 @@ onMounted(async () => {
   }
   if (props.databaseId) {
     handleDatabaseSelect(props.databaseId);
-  }
-  if (props.statement) {
-    state.statement = props.statement;
   }
 });
 
@@ -338,25 +260,8 @@ const doCreateIssue = async () => {
       .toISOString()}")`
   );
   expression.push(`request.row_limit <= ${state.maxRowCount}`);
-  if (props.statementOnly) {
-    // Selected database condition.
-    expression.push(
-      stringifyDatabaseResources([
-        {
-          databaseName: selectedDatabase.value!.name,
-        },
-      ])
-    );
-    // Statement condition.
-    expression.push(
-      `request.statement == "${btoa(
-        unescape(encodeURIComponent(state.statement))
-      )}"`
-    );
-  } else {
-    if (state.databaseResourceCondition) {
-      expression.push(state.databaseResourceCondition);
-    }
+  if (state.databaseResourceCondition) {
+    expression.push(state.databaseResourceCondition);
   }
 
   const celExpressionString = expression.join(" && ");
@@ -397,33 +302,7 @@ const doCreateIssue = async () => {
 };
 
 const generateIssueName = () => {
-  if (props.statementOnly) {
-    const database = selectedDatabase.value;
-    if (!database) {
-      throw new Error("Database is not selected");
-    }
-
-    if (state.databaseResources.length === 0) {
-      return `Request data export for "${database.databaseName} (${database.instanceEntity.title})"`;
-    } else {
-      const sections: string[] = [];
-      for (const databaseResource of state.databaseResources) {
-        const nameList = [database.databaseName];
-        if (databaseResource.schema) {
-          nameList.push(databaseResource.schema);
-        }
-        if (databaseResource.table) {
-          nameList.push(databaseResource.table);
-        }
-        sections.push(nameList.join("."));
-      }
-      return `Request data export for "${sections.join(".")} (${
-        database.instanceEntity.title
-      })"`;
-    }
-  } else {
-    const project = projectStore.getProjectByUID(state.projectId!);
-    return `Request data export for "${project.title}"`;
-  }
+  const project = projectStore.getProjectByUID(state.projectId!);
+  return `Request data export for "${project.title}"`;
 };
 </script>

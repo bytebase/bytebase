@@ -53,6 +53,7 @@ type MaterializedViewDDLOptions struct {
 }
 
 func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) {
+	// TODO(tommy): hard code.
 	instanceMetadata, err := d.SyncInstance(ctx)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to sync instance")
@@ -76,7 +77,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 
 			// dump indexes.
 			for _, index := range table.Indexes {
-				// TODO(tommy): get more index info from SyncInstance.
+				// TODO(tommy): get more index size from SyncInstance.
 				indexDDL, err := genIndexDDL(&IndexDDLOptions{
 					databaseName:          database.Name,
 					indexName:             index.Name,
@@ -120,7 +121,6 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 			_, _ = dumpStrBuilder.WriteString(viewDDL)
 		}
 
-		// TODO(tommy): get more mt view info from SyncInstance.
 		// dump materialized views.
 		for _, mtView := range database.MaterializedViews {
 			mtViewDDL, err := genMaterializedViewDDL(&MaterializedViewDDLOptions{
@@ -153,12 +153,19 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 
 // Restore the database from src, which is a full backup.
 func (*Driver) Restore(_ context.Context, _ io.Reader) error {
-	return errors.Errorf("Not implemeted")
+	return errors.Errorf("Not implemented")
 }
 
 // This function shows DDLs for creating certain type of schema [VIEW, DATABASE, TABLE].
 func (d *Driver) showCreateSchemaDDL(ctx context.Context, schemaType string, schemaName string, belongTo string) (string, error) {
 	schemaName = fmt.Sprintf("`%s`", schemaName)
+	originalTableName := schemaName
+	// rename table to format: [DatabaseName].[TableName].
+	if belongTo != "" {
+		belongTo = fmt.Sprintf("`%s`", belongTo)
+		schemaName = fmt.Sprintf("%s.%s", belongTo, schemaName)
+	}
+
 	// 'SHOW CREATE TABLE' can also be used for dumping views.
 	queryStatement := fmt.Sprintf("SHOW CREATE %s %s", schemaType, schemaName)
 	if schemaType == "VIEW" {
@@ -175,15 +182,11 @@ func (d *Driver) showCreateSchemaDDL(ctx context.Context, schemaType string, sch
 		schemaDDL += fmt.Sprintln(row.Values[0].GetStringValue())
 	}
 
-	// rename table to format: [DatabaseName].[TableName].
-	newSchemaName := schemaName
 	if belongTo != "" {
-		belongTo = fmt.Sprintf("`%s`", belongTo)
-		newSchemaName = fmt.Sprintf("%s.%s", belongTo, schemaName)
-		schemaDDL = strings.Replace(schemaDDL, schemaName, newSchemaName, 1)
+		schemaDDL = strings.Replace(schemaDDL, originalTableName, schemaName, 1)
 	}
 
-	return fmt.Sprintf(schemaStmtFmt, schemaType, newSchemaName, schemaDDL), nil
+	return fmt.Sprintf(schemaStmtFmt, schemaType, schemaName, schemaDDL), nil
 }
 
 func genIndexDDL(opts *IndexDDLOptions) (string, error) {

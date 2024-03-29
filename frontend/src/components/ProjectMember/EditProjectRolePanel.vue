@@ -136,11 +136,7 @@ import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import type { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle, extractUserUID } from "@/utils";
-import {
-  convertFromCELString,
-  convertFromExpr,
-  stringifyDatabaseResources,
-} from "@/utils/issue/cel";
+import { convertFromExpr } from "@/utils/issue/cel";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -160,7 +156,6 @@ interface LocalState {
   databaseResourceCondition?: string;
   databaseResources?: DatabaseResource[];
   // Exporter options.
-  statement?: string;
   maxRowCount: number;
   databaseId?: string;
 }
@@ -226,9 +221,6 @@ onMounted(() => {
     }
     if (conditionExpr.rowLimit) {
       state.maxRowCount = conditionExpr.rowLimit;
-    }
-    if (conditionExpr.statement) {
-      state.statement = conditionExpr.statement;
     }
   }
 
@@ -298,24 +290,6 @@ const handleUpdateRole = async () => {
   if (props.binding.role === PresetRoleType.PROJECT_EXPORTER) {
     if (state.databaseResourceCondition) {
       expression.push(state.databaseResourceCondition);
-
-      // Check if the statement export method is selected.
-      const condition = await convertFromCELString(
-        state.databaseResourceCondition
-      );
-      if (condition.statement) {
-        if (!state.databaseId) {
-          throw new Error("Database ID is not set.");
-        }
-        const database = databaseStore.getDatabaseByUID(state.databaseId);
-        expression.push(
-          stringifyDatabaseResources([
-            {
-              databaseName: database.name,
-            },
-          ])
-        );
-      }
     }
     if (state.maxRowCount) {
       expression.push(`request.row_limit <= ${state.maxRowCount}`);
