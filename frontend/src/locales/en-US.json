@@ -2252,7 +2252,8 @@
     "preview-table-data": "Preview table data",
     "view-table-detail": "View table detail",
     "view-database-detail": "View database detail",
-    "copy-all-column-names": "Copy all column names"
+    "copy-all-column-names": "Copy all column names",
+    "view-schema-text": "View schema text"
   },
   "schema-editor": {
     "self": "Schema Editor",

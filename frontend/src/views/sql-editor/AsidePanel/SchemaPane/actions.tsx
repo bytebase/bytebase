@@ -1,4 +1,5 @@
 import {
+  CodeIcon,
   CopyIcon,
   ExternalLinkIcon,
   LinkIcon,
@@ -39,7 +40,7 @@ const SELECT_ALL_LIMIT = 50; // default pagesize of SQL Editor
 
 export const useDropdown = () => {
   const router = useRouter();
-  const { events: editorEvents } = useSQLEditorContext();
+  const { events: editorEvents, schemaViewer } = useSQLEditorContext();
   const pageMode = usePageMode();
 
   const show = ref(false);
@@ -105,6 +106,19 @@ export const useDropdown = () => {
           onSelect: () => {
             const names = table.columns.map((col) => col.name).join(", ");
             copyToClipboard(names);
+          },
+        });
+
+        items.push({
+          key: "view-schema-text",
+          label: t("sql-editor.view-schema-text"),
+          icon: () => <CodeIcon class="w-4 h-4" />,
+          onSelect: () => {
+            schemaViewer.value = {
+              database: db,
+              schema: schema.name,
+              table: table.name,
+            };
           },
         });
       }
@@ -188,6 +202,7 @@ export const useDropdown = () => {
       "copy-all-column-names",
       "copy-select-statement",
       "preview-table-data",
+      "view-schema-text",
       "view-table-detail",
       "edit-schema",
       "copy-url",

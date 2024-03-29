@@ -2252,7 +2252,8 @@
     "preview-table-data": "预览表数据",
     "view-table-detail": "查看表详情",
     "view-database-detail": "查看数据库详情",
-    "copy-all-column-names": "复制所有列名"
+    "copy-all-column-names": "复制所有列名",
+    "view-schema-text": "查看文本 Schema"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

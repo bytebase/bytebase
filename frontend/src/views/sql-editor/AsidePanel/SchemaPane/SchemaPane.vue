@@ -41,6 +41,17 @@
     <MaskSpinner v-if="isFetchingMetadata" class="!bg-white/75" />
 
     <HoverPanel :offset-x="4" :offset-y="0" :margin="4" />
+
+    <BBModal :show="!!schemaViewer" @close="schemaViewer = undefined">
+      <template v-if="schemaViewer" #title>
+        <RichDatabaseName :database="schemaViewer.database" />
+      </template>
+      <TableSchemaViewer
+        v-if="schemaViewer"
+        style="width: calc(100vw - 12rem); height: calc(100vh - 12rem)"
+        v-bind="schemaViewer"
+      />
+    </BBModal>
   </div>
 </template>
 
@@ -49,8 +60,10 @@ import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
 import { NDropdown, type TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
+import { BBModal } from "@/bbkit";
+import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { SearchBox } from "@/components/v2";
+import { RichDatabaseName, SearchBox } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
@@ -59,6 +72,7 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { findAncestor, isDescendantOf } from "@/utils";
+import { useSQLEditorContext } from "../../context";
 import { provideHoverStateContext } from "./HoverPanel";
 import HoverPanel from "./HoverPanel";
 import { Label } from "./TreeNode";
@@ -79,6 +93,7 @@ const { height: treeContainerHeight } = useElementSize(
   }
 );
 const searchPattern = ref("");
+const { schemaViewer } = useSQLEditorContext();
 const {
   state: hoverState,
   position: hoverPosition,

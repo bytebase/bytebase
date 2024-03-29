@@ -2,7 +2,7 @@ import Emittery from "emittery";
 import type { InjectionKey, Ref } from "vue";
 import { inject, provide, ref } from "vue";
 import { useSQLEditorStore } from "@/store";
-import type { SQLEditorTab } from "@/types";
+import type { ComposedDatabase, SQLEditorTab } from "@/types";
 
 export type AsidePanelTab = "CONNECTION" | "SCHEMA" | "WORKSHEET" | "HISTORY";
 
@@ -23,6 +23,14 @@ type SQLEditorEvents = Emittery<{
 export type SQLEditorContext = {
   asidePanelTab: Ref<AsidePanelTab>;
   showAIChatBox: Ref<boolean>;
+  schemaViewer: Ref<
+    | {
+        database: ComposedDatabase;
+        schema?: string;
+        table?: string;
+      }
+    | undefined
+  >;
 
   events: SQLEditorEvents;
 
@@ -42,6 +50,7 @@ export const provideSQLEditorContext = () => {
   const context: SQLEditorContext = {
     asidePanelTab: ref("WORKSHEET"),
     showAIChatBox: ref(false),
+    schemaViewer: ref(undefined),
     events: new Emittery(),
 
     maybeSwitchProject: (project) => {
