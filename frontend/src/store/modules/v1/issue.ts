@@ -23,6 +23,7 @@ import { useActivityV1Store } from "./activity";
 import {
   experimentalFetchIssueByName,
   shallowComposeIssue,
+  type ComposeIssueConfig,
 } from "./experimental-issue";
 import { useProjectV1Store } from "./project";
 
@@ -127,7 +128,10 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     await useActivityV1Store().fetchActivityListForIssueV1(issue);
   };
 
-  const listIssues = async ({ find, pageSize, pageToken }: ListIssueParams) => {
+  const listIssues = async (
+    { find, pageSize, pageToken }: ListIssueParams,
+    composeIssueConfig?: ComposeIssueConfig
+  ) => {
     const resp = await issueServiceClient.searchIssues({
       parent: find.project,
       filter: buildIssueFilter(find),
@@ -146,7 +150,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     });
 
     const composedIssues = await Promise.all(
-      issues.map((issue) => shallowComposeIssue(issue))
+      issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
     );
     return {
       nextPageToken: resp.nextPageToken,
