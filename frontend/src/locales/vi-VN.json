@@ -1176,6 +1176,7 @@
     "missing-sql-statement": "Câu lệnh SQL không tồn tại. Để áp dụng thay đổi này cho tất cả các nhiệm vụ, nhấn vào nút '@:{'issue.apply-to-other-tasks'}'.",
     "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công",
     "data-export": {
+      "title": "Xuất Dữ Liệu",
       "options": "Tùy chọn xuất",
       "format": "Định dạng",
       "encrypt": "Mã hóa",

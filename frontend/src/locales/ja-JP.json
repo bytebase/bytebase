@@ -1176,6 +1176,7 @@
     "missing-sql-statement": "SQLステートメントが見つかりません。この変更をすべてのタスクに適用するには、「@:{'issue.apply-to-other-tasks'}」ボタンをクリックしてください。",
     "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました",
     "data-export": {
+      "title": "データエクスポート",
       "options": "エクスポートオプション",
       "format": "フォーマット",
       "encrypt": "暗号化",
