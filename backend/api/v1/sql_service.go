@@ -297,7 +297,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		if err := s.accessCheck(ctx, instance, user, request.Statement, spans, request.Limit, false /* isAdmin */, true /* isExport */); err != nil {
+		if err := s.accessCheck(ctx, instance, user, spans, request.Limit, false /* isAdmin */, true /* isExport */); err != nil {
 			return nil, err
 		}
 	}
@@ -1144,7 +1144,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		if err := s.accessCheck(ctx, instance, user, request.Statement, spans, request.Limit, false /* isAdmin */, false /* isExport */); err != nil {
+		if err := s.accessCheck(ctx, instance, user, spans, request.Limit, false /* isAdmin */, false /* isExport */); err != nil {
 			return nil, err
 		}
 	}
@@ -1197,7 +1197,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	allowExport := true
 	// AllowExport is a validate only check.
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		err := s.accessCheck(ctx, instance, user, request.Statement, spans, request.Limit, false /* isAdmin */, true /* isExport */)
+		err := s.accessCheck(ctx, instance, user, spans, request.Limit, false /* isAdmin */, true /* isExport */)
 		allowExport = (err == nil)
 	}
 
@@ -1392,7 +1392,6 @@ func (s *SQLService) accessCheck(
 	ctx context.Context,
 	instance *store.InstanceMessage,
 	user *store.UserMessage,
-	statement string,
 	spans []*base.QuerySpan,
 	limit int32,
 	isAdmin,
@@ -1410,7 +1409,6 @@ func (s *SQLService) accessCheck(
 				"resource.database": databaseResourceURL,
 				"resource.schema":   column.Schema,
 				"resource.table":    column.Table,
-				"request.statement": encodeToBase64String(statement),
 				"request.row_limit": limit,
 			}
 
