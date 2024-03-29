@@ -10,248 +10,106 @@
           :placeholder="''"
           :support-option-id-list="supportOptionIdList"
         />
-        <NButton
-          v-if="filterIssueId !== String(UNKNOWN_ID)"
-          @click="clearFilterIssueId"
-        >
-          <span>#{{ filterIssueId }}</span>
-          <heroicons:x-mark class="w-4 h-4 ml-1 -mr-1.5" />
-        </NButton>
       </div>
-      <NButton type="primary" @click="handleRequestExportClick">
-        <FeatureBadge
-          feature="bb.feature.access-control"
-          custom-class="text-white pointer-events-none mr-2"
-        />
+      <NButton type="primary" @click="state.showRequestExportPanel = true">
         {{ $t("quick-action.request-export-data") }}
       </NButton>
     </div>
-    <div class="w-full mt-4">
-      <ExportRecordTable :export-records="filterExportRecords" />
+
+    <div class="relative w-full mt-4 min-h-[20rem]">
+      <PagedIssueTableV1
+        v-model:loading="state.loading"
+        v-model:loading-more="state.loadingMore"
+        :session-key="'export-center'"
+        :issue-filter="mergedIssueFilter"
+        :ui-issue-filter="mergedUIIssueFilter"
+        :page-size="50"
+      >
+        <template #table="{ issueList, loading }">
+          <!-- TODO(steven): Implement data export issue's specific data table -->
+          <IssueTableV1
+            mode="PROJECT"
+            :bordered="true"
+            :loading="loading"
+            :issue-list="issueList"
+            :highlight-text="state.params.query"
+            :show-selection="false"
+          />
+        </template>
+      </PagedIssueTableV1>
     </div>
   </div>
 
-  <RequestExportPanel
-    v-if="state.showRequestExportPanel"
-    :project-id="selectedProject?.uid"
-    :database-id="selectedDatabase?.uid"
-    :redirect-to-issue-page="true"
-    :statement-only="true"
+  <Drawer
+    :auto-focus="true"
+    :show="state.showRequestExportPanel"
     @close="state.showRequestExportPanel = false"
-  />
-
-  <FeatureModal
-    feature="bb.feature.access-control"
-    :open="state.showFeatureModal"
-    @cancel="state.showFeatureModal = false"
-  />
+  >
+    <DataExportPrepForm @dismiss="state.showRequestExportPanel = false" />
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import { computed, reactive, watchEffect } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
-import { getExpiredDateTime } from "@/components/ProjectMember/utils";
+import { computed, reactive } from "vue";
+import DataExportPrepForm from "@/components/DataExportPrepForm";
+import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
+import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
+import { Drawer } from "@/components/v2";
+import { useCurrentUserV1 } from "@/store";
 import {
-  featureToRef,
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useInstanceV1Store,
-  useProjectIamPolicyStore,
-  useProjectV1List,
-  useProjectV1Store,
-} from "@/store";
-import { UNKNOWN_ID, PresetRoleType } from "@/types";
-import type { SearchParams, SearchScopeId } from "@/utils";
-import { convertFromExpr } from "@/utils/issue/cel";
-import ExportRecordTable from "./ExportRecordTable.vue";
+  buildIssueFilterBySearchParams,
+  buildUIIssueFilterBySearchParams,
+  type SearchParams,
+  type SearchScopeId,
+} from "@/utils";
 import type { ExportRecord } from "./types";
 
 interface LocalState {
   exportRecords: ExportRecord[];
   showRequestExportPanel: boolean;
-  showFeatureModal: boolean;
   params: SearchParams;
+  loading: boolean;
+  loadingMore: boolean;
 }
 
-const issueDescriptionRegexp = /^#(\d+)$/;
-
-const route = useRoute();
-const router = useRouter();
 const currentUser = useCurrentUserV1();
-const projectIamPolicyStore = useProjectIamPolicyStore();
-const databaseStore = useDatabaseV1Store();
-const projectStore = useProjectV1Store();
-const instanceStore = useInstanceV1Store();
-const { projectList } = useProjectV1List();
 const state = reactive<LocalState>({
   exportRecords: [],
   showRequestExportPanel: false,
-  showFeatureModal: false,
   params: {
     query: "",
     scopes: [],
   },
-});
-const hasDataAccessControlFeature = featureToRef("bb.feature.access-control");
-
-const selectedProject = computed(() => {
-  const project = state.params.scopes.find(
-    (scope) => scope.id === "project"
-  )?.value;
-  if (!project) {
-    return;
-  }
-  return projectStore.getProjectByName(`projects/${project}`);
+  loading: false,
+  loadingMore: false,
 });
 
-const selectedInstance = computed(() => {
-  const instance = state.params.scopes.find(
-    (scope) => scope.id === "instance"
-  )?.value;
-  if (!instance) {
-    return;
-  }
-  return instanceStore.getInstanceByName(`instances/${instance}`);
+const dataExportIssueSearchParams = computed(() => {
+  return {
+    query: state.params.query,
+    scopes: [
+      ...state.params.scopes,
+      // Default scopes with type and creator.
+      {
+        id: "type",
+        value: "DATA_EXPORT",
+      },
+      {
+        id: "creator",
+        value: currentUser.value.email,
+      },
+    ],
+  } as SearchParams;
 });
 
-const selectedDatabase = computed(() => {
-  const database = state.params.scopes.find(
-    (scope) => scope.id === "database"
-  )?.value;
-  if (!database) {
-    return;
-  }
-  const uid = database.split("-").slice(-1)[0];
-  return databaseStore.getDatabaseByUID(uid);
+const mergedIssueFilter = computed(() => {
+  return buildIssueFilterBySearchParams(dataExportIssueSearchParams.value);
 });
 
-const filterIssueId = computed(() => {
-  const hash = route.hash.replace(/^#+/g, "");
-  const maybeIssueId = parseInt(hash, 10);
-  if (!Number.isNaN(maybeIssueId) && maybeIssueId > 0) {
-    return String(maybeIssueId);
-  }
-  return String(UNKNOWN_ID);
+const mergedUIIssueFilter = computed(() => {
+  return buildUIIssueFilterBySearchParams(dataExportIssueSearchParams.value);
 });
-
-const filterExportRecords = computed(() => {
-  return state.exportRecords.filter((record) => {
-    if (filterIssueId.value !== String(UNKNOWN_ID)) {
-      if (record.issueId !== filterIssueId.value) {
-        return false;
-      }
-    }
-
-    if (selectedProject.value) {
-      if (record.database.project !== selectedProject.value.name) {
-        return false;
-      }
-    }
-    if (selectedInstance.value) {
-      if (record.database.instance !== selectedInstance.value.name) {
-        return false;
-      }
-    }
-    if (selectedDatabase.value) {
-      if (record.database.name !== selectedDatabase.value.name) {
-        return false;
-      }
-    }
-    return true;
-  });
-});
-
-watchEffect(async () => {
-  const projectNameList = projectList.value.map((project) => project.name);
-  const iamPolicyList =
-    await projectIamPolicyStore.batchGetOrFetchProjectIamPolicy(
-      projectNameList,
-      true /* skipCache */
-    );
-
-  const tempExportRecords: ExportRecord[] = [];
-  for (const iamPolicy of iamPolicyList) {
-    const bindings = iamPolicy.bindings.filter(
-      (binding) =>
-        binding.role === PresetRoleType.PROJECT_EXPORTER &&
-        binding.members.includes(`user:${currentUser.value.email}`)
-    );
-    for (const binding of bindings) {
-      if (!binding.parsedExpr?.expr) {
-        continue;
-      }
-      // Skip the expired export record.
-      const expiredDateTime = getExpiredDateTime(binding);
-      if (
-        expiredDateTime &&
-        new Date().getTime() >= expiredDateTime.getTime()
-      ) {
-        continue;
-      }
-      const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
-      // Only show the export record with statement condition in export center.
-      if (!conditionExpr.statement || conditionExpr.statement === "") {
-        continue;
-      }
-      if (
-        !conditionExpr.databaseResources ||
-        conditionExpr.databaseResources.length !== 1
-      ) {
-        continue;
-      }
-
-      const databaseResource = conditionExpr.databaseResources[0];
-      const description = binding.condition?.description || "";
-      // TODO: Here issueDescription looks like "#{uid}" so we don't have any parent
-      // project info here.
-      // To migrate this, we need to DML the description and re-write the issue
-      // id extraction logic below.
-      const issueId = description.match(issueDescriptionRegexp)?.[1];
-      const database = await databaseStore.getOrFetchDatabaseByName(
-        databaseResource.databaseName
-      );
-      let statement = conditionExpr.statement || "";
-      // NOTE: concat schema and table name to statement for table level export.
-      // Maybe we need to move this into backend later.
-      if (statement === "" && databaseResource.table) {
-        const names = [];
-        if (databaseResource.schema) {
-          names.push(databaseResource.schema);
-        }
-        names.push(databaseResource.table);
-        statement = `SELECT * FROM ${names.join(".")};`;
-      }
-
-      tempExportRecords.push({
-        databaseResource,
-        database,
-        statement,
-        expiration: conditionExpr.expiredTime || "",
-        maxRowCount: conditionExpr.rowLimit || 0,
-        exportFormat: (conditionExpr.exportFormat as any) || "JSON",
-        issueId: issueId || String(UNKNOWN_ID),
-      });
-    }
-  }
-  state.exportRecords = tempExportRecords;
-});
-
-const handleRequestExportClick = () => {
-  if (!hasDataAccessControlFeature.value) {
-    state.showFeatureModal = true;
-    return;
-  }
-  state.showRequestExportPanel = true;
-};
-
-const clearFilterIssueId = () => {
-  router.replace({
-    ...route,
-    hash: "",
-  });
-};
 
 const supportOptionIdList = computed((): SearchScopeId[] => [
   "project",
