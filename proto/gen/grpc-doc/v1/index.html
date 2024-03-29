@@ -1257,6 +1257,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ListIssueCommentsRequest"><span class="badge">M</span>ListIssueCommentsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListIssueCommentsResponse"><span class="badge">M</span>ListIssueCommentsResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListIssuesRequest"><span class="badge">M</span>ListIssuesRequest</a>
                 </li>
               
@@ -13992,6 +14000,83 @@ Keys are the following:
 
         
       
+        <h3 id="bytebase.v1.ListIssueCommentsRequest">ListIssueCommentsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{projects}/issues/{issue} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of issues to return. The service may return fewer than
+this value.
+If unspecified, at most 50 issues will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListIssues` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListIssues` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListIssueCommentsResponse">ListIssueCommentsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>issue_comments</td>
+                  <td><a href="#bytebase.v1.IssueComment">IssueComment</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ListIssuesRequest">ListIssuesRequest</h3>
         <p></p>
 
@@ -14674,6 +14759,13 @@ Format: projects/{project}/issues/{issue} </p></td>
               </tr>
             
               <tr>
+                <td>ListIssueComments</td>
+                <td><a href="#bytebase.v1.ListIssueCommentsRequest">ListIssueCommentsRequest</a></td>
+                <td><a href="#bytebase.v1.ListIssueCommentsResponse">ListIssueCommentsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>CreateIssueComment</td>
                 <td><a href="#bytebase.v1.CreateIssueCommentRequest">CreateIssueCommentRequest</a></td>
                 <td><a href="#bytebase.v1.IssueComment">IssueComment</a></td>
@@ -14780,6 +14872,16 @@ Format: projects/{project}/issues/{issue} </p></td>
                 <td>PATCH</td>
                 <td>/v1/{issue.name=projects/*/issues/*}</td>
                 <td>issue</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListIssueComments</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*/issues/*}/issueComments</td>
+                <td></td>
               </tr>
               
             
