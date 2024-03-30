@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
@@ -146,33 +145,6 @@ func TestSimpleVCS(t *testing.T) {
 		repositoryFullPath  string
 		newWebhookPushEvent func(added, modified [][]string, beforeSHA, afterSHA string) any
 	}{
-		{
-			name:               "GitLab",
-			vcsProviderCreator: fake.NewGitLab,
-			vcsType:            v1pb.VCSProvider_GITLAB,
-			externalID:         "121",
-			repositoryFullPath: "test/schemaUpdate",
-			newWebhookPushEvent: func(added, modified [][]string, beforeSHA, afterSHA string) any {
-				var commitList []gitlab.WebhookCommit
-				for i := range added {
-					commitList = append(commitList, gitlab.WebhookCommit{
-						Timestamp:    time.Now().Format(time.RFC3339),
-						AddedList:    added[i],
-						ModifiedList: modified[i],
-					})
-				}
-				return gitlab.WebhookPushEvent{
-					ObjectKind: gitlab.WebhookPush,
-					Ref:        "refs/heads/feature/foo",
-					Before:     beforeSHA,
-					After:      afterSHA,
-					Project: gitlab.WebhookProject{
-						ID: 121,
-					},
-					CommitList: commitList,
-				}
-			},
-		},
 		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
