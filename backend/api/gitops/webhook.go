@@ -55,40 +55,40 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		url := strings.TrimPrefix(c.Param("id"), "/")
 		workspaceID, projectID, vcsConnectorID, err := common.GetWorkspaceProjectVCSConnectorID(url)
 		if err != nil {
-			return c.String(http.StatusBadRequest, fmt.Sprintf("invalid id %q", url))
+			return c.String(http.StatusOK, fmt.Sprintf("invalid id %q", url))
 		}
 		myWorkspaceID, err := s.store.GetWorkspaceID(ctx)
 		if err != nil {
-			return c.String(http.StatusServiceUnavailable, fmt.Sprintf("failed to get workspace ID, error %v", err))
+			return c.String(http.StatusOK, fmt.Sprintf("failed to get workspace ID, error %v", err))
 		}
 		if myWorkspaceID != workspaceID {
-			return c.String(http.StatusBadRequest, fmt.Sprintf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID))
+			return c.String(http.StatusOK, fmt.Sprintf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID))
 		}
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 		if err != nil {
-			return c.String(http.StatusServiceUnavailable, fmt.Sprintf("failed to get project %q, error %v", projectID, err))
+			return c.String(http.StatusOK, fmt.Sprintf("failed to get project %q, error %v", projectID, err))
 		}
 		if project == nil || project.Deleted {
-			return c.String(http.StatusBadRequest, fmt.Sprintf("project %q does not exist or has been deleted", projectID))
+			return c.String(http.StatusOK, fmt.Sprintf("project %q does not exist or has been deleted", projectID))
 		}
 		vcsConnector, err := s.store.GetVCSConnector(ctx, &store.FindVCSConnectorMessage{ProjectID: &projectID, ResourceID: &vcsConnectorID})
 		if err != nil {
-			return c.String(http.StatusServiceUnavailable, fmt.Sprintf("failed to get project %q VCS connector %q, error %v", projectID, vcsConnectorID, err))
+			return c.String(http.StatusOK, fmt.Sprintf("failed to get project %q VCS connector %q, error %v", projectID, vcsConnectorID, err))
 		}
 		if vcsConnector == nil {
-			return c.String(http.StatusBadRequest, fmt.Sprintf("project %q VCS connector %q does not exist or has been deleted", projectID, vcsConnectorID))
+			return c.String(http.StatusOK, fmt.Sprintf("project %q VCS connector %q does not exist or has been deleted", projectID, vcsConnectorID))
 		}
 		vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
 		if err != nil {
-			return c.String(http.StatusServiceUnavailable, fmt.Sprintf("failed to get VCS provider %q, error %v", vcsConnector.VCSResourceID, err))
+			return c.String(http.StatusOK, fmt.Sprintf("failed to get VCS provider %q, error %v", vcsConnector.VCSResourceID, err))
 		}
 		if vcsProvider == nil {
-			return c.String(http.StatusBadRequest, fmt.Sprintf("VCS provider %q does not exist or has been deleted", vcsConnector.VCSResourceID))
+			return c.String(http.StatusOK, fmt.Sprintf("VCS provider %q does not exist or has been deleted", vcsConnector.VCSResourceID))
 		}
 
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
-			return c.String(http.StatusServiceUnavailable, fmt.Sprintf("failed to read body, error %v", err))
+			return c.String(http.StatusOK, fmt.Sprintf("failed to read body, error %v", err))
 		}
 
 		// Validate webhook secret.
@@ -97,15 +97,25 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			secretToken := c.Request().Header.Get("X-Hub-Signature-256")
 			ok, err := validateGitHubWebhookSignature256(secretToken, vcsConnector.Payload.WebhookSecretToken, body)
 			if err != nil {
-				return c.String(http.StatusBadRequest, fmt.Sprintf("failed to validate webhook signature %q, error %v", secretToken, err))
+				return c.String(http.StatusOK, fmt.Sprintf("failed to validate webhook signature %q, error %v", secretToken, err))
 			}
 			if !ok {
-				return c.String(http.StatusBadRequest, fmt.Sprintf("invalid webhook secret token %q", secretToken))
+				return c.String(http.StatusOK, fmt.Sprintf("invalid webhook secret token %q", secretToken))
 			}
 		case vcs.GitLab:
 			secretToken := c.Request().Header.Get("X-Gitlab-Token")
 			if secretToken != vcsConnector.Payload.WebhookSecretToken {
-				return c.String(http.StatusBadRequest, fmt.Sprintf("invalid webhook secret token %q", secretToken))
+				return c.String(http.StatusOK, fmt.Sprintf("invalid webhook secret token %q", secretToken))
+			}
+		}
+
+		if vcsProvider.Type == vcs.GitLab {
+			prInfo, err := getMergeRequestChangeFileContent(ctx, vcsProvider, vcsConnector, body)
+			if err != nil {
+				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
+			}
+			if err := s.createIssueFromPRInfo(ctx, project, prInfo); err != nil {
+				return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))
 			}
 		}
 
@@ -1086,6 +1096,133 @@ func patchTask(ctx context.Context, stores *store.Store, activityManager *activi
 		}); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 		}
+	}
+	return nil
+}
+
+func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, prInfo *pullRequestInfo) error {
+	creatorID := api.SystemBotID
+	user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &prInfo.email})
+	if err != nil {
+		slog.Error("failed to find user by email", slog.String("email", prInfo.email), log.BBError(err))
+	}
+	if user != nil {
+		creatorID = user.ID
+	}
+
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return err
+	}
+	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	if err != nil {
+		return err
+	}
+	environmentOrders := make(map[string]int32)
+	for _, environment := range environments {
+		environmentOrders[environment.ResourceID] = environment.Order
+	}
+	sort.Slice(databases, func(i, j int) bool {
+		return environmentOrders[databases[i].EffectiveEnvironmentID] < environmentOrders[databases[j].EffectiveEnvironmentID]
+	})
+
+	var sheets []int
+	for _, change := range prInfo.changes {
+		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
+			CreatorID:  creatorID,
+			ProjectUID: project.UID,
+			Title:      change.path,
+			Statement:  change.content,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to create sheet for file %s", change.path)
+		}
+		sheets = append(sheets, sheet.UID)
+	}
+
+	var steps []*v1pb.Plan_Step
+	for i, database := range databases {
+		if i == 0 || databases[i].EffectiveEnvironmentID != databases[i-1].EffectiveEnvironmentID {
+			steps = append(steps, &v1pb.Plan_Step{})
+		}
+		step := steps[len(steps)-1]
+		for i, change := range prInfo.changes {
+			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
+				Id: uuid.NewString(),
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Type:          change.changeType,
+						Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
+						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, sheets[i]),
+						SchemaVersion: change.version,
+					},
+				},
+			})
+		}
+	}
+
+	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
+	childCtx = context.WithValue(childCtx, common.UserContextKey, user)
+	childCtx = context.WithValue(childCtx, common.LoopbackContextKey, true)
+	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Plan: &v1pb.Plan{
+			Title: prInfo.title,
+			Steps: steps,
+		},
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create plan")
+	}
+	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Issue: &v1pb.Issue{
+			Title:       prInfo.title,
+			Description: prInfo.description,
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
+			Plan:        plan.Name,
+		},
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create issue")
+	}
+	if _, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
+		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
+		Rollout: &v1pb.Rollout{
+			Plan: plan.Name,
+		},
+	}); err != nil {
+		return errors.Wrapf(err, "failed to create rollout")
+	}
+
+	issueUID, err := strconv.Atoi(issue.Uid)
+	if err != nil {
+		return err
+	}
+	// Create a project activity after successfully creating the issue from the push event.
+	activityPayload, err := json.Marshal(
+		api.ActivityProjectRepositoryPushPayload{
+			// TODO(d): redefine VCS push event.
+			IssueID:   issueUID,
+			IssueName: issue.Title,
+		},
+	)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create activity payload")
+	}
+
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:        creatorID,
+		ResourceContainer: project.GetName(),
+		ContainerUID:      project.UID,
+		Type:              api.ActivityProjectRepositoryPush,
+		Level:             api.ActivityInfo,
+		Comment:           fmt.Sprintf("Created issue %q.", issue.Title),
+		Payload:           string(activityPayload),
+	}
+	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
+		return errors.Wrapf(err, "failed to activity after creating issue %d from push event", issueUID)
 	}
 	return nil
 }
