@@ -2,7 +2,7 @@
   <BBAttention type="warning" :description="attentionText" />
   <div class="mt-4 space-y-2">
     <div class="flex justify-between items-center">
-      <BBSpin v-if="state.loading" size="tiny" />
+      <BBSpin v-if="state.loading" :size="20" />
       <NButton
         v-else
         quaternary
