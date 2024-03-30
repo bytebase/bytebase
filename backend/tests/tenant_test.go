@@ -152,7 +152,7 @@ func TestTenant(t *testing.T) {
 		Parent: project.Name,
 		Sheet: &v1pb.Sheet{
 			Title:   "migration statement sheet",
-			Content: []byte(migrationStatement),
+			Content: []byte(migrationStatement1),
 		},
 	})
 	a.NoError(err)
