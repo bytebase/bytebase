@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -55,6 +56,30 @@ func TestVCS(t *testing.T) {
 					Description:  pullRequestDescription,
 					LastCommit: gitlab.LastCommit{
 						ID: "cc63b0592388a7ab1b05b005ad8c8dc14ce432b1",
+					},
+				},
+			},
+		},
+		{
+			name:               "GitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            v1pb.VCSProvider_GITHUB,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			webhookPushEvent: github.PullRequestPushEvent{
+				Action: "closed",
+				Number: pullRequestID,
+				PullRequest: github.EventPullRequest{
+					URL:   fmt.Sprintf("https://github.com/test/vcs/pull/%d", pullRequestID),
+					Title: pullRequestTitle,
+					Body:  pullRequestDescription,
+					Base: github.EventBranch{
+						Ref: branchName,
+						SHA: "cc63b0592388a7ab1b05b005ad8c8dc14ce432b0",
+					},
+					Head: github.EventBranch{
+						Ref: "test-branch",
+						SHA: "cc63b0592388a7ab1b05b005ad8c8dc14ce432b1",
 					},
 				},
 			},
