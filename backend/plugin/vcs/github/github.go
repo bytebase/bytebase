@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -59,12 +58,6 @@ func (*Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/api/v3", instanceURL)
 }
 
-// User represents a GitHub API response for a user.
-type User struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
 // Repository represents a GitHub API response for a repository.
 type Repository struct {
 	ID          int64  `json:"id"`
@@ -75,50 +68,6 @@ type Repository struct {
 		Admin bool `json:"admin"`
 	} `json:"permissions"`
 }
-
-// RepositoryTree represents a GitHub API response for a repository tree.
-type RepositoryTree struct {
-	Tree []RepositoryTreeNode `json:"tree"`
-}
-
-// RepositoryTreeNode represents a GitHub API response for a repository tree
-// node.
-type RepositoryTreeNode struct {
-	Path string `json:"path"`
-	Type string `json:"type"`
-}
-
-// Reference represents a GitHub API response for a reference.
-type Reference struct {
-	Ref    string `json:"ref"`
-	NodeID string `json:"node_id"`
-	URL    string `json:"url"`
-	Object struct {
-		Type string `json:"type"`
-		SHA  string `json:"sha"`
-		URL  string `json:"url"`
-	} `json:"object"`
-}
-
-// File represents a GitHub API response for a repository file.
-type File struct {
-	Encoding string `json:"encoding"`
-	Size     int64  `json:"size"`
-	Name     string `json:"name"`
-	Path     string `json:"path"`
-	Content  string `json:"content"`
-	SHA      string `json:"sha"`
-}
-
-// WebhookType is the GitHub webhook type.
-type WebhookType string
-
-const (
-	// WebhookPush is the webhook type for push.
-	WebhookPush WebhookType = "push"
-	// WebhookPing is the webhook type for ping.
-	WebhookPing WebhookType = "ping"
-)
 
 // WebhookInfo represents a GitHub API response for the webhook information.
 type WebhookInfo struct {
@@ -162,39 +111,6 @@ type WebhookRepository struct {
 	ID       int    `json:"id"`
 	FullName string `json:"full_name"`
 	HTMLURL  string `json:"html_url"`
-}
-
-// WebhookCommitAuthor is the API message for webhook commit author.
-type WebhookCommitAuthor struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
-// WebhookSender is the API message for webhook sender.
-type WebhookSender struct {
-	Login string `json:"login"`
-}
-
-// WebhookCommit is the API message for webhook commit.
-type WebhookCommit struct {
-	ID        string              `json:"id"`
-	Distinct  bool                `json:"distinct"`
-	Message   string              `json:"message"`
-	Timestamp time.Time           `json:"timestamp"`
-	URL       string              `json:"url"`
-	Author    WebhookCommitAuthor `json:"author"`
-	Added     []string            `json:"added"`
-	Modified  []string            `json:"modified"`
-}
-
-// WebhookPushEvent is the API message for webhook push event.
-type WebhookPushEvent struct {
-	Ref        string            `json:"ref"`
-	Before     string            `json:"before"`
-	After      string            `json:"after"`
-	Repository WebhookRepository `json:"repository"`
-	Sender     WebhookSender     `json:"sender"`
-	Commits    []WebhookCommit   `json:"commits"`
 }
 
 // CommitAuthor represents a GitHub API response for a commit author.
@@ -302,149 +218,6 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx *c
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
 	return repos, len(repos) >= apiPageSize, nil
-}
-
-// FetchRepositoryFileList fetches the all files from the given repository tree
-// recursively.
-//
-// Docs: https://docs.github.com/en/rest/git/trees#get-a-tree
-//
-// TODO: GitHub returns truncated response if the number of items in the tree
-// array exceeded their maximum limit. It is not noted what exactly is the
-// maximum limit and requires making non-recursive request to each sub-tree.
-func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
-	url := fmt.Sprintf("%s/repos/%s/git/trees/%s?recursive=true", p.APIURL(instanceURL), repositoryID, ref)
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-	)
-	if err != nil {
-		return nil, errors.Wrapf(err, "GET %s", url)
-	}
-
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to fetch repository file list from URL %s", url)
-	} else if code >= 300 {
-		return nil,
-			errors.Errorf("failed to fetch repository file list from URL %s, status code: %d, body: %s",
-				url,
-				code,
-				body,
-			)
-	}
-
-	var repoTree RepositoryTree
-	if err := json.Unmarshal([]byte(body), &repoTree); err != nil {
-		return nil, errors.Wrap(err, "unmarshal body")
-	}
-
-	if filePath != "" && !strings.HasSuffix(filePath, "/") {
-		filePath += "/"
-	}
-
-	var allTreeNodes []*vcs.RepositoryTreeNode
-	for _, n := range repoTree.Tree {
-		// GitHub does not support filtering by path prefix, thus simulating the
-		// behavior here.
-		if n.Type == "blob" && strings.HasPrefix(n.Path, filePath) {
-			allTreeNodes = append(allTreeNodes,
-				&vcs.RepositoryTreeNode{
-					Path: n.Path,
-					Type: n.Type,
-				},
-			)
-		}
-	}
-	return allTreeNodes, nil
-}
-
-// ReadFileMeta reads the metadata of the given file in the repository.
-//
-// Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
-	lastCommitID, err := p.getLastCommitID(ctx, oauthCtx, instanceURL, repositoryID, refInfo.RefName)
-	if err != nil {
-		return nil, errors.Wrap(err, "get last commit ID")
-	}
-
-	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), lastCommitID)
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-	)
-	if err != nil {
-		return nil, errors.Wrapf(err, "GET %s", url)
-	}
-
-	// TODO(zp): should check non-200 return value?
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to read file meta from URL %s", url)
-	} else if code >= 300 {
-		return nil,
-			errors.Errorf("failed to read file meta from URL %s, status code: %d, body: %s",
-				url,
-				code,
-				body,
-			)
-	}
-
-	// This API endpoint returns a JSON array if the path is a directory, and we do
-	// not want that.
-	if body != "" && body[0] == '[' {
-		return nil, errors.Errorf("%q is a directory not a file", filePath)
-	}
-
-	var file File
-	if err = json.Unmarshal([]byte(body), &file); err != nil {
-		return nil, errors.Wrap(err, "unmarshal body")
-	}
-
-	return &vcs.FileMeta{
-		Name:         file.Name,
-		Path:         file.Path,
-		Size:         file.Size,
-		SHA:          file.SHA,
-		LastCommitID: lastCommitID,
-	}, nil
-}
-
-// getLastCommitID gets the last commit ID of given reference in the repository.
-//
-// Docs: https://docs.github.com/en/rest/git/refs?apiVersion=2022-11-28#get-a-reference
-func (p *Provider) getLastCommitID(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, ref string) (string, error) {
-	url := fmt.Sprintf("%s/repos/%s/git/ref/heads/%s", p.APIURL(instanceURL), repositoryID, ref)
-
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-	)
-	if err != nil {
-		return "", errors.Wrapf(err, "GET %s", url)
-	}
-
-	if code == http.StatusNotFound {
-		return "", common.Errorf(common.NotFound, "failed to get last commit ID from URL %s", url)
-	} else if code >= 300 {
-		return "",
-			errors.Errorf("failed to get last commit ID from URL %s, status code: %d, body: %s",
-				url,
-				code,
-				body,
-			)
-	}
-
-	var reference Reference
-	if err = json.Unmarshal([]byte(body), &reference); err != nil {
-		return "", errors.Wrap(err, "unmarshal body")
-	}
-
-	return reference.Object.SHA, nil
 }
 
 // ReadFileContent reads the content of the given file in the repository.
