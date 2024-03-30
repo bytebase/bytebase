@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -14,13 +15,6 @@ import (
 )
 
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	// roles.
-	// TODO(tommy): hard code 'SetRole()'.
-	adminRoleName := "admin"
-	if err := d.SetRole(ctx, adminRoleName); err != nil {
-		return nil, errors.Wrapf(err, "failed to switch role to %s", adminRoleName)
-	}
-
 	var instanceMetadata db.InstanceMetadata
 
 	// version.
@@ -35,16 +29,25 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, err
 	}
 
-	for _, databaseName := range databaseNames {
-		databaseSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
-		databaseSchemaMetadata.Name = databaseName
-		schemaMetadata, err := d.getDatabaseInfoByName(ctx, databaseName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to sync database %s", databaseName)
-		}
-		databaseSchemaMetadata.Schemas = append(databaseSchemaMetadata.Schemas, schemaMetadata)
-		instanceMetadata.Databases = append(instanceMetadata.Databases, databaseSchemaMetadata)
+	var wg sync.WaitGroup
+	instanceMetadata.Databases = make([]*storepb.DatabaseSchemaMetadata, len(databaseNames))
+	for idx, databaseName := range databaseNames {
+		wg.Add(1)
+		go func(index int, databaseName string) {
+			databaseSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
+			databaseSchemaMetadata.Name = databaseName
+
+			schemaMetadata, err := d.getDatabaseInfoByName(ctx, databaseName)
+			if err != nil {
+				return
+			}
+
+			databaseSchemaMetadata.Schemas = append(databaseSchemaMetadata.Schemas, schemaMetadata)
+			instanceMetadata.Databases[index] = databaseSchemaMetadata
+			wg.Done()
+		}(idx, databaseName)
 	}
+	wg.Wait()
 
 	rolesMetadata, err := d.getRoles(ctx)
 	if err != nil {
@@ -59,10 +62,6 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	dbName := d.config.Database
 	if dbName == "" {
 		dbName = "default"
-	}
-	adminRoleName := "admin"
-	if err := d.SetRole(ctx, adminRoleName); err != nil {
-		return nil, errors.Wrapf(err, "failed to switch role to %s", adminRoleName)
 	}
 
 	databaseSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
@@ -231,9 +230,15 @@ func (d *Driver) getRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata,
 func (d *Driver) getIndexesByTableName(ctx context.Context, tableName string, databaseName string) ([]*storepb.IndexMetadata, error) {
 	var (
 		indexMetadata []*storepb.IndexMetadata
-		cursor        = d.dbClient.Cursor()
 	)
+
+	conn, err := d.ConnPool.Get()
+	if err != nil {
+		return nil, err
+	}
+	cursor := conn.Cursor()
 	defer cursor.Close()
+	defer d.ConnPool.Put(conn)
 
 	cursor.Execute(ctx, fmt.Sprintf("use %s", databaseName), false)
 	if cursor.Err != nil {
@@ -296,9 +301,16 @@ func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName 
 		totalSize       int
 		numRows         int
 		hasReadColumns  = false
-		cursor          = d.dbClient.Cursor()
 	)
-	defer cursor.Close()
+	conn, err := d.ConnPool.Get()
+	if err != nil {
+		return nil, err
+	}
+	cursor := conn.Cursor()
+	defer func() {
+		cursor.Close()
+		d.ConnPool.Put(conn)
+	}()
 
 	cursor.Exec(ctx, fmt.Sprintf("DESCRIBE FORMATTED `%s`.`%s`", databaseName, tabName))
 	if cursor.Err != nil {
@@ -309,8 +321,8 @@ func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName 
 		var (
 			typeColStr    string
 			commentColStr string
+			colNameColStr string
 			rowMap        = cursor.RowMap(ctx)
-			colName       = rowMap["col_name"].(string)
 		)
 
 		if idx < 2 {
@@ -322,7 +334,7 @@ func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName 
 			ok := false
 			typeColStr, ok = rowMap["data_type"].(string)
 			if !ok {
-				return nil, errors.New("type assertions fails")
+				return nil, errors.New("type assertions fails: data_type")
 			}
 		}
 		if rowMap["comment"] == nil {
@@ -330,17 +342,26 @@ func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName 
 		} else {
 			commentColStr = strings.TrimRight(rowMap["comment"].(string), " ")
 		}
+		if rowMap["col_name"] == nil {
+			colNameColStr = ""
+		} else {
+			ok := false
+			colNameColStr, ok = rowMap["col_name"].(string)
+			if !ok {
+				return nil, errors.New("type assertions fails: col_name")
+			}
+		}
 
 		// process table type.
-		if strings.Contains(colName, "Table Type") {
+		if strings.Contains(colNameColStr, "Table Type") {
 			tabType = strings.ReplaceAll(typeColStr, " ", "")
-		} else if colName == "" {
+		} else if colNameColStr == "" {
 			hasReadColumns = true
 		}
 		if !hasReadColumns {
 			// process column.
 			columnMetadatas = append(columnMetadatas, &storepb.ColumnMetadata{
-				Name:    colName,
+				Name:    colNameColStr,
 				Type:    typeColStr,
 				Comment: commentColStr,
 			})
@@ -361,7 +382,7 @@ func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName 
 			}
 			totalSize = size
 		}
-		if strings.Contains(colName, "View Original Text") {
+		if strings.Contains(colNameColStr, "View Original Text") {
 			// get view definition if it exists.
 			viewDefination = typeColStr
 		}

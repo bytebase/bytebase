@@ -53,24 +53,26 @@ type MaterializedViewDDLOptions struct {
 }
 
 func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) {
-	// TODO(tommy): hard code.
 	instanceMetadata, err := d.SyncInstance(ctx)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to sync instance")
 	}
 
 	var dumpStrBuilder strings.Builder
-	for _, database := range instanceMetadata.Databases[0].Schemas {
+
+	for _, database := range instanceMetadata.Databases {
+		schema := database.Schemas[0]
+
 		// dump databases.
-		databaseDDL, err := d.showCreateSchemaDDL(ctx, "DATABASE", database.Name, "")
+		databaseDDL, err := d.showCreateSchemaDDL(ctx, "DATABASE", schema.Name, "")
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to dump database %s", database.Name)
+			return "", errors.Wrapf(err, "failed to dump database %s", schema.Name)
 		}
 		_, _ = dumpStrBuilder.WriteString(databaseDDL)
 
 		// dump managed tables.
-		for _, table := range database.Tables {
-			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", table.Name, database.Name)
+		for _, table := range schema.Tables {
+			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", table.Name, schema.Name)
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to dump table %s", table.Name)
 			}
@@ -79,7 +81,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 			for _, index := range table.Indexes {
 				// TODO(tommy): get more index size from SyncInstance.
 				indexDDL, err := genIndexDDL(&IndexDDLOptions{
-					databaseName:          database.Name,
+					databaseName:          schema.Name,
 					indexName:             index.Name,
 					tableName:             table.Name,
 					indexType:             index.Type,
@@ -104,8 +106,8 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 		}
 
 		// dump external tables.
-		for _, extTable := range database.ExternalTables {
-			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", extTable.Name, database.Name)
+		for _, extTable := range schema.ExternalTables {
+			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", extTable.Name, schema.Name)
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to dump table %s", extTable.Name)
 			}
@@ -113,8 +115,8 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 		}
 
 		// dump views.
-		for _, view := range database.Views {
-			viewDDL, err := d.showCreateSchemaDDL(ctx, "VIEW", view.Name, database.Name)
+		for _, view := range schema.Views {
+			viewDDL, err := d.showCreateSchemaDDL(ctx, "VIEW", view.Name, schema.Name)
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to dump view %s", view.Name)
 			}
@@ -122,9 +124,9 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 		}
 
 		// dump materialized views.
-		for _, mtView := range database.MaterializedViews {
+		for _, mtView := range schema.MaterializedViews {
 			mtViewDDL, err := genMaterializedViewDDL(&MaterializedViewDDLOptions{
-				databaseName:   database.Name,
+				databaseName:   schema.Name,
 				mtViewName:     mtView.Name,
 				disableRewrite: false,
 				comment:        mtView.Comment,
@@ -144,7 +146,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 				return "", errors.Wrapf(err, "failed to generate DDL for materialized view %s", mtView.Name)
 			}
 
-			_, _ = dumpStrBuilder.WriteString(fmt.Sprintf(schemaStmtFmt, "MATERIALIZED VIEW", fmt.Sprintf("`%s`.`%s`", database.Name, mtView.Name), mtViewDDL))
+			_, _ = dumpStrBuilder.WriteString(fmt.Sprintf(schemaStmtFmt, "MATERIALIZED VIEW", fmt.Sprintf("`%s`.`%s`", schema.Name, mtView.Name), mtViewDDL))
 		}
 	}
 
