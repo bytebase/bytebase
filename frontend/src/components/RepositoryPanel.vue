@@ -36,7 +36,7 @@
   />
   <div
     v-if="allowEdit || allowDelete"
-    class="mt-4 pt-4 flex border-t justify-between"
+    class="mt-6 pt-4 flex border-t justify-between"
   >
     <BBButtonConfirm
       v-if="allowDelete"
@@ -60,11 +60,6 @@
       </NButton>
     </div>
   </div>
-  <FeatureModal
-    feature="bb.feature.vcs-sql-review"
-    :open="state.showFeatureModal"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -80,7 +75,6 @@ import type { ExternalRepositoryInfo, RepositoryConfig } from "../types";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
-  showFeatureModal: boolean;
   processing: boolean;
 }
 
@@ -106,7 +100,6 @@ const state = reactive<LocalState>({
     baseDirectory: "",
     branch: "",
   },
-  showFeatureModal: false,
   processing: false,
 });
 

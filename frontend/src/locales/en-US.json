@@ -2411,7 +2411,7 @@
     "request-with-qr": "Scan QR code",
     "successfully-start-trial": "Successfully start free trial for {days} days",
     "successfully-upgrade-trial": "Successfully upgrade free trial to {plan}",
-    "require-subscription": "This feature requires {requiredPlan} subscription, please purchase Bytebase license to unlock this feature.",
+    "require-subscription": "This feature requires {requiredPlan} subscription, please purchase Bytebase license to unlock it.",
     "feature-require-subscription": "{feature} requires {requiredPlan} subscription.",
     "required-plan-with-trial": "This feature requires {requiredPlan}. {startTrial}",
     "trial-for-plan": "You can start a free trial for {plan} with {days} days - no credit card required.",

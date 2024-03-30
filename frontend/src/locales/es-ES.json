@@ -2411,7 +2411,7 @@
     "request-with-qr": "Escanear código QR",
     "successfully-start-trial": "Prueba gratuita iniciada con éxito por {days} días",
     "successfully-upgrade-trial": "Prueba gratuita actualizada con éxito a {plan}",
-    "require-subscription": "Esta función requiere una suscripción a {requiredPlan}. Compre una licencia de Bytebase para desbloquear esta función.",
+    "require-subscription": "Esta función requiere una suscripción a {requiredPlan}. Compre una licencia de Bytebase para desbloquearla.",
     "feature-require-subscription": "{feature} requiere suscripción a {requiredPlan}.",
     "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}",
     "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito.",

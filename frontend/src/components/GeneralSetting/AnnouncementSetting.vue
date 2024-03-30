@@ -100,6 +100,10 @@
             :disabled="!allowEdit || !allowSave"
             @click.prevent="updateAnnouncementSetting"
           >
+            <FeatureBadge
+              feature="bb.feature.announcement"
+              custom-class="mr-1 text-white pointer-events-none"
+            />
             {{ $t("common.update") }}
           </NButton>
         </div>

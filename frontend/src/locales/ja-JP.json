@@ -2411,7 +2411,7 @@
     "request-with-qr": "QRコードをスキャン",
     "successfully-start-trial": "{days}日間の無料トライアルが正常に開始されました",
     "successfully-upgrade-trial": "無料トライアルを{plan}に正常にアップグレードしました",
-    "require-subscription": "この機能には{requiredPlan}のサブスクリプションが必要です。Bytebaseライセンスを購入してこの機能をアンロックしてください。",
+    "require-subscription": "この機能には {requiredPlan} のサブスクリプションが必要です。ロックを解除するには Bytebase ライセンスを購入してください。",
     "feature-require-subscription": "{feature}には{requiredPlan}のサブスクリプションが必要です。",
     "required-plan-with-trial": "この機能には{requiredPlan}が必要です。{startTrial}",
     "trial-for-plan": "{days}日間の無料トライアルを開始できます - クレジットカード不要です。",
