@@ -11,7 +11,7 @@
         <heroicons-outline:external-link class="w-4 h-4 ml-1" />
       </a>
     </div>
-    <div class="w-full flex flex-col">
+    <div class="w-full flex flex-col gap-y-6">
       <!-- Host and Port -->
       <div class="w-full flex flex-row gap-4">
         <div class="min-w-max w-80">
@@ -46,7 +46,7 @@
           />
         </div>
       </div>
-      <div class="w-full flex flex-row gap-4 mt-8">
+      <div class="w-full flex flex-row gap-4">
         <div class="min-w-max w-80">
           <div class="textlabel pl-1">
             {{ $t("settings.mail-delivery.field.from") }}
@@ -60,7 +60,7 @@
         </div>
       </div>
       <!-- Authentication Related -->
-      <div class="w-full gap-4 mt-8">
+      <div class="w-full gap-4">
         <div class="min-w-max w-80">
           <div class="textlabel pl-1">
             {{ $t("settings.mail-delivery.field.authentication-method") }}
@@ -82,7 +82,7 @@
           SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_NONE
         "
       >
-        <div class="w-full flex flex-row gap-4 mt-4">
+        <div class="w-full flex flex-row gap-4">
           <div class="min-w-max w-80">
             <div class="flex flex-row">
               <label class="textlabel pl-1">
@@ -118,7 +118,7 @@
         </div>
       </template>
       <!-- Encryption Related -->
-      <div class="w-full gap-4 mt-8">
+      <div class="w-full gap-4">
         <div class="min-w-max w-80">
           <div class="textlabel pl-1">
             {{ $t("settings.mail-delivery.field.encryption") }}
@@ -133,25 +133,8 @@
           />
         </div>
       </div>
-      <div class="flex flex-row w-full">
-        <div class="w-auto gap-4 mt-8 flex flex-row">
-          <NButton
-            type="primary"
-            :disabled="
-              !allowMailDeliveryActionButton ||
-              state.isSendLoading ||
-              state.isCreateOrUpdateLoading
-            "
-            @click.prevent="updateMailDeliverySetting"
-          >
-            {{ mailDeliverySettingButtonText }}
-          </NButton>
-          <BBSpin v-if="state.isCreateOrUpdateLoading" class="ml-1" />
-        </div>
-      </div>
-      <div class="border-b mt-4"></div>
       <!-- Test Send Email To Someone -->
-      <div class="w-full gap-4 mt-4 flex flex-row">
+      <div class="w-full gap-4 flex flex-row">
         <div class="min-w-max w-160">
           <div class="textlabel pl-1">
             {{ $t("settings.mail-delivery.field.send-test-email-to") }}
@@ -165,10 +148,9 @@
             <NButton
               type="primary"
               :disabled="
-                state.testMailTo === '' ||
-                state.isSendLoading ||
-                state.isCreateOrUpdateLoading
+                state.testMailTo === '' || state.isCreateOrUpdateLoading
               "
+              :loading="state.isSendLoading"
               @click.prevent="testMailDeliverySetting"
             >
               {{ $t("settings.mail-delivery.field.send") }}
@@ -177,12 +159,22 @@
           </div>
         </div>
       </div>
+      <div class="flex border-t pt-4 flex-row w-full justify-end">
+        <NButton
+          type="primary"
+          :disabled="!allowMailDeliveryActionButton || state.isSendLoading"
+          :loading="state.isCreateOrUpdateLoading"
+          @click.prevent="updateMailDeliverySetting"
+        >
+          {{ mailDeliverySettingButtonText }}
+        </NButton>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import { NCheckbox } from "naive-ui";
 import type { ClientError } from "nice-grpc-web";
@@ -240,12 +232,32 @@ const mailDeliverySettingButtonText = computed(() => {
     ? t("common.create")
     : t("common.update");
 });
+
 const allowMailDeliveryActionButton = computed(() => {
-  return (
-    props.allowEdit &&
-    (state.useEmptyPassword ||
-      !isEqual(state.originMailDeliverySetting, state.mailDeliverySetting))
-  );
+  if (!props.allowEdit) {
+    return false;
+  }
+  if (
+    !state.mailDeliverySetting.server ||
+    !state.mailDeliverySetting.port ||
+    !state.mailDeliverySetting.from
+  ) {
+    return false;
+  }
+
+  if (
+    state.mailDeliverySetting.authentication !==
+    SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_NONE
+  ) {
+    if (!state.mailDeliverySetting.username) {
+      return false;
+    }
+    if (!state.useEmptyPassword && !state.mailDeliverySetting.password) {
+      return false;
+    }
+  }
+
+  return true;
 });
 
 onMounted(async () => {

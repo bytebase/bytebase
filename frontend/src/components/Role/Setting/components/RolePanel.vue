@@ -84,6 +84,10 @@
         <div class="flex items-center justify-end gap-x-2">
           <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
           <NButton type="primary" :disabled="!allowSave" @click="handleSave">
+            <FeatureBadge
+              feature="bb.feature.custom-role"
+              custom-class="mr-1 text-white"
+            />
             {{ mode === "ADD" ? $t("common.add") : $t("common.update") }}
           </NButton>
         </div>

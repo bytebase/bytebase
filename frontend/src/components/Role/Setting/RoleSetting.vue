@@ -18,6 +18,10 @@
         :disabled="!allowCreateRole"
         @click="addRole"
       >
+        <FeatureBadge
+          feature="bb.feature.custom-role"
+          custom-class="mr-1 text-white"
+        />
         {{ $t("role.setting.add") }}
       </NButton>
     </div>

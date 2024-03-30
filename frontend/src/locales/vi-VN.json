@@ -2411,7 +2411,7 @@
     "request-with-qr": "Quét mã QR",
     "successfully-start-trial": "Bắt đầu dùng thử miễn phí thành công trong {days} ngày",
     "successfully-upgrade-trial": "Nâng cấp thành công bản dùng thử miễn phí lên {plan}",
-    "require-subscription": "Tính năng này yêu cầu đăng ký {requiredPlan}, vui lòng mua giấy phép Bytebase để mở khóa tính năng này.",
+    "require-subscription": "Tính năng này yêu cầu đăng ký {requiredPlan}, vui lòng mua giấy phép Bytebase để mở khóa.",
     "feature-require-subscription": "{feature} yêu cầu đăng ký {requiredPlan}.",
     "required-plan-with-trial": "Tính năng này yêu cầu {requiredPlan}. {startTrial}",
     "trial-for-plan": "Bạn có thể bắt đầu dùng thử miễn phí {plan} trong {days} ngày - không cần thẻ tín dụng.",

@@ -97,6 +97,7 @@
           resource-type="idp"
           :readonly="!isCreating"
           :value="resourceId"
+          :suffix="true"
           :resource-title="identityProvider.title"
           :validate="validateResourceId"
         />
@@ -607,7 +608,7 @@
     </div>
 
     <div
-      class="mt-4 space-x-4 w-full flex flex-row justify-between items-center"
+      class="mt-6 pt-4 border-t space-x-4 w-full flex flex-row justify-between items-center"
     >
       <div class="space-x-4 flex flex-row justify-start items-center">
         <template v-if="!isCreating">

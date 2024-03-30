@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <div>
       <div class="flex items-center space-x-2">
         <label for="instanceurl" class="textlabel">
@@ -64,7 +64,7 @@
       />
     </div>
 
-    <div class="pt-4 flex border-t justify-between">
+    <div class="pt-4 mt-2 flex border-t justify-between">
       <template v-if="connectorList.length == 0">
         <BBButtonConfirm
           :style="'DELETE'"

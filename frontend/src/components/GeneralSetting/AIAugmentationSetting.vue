@@ -85,6 +85,10 @@
             :disabled="!allowEdit || !allowSave"
             @click.prevent="updateOpenAIKeyEndpoint"
           >
+            <FeatureBadge
+              feature="bb.feature.plugin.openai"
+              custom-class="mr-1 text-white pointer-events-none"
+            />
             {{ $t("common.update") }}
           </NButton>
         </div>

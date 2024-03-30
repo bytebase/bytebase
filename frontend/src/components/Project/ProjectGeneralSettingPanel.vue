@@ -3,7 +3,7 @@
     <p class="text-lg font-medium leading-7 text-main">
       {{ $t("common.general") }}
     </p>
-    <div class="flex justify-start items-start gap-12">
+    <div class="flex justify-start items-start gap-6">
       <dl class="">
         <dt class="text-sm font-medium text-control-light">
           {{ $t("common.name") }} <span class="text-red-600">*</span>

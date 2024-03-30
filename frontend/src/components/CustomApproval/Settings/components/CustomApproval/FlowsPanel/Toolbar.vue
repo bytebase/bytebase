@@ -1,6 +1,10 @@
 <template>
   <div class="flex items-center gap-x-2">
     <NButton type="primary" :disabled="!allowAdmin" @click="createRule">
+      <FeatureBadge
+        feature="bb.feature.custom-approval"
+        custom-class="mr-1 text-white"
+      />
       {{ $t("common.create") }}
     </NButton>
   </div>
