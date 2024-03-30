@@ -7,8 +7,8 @@
         v-else
         quaternary
         circle
-        @click.prevent="refreshRepositoryList"
         :loading="state.loading"
+        @click.prevent="refreshRepositoryList"
       >
         <RefreshCwIcon class="w-5 h-5" />
       </NButton>
@@ -42,7 +42,7 @@
 <script setup lang="ts">
 import { RefreshCwIcon, ChevronRightIcon } from "lucide-vue-next";
 import { reactive, computed, onMounted } from "vue";
-import type BBSpin from "@/bbkit/BBSpin.vue";
+import BBSpin from "@/bbkit/BBSpin.vue";
 import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
 import type { ExternalRepositoryInfo, ProjectRepositoryConfig } from "@/types";
 import type { SearchVCSProviderProjectsResponse_Project } from "@/types/proto/v1/vcs_provider_service";
