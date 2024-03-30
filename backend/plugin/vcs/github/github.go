@@ -113,39 +113,6 @@ type WebhookRepository struct {
 	HTMLURL  string `json:"html_url"`
 }
 
-// WebhookCommitAuthor is the API message for webhook commit author.
-type WebhookCommitAuthor struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
-// WebhookSender is the API message for webhook sender.
-type WebhookSender struct {
-	Login string `json:"login"`
-}
-
-// WebhookCommit is the API message for webhook commit.
-type WebhookCommit struct {
-	ID        string              `json:"id"`
-	Distinct  bool                `json:"distinct"`
-	Message   string              `json:"message"`
-	Timestamp time.Time           `json:"timestamp"`
-	URL       string              `json:"url"`
-	Author    WebhookCommitAuthor `json:"author"`
-	Added     []string            `json:"added"`
-	Modified  []string            `json:"modified"`
-}
-
-// WebhookPushEvent is the API message for webhook push event.
-type WebhookPushEvent struct {
-	Ref        string            `json:"ref"`
-	Before     string            `json:"before"`
-	After      string            `json:"after"`
-	Repository WebhookRepository `json:"repository"`
-	Sender     WebhookSender     `json:"sender"`
-	Commits    []WebhookCommit   `json:"commits"`
-}
-
 // CommitAuthor represents a GitHub API response for a commit author.
 type CommitAuthor struct {
 	// Date expects corresponding JSON value is a string in RFC 3339 format,
