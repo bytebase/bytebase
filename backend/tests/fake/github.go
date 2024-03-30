@@ -12,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"path"
 	"strconv"
 	"time"
 
@@ -67,7 +66,6 @@ func NewGitHub(port int) VCSProvider {
 	g := e.Group("/api/v3")
 	g.POST("/repos/:owner/:repo/hooks", gh.createRepositoryWebhook)
 	g.GET("/repos/:owner/:repo/git/commits/:commitID", gh.getRepositoryCommit)
-	g.GET("/repos/:owner/:repo/git/trees/:ref", gh.getRepositoryTree)
 	g.GET("/repos/:owner/:repo/contents/:filePath", gh.readRepositoryFile)
 	g.PUT("/repos/:owner/:repo/contents/:filePath", gh.createRepositoryFile)
 	g.GET("/repos/:owner/:repo/git/ref/heads/:branchName", gh.getRepositoryBranch)
@@ -123,32 +121,6 @@ func (gh *GitHub) getRepositoryCommit(c echo.Context) error {
 	return c.String(http.StatusOK, string(buf))
 }
 
-func (gh *GitHub) getRepositoryTree(c echo.Context) error {
-	r, err := gh.validRepository(c)
-	if err != nil {
-		return err
-	}
-
-	var treeNodes []github.RepositoryTreeNode
-	for filePath := range r.files {
-		treeNodes = append(treeNodes,
-			github.RepositoryTreeNode{
-				Path: filePath,
-				Type: "blob",
-			},
-		)
-	}
-	buf, err := json.Marshal(
-		github.RepositoryTree{
-			Tree: treeNodes,
-		},
-	)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository tree: %v", err))
-	}
-	return c.String(http.StatusOK, string(buf))
-}
-
 func (gh *GitHub) readRepositoryFile(c echo.Context) error {
 	r, err := gh.validRepository(c)
 	if err != nil {
@@ -170,20 +142,7 @@ func (gh *GitHub) readRepositoryFile(c echo.Context) error {
 		return c.String(http.StatusOK, content)
 	}
 
-	buf, err := json.Marshal(
-		github.File{
-			Encoding: "base64",
-			Size:     int64(len(content)),
-			Name:     path.Base(filePath),
-			Path:     filePath,
-			Content:  base64.StdEncoding.EncodeToString([]byte(content)),
-			SHA:      "fake_github_commit_sha",
-		},
-	)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository file: %v", err))
-	}
-	return c.String(http.StatusOK, string(buf))
+	return c.String(http.StatusBadRequest, "must accept vnd.github.raw")
 }
 
 func (gh *GitHub) createRepositoryFile(c echo.Context) error {

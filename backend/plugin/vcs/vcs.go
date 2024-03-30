@@ -215,24 +215,6 @@ type Provider interface {
 	// instanceURL: VCS instance URL
 	FetchAllRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL string) ([]*Repository, error)
 
-	// Fetch the repository file list
-	//
-	// oauthCtx: OAuth context to read the repository tree
-	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	// ref: the unique name of a repository tree, could be a branch name in GitLab or a tree sha in GitHub
-	// filePath: the path inside repository, used to get content of subdirectories
-	FetchRepositoryFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*RepositoryTreeNode, error)
-
-	// Reads the file metadata
-	//
-	// oauthCtx: OAuth context to fetch the file metadata
-	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	// filePath: file path to be read
-	// ref: the specific file version to be read, could be a name of branch, tag or commit
-	ReadFileMeta(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo RefInfo) (*FileMeta, error)
-
 	// Reads the file content
 	//
 	// oauthCtx: OAuth context to read the file content
