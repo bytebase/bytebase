@@ -46,6 +46,7 @@
         class="max-w-full flex-nowrap mt-1.5"
         editing-class="mt-4"
         resource-type="vcs-provider"
+        :suffix="true"
         :resource-title="config.name"
         :validate="validateResourceId"
       />

@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <div v-if="create">
       <div>
         <label for="name" class="textlabel">
@@ -208,11 +208,13 @@
         </div>
       </div>
     </div>
-    <NButton @click.prevent="testWebhook">
-      {{ $t("project.webhook.test-webhook") }}
-    </NButton>
+    <div>
+      <NButton @click.prevent="testWebhook">
+        {{ $t("project.webhook.test-webhook") }}
+      </NButton>
+    </div>
     <div
-      class="flex pt-5"
+      class="flex mt-2 pt-4 border-t"
       :class="!create && allowEdit ? 'justify-between' : 'justify-end'"
     >
       <BBButtonConfirm

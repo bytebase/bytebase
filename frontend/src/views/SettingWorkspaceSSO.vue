@@ -19,7 +19,7 @@
       >
         <FeatureBadge
           :feature="'bb.feature.sso'"
-          custom-class="mr-2 text-white"
+          custom-class="mr-1 text-white"
         />
         {{ $t("settings.sso.create") }}
       </NButton>

@@ -24,7 +24,6 @@ export type FeatureType =
   | "bb.feature.branding"
   // Change Workflow
   | "bb.feature.dba-workflow"
-  | "bb.feature.lgtm"
   | "bb.feature.im.approval"
   | "bb.feature.multi-tenancy"
   | "bb.feature.online-migration"
@@ -35,10 +34,7 @@ export type FeatureType =
   | "bb.feature.encrypted-secrets"
   | "bb.feature.database-grouping"
   | "bb.feature.schema-template"
-  // VCS Integration
-  | "bb.feature.vcs-sql-review"
   // Database management
-  | "bb.feature.pitr"
   | "bb.feature.read-replica-connection"
   | "bb.feature.custom-instance-scan-interval"
   | "bb.feature.instance-ssh-connection"
@@ -69,7 +65,6 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.task-schedule-time",
   "bb.feature.online-migration",
   // Database Management
-  "bb.feature.pitr",
   "bb.feature.read-replica-connection",
   "bb.feature.instance-ssh-connection",
   "bb.feature.custom-instance-scan-interval",
@@ -80,7 +75,6 @@ export const instanceLimitFeature = new Set<FeatureType>([
   "bb.feature.sensitive-data",
   "bb.feature.custom-approval",
   // VCS Integration
-  "bb.feature.vcs-sql-review",
   "bb.feature.mybatis-sql-review",
 ]);
 
