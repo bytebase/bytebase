@@ -12,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"path"
 	"strconv"
 	"time"
 
@@ -34,8 +33,6 @@ type GitHub struct {
 	repositories  map[string]*githubRepositoryData
 }
 
-const publicKeyName = "public-key"
-
 type githubRepositoryData struct {
 	webhooks []*github.WebhookCreateOrUpdate
 	// files is a map that the full file path is the key and the file content is the
@@ -44,9 +41,6 @@ type githubRepositoryData struct {
 	// refs is the map for repository branch.
 	// the map key is the branch ref, like "refs/heads/main".
 	refs map[string]*github.Branch
-	// secrets is the map for repository secret.
-	// the map key is the secret name, like "public-key".
-	secrets map[string]*github.RepositorySecret
 	// pullRequests is the map for repository pull request.
 	// the map key is the pull request id.
 	pullRequests map[int]struct {
@@ -72,17 +66,11 @@ func NewGitHub(port int) VCSProvider {
 	g := e.Group("/api/v3")
 	g.POST("/repos/:owner/:repo/hooks", gh.createRepositoryWebhook)
 	g.GET("/repos/:owner/:repo/git/commits/:commitID", gh.getRepositoryCommit)
-	g.GET("/repos/:owner/:repo/git/trees/:ref", gh.getRepositoryTree)
 	g.GET("/repos/:owner/:repo/contents/:filePath", gh.readRepositoryFile)
 	g.PUT("/repos/:owner/:repo/contents/:filePath", gh.createRepositoryFile)
 	g.GET("/repos/:owner/:repo/git/ref/heads/:branchName", gh.getRepositoryBranch)
 	g.POST("/repos/:owner/:repo/git/refs", gh.createRepositoryBranch)
 	g.POST("/repos/:owner/:repo/pulls", gh.createRepositoryPullRequest)
-	g.GET(
-		fmt.Sprintf("/repos/:owner/:repo/actions/secrets/%s", publicKeyName),
-		gh.getRepositoryPublicKey,
-	)
-	g.PUT("/repos/:owner/:repo/actions/secrets/:keyName", gh.updateRepositoryPublicKey)
 	g.GET("/repos/:owner/:repo/pulls/:prID/files", gh.listPullRequestFile)
 	g.GET("/repos/:owner/:repo/compare/:baseHead", gh.compareCommits)
 	return gh
@@ -133,32 +121,6 @@ func (gh *GitHub) getRepositoryCommit(c echo.Context) error {
 	return c.String(http.StatusOK, string(buf))
 }
 
-func (gh *GitHub) getRepositoryTree(c echo.Context) error {
-	r, err := gh.validRepository(c)
-	if err != nil {
-		return err
-	}
-
-	var treeNodes []github.RepositoryTreeNode
-	for filePath := range r.files {
-		treeNodes = append(treeNodes,
-			github.RepositoryTreeNode{
-				Path: filePath,
-				Type: "blob",
-			},
-		)
-	}
-	buf, err := json.Marshal(
-		github.RepositoryTree{
-			Tree: treeNodes,
-		},
-	)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository tree: %v", err))
-	}
-	return c.String(http.StatusOK, string(buf))
-}
-
 func (gh *GitHub) readRepositoryFile(c echo.Context) error {
 	r, err := gh.validRepository(c)
 	if err != nil {
@@ -180,20 +142,7 @@ func (gh *GitHub) readRepositoryFile(c echo.Context) error {
 		return c.String(http.StatusOK, content)
 	}
 
-	buf, err := json.Marshal(
-		github.File{
-			Encoding: "base64",
-			Size:     int64(len(content)),
-			Name:     path.Base(filePath),
-			Path:     filePath,
-			Content:  base64.StdEncoding.EncodeToString([]byte(content)),
-			SHA:      "fake_github_commit_sha",
-		},
-	)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository file: %v", err))
-	}
-	return c.String(http.StatusOK, string(buf))
+	return c.String(http.StatusBadRequest, "must accept vnd.github.raw")
 }
 
 func (gh *GitHub) createRepositoryFile(c echo.Context) error {
@@ -314,51 +263,6 @@ func (gh *GitHub) createRepositoryPullRequest(c echo.Context) error {
 	return c.String(http.StatusOK, string(buf))
 }
 
-func (gh *GitHub) getRepositoryPublicKey(c echo.Context) error {
-	r, err := gh.validRepository(c)
-	if err != nil {
-		return err
-	}
-
-	buf, err := json.Marshal(
-		r.secrets[publicKeyName],
-	)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository public key: %v", err))
-	}
-	return c.String(http.StatusOK, string(buf))
-}
-
-func (gh *GitHub) updateRepositoryPublicKey(c echo.Context) error {
-	r, err := gh.validRepository(c)
-	if err != nil {
-		return err
-	}
-
-	body, err := io.ReadAll(c.Request().Body)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read request body for updating repository secret: %v", err))
-	}
-
-	var secretUpdate github.RepositorySecretUpdate
-	if err = json.Unmarshal(body, &secretUpdate); err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal request body for updating repository secret: %v", err))
-	}
-
-	// The KeyID in RepositorySecretUpdate should be the repository public id.
-	if secretUpdate.KeyID != r.secrets[publicKeyName].KeyID {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("The key id not matched: %v", secretUpdate.KeyID))
-	}
-
-	keyName := c.Param("keyName")
-	r.secrets[keyName] = &github.RepositorySecret{
-		KeyID: fmt.Sprintf("%s_%d", keyName, time.Now().Unix()),
-		Key:   secretUpdate.EncryptedValue,
-	}
-
-	return c.String(http.StatusOK, "")
-}
-
 func (gh *GitHub) listPullRequestFile(c echo.Context) error {
 	r, err := gh.validRepository(c)
 	if err != nil {
@@ -446,14 +350,7 @@ func (*GitHub) APIURL(instanceURL string) string {
 func (gh *GitHub) CreateRepository(id string) {
 	gh.repositories[id] = &githubRepositoryData{
 		files: make(map[string]string),
-		secrets: map[string]*github.RepositorySecret{
-			publicKeyName: {
-				KeyID: fmt.Sprintf("publickeyid_%d", time.Now().Unix()),
-				// mock public key
-				Key: "YJf3Ojcv8TSEBCtR0wtTR/F2bD3nBl1lxiwkfV/TYQk=",
-			},
-		},
-		refs: map[string]*github.Branch{},
+		refs:  map[string]*github.Branch{},
 		pullRequests: map[int]struct {
 			Files []*github.PullRequestFile
 			*github.PullRequest
@@ -533,7 +430,7 @@ func (gh *GitHub) SendWebhookPush(repositoryID string, payload []byte) error {
 			}
 			signature := "sha256=" + hex.EncodeToString(m.Sum(nil))
 			req.Header.Set("X-Hub-Signature-256", signature)
-			req.Header.Set("X-GitHub-Event", "push")
+			req.Header.Set("X-GitHub-Event", "pull_request")
 
 			resp, err := gh.client.Do(req)
 			if err != nil {

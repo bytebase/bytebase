@@ -2110,7 +2110,6 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 			URL:                   fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 			SecretToken:           secretToken,
 			MergeRequestsEvents:   true,
-			PushEvents:            true,
 			NoteEvents:            true,
 			EnableSSLVerification: false,
 		}
@@ -2126,7 +2125,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 				Secret:      secretToken,
 				InsecureSSL: 1,
 			},
-			Events: []string{"push", "pull_request", "pull_request_review_comment"},
+			Events: []string{"pull_request", "pull_request_review_comment"},
 		}
 		webhookCreatePayload, err = json.Marshal(webhookPost)
 		if err != nil {
@@ -2137,7 +2136,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 			Description: "Bytebase GitOps",
 			URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 			Active:      true,
-			Events:      []string{"repo:push", "pullrequest:created", "pullrequest:updated", "pullrequest:comment_created"},
+			Events:      []string{"pullrequest:created", "pullrequest:updated", "pullrequest:fulfilled", "pullrequest:comment_created"},
 		}
 		webhookCreatePayload, err = json.Marshal(webhookPost)
 		if err != nil {
@@ -2157,8 +2156,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 				URL:                  fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 				AcceptUntrustedCerts: true,
 			},
-			EventType: "git.push",
-			// TODO(d): We cannot create a few webhooks together with "git.pullrequest.created", "git.pullrequest.updated", and work items.
+			EventType:   "git.pullrequest.merged",
 			PublisherID: "tfs",
 			PublisherInputs: azure.WebhookCreatePublisherInputs{
 				Repository: repositoryID,

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -29,7 +30,7 @@ func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, e
 }
 
 func (d *Driver) ListRole(ctx context.Context) ([]*db.DatabaseRoleMessage, error) {
-	roleResults, err := d.QueryConn(ctx, nil, "SHOW ROLES", nil)
+	roleResults, err := d.QueryConn(ctx, nil, "SHOW ROLES", &db.QueryContext{ReadOnly: false})
 	var roleMessages []*db.DatabaseRoleMessage
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get roles")
@@ -53,16 +54,20 @@ func (d *Driver) DeleteRole(ctx context.Context, roleName string) error {
 }
 
 // some DMLs need admin role.
-func (d *Driver) SetRole(ctx context.Context, roleName string) error {
-	_, err := d.Execute(ctx, fmt.Sprintf("SET ROLE %s", roleName), db.ExecuteOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to set role to %s", roleName)
+func SetRole(ctx context.Context, conn *gohive.Connection, roleName string) error {
+	cursor := conn.Cursor()
+	defer cursor.Close()
+
+	cursor.Exec(ctx, fmt.Sprintf("SET ROLE %s", roleName))
+	if cursor.Err != nil {
+		return errors.Wrapf(cursor.Err, "failed to set role to %s", roleName)
 	}
+
 	return nil
 }
 
 func (d *Driver) GetRoleGrant(ctx context.Context, roleName string) (string, error) {
-	grantResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("SHOW GRANT ROLE %s", roleName), nil)
+	grantResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("SHOW GRANT ROLE %s", roleName), &db.QueryContext{ReadOnly: false})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get grant from %s", roleName)
 	}

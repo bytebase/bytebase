@@ -39,9 +39,6 @@ type projectData struct {
 	// branches is the map for project branch.
 	// the map key is the project name, like "refs/heads/main".
 	branches map[string]*gitlab.Branch
-	// variables is the map for project environment variable.
-	// the map key is the variable name, like "public-key".
-	variables map[string]*gitlab.EnvironmentVariable
 	// mergeRequests is the map for project merge request.
 	// the map key is the merge request id.
 	mergeRequests map[int]struct {
@@ -75,9 +72,6 @@ func NewGitLab(port int) VCSProvider {
 	projectGroup.GET("/projects/:id/repository/branches/:branchName", gl.getProjectBranch)
 	projectGroup.POST("/projects/:id/repository/branches", gl.createProjectBranch)
 	projectGroup.POST("/projects/:id/merge_requests", gl.createProjectPullRequest)
-	projectGroup.GET("/projects/:id/variables/:variableKey", gl.getProjectEnvironmentVariable)
-	projectGroup.POST("/projects/:id/variables", gl.createProjectEnvironmentVariable)
-	projectGroup.PUT("/projects/:id/variables/:variableKey", gl.updateProjectEnvironmentVariable)
 	projectGroup.GET("/projects/:id/merge_requests/:mrID/changes", gl.getMergeRequestChanges)
 	projectGroup.GET("/projects/:id/repository/compare", gl.compareCommits)
 
@@ -107,9 +101,8 @@ func (*GitLab) APIURL(instanceURL string) string {
 // CreateRepository creates a GitLab project with given ID.
 func (gl *GitLab) CreateRepository(id string) {
 	gl.projects[id] = &projectData{
-		files:     map[string]string{},
-		branches:  map[string]*gitlab.Branch{},
-		variables: map[string]*gitlab.EnvironmentVariable{},
+		files:    map[string]string{},
+		branches: map[string]*gitlab.Branch{},
 		mergeRequests: map[int]struct {
 			*gitlab.MergeRequestChange
 			*gitlab.MergeRequest
@@ -368,77 +361,6 @@ func (gl *GitLab) createProjectPullRequest(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for creating project merge request: %v", err))
 	}
 	return c.String(http.StatusOK, string(buf))
-}
-
-func (gl *GitLab) getProjectEnvironmentVariable(c echo.Context) error {
-	pd, err := gl.validProject(c)
-	if err != nil {
-		return err
-	}
-
-	variableKey := c.Param("variableKey")
-	variable, ok := pd.variables[variableKey]
-	if !ok {
-		return c.String(http.StatusNotFound, fmt.Sprintf("failed to find variable %s", variableKey))
-	}
-
-	buf, err := json.Marshal(variable)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting project environment variable: %v", err))
-	}
-	return c.String(http.StatusOK, string(buf))
-}
-
-func (gl *GitLab) createProjectEnvironmentVariable(c echo.Context) error {
-	pd, err := gl.validProject(c)
-	if err != nil {
-		return err
-	}
-
-	body, err := io.ReadAll(c.Request().Body)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read request body for creating project environment variable: %v", err))
-	}
-
-	var environmentVariable gitlab.EnvironmentVariable
-	if err = json.Unmarshal(body, &environmentVariable); err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal request body for creating project environment variable: %v", err))
-	}
-
-	if _, ok := pd.variables[environmentVariable.Key]; ok {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("environment variable already exists %s", environmentVariable.Key))
-	}
-
-	pd.variables[environmentVariable.Key] = &environmentVariable
-	return c.String(http.StatusOK, "")
-}
-
-func (gl *GitLab) updateProjectEnvironmentVariable(c echo.Context) error {
-	pd, err := gl.validProject(c)
-	if err != nil {
-		return err
-	}
-
-	body, err := io.ReadAll(c.Request().Body)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read request body for creating project environment variable: %v", err))
-	}
-
-	var environmentVariable gitlab.EnvironmentVariable
-	if err = json.Unmarshal(body, &environmentVariable); err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal request body for creating project environment variable: %v", err))
-	}
-
-	variableKey := c.Param("variableKey")
-	if _, ok := pd.variables[variableKey]; !ok {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to find environment variable %s", variableKey))
-	}
-	if variableKey != environmentVariable.Key {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("invalid environment variable %s", environmentVariable.Key))
-	}
-
-	pd.variables[environmentVariable.Key] = &environmentVariable
-	return c.String(http.StatusOK, "")
 }
 
 func (gl *GitLab) getMergeRequestChanges(c echo.Context) error {

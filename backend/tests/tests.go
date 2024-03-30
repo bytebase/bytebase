@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	migrationStatement = `
+	migrationStatement1 = `
 	CREATE TABLE book (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
@@ -46,25 +46,14 @@ var (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
 	);`
-	migrationStatement3 = `
-	CREATE TABLE book3 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);`
-	migrationStatement4 = `
-	CREATE TABLE book4 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);`
 
 	//go:embed test-data/book_schema.result
 	wantBookSchema string
 
-	//go:embed test-data/book_3_schema.result
-	want3BookSchema string
+	//go:embed test-data/book_2_schema.result
+	want2BookSchema string
 
-	dataUpdateStatementWrong = "INSERT INTO book(name) xxx"
-	dataUpdateStatement      = `
+	dataUpdateStatement = `
 	INSERT INTO book(name) VALUES
 		("byte"),
 		(NULL);
@@ -83,36 +72,7 @@ CREATE TABLE book2 (
 		name TEXT NULL
 	);
 `
-	dumpedSchema3 = `CREATE TABLE book (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-CREATE TABLE book2 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-CREATE TABLE book3 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-`
-	dumpedSchema4 = `CREATE TABLE book (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-CREATE TABLE book2 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-CREATE TABLE book3 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-CREATE TABLE book4 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-`
+
 	deploySchedule = &v1pb.Schedule{
 		Deployments: []*v1pb.ScheduleDeployment{
 			{

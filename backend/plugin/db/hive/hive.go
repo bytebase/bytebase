@@ -32,7 +32,7 @@ func init() {
 type Driver struct {
 	config   db.ConnectionConfig
 	ctx      db.ConnectionContext
-	dbClient *gohive.Connection
+	ConnPool *FixedConnPool
 }
 
 var (
@@ -58,19 +58,24 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	if err != nil {
 		return nil, errors.Errorf("conversion failure for 'port' [string -> int]")
 	}
+
 	// TODO(tommy): actually there are various kinds of authentication to choose among [SASL, KERBEROS, NOSASL, PLAIN SASL]
 	// "NONE" refers to PLAIN SASL that doesn't need authentication.
-	authMethods := "NONE"
-	conn, errConn := gohive.Connect(config.Host, port, authMethods, configuration)
-	if errConn != nil {
-		return nil, errors.Errorf("failed to establish connection")
+	pool, err := CreateHiveConnPool(5, ConnPoolConfig{
+		Host:   config.Host,
+		Port:   port,
+		Config: configuration,
+	}, PlainSASLConnFactory)
+	if err != nil {
+		return nil, err
 	}
-	d.dbClient = conn
+	d.ConnPool = pool
+
 	return d, nil
 }
 
 func (d *Driver) Close(_ context.Context) error {
-	err := d.dbClient.Close()
+	err := d.ConnPool.Destroy()
 	if err != nil {
 		return errors.Errorf("faild to close connection")
 	}
@@ -78,7 +83,7 @@ func (d *Driver) Close(_ context.Context) error {
 }
 
 func (d *Driver) Ping(ctx context.Context) error {
-	if d.dbClient == nil {
+	if d.ConnPool == nil {
 		return errors.Errorf("no database connection established")
 	}
 	if _, err := d.QueryConn(ctx, nil, "SELECT 1", &db.QueryContext{}); err != nil {
@@ -99,15 +104,21 @@ func (*Driver) GetDB() *sql.DB {
 // Even in Hive's bucketed transaction table, all the statements are committed automatically by
 // the Hive server.
 func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
-	if d.dbClient == nil {
+	if d.ConnPool == nil {
 		return 0, errors.Errorf("no database connection established")
 	}
 
-	var (
-		affectedRows int64
-		cursor       = d.dbClient.Cursor()
-	)
-	defer cursor.Close()
+	var affectedRows int64
+
+	conn, err := d.ConnPool.Get()
+	if err != nil {
+		return 0, err
+	}
+	cursor := conn.Cursor()
+	defer func() {
+		cursor.Close()
+		d.ConnPool.Put(conn)
+	}()
 
 	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
 	if err != nil {
@@ -126,9 +137,8 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	return affectedRows, nil
 }
 
-// TODO(tommy): run query asynchronously.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if d.dbClient == nil {
+	if d.ConnPool == nil {
 		return nil, errors.Errorf("no database connection established")
 	}
 
@@ -139,29 +149,32 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 		return nil, errors.Wrapf(err, "failed to split statements")
 	}
 
+	isAdminMode := false
+	if queryCtx != nil && !queryCtx.ReadOnly {
+		isAdminMode = true
+	}
+
 	for _, statement := range statements {
 		statementStr := strings.TrimRight(statement.Text, ";")
 		if queryCtx != nil && queryCtx.Limit > 0 {
 			statementStr = fmt.Sprintf("%s LIMIT %d", statementStr, queryCtx.Limit)
 		}
 
-		result, err := d.runSingleQuery(ctx, statementStr)
+		result, err := d.runSingleStatement(ctx, statementStr, isAdminMode)
 		if err != nil {
 			result.Error = err.Error()
 			return nil, err
 		}
+
 		results = append(results, result)
 	}
 
 	return results, nil
 }
 
-// TODO(tommy): this func is used for admin mode.
+// this func is used for admin mode in SQL Editor.
 func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	if err := d.SetRole(ctx, "admin"); err != nil {
-		return nil, errors.Wrapf(err, "failed to switch role to admin")
-	}
-	results, err := d.QueryConn(ctx, nil, statement, nil)
+	results, err := d.QueryConn(ctx, nil, statement, &db.QueryContext{ReadOnly: false})
 	if err != nil {
 		return nil, errors.Wrapf(err, "")
 	}
@@ -201,13 +214,27 @@ func parseValueType(value any, gohiveType string) (*v1pb.RowValue, error) {
 	return &rowValue, nil
 }
 
-func (d *Driver) runSingleQuery(ctx context.Context, statement string) (*v1pb.QueryResult, error) {
+func (d *Driver) runSingleStatement(ctx context.Context, statement string, readOnly bool) (*v1pb.QueryResult, error) {
 	var (
 		result    = v1pb.QueryResult{}
 		startTime = time.Now()
 	)
-	cursor := d.dbClient.Cursor()
-	defer cursor.Close()
+
+	conn, err := d.ConnPool.Get()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get connection from pool")
+	}
+	cursor := conn.Cursor()
+	defer func() {
+		cursor.Close()
+		d.ConnPool.Put(conn)
+	}()
+
+	if readOnly {
+		if err := SetRole(ctx, conn, "admin"); err != nil {
+			return nil, err
+		}
+	}
 
 	// run query.
 	cursor.Execute(ctx, statement, false)
@@ -218,7 +245,7 @@ func (d *Driver) runSingleQuery(ctx context.Context, statement string) (*v1pb.Qu
 	// Statement.
 	result.Statement = statement
 	if cursor.Err != nil {
-		return &result, errors.Wrapf(cursor.Err, "failed to execute statement")
+		return &result, errors.Wrapf(cursor.Err, "failed to execute statement %s", statement)
 	}
 
 	columnNamesAndTypes := cursor.Description()
