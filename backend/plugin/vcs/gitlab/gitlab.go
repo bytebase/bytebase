@@ -512,6 +512,7 @@ type MergeRequestFile struct {
 
 // ListPullRequestFile lists the changed files in the pull request.
 //
+// TODO(d): migrate to diff API.
 // Docs: https://docs.gitlab.com/ee/api/merge_requests.html#get-single-mr-changes
 func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
 	url := fmt.Sprintf("%s/projects/%s/merge_requests/%s/changes", p.APIURL(instanceURL), repositoryID, pullRequestID)
