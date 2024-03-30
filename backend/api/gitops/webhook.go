@@ -72,7 +72,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			return c.String(http.StatusOK, fmt.Sprintf("failed to read body, error %v", err))
 		}
 
-		// Validate webhook secret.
+		var prInfo *pullRequestInfo
 		switch vcsProvider.Type {
 		case vcs.GitHub:
 			secretToken := c.Request().Header.Get("X-Hub-Signature-256")
@@ -83,22 +83,37 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if !ok {
 				return c.String(http.StatusOK, fmt.Sprintf("invalid webhook secret token %q", secretToken))
 			}
+			eventType := c.Request().Header.Get("X-GitHub-Event")
+			// https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhooks#ping-event
+			// When we create a new webhook, GitHub will send us a simple ping event to let us know we've set up the webhook correctly.
+			// We respond to this event so as not to mislead users.
+			switch eventType {
+			case "ping":
+				return c.String(http.StatusOK, "OK")
+			case "pull_request":
+			default:
+				return c.String(http.StatusOK, "OK")
+			}
+
+			prInfo, err = getGitHubPullRequestInfo(ctx, vcsProvider, vcsConnector, body)
+			if err != nil {
+				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
+			}
 		case vcs.GitLab:
 			secretToken := c.Request().Header.Get("X-Gitlab-Token")
 			if secretToken != vcsConnector.Payload.WebhookSecretToken {
 				return c.String(http.StatusOK, fmt.Sprintf("invalid webhook secret token %q", secretToken))
 			}
-		}
 
-		if vcsProvider.Type == vcs.GitLab {
-			prInfo, err := getMergeRequestChangeFileContent(ctx, vcsProvider, vcsConnector, body)
+			prInfo, err = getGitLabPullRequestInfo(ctx, vcsProvider, vcsConnector, body)
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
-			if err := s.createIssueFromPRInfo(ctx, project, prInfo); err != nil {
-				return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))
-			}
+		default:
 			return nil
+		}
+		if err := s.createIssueFromPRInfo(ctx, project, prInfo); err != nil {
+			return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))
 		}
 		return nil
 	})
