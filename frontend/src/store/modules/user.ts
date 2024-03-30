@@ -1,17 +1,10 @@
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { authServiceClient } from "@/grpcweb";
-import {
-  ALL_USERS_USER_ID,
-  ALL_USERS_USER_EMAIL,
-  PrincipalType,
-  allUsersUser,
-} from "@/types";
-import {
-  UpdateUserRequest,
-  User,
-  UserType,
-} from "@/types/proto/v1/auth_service";
+import type { PrincipalType } from "@/types";
+import { ALL_USERS_USER_ID, ALL_USERS_USER_EMAIL, allUsersUser } from "@/types";
+import type { UpdateUserRequest, User } from "@/types/proto/v1/auth_service";
+import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { extractUserUID } from "@/utils";
 import { userNamePrefix, getUserEmailFromIdentifier } from "./v1/common";

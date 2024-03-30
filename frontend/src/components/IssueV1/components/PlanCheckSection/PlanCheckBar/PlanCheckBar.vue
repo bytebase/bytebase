@@ -37,12 +37,12 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
-import {
+import type {
   PlanCheckRun,
   PlanCheckRun_Type,
   Task,
 } from "@/types/proto/v1/rollout_service";
-import { VueClass } from "@/utils";
+import type { VueClass } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckPanel from "./PlanCheckPanel.vue";
 import PlanCheckRunButton from "./PlanCheckRunButton.vue";

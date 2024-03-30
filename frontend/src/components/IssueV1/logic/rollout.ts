@@ -1,10 +1,10 @@
 import { t } from "@/plugins/i18n";
-import { ComposedIssue } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { ComposedIssue } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import type { Task } from "@/types/proto/v1/rollout_service";
 import {
-  Task,
   Task_Status,
   task_StatusToJSON,
   Task_Type,
@@ -56,8 +56,11 @@ export const allowUserToEditStatementForTask = (
     return [];
   }
 
-  if (issue.type !== Issue_Type.DATABASE_CHANGE) {
-    denyReasons.push("Only database change issue type can be changed");
+  if (
+    issue.type !== Issue_Type.DATABASE_CHANGE &&
+    issue.type !== Issue_Type.DATABASE_DATA_EXPORT
+  ) {
+    denyReasons.push("Only database related issue type can be changed");
   }
   if (issue.status !== IssueStatus.OPEN) {
     denyReasons.push("The issue is not open");
@@ -141,16 +144,10 @@ export const isTaskV1TriggeredByVCS = (
 
 export const semanticTaskType = (type: Task_Type) => {
   switch (type) {
-    case Task_Type.DATABASE_BACKUP:
-      return t("common.backup");
     case Task_Type.DATABASE_CREATE:
       return t("db.create");
     case Task_Type.DATABASE_DATA_UPDATE:
       return "DML";
-    case Task_Type.DATABASE_RESTORE_RESTORE:
-      return `PITR ${t("common.restore")}`;
-    case Task_Type.DATABASE_RESTORE_CUTOVER:
-      return `PITR ${t("common.cutover")}`;
     case Task_Type.DATABASE_SCHEMA_BASELINE:
       return t("common.baseline");
     case Task_Type.DATABASE_SCHEMA_UPDATE:

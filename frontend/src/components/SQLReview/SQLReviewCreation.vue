@@ -1,11 +1,14 @@
 <template>
-  <div>
+  <div class="-my-4">
     <StepTab
       :sticky="true"
       :current-index="state.currentStep"
       :step-list="STEP_LIST"
       :allow-next="allowNext"
       :finish-title="$t(`common.confirm-and-${policy ? 'update' : 'add'}`)"
+      header-class="!-top-4"
+      footer-class="!-bottom-4 !pt-4"
+      pane-class="!mb-4"
       @update:current-index="changeStepIndex"
       @cancel="onCancel"
       @finish="tryFinishSetup"
@@ -41,7 +44,7 @@ import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
-import { SETTING_ROUTE_WORKSPACE_SQL_REVIEW } from "@/router/dashboard/workspaceSetting";
+import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import {
   useCurrentUserV1,
   pushNotification,
@@ -49,16 +52,18 @@ import {
   useSubscriptionV1Store,
   useEnvironmentV1List,
 } from "@/store";
-import {
+import type {
   RuleTemplate,
-  convertToCategoryList,
-  convertRuleTemplateToPolicyRule,
-  ruleIsAvailableInSubscription,
   SQLReviewPolicyTemplate,
   SQLReviewPolicy,
   SchemaPolicyRule,
 } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
+import {
+  convertToCategoryList,
+  convertRuleTemplateToPolicyRule,
+  ruleIsAvailableInSubscription,
+} from "@/types";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
@@ -159,7 +164,7 @@ const onCancel = () => {
     emit("cancel");
   } else {
     router.push({
-      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
+      name: WORKSPACE_ROUTE_SQL_REVIEW,
     });
   }
 };
@@ -191,6 +196,7 @@ const changeStepIndex = (nextIndex: number) => {
         positiveText: t("common.confirm"),
         onPositiveClick: (_: MouseEvent) => {
           onTemplateApply(state.pendingApplyTemplate);
+          state.currentStep = nextIndex;
         },
       });
       return;

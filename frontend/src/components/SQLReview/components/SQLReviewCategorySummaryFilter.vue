@@ -49,12 +49,12 @@
 <script lang="ts" setup>
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
-import { LEVEL_LIST, RuleTemplate } from "@/types";
-import { engineFromJSON, Engine, engineToJSON } from "@/types/proto/v1/common";
-import {
-  SQLReviewRuleLevel,
-  sQLReviewRuleLevelToJSON,
-} from "@/types/proto/v1/org_policy_service";
+import type { RuleTemplate } from "@/types";
+import { LEVEL_LIST } from "@/types";
+import type { Engine } from "@/types/proto/v1/common";
+import { engineFromJSON, engineToJSON } from "@/types/proto/v1/common";
+import type { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import { sQLReviewRuleLevelToJSON } from "@/types/proto/v1/org_policy_service";
 import SQLRuleLevelBadge from "./SQLRuleLevelBadge.vue";
 
 type EngineTypeStats = {
@@ -84,18 +84,21 @@ const emit = defineEmits<{
 }>();
 
 const engineList = computed((): EngineTypeStats[] => {
-  const tmp = props.ruleList.reduce((dict, rule) => {
-    for (const engine of rule.engineList) {
-      if (!dict[engine]) {
-        dict[engine] = {
-          engine: engine,
-          count: 0,
-        };
+  const tmp = props.ruleList.reduce(
+    (dict, rule) => {
+      for (const engine of rule.engineList) {
+        if (!dict[engine]) {
+          dict[engine] = {
+            engine: engine,
+            count: 0,
+          };
+        }
+        dict[engine].count += 1;
       }
-      dict[engine].count += 1;
-    }
-    return dict;
-  }, {} as { [id: string]: EngineTypeStats });
+      return dict;
+    },
+    {} as { [id: string]: EngineTypeStats }
+  );
   return Object.values(tmp);
 });
 

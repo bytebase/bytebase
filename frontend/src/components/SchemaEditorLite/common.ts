@@ -1,8 +1,8 @@
 import { isEqual } from "lodash-es";
 import { branchServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
-import { ComposedDatabase } from "@/types";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import type { ComposedDatabase } from "@/types";
+import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { TinyTimer } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { validateDatabaseMetadata } from "./utils";

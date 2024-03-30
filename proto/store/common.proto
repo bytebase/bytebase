@@ -31,6 +31,7 @@ enum Engine {
   OCEANBASE_ORACLE = 17;
   STARROCKS = 18;
   DORIS = 19;
+  HIVE = 20;
 }
 
 enum VcsType {
@@ -45,4 +46,12 @@ enum MaskingLevel {
   NONE = 1;
   PARTIAL = 2;
   FULL = 3;
+}
+
+enum ExportFormat {
+  FORMAT_UNSPECIFIED = 0;
+  CSV = 1;
+  JSON = 2;
+  SQL = 3;
+  XLSX = 4;
 }

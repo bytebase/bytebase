@@ -256,12 +256,13 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			return errors.Wrapf(err, "failed to marshal activity payload")
 		}
 		create := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: *issue.PipelineUID,
-			Type:         api.ActivityNotifyPipelineRollout,
-			Level:        api.ActivityInfo,
-			Comment:      "",
-			Payload:      string(payload),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      *issue.PipelineUID,
+			Type:              api.ActivityNotifyPipelineRollout,
+			Level:             api.ActivityInfo,
+			Comment:           "",
+			Payload:           string(payload),
 		}
 		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 			return err
@@ -293,12 +294,13 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		}
 
 		create := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: issue.UID,
-			Type:         api.ActivityIssueApprovalNotify,
-			Level:        api.ActivityInfo,
-			Comment:      "",
-			Payload:      string(activityPayload),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      issue.UID,
+			Type:              api.ActivityIssueApprovalNotify,
+			Level:             api.ActivityInfo,
+			Comment:           "",
+			Payload:           string(activityPayload),
 		}
 		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 			return err
@@ -351,6 +353,8 @@ func getIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise
 		return getGrantRequestIssueRisk(ctx, s, issue, risks)
 	case api.IssueDatabaseGeneral:
 		return getDatabaseGeneralIssueRisk(ctx, s, licenseService, dbFactory, issue, risks)
+	case api.IssueDatabaseDataExport:
+		return getDatabaseDataExportIssueRisk(ctx, s, licenseService, dbFactory, issue, risks)
 	default:
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("unknown issue type %v", issue.Type)
 	}
@@ -572,6 +576,113 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 	return maxRiskLevel, riskSource, true, nil
 }
 
+func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+	if issue.PlanUID == nil {
+		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
+	}
+	plan, err := s.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+	}
+	if plan == nil {
+		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+	}
+
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, licenseService, dbFactory, plan.Config.Steps, issue.Project)
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
+	}
+
+	riskSource := store.RiskSourceDatabaseDataExport
+
+	e, err := cel.NewEnv(common.RiskFactors...)
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, err
+	}
+
+	var maxRiskLevel int32
+	for _, stage := range pipelineCreate.Stages {
+		for _, task := range stage.TaskList {
+			if task.Type != api.TaskDatabaseDataExport {
+				continue
+			}
+			instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+				UID: &task.InstanceID,
+			})
+			if err != nil {
+				return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
+			}
+			if instance.Deleted {
+				continue
+			}
+
+			payload := &api.TaskDatabaseDataExportPayload{}
+			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+				return 0, store.RiskSourceUnknown, false, err
+			}
+
+			database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				UID: task.DatabaseID,
+			})
+			if err != nil {
+				return 0, store.RiskSourceUnknown, false, err
+			}
+			databaseName := database.DatabaseName
+			environmentID := database.EffectiveEnvironmentID
+
+			risk, err := func() (int32, error) {
+				for _, risk := range risks {
+					if !risk.Active {
+						continue
+					}
+					if risk.Source != riskSource {
+						continue
+					}
+					if risk.Expression == nil || risk.Expression.Expression == "" {
+						continue
+					}
+					ast, issues := e.Parse(risk.Expression.Expression)
+					if issues != nil && issues.Err() != nil {
+						return 0, errors.Errorf("failed to parse expression: %v", issues.Err())
+					}
+					prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
+					if err != nil {
+						return 0, err
+					}
+					args := map[string]any{
+						"environment_id": environmentID,
+						"project_id":     issue.Project.ResourceID,
+						"database_name":  databaseName,
+						"db_engine":      instance.Engine.String(),
+					}
+
+					vars, err := e.PartialVars(args)
+					if err != nil {
+						return 0, errors.Wrapf(err, "failed to get vars")
+					}
+					out, _, err := prg.Eval(vars)
+					if err != nil {
+						return 0, errors.Wrapf(err, "failed to eval expression")
+					}
+					if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
+						return risk.Level, nil
+					}
+				}
+				return 0, nil
+			}()
+			if err != nil {
+				return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to evaluate risk expression for risk source %v", riskSource)
+			}
+
+			if maxRiskLevel < risk {
+				maxRiskLevel = risk
+			}
+		}
+	}
+
+	return maxRiskLevel, riskSource, true, nil
+}
+
 func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
 	payload := issue.Payload
 	if payload.GrantRequest == nil {
@@ -744,9 +855,11 @@ func convertToSource(source store.RiskSource) v1pb.Risk_Source {
 	case store.RiskSourceDatabaseDataUpdate:
 		return v1pb.Risk_DML
 	case store.RiskRequestQuery:
-		return v1pb.Risk_QUERY
+		return v1pb.Risk_REQUEST_QUERY
 	case store.RiskRequestExport:
-		return v1pb.Risk_EXPORT
+		return v1pb.Risk_REQUEST_EXPORT
+	case store.RiskSourceDatabaseDataExport:
+		return v1pb.Risk_DATA_EXPORT
 	}
 	return v1pb.Risk_SOURCE_UNSPECIFIED
 }

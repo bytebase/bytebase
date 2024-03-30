@@ -37,8 +37,6 @@ const (
 	ActivityPipelineTaskStatusUpdate ActivityType = "bb.pipeline.task.status.update"
 	// ActivityPipelineTaskRunStatusUpdate is the type for updating pipeline task run status.
 	ActivityPipelineTaskRunStatusUpdate ActivityType = "bb.pipeline.taskrun.status.update"
-	// ActivityPipelineTaskFileCommit is the type for committing pipeline task file.
-	ActivityPipelineTaskFileCommit ActivityType = "bb.pipeline.task.file.commit"
 	// ActivityPipelineTaskStatementUpdate is the type for updating pipeline task SQL statement.
 	ActivityPipelineTaskStatementUpdate ActivityType = "bb.pipeline.task.statement.update"
 	// ActivityPipelineTaskEarliestAllowedTimeUpdate is the type for updating pipeline task the earliest allowed time.
@@ -70,18 +68,12 @@ const (
 
 	// SQL Editor related.
 
-	// ActivitySQLEditorQuery is the type for executing query.
-	ActivitySQLEditorQuery ActivityType = "bb.sql-editor.query"
-
-	// SQL related.
-
+	// ActivitySQLQuery is the type for executing query.
+	ActivitySQLQuery ActivityType = "bb.sql.query"
 	// ActivitySQLExport is the type for exporting SQL.
 	ActivitySQLExport ActivityType = "bb.sql.export"
 
 	// Database related.
-
-	// ActivityDatabaseRecoveryPITRDone is the type for performing PITR on the database successfully.
-	ActivityDatabaseRecoveryPITRDone ActivityType = "bb.database.recovery.pitr.done"
 )
 
 // ActivityLevel is the level of activities.
@@ -176,16 +168,6 @@ type ActivityPipelineTaskRunStatusUpdatePayload struct {
 	TaskName  string        `json:"taskName"`
 }
 
-// ActivityPipelineTaskFileCommitPayload is the API message payloads for committing pipeline task files.
-type ActivityPipelineTaskFileCommitPayload struct {
-	TaskID             int    `json:"taskId"`
-	VCSInstanceURL     string `json:"vcsInstanceUrl,omitempty"`
-	RepositoryFullPath string `json:"repositoryFullPath,omitempty"`
-	Branch             string `json:"branch,omitempty"`
-	FilePath           string `json:"filePath,omitempty"`
-	CommitID           string `json:"commitId,omitempty"`
-}
-
 // ActivityPipelineTaskStatementUpdatePayload is the API message payloads for pipeline task statement updates.
 type ActivityPipelineTaskStatementUpdatePayload struct {
 	TaskID       int    `json:"taskId"`
@@ -266,15 +248,13 @@ type ActivityProjectDatabaseTransferPayload struct {
 // ActivitySQLEditorQueryPayload is the API message payloads for the executed query info.
 type ActivitySQLEditorQueryPayload struct {
 	// Used by activity table to display info without paying the join cost
-	Statement  string `json:"statement"`
-	DurationNs int64  `json:"durationNs"`
-	InstanceID int    `json:"instanceId"`
-	// DeprecatedInstanceName is deprecated and should be removed from future version.
-	DeprecatedInstanceName string           `json:"instanceName"`
-	DatabaseID             int              `json:"databaseId"`
-	DatabaseName           string           `json:"databaseName"`
-	Error                  string           `json:"error"`
-	AdviceList             []advisor.Advice `json:"adviceList"`
+	Statement    string           `json:"statement"`
+	DurationNs   int64            `json:"durationNs"`
+	InstanceID   int              `json:"instanceId"`
+	DatabaseID   int              `json:"databaseId"`
+	DatabaseName string           `json:"databaseName"`
+	Error        string           `json:"error"`
+	AdviceList   []advisor.Advice `json:"adviceList"`
 }
 
 // ActivitySQLExportPayload is the API message payloads for the exported SQL info.

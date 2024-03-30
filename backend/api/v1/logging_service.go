@@ -40,7 +40,7 @@ var defaultResourceActionTypeMap = map[string][]api.ActivityType{
 		api.ActivityMemberDeactivate,
 	},
 	"instances": {
-		api.ActivitySQLEditorQuery,
+		api.ActivitySQLQuery,
 		api.ActivitySQLExport,
 	},
 	"projects": {
@@ -48,13 +48,11 @@ var defaultResourceActionTypeMap = map[string][]api.ActivityType{
 		api.ActivityProjectDatabaseTransfer,
 		api.ActivityProjectMemberCreate,
 		api.ActivityProjectMemberDelete,
-		api.ActivityDatabaseRecoveryPITRDone,
 	},
 	"pipelines": {
 		api.ActivityPipelineStageStatusUpdate,
 		api.ActivityPipelineTaskStatusUpdate,
 		api.ActivityPipelineTaskRunStatusUpdate,
-		api.ActivityPipelineTaskFileCommit,
 		api.ActivityPipelineTaskStatementUpdate,
 		api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
 		api.ActivityPipelineTaskPriorBackup,
@@ -68,8 +66,8 @@ var defaultResourceActionTypeMap = map[string][]api.ActivityType{
 	},
 }
 
-// ListLogs lists the logs.
-func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsRequest) (*v1pb.ListLogsResponse, error) {
+// SearchLogs search the logs.
+func (s *LoggingService) SearchLogs(ctx context.Context, request *v1pb.SearchLogsRequest) (*v1pb.SearchLogsResponse, error) {
 	var pageToken storepb.PageToken
 	if request.PageToken != "" {
 		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
@@ -114,7 +112,7 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 		}
 	}
 
-	resp := &v1pb.ListLogsResponse{
+	resp := &v1pb.SearchLogsResponse{
 		NextPageToken: nextPageToken,
 	}
 	for _, activity := range activityList {
@@ -354,7 +352,16 @@ func (s *LoggingService) ExportLogs(ctx context.Context, request *v1pb.ExportLog
 	return &v1pb.ExportLogsResponse{Content: content}, nil
 }
 
-func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.ActivityMessage) (*v1pb.LogEntity, error) {
+func convertToLogEntity(ctx context.Context, stores *store.Store, activity *store.ActivityMessage) (*v1pb.LogEntity, error) {
+	parent := activity.ResourceContainer
+	if parent == "" {
+		workspaceID, err := stores.GetWorkspaceID(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to find workspace id with error: %v", err.Error())
+		}
+		parent = fmt.Sprintf("workspaces/%s", workspaceID)
+	}
+
 	resource := ""
 	switch activity.Type {
 	case
@@ -362,7 +369,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		api.ActivityMemberRoleUpdate,
 		api.ActivityMemberActivate,
 		api.ActivityMemberDeactivate:
-		user, err := db.GetUserByID(ctx, activity.ContainerUID)
+		user, err := stores.GetUserByID(ctx, activity.ContainerUID)
 		if err != nil {
 			return nil, err
 		}
@@ -381,7 +388,6 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		api.ActivityPipelineStageStatusUpdate,
 		api.ActivityPipelineTaskStatusUpdate,
 		api.ActivityPipelineTaskRunStatusUpdate,
-		api.ActivityPipelineTaskFileCommit,
 		api.ActivityPipelineTaskStatementUpdate,
 		api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
 		api.ActivityPipelineTaskPriorBackup:
@@ -390,9 +396,8 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		api.ActivityProjectRepositoryPush,
 		api.ActivityProjectDatabaseTransfer,
 		api.ActivityProjectMemberCreate,
-		api.ActivityProjectMemberDelete,
-		api.ActivityDatabaseRecoveryPITRDone:
-		project, err := db.GetProjectV2(ctx, &store.FindProjectMessage{
+		api.ActivityProjectMemberDelete:
+		project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{
 			UID: &activity.ContainerUID,
 		})
 		if err != nil {
@@ -403,9 +408,9 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		}
 		resource = fmt.Sprintf("%s%s", common.ProjectNamePrefix, project.ResourceID)
 	case
-		api.ActivitySQLEditorQuery,
+		api.ActivitySQLQuery,
 		api.ActivitySQLExport:
-		instance, err := db.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{
 			UID: &activity.ContainerUID,
 		})
 		if err != nil {
@@ -417,7 +422,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		resource = fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID)
 	}
 
-	user, err := db.GetUserByID(ctx, activity.CreatorUID)
+	user, err := stores.GetUserByID(ctx, activity.CreatorUID)
 	if err != nil {
 		return nil, err
 	}
@@ -426,7 +431,7 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 	}
 
 	return &v1pb.LogEntity{
-		Name:       fmt.Sprintf("%s%d", common.LogNamePrefix, activity.UID),
+		Name:       fmt.Sprintf("%s/%s%d", parent, common.LogNamePrefix, activity.UID),
 		Creator:    fmt.Sprintf("%s%s", common.UserNamePrefix, user.Email),
 		Resource:   resource,
 		Action:     convertToActionType(activity.Type),
@@ -466,8 +471,6 @@ func convertToActivityType(action v1pb.LogEntity_Action) (api.ActivityType, erro
 		return api.ActivityPipelineTaskStatusUpdate, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
 		return api.ActivityPipelineTaskRunStatusUpdate, nil
-	case v1pb.LogEntity_ACTION_PIPELINE_TASK_FILE_COMMIT:
-		return api.ActivityPipelineTaskFileCommit, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
 		return api.ActivityPipelineTaskStatementUpdate, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
@@ -483,11 +486,9 @@ func convertToActivityType(action v1pb.LogEntity_Action) (api.ActivityType, erro
 		return api.ActivityProjectMemberCreate, nil
 	case v1pb.LogEntity_ACTION_PROJECT_MEMBER_DELETE:
 		return api.ActivityProjectMemberDelete, nil
-	case v1pb.LogEntity_ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE:
-		return api.ActivityDatabaseRecoveryPITRDone, nil
 
 	case v1pb.LogEntity_ACTION_DATABASE_SQL_EDITOR_QUERY:
-		return api.ActivitySQLEditorQuery, nil
+		return api.ActivitySQLQuery, nil
 	case v1pb.LogEntity_ACTION_DATABASE_SQL_EXPORT:
 		return api.ActivitySQLExport, nil
 	default:
@@ -523,8 +524,6 @@ func convertToActionType(activityType api.ActivityType) v1pb.LogEntity_Action {
 		return v1pb.LogEntity_ACTION_PIPELINE_TASK_STATUS_UPDATE
 	case api.ActivityPipelineTaskRunStatusUpdate:
 		return v1pb.LogEntity_ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE
-	case api.ActivityPipelineTaskFileCommit:
-		return v1pb.LogEntity_ACTION_PIPELINE_TASK_FILE_COMMIT
 	case api.ActivityPipelineTaskStatementUpdate:
 		return v1pb.LogEntity_ACTION_PIPELINE_TASK_STATEMENT_UPDATE
 	case api.ActivityPipelineTaskEarliestAllowedTimeUpdate:
@@ -540,10 +539,7 @@ func convertToActionType(activityType api.ActivityType) v1pb.LogEntity_Action {
 		return v1pb.LogEntity_ACTION_PROJECT_MEMBER_CREATE
 	case api.ActivityProjectMemberDelete:
 		return v1pb.LogEntity_ACTION_PROJECT_MEMBER_DELETE
-	case api.ActivityDatabaseRecoveryPITRDone:
-		return v1pb.LogEntity_ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE
-
-	case api.ActivitySQLEditorQuery:
+	case api.ActivitySQLQuery:
 		return v1pb.LogEntity_ACTION_DATABASE_SQL_EDITOR_QUERY
 	case api.ActivitySQLExport:
 		return v1pb.LogEntity_ACTION_DATABASE_SQL_EXPORT

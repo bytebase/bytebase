@@ -16,15 +16,17 @@
     </div>
 
     <template #trigger>
-      <span :class="contentClass">{{ displayContent }}</span>
+      <span :class="contentClass" v-bind="$attrs">{{ displayContent }}</span>
     </template>
   </NPopover>
 </template>
 
 <script lang="ts" setup>
-import { NPopover, PopoverPlacement } from "naive-ui";
-import { PropType, computed } from "vue";
-import { VueClass } from "@/utils";
+import type { PopoverPlacement } from "naive-ui";
+import { NPopover } from "naive-ui";
+import type { PropType } from "vue";
+import { computed } from "vue";
+import type { VueClass } from "@/utils";
 
 const props = defineProps({
   content: {

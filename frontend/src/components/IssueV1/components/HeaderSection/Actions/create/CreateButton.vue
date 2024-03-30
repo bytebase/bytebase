@@ -47,10 +47,12 @@ import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useDatabaseV1Store, useSheetV1Store } from "@/store";
-import { ComposedIssue, dialectOfEngineV1, languageOfEngineV1 } from "@/types";
+import type { ComposedIssue } from "@/types";
+import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
-import { Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import type { Plan_ExportDataConfig } from "@/types/proto/v1/rollout_service";
+import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
+import type { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   extractDeploymentConfigName,
   extractProjectResourceName,
@@ -157,12 +159,15 @@ const createSheets = async () => {
     return step.specs;
   });
 
-  const configWithSheetList: Plan_ChangeDatabaseConfig[] = [];
+  const configWithSheetList: (
+    | Plan_ChangeDatabaseConfig
+    | Plan_ExportDataConfig
+  )[] = [];
   const pendingCreateSheetMap = new Map<string, Sheet>();
 
   for (let i = 0; i < flattenSpecList.length; i++) {
     const spec = flattenSpecList[i];
-    const config = spec.changeDatabaseConfig;
+    const config = spec.changeDatabaseConfig || spec.exportDataConfig;
     if (!config) continue;
     configWithSheetList.push(config);
     if (pendingCreateSheetMap.has(config.sheet)) continue;

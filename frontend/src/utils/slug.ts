@@ -3,14 +3,11 @@ import {
   getProjectName,
   getWorksheetId,
   worksheetNamePrefix,
-  getVCSUid,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { ExternalVersionControl as VCSV1 } from "@/types/proto/v1/externalvs_service";
-import { Worksheet } from "@/types/proto/v1/worksheet_service";
-import { IssueId, SQLReviewPolicy } from "../types";
-import { IdType } from "../types/id";
-import { extractEnvironmentResourceName } from "./v1";
+import type { Worksheet } from "@/types/proto/v1/worksheet_service";
+import type { IssueId, SQLReviewPolicy } from "../types";
+import type { IdType } from "../types/id";
 
 export const indexOrUIDFromSlug = (slug: string): number => {
   const parts = slug.split("-");
@@ -59,15 +56,8 @@ export function taskSlug(name: string, id: IdType): string {
   return [slug(name), id].join("-");
 }
 
-export function vcsSlugV1(vcs: VCSV1): string {
-  return [slug(vcs.title), getVCSUid(vcs.name)].join("-");
-}
-
 export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
-  return [
-    slug(reviewPolicy.name),
-    extractEnvironmentResourceName(reviewPolicy.environment.name),
-  ].join("-");
+  return [slug(reviewPolicy.name), reviewPolicy.environment.uid].join("-");
 }
 
 export function worksheetSlugV1(sheet: Worksheet): string {

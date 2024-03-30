@@ -26,9 +26,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NTree, TreeOption } from "naive-ui";
+import type { TreeOption } from "naive-ui";
+import { NTree } from "naive-ui";
 import { computed, reactive, h } from "vue";
-import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
 

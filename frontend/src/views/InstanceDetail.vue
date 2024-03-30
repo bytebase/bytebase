@@ -63,7 +63,7 @@
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import { ClientError } from "nice-grpc-web";
+import type { ClientError } from "nice-grpc-web";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
@@ -123,8 +123,9 @@ const environment = computed(() => {
 });
 
 watchEffect(() => {
-  databaseStore.searchOrListDatabases({
-    parent: instance.value.name,
+  const filter = `instance = "${instance.value.name}"`;
+  databaseStore.searchDatabases({
+    filter,
   });
 });
 
@@ -158,8 +159,9 @@ const syncSchema = async () => {
   state.syncingSchema = true;
   try {
     await instanceV1Store.syncInstance(instance.value).then(() => {
-      return databaseStore.searchOrListDatabases({
-        parent: instance.value.name,
+      const filter = `instance = "${instance.value.name}"`;
+      databaseStore.searchDatabases({
+        filter,
       });
     });
     // Clear the db schema metadata cache entities.

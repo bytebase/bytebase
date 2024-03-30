@@ -1,15 +1,16 @@
-import Emittery, {
+import type {
   DatalessEventNames,
   EventName,
   OmnipresentEventData,
 } from "emittery";
+import type Emittery from "emittery";
 import { onUnmounted } from "vue";
 
 export const useEmitteryEventListener = <
   EventData = Record<EventName, any>,
   AllEventData = EventData & OmnipresentEventData,
   DatalessEvents = DatalessEventNames<EventData>,
-  E extends keyof AllEventData = any
+  E extends keyof AllEventData = any,
 >(
   target: Emittery<
     EventData, // TODO: Use `unknown` instead of `any`.

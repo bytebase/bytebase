@@ -1,4 +1,5 @@
+import IssueExtraActionButtonGroup from "./IssueExtraActionButtonGroup.vue";
 import IssueStatusActionButtonGroup from "./IssueStatusActionButtonGroup";
 
 export * from "./types";
-export { IssueStatusActionButtonGroup };
+export { IssueExtraActionButtonGroup, IssueStatusActionButtonGroup };

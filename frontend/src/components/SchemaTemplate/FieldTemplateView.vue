@@ -34,8 +34,14 @@
       :readonly="readonly"
       :template-list="filteredTemplateList"
       class="flex-1"
-      @view="(template: SchemaTemplateSetting_FieldTemplate) => $emit('view', template)"
-      @apply="(template: SchemaTemplateSetting_FieldTemplate) => $emit('apply', template)"
+      @view="
+        (template: SchemaTemplateSetting_FieldTemplate) =>
+          $emit('view', template)
+      "
+      @apply="
+        (template: SchemaTemplateSetting_FieldTemplate) =>
+          $emit('apply', template)
+      "
     />
   </div>
 </template>
@@ -44,8 +50,8 @@
 import { NCheckbox } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { Engine } from "@/types/proto/v1/common";
-import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import type { Engine } from "@/types/proto/v1/common";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import FieldTemplateTable from "./FieldTemplateTable.vue";
 
 interface LocalState {

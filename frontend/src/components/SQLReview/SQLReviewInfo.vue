@@ -52,10 +52,10 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType } from "vue";
+import type { PropType } from "vue";
 import { BBTextField } from "@/bbkit";
-import { SQLReviewPolicyTemplate } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { SQLReviewPolicyTemplate } from "@/types";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import { environmentV1Name } from "@/utils";
 import { SQLReviewTemplateSelector } from "./components";
 

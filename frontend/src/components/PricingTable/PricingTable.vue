@@ -279,15 +279,11 @@ import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useLanguage } from "@/composables/useLanguage";
 import { useSubscriptionV1Store } from "@/store";
-import {
-  Plan,
-  PLANS,
-  FEATURE_SECTIONS,
-  ENTERPRISE_INQUIRE_LINK,
-} from "@/types";
+import type { Plan } from "@/types";
+import { PLANS, FEATURE_SECTIONS, ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import FeatureItem from "./FeatureItem.vue";
-import { LocalPlan } from "./types";
+import type { LocalPlan } from "./types";
 
 interface LocalState {
   isMonthly: boolean;
@@ -333,8 +329,8 @@ const plans = computed((): LocalPlan[] => {
       plan.type === PlanType.TEAM
         ? t("subscription.price-unit-for-team")
         : plan.type === PlanType.ENTERPRISE
-        ? ""
-        : t("subscription.per-month"),
+          ? ""
+          : t("subscription.per-month"),
     // only support free trial for enterprise in console.
     canTrial: plan.type === PlanType.ENTERPRISE && plan.trialDays > 0,
   }));

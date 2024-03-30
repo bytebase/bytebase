@@ -52,6 +52,8 @@ export interface SchemaMetadata {
   views: ViewMetadata[];
   /** The functions is the list of functions in a schema. */
   functions: FunctionMetadata[];
+  /** The procedures is the list of procedures in a schema. */
+  procedures: ProcedureMetadata[];
   /** The streams is the list of streams in a schema, currently, only used for Snowflake. */
   streams: StreamMetadata[];
   /** The routines is the list of routines in a schema, currently, only used for Snowflake. */
@@ -295,6 +297,11 @@ export interface TablePartitionMetadata {
    * - For others, it's an empty string.
    */
   value: string;
+  /**
+   * The use_default is whether the users use the default partition, it stores the different value for different database engines.
+   * For MySQL, it's [INT] type, 0 means not use default partition, otherwise, it's equals to number in syntax [SUB]PARTITION {number}.
+   */
+  useDefault: string;
   /** The subpartitions is the list of subpartitions in a table partition. */
   subpartitions: TablePartitionMetadata[];
 }
@@ -453,9 +460,17 @@ export interface MaterializedViewMetadata {
 
 /** FunctionMetadata is the metadata for functions. */
 export interface FunctionMetadata {
-  /** The name is the name of a view. */
+  /** The name is the name of a function. */
   name: string;
-  /** The definition is the definition of a view. */
+  /** The definition is the definition of a function. */
+  definition: string;
+}
+
+/** ProcedureMetadata is the metadata for procedures. */
+export interface ProcedureMetadata {
+  /** The name is the name of a procedure. */
+  name: string;
+  /** The definition is the definition of a procedure. */
   definition: string;
 }
 
@@ -911,6 +926,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     externalTables: [],
     views: [],
     functions: [],
+    procedures: [],
     streams: [],
     tasks: [],
     materializedViews: [],
@@ -934,14 +950,17 @@ export const SchemaMetadata = {
     for (const v of message.functions) {
       FunctionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
     }
+    for (const v of message.procedures) {
+      ProcedureMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
+    }
     for (const v of message.streams) {
-      StreamMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
+      StreamMetadata.encode(v!, writer.uint32(58).fork()).ldelim();
     }
     for (const v of message.tasks) {
-      TaskMetadata.encode(v!, writer.uint32(58).fork()).ldelim();
+      TaskMetadata.encode(v!, writer.uint32(66).fork()).ldelim();
     }
     for (const v of message.materializedViews) {
-      MaterializedViewMetadata.encode(v!, writer.uint32(66).fork()).ldelim();
+      MaterializedViewMetadata.encode(v!, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -993,17 +1012,24 @@ export const SchemaMetadata = {
             break;
           }
 
-          message.streams.push(StreamMetadata.decode(reader, reader.uint32()));
+          message.procedures.push(ProcedureMetadata.decode(reader, reader.uint32()));
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.tasks.push(TaskMetadata.decode(reader, reader.uint32()));
+          message.streams.push(StreamMetadata.decode(reader, reader.uint32()));
           continue;
         case 8:
           if (tag !== 66) {
+            break;
+          }
+
+          message.tasks.push(TaskMetadata.decode(reader, reader.uint32()));
+          continue;
+        case 9:
+          if (tag !== 74) {
             break;
           }
 
@@ -1028,6 +1054,9 @@ export const SchemaMetadata = {
       views: globalThis.Array.isArray(object?.views) ? object.views.map((e: any) => ViewMetadata.fromJSON(e)) : [],
       functions: globalThis.Array.isArray(object?.functions)
         ? object.functions.map((e: any) => FunctionMetadata.fromJSON(e))
+        : [],
+      procedures: globalThis.Array.isArray(object?.procedures)
+        ? object.procedures.map((e: any) => ProcedureMetadata.fromJSON(e))
         : [],
       streams: globalThis.Array.isArray(object?.streams)
         ? object.streams.map((e: any) => StreamMetadata.fromJSON(e))
@@ -1056,6 +1085,9 @@ export const SchemaMetadata = {
     if (message.functions?.length) {
       obj.functions = message.functions.map((e) => FunctionMetadata.toJSON(e));
     }
+    if (message.procedures?.length) {
+      obj.procedures = message.procedures.map((e) => ProcedureMetadata.toJSON(e));
+    }
     if (message.streams?.length) {
       obj.streams = message.streams.map((e) => StreamMetadata.toJSON(e));
     }
@@ -1078,6 +1110,7 @@ export const SchemaMetadata = {
     message.externalTables = object.externalTables?.map((e) => ExternalTableMetadata.fromPartial(e)) || [];
     message.views = object.views?.map((e) => ViewMetadata.fromPartial(e)) || [];
     message.functions = object.functions?.map((e) => FunctionMetadata.fromPartial(e)) || [];
+    message.procedures = object.procedures?.map((e) => ProcedureMetadata.fromPartial(e)) || [];
     message.streams = object.streams?.map((e) => StreamMetadata.fromPartial(e)) || [];
     message.tasks = object.tasks?.map((e) => TaskMetadata.fromPartial(e)) || [];
     message.materializedViews = object.materializedViews?.map((e) => MaterializedViewMetadata.fromPartial(e)) || [];
@@ -1864,7 +1897,7 @@ export const ExternalTableMetadata = {
 };
 
 function createBaseTablePartitionMetadata(): TablePartitionMetadata {
-  return { name: "", type: 0, expression: "", value: "", subpartitions: [] };
+  return { name: "", type: 0, expression: "", value: "", useDefault: "", subpartitions: [] };
 }
 
 export const TablePartitionMetadata = {
@@ -1881,8 +1914,11 @@ export const TablePartitionMetadata = {
     if (message.value !== "") {
       writer.uint32(34).string(message.value);
     }
+    if (message.useDefault !== "") {
+      writer.uint32(42).string(message.useDefault);
+    }
     for (const v of message.subpartitions) {
-      TablePartitionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
+      TablePartitionMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -1927,6 +1963,13 @@ export const TablePartitionMetadata = {
             break;
           }
 
+          message.useDefault = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
           message.subpartitions.push(TablePartitionMetadata.decode(reader, reader.uint32()));
           continue;
       }
@@ -1944,6 +1987,7 @@ export const TablePartitionMetadata = {
       type: isSet(object.type) ? tablePartitionMetadata_TypeFromJSON(object.type) : 0,
       expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
       value: isSet(object.value) ? globalThis.String(object.value) : "",
+      useDefault: isSet(object.useDefault) ? globalThis.String(object.useDefault) : "",
       subpartitions: globalThis.Array.isArray(object?.subpartitions)
         ? object.subpartitions.map((e: any) => TablePartitionMetadata.fromJSON(e))
         : [],
@@ -1964,6 +2008,9 @@ export const TablePartitionMetadata = {
     if (message.value !== "") {
       obj.value = message.value;
     }
+    if (message.useDefault !== "") {
+      obj.useDefault = message.useDefault;
+    }
     if (message.subpartitions?.length) {
       obj.subpartitions = message.subpartitions.map((e) => TablePartitionMetadata.toJSON(e));
     }
@@ -1979,6 +2026,7 @@ export const TablePartitionMetadata = {
     message.type = object.type ?? 0;
     message.expression = object.expression ?? "";
     message.value = object.value ?? "";
+    message.useDefault = object.useDefault ?? "";
     message.subpartitions = object.subpartitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
     return message;
   },
@@ -2606,6 +2654,80 @@ export const FunctionMetadata = {
   },
   fromPartial(object: DeepPartial<FunctionMetadata>): FunctionMetadata {
     const message = createBaseFunctionMetadata();
+    message.name = object.name ?? "";
+    message.definition = object.definition ?? "";
+    return message;
+  },
+};
+
+function createBaseProcedureMetadata(): ProcedureMetadata {
+  return { name: "", definition: "" };
+}
+
+export const ProcedureMetadata = {
+  encode(message: ProcedureMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.definition !== "") {
+      writer.uint32(18).string(message.definition);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProcedureMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProcedureMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.definition = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProcedureMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
+    };
+  },
+
+  toJSON(message: ProcedureMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.definition !== "") {
+      obj.definition = message.definition;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProcedureMetadata>): ProcedureMetadata {
+    return ProcedureMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProcedureMetadata>): ProcedureMetadata {
+    const message = createBaseProcedureMetadata();
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
     return message;

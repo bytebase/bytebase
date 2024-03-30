@@ -9,12 +9,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed } from "vue";
 import { BBAvatar } from "@/bbkit";
-import { BBAvatarSizeType } from "@/bbkit/types";
+import type { BBAvatarSizeType } from "@/bbkit/types";
 import { UNKNOWN_ID, unknownUser } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
-import { VueClass } from "@/utils";
+import type { User } from "@/types/proto/v1/auth_service";
+import type { VueClass } from "@/utils";
 
 const props = defineProps({
   user: {

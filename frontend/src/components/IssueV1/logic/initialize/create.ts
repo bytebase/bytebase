@@ -2,7 +2,7 @@ import { cloneDeep, groupBy, orderBy } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
 import { rolloutServiceClient } from "@/grpcweb";
-import { TemplateType } from "@/plugins";
+import type { TemplateType } from "@/plugins";
 import {
   useBranchStore,
   useChangelistStore,
@@ -12,22 +12,19 @@ import {
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
-import {
-  ComposedProject,
-  emptyIssue,
-  TaskTypeListWithStatement,
-  UNKNOWN_ID,
-} from "@/types";
+import type { ComposedProject } from "@/types";
+import { emptyIssue, TaskTypeListWithStatement, UNKNOWN_ID } from "@/types";
 import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
+import type { Stage } from "@/types/proto/v1/rollout_service";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
   Plan_ChangeDatabaseConfig_Type,
+  Plan_ExportDataConfig,
   Plan_Spec,
   Plan_Step,
   Rollout,
-  Stage,
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import { SheetPayload } from "@/types/proto/v1/sheet_service";
@@ -59,35 +56,23 @@ type CreateIssueParams = {
 };
 
 export const createIssueSkeleton = async (query: Record<string, string>) => {
-  const issue = emptyIssue();
-  const me = useCurrentUserV1();
-  issue.creator = `users/${me.value.email}`;
-  issue.creatorEntity = me.value;
-
   const project = await useProjectV1Store().getOrFetchProjectByUID(
     query.project
   );
-  issue.project = project.name;
-  issue.projectEntity = project;
-  issue.uid = nextUID();
-  issue.name = `${project.name}/issues/${issue.uid}`;
-  issue.title = query.name;
-  issue.type = Issue_Type.DATABASE_CHANGE;
-  issue.status = IssueStatus.OPEN;
-
   const databaseUIDList = (query.databaseList ?? "")
     .split(",")
     .filter((uid) => uid && uid !== String(UNKNOWN_ID));
   await prepareDatabaseList(databaseUIDList, project.uid);
-  const branch = query.branch || undefined;
 
   const params: CreateIssueParams = {
     databaseUIDList,
     project,
     query,
     initialSQL: extractInitialSQLListFromQuery(query),
-    branch,
+    branch: query.branch || undefined,
   };
+
+  const issue = await buildIssue(params);
 
   // Prepare params context for building plan.
   await prepareParamsContext(params);
@@ -112,6 +97,29 @@ const prepareParamsContext = async (params: CreateIssueParams) => {
   if (params.branch) {
     await useBranchStore().fetchBranchByName(params.branch);
   }
+};
+
+const buildIssue = async (params: CreateIssueParams) => {
+  const { project, query } = params;
+  const issue = emptyIssue();
+  const me = useCurrentUserV1();
+  issue.creator = `users/${me.value.email}`;
+  issue.creatorEntity = me.value;
+  issue.project = project.name;
+  issue.projectEntity = project;
+  issue.uid = nextUID();
+  issue.name = `${project.name}/issues/${issue.uid}`;
+  issue.title = query.name;
+  issue.status = IssueStatus.OPEN;
+
+  const template = query.template as TemplateType | undefined;
+  if (template === "bb.issue.database.data.export") {
+    issue.type = Issue_Type.DATABASE_DATA_EXPORT;
+  } else {
+    issue.type = Issue_Type.DATABASE_CHANGE;
+  }
+
+  return issue;
 };
 
 export const buildPlan = async (params: CreateIssueParams) => {
@@ -370,6 +378,12 @@ export const buildSpecForTarget = async (
       type: Plan_ChangeDatabaseConfig_Type.BASELINE,
     });
   }
+  if (template === "bb.issue.database.data.export") {
+    spec.exportDataConfig = Plan_ExportDataConfig.fromJSON({
+      target,
+      sheet,
+    });
+  }
 
   return spec;
 };
@@ -527,9 +541,8 @@ export const prepareDatabaseList = async (
     // It's horrible to fetchDatabaseByUID one-by-one when query.databaseList
     // is big (100+ sometimes)
     // So we are fetching databaseList by project since that's better cached.
-    const project = await useProjectV1Store().getOrFetchProjectByUID(
-      projectUID
-    );
+    const project =
+      await useProjectV1Store().getOrFetchProjectByUID(projectUID);
     await prepareDatabaseListByProject(project.name);
   } else {
     // Otherwise, we don't have the projectUID (very rare to see, theoretically)
@@ -547,9 +560,9 @@ export const prepareDatabaseList = async (
 };
 
 const prepareDatabaseListByProject = async (project: string) => {
-  await useDatabaseV1Store().searchOrListDatabases({
-    parent: `instances/-`,
-    filter: `project == "${project}"`,
+  const filters = [`instance = "instances/-"`, `project = "${project}"`];
+  await useDatabaseV1Store().searchDatabases({
+    filter: filters.join(" && "),
   });
 };
 

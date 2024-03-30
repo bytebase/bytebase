@@ -2,9 +2,16 @@
   <BBAttention type="warning" :description="attentionText" />
   <div class="mt-4 space-y-2">
     <div class="flex justify-between items-center">
-      <button class="btn-icon" @click.prevent="refreshRepositoryList">
-        <heroicons-outline:refresh class="w-6 h-6" />
-      </button>
+      <BBSpin v-if="state.loading" :size="20" />
+      <NButton
+        v-else
+        quaternary
+        circle
+        :loading="state.loading"
+        @click.prevent="refreshRepositoryList"
+      >
+        <RefreshCwIcon class="w-5 h-5" />
+      </NButton>
       <SearchBox
         v-model:value="state.searchText"
         :placeholder="$t('repository.select-repository-search')"
@@ -20,14 +27,11 @@
           class="block hover:bg-control-bg-hover cursor-pointer"
           @click.prevent="selectRepository(repository)"
         >
-          <div class="flex items-center px-4 py-3">
+          <div class="flex items-center px-3 py-2">
             <div class="min-w-0 flex-1 flex items-center">
               {{ repository.fullpath }}
             </div>
-            <div>
-              <!-- Heroicon name: solid/chevron-right -->
-              <heroicons-solid:chevron-right class="h-5 w-5 text-control" />
-            </div>
+            <ChevronRightIcon class="h-5 w-5 text-control" />
           </div>
         </li>
       </ul>
@@ -35,31 +39,26 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: "RepositorySelectionPanel" };
-</script>
-
 <script setup lang="ts">
-import { reactive, computed, onMounted, nextTick } from "vue";
-import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "@/types";
+import { RefreshCwIcon, ChevronRightIcon } from "lucide-vue-next";
+import { reactive, computed, onMounted } from "vue";
+import BBSpin from "@/bbkit/BBSpin.vue";
 import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
-import {
-  OAuthToken,
-  ExternalVersionControl_Type,
-  SearchExternalVersionControlProjectsResponse_Project,
-} from "@/types/proto/v1/externalvs_service";
+import type { ExternalRepositoryInfo, ProjectRepositoryConfig } from "@/types";
+import type { SearchVCSProviderProjectsResponse_Project } from "@/types/proto/v1/vcs_provider_service";
+import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
-  repositoryList: SearchExternalVersionControlProjectsResponse_Project[];
+  repositoryList: SearchVCSProviderProjectsResponse_Project[];
   searchText: string;
+  loading: boolean;
 }
 
 const props = defineProps<{ config: ProjectRepositoryConfig }>();
 
 const emit = defineEmits<{
   (event: "next"): void;
-  (event: "set-token", payload: OAuthToken): void;
   (event: "set-repository", payload: ExternalRepositoryInfo): void;
 }>();
 
@@ -68,31 +67,18 @@ const vcsV1Store = useVCSV1Store();
 const state = reactive<LocalState>({
   repositoryList: [],
   searchText: "",
+  loading: true,
 });
 
 onMounted(() => {
-  prepareRepositoryList();
+  refreshRepositoryList();
 });
-
-const prepareRepositoryList = () => {
-  vcsV1Store
-    .exchangeToken({
-      vcsName: props.config.vcs.name,
-      code: props.config.code,
-    })
-    .then((token: OAuthToken) => {
-      emit("set-token", token);
-      nextTick(() => {
-        refreshRepositoryList();
-      });
-    });
-};
 
 const refreshRepositoryList = async () => {
   if (
     !hasWorkspacePermissionV2(
       currentUser.value,
-      "bb.externalVersionControls.searchProjects"
+      "bb.vcsProviders.searchProjects"
     )
   ) {
     pushNotification({
@@ -103,12 +89,12 @@ const refreshRepositoryList = async () => {
     return;
   }
 
+  state.loading = true;
   const projects = await vcsV1Store.listVCSExternalProjects(
-    props.config.vcs.name,
-    props.config.token.accessToken,
-    props.config.token.refreshToken
+    props.config.vcs.name
   );
   state.repositoryList = projects;
+  state.loading = false;
 };
 
 const repositoryList = computed(() => {
@@ -116,29 +102,27 @@ const repositoryList = computed(() => {
     return state.repositoryList;
   }
   return state.repositoryList.filter(
-    (repository: SearchExternalVersionControlProjectsResponse_Project) => {
+    (repository: SearchVCSProviderProjectsResponse_Project) => {
       return repository.fullpath.toLowerCase().includes(state.searchText);
     }
   );
 });
 
 const attentionText = computed((): string => {
-  if (props.config.vcs.type === ExternalVersionControl_Type.GITLAB) {
+  if (props.config.vcs.type === VCSProvider_Type.GITLAB) {
     return "repository.select-repository-attention-gitlab";
-  } else if (props.config.vcs.type === ExternalVersionControl_Type.GITHUB) {
+  } else if (props.config.vcs.type === VCSProvider_Type.GITHUB) {
     return "repository.select-repository-attention-github";
-  } else if (props.config.vcs.type === ExternalVersionControl_Type.BITBUCKET) {
+  } else if (props.config.vcs.type === VCSProvider_Type.BITBUCKET) {
     return "repository.select-repository-attention-bitbucket";
-  } else if (
-    props.config.vcs.type === ExternalVersionControl_Type.AZURE_DEVOPS
-  ) {
+  } else if (props.config.vcs.type === VCSProvider_Type.AZURE_DEVOPS) {
     return "repository.select-repository-attention-azure-devops";
   }
   return "";
 });
 
 const selectRepository = (
-  repository: SearchExternalVersionControlProjectsResponse_Project
+  repository: SearchVCSProviderProjectsResponse_Project
 ) => {
   emit("set-repository", {
     externalId: repository.id,

@@ -165,7 +165,15 @@ export interface SearchDatabasesRequest {
   pageToken: string;
   /**
    * Filter is used to filter databases returned in the list.
-   * For example, "project = projects/{project}" can be used to list databases in a project.
+   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+   * The field only support in filter:
+   * - project with "=" operator, for example:
+   *  - project = "projects/sample-project"
+   *  - project = "projects/-"
+   * - instance with "=" operator, for example:
+   *  - instance = "instances/mysql"
+   *  - instance = "instances/-"
+   * for example, we can use project = "projects/sample" && instance = "instances/-" to list all databases in the sample project.
    */
   filter: string;
   /**
@@ -302,63 +310,6 @@ export interface DiffSchemaResponse {
   diff: string;
 }
 
-export interface GetBackupSettingRequest {
-  /**
-   * The name of the database to retrieve backup setting.
-   * Format: instances/{instance}/databases/{database}/backupSetting
-   */
-  name: string;
-}
-
-export interface UpdateBackupSettingRequest {
-  /** The database backup setting to update. */
-  setting: BackupSetting | undefined;
-}
-
-/** CreateBackupRequest is the request message for CreateBackup. */
-export interface CreateBackupRequest {
-  /**
-   * The parent resource where this backup will be created.
-   * Format: instances/{instance}/databases/{database}
-   */
-  parent: string;
-  backup: Backup | undefined;
-}
-
-/** ListBackupsRequest is the request message for ListBackup. */
-export interface ListBackupsRequest {
-  /**
-   * The parent resource where this backup will be created.
-   * Format: instances/{instance}/databases/{database}
-   */
-  parent: string;
-  /**
-   * Not used. The maximum number of backups to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 50 backups will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   */
-  pageSize: number;
-  /**
-   * Not used. A page token, received from a previous `ListBackup` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListBackup` must match
-   * the call that provided the page token.
-   */
-  pageToken: string;
-}
-
-export interface ListBackupsResponse {
-  /** The backups from the specified request. */
-  backups: Backup[];
-  /**
-   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   */
-  nextPageToken: string;
-}
-
 export interface Database {
   /**
    * The name of the database.
@@ -440,6 +391,8 @@ export interface SchemaMetadata {
   views: ViewMetadata[];
   /** The functions is the list of functions in a schema. */
   functions: FunctionMetadata[];
+  /** The procedures is the list of procedures in a schema. */
+  procedures: ProcedureMetadata[];
   /** The streams is the list of streams in a schema, currently, only used for Snowflake. */
   streams: StreamMetadata[];
   /** The routines is the list of routines in a schema, currently, only used for Snowflake. */
@@ -521,6 +474,11 @@ export interface TablePartitionMetadata {
    * - For others, it's an empty string.
    */
   value: string;
+  /**
+   * The use_default is whether the users use the default partition, it stores the different value for different database engines.
+   * For MySQL, it's [INT] type, 0 means not use default partition, otherwise, it's equals to number in syntax [SUB]PARTITION {number}.
+   */
+  useDefault: string;
   /** The subpartitions is the list of subpartitions in a table partition. */
   subpartitions: TablePartitionMetadata[];
 }
@@ -684,9 +642,17 @@ export interface MaterializedViewMetadata {
 
 /** FunctionMetadata is the metadata for functions. */
 export interface FunctionMetadata {
-  /** The name is the name of a view. */
+  /** The name is the name of a function. */
   name: string;
-  /** The definition is the definition of a view. */
+  /** The definition is the definition of a function. */
+  definition: string;
+}
+
+/** ProcedureMetadata is the metadata for procedures. */
+export interface ProcedureMetadata {
+  /** The name is the name of a procedure. */
+  name: string;
+  /** The definition is the definition of a procedure. */
   definition: string;
 }
 
@@ -959,157 +925,6 @@ export interface ColumnConfig_LabelsEntry {
 export interface DatabaseSchema {
   /** The schema dump from database. */
   schema: string;
-}
-
-/** BackupSetting is the setting for database backup. */
-export interface BackupSetting {
-  /**
-   * The name of the database backup setting.
-   * Format: instances/{instance}/databases/{database}/backupSetting
-   */
-  name: string;
-  /**
-   * The default maximum age of a Backup created via this BackupPlan.
-   * If specified, a Backup will be automatically deleted after its age reaches.
-   * If not specified, Backups created under this BackupPlan will be deleted after 7 DAYS.
-   * It will be rounded up to the number of days.
-   */
-  backupRetainDuration:
-    | Duration
-    | undefined;
-  /**
-   * Cron(https://wikipedia.com/wiki/cron) string that defines a repeating schedule for creating Backups.
-   * Support hour of day, day of week. (UTC time)
-   *
-   * Default (empty): Disable automatic backup.
-   */
-  cronSchedule: string;
-  /** hook_url(https://www.bytebase.com/docs/disaster-recovery/backup/#post-backup-webhook) is the URL to send a notification when a backup is created. */
-  hookUrl: string;
-}
-
-/** The message of the backup. */
-export interface Backup {
-  /**
-   * The resource name of the database backup. backup-name is specified by the client.
-   * Format: instances/{instance}/databases/{database}/backups/{backup-name}
-   */
-  name: string;
-  /** The timestamp when the backup resource was created initially. */
-  createTime:
-    | Date
-    | undefined;
-  /** The timestamp when the backup resource was updated. */
-  updateTime:
-    | Date
-    | undefined;
-  /** The state of the backup. */
-  state: Backup_BackupState;
-  /** The type of the backup. */
-  backupType: Backup_BackupType;
-  /** The comment of the backup. */
-  comment: string;
-  uid: string;
-}
-
-/** The type of the backup. */
-export enum Backup_BackupType {
-  /** BACKUP_TYPE_UNSPECIFIED - The type of the backup is unknown. */
-  BACKUP_TYPE_UNSPECIFIED = 0,
-  /** MANUAL - The backup is created by user. */
-  MANUAL = 1,
-  /** AUTOMATIC - The backup is created by automatic backup. */
-  AUTOMATIC = 2,
-  /** PITR - The backup is created automatically after doing PITR. */
-  PITR = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function backup_BackupTypeFromJSON(object: any): Backup_BackupType {
-  switch (object) {
-    case 0:
-    case "BACKUP_TYPE_UNSPECIFIED":
-      return Backup_BackupType.BACKUP_TYPE_UNSPECIFIED;
-    case 1:
-    case "MANUAL":
-      return Backup_BackupType.MANUAL;
-    case 2:
-    case "AUTOMATIC":
-      return Backup_BackupType.AUTOMATIC;
-    case 3:
-    case "PITR":
-      return Backup_BackupType.PITR;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Backup_BackupType.UNRECOGNIZED;
-  }
-}
-
-export function backup_BackupTypeToJSON(object: Backup_BackupType): string {
-  switch (object) {
-    case Backup_BackupType.BACKUP_TYPE_UNSPECIFIED:
-      return "BACKUP_TYPE_UNSPECIFIED";
-    case Backup_BackupType.MANUAL:
-      return "MANUAL";
-    case Backup_BackupType.AUTOMATIC:
-      return "AUTOMATIC";
-    case Backup_BackupType.PITR:
-      return "PITR";
-    case Backup_BackupType.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-/** The state of the backup. */
-export enum Backup_BackupState {
-  /** BACKUP_STATE_UNSPECIFIED - The state of the backup is unknown. */
-  BACKUP_STATE_UNSPECIFIED = 0,
-  /** PENDING_CREATE - The backup is being pending to create. */
-  PENDING_CREATE = 1,
-  /** DONE - The backup is ready to use. */
-  DONE = 2,
-  /** FAILED - The backup is being deleted. */
-  FAILED = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function backup_BackupStateFromJSON(object: any): Backup_BackupState {
-  switch (object) {
-    case 0:
-    case "BACKUP_STATE_UNSPECIFIED":
-      return Backup_BackupState.BACKUP_STATE_UNSPECIFIED;
-    case 1:
-    case "PENDING_CREATE":
-      return Backup_BackupState.PENDING_CREATE;
-    case 2:
-    case "DONE":
-      return Backup_BackupState.DONE;
-    case 3:
-    case "FAILED":
-      return Backup_BackupState.FAILED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Backup_BackupState.UNRECOGNIZED;
-  }
-}
-
-export function backup_BackupStateToJSON(object: Backup_BackupState): string {
-  switch (object) {
-    case Backup_BackupState.BACKUP_STATE_UNSPECIFIED:
-      return "BACKUP_STATE_UNSPECIFIED";
-    case Backup_BackupState.PENDING_CREATE:
-      return "PENDING_CREATE";
-    case Backup_BackupState.DONE:
-      return "DONE";
-    case Backup_BackupState.FAILED:
-      return "FAILED";
-    case Backup_BackupState.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
 }
 
 /** ListSlowQueriesRequest is the request of listing slow query. */
@@ -2739,361 +2554,6 @@ export const DiffSchemaResponse = {
   },
 };
 
-function createBaseGetBackupSettingRequest(): GetBackupSettingRequest {
-  return { name: "" };
-}
-
-export const GetBackupSettingRequest = {
-  encode(message: GetBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetBackupSettingRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetBackupSettingRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetBackupSettingRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
-  toJSON(message: GetBackupSettingRequest): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetBackupSettingRequest>): GetBackupSettingRequest {
-    return GetBackupSettingRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetBackupSettingRequest>): GetBackupSettingRequest {
-    const message = createBaseGetBackupSettingRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseUpdateBackupSettingRequest(): UpdateBackupSettingRequest {
-  return { setting: undefined };
-}
-
-export const UpdateBackupSettingRequest = {
-  encode(message: UpdateBackupSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.setting !== undefined) {
-      BackupSetting.encode(message.setting, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateBackupSettingRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateBackupSettingRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.setting = BackupSetting.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UpdateBackupSettingRequest {
-    return { setting: isSet(object.setting) ? BackupSetting.fromJSON(object.setting) : undefined };
-  },
-
-  toJSON(message: UpdateBackupSettingRequest): unknown {
-    const obj: any = {};
-    if (message.setting !== undefined) {
-      obj.setting = BackupSetting.toJSON(message.setting);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<UpdateBackupSettingRequest>): UpdateBackupSettingRequest {
-    return UpdateBackupSettingRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<UpdateBackupSettingRequest>): UpdateBackupSettingRequest {
-    const message = createBaseUpdateBackupSettingRequest();
-    message.setting = (object.setting !== undefined && object.setting !== null)
-      ? BackupSetting.fromPartial(object.setting)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseCreateBackupRequest(): CreateBackupRequest {
-  return { parent: "", backup: undefined };
-}
-
-export const CreateBackupRequest = {
-  encode(message: CreateBackupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    if (message.backup !== undefined) {
-      Backup.encode(message.backup, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): CreateBackupRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreateBackupRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.backup = Backup.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CreateBackupRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      backup: isSet(object.backup) ? Backup.fromJSON(object.backup) : undefined,
-    };
-  },
-
-  toJSON(message: CreateBackupRequest): unknown {
-    const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.backup !== undefined) {
-      obj.backup = Backup.toJSON(message.backup);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<CreateBackupRequest>): CreateBackupRequest {
-    return CreateBackupRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<CreateBackupRequest>): CreateBackupRequest {
-    const message = createBaseCreateBackupRequest();
-    message.parent = object.parent ?? "";
-    message.backup = (object.backup !== undefined && object.backup !== null)
-      ? Backup.fromPartial(object.backup)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseListBackupsRequest(): ListBackupsRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
-}
-
-export const ListBackupsRequest = {
-  encode(message: ListBackupsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListBackupsRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListBackupsRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.pageSize = reader.int32();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.pageToken = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListBackupsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
-  },
-
-  toJSON(message: ListBackupsRequest): unknown {
-    const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ListBackupsRequest>): ListBackupsRequest {
-    return ListBackupsRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ListBackupsRequest>): ListBackupsRequest {
-    const message = createBaseListBackupsRequest();
-    message.parent = object.parent ?? "";
-    message.pageSize = object.pageSize ?? 0;
-    message.pageToken = object.pageToken ?? "";
-    return message;
-  },
-};
-
-function createBaseListBackupsResponse(): ListBackupsResponse {
-  return { backups: [], nextPageToken: "" };
-}
-
-export const ListBackupsResponse = {
-  encode(message: ListBackupsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.backups) {
-      Backup.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.nextPageToken !== "") {
-      writer.uint32(18).string(message.nextPageToken);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListBackupsResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListBackupsResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.backups.push(Backup.decode(reader, reader.uint32()));
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.nextPageToken = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListBackupsResponse {
-    return {
-      backups: globalThis.Array.isArray(object?.backups) ? object.backups.map((e: any) => Backup.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
-  toJSON(message: ListBackupsResponse): unknown {
-    const obj: any = {};
-    if (message.backups?.length) {
-      obj.backups = message.backups.map((e) => Backup.toJSON(e));
-    }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ListBackupsResponse>): ListBackupsResponse {
-    return ListBackupsResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ListBackupsResponse>): ListBackupsResponse {
-    const message = createBaseListBackupsResponse();
-    message.backups = object.backups?.map((e) => Backup.fromPartial(e)) || [];
-    message.nextPageToken = object.nextPageToken ?? "";
-    return message;
-  },
-};
-
 function createBaseDatabase(): Database {
   return {
     name: "",
@@ -3541,6 +3001,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     externalTables: [],
     views: [],
     functions: [],
+    procedures: [],
     streams: [],
     tasks: [],
     materializedViews: [],
@@ -3564,14 +3025,17 @@ export const SchemaMetadata = {
     for (const v of message.functions) {
       FunctionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
     }
+    for (const v of message.procedures) {
+      ProcedureMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
+    }
     for (const v of message.streams) {
-      StreamMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
+      StreamMetadata.encode(v!, writer.uint32(58).fork()).ldelim();
     }
     for (const v of message.tasks) {
-      TaskMetadata.encode(v!, writer.uint32(58).fork()).ldelim();
+      TaskMetadata.encode(v!, writer.uint32(66).fork()).ldelim();
     }
     for (const v of message.materializedViews) {
-      MaterializedViewMetadata.encode(v!, writer.uint32(66).fork()).ldelim();
+      MaterializedViewMetadata.encode(v!, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -3623,17 +3087,24 @@ export const SchemaMetadata = {
             break;
           }
 
-          message.streams.push(StreamMetadata.decode(reader, reader.uint32()));
+          message.procedures.push(ProcedureMetadata.decode(reader, reader.uint32()));
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.tasks.push(TaskMetadata.decode(reader, reader.uint32()));
+          message.streams.push(StreamMetadata.decode(reader, reader.uint32()));
           continue;
         case 8:
           if (tag !== 66) {
+            break;
+          }
+
+          message.tasks.push(TaskMetadata.decode(reader, reader.uint32()));
+          continue;
+        case 9:
+          if (tag !== 74) {
             break;
           }
 
@@ -3658,6 +3129,9 @@ export const SchemaMetadata = {
       views: globalThis.Array.isArray(object?.views) ? object.views.map((e: any) => ViewMetadata.fromJSON(e)) : [],
       functions: globalThis.Array.isArray(object?.functions)
         ? object.functions.map((e: any) => FunctionMetadata.fromJSON(e))
+        : [],
+      procedures: globalThis.Array.isArray(object?.procedures)
+        ? object.procedures.map((e: any) => ProcedureMetadata.fromJSON(e))
         : [],
       streams: globalThis.Array.isArray(object?.streams)
         ? object.streams.map((e: any) => StreamMetadata.fromJSON(e))
@@ -3686,6 +3160,9 @@ export const SchemaMetadata = {
     if (message.functions?.length) {
       obj.functions = message.functions.map((e) => FunctionMetadata.toJSON(e));
     }
+    if (message.procedures?.length) {
+      obj.procedures = message.procedures.map((e) => ProcedureMetadata.toJSON(e));
+    }
     if (message.streams?.length) {
       obj.streams = message.streams.map((e) => StreamMetadata.toJSON(e));
     }
@@ -3708,6 +3185,7 @@ export const SchemaMetadata = {
     message.externalTables = object.externalTables?.map((e) => ExternalTableMetadata.fromPartial(e)) || [];
     message.views = object.views?.map((e) => ViewMetadata.fromPartial(e)) || [];
     message.functions = object.functions?.map((e) => FunctionMetadata.fromPartial(e)) || [];
+    message.procedures = object.procedures?.map((e) => ProcedureMetadata.fromPartial(e)) || [];
     message.streams = object.streams?.map((e) => StreamMetadata.fromPartial(e)) || [];
     message.tasks = object.tasks?.map((e) => TaskMetadata.fromPartial(e)) || [];
     message.materializedViews = object.materializedViews?.map((e) => MaterializedViewMetadata.fromPartial(e)) || [];
@@ -4123,7 +3601,7 @@ export const TableMetadata = {
 };
 
 function createBaseTablePartitionMetadata(): TablePartitionMetadata {
-  return { name: "", type: 0, expression: "", value: "", subpartitions: [] };
+  return { name: "", type: 0, expression: "", value: "", useDefault: "", subpartitions: [] };
 }
 
 export const TablePartitionMetadata = {
@@ -4140,8 +3618,11 @@ export const TablePartitionMetadata = {
     if (message.value !== "") {
       writer.uint32(34).string(message.value);
     }
+    if (message.useDefault !== "") {
+      writer.uint32(42).string(message.useDefault);
+    }
     for (const v of message.subpartitions) {
-      TablePartitionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
+      TablePartitionMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -4186,6 +3667,13 @@ export const TablePartitionMetadata = {
             break;
           }
 
+          message.useDefault = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
           message.subpartitions.push(TablePartitionMetadata.decode(reader, reader.uint32()));
           continue;
       }
@@ -4203,6 +3691,7 @@ export const TablePartitionMetadata = {
       type: isSet(object.type) ? tablePartitionMetadata_TypeFromJSON(object.type) : 0,
       expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
       value: isSet(object.value) ? globalThis.String(object.value) : "",
+      useDefault: isSet(object.useDefault) ? globalThis.String(object.useDefault) : "",
       subpartitions: globalThis.Array.isArray(object?.subpartitions)
         ? object.subpartitions.map((e: any) => TablePartitionMetadata.fromJSON(e))
         : [],
@@ -4223,6 +3712,9 @@ export const TablePartitionMetadata = {
     if (message.value !== "") {
       obj.value = message.value;
     }
+    if (message.useDefault !== "") {
+      obj.useDefault = message.useDefault;
+    }
     if (message.subpartitions?.length) {
       obj.subpartitions = message.subpartitions.map((e) => TablePartitionMetadata.toJSON(e));
     }
@@ -4238,6 +3730,7 @@ export const TablePartitionMetadata = {
     message.type = object.type ?? 0;
     message.expression = object.expression ?? "";
     message.value = object.value ?? "";
+    message.useDefault = object.useDefault ?? "";
     message.subpartitions = object.subpartitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
     return message;
   },
@@ -4899,6 +4392,80 @@ export const FunctionMetadata = {
   },
   fromPartial(object: DeepPartial<FunctionMetadata>): FunctionMetadata {
     const message = createBaseFunctionMetadata();
+    message.name = object.name ?? "";
+    message.definition = object.definition ?? "";
+    return message;
+  },
+};
+
+function createBaseProcedureMetadata(): ProcedureMetadata {
+  return { name: "", definition: "" };
+}
+
+export const ProcedureMetadata = {
+  encode(message: ProcedureMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.definition !== "") {
+      writer.uint32(18).string(message.definition);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProcedureMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProcedureMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.definition = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProcedureMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
+    };
+  },
+
+  toJSON(message: ProcedureMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.definition !== "") {
+      obj.definition = message.definition;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProcedureMetadata>): ProcedureMetadata {
+    return ProcedureMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProcedureMetadata>): ProcedureMetadata {
+    const message = createBaseProcedureMetadata();
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
     return message;
@@ -6221,263 +5788,6 @@ export const DatabaseSchema = {
   fromPartial(object: DeepPartial<DatabaseSchema>): DatabaseSchema {
     const message = createBaseDatabaseSchema();
     message.schema = object.schema ?? "";
-    return message;
-  },
-};
-
-function createBaseBackupSetting(): BackupSetting {
-  return { name: "", backupRetainDuration: undefined, cronSchedule: "", hookUrl: "" };
-}
-
-export const BackupSetting = {
-  encode(message: BackupSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.backupRetainDuration !== undefined) {
-      Duration.encode(message.backupRetainDuration, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.cronSchedule !== "") {
-      writer.uint32(26).string(message.cronSchedule);
-    }
-    if (message.hookUrl !== "") {
-      writer.uint32(34).string(message.hookUrl);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): BackupSetting {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBackupSetting();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.backupRetainDuration = Duration.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.cronSchedule = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.hookUrl = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): BackupSetting {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      backupRetainDuration: isSet(object.backupRetainDuration)
-        ? Duration.fromJSON(object.backupRetainDuration)
-        : undefined,
-      cronSchedule: isSet(object.cronSchedule) ? globalThis.String(object.cronSchedule) : "",
-      hookUrl: isSet(object.hookUrl) ? globalThis.String(object.hookUrl) : "",
-    };
-  },
-
-  toJSON(message: BackupSetting): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.backupRetainDuration !== undefined) {
-      obj.backupRetainDuration = Duration.toJSON(message.backupRetainDuration);
-    }
-    if (message.cronSchedule !== "") {
-      obj.cronSchedule = message.cronSchedule;
-    }
-    if (message.hookUrl !== "") {
-      obj.hookUrl = message.hookUrl;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<BackupSetting>): BackupSetting {
-    return BackupSetting.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<BackupSetting>): BackupSetting {
-    const message = createBaseBackupSetting();
-    message.name = object.name ?? "";
-    message.backupRetainDuration = (object.backupRetainDuration !== undefined && object.backupRetainDuration !== null)
-      ? Duration.fromPartial(object.backupRetainDuration)
-      : undefined;
-    message.cronSchedule = object.cronSchedule ?? "";
-    message.hookUrl = object.hookUrl ?? "";
-    return message;
-  },
-};
-
-function createBaseBackup(): Backup {
-  return { name: "", createTime: undefined, updateTime: undefined, state: 0, backupType: 0, comment: "", uid: "" };
-}
-
-export const Backup = {
-  encode(message: Backup, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(18).fork()).ldelim();
-    }
-    if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
-    }
-    if (message.state !== 0) {
-      writer.uint32(32).int32(message.state);
-    }
-    if (message.backupType !== 0) {
-      writer.uint32(40).int32(message.backupType);
-    }
-    if (message.comment !== "") {
-      writer.uint32(50).string(message.comment);
-    }
-    if (message.uid !== "") {
-      writer.uint32(58).string(message.uid);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Backup {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBackup();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
-          message.state = reader.int32() as any;
-          continue;
-        case 5:
-          if (tag !== 40) {
-            break;
-          }
-
-          message.backupType = reader.int32() as any;
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.comment = reader.string();
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.uid = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Backup {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
-      state: isSet(object.state) ? backup_BackupStateFromJSON(object.state) : 0,
-      backupType: isSet(object.backupType) ? backup_BackupTypeFromJSON(object.backupType) : 0,
-      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
-    };
-  },
-
-  toJSON(message: Backup): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
-    }
-    if (message.state !== 0) {
-      obj.state = backup_BackupStateToJSON(message.state);
-    }
-    if (message.backupType !== 0) {
-      obj.backupType = backup_BackupTypeToJSON(message.backupType);
-    }
-    if (message.comment !== "") {
-      obj.comment = message.comment;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Backup>): Backup {
-    return Backup.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Backup>): Backup {
-    const message = createBaseBackup();
-    message.name = object.name ?? "";
-    message.createTime = object.createTime ?? undefined;
-    message.updateTime = object.updateTime ?? undefined;
-    message.state = object.state ?? 0;
-    message.backupType = object.backupType ?? 0;
-    message.comment = object.comment ?? "";
-    message.uid = object.uid ?? "";
     return message;
   },
 };
@@ -9448,288 +8758,6 @@ export const DatabaseServiceDefinition = {
               101,
               109,
               97,
-            ]),
-          ],
-        },
-      },
-    },
-    getBackupSetting: {
-      name: "GetBackupSetting",
-      requestType: GetBackupSettingRequest,
-      requestStream: false,
-      responseType: BackupSetting,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              50,
-              18,
-              48,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-              47,
-              42,
-              47,
-              100,
-              97,
-              116,
-              97,
-              98,
-              97,
-              115,
-              101,
-              115,
-              47,
-              42,
-              47,
-              98,
-              97,
-              99,
-              107,
-              117,
-              112,
-              83,
-              101,
-              116,
-              116,
-              105,
-              110,
-              103,
-              125,
-            ]),
-          ],
-        },
-      },
-    },
-    updateBackupSetting: {
-      name: "UpdateBackupSetting",
-      requestType: UpdateBackupSettingRequest,
-      requestStream: false,
-      responseType: BackupSetting,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              67,
-              58,
-              7,
-              115,
-              101,
-              116,
-              116,
-              105,
-              110,
-              103,
-              50,
-              56,
-              47,
-              118,
-              49,
-              47,
-              123,
-              115,
-              101,
-              116,
-              116,
-              105,
-              110,
-              103,
-              46,
-              110,
-              97,
-              109,
-              101,
-              61,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-              47,
-              42,
-              47,
-              100,
-              97,
-              116,
-              97,
-              98,
-              97,
-              115,
-              101,
-              115,
-              47,
-              42,
-              47,
-              98,
-              97,
-              99,
-              107,
-              117,
-              112,
-              83,
-              101,
-              116,
-              116,
-              105,
-              110,
-              103,
-              125,
-            ]),
-          ],
-        },
-      },
-    },
-    createBackup: {
-      name: "CreateBackup",
-      requestType: CreateBackupRequest,
-      requestStream: false,
-      responseType: Backup,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              54,
-              58,
-              6,
-              98,
-              97,
-              99,
-              107,
-              117,
-              112,
-              34,
-              44,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-              47,
-              42,
-              47,
-              100,
-              97,
-              116,
-              97,
-              98,
-              97,
-              115,
-              101,
-              115,
-              47,
-              42,
-              125,
-              47,
-              98,
-              97,
-              99,
-              107,
-              117,
-              112,
-              115,
-            ]),
-          ],
-        },
-      },
-    },
-    listBackups: {
-      name: "ListBackups",
-      requestType: ListBackupsRequest,
-      requestStream: false,
-      responseType: ListBackupsResponse,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
-          578365826: [
-            new Uint8Array([
-              46,
-              18,
-              44,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-              47,
-              42,
-              47,
-              100,
-              97,
-              116,
-              97,
-              98,
-              97,
-              115,
-              101,
-              115,
-              47,
-              42,
-              125,
-              47,
-              98,
-              97,
-              99,
-              107,
-              117,
-              112,
-              115,
             ]),
           ],
         },

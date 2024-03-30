@@ -20,9 +20,12 @@
           class="flex flex-row items-center space-x-1"
         >
           <heroicons-solid:sparkles class="w-6 h-6 text-accent" />
-          <router-link to="/setting/subscription" class="text-lg accent-link">{{
-            $t("settings.members.upgrade")
-          }}</router-link>
+          <router-link
+            :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
+            class="text-lg accent-link"
+          >
+            {{ $t("settings.members.upgrade") }}
+          </router-link>
         </div>
       </div>
 
@@ -104,13 +107,15 @@ import { useI18n } from "vue-i18n";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import UserDataTableByRole from "@/components/User/Settings/UserDataTableByRole/index.vue";
 import { SearchBox } from "@/components/v2";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useSubscriptionV1Store,
   useCurrentUserV1,
   useUserStore,
   useUIStateStore,
 } from "@/store";
-import { User, UserType } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
+import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import {
   ALL_USERS_USER_EMAIL,
@@ -171,8 +176,8 @@ const activeUserList = computed(() => {
         user.userType === UserType.SYSTEM_BOT
           ? 0
           : user.userType === UserType.SERVICE_ACCOUNT
-          ? 1
-          : 2,
+            ? 1
+            : 2,
       (user) => user.roles.includes(PresetRoleType.WORKSPACE_ADMIN),
       (user) => user.roles.includes(PresetRoleType.WORKSPACE_DBA),
     ],

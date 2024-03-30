@@ -22,18 +22,20 @@
               :status="state.role.title?.length === 0 ? 'error' : undefined"
             />
           </div>
+          <div class="-mt-2">
+            <ResourceIdField
+              ref="resourceIdField"
+              v-model:value="resourceId"
+              resource-type="role"
+              :resource-title="state.role.title"
+              :suffix="true"
+              :readonly="mode === 'EDIT'"
+              :validate="validateResourceId"
+              class="flex flex-col mt-1.5"
+              editing-class="mt-4"
+            />
+          </div>
         </div>
-
-        <ResourceIdField
-          ref="resourceIdField"
-          v-model:value="resourceId"
-          resource-type="role"
-          :resource-title="state.role.title"
-          :suffix="true"
-          :readonly="mode === 'EDIT'"
-          :validate="validateResourceId"
-          class="flex flex-col gap-y-2"
-        />
 
         <div class="flex flex-col gap-y-2">
           <div class="textlabel">{{ $t("common.description") }}</div>
@@ -82,6 +84,10 @@
         <div class="flex items-center justify-end gap-x-2">
           <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
           <NButton type="primary" :disabled="!allowSave" @click="handleSave">
+            <FeatureBadge
+              feature="bb.feature.custom-role"
+              custom-class="mr-1 text-white"
+            />
             {{ mode === "ADD" ? $t("common.add") : $t("common.update") }}
           </NButton>
         </div>
@@ -104,11 +110,8 @@ import { computed, reactive, watch, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent, ResourceIdField } from "@/components/v2";
 import { pushNotification, useRoleStore } from "@/store";
-import {
-  PROJECT_PERMISSIONS,
-  ValidatedMessage,
-  WORKSPACE_PERMISSIONS,
-} from "@/types";
+import type { ValidatedMessage } from "@/types";
+import { PROJECT_PERMISSIONS, WORKSPACE_PERMISSIONS } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { extractRoleResourceName } from "@/utils";
 import { displayPermissionTitle } from "@/utils/permission";

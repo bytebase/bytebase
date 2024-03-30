@@ -63,16 +63,10 @@
         :page-size="50"
       >
         <template #table="{ issueList, loading }">
-          <div
-            v-if="state.loading"
-            class="absolute inset-0 bg-white/50 pt-[10rem] flex flex-col items-center"
-          >
-            <BBSpin />
-          </div>
           <IssueTableV1
-            v-else
             mode="PROJECT"
-            :show-placeholder="!loading"
+            :bordered="true"
+            :loading="loading"
             :issue-list="issueList"
             :highlight-text="state.params.query"
           />
@@ -83,7 +77,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useLocalStorage } from "@vueuse/core";
+import { useLocalStorage, type UseStorageOptions } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { ChevronDownIcon, SearchIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
@@ -92,12 +86,10 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
-import { TabFilterItem } from "@/components/v2";
-import { ComposedProject } from "@/types";
+import type { TabFilterItem } from "@/components/v2";
+import type { ComposedProject } from "@/types";
+import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
 import {
-  SearchParams,
-  SearchScope,
-  SearchScopeId,
   buildIssueFilterBySearchParams,
   buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
@@ -110,11 +102,10 @@ import { IssueSearch } from "../IssueV1/components";
 
 const TABS = ["WAITING_APPROVAL", "WAITING_ROLLOUT", "ALL", ""] as const;
 
-type TabValue = typeof TABS[number];
+type TabValue = (typeof TABS)[number];
 
 interface LocalState {
   params: SearchParams;
-  isFetchingActivityList: boolean;
   advanced: boolean;
   loading: boolean;
   loadingMore: boolean;
@@ -156,7 +147,7 @@ const storedTab = useLocalStorage<TabValue>(
         return value;
       },
     },
-  }
+  } as UseStorageOptions<TabValue>
 );
 
 const keyForTab = (tab: TabValue) => {
@@ -252,7 +243,6 @@ const initializeSearchParamsFromQueryOrLocalStorage = () => {
 };
 
 const state = reactive<LocalState>({
-  isFetchingActivityList: false,
   ...initializeSearchParamsFromQueryOrLocalStorage(),
   loading: false,
   loadingMore: false,

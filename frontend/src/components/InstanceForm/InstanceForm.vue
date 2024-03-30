@@ -22,14 +22,14 @@
           <div class="sm:col-span-2 sm:col-start-1">
             <label for="name" class="textlabel flex flex-row items-center">
               {{ $t("instance.instance-name") }}
-              <span class="text-red-600 mr-2">*</span>
-              <template v-if="props.instance">
+              <span class="text-red-600 ml-0.5">*</span>
+              <div v-if="props.instance" class="ml-2 flex items-center">
                 <InstanceV1EngineIcon
                   :instance="props.instance"
                   :tooltip="false"
                 />
                 <span class="ml-1">{{ props.instance.engineVersion }}</span>
-              </template>
+              </div>
             </label>
             <NInput
               v-model:value="basicInfo.title"
@@ -45,7 +45,10 @@
           >
             <label for="activation" class="textlabel block">
               {{ $t("subscription.instance-assignment.assign-license") }}
-              (<router-link to="/setting/subscription" class="accent-link">
+              (<router-link
+                :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
+                class="accent-link"
+              >
                 {{
                   $t("subscription.instance-assignment.n-license-remain", {
                     n: availableLicenseCountText,
@@ -70,6 +73,7 @@
               ref="resourceIdField"
               v-model:value="resourceId"
               class="max-w-full flex-nowrap"
+              editing-class="mt-4"
               resource-type="instance"
               :readonly="!isCreating"
               :resource-title="basicInfo.title"
@@ -81,7 +85,7 @@
             <label for="environment" class="textlabel">
               {{ $t("common.environment") }}
             </label>
-            <span class="text-red-600 mr-2">*</span>
+            <span class="text-red-600 ml-0.5">*</span>
             <EnvironmentSelect
               class="mt-1 w-full"
               :disabled="!isCreating"
@@ -273,7 +277,7 @@
         <div class="w-full flex justify-between items-center">
           <InstanceArchiveRestoreButton
             v-if="!isCreating && instance"
-            :instance="(instance as ComposedInstance)"
+            :instance="instance as ComposedInstance"
           />
           <NButton
             v-if="allowEdit"
@@ -313,10 +317,11 @@
   </component>
 
   <FeatureModal
-    feature="bb.feature.read-replica-connection"
-    :open="showReadOnlyDataSourceFeatureModal"
+    v-if="missingFeature"
+    :feature="missingFeature"
+    :open="true"
     :instance="instance"
-    @cancel="showReadOnlyDataSourceFeatureModal = false"
+    @cancel="missingFeature = undefined"
   />
 
   <BBAlert
@@ -334,15 +339,8 @@
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import { NButton, NInput, NSwitch } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import {
-  computed,
-  reactive,
-  PropType,
-  ref,
-  watch,
-  onMounted,
-  toRef,
-} from "vue";
+import type { PropType } from "vue";
+import { computed, reactive, ref, watch, onMounted, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { InstanceArchiveRestoreButton } from "@/components/Instance";
@@ -354,6 +352,7 @@ import {
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { instanceServiceClient } from "@/grpcweb";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   pushNotification,
   useSettingV1Store,
@@ -365,19 +364,13 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
-import {
-  UNKNOWN_ID,
-  ResourceId,
-  ValidatedMessage,
-  unknownEnvironment,
-  ComposedInstance,
-} from "@/types";
-import { Duration } from "@/types/proto/google/protobuf/duration";
+import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
+import { UNKNOWN_ID, unknownEnvironment } from "@/types";
+import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";
+import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import {
-  DataSource,
   DataSourceType,
-  Instance,
   InstanceOptions,
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -394,11 +387,8 @@ import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
 import OracleSyncModeInput from "./OracleSyncModeInput.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
-import {
-  EditDataSource,
-  extractBasicInfo,
-  extractDataSourceEditState,
-} from "./common";
+import type { EditDataSource } from "./common";
+import { extractBasicInfo, extractDataSourceEditState } from "./common";
 import {
   MongoDBConnectionStringSchemaList,
   SnowflakeExtraLinkPlaceHolder,
@@ -436,7 +426,6 @@ const cancel = () => {
 
 interface LocalState {
   editingDataSourceId: string | undefined;
-  showFeatureModal: boolean;
   isTestingConnection: boolean;
   isRequesting: boolean;
   showCreateInstanceWarningModal: boolean;
@@ -456,7 +445,6 @@ const state = reactive<LocalState>({
   editingDataSourceId: props.instance?.dataSources.find(
     (ds) => ds.type === DataSourceType.ADMIN
   )?.id,
-  showFeatureModal: false,
   isTestingConnection: false,
   isRequesting: false,
   showCreateInstanceWarningModal: false,
@@ -474,7 +462,7 @@ const {
   editingDataSource,
   readonlyDataSourceList,
   hasReadonlyReplicaFeature,
-  showReadOnlyDataSourceFeatureModal,
+  missingFeature,
 } = context;
 const {
   showDatabase,
@@ -750,6 +738,10 @@ const tryCreate = async () => {
   }
 };
 
+const hasExternalSecretFeature = computed(() =>
+  subscriptionStore.hasFeature("bb.feature.external-secret-manager")
+);
+
 // We will also create the database * denoting all databases
 // and its RW data source. The username, password is actually
 // stored in that data source object instead of in the instance self.
@@ -769,12 +761,16 @@ const doCreate = async () => {
   );
   instanceCreate.dataSources = [adminDataSourceCreate];
 
+  if (!checkExternalSecretFeature(instanceCreate)) {
+    missingFeature.value = "bb.feature.external-secret-manager";
+    return;
+  }
+
   state.isRequesting = true;
   try {
     await useGracefulRequest(async () => {
-      const createdInstance = await instanceV1Store.createInstance(
-        instanceCreate
-      );
+      const createdInstance =
+        await instanceV1Store.createInstance(instanceCreate);
       router.push(`/${createdInstance.name}`);
       pushNotification({
         module: "bytebase",
@@ -797,7 +793,11 @@ const doUpdate = async () => {
     return;
   }
   if (!checkRODataSourceFeature(instance)) {
-    showReadOnlyDataSourceFeatureModal.value = true;
+    missingFeature.value = "bb.feature.read-replica-connection";
+    return;
+  }
+  if (!checkExternalSecretFeature(instance)) {
+    missingFeature.value = "bb.feature.external-secret-manager";
     return;
   }
   // When clicking **Update** we may have more than one thing to do (if needed)
@@ -1119,6 +1119,16 @@ const extractDataSourceFromEdit = (
   }
 
   return ds;
+};
+
+const checkExternalSecretFeature = (instance: Instance) => {
+  if (hasExternalSecretFeature.value) {
+    return true;
+  }
+
+  return instance.dataSources.every((ds) => {
+    return !ds.externalSecret && !/^{{.+}}$/.test(ds.password);
+  });
 };
 
 const checkRODataSourceFeature = (instance: Instance) => {

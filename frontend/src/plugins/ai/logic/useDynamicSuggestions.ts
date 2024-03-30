@@ -3,7 +3,7 @@ import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
 import { WebStorageHelper } from "@/utils";
-import { OpenAIMessage, OpenAIResponse } from "../types";
+import type { OpenAIMessage, OpenAIResponse } from "../types";
 import { useAIContext } from "./context";
 import { databaseMetadataToText } from "./utils";
 
@@ -48,7 +48,7 @@ export const useDynamicSuggestions = () => {
       presence_penalty: 0.0,
     };
     const axios = new Axios({
-      timeout: 20 * 1000,
+      timeout: 300 * 1000,
       responseType: "json",
     });
     const headers = {

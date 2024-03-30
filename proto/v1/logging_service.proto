@@ -11,7 +11,7 @@ import "v1/common.proto";
 option go_package = "generated-go/v1";
 
 service LoggingService {
-  rpc ListLogs(ListLogsRequest) returns (ListLogsResponse) {
+  rpc SearchLogs(SearchLogsRequest) returns (SearchLogsResponse) {
     option (google.api.http) = {get: "/v1/logs:search"};
   }
 
@@ -28,7 +28,7 @@ service LoggingService {
   }
 }
 
-message ListLogsRequest {
+message SearchLogsRequest {
   // filter is the filter to apply on the list logs request,
   // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
   // The field only support in filter:
@@ -62,17 +62,17 @@ message ListLogsRequest {
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 3;
 
-  // Not used. A page token, received from a previous `ListLogs` call.
+  // Not used. A page token, received from a previous `SearchLogs` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 4;
 }
 
-message ListLogsResponse {
+message SearchLogsResponse {
   // The list of log entities.
   repeated LogEntity log_entities = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // A token to retrieve next page of log entities.
-  // Pass this value in the page_token field in the subsequent call to `ListLogs` method
+  // Pass this value in the page_token field in the subsequent call to `SearchLogs` method
   // to retrieve the next page of log entities.
   string next_page_token = 2;
 }
@@ -167,8 +167,6 @@ message LogEntity {
     ACTION_PIPELINE_STAGE_STATUS_UPDATE = 31;
     // ACTION_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now.
     ACTION_PIPELINE_TASK_STATUS_UPDATE = 32;
-    // ACTION_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement.
-    ACTION_PIPELINE_TASK_FILE_COMMIT = 33;
     // ACTION_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement.
     ACTION_PIPELINE_TASK_STATEMENT_UPDATE = 34;
     // ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time.
@@ -187,8 +185,6 @@ message LogEntity {
     ACTION_PROJECT_MEMBER_CREATE = 42;
     // ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project.
     ACTION_PROJECT_MEMBER_DELETE = 43;
-    // ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done.
-    ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE = 44;
     // ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another.
     ACTION_PROJECT_DATABASE_TRANSFER = 45;
 

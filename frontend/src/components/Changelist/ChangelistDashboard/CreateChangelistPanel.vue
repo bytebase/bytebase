@@ -100,8 +100,9 @@ import {
   useChangelistStore,
   useProjectV1Store,
 } from "@/store";
-import { ResourceId, UNKNOWN_ID, ValidatedMessage } from "@/types";
-import { ComposedProject } from "@/types";
+import type { ResourceId, ValidatedMessage } from "@/types";
+import { UNKNOWN_ID } from "@/types";
+import type { ComposedProject } from "@/types";
 import { Changelist } from "@/types/proto/v1/changelist_service";
 import { extractChangelistResourceName } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";

@@ -1,5 +1,5 @@
 import type { TreeOption } from "naive-ui";
-import {
+import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";

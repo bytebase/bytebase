@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -45,11 +44,11 @@ type UpdateInstanceMessage struct {
 	// OptionsUpsert upserts the top-level messages of the instance options.
 	OptionsUpsert *storepb.InstanceOptions
 	Metadata      *storepb.InstanceMetadata
+	EnvironmentID *string
 
 	// Output only.
-	UpdaterID     int
-	EnvironmentID string
-	ResourceID    string
+	UpdaterID  int
+	ResourceID string
 }
 
 // FindInstanceMessage is the message for finding instances.
@@ -241,6 +240,18 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.EnvironmentID; v != nil {
+		environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{
+			ResourceID: v,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if environment == nil {
+			return nil, common.Errorf(common.NotFound, "environment %s not found", *v)
+		}
+		set, args = append(set, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, environment.UID)
+	}
 	if v := patch.ExternalLink; v != nil {
 		set, args = append(set, fmt.Sprintf("external_link = $%d", len(args)+1)), append(args, *v)
 	}
@@ -279,6 +290,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 
 		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadata)
 	}
+	where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, patch.ResourceID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -286,24 +298,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 	defer tx.Rollback()
 
-	// TODO(d): use the same query for environment.
-	environment, err := s.getEnvironmentImplV2(ctx, tx, &FindEnvironmentMessage{
-		ResourceID: &patch.EnvironmentID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if environment == nil {
-		return nil, common.Errorf(common.NotFound, "environment %s not found", patch.EnvironmentID)
-	}
-
-	args = append(args, patch.ResourceID, environment.UID)
-	where = append(where, fmt.Sprintf("resource_id = $%d", len(args)-1), fmt.Sprintf("environment_id = $%d", len(args)))
-
-	instance := &InstanceMessage{
-		EnvironmentID: patch.EnvironmentID,
-	}
+	instance := &InstanceMessage{}
 	var engine string
+	var environmentUID int
 	query := fmt.Sprintf(`
 			UPDATE instance
 			SET `+strings.Join(set, ", ")+`
@@ -311,6 +308,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			RETURNING
 				id,
 				resource_id,
+				environment_id,
 				name,
 				engine,
 				engine_version,
@@ -325,6 +323,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&instance.UID,
 		&instance.ResourceID,
+		&environmentUID,
 		&instance.Title,
 		&engine,
 		&instance.EngineVersion,
@@ -334,9 +333,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		&options,
 		&metadata,
 	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
 		return nil, err
 	}
 	engineTypeValue, ok := storepb.Engine_value[engine]
@@ -377,6 +373,17 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
+
+	environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{
+		UID: &environmentUID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if environment == nil {
+		return nil, common.Errorf(common.NotFound, "environment %d not found", environmentUID)
+	}
+	instance.EnvironmentID = environment.ResourceID
 
 	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
 	s.instanceIDCache.Add(instance.UID, instance)
@@ -478,48 +485,6 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 
 	return instanceMessages, nil
-}
-
-// FindInstanceWithDatabaseBackupEnabled finds instances with at least one database who enables backup policy.
-func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context) ([]*InstanceMessage, error) {
-	rows, err := s.db.db.QueryContext(ctx, `
-		SELECT DISTINCT
-			instance.id
-		FROM instance
-		JOIN db ON db.instance_id = instance.id
-		JOIN backup_setting AS bs ON db.id = bs.database_id
-		WHERE bs.enabled = true AND instance.row_status = $1
-	`, api.Normal)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var instanceUIDs []int
-	for rows.Next() {
-		var instanceUID int
-		if err := rows.Scan(
-			&instanceUID,
-		); err != nil {
-			return nil, err
-		}
-		instanceUIDs = append(instanceUIDs, instanceUID)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	var instances []*InstanceMessage
-	for _, instanceUID := range instanceUIDs {
-		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{UID: &instanceUID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance %v", instanceUID)
-		}
-		if instance == nil {
-			continue
-		}
-		instances = append(instances, instance)
-	}
-	return instances, nil
 }
 
 var countActivateInstanceQuery = "SELECT COUNT(*) FROM instance WHERE activation = TRUE AND row_status = 'NORMAL'"

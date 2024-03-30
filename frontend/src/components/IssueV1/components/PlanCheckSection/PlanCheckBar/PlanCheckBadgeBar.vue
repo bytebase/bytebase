@@ -15,10 +15,8 @@
 <script lang="ts" setup>
 import { orderBy } from "lodash-es";
 import { computed } from "vue";
-import {
-  PlanCheckRun,
-  PlanCheckRun_Type,
-} from "@/types/proto/v1/rollout_service";
+import type { PlanCheckRun } from "@/types/proto/v1/rollout_service";
+import { PlanCheckRun_Type } from "@/types/proto/v1/rollout_service";
 import { groupBy } from "@/utils/collections";
 import PlanCheckBadge from "./PlanCheckBadge.vue";
 
@@ -47,7 +45,6 @@ const planCheckRunsGroupByType = computed(() => {
 });
 
 const PlanCheckTypeOrderList: PlanCheckRun_Type[] = [
-  PlanCheckRun_Type.DATABASE_PITR_MYSQL,
   PlanCheckRun_Type.DATABASE_GHOST_SYNC,
   PlanCheckRun_Type.DATABASE_STATEMENT_COMPATIBILITY,
   PlanCheckRun_Type.DATABASE_STATEMENT_TYPE,

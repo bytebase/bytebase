@@ -111,9 +111,8 @@
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
+import type { FormInst, FormRules } from "naive-ui";
 import {
-  FormInst,
-  FormRules,
   NButton,
   NDropdown,
   NForm,

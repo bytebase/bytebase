@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
 
@@ -14,31 +15,43 @@ option go_package = "generated-go/v1";
 service SQLService {
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
-      post: "/v1/{name=instances/*}:query"
+      post: "/v1/{name=instances/*/databases/*}:query"
+      additional_bindings {post: "/v1/{name=instances/*}:query"}
       body: "*"
     };
   }
+
+  rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
+    option (google.api.http) = {get: "/v1/queryHistories:search"};
+  }
+
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
-      post: "/v1/{name=instances/*}:export"
+      post: "/v1/{name=instances/*/databases/*}:export"
+      additional_bindings {post: "/v1/{name=instances/*}:export"}
+      additional_bindings {post: "/v1/{name=projects/*/issues/*}:export"}
       body: "*"
     };
   }
+
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     option (google.api.http) = {get: "/v1:adminExecute"};
   }
+
   rpc DifferPreview(DifferPreviewRequest) returns (DifferPreviewResponse) {
     option (google.api.http) = {
       post: "/v1/sql/differPreview"
       body: "*"
     };
   }
+
   rpc Check(CheckRequest) returns (CheckResponse) {
     option (google.api.http) = {
       post: "/v1/sql/check"
       body: "*"
     };
   }
+
   rpc ParseMyBatisMapper(ParseMyBatisMapperRequest) returns (ParseMyBatisMapperResponse) {
     option (google.api.http) = {
       post: "/v1/sql/parseMyBatisMapper"
@@ -75,13 +88,10 @@ message DifferPreviewResponse {
 
 message AdminExecuteRequest {
   // The name is the instance name to execute the query against.
-  // Format: instances/{instance}
+  // Format: instances/{instance}/databases/{databaseName}
   string name = 1;
 
-  // The connection database name to execute the query against.
-  // For PostgreSQL, it's required.
-  // For other database engines, it's optional. Use empty string to execute against without specifying a database.
-  string connection_database = 2;
+  string connection_database = 2 [deprecated = true];
 
   // The SQL statement to execute.
   string statement = 3;
@@ -100,13 +110,10 @@ message AdminExecuteResponse {
 
 message ExportRequest {
   // The name is the instance name to execute the query against.
-  // Format: instances/{instance}
+  // Format: instances/{instance}/databases/{databaseName}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // The connection database name to execute the query against.
-  // For PostgreSQL, it's required.
-  // For other database engines, it's optional. Use empty string to execute against without specifying a database.
-  string connection_database = 2;
+  string connection_database = 2 [deprecated = true];
 
   // The SQL statement to execute.
   string statement = 3;
@@ -132,13 +139,10 @@ message ExportResponse {
 
 message QueryRequest {
   // The name is the instance name to execute the query against.
-  // Format: instances/{instance}
+  // Format: instances/{instance}/databases/{databaseName}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // The connection database name to execute the query against.
-  // For PostgreSQL, it's required.
-  // For other database engines, it's optional. Use empty string to execute against without specifying a database.
-  string connection_database = 2;
+  string connection_database = 2 [deprecated = true];
 
   // The SQL statement to execute.
   string statement = 3;
@@ -304,4 +308,65 @@ message StringifyMetadataRequest {
 
 message StringifyMetadataResponse {
   string schema = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message SearchQueryHistoriesRequest {
+  // Not used. The maximum number of histories to return.
+  // The service may return fewer than this value.
+  // If unspecified, at most 100 history entries will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 1;
+
+  // Not used. A page token, received from a previous `ListQueryHistory` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 2;
+
+  // filter is the filter to apply on the search query history,
+  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+  // Support filter by:
+  // - database, for example:
+  //    database = "instances/{instance}/databases/{database}"
+  // - instance, for example:
+  //    instance = "instance/{instance}"
+  // - type, for example:
+  //    type = "QUERY"
+  string filter = 3;
+}
+
+message SearchQueryHistoriesResponse {
+  // The list of history.
+  repeated QueryHistory query_histories = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // A token to retrieve next page of history.
+  // Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method
+  // to retrieve the next page of history.
+  string next_page_token = 2;
+}
+
+message QueryHistory {
+  // The name for the query history.
+  // Format: queryHistories/{uid}
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The database name to execute the query.
+  // Format: instances/{instance}/databases/{databaseName}
+  string database = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string statement = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  optional string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Duration duration = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    QUERY = 1;
+    EXPORT = 2;
+  }
+
+  Type type = 8;
 }

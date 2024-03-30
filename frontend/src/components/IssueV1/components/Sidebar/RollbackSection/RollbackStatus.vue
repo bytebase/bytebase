@@ -82,12 +82,11 @@ import { databaseForTask, useIssueContext } from "@/components/IssueV1";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useActivityV1Store, useSheetV1Store } from "@/store";
-import {
+import type {
   ActivityIssueCommentCreatePayload,
   TaskRollbackBy,
-  UNKNOWN_ID,
-  unknownIssue,
 } from "@/types";
+import { UNKNOWN_ID, unknownIssue } from "@/types";
 import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { Task_DatabaseDataUpdate_RollbackSqlStatus as RollbackSqlStatus } from "@/types/proto/v1/rollout_service";
 import { extractProjectResourceName, extractSheetUID } from "@/utils";

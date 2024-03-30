@@ -237,10 +237,7 @@ CREATE TABLE project (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
     key TEXT NOT NULL,
-    workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS')),
-    visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE')),
     tenant_mode TEXT NOT NULL CHECK (tenant_mode IN ('DISABLED', 'TENANT')) DEFAULT 'DISABLED',
-    schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
     resource_id TEXT NOT NULL,
     data_classification_config_id TEXT NOT NULL DEFAULT '',
     setting JSONB NOT NULL DEFAULT '{}'
@@ -257,8 +254,6 @@ INSERT INTO
         updater_id,
         name,
         key,
-        workflow_type,
-        visibility,
         tenant_mode,
         resource_id
     )
@@ -269,8 +264,6 @@ VALUES
         1,
         'Default',
         'DEFAULT',
-        'UI',
-        'PUBLIC',
         'DISABLED',
         'default'
     );
@@ -399,8 +392,6 @@ CREATE TABLE db (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
     environment_id INTEGER REFERENCES environment (id),
-    -- If db is restored from a backup, then we will record that backup id. We can thus trace up to the original db.
-    source_backup_id INTEGER,
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
     schema_version TEXT NOT NULL,
@@ -480,68 +471,6 @@ CREATE TRIGGER update_data_source_updated_ts
 BEFORE
 UPDATE
     ON data_source FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
--- backup stores the backups for a particular database.
-CREATE TABLE backup (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    database_id INTEGER NOT NULL REFERENCES db (id),
-    name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('PENDING_CREATE', 'DONE', 'FAILED')),
-    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC', 'PITR')),
-    storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL', 'S3', 'GCS', 'OSS')),
-    migration_history_version TEXT NOT NULL,
-    path TEXT NOT NULL,
-    comment TEXT NOT NULL DEFAULT '',
-    payload JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_backup_database_id ON backup(database_id);
-
-CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON backup(database_id, name);
-
-ALTER SEQUENCE backup_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_backup_updated_ts
-BEFORE
-UPDATE
-    ON backup FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
--- backup_setting stores the backup settings for a particular database.
--- This is a strict version of cron expression using UTC timezone uniformly.
-CREATE TABLE backup_setting (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    database_id INTEGER NOT NULL REFERENCES db (id),
-    -- enable automatic backup schedule.
-    enabled BOOLEAN NOT NULL,
-    hour INTEGER NOT NULL CHECK (hour >= 0 AND hour <= 23),
-    -- day_of_week can be -1 which is wildcard (daily automatic backup).
-    day_of_week INTEGER NOT NULL CHECK (day_of_week >= -1 AND day_of_week <= 6),
-    -- retention_period_ts == 0 means unset retention period and we do not delete any data.
-    retention_period_ts INTEGER NOT NULL DEFAULT 0 CHECK (retention_period_ts >= 0),
-    -- hook_url is the callback url to be requested after a successful backup.
-    hook_url TEXT NOT NULL
-);
-
-CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON backup_setting(database_id);
-
-ALTER SEQUENCE backup_setting_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_backup_setting_updated_ts
-BEFORE
-UPDATE
-    ON backup_setting FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 -----------------------
@@ -848,12 +777,15 @@ CREATE TABLE activity (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    resource_container TEXT NOT NULL DEFAULT '',
     container_id INTEGER NOT NULL CHECK (container_id > 0),
     type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
     level TEXT NOT NULL CHECK (level IN ('INFO', 'WARN', 'ERROR')),
     comment TEXT NOT NULL DEFAULT '',
     payload JSONB NOT NULL DEFAULT '{}'
 );
+
+CREATE INDEX idx_activity_resource_container ON activity(resource_container);
 
 CREATE INDEX idx_activity_container_id ON activity(container_id);
 
@@ -867,45 +799,42 @@ UPDATE
     ON activity FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
--- inbox table stores the inbox entry for the corresponding activity.
--- Unlike other tables, it doesn't have row_status/creator_id/created_ts/updater_id/updated_ts.
--- We design in this way because:
--- 1. The table may potentially contain a lot of rows (an issue activity will generate one inbox record per issue subscriber)
--- 2. Does not provide much value besides what's contained in the related activity record.
-CREATE TABLE inbox (
-    id SERIAL PRIMARY KEY,
-    receiver_id INTEGER NOT NULL REFERENCES principal (id),
-    activity_id INTEGER NOT NULL REFERENCES activity (id),
-    status TEXT NOT NULL CHECK (status IN ('UNREAD', 'READ'))
-);
-
-CREATE INDEX idx_inbox_receiver_id_activity_id ON inbox(receiver_id, activity_id);
-
-CREATE INDEX idx_inbox_receiver_id_status ON inbox(receiver_id, status);
-
-ALTER SEQUENCE inbox_id_seq RESTART WITH 101;
-
--- bookmark table stores the bookmark for the user
-CREATE TABLE bookmark (
-    id SERIAL PRIMARY KEY,
+CREATE TABLE issue_comment (
+    id BIGSERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    name TEXT NOT NULL,
-    link TEXT NOT NULL
+    issue_id INTEGER NOT NULL REFERENCES issue (id),
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON bookmark(creator_id, link);
+CREATE INDEX idx_issue_comment_issue_id ON issue_comment(issue_id);
 
-ALTER SEQUENCE bookmark_id_seq RESTART WITH 101;
+ALTER SEQUENCE issue_comment_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_bookmark_updated_ts
+CREATE TRIGGER update_issue_comment_updated_ts
 BEFORE
 UPDATE
-    ON bookmark FOR EACH ROW
+    ON issue_comment FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
+
+CREATE TABLE query_history (
+    id BIGSERIAL PRIMARY KEY,
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    project_id TEXT NOT NULL, -- the project resource id
+    database TEXT NOT NULL, -- the database resource name, for example, instances/{instance}/databases/{database}
+    statement TEXT NOT NULL,
+    type TEXT NOT NULL, -- the history type, support QUERY and EXPORT.
+    payload JSONB NOT NULL DEFAULT '{}' -- saved for details, like error, duration, etc.
+);
+
+CREATE INDEX idx_query_history_creator_id_created_ts_project_id ON query_history(creator_id, created_ts, project_id DESC);
+
+ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 
 -- vcs table stores the version control provider config
 CREATE TABLE vcs (
@@ -915,13 +844,14 @@ CREATE TABLE vcs (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    resource_id TEXT NOT NULL,
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS')),
     instance_url TEXT NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
-    api_url TEXT NOT NULL CHECK ((api_url LIKE 'http://%' OR api_url LIKE 'https://%') AND api_url = rtrim(api_url, '/')),
-    application_id TEXT NOT NULL,
-    secret TEXT NOT NULL
+    access_token TEXT NOT NULL DEFAULT ''
 );
+
+CREATE UNIQUE INDEX idx_vcs_unique_resource_id ON vcs(resource_id);
 
 ALTER SEQUENCE vcs_id_seq RESTART WITH 101;
 
@@ -931,10 +861,8 @@ UPDATE
     ON vcs FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
--- repository table stores the repository setting for a project
--- A vcs is associated with many repositories.
--- A project can only link one repository (at least for now).
-CREATE TABLE repository (
+-- vcs_connector table stores vcs connectors for a project
+CREATE TABLE vcs_connector (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
@@ -943,57 +871,18 @@ CREATE TABLE repository (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     vcs_id INTEGER NOT NULL REFERENCES vcs (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    -- Name from the corresponding VCS provider.
-    -- For GitLab, this is the project name. e.g. project 1
-    name TEXT NOT NULL,
-    -- Full path from the corresponding VCS provider.
-    -- For GitLab, this is the project full path. e.g. group1/project-1
-    full_path TEXT NOT NULL,
-    -- Web url from the corresponding VCS provider.
-    -- For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1
-    web_url TEXT NOT NULL,
-    -- Branch we are interested.
-    -- For GitLab, this corresponds to webhook's push_events_branch_filter. Wildcard is supported
-    branch_filter TEXT NOT NULL DEFAULT '',
-    -- Base working directory we are interested.
-    base_directory TEXT NOT NULL DEFAULT '',
-    -- The file path template for matching the committed migration script.
-    file_path_template TEXT NOT NULL DEFAULT '',
-    -- If enable the SQL review CI in VCS repository.
-    enable_sql_review_ci BOOLEAN NOT NULL DEFAULT false,
-    -- If enabled, create an issue on commits.
-    enable_cd BOOLEAN NOT NULL DEFAULT false,
-    -- The file path template for storing the latest schema auto-generated by Bytebase after migration.
-    -- If empty, then Bytebase won't auto generate it.
-    schema_path_template TEXT NOT NULL DEFAULT '',
-    -- The file path template to match the script file for sheet.
-    sheet_path_template TEXT NOT NULL DEFAULT '',
-    -- Repository id from the corresponding VCS provider.
-    -- For GitLab, this is the project id. e.g. 123
-    external_id TEXT NOT NULL,
-    -- Push webhook id from the corresponding VCS provider.
-    -- For GitLab, this is the project webhook id. e.g. 123
-    external_webhook_id TEXT NOT NULL,
-    -- Identify the host of the webhook url where the webhook event sends. We store this to identify stale webhook url whose url doesn't match the current bytebase --external-url.
-    webhook_url_host TEXT NOT NULL,
-    -- Identify the target repository receiving the webhook event. This is a random string.
-    webhook_endpoint_id TEXT NOT NULL,
-    -- For GitLab, webhook request contains this in the 'X-Gitlab-Token" header and we compare it with the one stored in db to validate it sends to the expected endpoint.
-    webhook_secret_token TEXT NOT NULL,
-    -- access_token, expires_ts, refresh_token belongs to the user linking the project to the VCS repository.
-    access_token TEXT NOT NULL,
-    expires_ts BIGINT NOT NULL,
-    refresh_token TEXT NOT NULL
+    resource_id TEXT NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_repository_unique_project_id ON repository(project_id);
+CREATE UNIQUE INDEX idx_vcs_connector_unique_project_id_resource_id ON vcs_connector(project_id, resource_id);
 
-ALTER SEQUENCE repository_id_seq RESTART WITH 101;
+ALTER SEQUENCE vcs_connector_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_repository_updated_ts
+CREATE TRIGGER update_vcs_connector_updated_ts
 BEFORE
 UPDATE
-    ON repository FOR EACH ROW
+    ON vcs_connector FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Anomaly
@@ -1300,3 +1189,10 @@ BEFORE
 UPDATE
     ON branch FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
+
+CREATE TABLE export_archive (
+  id SERIAL PRIMARY KEY,
+  created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+  bytes BYTEA,
+  payload JSONB NOT NULL DEFAULT '{}'
+);

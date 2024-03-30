@@ -95,14 +95,8 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  NPopover,
-  NDivider,
-  NDataTable,
-  DataTableRowKey,
-  NTag,
-  DataTableColumn,
-} from "naive-ui";
+import type { DataTableRowKey, DataTableColumn } from "naive-ui";
+import { NPopover, NDivider, NDataTable, NTag } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
@@ -110,12 +104,12 @@ import { InstanceV1EngineIcon } from "@/components/v2";
 import LabelsColumn from "@/components/v2/Model/DatabaseV1Table/LabelsColumn.vue";
 import {
   hasFeature,
+  useConnectionOfCurrentSQLEditorTab,
   useCurrentUserIamPolicy,
-  useDatabaseV1ByUID,
   useDatabaseV1Store,
-  useTabStore,
+  useSQLEditorTabStore,
 } from "@/store/modules";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 
 interface LocalState {
   databaseNameSearch: string;
@@ -124,7 +118,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 const state = reactive<LocalState>({
   databaseNameSearch: "",
@@ -132,13 +126,9 @@ const state = reactive<LocalState>({
 });
 // Save the stringified label key-value pairs.
 const currentTab = computed(() => tabStore.currentTab);
-const connection = computed(() => currentTab.value.connection);
+const { database: selectedDatabase } = useConnectionOfCurrentSQLEditorTab();
 const selectedDatabaseNames = ref<string[]>([]);
 const hasBatchQueryFeature = hasFeature("bb.feature.batch-query");
-
-const { database: selectedDatabase } = useDatabaseV1ByUID(
-  computed(() => String(connection.value.databaseId))
-);
 
 const project = computed(() => selectedDatabase.value.projectEntity);
 
@@ -250,16 +240,15 @@ const handleTriggerClick = () => {
 watch(selectedDatabaseNames, () => {
   tabStore.updateCurrentTab({
     batchQueryContext: {
-      selectedDatabaseNames: selectedDatabaseNames.value,
+      databases: selectedDatabaseNames.value,
     },
   });
 });
 
 watch(
-  () => currentTab.value.batchQueryContext?.selectedDatabaseNames,
-  () => {
-    selectedDatabaseNames.value =
-      currentTab.value.batchQueryContext?.selectedDatabaseNames || [];
+  () => currentTab.value?.batchQueryContext?.databases,
+  (databases) => {
+    selectedDatabaseNames.value = databases ?? [];
   },
   {
     immediate: true,

@@ -1,6 +1,6 @@
 import { keyBy } from "lodash-es";
 import { Engine } from "@/types/proto/v1/common";
-import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
+import type { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
 import type { Database, Environment } from "../types";
 import { semverCompare } from "./util";
 
@@ -109,12 +109,6 @@ export function filterDatabaseByKeyword(
   }
 
   return false;
-}
-
-export function isPITRDatabase(db: Database): boolean {
-  const { name } = db;
-  // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
-  return !!name.match(/^(.+?)_pitr_(\d+)(_del)?$/);
 }
 
 export function isArchivedDatabase(db: Database): boolean {

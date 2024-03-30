@@ -9,7 +9,6 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/common.proto";
-import "v1/externalvs_service.proto";
 import "v1/iam_policy.proto";
 
 option go_package = "generated-go/v1";
@@ -111,29 +110,6 @@ service ProjectService {
       post: "/v1/{project=projects/*}:testWebhook"
       body: "*"
     };
-  }
-
-  rpc UpdateProjectGitOpsInfo(UpdateProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
-    option (google.api.http) = {
-      patch: "/v1/{project_gitops_info.name=projects/*/gitOpsInfo}"
-      body: "*"
-    };
-  }
-
-  rpc UnsetProjectGitOpsInfo(UnsetProjectGitOpsInfoRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=projects/*/gitOpsInfo}"};
-    option (google.api.method_signature) = "name";
-  }
-
-  rpc SetupProjectSQLReviewCI(SetupSQLReviewCIRequest) returns (SetupSQLReviewCIResponse) {
-    option (google.api.http) = {
-      patch: "/v1/{name=projects/*/gitOpsInfo}:setupSQLReviewCI"
-      body: "*"
-    };
-  }
-
-  rpc GetProjectGitOpsInfo(GetProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
-    option (google.api.http) = {get: "/v1/{name=projects/*/gitOpsInfo}"};
   }
 
   rpc ListDatabaseGroups(ListDatabaseGroupsRequest) returns (ListDatabaseGroupsResponse) {
@@ -331,40 +307,6 @@ message UpdateDeploymentConfigRequest {
   DeploymentConfig config = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message UpdateProjectGitOpsInfoRequest {
-  // The binding for the project and external version control.
-  ProjectGitOpsInfo project_gitops_info = 2 [(google.api.field_behavior) = REQUIRED];
-
-  // The mask of the fields to be updated.
-  google.protobuf.FieldMask update_mask = 3;
-
-  // If true, the gitops will be created if it does not exist.
-  bool allow_missing = 4;
-}
-
-message UnsetProjectGitOpsInfoRequest {
-  // The name of the GitOps info.
-  // Format: projects/{project}/gitOpsInfo
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message GetProjectGitOpsInfoRequest {
-  // The name of the GitOps info.
-  // Format: projects/{project}/gitOpsInfo
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message SetupSQLReviewCIRequest {
-  // The name of the GitOps info.
-  // Format: projects/{project}/gitOpsInfo
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message SetupSQLReviewCIResponse {
-  // The CI setup PR URL for the repository.
-  string pull_request_url = 1;
-}
-
 message Project {
   // The name of the project.
   // Format: projects/{project}
@@ -383,11 +325,7 @@ message Project {
 
   Workflow workflow = 6;
 
-  Visibility visibility = 7;
-
   TenantMode tenant_mode = 8;
-
-  SchemaChange schema_change = 10;
 
   repeated Webhook webhooks = 11;
 
@@ -400,28 +338,10 @@ enum Workflow {
   VCS = 2;
 }
 
-enum Visibility {
-  VISIBILITY_UNSPECIFIED = 0;
-  VISIBILITY_PUBLIC = 1;
-  VISIBILITY_PRIVATE = 2;
-}
-
 enum TenantMode {
   TENANT_MODE_UNSPECIFIED = 0;
   TENANT_MODE_DISABLED = 1;
   TENANT_MODE_ENABLED = 2;
-}
-
-enum SchemaVersion {
-  SCHEMA_VERSION_UNSPECIFIED = 0;
-  TIMESTAMP = 1;
-  SEMANTIC = 2;
-}
-
-enum SchemaChange {
-  SCHEMA_CHANGE_UNSPECIFIED = 0;
-  DDL = 1;
-  SDL = 2;
 }
 
 message AddWebhookRequest {
@@ -568,8 +488,6 @@ message Activity {
     TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE = 6;
     // TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
     TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22;
-    // TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement.
-    TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT = 7;
     // TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement.
     TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE = 8;
     // TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time.
@@ -600,10 +518,6 @@ message Activity {
     // SQL Editor related activity types.
     // TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
     TYPE_SQL_EDITOR_QUERY = 19;
-
-    // Database related activity types.
-    // TYPE_DATABASE_RECOVERY_PITR_DONE represents the database recovery to a point in time is done.
-    TYPE_DATABASE_RECOVERY_PITR_DONE = 20;
   }
 }
 

@@ -2,15 +2,15 @@ import { defineStore } from "pinia";
 import { computed, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
 import { useCache } from "@/store/cache";
-import {
+import type {
   ProtectionRule,
-  ProtectionRule_Target,
   ProtectionRules,
 } from "@/types/proto/v1/project_service";
+import { ProtectionRule_Target } from "@/types/proto/v1/project_service";
 import { protectionRulesSuffix } from "./common";
 
 type ProjectProtectionRuleCacheKey = [
-  string /* project protection rules resource name */
+  string /* project protection rules resource name */,
 ];
 
 export const useProjectProtectionRulesStore = defineStore(

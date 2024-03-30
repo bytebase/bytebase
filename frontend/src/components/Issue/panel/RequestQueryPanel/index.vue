@@ -95,13 +95,8 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import {
-  ComposedDatabase,
-  DatabaseResource,
-  SYSTEM_BOT_EMAIL,
-  UNKNOWN_ID,
-  PresetRoleType,
-} from "@/types";
+import type { ComposedDatabase, DatabaseResource } from "@/types";
+import { SYSTEM_BOT_EMAIL, UNKNOWN_ID, PresetRoleType } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
@@ -213,15 +208,6 @@ const doCreateIssue = async () => {
     return;
   }
 
-  // const newIssue: IssueCreate = {
-  //   name: generateIssueName(),
-  //   type: "bb.issue.grant.request",
-  //   description: state.description,
-  //   projectId: Number(state.projectId),
-  //   assigneeId: SYSTEM_BOT_ID,
-  //   createContext: {},
-  //   payload: {},
-  // };
   const newIssue = Issue.fromPartial({
     title: generateIssueName(),
     description: state.description,

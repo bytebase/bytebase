@@ -1,9 +1,9 @@
-import { DataSource } from ".";
-import { RowStatus } from "./common";
-import { Environment } from "./environment";
-import { InstanceId, MigrationHistoryId } from "./id";
+import type { DataSource } from ".";
+import type { RowStatus } from "./common";
+import type { Environment } from "./environment";
+import type { InstanceId, MigrationHistoryId } from "./id";
 import { Engine } from "./proto/v1/common";
-import { VCSPushEvent } from "./vcs";
+import type { VCSPushEvent } from "./vcs";
 
 export const EngineTypeList = [
   "CLICKHOUSE",
@@ -23,7 +23,7 @@ export const EngineTypeList = [
   "RISINGWAVE",
 ] as const;
 
-export type EngineType = typeof EngineTypeList[number];
+export type EngineType = (typeof EngineTypeList)[number];
 
 export function convertEngineType(type: EngineType): Engine {
   switch (type) {

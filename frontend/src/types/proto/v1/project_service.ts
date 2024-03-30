@@ -5,7 +5,6 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
 import { State, stateFromJSON, stateToJSON } from "./common";
-import { ProjectGitOpsInfo } from "./externalvs_service";
 import { IamPolicy } from "./iam_policy";
 
 export const protobufPackage = "bytebase.v1";
@@ -49,45 +48,6 @@ export function workflowToJSON(object: Workflow): string {
   }
 }
 
-export enum Visibility {
-  VISIBILITY_UNSPECIFIED = 0,
-  VISIBILITY_PUBLIC = 1,
-  VISIBILITY_PRIVATE = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function visibilityFromJSON(object: any): Visibility {
-  switch (object) {
-    case 0:
-    case "VISIBILITY_UNSPECIFIED":
-      return Visibility.VISIBILITY_UNSPECIFIED;
-    case 1:
-    case "VISIBILITY_PUBLIC":
-      return Visibility.VISIBILITY_PUBLIC;
-    case 2:
-    case "VISIBILITY_PRIVATE":
-      return Visibility.VISIBILITY_PRIVATE;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Visibility.UNRECOGNIZED;
-  }
-}
-
-export function visibilityToJSON(object: Visibility): string {
-  switch (object) {
-    case Visibility.VISIBILITY_UNSPECIFIED:
-      return "VISIBILITY_UNSPECIFIED";
-    case Visibility.VISIBILITY_PUBLIC:
-      return "VISIBILITY_PUBLIC";
-    case Visibility.VISIBILITY_PRIVATE:
-      return "VISIBILITY_PRIVATE";
-    case Visibility.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export enum TenantMode {
   TENANT_MODE_UNSPECIFIED = 0,
   TENANT_MODE_DISABLED = 1,
@@ -122,84 +82,6 @@ export function tenantModeToJSON(object: TenantMode): string {
     case TenantMode.TENANT_MODE_ENABLED:
       return "TENANT_MODE_ENABLED";
     case TenantMode.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum SchemaVersion {
-  SCHEMA_VERSION_UNSPECIFIED = 0,
-  TIMESTAMP = 1,
-  SEMANTIC = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function schemaVersionFromJSON(object: any): SchemaVersion {
-  switch (object) {
-    case 0:
-    case "SCHEMA_VERSION_UNSPECIFIED":
-      return SchemaVersion.SCHEMA_VERSION_UNSPECIFIED;
-    case 1:
-    case "TIMESTAMP":
-      return SchemaVersion.TIMESTAMP;
-    case 2:
-    case "SEMANTIC":
-      return SchemaVersion.SEMANTIC;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return SchemaVersion.UNRECOGNIZED;
-  }
-}
-
-export function schemaVersionToJSON(object: SchemaVersion): string {
-  switch (object) {
-    case SchemaVersion.SCHEMA_VERSION_UNSPECIFIED:
-      return "SCHEMA_VERSION_UNSPECIFIED";
-    case SchemaVersion.TIMESTAMP:
-      return "TIMESTAMP";
-    case SchemaVersion.SEMANTIC:
-      return "SEMANTIC";
-    case SchemaVersion.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum SchemaChange {
-  SCHEMA_CHANGE_UNSPECIFIED = 0,
-  DDL = 1,
-  SDL = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function schemaChangeFromJSON(object: any): SchemaChange {
-  switch (object) {
-    case 0:
-    case "SCHEMA_CHANGE_UNSPECIFIED":
-      return SchemaChange.SCHEMA_CHANGE_UNSPECIFIED;
-    case 1:
-    case "DDL":
-      return SchemaChange.DDL;
-    case 2:
-    case "SDL":
-      return SchemaChange.SDL;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return SchemaChange.UNRECOGNIZED;
-  }
-}
-
-export function schemaChangeToJSON(object: SchemaChange): string {
-  switch (object) {
-    case SchemaChange.SCHEMA_CHANGE_UNSPECIFIED:
-      return "SCHEMA_CHANGE_UNSPECIFIED";
-    case SchemaChange.DDL:
-      return "DDL";
-    case SchemaChange.SDL:
-      return "SDL";
-    case SchemaChange.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -476,48 +358,6 @@ export interface UpdateDeploymentConfigRequest {
   config: DeploymentConfig | undefined;
 }
 
-export interface UpdateProjectGitOpsInfoRequest {
-  /** The binding for the project and external version control. */
-  projectGitopsInfo:
-    | ProjectGitOpsInfo
-    | undefined;
-  /** The mask of the fields to be updated. */
-  updateMask:
-    | string[]
-    | undefined;
-  /** If true, the gitops will be created if it does not exist. */
-  allowMissing: boolean;
-}
-
-export interface UnsetProjectGitOpsInfoRequest {
-  /**
-   * The name of the GitOps info.
-   * Format: projects/{project}/gitOpsInfo
-   */
-  name: string;
-}
-
-export interface GetProjectGitOpsInfoRequest {
-  /**
-   * The name of the GitOps info.
-   * Format: projects/{project}/gitOpsInfo
-   */
-  name: string;
-}
-
-export interface SetupSQLReviewCIRequest {
-  /**
-   * The name of the GitOps info.
-   * Format: projects/{project}/gitOpsInfo
-   */
-  name: string;
-}
-
-export interface SetupSQLReviewCIResponse {
-  /** The CI setup PR URL for the repository. */
-  pullRequestUrl: string;
-}
-
 export interface Project {
   /**
    * The name of the project.
@@ -532,9 +372,7 @@ export interface Project {
   /** The key is a short and upper-case identifier for a project. It's unique within the workspace. */
   key: string;
   workflow: Workflow;
-  visibility: Visibility;
   tenantMode: TenantMode;
-  schemaChange: SchemaChange;
   webhooks: Webhook[];
   dataClassificationConfigId: string;
 }
@@ -742,8 +580,6 @@ export enum Activity_Type {
   TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE = 6,
   /** TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. */
   TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22,
-  /** TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT - TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. */
-  TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT = 7,
   /** TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. */
   TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE = 8,
   /** TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE - TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. */
@@ -777,11 +613,6 @@ export enum Activity_Type {
    * TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
    */
   TYPE_SQL_EDITOR_QUERY = 19,
-  /**
-   * TYPE_DATABASE_RECOVERY_PITR_DONE - Database related activity types.
-   * TYPE_DATABASE_RECOVERY_PITR_DONE represents the database recovery to a point in time is done.
-   */
-  TYPE_DATABASE_RECOVERY_PITR_DONE = 20,
   UNRECOGNIZED = -1,
 }
 
@@ -820,9 +651,6 @@ export function activity_TypeFromJSON(object: any): Activity_Type {
     case 22:
     case "TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE":
       return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE;
-    case 7:
-    case "TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT":
-      return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT;
     case 8:
     case "TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE":
       return Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE;
@@ -856,9 +684,6 @@ export function activity_TypeFromJSON(object: any): Activity_Type {
     case 19:
     case "TYPE_SQL_EDITOR_QUERY":
       return Activity_Type.TYPE_SQL_EDITOR_QUERY;
-    case 20:
-    case "TYPE_DATABASE_RECOVERY_PITR_DONE":
-      return Activity_Type.TYPE_DATABASE_RECOVERY_PITR_DONE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -890,8 +715,6 @@ export function activity_TypeToJSON(object: Activity_Type): string {
       return "TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE";
     case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
       return "TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE";
-    case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT:
-      return "TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT";
     case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE:
       return "TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE";
     case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
@@ -914,8 +737,6 @@ export function activity_TypeToJSON(object: Activity_Type): string {
       return "TYPE_PROJECT_MEMBER_DELETE";
     case Activity_Type.TYPE_SQL_EDITOR_QUERY:
       return "TYPE_SQL_EDITOR_QUERY";
-    case Activity_Type.TYPE_DATABASE_RECOVERY_PITR_DONE:
-      return "TYPE_DATABASE_RECOVERY_PITR_DONE";
     case Activity_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -2353,327 +2174,6 @@ export const UpdateDeploymentConfigRequest = {
   },
 };
 
-function createBaseUpdateProjectGitOpsInfoRequest(): UpdateProjectGitOpsInfoRequest {
-  return { projectGitopsInfo: undefined, updateMask: undefined, allowMissing: false };
-}
-
-export const UpdateProjectGitOpsInfoRequest = {
-  encode(message: UpdateProjectGitOpsInfoRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.projectGitopsInfo !== undefined) {
-      ProjectGitOpsInfo.encode(message.projectGitopsInfo, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.updateMask !== undefined) {
-      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(26).fork()).ldelim();
-    }
-    if (message.allowMissing === true) {
-      writer.uint32(32).bool(message.allowMissing);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateProjectGitOpsInfoRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateProjectGitOpsInfoRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.projectGitopsInfo = ProjectGitOpsInfo.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
-          message.allowMissing = reader.bool();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UpdateProjectGitOpsInfoRequest {
-    return {
-      projectGitopsInfo: isSet(object.projectGitopsInfo)
-        ? ProjectGitOpsInfo.fromJSON(object.projectGitopsInfo)
-        : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-      allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
-    };
-  },
-
-  toJSON(message: UpdateProjectGitOpsInfoRequest): unknown {
-    const obj: any = {};
-    if (message.projectGitopsInfo !== undefined) {
-      obj.projectGitopsInfo = ProjectGitOpsInfo.toJSON(message.projectGitopsInfo);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
-    if (message.allowMissing === true) {
-      obj.allowMissing = message.allowMissing;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<UpdateProjectGitOpsInfoRequest>): UpdateProjectGitOpsInfoRequest {
-    return UpdateProjectGitOpsInfoRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<UpdateProjectGitOpsInfoRequest>): UpdateProjectGitOpsInfoRequest {
-    const message = createBaseUpdateProjectGitOpsInfoRequest();
-    message.projectGitopsInfo = (object.projectGitopsInfo !== undefined && object.projectGitopsInfo !== null)
-      ? ProjectGitOpsInfo.fromPartial(object.projectGitopsInfo)
-      : undefined;
-    message.updateMask = object.updateMask ?? undefined;
-    message.allowMissing = object.allowMissing ?? false;
-    return message;
-  },
-};
-
-function createBaseUnsetProjectGitOpsInfoRequest(): UnsetProjectGitOpsInfoRequest {
-  return { name: "" };
-}
-
-export const UnsetProjectGitOpsInfoRequest = {
-  encode(message: UnsetProjectGitOpsInfoRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): UnsetProjectGitOpsInfoRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUnsetProjectGitOpsInfoRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UnsetProjectGitOpsInfoRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
-  toJSON(message: UnsetProjectGitOpsInfoRequest): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<UnsetProjectGitOpsInfoRequest>): UnsetProjectGitOpsInfoRequest {
-    return UnsetProjectGitOpsInfoRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<UnsetProjectGitOpsInfoRequest>): UnsetProjectGitOpsInfoRequest {
-    const message = createBaseUnsetProjectGitOpsInfoRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseGetProjectGitOpsInfoRequest(): GetProjectGitOpsInfoRequest {
-  return { name: "" };
-}
-
-export const GetProjectGitOpsInfoRequest = {
-  encode(message: GetProjectGitOpsInfoRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetProjectGitOpsInfoRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetProjectGitOpsInfoRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetProjectGitOpsInfoRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
-  toJSON(message: GetProjectGitOpsInfoRequest): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetProjectGitOpsInfoRequest>): GetProjectGitOpsInfoRequest {
-    return GetProjectGitOpsInfoRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetProjectGitOpsInfoRequest>): GetProjectGitOpsInfoRequest {
-    const message = createBaseGetProjectGitOpsInfoRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseSetupSQLReviewCIRequest(): SetupSQLReviewCIRequest {
-  return { name: "" };
-}
-
-export const SetupSQLReviewCIRequest = {
-  encode(message: SetupSQLReviewCIRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SetupSQLReviewCIRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetupSQLReviewCIRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SetupSQLReviewCIRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
-  toJSON(message: SetupSQLReviewCIRequest): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SetupSQLReviewCIRequest>): SetupSQLReviewCIRequest {
-    return SetupSQLReviewCIRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SetupSQLReviewCIRequest>): SetupSQLReviewCIRequest {
-    const message = createBaseSetupSQLReviewCIRequest();
-    message.name = object.name ?? "";
-    return message;
-  },
-};
-
-function createBaseSetupSQLReviewCIResponse(): SetupSQLReviewCIResponse {
-  return { pullRequestUrl: "" };
-}
-
-export const SetupSQLReviewCIResponse = {
-  encode(message: SetupSQLReviewCIResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.pullRequestUrl !== "") {
-      writer.uint32(10).string(message.pullRequestUrl);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SetupSQLReviewCIResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetupSQLReviewCIResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.pullRequestUrl = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SetupSQLReviewCIResponse {
-    return { pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "" };
-  },
-
-  toJSON(message: SetupSQLReviewCIResponse): unknown {
-    const obj: any = {};
-    if (message.pullRequestUrl !== "") {
-      obj.pullRequestUrl = message.pullRequestUrl;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SetupSQLReviewCIResponse>): SetupSQLReviewCIResponse {
-    return SetupSQLReviewCIResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SetupSQLReviewCIResponse>): SetupSQLReviewCIResponse {
-    const message = createBaseSetupSQLReviewCIResponse();
-    message.pullRequestUrl = object.pullRequestUrl ?? "";
-    return message;
-  },
-};
-
 function createBaseProject(): Project {
   return {
     name: "",
@@ -2682,9 +2182,7 @@ function createBaseProject(): Project {
     title: "",
     key: "",
     workflow: 0,
-    visibility: 0,
     tenantMode: 0,
-    schemaChange: 0,
     webhooks: [],
     dataClassificationConfigId: "",
   };
@@ -2710,14 +2208,8 @@ export const Project = {
     if (message.workflow !== 0) {
       writer.uint32(48).int32(message.workflow);
     }
-    if (message.visibility !== 0) {
-      writer.uint32(56).int32(message.visibility);
-    }
     if (message.tenantMode !== 0) {
       writer.uint32(64).int32(message.tenantMode);
-    }
-    if (message.schemaChange !== 0) {
-      writer.uint32(80).int32(message.schemaChange);
     }
     for (const v of message.webhooks) {
       Webhook.encode(v!, writer.uint32(90).fork()).ldelim();
@@ -2777,26 +2269,12 @@ export const Project = {
 
           message.workflow = reader.int32() as any;
           continue;
-        case 7:
-          if (tag !== 56) {
-            break;
-          }
-
-          message.visibility = reader.int32() as any;
-          continue;
         case 8:
           if (tag !== 64) {
             break;
           }
 
           message.tenantMode = reader.int32() as any;
-          continue;
-        case 10:
-          if (tag !== 80) {
-            break;
-          }
-
-          message.schemaChange = reader.int32() as any;
           continue;
         case 11:
           if (tag !== 90) {
@@ -2829,9 +2307,7 @@ export const Project = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       key: isSet(object.key) ? globalThis.String(object.key) : "",
       workflow: isSet(object.workflow) ? workflowFromJSON(object.workflow) : 0,
-      visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       tenantMode: isSet(object.tenantMode) ? tenantModeFromJSON(object.tenantMode) : 0,
-      schemaChange: isSet(object.schemaChange) ? schemaChangeFromJSON(object.schemaChange) : 0,
       webhooks: globalThis.Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
       dataClassificationConfigId: isSet(object.dataClassificationConfigId)
         ? globalThis.String(object.dataClassificationConfigId)
@@ -2859,14 +2335,8 @@ export const Project = {
     if (message.workflow !== 0) {
       obj.workflow = workflowToJSON(message.workflow);
     }
-    if (message.visibility !== 0) {
-      obj.visibility = visibilityToJSON(message.visibility);
-    }
     if (message.tenantMode !== 0) {
       obj.tenantMode = tenantModeToJSON(message.tenantMode);
-    }
-    if (message.schemaChange !== 0) {
-      obj.schemaChange = schemaChangeToJSON(message.schemaChange);
     }
     if (message.webhooks?.length) {
       obj.webhooks = message.webhooks.map((e) => Webhook.toJSON(e));
@@ -2888,9 +2358,7 @@ export const Project = {
     message.title = object.title ?? "";
     message.key = object.key ?? "";
     message.workflow = object.workflow ?? 0;
-    message.visibility = object.visibility ?? 0;
     message.tenantMode = object.tenantMode ?? 0;
-    message.schemaChange = object.schemaChange ?? 0;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
     message.dataClassificationConfigId = object.dataClassificationConfigId ?? "";
     return message;
@@ -6408,250 +5876,6 @@ export const ProjectServiceDefinition = {
               111,
               111,
               107,
-            ]),
-          ],
-        },
-      },
-    },
-    updateProjectGitOpsInfo: {
-      name: "UpdateProjectGitOpsInfo",
-      requestType: UpdateProjectGitOpsInfoRequest,
-      requestStream: false,
-      responseType: ProjectGitOpsInfo,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              57,
-              58,
-              1,
-              42,
-              50,
-              52,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              95,
-              103,
-              105,
-              116,
-              111,
-              112,
-              115,
-              95,
-              105,
-              110,
-              102,
-              111,
-              46,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              103,
-              105,
-              116,
-              79,
-              112,
-              115,
-              73,
-              110,
-              102,
-              111,
-              125,
-            ]),
-          ],
-        },
-      },
-    },
-    unsetProjectGitOpsInfo: {
-      name: "UnsetProjectGitOpsInfo",
-      requestType: UnsetProjectGitOpsInfoRequest,
-      requestStream: false,
-      responseType: Empty,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([4, 110, 97, 109, 101])],
-          578365826: [
-            new Uint8Array([
-              34,
-              42,
-              32,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              103,
-              105,
-              116,
-              79,
-              112,
-              115,
-              73,
-              110,
-              102,
-              111,
-              125,
-            ]),
-          ],
-        },
-      },
-    },
-    setupProjectSQLReviewCI: {
-      name: "SetupProjectSQLReviewCI",
-      requestType: SetupSQLReviewCIRequest,
-      requestStream: false,
-      responseType: SetupSQLReviewCIResponse,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              54,
-              58,
-              1,
-              42,
-              50,
-              49,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              103,
-              105,
-              116,
-              79,
-              112,
-              115,
-              73,
-              110,
-              102,
-              111,
-              125,
-              58,
-              115,
-              101,
-              116,
-              117,
-              112,
-              83,
-              81,
-              76,
-              82,
-              101,
-              118,
-              105,
-              101,
-              119,
-              67,
-              73,
-            ]),
-          ],
-        },
-      },
-    },
-    getProjectGitOpsInfo: {
-      name: "GetProjectGitOpsInfo",
-      requestType: GetProjectGitOpsInfoRequest,
-      requestStream: false,
-      responseType: ProjectGitOpsInfo,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              34,
-              18,
-              32,
-              47,
-              118,
-              49,
-              47,
-              123,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              103,
-              105,
-              116,
-              79,
-              112,
-              115,
-              73,
-              110,
-              102,
-              111,
-              125,
             ]),
           ],
         },

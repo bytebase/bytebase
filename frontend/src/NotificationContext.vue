@@ -6,7 +6,7 @@
 import { useNotification } from "naive-ui";
 import { watchEffect, h } from "vue";
 import { useNotificationStore } from "@/store";
-import { BBNotificationStyle } from "@/types";
+import type { BBNotificationStyle } from "@/types";
 
 const NOTIFICATION_DURATION = 6000;
 const CRITICAL_NOTIFICATION_DURATION = 10000;
@@ -38,8 +38,8 @@ const watchNotification = () => {
   const duration = item.manualHide
     ? undefined
     : item.style === "CRITICAL"
-    ? CRITICAL_NOTIFICATION_DURATION
-    : NOTIFICATION_DURATION;
+      ? CRITICAL_NOTIFICATION_DURATION
+      : NOTIFICATION_DURATION;
 
   notification.create({
     type: getNotificationType(item.style),

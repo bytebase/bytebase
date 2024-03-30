@@ -14,18 +14,19 @@
 </template>
 
 <script lang="ts" setup>
-import { SelectOption } from "naive-ui";
-import { CSSProperties, computed, ref } from "vue";
+import type { SelectOption } from "naive-ui";
+import type { CSSProperties } from "vue";
+import { computed, ref } from "vue";
+import type { DefaultValueOption } from "@/components/SchemaEditorLite/utils";
 import {
-  DefaultValueOption,
   getColumnDefaultDisplayString,
   getColumnDefaultValueOptions,
   getColumnDefaultValuePlaceholder,
   getDefaultValueByKey,
 } from "@/components/SchemaEditorLite/utils";
 import { DropdownInput } from "@/components/v2";
-import { Engine } from "@/types/proto/v1/common";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import type { Engine } from "@/types/proto/v1/common";
+import type { ColumnMetadata } from "@/types/proto/v1/database_service";
 
 const props = defineProps<{
   column: ColumnMetadata;

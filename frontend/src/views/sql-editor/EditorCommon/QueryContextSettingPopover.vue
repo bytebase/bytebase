@@ -1,5 +1,5 @@
 <template>
-  <NPopover placement="bottom-center" trigger="click">
+  <NPopover placement="bottom" trigger="click">
     <template #trigger>
       <NButton type="primary" class="!px-1" size="small">
         <template #icon>
@@ -23,18 +23,16 @@
 <script lang="ts" setup>
 import { head, orderBy } from "lodash-es";
 import { ChevronDown } from "lucide-vue-next";
-import {
-  NButton,
-  NEllipsis,
-  NPopover,
-  NSelect,
-  SelectOption,
-  SelectRenderLabel,
-} from "naive-ui";
+import type { SelectOption, SelectRenderLabel } from "naive-ui";
+import { NButton, NEllipsis, NPopover, NSelect } from "naive-ui";
 import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useInstanceV1ByUID, useTabStore } from "@/store";
-import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore,
+} from "@/store";
+import type { DataSource } from "@/types/proto/v1/instance_service";
+import { DataSourceType } from "@/types/proto/v1/instance_service";
 
 interface DataSourceSelectOption extends SelectOption {
   value: string;
@@ -42,15 +40,12 @@ interface DataSourceSelectOption extends SelectOption {
 }
 
 const { t } = useI18n();
-const tabStore = useTabStore();
-const connection = computed(() => tabStore.currentTab.connection);
+const tabStore = useSQLEditorTabStore();
+const { connection, instance: selectedInstance } =
+  useConnectionOfCurrentSQLEditorTab();
 const selectedDataSourceId = computed(() => {
   return connection.value.dataSourceId;
 });
-
-const { instance: selectedInstance } = useInstanceV1ByUID(
-  computed(() => connection.value.instanceId)
-);
 
 const dataSources = computed(() => {
   return orderBy(selectedInstance.value?.dataSources ?? [], "type");

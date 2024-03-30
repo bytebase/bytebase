@@ -16,10 +16,9 @@
             :required="true"
             :placeholder="$t('project.create-modal.project-name')"
           />
-        </div>
-        <div class="-mt-2">
           <ResourceIdField
             ref="resourceIdField"
+            editing-class="mt-3"
             resource-type="project"
             :value="state.resourceId"
             :resource-title="state.project.title"
@@ -106,8 +105,10 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useProjectV1Store } from "@/store/modules/v1/project";
-import { ResourceId, ValidatedMessage, emptyProject } from "@/types";
-import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import type { ResourceId, ValidatedMessage } from "@/types";
+import { emptyProject } from "@/types";
+import type { Project } from "@/types/proto/v1/project_service";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import { randomString } from "@/utils";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";

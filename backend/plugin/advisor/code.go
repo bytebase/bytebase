@@ -25,27 +25,36 @@ const (
 	CompatibilityDropSchema    Code = 112
 
 	// 201 ~ 299 statement error code.
-	StatementSyntaxError                    Code = 201
-	StatementNoWhere                        Code = 202
-	StatementSelectAll                      Code = 203
-	StatementLeadingWildcardLike            Code = 204
-	StatementCreateTableAs                  Code = 205
-	StatementDisallowCommit                 Code = 206
-	StatementRedundantAlterTable            Code = 207
-	StatementDMLDryRunFailed                Code = 208
-	StatementAffectedRowExceedsLimit        Code = 209
-	StatementAddColumnWithDefault           Code = 210
-	StatementAddCheckWithValidation         Code = 211
-	StatementAddNotNull                     Code = 212
-	StatementDisallowCascade                Code = 213
-	StatementCheckSelectFullTableScanFailed Code = 214
-	StatementHasTableFullScan               Code = 215
-	StatementCreateWithoutSchemaName        Code = 216
-	StatementCheckSetRoleVariable           Code = 217
-	StatementExplainQueryFailed             Code = 218
-	StatementHasUsingFilesort               Code = 219
-	StatementHasUsingTemporary              Code = 220
-	StatementWhereNoEqualNull               Code = 221
+	StatementSyntaxError                      Code = 201
+	StatementNoWhere                          Code = 202
+	StatementSelectAll                        Code = 203
+	StatementLeadingWildcardLike              Code = 204
+	StatementCreateTableAs                    Code = 205
+	StatementDisallowCommit                   Code = 206
+	StatementRedundantAlterTable              Code = 207
+	StatementDMLDryRunFailed                  Code = 208
+	StatementAffectedRowExceedsLimit          Code = 209
+	StatementAddColumnWithDefault             Code = 210
+	StatementAddCheckWithValidation           Code = 211
+	StatementAddNotNull                       Code = 212
+	StatementDisallowCascade                  Code = 213
+	StatementCheckSelectFullTableScanFailed   Code = 214
+	StatementHasTableFullScan                 Code = 215
+	StatementCreateWithoutSchemaName          Code = 216
+	StatementCheckSetRoleVariable             Code = 217
+	StatementExplainQueryFailed               Code = 218
+	StatementHasUsingFilesort                 Code = 219
+	StatementHasUsingTemporary                Code = 220
+	StatementWhereNoEqualNull                 Code = 221
+	StatementExceedMaximumLimitValue          Code = 222
+	StatementMaximumJoinTableCount            Code = 223
+	StatementUnwantedQueryPlanLevel           Code = 224
+	StatementWhereMaximumLogicalOperatorCount Code = 225
+	StatementJoinColumnAttrsNotMatch          Code = 226
+	StatementDisallowMixDDLDML                Code = 227
+	StatementPriorBackupCheck                 Code = 228
+	StatementAddFKWithValidation              Code = 229
+	StatementNonTransactional                 Code = 230
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
@@ -107,11 +116,14 @@ const (
 	CreateTablePartition              Code = 608
 	TableIsReferencedByView           Code = 609
 	CreateTableTrigger                Code = 610
+	TotalTextLengthExceedsLimit       Code = 611
+	DisallowSetCharset                Code = 612
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
 	NotCurrentDatabase Code = 702
 	DatabaseIsDeleted  Code = 703
+	DatabaseNotExists  Code = 704
 
 	// 801 ~ 899 index error code.
 	NotUseIndex                Code = 801

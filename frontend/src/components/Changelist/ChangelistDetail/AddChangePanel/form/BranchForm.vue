@@ -54,7 +54,7 @@ import { DatabaseSelect } from "@/components/v2";
 import { useDatabaseV1Store, useLocalSheetStore } from "@/store";
 import { useBranchListByProject, useBranchStore } from "@/store/modules/branch";
 import { UNKNOWN_ID } from "@/types";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { keyBy } from "@/utils";
 import BranchDetailPanel from "../../BranchDetailPanel";
@@ -134,10 +134,12 @@ const selectedBranchList = computed<string[]>({
         const sheet = localSheetStore.createLocalSheet(
           `${project.value.name}/sheets/${uid}`
         );
-        updatedChanges.push({
-          sheet: sheet.name,
-          source: name,
-        });
+        updatedChanges.push(
+          Change.fromPartial({
+            sheet: sheet.name,
+            source: name,
+          })
+        );
       }
     }
     changes.value = updatedChanges;

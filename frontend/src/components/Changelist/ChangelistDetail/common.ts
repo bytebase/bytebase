@@ -1,7 +1,7 @@
 import dayjs from "@/plugins/dayjs";
 import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { Changelist } from "@/types/proto/v1/changelist_service";
+import type { Changelist } from "@/types/proto/v1/changelist_service";
 import { extractProjectResourceName } from "@/utils";
 
 export const generateIssueName = (

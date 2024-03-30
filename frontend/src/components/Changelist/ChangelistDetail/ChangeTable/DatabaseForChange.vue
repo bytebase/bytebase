@@ -13,7 +13,7 @@
 import { asyncComputed } from "@vueuse/core";
 import { RichDatabaseName } from "@/components/v2";
 import { useDatabaseV1Store, useBranchStore } from "@/store";
-import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import {
   extractDatabaseResourceName,
   isBranchChangeSource,
@@ -28,7 +28,7 @@ const database = asyncComputed(async () => {
   const { change } = props;
   const { source } = change;
   if (isChangeHistoryChangeSource(change)) {
-    const { full: database } = extractDatabaseResourceName(source);
+    const { database } = extractDatabaseResourceName(source);
     return useDatabaseV1Store().getDatabaseByName(database);
   } else if (isBranchChangeSource(change)) {
     const branch = await useBranchStore().fetchBranchByName(

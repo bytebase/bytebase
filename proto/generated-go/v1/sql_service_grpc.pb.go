@@ -19,14 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SQLService_Query_FullMethodName              = "/bytebase.v1.SQLService/Query"
-	SQLService_Export_FullMethodName             = "/bytebase.v1.SQLService/Export"
-	SQLService_AdminExecute_FullMethodName       = "/bytebase.v1.SQLService/AdminExecute"
-	SQLService_DifferPreview_FullMethodName      = "/bytebase.v1.SQLService/DifferPreview"
-	SQLService_Check_FullMethodName              = "/bytebase.v1.SQLService/Check"
-	SQLService_ParseMyBatisMapper_FullMethodName = "/bytebase.v1.SQLService/ParseMyBatisMapper"
-	SQLService_Pretty_FullMethodName             = "/bytebase.v1.SQLService/Pretty"
-	SQLService_StringifyMetadata_FullMethodName  = "/bytebase.v1.SQLService/StringifyMetadata"
+	SQLService_Query_FullMethodName                = "/bytebase.v1.SQLService/Query"
+	SQLService_SearchQueryHistories_FullMethodName = "/bytebase.v1.SQLService/SearchQueryHistories"
+	SQLService_Export_FullMethodName               = "/bytebase.v1.SQLService/Export"
+	SQLService_AdminExecute_FullMethodName         = "/bytebase.v1.SQLService/AdminExecute"
+	SQLService_DifferPreview_FullMethodName        = "/bytebase.v1.SQLService/DifferPreview"
+	SQLService_Check_FullMethodName                = "/bytebase.v1.SQLService/Check"
+	SQLService_ParseMyBatisMapper_FullMethodName   = "/bytebase.v1.SQLService/ParseMyBatisMapper"
+	SQLService_Pretty_FullMethodName               = "/bytebase.v1.SQLService/Pretty"
+	SQLService_StringifyMetadata_FullMethodName    = "/bytebase.v1.SQLService/StringifyMetadata"
 )
 
 // SQLServiceClient is the client API for SQLService service.
@@ -34,6 +35,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SQLServiceClient interface {
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
+	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
 	AdminExecute(ctx context.Context, opts ...grpc.CallOption) (SQLService_AdminExecuteClient, error)
 	DifferPreview(ctx context.Context, in *DifferPreviewRequest, opts ...grpc.CallOption) (*DifferPreviewResponse, error)
@@ -54,6 +56,15 @@ func NewSQLServiceClient(cc grpc.ClientConnInterface) SQLServiceClient {
 func (c *sQLServiceClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error) {
 	out := new(QueryResponse)
 	err := c.cc.Invoke(ctx, SQLService_Query_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error) {
+	out := new(SearchQueryHistoriesResponse)
+	err := c.cc.Invoke(ctx, SQLService_SearchQueryHistories_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -150,6 +161,7 @@ func (c *sQLServiceClient) StringifyMetadata(ctx context.Context, in *StringifyM
 // for forward compatibility
 type SQLServiceServer interface {
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
 	AdminExecute(SQLService_AdminExecuteServer) error
 	DifferPreview(context.Context, *DifferPreviewRequest) (*DifferPreviewResponse, error)
@@ -166,6 +178,9 @@ type UnimplementedSQLServiceServer struct {
 
 func (UnimplementedSQLServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
+}
+func (UnimplementedSQLServiceServer) SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchQueryHistories not implemented")
 }
 func (UnimplementedSQLServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Export not implemented")
@@ -215,6 +230,24 @@ func _SQLService_Query_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SQLServiceServer).Query(ctx, req.(*QueryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SQLService_SearchQueryHistories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchQueryHistoriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).SearchQueryHistories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_SearchQueryHistories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).SearchQueryHistories(ctx, req.(*SearchQueryHistoriesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -363,6 +396,10 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Query",
 			Handler:    _SQLService_Query_Handler,
+		},
+		{
+			MethodName: "SearchQueryHistories",
+			Handler:    _SQLService_SearchQueryHistories_Handler,
 		},
 		{
 			MethodName: "Export",

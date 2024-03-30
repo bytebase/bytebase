@@ -12,11 +12,12 @@
 </template>
 
 <script lang="ts" setup>
-import { NSelect, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { AuditActivityTypeI18nNameMap } from "@/types";
-import { LogEntity_Action } from "@/types/proto/v1/logging_service";
+import type { LogEntity_Action } from "@/types/proto/v1/logging_service";
 
 defineProps<{
   selected: LogEntity_Action[];

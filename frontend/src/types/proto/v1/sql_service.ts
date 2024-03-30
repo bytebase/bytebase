@@ -3,6 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
+import { Timestamp } from "../google/protobuf/timestamp";
 import { Engine, engineFromJSON, engineToJSON, ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
 import { DatabaseMetadata } from "./database_service";
 
@@ -21,14 +22,10 @@ export interface DifferPreviewResponse {
 export interface AdminExecuteRequest {
   /**
    * The name is the instance name to execute the query against.
-   * Format: instances/{instance}
+   * Format: instances/{instance}/databases/{databaseName}
    */
   name: string;
-  /**
-   * The connection database name to execute the query against.
-   * For PostgreSQL, it's required.
-   * For other database engines, it's optional. Use empty string to execute against without specifying a database.
-   */
+  /** @deprecated */
   connectionDatabase: string;
   /** The SQL statement to execute. */
   statement: string;
@@ -46,14 +43,10 @@ export interface AdminExecuteResponse {
 export interface ExportRequest {
   /**
    * The name is the instance name to execute the query against.
-   * Format: instances/{instance}
+   * Format: instances/{instance}/databases/{databaseName}
    */
   name: string;
-  /**
-   * The connection database name to execute the query against.
-   * For PostgreSQL, it's required.
-   * For other database engines, it's optional. Use empty string to execute against without specifying a database.
-   */
+  /** @deprecated */
   connectionDatabase: string;
   /** The SQL statement to execute. */
   statement: string;
@@ -78,14 +71,10 @@ export interface ExportResponse {
 export interface QueryRequest {
   /**
    * The name is the instance name to execute the query against.
-   * Format: instances/{instance}
+   * Format: instances/{instance}/databases/{databaseName}
    */
   name: string;
-  /**
-   * The connection database name to execute the query against.
-   * For PostgreSQL, it's required.
-   * For other database engines, it's optional. Use empty string to execute against without specifying a database.
-   */
+  /** @deprecated */
   connectionDatabase: string;
   /** The SQL statement to execute. */
   statement: string;
@@ -321,6 +310,102 @@ export interface StringifyMetadataRequest {
 
 export interface StringifyMetadataResponse {
   schema: string;
+}
+
+export interface SearchQueryHistoriesRequest {
+  /**
+   * Not used. The maximum number of histories to return.
+   * The service may return fewer than this value.
+   * If unspecified, at most 100 history entries will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * Not used. A page token, received from a previous `ListQueryHistory` call.
+   * Provide this to retrieve the subsequent page.
+   */
+  pageToken: string;
+  /**
+   * filter is the filter to apply on the search query history,
+   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+   * Support filter by:
+   * - database, for example:
+   *    database = "instances/{instance}/databases/{database}"
+   * - instance, for example:
+   *    instance = "instance/{instance}"
+   * - type, for example:
+   *    type = "QUERY"
+   */
+  filter: string;
+}
+
+export interface SearchQueryHistoriesResponse {
+  /** The list of history. */
+  queryHistories: QueryHistory[];
+  /**
+   * A token to retrieve next page of history.
+   * Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method
+   * to retrieve the next page of history.
+   */
+  nextPageToken: string;
+}
+
+export interface QueryHistory {
+  /**
+   * The name for the query history.
+   * Format: queryHistories/{uid}
+   */
+  name: string;
+  /**
+   * The database name to execute the query.
+   * Format: instances/{instance}/databases/{databaseName}
+   */
+  database: string;
+  creator: string;
+  createTime: Date | undefined;
+  statement: string;
+  error?: string | undefined;
+  duration: Duration | undefined;
+  type: QueryHistory_Type;
+}
+
+export enum QueryHistory_Type {
+  TYPE_UNSPECIFIED = 0,
+  QUERY = 1,
+  EXPORT = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function queryHistory_TypeFromJSON(object: any): QueryHistory_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return QueryHistory_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "QUERY":
+      return QueryHistory_Type.QUERY;
+    case 2:
+    case "EXPORT":
+      return QueryHistory_Type.EXPORT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return QueryHistory_Type.UNRECOGNIZED;
+  }
+}
+
+export function queryHistory_TypeToJSON(object: QueryHistory_Type): string {
+  switch (object) {
+    case QueryHistory_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case QueryHistory_Type.QUERY:
+      return "QUERY";
+    case QueryHistory_Type.EXPORT:
+      return "EXPORT";
+    case QueryHistory_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 function createBaseDifferPreviewRequest(): DifferPreviewRequest {
@@ -2299,6 +2384,346 @@ export const StringifyMetadataResponse = {
   },
 };
 
+function createBaseSearchQueryHistoriesRequest(): SearchQueryHistoriesRequest {
+  return { pageSize: 0, pageToken: "", filter: "" };
+}
+
+export const SearchQueryHistoriesRequest = {
+  encode(message: SearchQueryHistoriesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.pageSize !== 0) {
+      writer.uint32(8).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(18).string(message.pageToken);
+    }
+    if (message.filter !== "") {
+      writer.uint32(26).string(message.filter);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchQueryHistoriesRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchQueryHistoriesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchQueryHistoriesRequest {
+    return {
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+    };
+  },
+
+  toJSON(message: SearchQueryHistoriesRequest): unknown {
+    const obj: any = {};
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SearchQueryHistoriesRequest>): SearchQueryHistoriesRequest {
+    return SearchQueryHistoriesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SearchQueryHistoriesRequest>): SearchQueryHistoriesRequest {
+    const message = createBaseSearchQueryHistoriesRequest();
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    message.filter = object.filter ?? "";
+    return message;
+  },
+};
+
+function createBaseSearchQueryHistoriesResponse(): SearchQueryHistoriesResponse {
+  return { queryHistories: [], nextPageToken: "" };
+}
+
+export const SearchQueryHistoriesResponse = {
+  encode(message: SearchQueryHistoriesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.queryHistories) {
+      QueryHistory.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchQueryHistoriesResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchQueryHistoriesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.queryHistories.push(QueryHistory.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchQueryHistoriesResponse {
+    return {
+      queryHistories: globalThis.Array.isArray(object?.queryHistories)
+        ? object.queryHistories.map((e: any) => QueryHistory.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: SearchQueryHistoriesResponse): unknown {
+    const obj: any = {};
+    if (message.queryHistories?.length) {
+      obj.queryHistories = message.queryHistories.map((e) => QueryHistory.toJSON(e));
+    }
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SearchQueryHistoriesResponse>): SearchQueryHistoriesResponse {
+    return SearchQueryHistoriesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SearchQueryHistoriesResponse>): SearchQueryHistoriesResponse {
+    const message = createBaseSearchQueryHistoriesResponse();
+    message.queryHistories = object.queryHistories?.map((e) => QueryHistory.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseQueryHistory(): QueryHistory {
+  return {
+    name: "",
+    database: "",
+    creator: "",
+    createTime: undefined,
+    statement: "",
+    error: undefined,
+    duration: undefined,
+    type: 0,
+  };
+}
+
+export const QueryHistory = {
+  encode(message: QueryHistory, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.database !== "") {
+      writer.uint32(18).string(message.database);
+    }
+    if (message.creator !== "") {
+      writer.uint32(26).string(message.creator);
+    }
+    if (message.createTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.statement !== "") {
+      writer.uint32(42).string(message.statement);
+    }
+    if (message.error !== undefined) {
+      writer.uint32(50).string(message.error);
+    }
+    if (message.duration !== undefined) {
+      Duration.encode(message.duration, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.type !== 0) {
+      writer.uint32(64).int32(message.type);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): QueryHistory {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryHistory();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.duration = Duration.decode(reader, reader.uint32());
+          continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryHistory {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      error: isSet(object.error) ? globalThis.String(object.error) : undefined,
+      duration: isSet(object.duration) ? Duration.fromJSON(object.duration) : undefined,
+      type: isSet(object.type) ? queryHistory_TypeFromJSON(object.type) : 0,
+    };
+  },
+
+  toJSON(message: QueryHistory): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    if (message.error !== undefined) {
+      obj.error = message.error;
+    }
+    if (message.duration !== undefined) {
+      obj.duration = Duration.toJSON(message.duration);
+    }
+    if (message.type !== 0) {
+      obj.type = queryHistory_TypeToJSON(message.type);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<QueryHistory>): QueryHistory {
+    return QueryHistory.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<QueryHistory>): QueryHistory {
+    const message = createBaseQueryHistory();
+    message.name = object.name ?? "";
+    message.database = object.database ?? "";
+    message.creator = object.creator ?? "";
+    message.createTime = object.createTime ?? undefined;
+    message.statement = object.statement ?? "";
+    message.error = object.error ?? undefined;
+    message.duration = (object.duration !== undefined && object.duration !== null)
+      ? Duration.fromPartial(object.duration)
+      : undefined;
+    message.type = object.type ?? 0;
+    return message;
+  },
+};
+
 export type SQLServiceDefinition = typeof SQLServiceDefinition;
 export const SQLServiceDefinition = {
   name: "SQLService",
@@ -2314,10 +2739,12 @@ export const SQLServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              33,
+              77,
               58,
               1,
               42,
+              90,
+              30,
               34,
               28,
               47,
@@ -2348,6 +2775,91 @@ export const SQLServiceDefinition = {
               101,
               114,
               121,
+              34,
+              40,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              113,
+              117,
+              101,
+              114,
+              121,
+            ]),
+          ],
+        },
+      },
+    },
+    searchQueryHistories: {
+      name: "SearchQueryHistories",
+      requestType: SearchQueryHistoriesRequest,
+      requestStream: false,
+      responseType: SearchQueryHistoriesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              27,
+              18,
+              25,
+              47,
+              118,
+              49,
+              47,
+              113,
+              117,
+              101,
+              114,
+              121,
+              72,
+              105,
+              115,
+              116,
+              111,
+              114,
+              105,
+              101,
+              115,
+              58,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
             ]),
           ],
         },
@@ -2363,10 +2875,12 @@ export const SQLServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              34,
+              120,
               58,
               1,
               42,
+              90,
+              31,
               34,
               29,
               47,
@@ -2386,6 +2900,90 @@ export const SQLServiceDefinition = {
               97,
               110,
               99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+              90,
+              39,
+              34,
+              37,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              105,
+              115,
+              115,
+              117,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+              34,
+              41,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
               101,
               115,
               47,
@@ -2624,6 +3222,32 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = numberToLong(date.getTime() / 1_000);
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof globalThis.Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new globalThis.Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

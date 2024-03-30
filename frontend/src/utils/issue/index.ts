@@ -1,34 +1,10 @@
 import dayjs from "dayjs";
-import { Issue, IssueType, StageId } from "@/types";
-
-export function stageName(issue: Issue, stageId: StageId): string {
-  for (const stage of issue.pipeline?.stageList ?? []) {
-    if (stage.id == stageId) {
-      return stage.name;
-    }
-  }
-  return "<<Unknown stage>>";
-}
-
-export function isGrantRequestIssueType(issueType: IssueType): boolean {
-  return issueType === "bb.issue.grant.request";
-}
-
-export function isDatabaseRelatedIssueType(issueType: IssueType): boolean {
-  return [
-    "bb.issue.database.general",
-    "bb.issue.database.create",
-    "bb.issue.database.grant",
-    "bb.issue.database.schema.update",
-    "bb.issue.database.data.update",
-    "bb.issue.database.rollback",
-    "bb.issue.database.schema.update.ghost",
-    "bb.issue.database.restore.pitr",
-  ].includes(issueType);
-}
 
 export const generateIssueName = (
-  type: "bb.issue.database.schema.update" | "bb.issue.database.data.update",
+  type:
+    | "bb.issue.database.schema.update"
+    | "bb.issue.database.data.update"
+    | "bb.issue.database.data.export",
   databaseNameList: string[],
   isOnlineMode = false
 ) => {
@@ -43,7 +19,11 @@ export const generateIssueName = (
     issueNameParts.push("Online schema change");
   } else {
     issueNameParts.push(
-      type === "bb.issue.database.schema.update" ? `Edit schema` : `Change data`
+      type === "bb.issue.database.schema.update"
+        ? `Edit schema`
+        : type === "bb.issue.database.data.update"
+          ? `Change data`
+          : "Export data"
     );
   }
   const datetime = dayjs().format("@MM-DD HH:mm");

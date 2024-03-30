@@ -158,19 +158,6 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 	return matrix, nil
 }
 
-// RefreshToken is a token refresher that stores the latest access token configuration to repository.
-func RefreshToken(ctx context.Context, s *store.Store, webURL string) common.TokenRefresher {
-	return func(token, refreshToken string, expiresTs int64) error {
-		_, err := s.PatchRepositoryV2(ctx, &store.PatchRepositoryMessage{
-			WebURL:       &webURL,
-			AccessToken:  &token,
-			ExpiresTs:    &expiresTs,
-			RefreshToken: &refreshToken,
-		}, api.SystemBotID)
-		return err
-	}
-}
-
 // GetTaskSheetID gets the sheetID of a task.
 func GetTaskSheetID(taskPayload string) (int, error) {
 	var taskSheetID struct {
@@ -445,12 +432,13 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 			return nil, err
 		}
 		return &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: issue.UID,
-			Type:         api.ActivityIssueCommentCreate,
-			Level:        api.ActivityInfo,
-			Comment:      comment,
-			Payload:      string(activityPayload),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      issue.UID,
+			Type:              api.ActivityIssueCommentCreate,
+			Level:             api.ActivityInfo,
+			Comment:           comment,
+			Payload:           string(activityPayload),
 		}, nil
 	}
 
@@ -588,11 +576,12 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 	}
 	// Post project IAM policy update activity.
 	if _, err := activityManager.CreateActivity(ctx, &store.ActivityMessage{
-		CreatorUID:   api.SystemBotID,
-		ContainerUID: issue.Project.UID,
-		Type:         api.ActivityProjectMemberCreate,
-		Level:        api.ActivityInfo,
-		Comment:      fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, roleID),
+		CreatorUID:        api.SystemBotID,
+		ResourceContainer: issue.Project.GetName(),
+		ContainerUID:      issue.Project.UID,
+		Type:              api.ActivityProjectMemberCreate,
+		Level:             api.ActivityInfo,
+		Comment:           fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, roleID),
 	}, &activity.Metadata{}); err != nil {
 		slog.Warn("Failed to create project activity", log.BBError(err))
 	}
@@ -675,24 +664,10 @@ func convertVcsPushEventCommits(commits []vcs.Commit) []*storepb.Commit {
 	return result
 }
 
-func convertVcsPushEventFileCommit(c *vcs.FileCommit) *storepb.FileCommit {
-	return &storepb.FileCommit{
-		Id:          c.ID,
-		Title:       c.Title,
-		Message:     c.Message,
-		CreatedTs:   c.CreatedTs,
-		Url:         c.URL,
-		AuthorName:  c.AuthorName,
-		AuthorEmail: c.AuthorEmail,
-		Added:       c.Added,
-	}
-}
-
 // ConvertVcsPushEvent converts a vcs.pushEvent to a storepb.PushEvent.
 func ConvertVcsPushEvent(pushEvent *vcs.PushEvent) *storepb.PushEvent {
 	return &storepb.PushEvent{
 		VcsType:            convertVcsPushEventType(pushEvent.VCSType),
-		BaseDir:            pushEvent.BaseDirectory,
 		Ref:                pushEvent.Ref,
 		Before:             pushEvent.Before,
 		After:              pushEvent.After,
@@ -701,7 +676,6 @@ func ConvertVcsPushEvent(pushEvent *vcs.PushEvent) *storepb.PushEvent {
 		RepositoryFullPath: pushEvent.RepositoryFullPath,
 		AuthorName:         pushEvent.AuthorName,
 		Commits:            convertVcsPushEventCommits(pushEvent.CommitList),
-		FileCommit:         convertVcsPushEventFileCommit(&pushEvent.FileCommit),
 	}
 }
 
@@ -794,12 +768,13 @@ func ChangeIssueStatus(ctx context.Context, stores *store.Store, activityManager
 		return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
 	}
 	activityCreate := &store.ActivityMessage{
-		CreatorUID:   updaterID,
-		ContainerUID: issue.UID,
-		Type:         api.ActivityIssueStatusUpdate,
-		Level:        api.ActivityInfo,
-		Comment:      comment,
-		Payload:      string(payload),
+		CreatorUID:        updaterID,
+		ResourceContainer: issue.Project.GetName(),
+		ContainerUID:      issue.UID,
+		Type:              api.ActivityIssueStatusUpdate,
+		Level:             api.ActivityInfo,
+		Comment:           comment,
+		Payload:           string(payload),
 	}
 	if _, err := activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 		Issue: updatedIssue,

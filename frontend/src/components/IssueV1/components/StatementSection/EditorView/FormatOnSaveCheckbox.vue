@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
-import { Language } from "@/types";
+import type { Language } from "@/types";
 
 const props = defineProps<{
   language: Language;

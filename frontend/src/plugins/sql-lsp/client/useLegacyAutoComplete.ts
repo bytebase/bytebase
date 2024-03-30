@@ -1,23 +1,16 @@
 import { computedAsync } from "@vueuse/core";
 import type monaco from "monaco-editor";
-import { Ref, computed, watch } from "vue";
+import type { Ref } from "vue";
+import { computed, watch } from "vue";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
-import {
-  SQLDialect,
-  UNKNOWN_ID,
-  dialectOfEngineV1,
-  unknownDatabase,
-} from "@/types";
+import type { SQLDialect } from "@/types";
+import { UNKNOWN_ID, dialectOfEngineV1, unknownDatabase } from "@/types";
 import {
   DatabaseMetadata,
   DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
-import {
-  Table,
-  type ConnectionScope,
-  type MonacoModule,
-  type Schema,
-} from "../types";
+import type { Table } from "../types";
+import { type ConnectionScope, type MonacoModule, type Schema } from "../types";
 
 export type AutoCompleteContext = {
   instance: string; // instances/{instance}
@@ -51,19 +44,22 @@ export const useLegacyAutoComplete = async (
     }
     return "instance";
   });
-  const metadata = computedAsync(() => {
-    if (database.value.uid === String(UNKNOWN_ID)) {
-      return DatabaseMetadata.fromPartial({
-        name: `${database.value.name}/metadata`,
-      });
-    }
+  const metadata = computedAsync(
+    () => {
+      if (database.value.uid === String(UNKNOWN_ID)) {
+        return DatabaseMetadata.fromPartial({
+          name: `${database.value.name}/metadata`,
+        });
+      }
 
-    return useDBSchemaV1Store().getOrFetchDatabaseMetadata({
-      database: database.value.name,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
-      skipCache: false,
-    });
-  }, DatabaseMetadata.fromPartial({ name: unknownDatabase().name }));
+      return useDBSchemaV1Store().getOrFetchDatabaseMetadata({
+        database: database.value.name,
+        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+        skipCache: false,
+      });
+    },
+    DatabaseMetadata.fromPartial({ name: unknownDatabase().name })
+  );
 
   watch(
     dialect,

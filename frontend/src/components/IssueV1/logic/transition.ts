@@ -1,17 +1,16 @@
 import { useCurrentUserV1 } from "@/store";
-import {
+import type {
   ComposedIssue,
   IssueStatusTransitionType,
-  ISSUE_STATUS_TRANSITION_LIST,
   IssueStatusTransition,
 } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import { ISSUE_STATUS_TRANSITION_LIST } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
+import type { StageStatusTransition, TaskStatusTransition } from "@/utils";
 import {
-  StageStatusTransition,
-  TaskStatusTransition,
-  isDatabaseRelatedIssue,
+  isDatabaseChangeRelatedIssue,
   flattenTaskV1List,
   isGrantRequestIssue,
   activeTaskInRollout,
@@ -61,7 +60,7 @@ export const calcApplicableIssueStatusTransitionList = (
       }
     }
 
-    if (isDatabaseRelatedIssue(issue)) {
+    if (isDatabaseChangeRelatedIssue(issue)) {
       const currentTask = activeTaskInRollout(issue.rolloutEntity);
       const flattenTaskList = flattenTaskV1List(issue.rolloutEntity);
       if (flattenTaskList.some((task) => task.status === Task_Status.RUNNING)) {
@@ -89,7 +88,10 @@ export const calcApplicableIssueStatusTransitionList = (
 };
 
 export function isApplicableTransition<
-  T extends IssueStatusTransition | TaskStatusTransition | StageStatusTransition
+  T extends
+    | IssueStatusTransition
+    | TaskStatusTransition
+    | StageStatusTransition,
 >(target: T, list: T[]): boolean {
   return (
     list.findIndex((applicable) => {

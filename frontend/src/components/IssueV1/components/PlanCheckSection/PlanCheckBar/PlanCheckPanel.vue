@@ -35,13 +35,14 @@ import { first, orderBy } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
-import { TabFilter, TabFilterItem } from "@/components/v2";
-import {
+import type { TabFilterItem } from "@/components/v2";
+import { TabFilter } from "@/components/v2";
+import type {
   PlanCheckRun,
   PlanCheckRun_Type,
   Task,
 } from "@/types/proto/v1/rollout_service";
-import { humanizeDate, extractEnvironmentResourceName } from "@/utils";
+import { humanizeDate } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckDetail from "./PlanCheckDetail.vue";
 
@@ -86,8 +87,8 @@ const tabItemList = computed(() => {
         i === 0
           ? t("common.latest")
           : checkRun.createTime
-          ? humanizeDate(checkRun.createTime)
-          : `UID(${checkRun.uid})`;
+            ? humanizeDate(checkRun.createTime)
+            : `UID(${checkRun.uid})`;
       return {
         label,
         value: checkRun.uid,
@@ -106,8 +107,6 @@ const environment = computed(() => {
     return;
   }
   const database = databaseForTask(issue.value, task);
-  return extractEnvironmentResourceName(
-    database.effectiveEnvironmentEntity.name
-  );
+  return database.effectiveEnvironmentEntity.name;
 });
 </script>

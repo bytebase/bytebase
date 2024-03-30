@@ -5,14 +5,13 @@ export type WorkspacePermission =
   | "bb.environments.list"
   | "bb.environments.undelete"
   | "bb.environments.update"
-  | "bb.externalVersionControls.create"
-  | "bb.externalVersionControls.delete"
-  | "bb.externalVersionControls.exchangeToken"
-  | "bb.externalVersionControls.get"
-  | "bb.externalVersionControls.list"
-  | "bb.externalVersionControls.listProjects"
-  | "bb.externalVersionControls.searchProjects"
-  | "bb.externalVersionControls.update"
+  | "bb.vcsProviders.create"
+  | "bb.vcsProviders.delete"
+  | "bb.vcsProviders.get"
+  | "bb.vcsProviders.list"
+  | "bb.vcsProviders.listProjects"
+  | "bb.vcsProviders.searchProjects"
+  | "bb.vcsProviders.update"
   | "bb.identityProviders.create"
   | "bb.identityProviders.delete"
   | "bb.identityProviders.get"
@@ -48,8 +47,6 @@ export type WorkspacePermission =
   | "bb.settings.set";
 
 export type ProjectPermission =
-  | "bb.backups.create"
-  | "bb.backups.list"
   | "bb.branches.create"
   | "bb.branches.delete"
   | "bb.branches.get"
@@ -68,13 +65,11 @@ export type ProjectPermission =
   | "bb.databases.adviseIndex"
   | "bb.databases.export"
   | "bb.databases.get"
-  | "bb.databases.getBackupSetting"
   | "bb.databases.getSchema"
   | "bb.databases.list"
   | "bb.databases.query"
   | "bb.databases.sync"
   | "bb.databases.update"
-  | "bb.databases.updateBackupSetting"
   | "bb.issueComments.create"
   | "bb.issueComments.update"
   | "bb.issues.create"
@@ -95,6 +90,11 @@ export type ProjectPermission =
   | "bb.rollouts.get"
   | "bb.rollouts.preview"
   | "bb.slowQueries.list"
-  | "bb.taskRuns.list";
+  | "bb.taskRuns.list"
+  | "bb.vcsConnectors.create"
+  | "bb.vcsConnectors.delete"
+  | "bb.vcsConnectors.get"
+  | "bb.vcsConnectors.list"
+  | "bb.vcsConnectors.update";
 
 export type Permission = WorkspacePermission | ProjectPermission;

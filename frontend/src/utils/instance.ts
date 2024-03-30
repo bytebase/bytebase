@@ -1,16 +1,15 @@
 import { keyBy } from "lodash-es";
 import { computed, unref } from "vue";
-import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
-import { Instance as InstanceV1 } from "@/types/proto/v1/instance_service";
-import {
+import type { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
+import type { Instance as InstanceV1 } from "@/types/proto/v1/instance_service";
+import type {
   EngineType,
   Environment,
   Instance,
   Language,
-  languageOfEngine,
-  languageOfEngineV1,
   MaybeRef,
 } from "../types";
+import { languageOfEngine, languageOfEngineV1 } from "../types";
 
 export const supportedEngineList = () => {
   const engines: EngineType[] = [
@@ -108,17 +107,6 @@ export const instanceHasAlterSchema = (
 ): boolean => {
   const engine = engineOfInstance(instanceOrEngine);
   if (engine === "REDIS") return false;
-  return true;
-};
-
-export const instanceHasBackupRestore = (
-  instanceOrEngine: Instance | EngineType
-): boolean => {
-  const engine = engineOfInstance(instanceOrEngine);
-  if (engine === "MONGODB") return false;
-  if (engine === "REDIS") return false;
-  if (engine === "SPANNER") return false;
-  if (engine === "REDSHIFT") return false;
   return true;
 };
 

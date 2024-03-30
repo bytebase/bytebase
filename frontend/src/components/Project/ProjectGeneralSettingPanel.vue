@@ -3,7 +3,7 @@
     <p class="text-lg font-medium leading-7 text-main">
       {{ $t("common.general") }}
     </p>
-    <div class="flex justify-start items-start gap-12">
+    <div class="flex justify-start items-start gap-6">
       <dl class="">
         <dt class="text-sm font-medium text-control-light">
           {{ $t("common.name") }} <span class="text-red-600">*</span>
@@ -42,7 +42,7 @@
             v-model:value="state.key"
             :disabled="!allowEdit"
             required
-            @update:value="(val: string) => state.key = val.toUpperCase()"
+            @update:value="(val: string) => (state.key = val.toUpperCase())"
           />
         </dd>
       </dl>
@@ -82,8 +82,10 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { hasFeature, pushNotification, useProjectV1Store } from "@/store";
-import { DEFAULT_PROJECT_ID, FeatureType } from "@/types";
-import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import type { FeatureType } from "@/types";
+import { DEFAULT_PROJECT_ID } from "@/types";
+import type { Project } from "@/types/proto/v1/project_service";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import { extractProjectResourceName } from "@/utils";
 
 interface LocalState {

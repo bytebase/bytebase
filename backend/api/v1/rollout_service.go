@@ -72,7 +72,11 @@ func (s *RolloutService) GetPlan(ctx context.Context, request *v1pb.GetPlanReque
 	if plan == nil {
 		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
 	}
-	return convertToPlan(plan), nil
+	convertedPlan, err := convertToPlan(ctx, s.store, plan)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plan, error: %v", err)
+	}
+	return convertedPlan, nil
 }
 
 // ListPlans lists plans.
@@ -126,22 +130,25 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 		return nil, status.Errorf(codes.Internal, "failed to list plans, error: %v", err)
 	}
 
+	var nextPageToken string
 	// has more pages
 	if len(plans) == limitPlusOne {
-		nextPageToken, err := getPageToken(limit, offset+limit)
+		pageToken, err := getPageToken(limit, offset+limit)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		return &v1pb.ListPlansResponse{
-			Plans:         convertToPlans(plans[:limit]),
-			NextPageToken: nextPageToken,
-		}, nil
+		nextPageToken = pageToken
+		plans = plans[:limit]
 	}
 
-	// no subsequent pages
+	convertedPlans, err := convertToPlans(ctx, s.store, plans)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plans, error: %v", err)
+	}
+
 	return &v1pb.ListPlansResponse{
-		Plans:         convertToPlans(plans),
-		NextPageToken: "",
+		Plans:         convertedPlans,
+		NextPageToken: nextPageToken,
 	}, nil
 }
 
@@ -197,7 +204,11 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	// Tickle plan check scheduler.
 	s.stateCfg.PlanCheckTickleChan <- 0
 
-	return convertToPlan(plan), nil
+	convertedPlan, err := convertToPlan(ctx, s.store, plan)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plan, error: %v", err)
+	}
+	return convertedPlan, nil
 }
 
 // PreviewRollout previews the rollout for a plan.
@@ -254,6 +265,9 @@ func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRollou
 	rollout, err := s.store.GetRollout(ctx, rolloutID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get pipeline, error: %v", err)
+	}
+	if rollout == nil {
+		return nil, status.Errorf(codes.NotFound, "rollout not found for id: %d", rolloutID)
 	}
 
 	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
@@ -421,8 +435,12 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTas
 		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
 	}
 
+	taskRunsV1, err := convertToTaskRuns(ctx, s.store, s.stateCfg, taskRuns)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to task runs, error: %v", err)
+	}
 	return &v1pb.ListTaskRunsResponse{
-		TaskRuns:      convertToTaskRuns(s.stateCfg, taskRuns),
+		TaskRuns:      taskRunsV1,
 		NextPageToken: "",
 	}, nil
 }
@@ -862,6 +880,13 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		return nil, status.Errorf(codes.InvalidArgument, "no specs updated")
 	}
 
+	oldSpecsByID := make(map[string]*v1pb.Plan_Spec)
+	for _, step := range oldSteps {
+		for _, spec := range step.Specs {
+			oldSpecsByID[spec.Id] = spec
+		}
+	}
+
 	updatedByID := make(map[string]*v1pb.Plan_Spec)
 	for _, spec := range updated {
 		updatedByID[spec.Id] = spec
@@ -871,11 +896,25 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	var taskPatchList []*api.TaskPatch
 	var statementUpdates []api.ActivityPipelineTaskStatementUpdatePayload
 	var earliestUpdates []api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload
+	var taskDAGRebuildList []struct {
+		fromTaskIDs []int
+		toTaskID    int
+	}
 
 	if oldPlan.PipelineUID != nil {
 		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: oldPlan.PipelineUID})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to list tasks: %v", err)
+		}
+		tasksBySpecID := make(map[string][]*store.TaskMessage)
+		for _, task := range tasks {
+			var taskSpecID struct {
+				SpecID string `json:"specId"`
+			}
+			if err := json.Unmarshal([]byte(task.Payload), &taskSpecID); err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
+			}
+			tasksBySpecID[taskSpecID.SpecID] = append(tasksBySpecID[taskSpecID.SpecID], task)
 		}
 		for _, task := range tasks {
 			doUpdate := false
@@ -959,21 +998,31 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 			// Sheet
 			if err := func() error {
 				switch task.Type {
-				case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
+				case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate, api.TaskDatabaseDataExport:
 					var taskPayload struct {
-						SpecID  string `json:"specId"`
-						SheetID int    `json:"sheetId"`
+						SheetID int `json:"sheetId"`
 					}
 					if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
 						return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
 					}
-					config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
-					if !ok {
-						return nil
+
+					var oldSheetName string
+					if task.Type == api.TaskDatabaseDataExport {
+						config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
+						if !ok {
+							return nil
+						}
+						oldSheetName = config.ExportDataConfig.Sheet
+					} else {
+						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
+						if !ok {
+							return nil
+						}
+						oldSheetName = config.ChangeDatabaseConfig.Sheet
 					}
-					_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.ChangeDatabaseConfig.Sheet)
+					_, sheetUID, err := common.GetProjectResourceIDSheetUID(oldSheetName)
 					if err != nil {
-						return status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", config.ChangeDatabaseConfig.Sheet, err)
+						return status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", oldSheetName, err)
 					}
 					if taskPayload.SheetID == sheetUID {
 						return nil
@@ -983,10 +1032,10 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 						UID: &sheetUID,
 					})
 					if err != nil {
-						return status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
+						return status.Errorf(codes.Internal, "failed to get sheet %q: %v", oldSheetName, err)
 					}
 					if sheet == nil {
-						return status.Errorf(codes.NotFound, "sheet %q not found", config.ChangeDatabaseConfig.Sheet)
+						return status.Errorf(codes.NotFound, "sheet %q not found", oldSheetName)
 					}
 					doUpdate = true
 					// TODO(p0ny): update schema version
@@ -999,6 +1048,64 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 						IssueName:  issue.Title,
 					})
 				}
+				return nil
+			}(); err != nil {
+				return nil, err
+			}
+
+			// version
+			if err := func() error {
+				switch task.Type {
+				case api.TaskDatabaseSchemaBaseline, api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
+				default:
+					return nil
+				}
+				var taskPayload struct {
+					SchemaVersion string `json:"schemaVersion"`
+				}
+				if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
+					return errors.Wrapf(err, "failed to unmarshal task payload")
+				}
+				if v := spec.GetChangeDatabaseConfig().GetSchemaVersion(); v != "" && v != taskPayload.SchemaVersion {
+					taskPatch.SchemaVersion = &v
+					doUpdate = true
+				}
+				return nil
+			}(); err != nil {
+				return nil, err
+			}
+
+			// task dag
+			if err := func() error {
+				oldSpec, ok := oldSpecsByID[taskSpecID.SpecID]
+				if !ok {
+					return nil
+				}
+
+				sort.Slice(oldSpec.DependsOnSpecs, func(i, j int) bool {
+					return oldSpec.DependsOnSpecs[i] < oldSpec.DependsOnSpecs[j]
+				})
+				sort.Slice(spec.DependsOnSpecs, func(i, j int) bool {
+					return spec.DependsOnSpecs[i] < spec.DependsOnSpecs[j]
+				})
+				if slices.Equal(oldSpec.GetDependsOnSpecs(), spec.GetDependsOnSpecs()) {
+					return nil
+				}
+
+				// rebuild the task dag
+				var fromTaskIDs []int
+				for _, dependsOnSpec := range spec.GetDependsOnSpecs() {
+					for _, dependsOnTask := range tasksBySpecID[dependsOnSpec] {
+						fromTaskIDs = append(fromTaskIDs, dependsOnTask.ID)
+					}
+				}
+				taskDAGRebuildList = append(taskDAGRebuildList, struct {
+					fromTaskIDs []int
+					toTaskID    int
+				}{
+					fromTaskIDs: fromTaskIDs,
+					toTaskID:    task.ID,
+				})
 				return nil
 			}(); err != nil {
 				return nil, err
@@ -1057,6 +1164,12 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		}
 	}
 
+	for _, taskDAGRebuild := range taskDAGRebuildList {
+		if err := s.store.RebuildTaskDAG(ctx, taskDAGRebuild.fromTaskIDs, taskDAGRebuild.toTaskID); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to rebuild task dag: %v", err)
+		}
+	}
+
 	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
 		UID:       oldPlan.UID,
 		UpdaterID: user.ID,
@@ -1093,11 +1206,12 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				return errors.Wrapf(err, "failed to marshal payload")
 			}
 			_, err = s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-				CreatorUID:   user.ID,
-				ContainerUID: task.PipelineID,
-				Type:         api.ActivityPipelineTaskStatementUpdate,
-				Payload:      string(payload),
-				Level:        api.ActivityInfo,
+				CreatorUID:        user.ID,
+				ResourceContainer: project.GetName(),
+				ContainerUID:      task.PipelineID,
+				Type:              api.ActivityPipelineTaskStatementUpdate,
+				Payload:           string(payload),
+				Level:             api.ActivityInfo,
 			}, &activity.Metadata{
 				Issue: issue,
 			})
@@ -1114,11 +1228,12 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				return errors.Wrapf(err, "failed to marshal payload")
 			}
 			_, err = s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-				CreatorUID:   user.ID,
-				ContainerUID: task.PipelineID,
-				Type:         api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
-				Payload:      string(payload),
-				Level:        api.ActivityInfo,
+				CreatorUID:        user.ID,
+				ResourceContainer: project.GetName(),
+				ContainerUID:      task.PipelineID,
+				Type:              api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
+				Payload:           string(payload),
+				Level:             api.ActivityInfo,
 			}, &activity.Metadata{
 				Issue: issue,
 			})
@@ -1147,7 +1262,11 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		}
 	}
 
-	return convertToPlan(updatedPlan), nil
+	convertedPlan, err := convertToPlan(ctx, s.store, updatedPlan)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plan, error: %v", err)
+	}
+	return convertedPlan, nil
 }
 
 // diffSpecs check if there are any specs removed, added or updated in the new plan.
@@ -1196,6 +1315,7 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 	var databaseTarget, databaseGroupTarget, deploymentConfigTarget int
 	seenID := map[string]bool{}
 	for _, step := range steps {
+		seenIDInStep := map[string]bool{}
 		for _, spec := range step.Specs {
 			id := spec.GetId()
 			if id == "" {
@@ -1205,6 +1325,7 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 				return errors.Errorf("found duplicate spec id %q", spec.GetId())
 			}
 			seenID[id] = true
+			seenIDInStep[id] = true
 			if config := spec.GetChangeDatabaseConfig(); config != nil {
 				if _, _, err := common.GetInstanceDatabaseID(config.Target); err == nil {
 					databaseTarget++
@@ -1214,6 +1335,16 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 					deploymentConfigTarget++
 				} else {
 					return errors.Errorf("unknown target %q", config.Target)
+				}
+			}
+		}
+		for _, spec := range step.Specs {
+			for _, dependOnSpec := range spec.DependsOnSpecs {
+				if !seenIDInStep[dependOnSpec] {
+					return errors.Errorf("spec %q depends on spec %q, but spec %q is not found in the step", spec.Id, dependOnSpec, dependOnSpec)
+				}
+				if dependOnSpec == spec.Id {
+					return errors.Errorf("spec %q depends on itself", spec.Id)
 				}
 			}
 		}
@@ -1261,6 +1392,8 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 			}
 			return nil
 		}
+
+		taskIndexesBySpecID := map[string][]int{}
 		for _, spec := range step.Specs {
 			taskCreates, taskIndexDAGCreates, err := getTaskCreatesFromSpec(ctx, s, licenseService, dbFactory, spec, project, registerEnvironmentID)
 			if err != nil {
@@ -1268,6 +1401,9 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 			}
 
 			offset := len(stageCreate.TaskList)
+			for i := range taskCreates {
+				taskIndexesBySpecID[spec.Id] = append(taskIndexesBySpecID[spec.Id], i+offset)
+			}
 			for i := range taskIndexDAGCreates {
 				taskIndexDAGCreates[i].FromIndex += offset
 				taskIndexDAGCreates[i].ToIndex += offset
@@ -1275,6 +1411,9 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 			stageCreate.TaskList = append(stageCreate.TaskList, taskCreates...)
 			stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, taskIndexDAGCreates...)
 		}
+		stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, getTaskIndexDAGs(step.Specs, func(specID string) []int {
+			return taskIndexesBySpecID[specID]
+		})...)
 
 		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &stageEnvironmentID})
 		if err != nil {
@@ -1292,6 +1431,23 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 		pipelineCreate.Stages = append(pipelineCreate.Stages, stageCreate)
 	}
 	return pipelineCreate, nil
+}
+
+func getTaskIndexDAGs(specs []*storepb.PlanConfig_Spec, getTaskIndexes func(specID string) []int) []store.TaskIndexDAG {
+	var taskIndexDAGs []store.TaskIndexDAG
+	for _, spec := range specs {
+		for _, dependsOnSpec := range spec.DependsOnSpecs {
+			for _, dependsOnTask := range getTaskIndexes(dependsOnSpec) {
+				for _, task := range getTaskIndexes(spec.Id) {
+					taskIndexDAGs = append(taskIndexDAGs, store.TaskIndexDAG{
+						FromIndex: dependsOnTask,
+						ToIndex:   task,
+					})
+				}
+			}
+		}
+	}
+	return taskIndexDAGs
 }
 
 func (s *RolloutService) createPipeline(ctx context.Context, project *store.ProjectMessage, pipelineCreate *store.PipelineMessage, creatorID int) (*store.PipelineMessage, error) {
@@ -1390,7 +1546,12 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 
 // canUserRunStageTasks returns if a user can run the tasks in a stage.
 func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
-	// the workspace owner and DBA roles can always run tasks.
+	// For data export issues, only the creator can run tasks.
+	if issue.Type == api.IssueDatabaseDataExport {
+		return issue.Creator.ID == user.ID, nil
+	}
+
+	// The workspace owner and DBA roles can always run tasks.
 	if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
 		return true, nil
 	}

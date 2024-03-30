@@ -6,20 +6,19 @@
 import dayjs from "dayjs";
 import { defineComponent, h } from "vue";
 import { Translation, useI18n } from "vue-i18n";
-import {
+import type {
   ActivityIssueCommentCreatePayload,
   ActivityPipelineTaskRunStatusUpdatePayload,
   ActivityStageStatusUpdatePayload,
   ActivityTaskEarliestAllowedTimeUpdatePayload,
-  ActivityTaskFileCommitPayload,
   ActivityTaskStatementUpdatePayload,
   ActivityTaskStatusUpdatePayload,
   ActivityTaskPriorBackup,
   ComposedIssue,
-  SYSTEM_BOT_EMAIL,
-  UNKNOWN_ID,
 } from "@/types";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
+import type { LogEntity } from "@/types/proto/v1/logging_service";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import {
   findStageByUID,
   findTaskByUID,
@@ -255,17 +254,6 @@ const renderActionSentence = () => {
         tag: "span",
       });
     }
-    case LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT: {
-      const payload = JSON.parse(
-        activity.payload
-      ) as ActivityTaskFileCommitPayload;
-      // return `committed ${payload.filePath} to ${payload.branch}@${payload.repositoryFullPath}`;
-      return t("activity.sentence.committed-to-at", {
-        file: payload.filePath,
-        branch: payload.branch,
-        repo: payload.repositoryFullPath,
-      });
-    }
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE: {
       const payload = JSON.parse(
         activity.payload
@@ -295,13 +283,14 @@ const renderActionSentence = () => {
       ) as ActivityTaskEarliestAllowedTimeUpdatePayload;
       const newVal = payload.newEarliestAllowedTs;
       const oldVal = payload.oldEarliestAllowedTs;
+      const timeFormat = "YYYY-MM-DD HH:mm:ss UTCZZ";
       return h(
         "span",
         {},
         t("activity.sentence.changed-from-to", {
           name: t("task.rollout-time"),
-          oldValue: oldVal ? dayjs(oldVal * 1000) : "Unset",
-          newValue: newVal ? dayjs(newVal * 1000) : "Unset",
+          oldValue: oldVal ? dayjs(oldVal * 1000).format(timeFormat) : "Unset",
+          newValue: newVal ? dayjs(newVal * 1000).format(timeFormat) : "Unset",
         })
       );
     }

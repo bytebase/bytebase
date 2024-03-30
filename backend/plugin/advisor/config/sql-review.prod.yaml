@@ -77,7 +77,7 @@ ruleList:
     level: WARNING
   - type: statement.where.disallow-using-function
     level: WARNING
-  - type: statement.where.statement.query.minimum-plan-level
+  - type: statement.query.minimum-plan-level
     level: WARNING
     payload:
       required: true
@@ -100,10 +100,10 @@ ruleList:
       number: 10
   - type: statement.join-strict-column-attrs
     level: WARNING
-  - type: statement.disallow-mix-dml
-    level: WARNING
   - type: statement.disallow-mix-ddl-dml
     level: WARNING
+  - type: statement.prior-backup-check
+    level: ERROR
   - type: naming.table
     level: WARNING
     payload:
@@ -281,3 +281,7 @@ ruleList:
     level: ERROR
     payload:
       number: 100000000
+  - type: statement.add-foreign-key-not-valid
+    level: WARNING
+  - type: statement.non-transactional
+    level: WARNING

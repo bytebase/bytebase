@@ -35,3 +35,17 @@ export const upsertArray = <T>(array: T[], item: T) => {
     array.push(item);
   }
 };
+
+export const sortByDictionary = <T, K>(
+  array: T[],
+  dictionary: K[],
+  mapper: (item: T) => K
+) => {
+  array.sort((a, b) => {
+    let orderA = dictionary.indexOf(mapper(a));
+    let orderB = dictionary.indexOf(mapper(b));
+    if (orderA < 0) orderA = Number.MAX_VALUE;
+    if (orderB < 0) orderB = Number.MAX_VALUE;
+    return orderA - orderB;
+  });
+};

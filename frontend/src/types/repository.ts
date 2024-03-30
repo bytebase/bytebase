@@ -1,10 +1,7 @@
 export type RepositoryConfig = {
   baseDirectory: string;
-  branchFilter: string;
-  filePathTemplate: string;
-  schemaPathTemplate: string;
-  sheetPathTemplate: string;
-  enableSQLReviewCI: boolean;
+  branch: string;
+  resourceId: string;
 };
 
 export type ExternalRepositoryInfo = {

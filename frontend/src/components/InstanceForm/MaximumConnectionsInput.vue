@@ -34,7 +34,7 @@
               style="width: 4rem"
               :status="state.isValid ? undefined : 'error'"
               :disabled="state.mode !== 'CUSTOM'"
-              @update:value="handleMaximumConnectionsChange"
+              @update:value="handleMaximumConnectionsChange($event as number)"
             />
             <span v-if="!state.isValid" class="text-error">
               {{

@@ -2,13 +2,10 @@ import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
-import { useCurrentUserV1 } from "@/store";
+import type { ComposedInstance, ComposedDatabase, MaybeRef } from "@/types";
 import {
-  ComposedInstance,
-  ComposedDatabase,
   emptyDatabase,
   EMPTY_ID,
-  MaybeRef,
   unknownDatabase,
   unknownEnvironment,
   unknownInstance,
@@ -16,26 +13,20 @@ import {
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
-import {
+import type { User } from "@/types/proto/v1/auth_service";
+import type {
   Database,
-  ListDatabasesRequest,
   UpdateDatabaseRequest,
   DiffSchemaRequest,
   SearchDatabasesRequest,
 } from "@/types/proto/v1/database_service";
-import {
-  extractDatabaseResourceName,
-  hasWorkspaceLevelProjectPermission,
-  isMemberOfProjectV1,
-} from "@/utils";
+import { extractDatabaseResourceName, isMemberOfProjectV1 } from "@/utils";
 import { useGracefulRequest } from "../utils";
 import { useEnvironmentV1Store } from "./environment";
 import { useInstanceV1Store } from "./instance";
 import { useProjectV1Store } from "./project";
 
 export const useDatabaseV1Store = defineStore("database_v1", () => {
-  const currentUser = useCurrentUserV1();
   const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
   const databaseMapByUID = reactive(new Map<string, ComposedDatabase>());
 
@@ -71,25 +62,10 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       }
     }
   };
-  const listDatabases = async (args: Partial<ListDatabasesRequest>) => {
-    const { databases } = await databaseServiceClient.listDatabases(args);
-    const composedDatabaseList = await upsertDatabaseMap(databases);
-    return composedDatabaseList;
-  };
   const searchDatabases = async (args: Partial<SearchDatabasesRequest>) => {
     const { databases } = await databaseServiceClient.searchDatabases(args);
     const composedDatabaseList = await upsertDatabaseMap(databases);
     return composedDatabaseList;
-  };
-  const searchOrListDatabases = async (
-    args: Partial<ListDatabasesRequest | SearchDatabasesRequest>
-  ) => {
-    return hasWorkspaceLevelProjectPermission(
-      currentUser.value,
-      "bb.databases.list"
-    )
-      ? listDatabases(args)
-      : searchDatabases(args);
   };
   const syncDatabase = async (database: string) => {
     await databaseServiceClient.syncDatabase({
@@ -217,8 +193,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   return {
     reset,
     databaseList,
-    searchOrListDatabases,
-    listDatabases,
     searchDatabases,
     syncDatabase,
     databaseListByUser,
@@ -318,7 +292,7 @@ const batchComposeDatabase = async (databaseList: Database[]) => {
   const distinctProjectList = uniq(databaseList.map((db) => db.project));
   const distinctInstanceList = uniq(
     databaseList
-      .map((db) => `instances/${extractDatabaseResourceName(db.name).instance}`)
+      .map((db) => extractDatabaseResourceName(db.name).instance)
       .filter((instance) => instance !== UNKNOWN_INSTANCE_NAME)
   );
 
@@ -337,10 +311,10 @@ const batchComposeDatabase = async (databaseList: Database[]) => {
   );
   return databaseList.map((db) => {
     const composed = db as ComposedDatabase;
-    const extractedResourceNames = extractDatabaseResourceName(db.name);
+    const { databaseName, instance } = extractDatabaseResourceName(db.name);
 
-    composed.databaseName = extractedResourceNames.database;
-    composed.instance = `instances/${extractedResourceNames.instance}`;
+    composed.databaseName = databaseName;
+    composed.instance = instance;
     const instanceEntity =
       composed.instance === UNKNOWN_INSTANCE_NAME
         ? unknownInstance()

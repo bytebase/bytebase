@@ -78,6 +78,9 @@ type columnAutoIncrementInitialValueChecker struct {
 }
 
 func (checker *columnAutoIncrementInitialValueChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.CreateTableOptions() == nil || ctx.TableName() == nil {
 		return
 	}
@@ -108,6 +111,9 @@ func (checker *columnAutoIncrementInitialValueChecker) EnterCreateTable(ctx *mys
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *columnAutoIncrementInitialValueChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

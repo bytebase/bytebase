@@ -115,7 +115,10 @@
                   <span>
                     {{ $t("auth.sign-in.new-user") }}
                   </span>
-                  <router-link to="/auth/signup" class="accent-link px-2">
+                  <router-link
+                    :to="{ name: AUTH_SIGNUP_MODULE }"
+                    class="accent-link px-2"
+                  >
                     {{ $t("common.sign-up") }}
                   </router-link>
                 </template>
@@ -251,10 +254,8 @@ import {
   useAuthStore,
   useIdentityProviderStore,
 } from "@/store";
-import {
-  IdentityProvider,
-  IdentityProviderType,
-} from "@/types/proto/v1/idp_service";
+import type { IdentityProvider } from "@/types/proto/v1/idp_service";
+import { IdentityProviderType } from "@/types/proto/v1/idp_service";
 import { isValidEmail, openWindowForSSO } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 

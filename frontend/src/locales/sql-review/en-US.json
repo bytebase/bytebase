@@ -67,7 +67,12 @@
     },
     "table-text-fields-total-length": {
       "title": "Restrict the total length of text fields in a table",
-      "description": "This rule limits the amount of data a table can hold, preventing excessive storage usage."
+      "description": "This rule limits the amount of data a table can hold, preventing excessive storage usage.",
+      "component": {
+        "number": {
+          "title": "Maximum length"
+        }
+      }
     },
     "table-disallow-set-charset": {
       "title": "Prohibit defining character set in table properties",
@@ -355,7 +360,7 @@
       }
     },
     "statement-affected-row-limit": {
-      "title": "Restrict the maximum number of updated or deleted rows.",
+      "title": "Restrict the maximum number of updated or deleted rows (estimated).",
       "description": "Reveal the number of rows to be updated or deleted can help determine whether the statement meets business expectations. Suggestion error level: Warning",
       "component": {
         "number": {
@@ -373,7 +378,7 @@
     },
     "statement-add-check-not-valid": {
       "title": "Enforce including \"NOT VALID\" option when adding \"CHECK\" constraints",
-      "description": "Before PostgreSQL 11, adding a CHECK constraint need to verify the existing data and lock the table. This blocks read and write, which may cause business interruption. It is recommended to add the \"NOT VALID\" option to validate new data and manually validate existing data after the change is completed. In PostgreSQL 11 and above, this issue has been optimized and there is no need to pay attention to this rule. Suggestion error level: Warning"
+      "description": "Adding a CHECK constraint needs to verify the existing data and requires ACCESS EXCLUSIVE table lock. This blocks read and write, which may cause business interruption. It is recommended to add the \"NOT VALID\" option to validate new data and manually validate existing data after the change is completed. Suggestion error level: Warning"
     },
     "statement-disallow-add-not-null": {
       "title": "Restrict adding \"NOT NULL\" constraint to existing columns",
@@ -407,37 +412,62 @@
       "title": "Do not apply functions or perform calculations on indexed fields in the WHERE clause",
       "description": "If you apply a function or perform a calculation on the indexed field, the database cannot use the index and has to scan the entire table instead."
     },
-    "statement-where-statement-query-minimum-plan-level": {
+    "statement-query-minimum-plan-level": {
       "title": "Restrict the maximum level of query access method",
-      "description": "SQL performance optimization strives for constant (const) access, aiming for reference (ref) level as a baseline, with acceptable performance at range level."
+      "description": "SQL performance optimization strives for constant (const) access, aiming for reference (ref) level as a baseline, with acceptable performance at range level.",
+      "component": {
+        "level": {
+          "title": "Maximum level"
+        }
+      }
     },
     "statement-where-maximum-logical-operator-count": {
       "title": "Restrict the number of values in the IN or OR clause of the WHERE clause",
-      "description": "This prevents performance degradation due to extensive comparisons and resource limitations."
+      "description": "This prevents performance degradation due to extensive comparisons and resource limitations.",
+      "component": {
+        "number": {
+          "title": "Maximum count"
+        }
+      }
     },
     "statement-maximum-limit-value": {
       "title": "Restrict the maximum number of the LIMIT clause",
-      "description": "Limiting the number of rows through LIMIT ensures the database processes manageable chunks, improving query execution speed.  A capped LIMIT value prevents excessive memory usage, safeguarding overall system stability and preventing performance degradation."
+      "description": "Limiting the number of rows through LIMIT ensures the database processes manageable chunks, improving query execution speed.  A capped LIMIT value prevents excessive memory usage, safeguarding overall system stability and preventing performance degradation.",
+      "component": {
+        "number": {
+          "title": "Maximum value"
+        }
+      }
     },
     "statement-maximum-join-table-count": {
       "title": "Restrict the number of tables to be joined",
-      "description": "The more tables you join, the more complex the query becomes and the longer it takes to execute. In general, it is best to keep the number of joins to a minimum."
+      "description": "The more tables you join, the more complex the query becomes and the longer it takes to execute. In general, it is best to keep the number of joins to a minimum.",
+      "component": {
+        "number": {
+          "title": "Maximum value"
+        }
+      }
     },
     "statement-maximum-statements-in-transaction": {
       "title": "Restrict the number of statements in a transaction",
-      "description": "Large transactions can significantly impact database performance. If a large number of statements are involved and one fails, rolling back the entire transaction becomes complex. Limiting statements minimizes the potential damage caused by a single failure and simplifies rollback procedures."
+      "description": "Large transactions can significantly impact database performance. If a large number of statements are involved and one fails, rolling back the entire transaction becomes complex. Limiting statements minimizes the potential damage caused by a single failure and simplifies rollback procedures.",
+      "component": {
+        "number": {
+          "title": "Maximum value"
+        }
+      }
     },
     "statement-join-strict-column-attrs": {
       "title": "Fields to be joined must have identical data types, character sets",
       "description": "If the data types, character sets of the join columns are not identical, the database may not be able to correctly identify matching rows, leading to inaccurate or incomplete results."
     },
-    "statement-disallow-mix-dml": {
-      "title": "Disallow DMLs on the same table",
-      "description": "Performing concurrent data modifications on a table can lead to challenges in accurately identifying the impacted rows. This consequently complicates the process of creating a precise backup of the affected data."
-    },
     "statement-disallow-mix-ddl-dml": {
       "title": "Disallow mixing DDL and DML",
       "description": "For optimal performance and data integrity, avoid combining DDL and DML statements within the same script."
+    },
+    "statement-prior-backup-check": {
+      "title": "Check for prior backup before data change",
+      "description": "This rule will check if a backup can be created before the data change. For more details, contains the backup target database exists and disallow the DDL statement."
     },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
@@ -559,6 +589,14 @@
           "title": "Threshold value"
         }
       }
+    },
+    "statement-add-foreign-key-not-valid": {
+      "title": "Enforce including \"NOT VALID\" option when adding foreign keys",
+      "description": "Adding foreign keys needs to verify the existing data and requires SHARE ROW EXCLUSIVE table lock. This blocks write, which may cause business interruption. It is recommended to add the \"NOT VALID\" option to validate new data and validate existing data after the change is completed. Suggestion error level: Warning"
+    },
+    "statement-non-transactional": {
+      "title": "Detect and report non-transactional statements",
+      "description": ""
     }
   },
   "level": {

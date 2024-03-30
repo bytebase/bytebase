@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -17,7 +16,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -36,11 +34,6 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-)
-
-const (
-	// sqlReviewInVCSPRTitle is the pull request title for SQL review CI setup.
-	sqlReviewInVCSPRTitle = "chore: setup SQL review CI for Bytebase"
 )
 
 // ProjectService implements the project service.
@@ -179,15 +172,9 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			patch.Title = &request.Project.Title
 		case "key":
 			patch.Key = &request.Project.Key
-		case "workflow":
-			workflow := convertToProjectWorkflowType(request.Project.Workflow)
-			patch.Workflow = &workflow
 		case "tenant_mode":
 			tenantMode := convertToProjectTenantMode(request.Project.TenantMode)
 			patch.TenantMode = &tenantMode
-		case "schema_change":
-			schemaChange := convertToProjectSchemaChangeType(request.Project.SchemaChange)
-			patch.SchemaChangeType = &schemaChange
 		case "data_classification_config_id":
 			setting, err := s.store.GetDataClassificationSetting(ctx)
 			if err != nil {
@@ -408,305 +395,30 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	return iamPolicy, nil
 }
 
-// GetProjectGitOpsInfo gets the GitOps info for a project.
-func (s *ProjectService) GetProjectGitOpsInfo(ctx context.Context, request *v1pb.GetProjectGitOpsInfoRequest) (*v1pb.ProjectGitOpsInfo, error) {
-	projectName, err := common.TrimSuffix(request.Name, common.GitOpsInfoSuffix)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	repo, err := s.findProjectRepository(ctx, projectName)
-	if err != nil {
-		return nil, err
-	}
-	return convertToProjectGitOpsInfo(repo), nil
-}
-
-// UpdateProjectGitOpsInfo upserts the GitOps info for a project.
-func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v1pb.UpdateProjectGitOpsInfoRequest) (*v1pb.ProjectGitOpsInfo, error) {
-	if request.ProjectGitopsInfo == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "project gitops info is missing")
-	}
-	projectName, err := common.TrimSuffix(request.ProjectGitopsInfo.Name, common.GitOpsInfoSuffix)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	project, err := s.getProjectMessage(ctx, projectName)
-	if err != nil {
-		return nil, err
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectName)
-	}
-
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
-	}
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
-	}
-
-	repo, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{
-		ProjectResourceID: &project.ResourceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get repository, error %v", err.Error())
-	}
-	if repo == nil {
-		if !request.AllowMissing {
-			return nil, status.Errorf(codes.NotFound, "gitops not found, please set allow_missing flag for creation")
-		}
-
-		return s.createProjectGitOpsInfo(ctx, request, project)
-	}
-
-	if request.UpdateMask == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set to update gitops")
-	}
-
-	patch := &store.PatchRepositoryMessage{
-		UID: &repo.UID,
-	}
-
-	for _, path := range request.UpdateMask.Paths {
-		switch path {
-		case "branch_filter":
-			patch.BranchFilter = &request.ProjectGitopsInfo.BranchFilter
-		case "base_directory":
-			intVCSUID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid vcs uid: %s", request.ProjectGitopsInfo.VcsUid)
-			}
-			storeVCS, err := s.store.GetExternalVersionControlV2(ctx, intVCSUID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
-			}
-			if storeVCS == nil {
-				return nil, status.Errorf(codes.NotFound, "vcs %d not found", intVCSUID)
-			}
-			baseDir := request.ProjectGitopsInfo.BaseDirectory
-			// Azure DevOps base directory should start with /.
-			if storeVCS.Type == vcsplugin.AzureDevOps {
-				if !strings.HasPrefix(baseDir, "/") {
-					baseDir = "/" + request.ProjectGitopsInfo.BaseDirectory
-				}
-			} else {
-				baseDir = strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
-			}
-			patch.BaseDirectory = &baseDir
-		case "file_path_template":
-			if err := api.ValidateRepositoryFilePathTemplate(request.ProjectGitopsInfo.FilePathTemplate, project.TenantMode); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid file_path_template: %s", err.Error())
-			}
-			patch.FilePathTemplate = &request.ProjectGitopsInfo.FilePathTemplate
-		case "schema_path_template":
-			if err := api.ValidateRepositorySchemaPathTemplate(request.ProjectGitopsInfo.SchemaPathTemplate, project.TenantMode); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid schema_path_template: %s", err.Error())
-			}
-			patch.SchemaPathTemplate = &request.ProjectGitopsInfo.SchemaPathTemplate
-		case "sheet_path_template":
-			patch.SheetPathTemplate = &request.ProjectGitopsInfo.SheetPathTemplate
-		case "enable_sql_review_ci":
-			patch.EnableSQLReviewCI = &request.ProjectGitopsInfo.EnableSqlReviewCi
-		}
-	}
-
-	if v := patch.BranchFilter; v != nil && repo.BranchFilter != *v {
-		if *v == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
-		}
-
-		vcs, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
-		}
-		if vcs == nil {
-			return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSUID)
-		}
-
-		// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
-		if !strings.Contains(*v, "*") {
-			notFound, err := isBranchNotFound(
-				ctx,
-				vcs,
-				s.store,
-				repo.WebURL,
-				repo.AccessToken,
-				repo.RefreshToken,
-				repo.ExternalID,
-				*v,
-				setting.ExternalUrl,
-			)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
-			}
-			if notFound {
-				return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", *v, repo.FullPath)
-			}
-		}
-	}
-
-	// We need to check the FilePathTemplate in create repository request.
-	// This avoids to a certain extent that the creation succeeds but does not work.
-	newBaseDirectory, newFilePathTemplate := repo.BaseDirectory, repo.FilePathTemplate
-	if patch.BaseDirectory != nil {
-		newBaseDirectory = *patch.BaseDirectory
-	}
-	if patch.FilePathTemplate != nil {
-		newFilePathTemplate = *patch.FilePathTemplate
-	}
-
-	if err := vcsplugin.IsAsterisksInTemplateValid(path.Join(newBaseDirectory, newFilePathTemplate)); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
-	}
-
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	updatedRepo, err := s.store.PatchRepositoryV2(ctx, patch, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update repository with error: %v", err.Error())
-	}
-
-	return convertToProjectGitOpsInfo(updatedRepo), nil
-}
-
-// SetupProjectSQLReviewCI sets the SQL review CI for a project.
-func (s *ProjectService) SetupProjectSQLReviewCI(ctx context.Context, request *v1pb.SetupSQLReviewCIRequest) (*v1pb.SetupSQLReviewCIResponse, error) {
-	projectName, err := common.TrimSuffix(request.Name, common.GitOpsInfoSuffix)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	repo, err := s.findProjectRepository(ctx, projectName)
-	if err != nil {
-		return nil, err
-	}
-
-	vcs, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
-	}
-	if vcs == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSUID)
-	}
-
-	pullRequest, err := s.setupVCSSQLReviewCI(ctx, repo, vcs)
-	if err != nil {
-		return nil, err
-	}
-	response := &v1pb.SetupSQLReviewCIResponse{
-		PullRequestUrl: pullRequest.URL,
-	}
-
-	enableSQLReviewCi := true
-	repoPatch := &store.PatchRepositoryMessage{
-		UID:               &repo.UID,
-		EnableSQLReviewCI: &enableSQLReviewCi,
-	}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	if _, err := s.store.PatchRepositoryV2(ctx, repoPatch, principalID); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to patch repository with error: %v", err.Error())
-	}
-
-	return response, nil
-}
-
-// UnsetProjectGitOpsInfo deletes the GitOps info for a project.
-func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1pb.UnsetProjectGitOpsInfoRequest) (*emptypb.Empty, error) {
-	projectName, err := common.TrimSuffix(request.Name, common.GitOpsInfoSuffix)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	repo, err := s.findProjectRepository(ctx, projectName)
-	if err != nil {
-		return nil, err
-	}
-
-	vcs, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
-	}
-	if vcs == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSUID)
-	}
-
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	if err := s.store.DeleteRepositoryV2(ctx, repo.ProjectResourceID, principalID); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete repository with error: %v", err.Error())
-	}
-
-	// We use one webhook in one repo for at least one Bytebase project, so we only delete the webhook if this project is the last one using this webhook.
-	repos, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{
-		WebURL: &repo.WebURL,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, `failed to list repository for web url "%s" with error: %v`, repo.WebURL, err.Error())
-	}
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
-	}
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
-	}
-	if len(repos) == 0 {
-		// Delete the webhook after we successfully delete the repository.
-		// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
-		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
-		if err = vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).DeleteWebhook(
-			ctx,
-			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
-			&common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    refreshTokenNoop(),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			},
-			vcs.InstanceURL,
-			repo.ExternalID,
-			repo.ExternalWebhookID,
-		); err != nil {
-			// Despite the error here, we have deleted the repository in the database, we still return success.
-			slog.Error("failed to delete webhook for project", slog.String("project", projectName), slog.Int("repo", repo.UID), log.BBError(err))
-		}
-	}
-
-	return &emptypb.Empty{}, nil
-}
-
 // CreateIAMPolicyUpdateActivity creates project IAM policy change activities.
 func (s *ProjectService) CreateIAMPolicyUpdateActivity(ctx context.Context, remove, add *store.IAMPolicyMessage, project *store.ProjectMessage, creatorUID int) {
 	var activities []*store.ActivityMessage
 	for _, binding := range remove.Bindings {
 		for _, member := range binding.Members {
 			activities = append(activities, &store.ActivityMessage{
-				CreatorUID:   creatorUID,
-				ContainerUID: project.UID,
-				Type:         api.ActivityProjectMemberDelete,
-				Level:        api.ActivityInfo,
-				Comment:      fmt.Sprintf("Revoked %s from %s (%s).", binding.Role, member.Name, member.Email),
+				CreatorUID:        creatorUID,
+				ResourceContainer: project.GetName(),
+				ContainerUID:      project.UID,
+				Type:              api.ActivityProjectMemberDelete,
+				Level:             api.ActivityInfo,
+				Comment:           fmt.Sprintf("Revoked %s from %s (%s).", binding.Role, member.Name, member.Email),
 			})
 		}
 	}
 	for _, binding := range add.Bindings {
 		for _, member := range binding.Members {
 			activities = append(activities, &store.ActivityMessage{
-				CreatorUID:   creatorUID,
-				ContainerUID: project.UID,
-				Type:         api.ActivityProjectMemberCreate,
-				Level:        api.ActivityInfo,
-				Comment:      fmt.Sprintf("Granted %s to %s (%s).", member.Name, member.Email, binding.Role),
+				CreatorUID:        creatorUID,
+				ResourceContainer: project.GetName(),
+				ContainerUID:      project.UID,
+				Type:              api.ActivityProjectMemberCreate,
+				Level:             api.ActivityInfo,
+				Comment:           fmt.Sprintf("Granted %s to %s (%s).", member.Name, member.Email, binding.Role),
 			})
 		}
 	}
@@ -785,14 +497,6 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 
 // AddWebhook adds a webhook to a given project.
 func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhookRequest) (*v1pb.Project, error) {
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
-	}
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
-	}
-
 	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1010,583 +714,6 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 	}
 
 	return resp, nil
-}
-
-func (s *ProjectService) findProjectRepository(ctx context.Context, projectName string) (*store.RepositoryMessage, error) {
-	project, err := s.getProjectMessage(ctx, projectName)
-	if err != nil {
-		return nil, err
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, "project %s has been deleted", projectName)
-	}
-
-	repo, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{
-		ProjectResourceID: &project.ResourceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if repo == nil {
-		return nil, status.Errorf(codes.NotFound, "gitops not found")
-	}
-
-	return repo, nil
-}
-
-func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v1pb.UpdateProjectGitOpsInfoRequest, project *store.ProjectMessage) (*v1pb.ProjectGitOpsInfo, error) {
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace setting: %v", err)
-	}
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, setupExternalURLError)
-	}
-
-	intVCSUID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs uid: %s", request.ProjectGitopsInfo.VcsUid)
-	}
-	storeVCS, err := s.store.GetExternalVersionControlV2(ctx, intVCSUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
-	}
-	if storeVCS == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs %d not found", intVCSUID)
-	}
-
-	baseDir := request.ProjectGitopsInfo.BaseDirectory
-	// Azure DevOps base directory should start with /.
-	if storeVCS.Type == vcsplugin.AzureDevOps {
-		if !strings.HasPrefix(baseDir, "/") {
-			baseDir = "/" + request.ProjectGitopsInfo.BaseDirectory
-		}
-	} else {
-		baseDir = strings.Trim(request.ProjectGitopsInfo.BaseDirectory, "/")
-	}
-
-	vcsID, err := strconv.Atoi(request.ProjectGitopsInfo.VcsUid)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid vcs id: %s", request.ProjectGitopsInfo.VcsUid)
-	}
-
-	repositoryCreate := &store.RepositoryMessage{
-		VCSUID:             int(vcsID),
-		ProjectResourceID:  project.ResourceID,
-		WebhookURLHost:     setting.ExternalUrl,
-		Title:              request.ProjectGitopsInfo.Title,
-		FullPath:           request.ProjectGitopsInfo.FullPath,
-		WebURL:             request.ProjectGitopsInfo.WebUrl,
-		BranchFilter:       request.ProjectGitopsInfo.BranchFilter,
-		BaseDirectory:      baseDir,
-		FilePathTemplate:   request.ProjectGitopsInfo.FilePathTemplate,
-		SchemaPathTemplate: request.ProjectGitopsInfo.SchemaPathTemplate,
-		SheetPathTemplate:  request.ProjectGitopsInfo.SheetPathTemplate,
-		ExternalID:         request.ProjectGitopsInfo.ExternalId,
-		AccessToken:        request.ProjectGitopsInfo.AccessToken,
-		RefreshToken:       request.ProjectGitopsInfo.RefreshToken,
-	}
-	if request.ProjectGitopsInfo.ExpiresTime != nil {
-		repositoryCreate.ExpiresTs = request.ProjectGitopsInfo.ExpiresTime.AsTime().Unix()
-	}
-
-	if repositoryCreate.BranchFilter == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
-	}
-
-	// We need to check the FilePathTemplate in create repository request.
-	// This avoids to a certain extent that the creation succeeds but does not work.
-	if err := vcsplugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
-	}
-
-	if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate, project.TenantMode); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid file_path_template: %v", err.Error())
-	}
-
-	if err := api.ValidateRepositorySchemaPathTemplate(repositoryCreate.SchemaPathTemplate, project.TenantMode); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid schema_path_template: %s", err.Error())
-	}
-
-	vcs, err := s.store.GetExternalVersionControlV2(ctx, repositoryCreate.VCSUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
-	}
-	if vcs == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repositoryCreate.VCSUID)
-	}
-
-	// When the branch names doesn't contain wildcards, we should make sure the branch exists in the repo.
-	if !strings.Contains(repositoryCreate.BranchFilter, "*") {
-		notFound, err := isBranchNotFound(
-			ctx,
-			vcs,
-			s.store,
-			repositoryCreate.WebURL,
-			repositoryCreate.AccessToken,
-			repositoryCreate.RefreshToken,
-			repositoryCreate.ExternalID,
-			repositoryCreate.BranchFilter,
-			setting.ExternalUrl,
-		)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check branch %s with error: %v", repositoryCreate.BranchFilter, err.Error())
-		}
-		if notFound {
-			return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", repositoryCreate.BranchFilter, repositoryCreate.FullPath)
-		}
-	}
-
-	// For a particular VCS repo, all Bytebase projects share the same webhook.
-	repositories, err := s.store.ListRepositoryV2(ctx, &store.FindRepositoryMessage{
-		WebURL: &repositoryCreate.WebURL,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find repository with web url %s: %v", repositoryCreate.WebURL, err.Error())
-	}
-
-	// If we can find at least one repository with the same web url, we will use the same webhook instead of creating a new one.
-	if len(repositories) > 0 {
-		repo := repositories[0]
-		repositoryCreate.WebhookEndpointID = repo.WebhookEndpointID
-		repositoryCreate.WebhookSecretToken = repo.WebhookSecretToken
-		repositoryCreate.ExternalWebhookID = repo.ExternalWebhookID
-	} else {
-		workspaceID, err := s.store.GetWorkspaceID(ctx)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find workspace id with error: %v", err.Error())
-		}
-
-		repositoryCreate.WebhookEndpointID = fmt.Sprintf("%s-%d", workspaceID, time.Now().Unix())
-		secretToken, err := common.RandomString(gitlab.SecretTokenLength)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to generate random secret token for vcs with error: %v", err.Error())
-		}
-		repositoryCreate.WebhookSecretToken = secretToken
-
-		gitopsWebhookURL := setting.GitopsWebhookUrl
-		if gitopsWebhookURL == "" {
-			gitopsWebhookURL = setting.ExternalUrl
-		}
-		webhookID, err := createVCSWebhook(ctx, vcs.Type, repositoryCreate.WebhookEndpointID, secretToken, repositoryCreate.AccessToken, vcs.InstanceURL, repositoryCreate.ExternalID, gitopsWebhookURL)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create webhook for project %s with error: %v", repositoryCreate.ProjectResourceID, err.Error())
-		}
-		repositoryCreate.ExternalWebhookID = webhookID
-	}
-
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	repository, err := s.store.CreateRepositoryV2(ctx, repositoryCreate, principalID)
-	if err != nil {
-		if common.ErrorCode(err) == common.Conflict {
-			return nil, status.Errorf(codes.AlreadyExists, "project %s has already linked repository", repositoryCreate.ProjectResourceID)
-		}
-		return nil, status.Errorf(codes.Internal, "failed to link project repository with error: %v", err.Error())
-	}
-
-	return convertToProjectGitOpsInfo(repository), nil
-}
-
-func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *store.RepositoryMessage, vcs *store.ExternalVersionControlMessage) (*vcsplugin.PullRequest, error) {
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
-	}
-
-	branch, err := s.setupVCSSQLReviewBranch(ctx, repository, vcs)
-	if err != nil {
-		return nil, err
-	}
-
-	oauthContext := &common.OauthContext{
-		ClientID:     vcs.ApplicationID,
-		ClientSecret: vcs.Secret,
-		AccessToken:  repository.AccessToken,
-		RefreshToken: repository.RefreshToken,
-		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-	}
-
-	if err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).UpsertEnvironmentVariable(
-		ctx,
-		oauthContext,
-		vcs.InstanceURL,
-		repository.ExternalID,
-		vcsplugin.SQLReviewAPISecretName,
-		repository.WebhookSecretToken,
-	); err != nil {
-		return nil, err
-	}
-
-	endpoint := setting.ExternalUrl
-	if setting.GitopsWebhookUrl != "" {
-		endpoint = setting.GitopsWebhookUrl
-	}
-	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", endpoint, repository.WebhookEndpointID)
-
-	switch vcs.Type {
-	case vcsplugin.GitHub:
-		if err := setupVCSSQLReviewCIForGitHub(ctx, oauthContext, repository, vcs, branch, sqlReviewEndpoint); err != nil {
-			return nil, err
-		}
-	case vcsplugin.GitLab:
-		if err := setupVCSSQLReviewCIForGitLab(ctx, oauthContext, repository, vcs, branch, sqlReviewEndpoint); err != nil {
-			return nil, err
-		}
-	case vcsplugin.AzureDevOps:
-		if err := setupVCSSQLReviewCIForAzureDevOps(ctx, oauthContext, repository, vcs, branch, sqlReviewEndpoint); err != nil {
-			return nil, err
-		}
-	case vcsplugin.Bitbucket:
-		if err := setupVCSSQLReviewCIForBitBucket(ctx, oauthContext, repository, vcs, branch, sqlReviewEndpoint); err != nil {
-			return nil, err
-		}
-	}
-
-	return vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).CreatePullRequest(
-		ctx,
-		oauthContext,
-		vcs.InstanceURL,
-		repository.ExternalID,
-		&vcsplugin.PullRequestCreate{
-			Title:                 sqlReviewInVCSPRTitle,
-			Body:                  "This pull request is auto-generated by Bytebase for GitOps workflow.",
-			Head:                  branch.Name,
-			Base:                  repository.BranchFilter,
-			RemoveHeadAfterMerged: true,
-		},
-	)
-}
-
-// setupVCSSQLReviewBranch will create a new branch to setup SQL review CI.
-func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository *store.RepositoryMessage, vcs *store.ExternalVersionControlMessage) (*vcsplugin.BranchInfo, error) {
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
-	}
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
-	}
-	oauthContext := &common.OauthContext{
-		ClientID:     vcs.ApplicationID,
-		ClientSecret: vcs.Secret,
-		AccessToken:  repository.AccessToken,
-		RefreshToken: repository.RefreshToken,
-		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-	}
-	branch, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).GetBranch(
-		ctx,
-		oauthContext,
-		vcs.InstanceURL,
-		repository.ExternalID,
-		repository.BranchFilter,
-	)
-	if err != nil {
-		return nil, err
-	}
-	slog.Debug("VCS target branch info", slog.String("last_commit", branch.LastCommitID), slog.String("name", branch.Name))
-
-	branchCreate := &vcsplugin.BranchInfo{
-		Name:         fmt.Sprintf("bytebase-vcs-%d", time.Now().Unix()),
-		LastCommitID: branch.LastCommitID,
-	}
-	if err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).CreateBranch(
-		ctx,
-		oauthContext,
-		vcs.InstanceURL,
-		repository.ExternalID,
-		branchCreate,
-	); err != nil {
-		return nil, err
-	}
-
-	return branchCreate, nil
-}
-
-// setupVCSSQLReviewCIForGitHub will create the pull request in GitHub to setup SQL review action.
-func setupVCSSQLReviewCIForGitHub(
-	ctx context.Context,
-	oauthContext *common.OauthContext,
-	repository *store.RepositoryMessage,
-	vcs *store.ExternalVersionControlMessage,
-	branch *vcsplugin.BranchInfo,
-	sqlReviewEndpoint string,
-) error {
-	sqlReviewConfig := github.SetupSQLReviewCI(sqlReviewEndpoint)
-	fileLastCommitID := ""
-	fileSHA := ""
-
-	fileMeta, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(
-		ctx,
-		oauthContext,
-		vcs.InstanceURL,
-		repository.ExternalID,
-		github.SQLReviewActionFilePath,
-		vcsplugin.RefInfo{
-			RefType: vcsplugin.RefTypeBranch,
-			RefName: branch.Name,
-		},
-	)
-	if err != nil {
-		slog.Debug(
-			"Failed to get file meta",
-			slog.String("file", github.SQLReviewActionFilePath),
-			slog.String("last_commit", branch.LastCommitID),
-			slog.Int("code", common.ErrorCode(err).Int()),
-			log.BBError(err),
-		)
-	} else if fileMeta != nil {
-		fileLastCommitID = fileMeta.LastCommitID
-		fileSHA = fileMeta.SHA
-	}
-
-	return vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).CreateFile(
-		ctx,
-		oauthContext,
-		vcs.InstanceURL,
-		repository.ExternalID,
-		github.SQLReviewActionFilePath,
-		vcsplugin.FileCommitCreate{
-			Branch:        branch.Name,
-			CommitMessage: sqlReviewInVCSPRTitle,
-			Content:       sqlReviewConfig,
-			LastCommitID:  fileLastCommitID,
-			SHA:           fileSHA,
-		},
-	)
-}
-
-func setupVCSSQLReviewCIForBitBucket(
-	ctx context.Context,
-	oauthContext *common.OauthContext,
-	repository *store.RepositoryMessage,
-	vcs *store.ExternalVersionControlMessage,
-	branch *vcsplugin.BranchInfo,
-	sqlReviewEndpoint string,
-) error {
-	bitbucketPlugin := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{})
-	if err := bitbucket.EnableSQLReviewCI(ctx, oauthContext, bitbucketPlugin.APIURL(vcs.InstanceURL), vcs.InstanceURL, repository.ExternalID); err != nil {
-		return errors.Wrapf(err, "failed to enable the pipeline")
-	}
-
-	if err := createOrUpdateVCSSQLReviewFile(ctx, oauthContext, repository, vcs, branch, bitbucket.SQLReviewScriptFilePath, func(_ *vcsplugin.FileMeta) (string, error) {
-		return bitbucket.SQLReviewScript, nil
-	}); err != nil {
-		return err
-	}
-
-	return createOrUpdateVCSSQLReviewFile(ctx, oauthContext, repository, vcs, branch, bitbucket.CIFilePath, func(fileMeta *vcsplugin.FileMeta) (string, error) {
-		content := make(map[string]any)
-
-		if fileMeta != nil {
-			ciFileContent, err := bitbucketPlugin.ReadFileContent(
-				ctx,
-				oauthContext,
-				vcs.InstanceURL,
-				repository.ExternalID,
-				bitbucket.CIFilePath,
-				vcsplugin.RefInfo{
-					RefType: vcsplugin.RefTypeCommit,
-					RefName: fileMeta.LastCommitID,
-				},
-			)
-			if err != nil {
-				return "", err
-			}
-			if err := yaml.Unmarshal([]byte(ciFileContent), &content); err != nil {
-				return "", err
-			}
-		}
-
-		newContent, err := bitbucket.SetupBitBucketCI(content, sqlReviewEndpoint)
-		if err != nil {
-			return "", err
-		}
-
-		return newContent, nil
-	})
-}
-
-// setupVCSSQLReviewCIForGitLab will create or update SQL review related files in GitLab to setup SQL review CI.
-func setupVCSSQLReviewCIForGitLab(
-	ctx context.Context,
-	oauthContext *common.OauthContext,
-	repository *store.RepositoryMessage,
-	vcs *store.ExternalVersionControlMessage,
-	branch *vcsplugin.BranchInfo,
-	sqlReviewEndpoint string,
-) error {
-	// create or update the SQL review CI.
-	if err := createOrUpdateVCSSQLReviewFile(ctx, oauthContext, repository, vcs, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsplugin.FileMeta) (string, error) {
-		return gitlab.SetupSQLReviewCI(sqlReviewEndpoint), nil
-	}); err != nil {
-		return err
-	}
-
-	// create or update the .gitlab-ci.yml
-	return createOrUpdateVCSSQLReviewFile(ctx, oauthContext, repository, vcs, branch, gitlab.CIFilePath, func(fileMeta *vcsplugin.FileMeta) (string, error) {
-		content := make(map[string]any)
-
-		if fileMeta != nil {
-			ciFileContent, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileContent(
-				ctx,
-				oauthContext,
-				vcs.InstanceURL,
-				repository.ExternalID,
-				gitlab.CIFilePath,
-				vcsplugin.RefInfo{
-					RefType: vcsplugin.RefTypeCommit,
-					RefName: fileMeta.LastCommitID,
-				},
-			)
-			if err != nil {
-				return "", err
-			}
-			if err := yaml.Unmarshal([]byte(ciFileContent), &content); err != nil {
-				return "", err
-			}
-		}
-
-		newContent, err := gitlab.SetupGitLabCI(content)
-		if err != nil {
-			return "", err
-		}
-
-		return newContent, nil
-	})
-}
-
-// setupVCSSQLReviewCIForAzureDevOps will create or update SQL review related files in Azure DevOps to setup SQL review CI.
-func setupVCSSQLReviewCIForAzureDevOps(
-	ctx context.Context,
-	oauthContext *common.OauthContext,
-	repository *store.RepositoryMessage,
-	vcs *store.ExternalVersionControlMessage,
-	branch *vcsplugin.BranchInfo,
-	sqlReviewEndpoint string,
-) error {
-	sqlReviewConfig := azure.SetupSQLReviewCI(sqlReviewEndpoint, repository.BranchFilter)
-	fileLastCommitID := ""
-	fileSHA := ""
-
-	fileMeta, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(
-		ctx,
-		oauthContext,
-		vcs.InstanceURL,
-		repository.ExternalID,
-		azure.SQLReviewPipelineFilePath,
-		vcsplugin.RefInfo{
-			RefType: vcsplugin.RefTypeBranch,
-			RefName: branch.Name,
-		},
-	)
-	if err != nil {
-		slog.Debug(
-			"Failed to get file meta",
-			slog.String("file", azure.SQLReviewPipelineFilePath),
-			slog.String("last_commit", branch.LastCommitID),
-			slog.Int("code", common.ErrorCode(err).Int()),
-			log.BBError(err),
-		)
-	} else if fileMeta != nil {
-		fileLastCommitID = fileMeta.LastCommitID
-		fileSHA = fileMeta.SHA
-	}
-
-	return vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).OverwriteFile(
-		ctx,
-		oauthContext,
-		vcs.InstanceURL,
-		repository.ExternalID,
-		azure.SQLReviewPipelineFilePath,
-		vcsplugin.FileCommitCreate{
-			Branch:        branch.Name,
-			CommitMessage: sqlReviewInVCSPRTitle,
-			Content:       sqlReviewConfig,
-			LastCommitID:  fileLastCommitID,
-			SHA:           fileSHA,
-		},
-	)
-}
-
-// createOrUpdateVCSSQLReviewFile will create or update SQL review file for GitLab or BitBucket.
-func createOrUpdateVCSSQLReviewFile(
-	ctx context.Context,
-	oauthContext *common.OauthContext,
-	repository *store.RepositoryMessage,
-	vcs *store.ExternalVersionControlMessage,
-	branch *vcsplugin.BranchInfo,
-	fileName string,
-	getNewContent func(meta *vcsplugin.FileMeta) (string, error),
-) error {
-	fileExisted := true
-	fileMeta, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(
-		ctx,
-		oauthContext,
-		vcs.InstanceURL,
-		repository.ExternalID,
-		fileName,
-		vcsplugin.RefInfo{
-			RefType: vcsplugin.RefTypeBranch,
-			RefName: branch.Name,
-		},
-	)
-	if err != nil {
-		slog.Debug(
-			"Failed to get file meta",
-			slog.String("last_commit", branch.LastCommitID),
-			slog.Int("code", common.ErrorCode(err).Int()),
-			log.BBError(err),
-		)
-		if common.ErrorCode(err) == common.NotFound {
-			fileExisted = false
-		} else {
-			return err
-		}
-	}
-
-	newContent, err := getNewContent(fileMeta)
-	if err != nil {
-		return err
-	}
-
-	if fileExisted {
-		return vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).OverwriteFile(
-			ctx,
-			oauthContext,
-			vcs.InstanceURL,
-			repository.ExternalID,
-			fileName,
-			vcsplugin.FileCommitCreate{
-				Branch:        branch.Name,
-				CommitMessage: sqlReviewInVCSPRTitle,
-				Content:       newContent,
-				LastCommitID:  fileMeta.LastCommitID,
-				SHA:           fileMeta.SHA,
-			},
-		)
-	}
-
-	return vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).CreateFile(
-		ctx,
-		oauthContext,
-		vcs.InstanceURL,
-		repository.ExternalID,
-		fileName,
-		vcsplugin.FileCommitCreate{
-			Branch:        branch.Name,
-			CommitMessage: sqlReviewInVCSPRTitle,
-			Content:       newContent,
-		},
-	)
 }
 
 // CreateDatabaseGroup creates a database group.
@@ -2390,8 +1517,6 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 			result = append(result, string(api.ActivityPipelineTaskStatusUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
 			result = append(result, string(api.ActivityPipelineTaskRunStatusUpdate))
-		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT:
-			result = append(result, string(api.ActivityPipelineTaskFileCommit))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE:
 			result = append(result, string(api.ActivityPipelineTaskStatementUpdate))
 		case v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
@@ -2413,9 +1538,7 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 		case v1pb.Activity_TYPE_PROJECT_MEMBER_DELETE:
 			result = append(result, string(api.ActivityProjectMemberDelete))
 		case v1pb.Activity_TYPE_SQL_EDITOR_QUERY:
-			result = append(result, string(api.ActivitySQLEditorQuery))
-		case v1pb.Activity_TYPE_DATABASE_RECOVERY_PITR_DONE:
-			result = append(result, string(api.ActivityDatabaseRecoveryPITRDone))
+			result = append(result, string(api.ActivitySQLQuery))
 		case v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED:
 			result = append(result, string(api.ActivityNotifyIssueApproved))
 		case v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT:
@@ -2447,8 +1570,6 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE)
 		case string(api.ActivityPipelineTaskRunStatusUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE)
-		case string(api.ActivityPipelineTaskFileCommit):
-			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_FILE_COMMIT)
 		case string(api.ActivityPipelineTaskStatementUpdate):
 			result = append(result, v1pb.Activity_TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE)
 		case string(api.ActivityPipelineTaskEarliestAllowedTimeUpdate):
@@ -2469,10 +1590,8 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 			result = append(result, v1pb.Activity_TYPE_PROJECT_MEMBER_CREATE)
 		case string(api.ActivityProjectMemberDelete):
 			result = append(result, v1pb.Activity_TYPE_PROJECT_MEMBER_DELETE)
-		case string(api.ActivitySQLEditorQuery):
+		case string(api.ActivitySQLQuery):
 			result = append(result, v1pb.Activity_TYPE_SQL_EDITOR_QUERY)
-		case string(api.ActivityDatabaseRecoveryPITRDone):
-			result = append(result, v1pb.Activity_TYPE_DATABASE_RECOVERY_PITR_DONE)
 		case string(api.ActivityNotifyIssueApproved):
 			result = append(result, v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED)
 		case string(api.ActivityNotifyPipelineRollout):
@@ -2686,22 +1805,10 @@ func convertProjectRole(role string) (api.Role, error) {
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
-	workflow := v1pb.Workflow_WORKFLOW_UNSPECIFIED
-	switch projectMessage.Workflow {
-	case api.UIWorkflow:
-		workflow = v1pb.Workflow_UI
-	case api.VCSWorkflow:
+	workflow := v1pb.Workflow_UI
+	if projectMessage.VCSConnectorsCount > 0 {
 		workflow = v1pb.Workflow_VCS
 	}
-
-	visibility := v1pb.Visibility_VISIBILITY_UNSPECIFIED
-	switch projectMessage.Visibility {
-	case api.Private:
-		visibility = v1pb.Visibility_VISIBILITY_PRIVATE
-	case api.Public:
-		visibility = v1pb.Visibility_VISIBILITY_PUBLIC
-	}
-
 	tenantMode := v1pb.TenantMode_TENANT_MODE_UNSPECIFIED
 	switch projectMessage.TenantMode {
 	case api.TenantModeDisabled:
@@ -2709,15 +1816,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	case api.TenantModeTenant:
 		tenantMode = v1pb.TenantMode_TENANT_MODE_ENABLED
 	}
-
-	schemaChange := v1pb.SchemaChange_SCHEMA_CHANGE_UNSPECIFIED
-	switch projectMessage.SchemaChangeType {
-	case api.ProjectSchemaChangeTypeDDL:
-		schemaChange = v1pb.SchemaChange_DDL
-	case api.ProjectSchemaChangeTypeSDL:
-		schemaChange = v1pb.SchemaChange_SDL
-	}
-
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
@@ -2736,35 +1834,9 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Title:                      projectMessage.Title,
 		Key:                        projectMessage.Key,
 		Workflow:                   workflow,
-		Visibility:                 visibility,
 		TenantMode:                 tenantMode,
-		SchemaChange:               schemaChange,
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
-	}
-}
-
-func convertToProjectWorkflowType(workflow v1pb.Workflow) api.ProjectWorkflowType {
-	switch workflow {
-	case v1pb.Workflow_UI:
-		return api.UIWorkflow
-	case v1pb.Workflow_VCS:
-		return api.VCSWorkflow
-	default:
-		// Default is UI workflow.
-		return api.UIWorkflow
-	}
-}
-
-func convertToProjectVisibility(visibility v1pb.Visibility) api.ProjectVisibility {
-	switch visibility {
-	case v1pb.Visibility_VISIBILITY_PRIVATE:
-		return api.Private
-	case v1pb.Visibility_VISIBILITY_PUBLIC:
-		return api.Public
-	default:
-		// Default is public.
-		return api.Public
 	}
 }
 
@@ -2779,31 +1851,13 @@ func convertToProjectTenantMode(tenantMode v1pb.TenantMode) api.ProjectTenantMod
 	}
 }
 
-func convertToProjectSchemaChangeType(schemaChange v1pb.SchemaChange) api.ProjectSchemaChangeType {
-	switch schemaChange {
-	case v1pb.SchemaChange_DDL:
-		return api.ProjectSchemaChangeTypeDDL
-	case v1pb.SchemaChange_SDL:
-		return api.ProjectSchemaChangeTypeSDL
-	default:
-		return api.ProjectSchemaChangeTypeDDL
-	}
-}
-
 func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.ProjectMessage, error) {
-	workflow := convertToProjectWorkflowType(project.Workflow)
-	visibility := convertToProjectVisibility(project.Visibility)
 	tenantMode := convertToProjectTenantMode(project.TenantMode)
-	schemaChange := convertToProjectSchemaChangeType(project.SchemaChange)
-
 	return &store.ProjectMessage{
-		ResourceID:       resourceID,
-		Title:            project.Title,
-		Key:              project.Key,
-		Workflow:         workflow,
-		Visibility:       visibility,
-		TenantMode:       tenantMode,
-		SchemaChangeType: schemaChange,
+		ResourceID: resourceID,
+		Title:      project.Title,
+		Key:        project.Key,
+		TenantMode: tenantMode,
 	}, nil
 }
 
@@ -3028,37 +2082,13 @@ func validateMember(member string) error {
 	return errors.Errorf("invalid user %s", member)
 }
 
-func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.ProjectGitOpsInfo {
-	return &v1pb.ProjectGitOpsInfo{
-		Name:               fmt.Sprintf("%s%s/gitOpsInfo", common.ProjectNamePrefix, repository.ProjectResourceID),
-		VcsUid:             fmt.Sprintf("%d", repository.VCSUID),
-		Title:              repository.Title,
-		FullPath:           repository.FullPath,
-		WebUrl:             repository.WebURL,
-		BranchFilter:       repository.BranchFilter,
-		BaseDirectory:      repository.BaseDirectory,
-		FilePathTemplate:   repository.FilePathTemplate,
-		SchemaPathTemplate: repository.SchemaPathTemplate,
-		SheetPathTemplate:  repository.SheetPathTemplate,
-		EnableSqlReviewCi:  repository.EnableSQLReviewCI,
-		WebhookEndpointId:  repository.WebhookEndpointID,
-		ExternalId:         repository.ExternalID,
-	}
-}
-
 func isBranchNotFound(
 	ctx context.Context,
-	vcs *store.ExternalVersionControlMessage,
-	store *store.Store,
-	webURL, accessToken, refreshToken, externalID, branch, externalURL string,
+	vcs *store.VCSProviderMessage,
+	accessToken, externalID, branch string,
 ) (bool, error) {
 	oauthContext := &common.OauthContext{
-		ClientID:     vcs.ApplicationID,
-		ClientSecret: vcs.Secret,
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		Refresher:    utils.RefreshToken(ctx, store, webURL),
-		RedirectURL:  fmt.Sprintf("%s/oauth/callback", externalURL),
+		AccessToken: accessToken,
 	}
 	_, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).GetBranch(ctx,
 		oauthContext,
@@ -3070,17 +2100,18 @@ func isBranchNotFound(
 	return false, err
 }
 
-func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID, gitopsWebhookURL string) (string, error) {
+func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID, bytebaseEndpointURL string) (string, error) {
 	// Create a new webhook and retrieve the created webhook ID
 	var webhookCreatePayload []byte
 	var err error
 	switch vcsType {
 	case vcsplugin.GitLab:
 		webhookCreate := gitlab.WebhookCreate{
-			URL:                   fmt.Sprintf("%s/hook/gitlab/%s", gitopsWebhookURL, webhookEndpointID),
+			URL:                   fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 			SecretToken:           secretToken,
-			PushEvents:            true,
-			EnableSSLVerification: false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
+			MergeRequestsEvents:   true,
+			NoteEvents:            true,
+			EnableSSLVerification: false,
 		}
 		webhookCreatePayload, err = json.Marshal(webhookCreate)
 		if err != nil {
@@ -3089,12 +2120,12 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 	case vcsplugin.GitHub:
 		webhookPost := github.WebhookCreateOrUpdate{
 			Config: github.WebhookConfig{
-				URL:         fmt.Sprintf("%s/hook/github/%s", gitopsWebhookURL, webhookEndpointID),
+				URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 				ContentType: "json",
 				Secret:      secretToken,
-				InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
+				InsecureSSL: 1,
 			},
-			Events: []string{"push"},
+			Events: []string{"pull_request", "pull_request_review_comment"},
 		}
 		webhookCreatePayload, err = json.Marshal(webhookPost)
 		if err != nil {
@@ -3103,9 +2134,9 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 	case vcsplugin.Bitbucket:
 		webhookPost := bitbucket.WebhookCreateOrUpdate{
 			Description: "Bytebase GitOps",
-			URL:         fmt.Sprintf("%s/hook/bitbucket/%s", gitopsWebhookURL, webhookEndpointID),
+			URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 			Active:      true,
-			Events:      []string{"repo:push"},
+			Events:      []string{"pullrequest:created", "pullrequest:updated", "pullrequest:fulfilled", "pullrequest:comment_created"},
 		}
 		webhookCreatePayload, err = json.Marshal(webhookPost)
 		if err != nil {
@@ -3122,10 +2153,10 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 			ConsumerActionID: "httpRequest",
 			ConsumerID:       "webHooks",
 			ConsumerInputs: azure.WebhookCreateConsumerInputs{
-				URL:                  fmt.Sprintf("%s/hook/azure/%s", gitopsWebhookURL, webhookEndpointID),
+				URL:                  fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 				AcceptUntrustedCerts: true,
 			},
-			EventType:   "git.push",
+			EventType:   "git.pullrequest.merged",
 			PublisherID: "tfs",
 			PublisherInputs: azure.WebhookCreatePublisherInputs{
 				Repository: repositoryID,
@@ -3143,8 +2174,6 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 		ctx,
 		&common.OauthContext{
 			AccessToken: accessToken,
-			// We use refreshTokenNoop() because the repository isn't created yet.
-			Refresher: refreshTokenNoop(),
 		},
 		instanceURL,
 		externalRepoID,
@@ -3154,11 +2183,4 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 		return "", errors.Wrap(err, "failed to create webhook")
 	}
 	return webhookID, nil
-}
-
-// refreshToken is a no-op token refresher. It should be used when the repository isn't created yet.
-func refreshTokenNoop() common.TokenRefresher {
-	return func(_, _ string, _ int64) error {
-		return nil
-	}
 }

@@ -3,23 +3,15 @@ import utc from "dayjs/plugin/utc";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { loggingServiceClient } from "@/grpcweb";
+import type { IdType, FindActivityMessage, ComposedIssue } from "@/types";
+import { UNKNOWN_ID, EMPTY_ID } from "@/types";
+import type { ExportFormat } from "@/types/proto/v1/common";
+import type { LogEntity } from "@/types/proto/v1/logging_service";
 import {
-  IdType,
-  FindActivityMessage,
-  UNKNOWN_ID,
-  EMPTY_ID,
-  ComposedIssue,
-} from "@/types";
-import { ExportFormat } from "@/types/proto/v1/common";
-import {
-  LogEntity,
-  LogEntity_Action,
-  LogEntity_Level,
   logEntity_ActionToJSON,
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
-import { isDatabaseRelatedIssue, extractRolloutUID } from "@/utils";
-import { useCurrentUserV1 } from "../auth";
+import { isDatabaseChangeRelatedIssue, extractRolloutUID } from "@/utils";
 import { userNamePrefix, getLogId, logNamePrefix } from "./common";
 
 dayjs.extend(utc);
@@ -61,7 +53,7 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
   const activityListByIssueV1 = reactive(new Map<string, LogEntity[]>());
 
   const fetchActivityList = async (find: FindActivityMessage) => {
-    const resp = await loggingServiceClient.listLogs({
+    const resp = await loggingServiceClient.searchLogs({
       orderBy: find.order ? `create_time ${find.order}` : "",
       filter: buildFilter(find),
       pageSize: find.pageSize,
@@ -82,7 +74,7 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
         pageSize: 1000, // Pagination is complex, and not high priority
       }).then((resp) => resp.logEntities),
     ];
-    if (isDatabaseRelatedIssue(issue) && issue.rollout) {
+    if (isDatabaseChangeRelatedIssue(issue) && issue.rollout) {
       const pipelineUID = extractRolloutUID(issue.rollout);
       requests.push(
         fetchActivityList({
@@ -103,24 +95,6 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
 
     activityListByIssueV1.set(issue.uid, mergedList);
     return mergedList;
-  };
-
-  const fetchActivityListForQueryHistory = async ({
-    limit,
-    order,
-  }: {
-    limit: number;
-    order: "asc" | "desc";
-  }) => {
-    const currentUserV1 = useCurrentUserV1();
-
-    return fetchActivityList({
-      action: [LogEntity_Action.ACTION_DATABASE_SQL_EDITOR_QUERY],
-      creatorEmail: currentUserV1.value.email,
-      order,
-      pageSize: limit,
-      level: [LogEntity_Level.LEVEL_INFO, LogEntity_Level.LEVEL_WARNING],
-    }).then((resp) => resp.logEntities);
   };
 
   const fetchActivityByUID = async (uid: IdType) => {
@@ -155,7 +129,6 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
   return {
     fetchActivityList,
     fetchActivityListForIssueV1,
-    fetchActivityListForQueryHistory,
     fetchActivityByUID,
     getActivityListByIssueV1,
     getResourceId,

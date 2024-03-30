@@ -1,8 +1,6 @@
 roles:
   - name: roles/workspaceAdmin
     permissions:
-      - bb.backups.create
-      - bb.backups.list
       - bb.branches.create
       - bb.branches.delete
       - bb.branches.get
@@ -10,6 +8,11 @@ roles:
       - bb.branches.update
       - bb.changeHistories.get
       - bb.changeHistories.list
+      - bb.vcsConnectors.create
+      - bb.vcsConnectors.delete
+      - bb.vcsConnectors.get
+      - bb.vcsConnectors.list
+      - bb.vcsConnectors.update
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
@@ -21,27 +24,24 @@ roles:
       - bb.databases.adviseIndex
       - bb.databases.export
       - bb.databases.get
-      - bb.databases.getBackupSetting
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
       - bb.databases.sync
       - bb.databases.update
-      - bb.databases.updateBackupSetting
       - bb.environments.create
       - bb.environments.delete
       - bb.environments.get
       - bb.environments.list
       - bb.environments.undelete
       - bb.environments.update
-      - bb.externalVersionControls.create
-      - bb.externalVersionControls.delete
-      - bb.externalVersionControls.exchangeToken
-      - bb.externalVersionControls.get
-      - bb.externalVersionControls.list
-      - bb.externalVersionControls.listProjects
-      - bb.externalVersionControls.searchProjects
-      - bb.externalVersionControls.update
+      - bb.vcsProviders.create
+      - bb.vcsProviders.delete
+      - bb.vcsProviders.get
+      - bb.vcsProviders.list
+      - bb.vcsProviders.listProjects
+      - bb.vcsProviders.searchProjects
+      - bb.vcsProviders.update
       - bb.identityProviders.create
       - bb.identityProviders.delete
       - bb.identityProviders.get
@@ -98,8 +98,6 @@ roles:
       - bb.taskRuns.list
   - name: roles/workspaceDBA
     permissions:
-      - bb.backups.create
-      - bb.backups.list
       - bb.branches.create
       - bb.branches.delete
       - bb.branches.get
@@ -107,6 +105,11 @@ roles:
       - bb.branches.update
       - bb.changeHistories.get
       - bb.changeHistories.list
+      - bb.vcsConnectors.create
+      - bb.vcsConnectors.delete
+      - bb.vcsConnectors.get
+      - bb.vcsConnectors.list
+      - bb.vcsConnectors.update
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
@@ -118,27 +121,24 @@ roles:
       - bb.databases.adviseIndex
       - bb.databases.export
       - bb.databases.get
-      - bb.databases.getBackupSetting
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
       - bb.databases.sync
       - bb.databases.update
-      - bb.databases.updateBackupSetting
       - bb.environments.create
       - bb.environments.delete
       - bb.environments.get
       - bb.environments.list
       - bb.environments.undelete
       - bb.environments.update
-      - bb.externalVersionControls.create
-      - bb.externalVersionControls.delete
-      - bb.externalVersionControls.exchangeToken
-      - bb.externalVersionControls.get
-      - bb.externalVersionControls.list
-      - bb.externalVersionControls.listProjects
-      - bb.externalVersionControls.searchProjects
-      - bb.externalVersionControls.update
+      - bb.vcsProviders.create
+      - bb.vcsProviders.delete
+      - bb.vcsProviders.get
+      - bb.vcsProviders.list
+      - bb.vcsProviders.listProjects
+      - bb.vcsProviders.searchProjects
+      - bb.vcsProviders.update
       - bb.identityProviders.create
       - bb.identityProviders.delete
       - bb.identityProviders.get
@@ -197,10 +197,9 @@ roles:
     permissions:
       - bb.environments.get
       - bb.environments.list
-      - bb.externalVersionControls.exchangeToken
-      - bb.externalVersionControls.get
-      - bb.externalVersionControls.list
-      - bb.externalVersionControls.searchProjects
+      - bb.vcsProviders.get
+      - bb.vcsProviders.list
+      - bb.vcsProviders.searchProjects
       - bb.policies.get
       - bb.policies.list
       - bb.risks.list
@@ -208,8 +207,6 @@ roles:
       - bb.settings.list
   - name: roles/projectOwner
     permissions:
-      - bb.backups.create
-      - bb.backups.list
       - bb.branches.create
       - bb.branches.delete
       - bb.branches.get
@@ -217,6 +214,11 @@ roles:
       - bb.branches.update
       - bb.changeHistories.get
       - bb.changeHistories.list
+      - bb.vcsConnectors.create
+      - bb.vcsConnectors.delete
+      - bb.vcsConnectors.get
+      - bb.vcsConnectors.list
+      - bb.vcsConnectors.update
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
@@ -228,13 +230,11 @@ roles:
       - bb.databases.adviseIndex
       - bb.databases.export
       - bb.databases.get
-      - bb.databases.getBackupSetting
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
       - bb.databases.sync
       - bb.databases.update
-      - bb.databases.updateBackupSetting
       - bb.issueComments.create
       - bb.issueComments.update
       - bb.issues.create
@@ -263,6 +263,8 @@ roles:
       - bb.branches.list
       - bb.changeHistories.get
       - bb.changeHistories.list
+      - bb.vcsConnectors.get
+      - bb.vcsConnectors.list
       - bb.changelists.create
       - bb.changelists.get
       - bb.changelists.list

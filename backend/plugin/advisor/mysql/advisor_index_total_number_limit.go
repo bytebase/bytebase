@@ -117,6 +117,9 @@ func (checker *indexTotalNumberLimitChecker) generateAdvice() []advisor.Advice {
 
 // EnterCreateTable is called when production createTable is entered.
 func (checker *indexTotalNumberLimitChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -126,6 +129,9 @@ func (checker *indexTotalNumberLimitChecker) EnterCreateTable(ctx *mysql.CreateT
 }
 
 func (checker *indexTotalNumberLimitChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil {
 		return
 	}
@@ -135,6 +141,9 @@ func (checker *indexTotalNumberLimitChecker) EnterCreateIndex(ctx *mysql.CreateI
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *indexTotalNumberLimitChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

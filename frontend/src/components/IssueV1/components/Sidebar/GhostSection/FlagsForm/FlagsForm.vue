@@ -51,7 +51,8 @@
 import { NInput } from "naive-ui";
 import { onlyAllowNumber } from "@/utils";
 import BoolFlag from "./BoolFlag.vue";
-import { GhostParameter, SupportedGhostParameters } from "./constants";
+import type { GhostParameter } from "./constants";
+import { SupportedGhostParameters } from "./constants";
 
 const props = defineProps<{
   flags: Record<string, string>;

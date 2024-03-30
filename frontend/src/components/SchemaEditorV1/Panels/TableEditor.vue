@@ -37,7 +37,9 @@
         :classification-config-id="project.dataClassificationConfigId"
         :disable-change-table="disableChangeTable"
         :allow-reorder-columns="allowReorderColumns"
-        :filter-column="(column: Column) => column.name.includes(props.searchPattern.trim())"
+        :filter-column="
+          (column: Column) => column.name.includes(props.searchPattern.trim())
+        "
         :disable-alter-column="disableAlterColumn"
         :get-referenced-foreign-key-name="getReferencedForeignKeyName"
         :get-column-item-computed-class-list="getColumnItemComputedClassList"
@@ -95,16 +97,18 @@ import {
 } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
-import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
-import {
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import type {
   Column,
   Table,
   Schema,
-  convertColumnMetadataToColumn,
   ForeignKey,
+} from "@/types/v1/schemaEditor";
+import {
+  convertColumnMetadataToColumn,
   SchemaEditorTabType,
 } from "@/types/v1/schemaEditor";
-import { TableTabContext } from "@/types/v1/schemaEditor";
+import type { TableTabContext } from "@/types/v1/schemaEditor";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";

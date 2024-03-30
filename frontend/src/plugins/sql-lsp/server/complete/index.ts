@@ -1,5 +1,5 @@
 import type { Table, LanguageState } from "@sql-lsp/types";
-import { TextDocument } from "vscode-languageserver-textdocument";
+import type { TextDocument } from "vscode-languageserver-textdocument";
 import type {
   CompletionItem,
   CompletionParams,

@@ -31,13 +31,20 @@
         :show-placeholder="true"
         :custom-click="isStandaloneMode"
         :database-list="filteredDatabaseList"
-        @select-database="(db: ComposedDatabase) =>
-                  toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))"
+        @select-database="
+          (db: ComposedDatabase) =>
+            toggleDatabasesSelection(
+              [db as ComposedDatabase],
+              !isDatabaseSelected(db)
+            )
+        "
       >
         <template #selection-all="{ databaseList: selectedDatabaseList }">
           <NCheckbox
             v-if="selectedDatabaseList.length > 0"
-            v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
+            v-bind="
+              getAllSelectionState(selectedDatabaseList as ComposedDatabase[])
+            "
             @update:checked="
               toggleDatabasesSelection(
                 selectedDatabaseList as ComposedDatabase[],
@@ -84,10 +91,11 @@
 import { NCheckbox } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useFilterStore, usePageMode } from "@/store";
-import { ComposedDatabase, ComposedProject, UNKNOWN_ID } from "@/types";
+import type { ComposedDatabase, ComposedProject } from "@/types";
+import { UNKNOWN_ID } from "@/types";
+import type { SearchParams } from "@/utils";
 import {
   filterDatabaseV1ByKeyword,
-  SearchParams,
   CommonFilterScopeIdList,
   extractEnvironmentResourceName,
   extractInstanceResourceName,

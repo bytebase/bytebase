@@ -53,15 +53,10 @@ import { NInputGroup, NRadio, NRadioGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { InstanceSelect, ProjectSelect, SearchBox } from "@/components/v2";
 import { useInstanceV1Store, useProjectV1Store } from "@/store";
-import {
-  UNKNOWN_ID,
-  ComposedDatabase,
-  ComposedInstance,
-  DEFAULT_PROJECT_V1_NAME,
-  PresetRoleType,
-} from "@/types";
-import { Project } from "@/types/proto/v1/project_service";
-import { TransferSource } from "./utils";
+import type { ComposedDatabase, ComposedInstance } from "@/types";
+import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME, PresetRoleType } from "@/types";
+import type { Project } from "@/types/proto/v1/project_service";
+import type { TransferSource } from "./utils";
 
 interface LocalState {
   transferSource: TransferSource;

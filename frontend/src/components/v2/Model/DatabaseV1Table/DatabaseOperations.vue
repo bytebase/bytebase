@@ -89,8 +89,10 @@ import {
   PencilIcon,
   PenSquareIcon,
   ArrowRightLeftIcon,
+  DownloadIcon,
 } from "lucide-vue-next";
-import { computed, h, VNode, reactive, ref } from "vue";
+import type { VNode } from "vue";
+import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { Drawer } from "@/components/v2";
@@ -105,11 +107,8 @@ import {
   pushNotification,
   usePageMode,
 } from "@/store";
-import {
-  ComposedDatabase,
-  DEFAULT_PROJECT_V1_NAME,
-  ProjectPermission,
-} from "@/types";
+import type { ComposedDatabase, ProjectPermission } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import {
   Database,
   DatabaseMetadataView,
@@ -253,6 +252,10 @@ const allowTransferProject = computed(() => {
   );
 });
 
+const allowDataExport = computed(() => {
+  return props.databases.length === 1;
+});
+
 const allowEditLabels = computed(() => {
   return props.databases.every((db) => {
     const project = db.projectEntity;
@@ -280,7 +283,10 @@ const selectedDatabaseUidList = computed(() => {
 });
 
 const generateMultiDb = async (
-  type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
+  type:
+    | "bb.issue.database.schema.update"
+    | "bb.issue.database.data.update"
+    | "bb.issue.database.data.export"
 ) => {
   if (
     type === "bb.issue.database.schema.update" &&
@@ -389,6 +395,18 @@ const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
   if (!isStandaloneMode.value) {
     resp.push(
+      {
+        icon: h(DownloadIcon),
+        text: t("issue.data-export.title"),
+        disabled: !allowDataExport.value,
+        click: () => generateMultiDb("bb.issue.database.data.export"),
+        tooltip: () => {
+          if (props.databases.length === 0 || allowDataExport.value) {
+            return "";
+          }
+          return t("database.data-export-action-disabled");
+        },
+      },
       {
         icon: h(RefreshCcwIcon),
         text: t("common.sync"),

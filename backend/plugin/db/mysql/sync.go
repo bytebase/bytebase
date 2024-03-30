@@ -54,6 +54,8 @@ var (
 		}
 		return strings.Join(l, ", ")
 	}()
+
+	viewDefMatcher = regexp.MustCompile("CREATE ALGORITHM=(UNDEFINED|MERGE|TEMPTABLE) DEFINER=`([^`]+)`@`([^`]+)` SQL SECURITY (DEFINER|INVOKER) VIEW `([^`]+)`( \\((`([^`]+)`)+\\))? AS (?P<def>.+)")
 )
 
 // SyncInstance syncs the instance.
@@ -310,6 +312,15 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err := viewRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
+	for key := range viewMap {
+		def, err := driver.reconcileViewDefinition(ctx, driver.databaseName, key.Table)
+		if err != nil {
+			return nil, err
+		}
+		if def != "" {
+			viewMap[key].Definition = def
+		}
+	}
 
 	// Query foreign key info.
 	foreignKeysMap, err := driver.getForeignKeyList(ctx, driver.databaseName)
@@ -325,6 +336,13 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			return nil, err
 		}
 	}
+
+	functions, procedures, err := driver.syncRoutines(ctx, driver.databaseName)
+	if err != nil {
+		return nil, err
+	}
+	schemaMetadata.Functions = functions
+	schemaMetadata.Procedures = procedures
 
 	// Query table info.
 	tableQuery := `
@@ -435,6 +453,161 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	return databaseMetadata, err
 }
 
+func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*storepb.FunctionMetadata, []*storepb.ProcedureMetadata, error) {
+	// Query functions and procedure info.
+	routinesQuery := `
+		SELECT
+			ROUTINE_NAME,
+			ROUTINE_TYPE
+		FROM
+			INFORMATION_SCHEMA.ROUTINES
+		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE IN ('FUNCTION', 'PROCEDURE')
+		ORDER BY ROUTINE_TYPE, ROUTINE_NAME;
+	`
+	routineRows, err := driver.db.QueryContext(ctx, routinesQuery, driver.databaseName)
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, routinesQuery)
+	}
+	defer routineRows.Close()
+	var functions []*storepb.FunctionMetadata
+	var procedures []*storepb.ProcedureMetadata
+	for routineRows.Next() {
+		var name, routineType string
+		if err := routineRows.Scan(
+			&name,
+			&routineType,
+		); err != nil {
+			return nil, nil, err
+		}
+		if strings.EqualFold(routineType, "PROCEDURE") {
+			procedureDef, err := driver.getCreateProcedureStmt(ctx, databaseName, name)
+			if err != nil {
+				return nil, nil, err
+			}
+			procedures = append(procedures, &storepb.ProcedureMetadata{
+				Name:       name,
+				Definition: procedureDef,
+			})
+		} else {
+			functionDef, err := driver.getCreateFunctionStmt(ctx, databaseName, name)
+			if err != nil {
+				return nil, nil, err
+			}
+			functions = append(functions, &storepb.FunctionMetadata{
+				Name:       name,
+				Definition: functionDef,
+			})
+		}
+	}
+	if err := routineRows.Err(); err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, routinesQuery)
+	}
+
+	return functions, procedures, nil
+}
+
+func (driver *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, functionName string) (string, error) {
+	query := fmt.Sprintf("SHOW CREATE FUNCTION `%s`.`%s`", databaseName, functionName)
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+
+	type ResultRow struct {
+		CreateFunction string
+	}
+	resultRow := ResultRow{}
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
+	defIdx := -1
+	for i, column := range columns {
+		if strings.EqualFold(column, "Create Function") {
+			defIdx = i
+			break
+		}
+	}
+
+	if defIdx == -1 {
+		return "", errors.Errorf("failed to find column Create Function")
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		dests := make([]any, len(columns))
+		for i := 0; i < len(columns); i++ {
+			if i == defIdx {
+				dests[i] = &resultRow.CreateFunction
+				continue
+			}
+			dests[i] = new(string)
+		}
+
+		if err := rows.Scan(dests...); err != nil {
+			return "", err
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+
+	return resultRow.CreateFunction, nil
+}
+
+func (driver *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, functionName string) (string, error) {
+	query := fmt.Sprintf("SHOW CREATE PROCEDURE `%s`.`%s`", databaseName, functionName)
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+
+	type ResultRow struct {
+		CreateProcedure string
+	}
+	resultRow := ResultRow{}
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
+	defIdx := -1
+	for i, column := range columns {
+		if strings.EqualFold(column, "Create Procedure") {
+			defIdx = i
+			break
+		}
+	}
+
+	if defIdx == -1 {
+		return "", errors.Errorf("failed to find column Create Procedure")
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		dests := make([]any, len(columns))
+		for i := 0; i < len(columns); i++ {
+			if i == defIdx {
+				dests[i] = &resultRow.CreateProcedure
+				continue
+			}
+			dests[i] = new(string)
+		}
+
+		if err := rows.Scan(dests...); err != nil {
+			return "", err
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+
+	return resultRow.CreateProcedure, nil
+}
+
 func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string) {
 	if defaultStr.Valid {
 		// In MySQL 5.7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
@@ -481,6 +654,39 @@ func isCurrentTimestampLike(s string) bool {
 		return true
 	}
 	return false
+}
+
+func (driver *Driver) reconcileViewDefinition(ctx context.Context, databaseName, viewName string) (string, error) {
+	query := fmt.Sprintf("SHOW CREATE VIEW `%s`.`%s`", databaseName, viewName)
+	var createStmt, unused string
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&unused, &createStmt, &unused, &unused); err != nil {
+		if noRows := errors.Is(err, sql.ErrNoRows); noRows {
+			slog.Warn("no rows return for query show create view", slog.String("viewName", viewName), slog.String("databaseName", databaseName))
+			return "", nil
+		}
+		return "", errors.Wrapf(err, "failed to scan row for query: %s", query)
+	}
+
+	def, err := getViewDefFromCreateView(createStmt)
+	if err != nil {
+		slog.Warn("failed to get view definition", slog.String("viewName", viewName), slog.String("databaseName", databaseName), log.BBError(err))
+		return "", nil
+	}
+
+	return def, nil
+}
+
+func getViewDefFromCreateView(createView string) (string, error) {
+	viewDefMatching := viewDefMatcher.FindStringSubmatch(createView)
+	if len(viewDefMatching) == 0 {
+		return "", errors.Errorf("failed to match view definition, %s", createView)
+	}
+	for i, name := range viewDefMatcher.SubexpNames() {
+		if name == "def" && i < len(viewDefMatching) {
+			return viewDefMatching[i], nil
+		}
+	}
+	return "", errors.Errorf("failed to match view definition, %s", createView)
 }
 
 func (driver *Driver) listPartitionTables(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
@@ -600,6 +806,58 @@ func (driver *Driver) listPartitionTables(ctx context.Context, databaseName stri
 
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan row")
+	}
+
+	// We cannot get use whether the table is partitioned by server default from metadata, so we need to
+	// use regexp for dump table string.
+	for tableKey, partitions := range result {
+		if len(partitions) == 0 {
+			continue
+		}
+		showQuery := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`", databaseName, tableKey.Table)
+		showRows, err := driver.db.QueryContext(ctx, showQuery)
+		if err != nil {
+			slog.Warn("failed to execute query", slog.String("query", showQuery), log.BBError(err))
+		}
+		for showRows.Next() {
+			var tableName, createTable string
+			if err := showRows.Scan(&tableName, &createTable); err != nil {
+				slog.Warn("failed to scan row", slog.String("query", showQuery), log.BBError(err))
+			}
+			partitionRegexp := regexp.MustCompile(`[^B]PARTITIONS (?P<partitionNum>\d+)`)
+			subPartitionRegexp := regexp.MustCompile(`SUBPARTITIONS (?P<subPartitionNum>\d+)`)
+			partitionNum := 0
+			subPartitionNum := 0
+			if partitionRegexp.MatchString(createTable) {
+				partitionNum, err = strconv.Atoi(partitionRegexp.FindStringSubmatch(createTable)[1])
+				if err != nil {
+					slog.Warn("failed to parse partition number", slog.String("query", showQuery), log.BBError(err))
+				}
+			}
+			if subPartitionRegexp.MatchString(createTable) {
+				subPartitionNum, err = strconv.Atoi(subPartitionRegexp.FindStringSubmatch(createTable)[1])
+				if err != nil {
+					slog.Warn("failed to parse subpartition number", slog.String("query", showQuery), log.BBError(err))
+				}
+			}
+			for _, partition := range partitions {
+				if partitionNum != 0 {
+					partition.UseDefault = strconv.Itoa(partitionNum)
+				}
+				for _, subPartition := range partition.Subpartitions {
+					if subPartitionNum != 0 {
+						subPartition.UseDefault = strconv.Itoa(subPartitionNum)
+					}
+				}
+			}
+		}
+		if err := showRows.Err(); err != nil {
+			slog.Warn("rows err", slog.String("query", showQuery), log.BBError(err))
+		}
+		// nolint
+		if err := showRows.Close(); err != nil {
+			slog.Warn("failed to close row", slog.String("query", showQuery), log.BBError(err))
+		}
 	}
 
 	return result, nil

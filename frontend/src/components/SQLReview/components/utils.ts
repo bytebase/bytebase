@@ -1,17 +1,15 @@
 import { groupBy, cloneDeep } from "lodash-es";
-import {
-  convertPolicyRuleToRuleTemplate,
+import type {
   RuleConfigComponent,
   RuleTemplate,
-  RuleType,
   SQLReviewPolicy,
-  TEMPLATE_LIST,
   IndividualConfigForEngine,
 } from "@/types";
+import { convertPolicyRuleToRuleTemplate, TEMPLATE_LIST } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import { PayloadForEngine } from "./RuleConfigComponents";
+import type { PayloadForEngine } from "./RuleConfigComponents";
 
 export const templateIdForEnvironment = (environment: Environment): string => {
   return `bb.sql-review.environment-policy.${environment.name}`;
@@ -22,20 +20,20 @@ export const rulesToTemplate = (
   withDisabled = false
 ) => {
   const ruleTemplateList: RuleTemplate[] = [];
-  const ruleTemplateMap: Map<RuleType, RuleTemplate> = TEMPLATE_LIST.reduce(
+  const ruleTemplateMap: Map<string, RuleTemplate> = TEMPLATE_LIST.reduce(
     (map, template) => {
       for (const rule of template.ruleList) {
         map.set(rule.type, rule);
       }
       return map;
     },
-    new Map<RuleType, RuleTemplate>()
+    new Map<string, RuleTemplate>()
   );
 
   const groupByRule = groupBy(review.ruleList, (rule) => rule.type);
 
   for (const [type, ruleList] of Object.entries(groupByRule)) {
-    const rule = ruleTemplateMap.get(type as RuleType);
+    const rule = ruleTemplateMap.get(type);
     if (!rule) {
       continue;
     }

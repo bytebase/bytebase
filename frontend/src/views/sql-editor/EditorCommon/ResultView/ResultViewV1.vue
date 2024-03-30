@@ -81,30 +81,30 @@
 import { Info } from "lucide-vue-next";
 import { darkTheme, NConfigProvider, NTabs, NTabPane } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, PropType, ref, toRef } from "vue";
+import type { PropType } from "vue";
+import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { Drawer } from "@/components/v2";
 import {
+  useConnectionOfCurrentSQLEditorTab,
   useCurrentUserV1,
-  useInstanceV1Store,
   usePolicyV1Store,
-  useTabStore,
 } from "@/store";
-import {
+import type {
   ComposedDatabase,
-  ExecuteConfig,
-  ExecuteOption,
+  SQLEditorQueryParams,
   SQLResultSetV1,
 } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import { QueryResult } from "@/types/proto/v1/sql_service";
+import type { QueryResult } from "@/types/proto/v1/sql_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import DetailPanel from "./DetailPanel.vue";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView.vue";
 import RequestQueryButton from "./RequestQueryButton.vue";
-import { provideSQLResultViewContext, SQLResultViewContext } from "./context";
+import type { SQLResultViewContext } from "./context";
+import { provideSQLResultViewContext } from "./context";
 
 const { default: SingleResultViewV1 } = await import(
   "./SingleResultViewV1.vue"
@@ -114,11 +114,7 @@ type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
 const props = defineProps({
   executeParams: {
-    type: Object as PropType<{
-      query: string;
-      config: ExecuteConfig;
-      option?: Partial<ExecuteOption> | undefined;
-    }>,
+    type: Object as PropType<SQLEditorQueryParams>,
     default: undefined,
   },
   database: {
@@ -142,7 +138,7 @@ const props = defineProps({
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const policyStore = usePolicyV1Store();
-const connection = computed(() => useTabStore().currentTab.connection);
+const { instance } = useConnectionOfCurrentSQLEditorTab();
 const keyword = ref("");
 const detail: SQLResultViewContext["detail"] = ref({
   show: false,
@@ -196,10 +192,7 @@ const disallowCopyingData = computed(() => {
     return false;
   }
 
-  const instance = useInstanceV1Store().getInstanceByUID(
-    connection.value.instanceId
-  );
-  const environment = instance.environment;
+  const environment = instance.value.environment;
   const policy = policyStore.getPolicyByParentAndType({
     parentPath: environment,
     policyType: PolicyType.DISABLE_COPY_DATA,

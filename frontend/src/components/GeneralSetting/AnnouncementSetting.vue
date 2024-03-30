@@ -100,6 +100,10 @@
             :disabled="!allowEdit || !allowSave"
             @click.prevent="updateAnnouncementSetting"
           >
+            <FeatureBadge
+              feature="bb.feature.announcement"
+              custom-class="mr-1 text-white pointer-events-none"
+            />
             {{ $t("common.update") }}
           </NButton>
         </div>
@@ -121,10 +125,8 @@ import { useI18n } from "vue-i18n";
 import { AnnouncementLevelSelect } from "@/components/v2";
 import { pushNotification, featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import {
-  Announcement,
-  Announcement_AlertLevel,
-} from "@/types/proto/v1/setting_service";
+import type { Announcement } from "@/types/proto/v1/setting_service";
+import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
 
 interface LocalState {
   announcement: Announcement;

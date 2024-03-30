@@ -14,11 +14,13 @@
 </template>
 
 <script setup lang="ts">
-import { NDropdown, DropdownOption } from "naive-ui";
+import type { DropdownOption } from "naive-ui";
+import { NDropdown } from "naive-ui";
 import { computed, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { TabInfo, TabMode } from "@/types";
-import { CloseTabAction, useTabListContext } from "./context";
+import type { SQLEditorTab } from "@/types";
+import type { CloseTabAction } from "./context";
+import { useTabListContext } from "./context";
 
 const { t } = useI18n();
 const { contextMenu: state, events } = useTabListContext();
@@ -58,7 +60,7 @@ const options = computed((): DropdownOption[] => {
   ];
 
   const { tab } = state.value;
-  if (tab.mode === TabMode.ReadOnly) {
+  if (tab.mode === "READONLY" || tab.mode === "STANDARD") {
     const DIVIDER: DropdownOption = {
       type: "divider",
       key: "DIVIDER",
@@ -74,7 +76,7 @@ const options = computed((): DropdownOption[] => {
   return options;
 });
 
-const show = (tab: TabInfo, index: number, e: MouseEvent) => {
+const show = (tab: SQLEditorTab, index: number, e: MouseEvent) => {
   e.preventDefault();
   e.stopPropagation();
   state.value = undefined;

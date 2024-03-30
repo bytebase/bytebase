@@ -30,7 +30,7 @@
         #item="{
           item: database,
         }: {
-          item: ComposedDatabase | ComposedDatabaseGroup,
+          item: ComposedDatabase | ComposedDatabaseGroup;
         }"
       >
         <template v-if="isDatabase(database)">
@@ -58,7 +58,7 @@
         </template>
         <template v-else>
           <DatabaseGroupTableRow
-            :database-group="(database as ComposedDatabaseGroup)"
+            :database-group="database as ComposedDatabaseGroup"
             :mode="mode"
             :show-selection-column="showSelectionColumn"
             :show-misc-column="showMiscColumn"
@@ -78,16 +78,6 @@
 
       <template #placeholder-content>
         <slot name="placeholder"></slot>
-      </template>
-
-      <template #footer>
-        <div
-          v-if="hasReservedDatabases && !state.showReservedDatabaseList"
-          class="flex items-center justify-center cursor-pointer hover:bg-gray-200 py-2 text-gray-400 text-sm"
-          @click="showReservedDatabaseList()"
-        >
-          {{ $t("database.show-reserved-databases") }}
-        </div>
       </template>
     </BBGrid>
   </div>
@@ -134,24 +124,21 @@ import type { ColumnDef } from "@tanstack/vue-table";
 import { sortBy } from "lodash-es";
 import cloneDeep from "lodash-es/cloneDeep";
 import { NPagination } from "naive-ui";
-import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBGridColumn } from "@/bbkit/types";
+import type { BBGridColumn } from "@/bbkit/types";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { usePageMode, useCurrentUserV1 } from "@/store";
 import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
-import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
-import {
-  databaseV1Url,
-  getScrollParent,
-  isDatabaseV1Queryable,
-  isPITRDatabaseV1,
-  VueClass,
-} from "@/utils";
+import type { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
+import type { VueClass } from "@/utils";
+import { databaseV1Url, getScrollParent, isDatabaseV1Queryable } from "@/utils";
 import DatabaseGroupTableRow from "./DatabaseGroupTableRow.vue";
 import DatabaseTableRow from "./DatabaseTableRow.vue";
-import { isDatabase, Mode } from "./utils";
+import type { Mode } from "./utils";
+import { isDatabase } from "./utils";
 
 const { getCoreRowModel, getPaginationRowModel, useVueTable } = await import(
   "@tanstack/vue-table"
@@ -160,7 +147,6 @@ const { getCoreRowModel, getPaginationRowModel, useVueTable } = await import(
 interface LocalState {
   showIncorrectProjectModal: boolean;
   warningDatabase?: ComposedDatabase;
-  showReservedDatabaseList: boolean;
 }
 
 const props = defineProps({
@@ -236,28 +222,16 @@ const currentUserV1 = useCurrentUserV1();
 const { t } = useI18n();
 const state = reactive<LocalState>({
   showIncorrectProjectModal: false,
-  showReservedDatabaseList: false,
 });
 const pageMode = usePageMode();
 const wrapper = ref<HTMLElement>();
 
-const regularDatabaseList = computed(() =>
-  props.databaseList.filter((db) => !isPITRDatabaseV1(db))
-);
-const reservedDatabaseList = computed(() =>
-  props.databaseList.filter((db) => isPITRDatabaseV1(db))
-);
-const hasReservedDatabases = computed(
-  () => reservedDatabaseList.value.length > 0
-);
+const regularDatabaseList = computed(() => props.databaseList);
 
 const mixedDataList = computed(() => {
   const dataList: (ComposedDatabase | ComposedDatabaseGroup)[] = [
     ...regularDatabaseList.value,
   ];
-  if (state.showReservedDatabaseList) {
-    dataList.push(...reservedDatabaseList.value);
-  }
   if (props.databaseGroupList) {
     dataList.push(...props.databaseGroupList);
   }
@@ -395,17 +369,6 @@ watch(
   },
   { immediate: true }
 );
-
-const showReservedDatabaseList = () => {
-  const count = regularDatabaseList.value.length;
-  const pageCount = table.getPageCount();
-  const targetPage =
-    count === pageCount * props.pageSize ? pageCount + 1 : pageCount;
-  state.showReservedDatabaseList = true;
-  nextTick(() => {
-    handleChangePage(targetPage);
-  });
-};
 
 const allowQuery = (database: ComposedDatabase) => {
   return isDatabaseV1Queryable(database, currentUserV1.value);

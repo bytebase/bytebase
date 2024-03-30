@@ -81,8 +81,12 @@
         :engine="engine"
         :classification-config-id="project.dataClassificationConfigId"
         :disable-change-table="disableChangeTable"
+        :allow-change-primary-keys="allowChangePrimaryKeys"
         :allow-reorder-columns="allowReorderColumns"
-        :filter-column="(column: ColumnMetadata) => column.name.includes(props.searchPattern.trim())"
+        :filter-column="
+          (column: ColumnMetadata) =>
+            column.name.includes(props.searchPattern.trim())
+        "
         :disable-alter-column="disableAlterColumn"
         :get-column-item-computed-class-list="getColumnItemComputedClassList"
         @drop="handleDropColumn"
@@ -145,16 +149,18 @@ import { useI18n } from "vue-i18n";
 import { IndexIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature, pushNotification } from "@/store/modules";
-import { ComposedDatabase } from "@/types";
-import {
-  ColumnMetadata,
+import type { ComposedDatabase } from "@/types";
+import type {
   DatabaseMetadata,
   ForeignKeyMetadata,
-  IndexMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import {
+  ColumnMetadata,
+  IndexMetadata,
+} from "@/types/proto/v1/database_service";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
   arraySwap,
   instanceV1AllowsReorderColumns,
@@ -168,7 +174,7 @@ import {
   removeColumnPrimaryKey,
   upsertColumnPrimaryKey,
 } from "../edit";
-import { EditStatus } from "../types";
+import type { EditStatus } from "../types";
 import ColumnSelectionSummary from "./ColumnSelectionSummary.vue";
 import IndexesEditor from "./IndexesEditor";
 import TableColumnEditor from "./TableColumnEditor";
@@ -271,6 +277,10 @@ const isDroppedColumn = (column: ColumnMetadata): boolean => {
 
 const disableChangeTable = computed(() => {
   return isDroppedSchema.value || isDroppedTable.value;
+});
+
+const allowChangePrimaryKeys = computed(() => {
+  return statusForTable() === "created";
 });
 
 const allowReorderColumns = computed(() => {

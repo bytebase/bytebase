@@ -1,4 +1,4 @@
-import { Plan_Spec } from "@/types/proto/v1/rollout_service";
+import type { Plan_Spec } from "@/types/proto/v1/rollout_service";
 
 /**
  *
@@ -13,7 +13,6 @@ export const targetForSpec = (spec: Plan_Spec | undefined) => {
   return (
     spec.changeDatabaseConfig?.target ??
     spec.createDatabaseConfig?.target ??
-    spec.restoreDatabaseConfig?.target ??
     undefined
   );
 };

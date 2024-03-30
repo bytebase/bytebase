@@ -3,12 +3,18 @@ package mysql
 import (
 	"fmt"
 	"io"
+	"log/slog"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+
+	mysql "github.com/bytebase/mysql-parser"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -34,14 +40,14 @@ func convertToDatabaseState(database *storepb.DatabaseSchemaMetadata) *databaseS
 }
 
 func (s *databaseState) convertToDatabaseMetadata() *storepb.DatabaseSchemaMetadata {
-	schemaStates := []*schemaState{}
+	var schemaStates []*schemaState
 	for _, schema := range s.schemas {
 		schemaStates = append(schemaStates, schema)
 	}
 	sort.Slice(schemaStates, func(i, j int) bool {
 		return schemaStates[i].id < schemaStates[j].id
 	})
-	schemas := []*storepb.SchemaMetadata{}
+	var schemas []*storepb.SchemaMetadata
 	for _, schema := range schemaStates {
 		schemas = append(schemas, schema.convertToSchemaMetadata())
 	}
@@ -54,14 +60,18 @@ func (s *databaseState) convertToDatabaseMetadata() *storepb.DatabaseSchemaMetad
 }
 
 type schemaState struct {
-	id     int
-	name   string
-	tables map[string]*tableState
+	id           int
+	name         string
+	tables       map[string]*tableState
+	views        map[string]*viewState
+	handledViews map[string]bool
 }
 
 func newSchemaState() *schemaState {
 	return &schemaState{
-		tables: make(map[string]*tableState),
+		tables:       make(map[string]*tableState),
+		views:        make(map[string]*viewState),
+		handledViews: make(map[string]bool),
 	}
 }
 
@@ -71,26 +81,34 @@ func convertToSchemaState(schema *storepb.SchemaMetadata) *schemaState {
 	for i, table := range schema.Tables {
 		state.tables[table.Name] = convertToTableState(i, table)
 	}
+	for i, view := range schema.Views {
+		state.views[view.Name] = convertToViewState(i, view)
+	}
 	return state
 }
 
 func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
-	tableStates := []*tableState{}
+	var tableStates []*tableState
 	for _, table := range s.tables {
 		tableStates = append(tableStates, table)
 	}
 	sort.Slice(tableStates, func(i, j int) bool {
 		return tableStates[i].id < tableStates[j].id
 	})
-	tables := []*storepb.TableMetadata{}
+	var tables []*storepb.TableMetadata
 	for _, table := range tableStates {
 		tables = append(tables, table.convertToTableMetadata())
 	}
+	var views []*storepb.ViewMetadata
+	for _, view := range s.views {
+		views = append(views, view.convertToViewMetadata())
+	}
+
 	return &storepb.SchemaMetadata{
 		Name:   s.name,
 		Tables: tables,
+		Views:  views,
 		// Unsupported, for tests only.
-		Views:             []*storepb.ViewMetadata{},
 		Functions:         []*storepb.FunctionMetadata{},
 		Streams:           []*storepb.StreamMetadata{},
 		Tasks:             []*storepb.TaskMetadata{},
@@ -106,16 +124,16 @@ type tableState struct {
 	foreignKeys map[string]*foreignKeyState
 	comment     string
 	// engine and collation is only supported in ParseToMetadata.
-	engine                string
-	collation             string
-	partitionStateWrapper *partitionStateWrapper
+	engine    string
+	collation string
+	partition *partitionState
 }
 
 func (t *tableState) toString(buf io.StringWriter) error {
 	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
 		return err
 	}
-	columns := []*columnState{}
+	var columns []*columnState
 	for _, column := range t.columns {
 		columns = append(columns, column)
 	}
@@ -133,7 +151,7 @@ func (t *tableState) toString(buf io.StringWriter) error {
 		}
 	}
 
-	indexes := []*indexState{}
+	var indexes []*indexState
 	for _, index := range t.indexes {
 		indexes = append(indexes, index)
 	}
@@ -152,7 +170,7 @@ func (t *tableState) toString(buf io.StringWriter) error {
 		}
 	}
 
-	foreignKeys := []*foreignKeyState{}
+	var foreignKeys []*foreignKeyState
 	for _, fk := range t.foreignKeys {
 		foreignKeys = append(foreignKeys, fk)
 	}
@@ -193,11 +211,8 @@ func (t *tableState) toString(buf io.StringWriter) error {
 		}
 	}
 
-	if t.partitionStateWrapper != nil {
-		if _, err := buf.WriteString("\n"); err != nil {
-			return err
-		}
-		if err := t.partitionStateWrapper.toString(buf); err != nil {
+	if t.partition != nil {
+		if err := t.partition.toString(buf, nil); err != nil {
 			return err
 		}
 	}
@@ -232,19 +247,19 @@ func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 	for i, fk := range table.ForeignKeys {
 		state.foreignKeys[fk.Name] = convertToForeignKeyState(i, fk)
 	}
-	state.partitionStateWrapper = convertToPartitionStateWrapper(table.Partitions)
+	state.partition = convertToPartitionState(table.Partitions)
 	return state
 }
 
 func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
-	columnStates := []*columnState{}
+	var columnStates []*columnState
 	for _, column := range t.columns {
 		columnStates = append(columnStates, column)
 	}
 	sort.Slice(columnStates, func(i, j int) bool {
 		return columnStates[i].id < columnStates[j].id
 	})
-	columns := []*storepb.ColumnMetadata{}
+	var columns []*storepb.ColumnMetadata
 	for _, column := range columnStates {
 		columns = append(columns, column.convertToColumnMetadata())
 	}
@@ -253,28 +268,33 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 		column.Position = int32(i + 1)
 	}
 
-	indexStates := []*indexState{}
+	var indexStates []*indexState
 	for _, index := range t.indexes {
 		indexStates = append(indexStates, index)
 	}
 	sort.Slice(indexStates, func(i, j int) bool {
 		return indexStates[i].id < indexStates[j].id
 	})
-	indexes := []*storepb.IndexMetadata{}
+	var indexes []*storepb.IndexMetadata
 	for _, index := range indexStates {
 		indexes = append(indexes, index.convertToIndexMetadata())
 	}
 
-	fkStates := []*foreignKeyState{}
+	var fkStates []*foreignKeyState
 	for _, fk := range t.foreignKeys {
 		fkStates = append(fkStates, fk)
 	}
 	sort.Slice(fkStates, func(i, j int) bool {
 		return fkStates[i].id < fkStates[j].id
 	})
-	fks := []*storepb.ForeignKeyMetadata{}
+	var fks []*storepb.ForeignKeyMetadata
 	for _, fk := range fkStates {
 		fks = append(fks, fk.convertToForeignKeyMetadata())
+	}
+
+	var partitions []*storepb.TablePartitionMetadata
+	if t.partition != nil {
+		partitions = t.partition.convertToPartitionMetadata()
 	}
 
 	return &storepb.TableMetadata{
@@ -285,6 +305,7 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 		Comment:     t.comment,
 		Engine:      t.engine,
 		Collation:   t.collation,
+		Partitions:  partitions,
 	}
 }
 
@@ -367,6 +388,38 @@ func (f *foreignKeyState) toString(buf io.StringWriter) error {
 		}
 	}
 	if _, err := buf.WriteString(")"); err != nil {
+		return err
+	}
+	return nil
+}
+
+type viewState struct {
+	id         int
+	name       string
+	definition string
+}
+
+func (v *viewState) convertToViewMetadata() *storepb.ViewMetadata {
+	return &storepb.ViewMetadata{
+		Name:       v.name,
+		Definition: v.definition,
+	}
+}
+
+func convertToViewState(id int, view *storepb.ViewMetadata) *viewState {
+	return &viewState{
+		id:         id,
+		name:       view.Name,
+		definition: view.Definition,
+	}
+}
+
+func (v *viewState) toString(buf io.StringWriter) error {
+	stmt := fmt.Sprintf("CREATE VIEW `%s` AS %s", v.name, v.definition)
+	if !strings.HasSuffix(stmt, ";") {
+		stmt += ";"
+	}
+	if _, err := buf.WriteString(stmt); err != nil {
 		return err
 	}
 	return nil
@@ -500,181 +553,542 @@ func (i *indexState) toString(buf io.StringWriter) error {
 	return nil
 }
 
-// Currently, our storepb.TablePartitionMetadata is too redundant, we need to convert it to a more compact format.
-// In the future, we should update the storepb.TablePartitionMetadata to a more compact format.
-type partitionStateWrapper struct {
-	tp         storepb.TablePartitionMetadata_Type
-	expr       string
-	partitions map[string]*partitionState
+type partitionState struct {
+	info       partitionInfo
+	subInfo    *partitionInfo
+	partitions map[string]*partitionDefinition
 }
 
-func (p *partitionStateWrapper) hasSubpartitions() (bool, storepb.TablePartitionMetadata_Type, string) {
-	for _, partition := range p.partitions {
-		if partition.subPartition != nil && len(partition.subPartition.partitions) > 0 {
-			return true, partition.subPartition.tp, partition.subPartition.expr
+type partitionInfo struct {
+	tp         storepb.TablePartitionMetadata_Type
+	useDefault int
+	expr       string
+}
+
+type partitionDefinition struct {
+	id            int
+	name          string
+	value         string
+	subpartitions map[string]*partitionDefinition
+}
+
+func (p *partitionState) isValid() error {
+	if p.info.useDefault == 0 && len(p.partitions) == 0 {
+		return errors.New("empty partition list")
+	}
+
+	if p.info.useDefault != 0 && len(p.partitions) > 0 {
+		return errors.New("specify partitions clause and use default partition are not allowed at the same time")
+	}
+
+	if p.info.tp == storepb.TablePartitionMetadata_TYPE_UNSPECIFIED {
+		return errors.New("invalid partition type")
+	}
+
+	if p.subInfo != nil {
+		if p.subInfo.tp == storepb.TablePartitionMetadata_TYPE_UNSPECIFIED {
+			return errors.New("invalid subpartition type")
+		}
+
+		anySpecificPartition := len(p.partitions) > 0
+		if anySpecificPartition {
+			var anySpecificSubpartition bool
+			for _, partition := range p.partitions {
+				if len(partition.subpartitions) > 0 {
+					anySpecificSubpartition = true
+					break
+				}
+			}
+
+			if anySpecificSubpartition && p.subInfo.useDefault != 0 {
+				return errors.New("specify subpartitions clause and use default subpartition are not allowed at the same time")
+			}
 		}
 	}
 
-	return false, storepb.TablePartitionMetadata_TYPE_UNSPECIFIED, ""
+	return nil
 }
 
-type partitionState struct {
-	id           int
-	name         string
-	value        string
-	subPartition *partitionStateWrapper
-}
-
-// nolint
-func (p *partitionStateWrapper) convertToPartitionMetadata() []*storepb.TablePartitionMetadata {
-	partitions := make([]*storepb.TablePartitionMetadata, 0, len(p.partitions))
-	partitionStates := make([]*partitionState, 0, len(p.partitions))
-	for _, partition := range p.partitions {
-		partitionStates = append(partitionStates, partition)
+func convertToPartitionState(partitions []*storepb.TablePartitionMetadata) *partitionState {
+	if len(partitions) == 0 {
+		return nil
 	}
-	sort.Slice(partitionStates, func(i, j int) bool {
-		return partitionStates[i].id < partitionStates[j].id
-	})
+	state := &partitionState{
+		partitions: make(map[string]*partitionDefinition),
+	}
+	for i, partition := range partitions {
+		if i == 0 {
+			state.info.tp = partition.Type
+			state.info.expr = partition.Expression
+			if partition.UseDefault != "" {
+				var err error
+				state.info.useDefault, err = strconv.Atoi(partition.UseDefault)
+				if err != nil {
+					slog.Warn(err.Error())
+				}
+			}
+		}
+		partitionDef := &partitionDefinition{
+			id:            i,
+			name:          partition.Name,
+			value:         partition.Value,
+			subpartitions: make(map[string]*partitionDefinition),
+		}
 
-	for _, partition := range partitionStates {
-		partitions = append(partitions, &storepb.TablePartitionMetadata{
-			Name:          partition.name,
-			Type:          p.tp,
-			Expression:    p.expr,
-			Value:         partition.value,
-			Subpartitions: partition.subPartition.convertToPartitionMetadata(),
+		for j, subPartition := range partition.Subpartitions {
+			if j == 0 {
+				state.subInfo = &partitionInfo{
+					tp:   subPartition.Type,
+					expr: subPartition.Expression,
+				}
+				if subPartition.UseDefault != "" {
+					var err error
+					state.subInfo.useDefault, err = strconv.Atoi(subPartition.UseDefault)
+					if err != nil {
+						slog.Warn(err.Error())
+					}
+				}
+			}
+			partitionDef.subpartitions[subPartition.Name] = &partitionDefinition{
+				id:    j,
+				name:  subPartition.Name,
+				value: subPartition.Value,
+			}
+		}
+		state.partitions[partition.Name] = partitionDef
+	}
+	return state
+}
+
+func (p *partitionState) convertToPartitionMetadata() []*storepb.TablePartitionMetadata {
+	// There are `useDefault` fields in partitionInfo structure, which may use with empty parititions fields.
+	// For example, `PARTITION BY HASH (id) PARTITIONS 4 SUBPARTITION BY KEY(id) SUBPARTITIONS 5;` may cause the `partitions` field to be empty.
+	// To be compatible with our protobuf definition, which requires at least one partition, we need to generate the default partition name. And, value
+	// is not important, because only the KEY and HASH partition type support PARTITIONS clause.
+	// TODO(parser-group): recheck the MySQL behavior of generating the default partition name and value.
+	if err := p.isValid(); err != nil {
+		slog.Warn(err.Error())
+		return nil
+	}
+	var partitions []*storepb.TablePartitionMetadata
+	if p.info.useDefault != 0 {
+		generator := newPartitionDefaultNameGenerator("")
+		for i := 0; i < p.info.useDefault; i++ {
+			partitions = append(partitions, &storepb.TablePartitionMetadata{
+				Name:       generator.next(),
+				Type:       p.info.tp,
+				Expression: p.info.expr,
+				Value:      "",
+				UseDefault: strconv.Itoa(p.info.useDefault),
+			})
+		}
+		// The reason of we do not consider subUseDefault in this case is that MySQL does not support
+		// subpartitions for HASH and KEY partitioning, and they are the only partitioning types that support
+		// the PARTITIONS clause.
+	} else {
+		sortedPartitions := make([]*partitionDefinition, 0, len(p.partitions))
+		for _, partition := range p.partitions {
+			sortedPartitions = append(sortedPartitions, partition)
+		}
+		sort.Slice(sortedPartitions, func(i, j int) bool {
+			return sortedPartitions[i].id < sortedPartitions[j].id
 		})
+		for _, partition := range sortedPartitions {
+			partitionMetadata := &storepb.TablePartitionMetadata{
+				Name:       partition.name,
+				Type:       p.info.tp,
+				Expression: p.info.expr,
+				Value:      partition.value,
+			}
+			if p.subInfo != nil {
+				if p.subInfo.useDefault != 0 {
+					subUseDefault := strconv.Itoa(p.subInfo.useDefault)
+					generator := newPartitionDefaultNameGenerator(partition.name)
+					for i := 0; i < p.subInfo.useDefault; i++ {
+						partitionMetadata.Subpartitions = append(partitionMetadata.Subpartitions, &storepb.TablePartitionMetadata{
+							Name:       generator.next(),
+							Type:       p.subInfo.tp,
+							Expression: p.subInfo.expr,
+							UseDefault: subUseDefault,
+							Value:      "",
+						})
+					}
+				} else {
+					sortedSubpartitions := make([]*partitionDefinition, 0, len(partition.subpartitions))
+					for _, subPartition := range partition.subpartitions {
+						sortedSubpartitions = append(sortedSubpartitions, subPartition)
+					}
+					sort.Slice(sortedSubpartitions, func(i, j int) bool {
+						return sortedSubpartitions[i].id < sortedSubpartitions[j].id
+					})
+					for _, subPartition := range sortedSubpartitions {
+						partitionMetadata.Subpartitions = append(partitionMetadata.Subpartitions, &storepb.TablePartitionMetadata{
+							Name:       subPartition.name,
+							Type:       p.subInfo.tp,
+							Expression: p.subInfo.expr,
+							Value:      subPartition.value,
+						})
+					}
+				}
+			}
+			partitions = append(partitions, partitionMetadata)
+		}
 	}
 
 	return partitions
 }
 
-func convertToPartitionStateWrapper(partitions []*storepb.TablePartitionMetadata) *partitionStateWrapper {
-	if len(partitions) == 0 {
-		return nil
-	}
-	wrapper := &partitionStateWrapper{
-		partitions: make(map[string]*partitionState),
-	}
-	for i, partition := range partitions {
-		if i == 0 {
-			wrapper.tp = partition.Type
-			wrapper.expr = partition.Expression
-		}
-		partitionState := &partitionState{
-			id:    i,
-			name:  partition.Name,
-			value: partition.Value,
-		}
-		partitionState.subPartition = convertToPartitionStateWrapper(partition.Subpartitions)
-		wrapper.partitions[partition.Name] = partitionState
-	}
-
-	return wrapper
+// partitionDefaultNameGenerator is the name generator of MySQL partition, which use the default clause.
+// The behavior of this generator should be compatible with MySQL.
+// - If do not specify the `parentName`, the default partition name series is "p0", "p1", "p2", ...
+// - Otherwise, the default partition name series is "parentNamesp0", "parentNamesp1", "parentNamesp2", ...
+type partitionDefaultNameGenerator struct {
+	parentName string
+	count      int
 }
 
-func (p *partitionStateWrapper) toString(buf io.StringWriter) error {
+func newPartitionDefaultNameGenerator(parentName string) *partitionDefaultNameGenerator {
+	return &partitionDefaultNameGenerator{
+		parentName: parentName,
+		count:      -1,
+	}
+}
+
+func (g *partitionDefaultNameGenerator) next() string {
+	g.count++
+
+	if g.parentName == "" {
+		return fmt.Sprintf("p%d", g.count)
+	}
+	return fmt.Sprintf("%ssp%d", g.parentName, g.count)
+}
+
+// toString() writes the partition state as SHOW CREATE TABLE syntax to buf, referencing MySQL source code:
+// https://sourcegraph.com/github.com/mysql/mysql-server@824e2b4064053f7daf17d7f3f84b7a3ed92e5fb4/-/blob/sql/sql_show.cc?L2528-2550
+// partitionClauseCtx is use to minimize the difference between the original one and the output, it is safe to pass nil.
+func (p *partitionState) toString(buf io.StringWriter, partitionClauseCtx mysql.IPartitionClauseContext) error {
 	// Write version specific comment.
-	if _, err := buf.WriteString("/*!50100 PARTITION BY "); err != nil {
+	vsc := p.getVersionSpecificComment(partitionClauseCtx)
+	curComment := vsc
+	if _, err := buf.WriteString(vsc); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" PARTITION BY "); err != nil {
 		return err
 	}
 
-	tp, err := partitionTypeToString(p.tp)
-	if err != nil {
-		return err
-	}
-
-	if _, err := buf.WriteString(tp); err != nil {
-		return err
-	}
-
-	if _, err := buf.WriteString(fmt.Sprintf(" (%s)", p.expr)); err != nil {
-		return err
-	}
-
-	// Write subpartition type if any.
-	if has, subTp, subExpr := p.hasSubpartitions(); has {
-		if _, err := buf.WriteString("\nSUBPARTITION BY "); err != nil {
+	switch p.info.tp {
+	case storepb.TablePartitionMetadata_RANGE, storepb.TablePartitionMetadata_RANGE_COLUMNS:
+		if _, err := buf.WriteString("RANGE "); err != nil {
 			return err
 		}
-		subTp, err := partitionTypeToString(subTp)
-		if err != nil {
-			return err
-		}
-		if _, err := buf.WriteString(subTp); err != nil {
-			return err
-		}
-		if _, err := buf.WriteString(fmt.Sprintf(" (%s)", subExpr)); err != nil {
-			return err
-		}
-	}
-
-	parititonSlice := make([]*partitionState, 0, len(p.partitions))
-	for _, partition := range p.partitions {
-		parititonSlice = append(parititonSlice, partition)
-	}
-	sort.Slice(parititonSlice, func(i, j int) bool {
-		return parititonSlice[i].id < parititonSlice[j].id
-	})
-
-	for idx, partition := range parititonSlice {
-		prefix := "("
-		if idx > 0 {
-			prefix = strings.Repeat(" ", 1)
-		}
-		suffix := ","
-		if idx == len(parititonSlice)-1 {
-			suffix = ")"
-		}
-
-		if _, err := buf.WriteString(fmt.Sprintf("\n%s", prefix)); err != nil {
-			return err
-		}
-
-		var valuesWrap string
-		if strings.EqualFold(partition.value, "MAXVALUE") {
-			valuesWrap = "MAXVALUE"
-		} else {
-			valuesWrap = fmt.Sprintf("(%s)", partition.value)
-		}
-		if _, err := buf.WriteString(fmt.Sprintf("PARTITION %s VALUES LESS THAN %s", partition.name, valuesWrap)); err != nil {
-			return err
-		}
-		if partition.subPartition == nil {
-			if _, err := buf.WriteString(" ENGINE = InnoDB"); err != nil {
+		if p.info.tp == storepb.TablePartitionMetadata_RANGE {
+			fields := splitPartitionExprIntoFields(p.info.expr)
+			for i, field := range fields {
+				fields[i] = fmt.Sprintf("`%s`", field)
+			}
+			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
 				return err
 			}
 		} else {
-			subPartitionSlice := make([]*partitionState, 0, len(partition.subPartition.partitions))
-			for _, subPartition := range partition.subPartition.partitions {
-				subPartitionSlice = append(subPartitionSlice, subPartition)
+			// I think MySQL need to write "COLUMNS " instead of " COLUMNS" here...
+			if _, err := buf.WriteString(" COLUMNS"); err != nil {
+				return err
 			}
-			sort.Slice(subPartitionSlice, func(i, j int) bool {
-				return subPartitionSlice[i].id < subPartitionSlice[j].id
-			})
-
-			for subIdx, subPartition := range subPartitionSlice {
-				prefix := " ("
-				if subIdx > 0 {
-					prefix = strings.Repeat(" ", 2)
-				}
-				suffix := ","
-				if subIdx == len(subPartitionSlice)-1 {
-					suffix = ")"
-				}
-				if _, err := buf.WriteString(fmt.Sprintf("\n%s", prefix)); err != nil {
-					return err
-				}
-				if _, err := buf.WriteString(fmt.Sprintf("SUBPARTITION %s ENGINE = InnoDB", subPartition.name)); err != nil {
-					return err
-				}
-				if _, err := buf.WriteString(suffix); err != nil {
-					return err
-				}
+			fields := splitPartitionExprIntoFields(p.info.expr)
+			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
+				return err
 			}
 		}
-		if _, err := buf.WriteString(suffix); err != nil {
+	case storepb.TablePartitionMetadata_LIST, storepb.TablePartitionMetadata_LIST_COLUMNS:
+		if _, err := buf.WriteString("LIST "); err != nil {
 			return err
+		}
+		if p.info.tp == storepb.TablePartitionMetadata_LIST {
+			fields := splitPartitionExprIntoFields(p.info.expr)
+			for i, field := range fields {
+				fields[i] = fmt.Sprintf("`%s`", field)
+			}
+			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
+				return err
+			}
+		} else {
+			// I think MySQL need to write "COLUMNS " instead of " COLUMNS" here...
+			if _, err := buf.WriteString(" COLUMNS"); err != nil {
+				return err
+			}
+			fields := splitPartitionExprIntoFields(p.info.expr)
+			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
+				return err
+			}
+		}
+	case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_HASH, storepb.TablePartitionMetadata_LINEAR_KEY:
+		if p.info.tp == storepb.TablePartitionMetadata_LINEAR_HASH || p.info.tp == storepb.TablePartitionMetadata_LINEAR_KEY {
+			if _, err := buf.WriteString("LINEAR "); err != nil {
+				return err
+			}
+		}
+		if p.info.tp == storepb.TablePartitionMetadata_KEY || p.info.tp == storepb.TablePartitionMetadata_LINEAR_KEY {
+			if _, err := buf.WriteString("KEY "); err != nil {
+				return err
+			}
+			// NOTE: MySQL supports an ALGORITHM option with [SUB]PARTITION BY [LINEAR KEY]. ALGORITHM=1 causes the server to use the same key-hashing function as MYSQL 5.1, and ALGORITHM=1 is the only possible output in
+			// the following code. Sadly, I do not know how to get the key_algorithm from the INFORMATION_SCHEMA, AND 5.1 IS TOO LEGACY TO SUPPORT! So use the original one.
+			/*
+			   current_comment_start is given when called from SHOW CREATE TABLE,
+			   Then only add ALGORITHM = 1, not the default 2 or non-set 0!
+			   For .frm current_comment_start is NULL, then add ALGORITHM if != 0.
+			*/
+			// if (part_info->key_algorithm ==
+			// 	enum_key_algorithm::KEY_ALGORITHM_51 ||  // SHOW
+			// (!current_comment_start &&                   // .frm
+			//  (part_info->key_algorithm != enum_key_algorithm::KEY_ALGORITHM_NONE))) {
+			// 	/* If we already are within a comment, end that comment first. */
+			// 	if (current_comment_start) err += add_string(fptr, "*/ ");
+			// 	err += add_string(fptr, "/*!50611 ");
+			// 	err += add_part_key_word(fptr, partition_keywords[PKW_ALGORITHM].str);
+			// 	err += add_equal(fptr);
+			// 	err += add_space(fptr);
+			// 	err += add_int(fptr, static_cast<longlong>(part_info->key_algorithm));
+			// 	err += add_space(fptr);
+			// 	err += add_string(fptr, "*/ ");
+			// 	if (current_comment_start) {
+			// 		/* Skip new line. */
+			// 		if (current_comment_start[0] == '\n') current_comment_start++;
+			// 		err += add_string(fptr, current_comment_start);
+			// 		err += add_space(fptr);
+			// 	}
+			// }
+			if partitionClauseCtx != nil && partitionClauseCtx.PartitionTypeDef() != nil {
+				v := partitionClauseCtx.PartitionTypeDef()
+				partitionDefKeyCtx, ok := v.(*mysql.PartitionDefKeyContext)
+				if ok && partitionDefKeyCtx.PartitionKeyAlgorithm() != nil {
+					numText := partitionDefKeyCtx.PartitionKeyAlgorithm().Real_ulong_number().GetText()
+					num, err := strconv.Atoi(numText)
+					if err != nil {
+						slog.Warn(err.Error())
+					} else if num == 1 || (num == 0 && len(curComment) == 0) {
+						if _, err := buf.WriteString(fmt.Sprintf("*/ /*!50611 ALGORITHM = %d */ ", num)); err != nil {
+							return err
+						}
+						if len(curComment) > 0 {
+							s := curComment
+							if curComment[0] == '\n' {
+								s = curComment[1:]
+							}
+							if _, err := buf.WriteString(fmt.Sprintf("%s ", s)); err != nil {
+								return err
+							}
+						}
+					}
+				}
+			}
+			// HACK(zp): Write the part field list. In the MySQL source code, it calls append_identifier(), which considers the quote character. We should figure out the logic of it later.
+			// Currently, I just found that if the expr contains more than one field, it would not be quoted by '`'.
+			// KEY and LINEAR KEY can take the field list.
+			// While MySQL calls append_field_list() to write the field list, it unmasks the OPTION_QUOTE_SHOW_CREATE flag,
+			// for us, we do the best effort to split the expr by ',' and trim the leading and trailing '`', and write it to the buffer after joining them with ','.
+			fields := splitPartitionExprIntoFields(p.info.expr)
+			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
+				return err
+			}
+		} else {
+			if _, err := buf.WriteString("HASH "); err != nil {
+				return err
+			}
+			fields := splitPartitionExprIntoFields(p.info.expr)
+			for i, field := range fields {
+				fields[i] = fmt.Sprintf("`%s`", field)
+			}
+			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
+				return err
+			}
+		}
+	default:
+		return errors.Errorf("unsupported partition type: %v", p.info.tp)
+	}
+
+	// NOTE: MySQL writes the default partitions in the following code, which means that the server
+	// takes the responsibility to generate the partitions. Sadly, we cannot get whether the user
+	// use this or not in the metadata. So we skip it.
+	/*
+		if ((!part_info->use_default_num_partitions) &&
+		    part_info->use_default_partitions) {
+		    	err += add_string(fptr, "\n");
+		    	err += add_string(fptr, "PARTITIONS ");
+		    	err += add_int(fptr, part_info->num_parts);
+		}
+	*/
+	if p.info.useDefault != 0 {
+		if _, err := buf.WriteString(fmt.Sprintf("\nPARTITIONS %d", p.info.useDefault)); err != nil {
+			return err
+		}
+	}
+
+	isSubpartitioned := p.subInfo != nil && p.subInfo.tp != storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
+	if isSubpartitioned {
+		if _, err := buf.WriteString("\nSUBPARTITION BY "); err != nil {
+			return err
+		}
+	}
+	// Subpartition must be hash or key.
+	if isSubpartitioned {
+		switch p.subInfo.tp {
+		case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_LINEAR_HASH:
+			if p.subInfo.tp == storepb.TablePartitionMetadata_LINEAR_HASH {
+				if _, err := buf.WriteString("LINEAR "); err != nil {
+					return err
+				}
+			}
+			if _, err := buf.WriteString("HASH "); err != nil {
+				return err
+			}
+			fields := splitPartitionExprIntoFields(p.subInfo.expr)
+			for i, field := range fields {
+				fields[i] = fmt.Sprintf("`%s`", field)
+			}
+			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
+				return err
+			}
+		case storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_KEY:
+			if p.subInfo.tp == storepb.TablePartitionMetadata_LINEAR_KEY {
+				if _, err := buf.WriteString("LINEAR "); err != nil {
+					return err
+				}
+			}
+			if _, err := buf.WriteString("KEY "); err != nil {
+				return err
+			}
+			if partitionClauseCtx != nil && partitionClauseCtx.SubPartitions() != nil {
+				if v := partitionClauseCtx.SubPartitions().PartitionKeyAlgorithm(); v != nil {
+					numText := v.Real_ulong_number().GetText()
+					num, err := strconv.Atoi(numText)
+					if err != nil {
+						slog.Warn(err.Error())
+					} else if num == 1 || (num == 0 && len(curComment) == 0) {
+						if _, err := buf.WriteString(fmt.Sprintf("*/ /*!50611 ALGORITHM = %d */ ", num)); err != nil {
+							return err
+						}
+						if len(curComment) > 0 {
+							s := curComment
+							if curComment[0] == '\n' {
+								s = curComment[1:]
+							}
+							if _, err := buf.WriteString(fmt.Sprintf("%s ", s)); err != nil {
+								return err
+							}
+						}
+					}
+				}
+			}
+			fields := splitPartitionExprIntoFields(p.subInfo.expr)
+			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
+				return err
+			}
+		default:
+			return errors.Errorf("invalid subpartition type: %v", p.subInfo.tp)
+		}
+	}
+
+	// TODO(zp): MySQL writes the default subpartitions in the following code, which means that the server
+	// takes the responsibility to generate the subpartitions. Sadly, we cannot get whether the user
+	// use this or not in the metadata. So we skip it.
+	/*
+		if ((!part_info->use_default_num_subpartitions) &&
+			part_info->use_default_subpartitions) {
+				err += add_string(fptr, "\n");
+				err += add_string(fptr, "SUBPARTITIONS ");
+				err += add_int(fptr, part_info->num_subparts);
+		}
+	*/
+	if isSubpartitioned && p.subInfo.useDefault != 0 {
+		if _, err := buf.WriteString(fmt.Sprintf("\nSUBPARTITIONS %d", p.subInfo.useDefault)); err != nil {
+			return err
+		}
+	}
+
+	if p.info.useDefault == 0 {
+		// Write the partition list.
+		if len(p.partitions) == 0 {
+			return errors.New("empty partition list")
+		}
+		sortedPartitions := make([]*partitionDefinition, 0, len(p.partitions))
+		for _, partition := range p.partitions {
+			sortedPartitions = append(sortedPartitions, partition)
+		}
+		sort.Slice(sortedPartitions, func(i, j int) bool {
+			return sortedPartitions[i].id < sortedPartitions[j].id
+		})
+		if _, err := buf.WriteString("\n("); err != nil {
+			return err
+		}
+		preposition, err := getPrepositionByType(p.info.tp)
+		if err != nil {
+			return err
+		}
+		for i, partition := range sortedPartitions {
+			if i != 0 {
+				if _, err := buf.WriteString(",\n "); err != nil {
+					return err
+				}
+			}
+			if _, err := buf.WriteString(fmt.Sprintf("PARTITION %s", partition.name)); err != nil {
+				return err
+			}
+			if preposition != "" {
+				if partition.value != "MAXVALUE" {
+					if _, err := buf.WriteString(fmt.Sprintf(" VALUES %s (%s)", preposition, partition.value)); err != nil {
+						return err
+					}
+				} else {
+					if _, err := buf.WriteString(fmt.Sprintf(" VALUES %s %s", preposition, partition.value)); err != nil {
+						return err
+					}
+				}
+			}
+
+			if isSubpartitioned && p.subInfo.useDefault == 0 {
+				if len(partition.subpartitions) == 0 {
+					return errors.New("empty subpartition list")
+				}
+				if _, err := buf.WriteString("\n ("); err != nil {
+					return err
+				}
+				sortedSubpartitions := make([]*partitionDefinition, 0, len(partition.subpartitions))
+				for _, subPartition := range partition.subpartitions {
+					sortedSubpartitions = append(sortedSubpartitions, subPartition)
+				}
+				sort.Slice(sortedSubpartitions, func(i, j int) bool {
+					return sortedSubpartitions[i].id < sortedSubpartitions[j].id
+				})
+				for j, subPartition := range sortedSubpartitions {
+					if _, err := buf.WriteString(fmt.Sprintf("SUBPARTITION %s", subPartition.name)); err != nil {
+						return err
+					}
+					if err := p.writePartitionOptions(buf); err != nil {
+						return err
+					}
+					if j == len(sortedSubpartitions)-1 {
+						if _, err := buf.WriteString(")"); err != nil {
+							return err
+						}
+					} else {
+						if _, err := buf.WriteString(",\n  "); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				if err := p.writePartitionOptions(buf); err != nil {
+					return err
+				}
+			}
+
+			if i == len(sortedPartitions)-1 {
+				if _, err := buf.WriteString(")"); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -685,24 +1099,86 @@ func (p *partitionStateWrapper) toString(buf io.StringWriter) error {
 	return nil
 }
 
-func partitionTypeToString(tp storepb.TablePartitionMetadata_Type) (string, error) {
+func (*partitionState) writePartitionOptions(buf io.StringWriter) error {
+	/*
+		int err = 0;
+		err += add_space(fptr);
+		if (p_elem->tablespace_name) {
+			err += add_string(fptr, "TABLESPACE = ");
+			err += add_ident_string(fptr, p_elem->tablespace_name);
+			err += add_space(fptr);
+		}
+		if (p_elem->nodegroup_id != UNDEF_NODEGROUP)
+			err += add_keyword_int(fptr, "NODEGROUP", (longlong)p_elem->nodegroup_id);
+		if (p_elem->part_max_rows)
+			err += add_keyword_int(fptr, "MAX_ROWS", (longlong)p_elem->part_max_rows);
+		if (p_elem->part_min_rows)
+			err += add_keyword_int(fptr, "MIN_ROWS", (longlong)p_elem->part_min_rows);
+		if (!(current_thd->variables.sql_mode & MODE_NO_DIR_IN_CREATE)) {
+			if (p_elem->data_file_name)
+			err += add_keyword_path(fptr, "DATA DIRECTORY", p_elem->data_file_name);
+			if (p_elem->index_file_name)
+			err += add_keyword_path(fptr, "INDEX DIRECTORY", p_elem->index_file_name);
+		}
+		if (p_elem->part_comment)
+			err += add_keyword_string(fptr, "COMMENT", true, p_elem->part_comment);
+		return err + add_engine(fptr, p_elem->engine_type);
+	*/
+	// TODO(zp): Get all the partition options from the metadata is too complex, just write ENGINE=InnoDB for now.
+	if _, err := buf.WriteString(" ENGINE=InnoDB"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// getVersionSpecificComment is the go code equivalent of MySQL void partition_info::set_show_version_string(String *packet).
+// partitionClauseCtx is use to minimize the difference between the original one and the output, it is safe to pass nil.
+func (p *partitionState) getVersionSpecificComment(partitionClauseCtx mysql.IPartitionClauseContext) string {
+	if p.info.tp == storepb.TablePartitionMetadata_RANGE_COLUMNS || p.info.tp == storepb.TablePartitionMetadata_LIST_COLUMNS {
+		// MySQL introduce columns partitioning in 5.5+.
+		return "\n/*!50500"
+	} else if partitionClauseCtx != nil {
+		/*
+				if (part_expr)
+			      part_expr->walk(&Item::intro_version, enum_walk::POSTFIX,
+			                      (uchar *)&version);
+			    if (subpart_expr)
+			      subpart_expr->walk(&Item::intro_version, enum_walk::POSTFIX,
+			                         (uchar *)&version);
+		*/
+		tokenStream := partitionClauseCtx.GetParser().GetTokenStream()
+		startPos := partitionClauseCtx.GetStart().GetTokenIndex()
+		if tokenStream != nil {
+			if startPos-2 > 0 && tokenStream.Size() > startPos-2 {
+				regexp := regexp.MustCompile(`\/\*![0-9]+`)
+				for i := 0; i < 2; i++ {
+					if tokenStream.Get(startPos-i-1).GetChannel() == antlr.TokenHiddenChannel {
+						if regexp.MatchString(tokenStream.Get(startPos - i - 1).GetText()) {
+							return fmt.Sprintf("\n%s", tokenStream.Get(startPos-i-1).GetText())
+						}
+					}
+				}
+			}
+		}
+	}
+	// NOTE: Users can use function in partition expr or subpartition expr, and the intro version of function should be the infimum of the version.
+	// But sadly, it's a huge work for us to copy the intro version for each function in MySQL. So we use the original one.
+	return "\n/*!50100"
+}
+
+func getPrepositionByType(tp storepb.TablePartitionMetadata_Type) (string, error) {
 	switch tp {
 	case storepb.TablePartitionMetadata_RANGE:
-		return "RANGE", nil
+		return "LESS THAN", nil
 	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
-		return "RANGE COLUMNS", nil
+		return "LESS THAN", nil
 	case storepb.TablePartitionMetadata_LIST:
-		return "LIST", nil
+		return "IN", nil
 	case storepb.TablePartitionMetadata_LIST_COLUMNS:
-		return "LIST COLUMNS", nil
-	case storepb.TablePartitionMetadata_HASH:
-		return "HASH", nil
-	case storepb.TablePartitionMetadata_KEY:
-		return "KEY", nil
-	case storepb.TablePartitionMetadata_LINEAR_HASH:
-		return "LINEAR HASH", nil
-	case storepb.TablePartitionMetadata_LINEAR_KEY:
-		return "LINEAR KEY", nil
+		return "IN", nil
+	case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_HASH, storepb.TablePartitionMetadata_LINEAR_KEY:
+		return "", nil
 	default:
 		return "", errors.Errorf("unsupported partition type: %v", tp)
 	}
@@ -836,4 +1312,16 @@ func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
 		}
 	}
 	return result
+}
+
+// splitPartitioNExprIntoFields splits the partition expression by ',', and trims the leading and trailing '`' for each element.
+func splitPartitionExprIntoFields(expr string) []string {
+	// We do not support the expression contains parentheses, so we can split the expression by ','.
+	ss := strings.Split(expr, ",")
+	for i, s := range ss {
+		if strings.HasPrefix(s, "`") && strings.HasSuffix(s, "`") {
+			ss[i] = s[1 : len(s)-1]
+		}
+	}
+	return ss
 }

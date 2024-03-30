@@ -1,8 +1,7 @@
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
+import type { ComposedIssue, ComposedProject } from "@/types";
 import {
-  ComposedIssue,
-  ComposedProject,
   emptyIssue,
   emptyRollout,
   unknownUser,
@@ -12,26 +11,29 @@ import {
   UNKNOWN_ID,
   UNKNOWN_ISSUE_NAME,
 } from "@/types";
-import { Issue } from "@/types/proto/v1/issue_service";
-import { Plan, Rollout } from "@/types/proto/v1/rollout_service";
+import type { Issue } from "@/types/proto/v1/issue_service";
+import type { Plan, Rollout } from "@/types/proto/v1/rollout_service";
 import {
   extractProjectResourceName,
   extractUserResourceName,
   hasProjectPermissionV2,
 } from "@/utils";
 
+export interface ComposeIssueConfig {
+  withPlan?: boolean;
+  withRollout?: boolean;
+}
+
 export const composeIssue = async (
   rawIssue: Issue,
-  withPlan = true,
-  withRollout = true
+  config: ComposeIssueConfig = { withPlan: true, withRollout: true }
 ): Promise<ComposedIssue> => {
   const userStore = useUserStore();
   const me = useCurrentUserV1();
 
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
-  const projectEntity = await useProjectV1Store().getOrFetchProjectByName(
-    project
-  );
+  const projectEntity =
+    await useProjectV1Store().getOrFetchProjectByName(project);
 
   const creatorEntity =
     userStore.getUserByEmail(extractUserResourceName(rawIssue.creator)) ??
@@ -48,7 +50,7 @@ export const composeIssue = async (
     creatorEntity,
   };
 
-  if (withPlan && issue.plan) {
+  if (config.withPlan && issue.plan) {
     if (issue.plan) {
       if (hasProjectPermissionV2(projectEntity, me.value, "bb.plans.get")) {
         const plan = await rolloutServiceClient.getPlan({
@@ -66,7 +68,7 @@ export const composeIssue = async (
       }
     }
   }
-  if (withRollout && issue.rollout) {
+  if (config.withRollout && issue.rollout) {
     if (hasProjectPermissionV2(projectEntity, me.value, "bb.rollouts.get")) {
       issue.rolloutEntity = await rolloutServiceClient.getRollout({
         name: issue.rollout,
@@ -93,9 +95,13 @@ export const composeIssue = async (
 };
 
 export const shallowComposeIssue = async (
-  rawIssue: Issue
+  rawIssue: Issue,
+  config?: ComposeIssueConfig
 ): Promise<ComposedIssue> => {
-  return composeIssue(rawIssue, false, false);
+  return composeIssue(
+    rawIssue,
+    config || { withPlan: false, withRollout: false }
+  );
 };
 
 export const experimentalFetchIssueByUID = async (

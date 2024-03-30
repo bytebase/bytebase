@@ -1,6 +1,6 @@
-import { ComposedDatabase, ComposedProject } from "..";
-import { Branch } from "../../proto/v1/branch_service";
-import { Schema } from "./atomType";
+import type { ComposedDatabase, ComposedProject } from "..";
+import type { Branch } from "../../proto/v1/branch_service";
+import type { Schema } from "./atomType";
 
 export enum SchemaEditorTabType {
   TabForDatabase = "database",

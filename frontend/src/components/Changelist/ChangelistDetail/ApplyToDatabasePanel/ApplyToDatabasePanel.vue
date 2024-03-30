@@ -93,7 +93,8 @@ import {
   useEnvironmentV1List,
   useSearchDatabaseV1List,
 } from "@/store";
-import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
+import type { ComposedDatabase } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   extractProjectResourceName,
@@ -128,8 +129,7 @@ const state = reactive<LocalState>({
 
 const { ready } = useSearchDatabaseV1List(
   computed(() => ({
-    parent: "instances/-",
-    filter: `project == "${project.value.name}"`,
+    filter: `project = "${project.value.name}" && instance = instances/-`,
   }))
 );
 

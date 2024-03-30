@@ -1,5 +1,7 @@
 <template>
   <div class="flex gap-x-3">
+    <IssueExtraActionButtonGroup v-if="shouldShowExtraActionButtonGroup" />
+
     <RolloutActionButtonGroup
       v-if="primaryTaskRolloutActionList.length > 0"
       :task-rollout-action-list="primaryTaskRolloutActionList"
@@ -11,7 +13,10 @@
 
     <IssueStatusActionButtonGroup
       :display-mode="
-        primaryTaskRolloutActionList.length > 0 ? 'DROPDOWN' : 'BUTTON'
+        shouldShowExtraActionButtonGroup ||
+        primaryTaskRolloutActionList.length > 0
+          ? 'DROPDOWN'
+          : 'BUTTON'
       "
       :issue-status-action-list="issueStatusActionList"
       :extra-action-list="extraActionList"
@@ -37,9 +42,9 @@
 import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import type { TaskRolloutAction } from "@/components/IssueV1/logic";
 import {
   PrimaryTaskRolloutActionList,
-  TaskRolloutAction,
   allowUserToApplyTaskRolloutAction,
   getApplicableIssueStatusActionList,
   getApplicableStageRolloutActionList,
@@ -47,10 +52,15 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { useCurrentUserV1 } from "@/store";
-import { Task } from "@/types/proto/v1/rollout_service";
-import { ExtraActionOption, IssueStatusActionButtonGroup } from "../common";
+import type { Task } from "@/types/proto/v1/rollout_service";
+import { isDatabaseDataExportIssue } from "@/utils";
+import type { ExtraActionOption } from "../common";
+import {
+  IssueStatusActionButtonGroup,
+  IssueExtraActionButtonGroup,
+} from "../common";
 import RolloutActionButtonGroup from "./RolloutActionButtonGroup.vue";
-import { RolloutAction } from "./common";
+import type { RolloutAction } from "./common";
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
@@ -114,6 +124,10 @@ const extraActionList = computed(() => {
     });
   }
   return list;
+});
+
+const shouldShowExtraActionButtonGroup = computed(() => {
+  return isDatabaseDataExportIssue(issue.value);
 });
 
 const performRolloutAction = async (params: RolloutAction) => {

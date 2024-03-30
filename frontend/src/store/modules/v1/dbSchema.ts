@@ -2,10 +2,11 @@ import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
 import { useCache } from "@/store/cache";
-import { MaybeRef, UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
+import type { MaybeRef } from "@/types";
+import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
+import type { TableMetadata } from "@/types/proto/v1/database_service";
 import {
   DatabaseMetadata,
-  TableMetadata,
   DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName } from "@/utils";
@@ -15,12 +16,12 @@ const VIEW_BASIC = DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC;
 
 type DatabaseMetadataCacheKey = [
   string /* database metadata resource name */,
-  view: DatabaseMetadataView
+  view: DatabaseMetadataView,
 ];
 type TableMetadataCacheKey = [
   string /* database metadata resource name */,
   string /* schema */,
-  string /* table */
+  string /* table */,
 ];
 
 export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
@@ -56,7 +57,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     view?: DatabaseMetadataView
   ): [
     Promise<DatabaseMetadata> | undefined,
-    DatabaseMetadataView | undefined
+    DatabaseMetadataView | undefined,
   ] => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
     if (view === undefined) {
@@ -237,7 +238,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       skipCache = false,
       silent = false,
     } = params;
-    const { database: databaseName } = extractDatabaseResourceName(database);
+    const { databaseName } = extractDatabaseResourceName(database);
     if (
       databaseName === String(UNKNOWN_ID) ||
       databaseName === String(EMPTY_ID)
@@ -505,8 +506,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 });
 
 const ensureDatabaseResourceName = (name: string) => {
-  const { instance, database } = extractDatabaseResourceName(name);
-  return `instances/${instance}/databases/${database}`;
+  return extractDatabaseResourceName(name).database;
 };
 const ensureDatabaseMetadataResourceName = (name: string) => {
   const database = ensureDatabaseResourceName(name);
@@ -520,9 +520,7 @@ export const useMetadata = (
 ) => {
   const store = useDBSchemaV1Store();
   watchEffect(() => {
-    const { database: databaseName } = extractDatabaseResourceName(
-      unref(database)
-    );
+    const { databaseName } = extractDatabaseResourceName(unref(database));
     if (
       databaseName === String(UNKNOWN_ID) ||
       databaseName === String(EMPTY_ID)

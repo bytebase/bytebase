@@ -90,11 +90,17 @@ func (checker *statementAffectedRowLimitChecker) EnterQuery(ctx *mysql.QueryCont
 
 // EnterUpdateStatement is called when production updateStatement is entered.
 func (checker *statementAffectedRowLimitChecker) EnterUpdateStatement(ctx *mysql.UpdateStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	checker.handleStmt(ctx.GetStart().GetLine())
 }
 
 // EnterDeleteStatement is called when production deleteStatement is entered.
 func (checker *statementAffectedRowLimitChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	checker.handleStmt(ctx.GetStart().GetLine())
 }
 
@@ -124,7 +130,7 @@ func (checker *statementAffectedRowLimitChecker) handleStmt(lineNumber int) {
 				Status:  checker.level,
 				Code:    advisor.StatementAffectedRowExceedsLimit,
 				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\" affected %d rows. The count exceeds %d.", checker.text, rowCount, checker.maxRow),
+				Content: fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", checker.text, rowCount, checker.maxRow),
 				Line:    lineNumber,
 			})
 		}

@@ -1,4 +1,4 @@
-import { ComposedDatabase, DatabaseResource } from "@/types";
+import type { ComposedDatabase, DatabaseResource } from "@/types";
 
 export interface ExportRecord {
   databaseResource: DatabaseResource;

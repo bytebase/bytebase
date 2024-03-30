@@ -6,7 +6,7 @@ import { ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common
 
 export const protobufPackage = "bytebase.v1";
 
-export interface ListLogsRequest {
+export interface SearchLogsRequest {
   /**
    * filter is the filter to apply on the list logs request,
    * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
@@ -44,18 +44,18 @@ export interface ListLogsRequest {
    */
   pageSize: number;
   /**
-   * Not used. A page token, received from a previous `ListLogs` call.
+   * Not used. A page token, received from a previous `SearchLogs` call.
    * Provide this to retrieve the subsequent page.
    */
   pageToken: string;
 }
 
-export interface ListLogsResponse {
+export interface SearchLogsResponse {
   /** The list of log entities. */
   logEntities: LogEntity[];
   /**
    * A token to retrieve next page of log entities.
-   * Pass this value in the page_token field in the subsequent call to `ListLogs` method
+   * Pass this value in the page_token field in the subsequent call to `SearchLogs` method
    * to retrieve the next page of log entities.
    */
   nextPageToken: string;
@@ -175,8 +175,6 @@ export enum LogEntity_Action {
   ACTION_PIPELINE_STAGE_STATUS_UPDATE = 31,
   /** ACTION_PIPELINE_TASK_STATUS_UPDATE - ACTION_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. */
   ACTION_PIPELINE_TASK_STATUS_UPDATE = 32,
-  /** ACTION_PIPELINE_TASK_FILE_COMMIT - ACTION_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. */
-  ACTION_PIPELINE_TASK_FILE_COMMIT = 33,
   /** ACTION_PIPELINE_TASK_STATEMENT_UPDATE - ACTION_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. */
   ACTION_PIPELINE_TASK_STATEMENT_UPDATE = 34,
   /** ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE - ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. */
@@ -196,8 +194,6 @@ export enum LogEntity_Action {
   ACTION_PROJECT_MEMBER_CREATE = 42,
   /** ACTION_PROJECT_MEMBER_DELETE - ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project. */
   ACTION_PROJECT_MEMBER_DELETE = 43,
-  /** ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE - ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done. */
-  ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE = 44,
   /** ACTION_PROJECT_DATABASE_TRANSFER - ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another. */
   ACTION_PROJECT_DATABASE_TRANSFER = 45,
   /**
@@ -250,9 +246,6 @@ export function logEntity_ActionFromJSON(object: any): LogEntity_Action {
     case 32:
     case "ACTION_PIPELINE_TASK_STATUS_UPDATE":
       return LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE;
-    case 33:
-    case "ACTION_PIPELINE_TASK_FILE_COMMIT":
-      return LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT;
     case 34:
     case "ACTION_PIPELINE_TASK_STATEMENT_UPDATE":
       return LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE;
@@ -274,9 +267,6 @@ export function logEntity_ActionFromJSON(object: any): LogEntity_Action {
     case 43:
     case "ACTION_PROJECT_MEMBER_DELETE":
       return LogEntity_Action.ACTION_PROJECT_MEMBER_DELETE;
-    case 44:
-    case "ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE":
-      return LogEntity_Action.ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE;
     case 45:
     case "ACTION_PROJECT_DATABASE_TRANSFER":
       return LogEntity_Action.ACTION_PROJECT_DATABASE_TRANSFER;
@@ -319,8 +309,6 @@ export function logEntity_ActionToJSON(object: LogEntity_Action): string {
       return "ACTION_PIPELINE_STAGE_STATUS_UPDATE";
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE:
       return "ACTION_PIPELINE_TASK_STATUS_UPDATE";
-    case LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT:
-      return "ACTION_PIPELINE_TASK_FILE_COMMIT";
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
       return "ACTION_PIPELINE_TASK_STATEMENT_UPDATE";
     case LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
@@ -335,8 +323,6 @@ export function logEntity_ActionToJSON(object: LogEntity_Action): string {
       return "ACTION_PROJECT_MEMBER_CREATE";
     case LogEntity_Action.ACTION_PROJECT_MEMBER_DELETE:
       return "ACTION_PROJECT_MEMBER_DELETE";
-    case LogEntity_Action.ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE:
-      return "ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE";
     case LogEntity_Action.ACTION_PROJECT_DATABASE_TRANSFER:
       return "ACTION_PROJECT_DATABASE_TRANSFER";
     case LogEntity_Action.ACTION_DATABASE_SQL_EDITOR_QUERY:
@@ -397,12 +383,12 @@ export function logEntity_LevelToJSON(object: LogEntity_Level): string {
   }
 }
 
-function createBaseListLogsRequest(): ListLogsRequest {
+function createBaseSearchLogsRequest(): SearchLogsRequest {
   return { filter: "", orderBy: "", pageSize: 0, pageToken: "" };
 }
 
-export const ListLogsRequest = {
-  encode(message: ListLogsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const SearchLogsRequest = {
+  encode(message: SearchLogsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.filter !== "") {
       writer.uint32(10).string(message.filter);
     }
@@ -418,10 +404,10 @@ export const ListLogsRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListLogsRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchLogsRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListLogsRequest();
+    const message = createBaseSearchLogsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -462,7 +448,7 @@ export const ListLogsRequest = {
     return message;
   },
 
-  fromJSON(object: any): ListLogsRequest {
+  fromJSON(object: any): SearchLogsRequest {
     return {
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
       orderBy: isSet(object.orderBy) ? globalThis.String(object.orderBy) : "",
@@ -471,7 +457,7 @@ export const ListLogsRequest = {
     };
   },
 
-  toJSON(message: ListLogsRequest): unknown {
+  toJSON(message: SearchLogsRequest): unknown {
     const obj: any = {};
     if (message.filter !== "") {
       obj.filter = message.filter;
@@ -488,11 +474,11 @@ export const ListLogsRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListLogsRequest>): ListLogsRequest {
-    return ListLogsRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<SearchLogsRequest>): SearchLogsRequest {
+    return SearchLogsRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<ListLogsRequest>): ListLogsRequest {
-    const message = createBaseListLogsRequest();
+  fromPartial(object: DeepPartial<SearchLogsRequest>): SearchLogsRequest {
+    const message = createBaseSearchLogsRequest();
     message.filter = object.filter ?? "";
     message.orderBy = object.orderBy ?? "";
     message.pageSize = object.pageSize ?? 0;
@@ -501,12 +487,12 @@ export const ListLogsRequest = {
   },
 };
 
-function createBaseListLogsResponse(): ListLogsResponse {
+function createBaseSearchLogsResponse(): SearchLogsResponse {
   return { logEntities: [], nextPageToken: "" };
 }
 
-export const ListLogsResponse = {
-  encode(message: ListLogsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const SearchLogsResponse = {
+  encode(message: SearchLogsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.logEntities) {
       LogEntity.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -516,10 +502,10 @@ export const ListLogsResponse = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListLogsResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchLogsResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListLogsResponse();
+    const message = createBaseSearchLogsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -546,7 +532,7 @@ export const ListLogsResponse = {
     return message;
   },
 
-  fromJSON(object: any): ListLogsResponse {
+  fromJSON(object: any): SearchLogsResponse {
     return {
       logEntities: globalThis.Array.isArray(object?.logEntities)
         ? object.logEntities.map((e: any) => LogEntity.fromJSON(e))
@@ -555,7 +541,7 @@ export const ListLogsResponse = {
     };
   },
 
-  toJSON(message: ListLogsResponse): unknown {
+  toJSON(message: SearchLogsResponse): unknown {
     const obj: any = {};
     if (message.logEntities?.length) {
       obj.logEntities = message.logEntities.map((e) => LogEntity.toJSON(e));
@@ -566,11 +552,11 @@ export const ListLogsResponse = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListLogsResponse>): ListLogsResponse {
-    return ListLogsResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<SearchLogsResponse>): SearchLogsResponse {
+    return SearchLogsResponse.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<ListLogsResponse>): ListLogsResponse {
-    const message = createBaseListLogsResponse();
+  fromPartial(object: DeepPartial<SearchLogsResponse>): SearchLogsResponse {
+    const message = createBaseSearchLogsResponse();
     message.logEntities = object.logEntities?.map((e) => LogEntity.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
@@ -974,11 +960,11 @@ export const LoggingServiceDefinition = {
   name: "LoggingService",
   fullName: "bytebase.v1.LoggingService",
   methods: {
-    listLogs: {
-      name: "ListLogs",
-      requestType: ListLogsRequest,
+    searchLogs: {
+      name: "SearchLogs",
+      requestType: SearchLogsRequest,
       requestStream: false,
-      responseType: ListLogsResponse,
+      responseType: SearchLogsResponse,
       responseStream: false,
       options: {
         _unknownFields: {

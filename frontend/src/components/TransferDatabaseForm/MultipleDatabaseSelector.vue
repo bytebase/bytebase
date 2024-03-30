@@ -107,11 +107,11 @@ import { NCollapse, NCollapseItem, NCheckbox } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { type BBGridColumn, BBGrid } from "@/bbkit";
 import { useEnvironmentV1List } from "@/store";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import { InstanceV1Name, ProductionEnvironmentV1Icon } from "../v2";
-import { TransferSource } from "./utils";
+import type { TransferSource } from "./utils";
 
 type LocalState = {
   selectedDatabaseUidListForEnvironment: Map<string, Set<string>>;
@@ -158,7 +158,7 @@ watch(
   (args) => {
     const [databaseList, selectedUidList] = args as [
       ComposedDatabase[],
-      string[]
+      string[],
     ];
     for (const uid of selectedUidList) {
       const database = databaseList.find((db) => db.uid === uid);

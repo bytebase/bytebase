@@ -9,11 +9,8 @@ import {
   SupportedSourceList,
   DEFAULT_PROJECT_V1_NAME,
 } from "@/types";
-import {
-  Risk,
-  Risk_Source,
-  risk_SourceToJSON,
-} from "@/types/proto/v1/risk_service";
+import type { Risk } from "@/types/proto/v1/risk_service";
+import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
 import {
   extractEnvironmentResourceName,
   extractProjectResourceName,
@@ -90,6 +87,18 @@ const FactorList = {
     "expiration_days",
     "export_rows"
   ),
+  DataExport: uniq(
+    without(
+      [...StringFactorList, ...NumberFactorList],
+      "level",
+      "affected_rows",
+      "table_rows",
+      "source",
+      "sql_type",
+      "expiration_days",
+      "export_rows"
+    )
+  ),
   RequestQuery: uniq(
     without(
       [...StringFactorList, ...NumberFactorList],
@@ -121,9 +130,11 @@ export const getFactorList = (source: Risk_Source) => {
       return [...FactorList.DML];
     case Risk_Source.CREATE_DATABASE:
       return [...FactorList.CreateDatabase];
-    case Risk_Source.QUERY:
+    case Risk_Source.DATA_EXPORT:
+      return [...FactorList.DataExport];
+    case Risk_Source.REQUEST_QUERY:
       return [...FactorList.RequestQuery];
-    case Risk_Source.EXPORT:
+    case Risk_Source.REQUEST_EXPORT:
       return [...FactorList.RequestExport];
     default:
       // unsupported namespace

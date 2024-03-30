@@ -11,43 +11,42 @@ import (
 
 // nolint:revive
 const (
-	ProjectNamePrefix            = "projects/"
-	EnvironmentNamePrefix        = "environments/"
-	InstanceNamePrefix           = "instances/"
-	PolicyNamePrefix             = "policies/"
-	DatabaseIDPrefix             = "databases/"
-	InstanceRolePrefix           = "roles/"
-	UserNamePrefix               = "users/"
-	IdentityProviderNamePrefix   = "idps/"
-	SettingNamePrefix            = "settings/"
-	BackupPrefix                 = "backups/"
-	ExternalVersionControlPrefix = "externalVersionControls/"
-	RiskPrefix                   = "risks/"
-	IssuePrefix                  = "issues/"
-	RolloutPrefix                = "rollouts/"
-	StagePrefix                  = "stages/"
-	TaskPrefix                   = "tasks/"
-	TaskRunPrefix                = "taskRuns/"
-	PlanPrefix                   = "plans/"
-	PlanCheckRunPrefix           = "planCheckRuns/"
-	RolePrefix                   = "roles/"
-	SecretNamePrefix             = "secrets/"
-	WebhookIDPrefix              = "webhooks/"
-	SheetIDPrefix                = "sheets/"
-	WorksheetIDPrefix            = "worksheets/"
-	DatabaseGroupNamePrefix      = "databaseGroups/"
-	SchemaGroupNamePrefix        = "schemaGroups/"
-	SchemaNamePrefix             = "schemas/"
-	TableNamePrefix              = "tables/"
-	ChangeHistoryPrefix          = "changeHistories/"
-	IssueNamePrefix              = "issues/"
-	PipelineNamePrefix           = "pipelines/"
-	LogNamePrefix                = "logs/"
-	BranchPrefix                 = "branches/"
-	DeploymentConfigPrefix       = "deploymentConfigs/"
-	ChangelistsPrefix            = "changelists/"
+	WorkspacePrefix            = "workspaces/"
+	ProjectNamePrefix          = "projects/"
+	EnvironmentNamePrefix      = "environments/"
+	InstanceNamePrefix         = "instances/"
+	PolicyNamePrefix           = "policies/"
+	DatabaseIDPrefix           = "databases/"
+	InstanceRolePrefix         = "roles/"
+	UserNamePrefix             = "users/"
+	IdentityProviderNamePrefix = "idps/"
+	SettingNamePrefix          = "settings/"
+	VCSProviderPrefix          = "vcsProviders/"
+	RiskPrefix                 = "risks/"
+	RolloutPrefix              = "rollouts/"
+	StagePrefix                = "stages/"
+	TaskPrefix                 = "tasks/"
+	TaskRunPrefix              = "taskRuns/"
+	PlanPrefix                 = "plans/"
+	PlanCheckRunPrefix         = "planCheckRuns/"
+	RolePrefix                 = "roles/"
+	SecretNamePrefix           = "secrets/"
+	WebhookIDPrefix            = "webhooks/"
+	SheetIDPrefix              = "sheets/"
+	WorksheetIDPrefix          = "worksheets/"
+	DatabaseGroupNamePrefix    = "databaseGroups/"
+	SchemaGroupNamePrefix      = "schemaGroups/"
+	SchemaNamePrefix           = "schemas/"
+	TableNamePrefix            = "tables/"
+	ChangeHistoryPrefix        = "changeHistories/"
+	IssueNamePrefix            = "issues/"
+	PipelineNamePrefix         = "pipelines/"
+	LogNamePrefix              = "logs/"
+	BranchPrefix               = "branches/"
+	DeploymentConfigPrefix     = "deploymentConfigs/"
+	ChangelistsPrefix          = "changelists/"
+	VCSConnectorPrefix         = "vcsConnectors/"
 
-	BackupSettingSuffix   = "/backupSetting"
 	SchemaSuffix          = "/schema"
 	MetadataSuffix        = "/metadata"
 	GitOpsInfoSuffix      = "/gitOpsInfo"
@@ -208,15 +207,6 @@ func GetInstanceDatabaseIDSecretName(name string) (string, string, string, error
 	return tokens[0], tokens[1], tokens[2], nil
 }
 
-// GetInstanceDatabaseIDBackupName returns the instance ID, database ID, and backup name from a resource name.
-func GetInstanceDatabaseIDBackupName(name string) (string, string, string, error) {
-	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, BackupPrefix)
-	if err != nil {
-		return "", "", "", err
-	}
-	return tokens[0], tokens[1], tokens[2], nil
-}
-
 // GetUserID returns the user ID from a resource name.
 func GetUserID(name string) (int, error) {
 	return GetUIDFromName(name, UserNamePrefix)
@@ -249,9 +239,13 @@ func GetIdentityProviderID(name string) (string, error) {
 	return tokens[0], nil
 }
 
-// GetExternalVersionControlID returns the external version control ID from a resource name.
-func GetExternalVersionControlID(name string) (int, error) {
-	return GetUIDFromName(name, ExternalVersionControlPrefix)
+// GetVCSProviderID returns the VCS provider ID from a resource name.
+func GetVCSProviderID(name string) (string, error) {
+	tokens, err := GetNameParentTokens(name, VCSProviderPrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
 }
 
 // GetRiskID returns the risk ID from a resource name.
@@ -269,7 +263,7 @@ func GetRiskID(name string) (int64, error) {
 
 // GetProjectIDIssueID returns the project ID and issue ID from the issue name.
 func GetProjectIDIssueID(name string) (string, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssuePrefix)
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix)
 	if err != nil {
 		return "", "", err
 	}
@@ -278,7 +272,7 @@ func GetProjectIDIssueID(name string) (string, string, error) {
 
 // GetIssueID returns the issue ID from a resource name.
 func GetIssueID(name string) (int, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssuePrefix)
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix)
 	if err != nil {
 		return 0, err
 	}
@@ -507,6 +501,24 @@ func GetProjectAndBranchID(name string) (string, string, error) {
 		return "", "", errors.Errorf("invalid branch name %q", name)
 	}
 	return matches[1], matches[2], nil
+}
+
+// GetWorkspaceProjectVCSConnectorID returns the workspace, project, and VCS connector ID from a resource name.
+func GetProjectVCSConnectorID(name string) (string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, VCSConnectorPrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
+// GetWorkspaceProjectVCSConnectorID returns the workspace, project, and VCS connector ID from a resource name.
+func GetWorkspaceProjectVCSConnectorID(name string) (string, string, string, error) {
+	tokens, err := GetNameParentTokens(name, WorkspacePrefix, ProjectNamePrefix, VCSConnectorPrefix)
+	if err != nil {
+		return "", "", "", err
+	}
+	return tokens[0], tokens[1], tokens[2], nil
 }
 
 // TrimSuffix trims the suffix from the name and returns the trimmed name.

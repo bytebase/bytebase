@@ -2,7 +2,7 @@ import { Status } from "nice-grpc-common";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
-import { Secret } from "@/types/proto/v1/database_service";
+import type { Secret } from "@/types/proto/v1/database_service";
 import { secretNamePrefix } from "./common";
 
 export const useDatabaseSecretStore = defineStore("database-secret", () => {

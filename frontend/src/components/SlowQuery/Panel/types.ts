@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { useDatabaseV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { ListSlowQueriesRequest } from "@/types/proto/v1/database_service";
-import { SearchScope } from "@/utils";
+import type { SearchScope } from "@/utils";
 
 export const buildListSlowQueriesRequest = (
   scopes: SearchScope[],
@@ -35,11 +35,11 @@ export const buildListSlowQueriesRequest = (
     query.push(`project = "projects/${project}"`);
   }
   if (fromTime) {
-    const start = dayjs(fromTime).format("YYYY-MM-DDT00:00:00.000Z");
+    const start = dayjs(fromTime).toISOString();
     query.push(`start_time >= "${start}"`);
   }
   if (toTime) {
-    const end = dayjs(toTime).format("YYYY-MM-DDT00:00:00.000Z");
+    const end = dayjs(toTime).toISOString();
     query.push(`start_time <= "${end}"`);
   }
   if (query.length > 0) {

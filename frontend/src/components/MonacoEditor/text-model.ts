@@ -1,7 +1,7 @@
 import { Uri, editor } from "monaco-editor";
 import slug from "slug";
 import { isRef, markRaw, ref, shallowRef, unref, watch } from "vue";
-import { Language, MaybeRef } from "@/types";
+import type { Language, MaybeRef } from "@/types";
 import { MonacoEditorReady } from "./editor";
 
 const ready = ref(false);

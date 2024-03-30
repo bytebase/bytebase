@@ -104,8 +104,8 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, licenseService 
 		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, licenseService, dbFactory, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig, project, registerEnvironmentID)
-	case *storepb.PlanConfig_Spec_RestoreDatabaseConfig:
-		return getTaskCreatesFromRestoreDatabaseConfig(ctx, s, licenseService, dbFactory, spec, config.RestoreDatabaseConfig, project, registerEnvironmentID)
+	case *storepb.PlanConfig_Spec_ExportDataConfig:
+		return getTaskCreatesFromExportDataConfig(ctx, s, spec, config.ExportDataConfig, project, registerEnvironmentID)
 	}
 
 	return nil, nil, errors.Errorf("invalid spec config type %T", spec.Config)
@@ -115,16 +115,10 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	if c.Database == "" {
 		return nil, nil, errors.Errorf("database name is required")
 	}
-	instanceID, err := common.GetInstanceID(c.Target)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get instance id from %q", c.Target)
-	}
-	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+
+	instance, err := getInstanceMessage(ctx, s, c.Target)
 	if err != nil {
 		return nil, nil, err
-	}
-	if instance == nil {
-		return nil, nil, errors.Errorf("instance ID not found %v", instanceID)
 	}
 	if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
 		return nil, nil, errors.Errorf("creating Oracle database is not supported")
@@ -276,6 +270,65 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 	}
 
 	return nil, nil, errors.Errorf("unknown target %q", c.Target)
+}
+
+func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ExportDataConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get instance and database from target %q", c.Target)
+	}
+
+	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
+	}
+	if instance == nil {
+		return nil, nil, errors.Errorf("instance %q not found", instanceID)
+	}
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+	}
+	if database == nil {
+		return nil, nil, errors.Errorf("database %q not found", databaseName)
+	}
+
+	if err := registerEnvironmentID(database.EffectiveEnvironmentID); err != nil {
+		return nil, nil, err
+	}
+
+	_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+	}
+	payload := api.TaskDatabaseDataExportPayload{
+		SpecID:  spec.Id,
+		SheetID: sheetUID,
+		Format:  c.Format,
+	}
+	if c.Password != nil {
+		payload.Password = *c.Password
+	}
+	bytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to marshal task database data export payload")
+	}
+	payloadString := string(bytes)
+	taskCreate := &store.TaskMessage{
+		Name:              fmt.Sprintf("Export data from database %q", database.DatabaseName),
+		InstanceID:        instance.UID,
+		DatabaseID:        &database.UID,
+		Type:              api.TaskDatabaseDataExport,
+		EarliestAllowedTs: spec.EarliestAllowedTime.GetSeconds(),
+		Payload:           payloadString,
+	}
+	return []*store.TaskMessage{taskCreate}, nil, nil
 }
 
 func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
@@ -660,217 +713,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.Dat
 	return creates, nil
 }
 
-func getTaskCreatesFromRestoreDatabaseConfig(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_RestoreDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
-	if c.Source == nil {
-		return nil, nil, errors.Errorf("missing source in restore database config")
-	}
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get instance and database id from target %q", c.Target)
-	}
-	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
-	}
-	if instance == nil {
-		return nil, nil, errors.Errorf("instance %q not found", instanceID)
-	}
-
-	if c.CreateDatabaseConfig != nil {
-		// Create an empty dummy database.
-		if err := s.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
-			InstanceID:   instance.ResourceID,
-			DatabaseName: databaseName,
-			ProjectID:    project.ResourceID,
-		}); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-	}
-	if database == nil {
-		return nil, nil, errors.Errorf("database %q not found", databaseName)
-	}
-	if database.ProjectID != project.ResourceID {
-		return nil, nil, errors.Errorf("database %q is not in project %q", databaseName, project.ResourceID)
-	}
-
-	if err := registerEnvironmentID(database.EffectiveEnvironmentID); err != nil {
-		return nil, nil, err
-	}
-
-	var taskCreates []*store.TaskMessage
-
-	if c.CreateDatabaseConfig != nil {
-		restorePayload := api.TaskDatabasePITRRestorePayload{
-			SpecID:    spec.Id,
-			ProjectID: project.UID,
-		}
-		// restore to a new database
-		targetInstanceID, err := common.GetInstanceID(c.CreateDatabaseConfig.Target)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get instance id from %q", c.CreateDatabaseConfig.Target)
-		}
-		targetInstance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &targetInstanceID})
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to find the instance with ID %q", targetInstanceID)
-		}
-
-		// task 1: create the database
-		createDatabaseTasks, _, err := getTaskCreatesFromCreateDatabaseConfig(ctx, s, licenseService, dbFactory, spec, c.CreateDatabaseConfig, project, registerEnvironmentID)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to create the database create task list")
-		}
-		if len(createDatabaseTasks) != 1 {
-			return nil, nil, errors.Errorf("expected 1 task to create the database, got %d", len(createDatabaseTasks))
-		}
-		taskCreates = append(taskCreates, createDatabaseTasks[0])
-
-		// task 2: restore the database
-		switch source := c.Source.(type) {
-		case *storepb.PlanConfig_RestoreDatabaseConfig_Backup:
-			backupInstanceID, backupDatabaseName, backupName, err := common.GetInstanceDatabaseIDBackupName(source.Backup)
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to parse backup name %q", source.Backup)
-			}
-			backupInstance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &backupInstanceID})
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get instance %q", backupInstanceID)
-			}
-			backupDatabase, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:          &backupInstanceID,
-				DatabaseName:        &backupDatabaseName,
-				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(backupInstance),
-			})
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get database %q", backupDatabaseName)
-			}
-			if backupDatabase == nil {
-				return nil, nil, errors.Errorf("failed to find database %q where backup %q is created", backupDatabaseName, source.Backup)
-			}
-			backup, err := s.GetBackupV2(ctx, &store.FindBackupMessage{
-				DatabaseUID: &backupDatabase.UID,
-				Name:        &backupName,
-			})
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get backup %q", backupName)
-			}
-			if backup == nil {
-				return nil, nil, errors.Errorf("failed to find backup %q", backupName)
-			}
-			restorePayload.BackupID = &backup.UID
-		case *storepb.PlanConfig_RestoreDatabaseConfig_PointInTime:
-			ts := source.PointInTime.GetSeconds()
-			restorePayload.PointInTimeTs = &ts
-		}
-		restorePayload.TargetInstanceID = &targetInstance.UID
-		restorePayload.DatabaseName = &c.CreateDatabaseConfig.Database
-
-		restorePayloadBytes, err := json.Marshal(restorePayload)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to create PITR restore task, unable to marshal payload")
-		}
-
-		restoreTaskCreate := &store.TaskMessage{
-			Name:       fmt.Sprintf("Restore to new database %q", *restorePayload.DatabaseName),
-			Type:       api.TaskDatabaseRestorePITRRestore,
-			InstanceID: instance.UID,
-			DatabaseID: &database.UID,
-			Payload:    string(restorePayloadBytes),
-		}
-		taskCreates = append(taskCreates, restoreTaskCreate)
-	} else {
-		// in-place restore
-		// task 1: restore
-		restorePayload := api.TaskDatabasePITRRestorePayload{
-			SpecID:    spec.Id,
-			ProjectID: project.UID,
-		}
-		switch source := c.Source.(type) {
-		case *storepb.PlanConfig_RestoreDatabaseConfig_Backup:
-			backupInstanceID, backupDatabaseName, backupName, err := common.GetInstanceDatabaseIDBackupName(source.Backup)
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to parse backup name %q", source.Backup)
-			}
-			backupInstance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &backupInstanceID})
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get instance %q", backupInstanceID)
-			}
-			backupDatabase, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:          &backupInstanceID,
-				DatabaseName:        &backupDatabaseName,
-				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(backupInstance),
-			})
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get database %q", backupDatabaseName)
-			}
-			if backupDatabase == nil {
-				return nil, nil, errors.Errorf("failed to find database %q where backup %q is created", backupDatabaseName, source.Backup)
-			}
-			backup, err := s.GetBackupV2(ctx, &store.FindBackupMessage{
-				DatabaseUID: &backupDatabase.UID,
-				Name:        &backupName,
-			})
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get backup %q", backupName)
-			}
-			if backup == nil {
-				return nil, nil, errors.Errorf("failed to find backup %q", backupName)
-			}
-			restorePayload.BackupID = &backup.UID
-		case *storepb.PlanConfig_RestoreDatabaseConfig_PointInTime:
-			ts := source.PointInTime.GetSeconds()
-			restorePayload.PointInTimeTs = &ts
-		}
-		restorePayloadBytes, err := json.Marshal(restorePayload)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to create PITR restore task, unable to marshal payload")
-		}
-
-		restoreTaskCreate := &store.TaskMessage{
-			Name:       fmt.Sprintf("Restore to PITR database %q", database.DatabaseName),
-			Type:       api.TaskDatabaseRestorePITRRestore,
-			InstanceID: instance.UID,
-			DatabaseID: &database.UID,
-			Payload:    string(restorePayloadBytes),
-		}
-
-		taskCreates = append(taskCreates, restoreTaskCreate)
-
-		// task 2: cutover
-		cutoverPayload := api.TaskDatabasePITRCutoverPayload{
-			SpecID: spec.Id,
-		}
-		cutoverPayloadBytes, err := json.Marshal(cutoverPayload)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to create PITR cutover task, unable to marshal payload")
-		}
-		taskCreates = append(taskCreates, &store.TaskMessage{
-			Name:       fmt.Sprintf("Swap PITR and the original database %q", database.DatabaseName),
-			InstanceID: instance.UID,
-			DatabaseID: &database.UID,
-			Type:       api.TaskDatabaseRestorePITRCutover,
-			Payload:    string(cutoverPayloadBytes),
-		})
-	}
-
-	// We make sure that we will always return 2 tasks.
-	taskIndexDAGs := []store.TaskIndexDAG{
-		{
-			FromIndex: 0,
-			ToIndex:   1,
-		},
-	}
-	return taskCreates, taskIndexDAGs, nil
-}
-
 // checkCharacterSetCollationOwner checks if the character set, collation and owner are legal according to the dbType.
 func checkCharacterSetCollationOwner(dbType storepb.Engine, characterSet, collation, owner string) error {
 	switch dbType {
@@ -990,6 +832,8 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 			stmt = fmt.Sprintf("%s WITH\n\t%s", stmt, strings.Join(list, "\n\t"))
 		}
 		return fmt.Sprintf("%s;", stmt), nil
+	case storepb.Engine_HIVE:
+		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
 }

@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-y-4">
     <div v-if="create">
       <div>
         <label for="name" class="textlabel">
@@ -199,20 +199,22 @@
             :label="item.title"
             :checked="isEventOn(item.activity)"
             @update:checked="
-            (on: boolean) => {
-              toggleEvent(item.activity, on);
-            }
-          "
+              (on: boolean) => {
+                toggleEvent(item.activity, on);
+              }
+            "
           />
           <div class="textinfolabel">{{ item.label }}</div>
         </div>
       </div>
     </div>
-    <NButton @click.prevent="testWebhook">
-      {{ $t("project.webhook.test-webhook") }}
-    </NButton>
+    <div>
+      <NButton @click.prevent="testWebhook">
+        {{ $t("project.webhook.test-webhook") }}
+      </NButton>
+    </div>
     <div
-      class="flex pt-5"
+      class="flex mt-2 pt-4 border-t"
       :class="!create && allowEdit ? 'justify-between' : 'justify-end'"
     >
       <BBButtonConfirm
@@ -259,7 +261,8 @@
 <script lang="ts" setup>
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { NCheckbox, NRadio, NRadioGroup } from "naive-ui";
-import { reactive, computed, PropType, watch } from "vue";
+import type { PropType } from "vue";
+import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
@@ -275,12 +278,12 @@ import {
   projectWebhookV1ActivityItemList,
   projectWebhookV1TypeItemList,
 } from "@/types";
-import {
+import type {
   Activity_Type,
   Project,
   Webhook,
-  Webhook_Type,
 } from "@/types/proto/v1/project_service";
+import { Webhook_Type } from "@/types/proto/v1/project_service";
 import { projectWebhookV1Slug } from "../utils";
 
 interface LocalState {

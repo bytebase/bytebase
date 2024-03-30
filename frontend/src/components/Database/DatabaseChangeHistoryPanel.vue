@@ -46,7 +46,7 @@
           </template>
         </TooltipButton>
         <TooltipButton
-          v-if="allowMigrate"
+          v-if="allowEstablishBaseline"
           tooltip-mode="DISABLED-ONLY"
           :disabled="false"
           type="primary"
@@ -73,11 +73,12 @@
       </div>
     </div>
     <ChangeHistoryTable
+      v-model:selected-change-history-names="
+        state.selectedChangeHistoryNameList
+      "
       :mode="'DATABASE'"
       :database-section-list="[database]"
       :history-section-list="changeHistorySectionList"
-      :selected-change-history-name-list="state.selectedChangeHistoryNameList"
-      @update:selected="state.selectedChangeHistoryNameList = $event"
     />
   </div>
 
@@ -107,7 +108,7 @@ import { NCheckbox } from "naive-ui";
 import { computed, onBeforeMount, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBTableSectionDataSource } from "@/bbkit/types";
+import type { BBTableSectionDataSource } from "@/bbkit/types";
 import {
   AffectedTableSelect,
   ChangeHistoryTable,
@@ -116,15 +117,16 @@ import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
-import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
-import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
+import type { ComposedDatabase } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import type { AffectedTable } from "@/types/changeHistory";
+import { EmptyAffectedTable } from "@/types/changeHistory";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
-  ChangeHistory,
   ChangeHistory_Status,
   ChangeHistory_Type,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   getAffectedTablesOfChangeHistory,
   getHistoryChangeType,
@@ -176,20 +178,11 @@ const prepareChangeHistoryList = async () => {
 
 onBeforeMount(prepareChangeHistoryList);
 
-const isTenantProject = computed(() => {
-  return (
-    props.database.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
-  );
-});
-
 const allowExportChangeHistory = computed(() => {
   return state.selectedChangeHistoryNameList.length > 0;
 });
 
-const allowMigrate = computed(() => {
-  // Migrating single database in tenant mode is not allowed
-  // Since this will probably cause different migration version across a group of tenant databases
-  if (isTenantProject.value) return false;
+const allowEstablishBaseline = computed(() => {
   return allowAlterSchema.value;
 });
 

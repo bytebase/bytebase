@@ -1,7 +1,7 @@
-import Emittery from "emittery";
-import { ComputedRef, Ref } from "vue";
-import { ExecuteConfig, ExecuteOption, TabInfo } from "../tab";
-import { SQLResultSetV1 } from "./sql";
+import type Emittery from "emittery";
+import type { ComputedRef, Ref } from "vue";
+import type { SQLEditorQueryParams, SQLEditorTab } from "../sqlEditor";
+import type { SQLResultSetV1 } from "./sql";
 
 /**
  * Model
@@ -18,16 +18,10 @@ import { SQLResultSetV1 } from "./sql";
  *   -(has a)> websocket streaming connection
  */
 
-export type WebTerminalQueryParamsV1 = {
-  query: string;
-  config: ExecuteConfig;
-  option?: Partial<ExecuteOption>;
-};
-
 export type WebTerminalQueryItemV1 = {
   id: string;
   sql: string;
-  params?: WebTerminalQueryParamsV1;
+  params?: SQLEditorQueryParams;
   resultSet?: SQLResultSetV1;
   status: "IDLE" | "RUNNING" | "FINISHED";
 };
@@ -40,7 +34,7 @@ export type QueryTimer = {
 };
 
 export type QueryEvents = Emittery<{
-  query: WebTerminalQueryParamsV1;
+  query: SQLEditorQueryParams;
   result: SQLResultSetV1;
 }>;
 
@@ -51,7 +45,7 @@ export type StreamingQueryController = {
 };
 
 export type WebTerminalQueryState = {
-  tab: TabInfo;
+  tab: SQLEditorTab;
   queryItemList: Ref<WebTerminalQueryItemV1[]>;
   controller: StreamingQueryController;
   timer: QueryTimer;

@@ -249,7 +249,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	if task.EarliestAllowedTs != 0 && time.Now().Before(time.Unix(task.EarliestAllowedTs, 0)) {
 		return nil
 	}
-	for _, blockingTaskUID := range task.BlockedBy {
+	for _, blockingTaskUID := range task.DependsOn {
 		blockingTask, err := s.store.GetTaskV2ByID(ctx, blockingTaskUID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get blocking task %v", blockingTaskUID)
@@ -474,11 +474,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	}
 
 	if done && err == nil {
-		resultBytes, marshalErr := protojson.Marshal(&storepb.TaskRunResult{
-			Detail:        result.Detail,
-			ChangeHistory: result.ChangeHistory,
-			Version:       result.Version,
-		})
+		resultBytes, marshalErr := protojson.Marshal(result)
 		if marshalErr != nil {
 			slog.Error("Failed to marshal task run result",
 				slog.Int("task_id", task.ID),
@@ -596,11 +592,12 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						return errors.Wrap(err, "failed to marshal ActivityPipelineStageStatusUpdate payload")
 					}
 					activityCreate := &store.ActivityMessage{
-						CreatorUID:   api.SystemBotID,
-						ContainerUID: *issue.PipelineUID,
-						Type:         api.ActivityPipelineStageStatusUpdate,
-						Level:        api.ActivityInfo,
-						Payload:      string(bytes),
+						CreatorUID:        api.SystemBotID,
+						ResourceContainer: issue.Project.GetName(),
+						ContainerUID:      *issue.PipelineUID,
+						Type:              api.ActivityPipelineStageStatusUpdate,
+						Level:             api.ActivityInfo,
+						Payload:           string(bytes),
 					}
 					if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 						Issue: issue,
@@ -628,12 +625,13 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						return errors.Wrapf(err, "failed to marshal activity payload")
 					}
 					create := &store.ActivityMessage{
-						CreatorUID:   api.SystemBotID,
-						ContainerUID: nextStage.PipelineID,
-						Type:         api.ActivityNotifyPipelineRollout,
-						Level:        api.ActivityInfo,
-						Comment:      "",
-						Payload:      string(payload),
+						CreatorUID:        api.SystemBotID,
+						ResourceContainer: issue.Project.GetName(),
+						ContainerUID:      nextStage.PipelineID,
+						Type:              api.ActivityNotifyPipelineRollout,
+						Level:             api.ActivityInfo,
+						Comment:           "",
+						Payload:           string(payload),
 					}
 					if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 						return err
@@ -647,6 +645,11 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					// Every task in the pipeline has finished.
 					// Resolve the issue.
 					if err := func() error {
+						// For those database data export issues, we don't resolve them automatically.
+						if issue.Type == api.IssueDatabaseDataExport {
+							return nil
+						}
+
 						newStatus := api.IssueDone
 						updatedIssue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus}, api.SystemBotID)
 						if err != nil {
@@ -662,12 +665,13 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 							return errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title)
 						}
 						activityCreate := &store.ActivityMessage{
-							CreatorUID:   api.SystemBotID,
-							ContainerUID: updatedIssue.UID,
-							Type:         api.ActivityIssueStatusUpdate,
-							Level:        api.ActivityInfo,
-							Comment:      "",
-							Payload:      string(payload),
+							CreatorUID:        api.SystemBotID,
+							ResourceContainer: updatedIssue.Project.GetName(),
+							ContainerUID:      updatedIssue.UID,
+							Type:              api.ActivityIssueStatusUpdate,
+							Level:             api.ActivityInfo,
+							Comment:           "",
+							Payload:           string(payload),
 						}
 						if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 							Issue: updatedIssue,
@@ -712,11 +716,12 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 			return errors.Wrap(err, "failed to marshal ActivityPipelineTaskRunStatusUpdatePayload payload")
 		}
 		activityCreate := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: task.PipelineID,
-			Type:         api.ActivityPipelineTaskRunStatusUpdate,
-			Level:        api.ActivityInfo,
-			Payload:      string(bytes),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      task.PipelineID,
+			Type:              api.ActivityPipelineTaskRunStatusUpdate,
+			Level:             api.ActivityInfo,
+			Payload:           string(bytes),
 		}
 		if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
 			Issue: issue,

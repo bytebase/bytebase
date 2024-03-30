@@ -1,37 +1,40 @@
 import Emittery from "emittery";
-import { InjectionKey, inject, provide, Ref, ref } from "vue";
-import { ComposedDatabase, TabInfo } from "@/types";
-import {
-  DatabaseMetadata,
-  ExternalTableMetadata,
-  SchemaMetadata,
-  TableMetadata,
-} from "@/types/proto/v1/database_service";
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide, ref } from "vue";
+import { useSQLEditorStore } from "@/store";
+import type { ComposedDatabase, SQLEditorTab } from "@/types";
+
+export type AsidePanelTab = "CONNECTION" | "SCHEMA" | "WORKSHEET" | "HISTORY";
 
 type SQLEditorEvents = Emittery<{
-  "save-sheet": { tab: TabInfo; editTitle?: boolean };
+  "save-sheet": { tab: SQLEditorTab; editTitle?: boolean };
   "alter-schema": {
     databaseUID: string;
     schema: string;
     table: string;
   };
+  "format-content": undefined;
+  "tree-ready": undefined;
+  "project-context-ready": {
+    project: string;
+  };
 }>;
 
-export type SelectedDatabaseSchema = {
-  db: ComposedDatabase;
-  database: DatabaseMetadata;
-  schema: SchemaMetadata;
-  table?: TableMetadata;
-  externalTable?: ExternalTableMetadata;
-};
-
 export type SQLEditorContext = {
+  asidePanelTab: Ref<AsidePanelTab>;
   showAIChatBox: Ref<boolean>;
-  selectedDatabaseSchemaByDatabaseName: Ref<
-    Map<string, SelectedDatabaseSchema>
+  schemaViewer: Ref<
+    | {
+        database: ComposedDatabase;
+        schema?: string;
+        table?: string;
+      }
+    | undefined
   >;
 
   events: SQLEditorEvents;
+
+  maybeSwitchProject: (project: string) => Promise<string>;
 };
 
 export const KEY = Symbol(
@@ -43,10 +46,20 @@ export const useSQLEditorContext = () => {
 };
 
 export const provideSQLEditorContext = () => {
+  const editorStore = useSQLEditorStore();
   const context: SQLEditorContext = {
+    asidePanelTab: ref("WORKSHEET"),
     showAIChatBox: ref(false),
-    selectedDatabaseSchemaByDatabaseName: ref(new Map()),
+    schemaViewer: ref(undefined),
     events: new Emittery(),
+
+    maybeSwitchProject: (project) => {
+      if (editorStore.project !== project) {
+        editorStore.project = project;
+        return context.events.once("project-context-ready").then(() => project);
+      }
+      return Promise.resolve(editorStore.project);
+    },
   };
 
   provide(KEY, context);

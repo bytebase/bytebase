@@ -67,7 +67,12 @@
     },
     "table-text-fields-total-length": {
       "title": "Limitar la longitud total de los campos de texto en una tabla",
-      "description": "Esta regla limita la cantidad de datos que una tabla puede almacenar, evitando un uso excesivo de almacenamiento."
+      "description": "Esta regla limita la cantidad de datos que una tabla puede almacenar, evitando un uso excesivo de almacenamiento.",
+      "component": {
+        "number": {
+          "title": "Longitud máxima"
+        }
+      }
     },
     "table-disallow-set-charset": {
       "title": "Prohibir la definición del juego de caracteres en las propiedades de la tabla",
@@ -355,7 +360,7 @@
       }
     },
     "statement-affected-row-limit": {
-      "title": "Restringir el número máximo de filas actualizadas o eliminadas.",
+      "title": "Restringir el número máximo de filas actualizadas o eliminadas (estimada).",
       "description": "Revelar el número de filas a actualizar o eliminar puede ayudar a determinar si la declaración cumple con las expectativas comerciales. Nivel de sugerencia de error: Advertencia",
       "component": {
         "number": {
@@ -373,7 +378,7 @@
     },
     "statement-add-check-not-valid": {
       "title": "Obligar a incluir la opción \"NOT VALID\" al agregar restricciones \"CHECK\"",
-      "description": "Antes de PostgreSQL 11, agregar una restricción CHECK requería verificar los datos existentes y bloquear la tabla. Esto bloqueaba la lectura y escritura, lo que podía causar interrupciones comerciales. Se recomienda agregar la opción \"NOT VALID\" para validar nuevos datos y validar manualmente los datos existentes después de completar el cambio. En PostgreSQL 11 y versiones posteriores, este problema se ha optimizado y no es necesario prestar atención a esta regla. Nivel de sugerencia de error: Advertencia"
+      "description": "Agregar una restricción CHECK necesita verificar los datos existentes y requiere el bloqueo de tabla ACCESS EXCLUSIVE. Esto bloquea la lectura y la escritura, lo que puede provocar la interrupción del negocio. Se recomienda agregar la opción \"NOT VALID\" para validar nuevos datos y validar manualmente los datos existentes después de completar el cambio. Nivel de sugerencia de error: Advertencia"
     },
     "statement-disallow-add-not-null": {
       "title": "Restricción de agregar restricción \"NOT NULL\" a columnas existentes",
@@ -407,37 +412,62 @@
       "title": "No aplique funciones ni realice cálculos en campos indexados en la cláusula WHERE",
       "description": "Si aplica una función o realiza un cálculo en el campo indexado, la base de datos no puede usar el índice y tiene que escanear toda la tabla."
     },
-    "statement-where-statement-query-minimum-plan-level": {
+    "statement-query-minimum-plan-level": {
       "title": "Limitar el nivel máximo del método de acceso a la consulta",
-      "description": "La optimización del rendimiento de SQL busca un acceso constante (const), con el nivel de referencia (ref) como base, y un rendimiento aceptable a nivel de rango."
+      "description": "La optimización del rendimiento de SQL busca un acceso constante (const), con el nivel de referencia (ref) como base, y un rendimiento aceptable a nivel de rango.",
+      "component": {
+        "level": {
+          "title": "Nivel maximo"
+        }
+      }
     },
     "statement-where-maximum-logical-operator-count": {
       "title": "Limitar el número de valores en las cláusulas IN u OR dentro de la cláusula WHERE",
-      "description": "Esto evita la degradación del rendimiento debido a comparaciones exhaustivas y limitaciones de recursos."
+      "description": "Esto evita la degradación del rendimiento debido a comparaciones exhaustivas y limitaciones de recursos.",
+      "component": {
+        "number": {
+          "title": "Número máximo"
+        }
+      }
     },
     "statement-maximum-limit-value": {
       "title": "Limitar el número máximo de la cláusula LIMIT",
-      "description": "Limitar el número de filas mediante LIMIT garantiza que la base de datos procese bloques manejables, lo que mejora la velocidad de ejecución de las consultas. Un valor LIMIT limitado evita el uso excesivo de memoria, salvaguardando la estabilidad general del sistema y evitando la degradación del rendimiento."
+      "description": "Limitar el número de filas mediante LIMIT garantiza que la base de datos procese bloques manejables, lo que mejora la velocidad de ejecución de las consultas. Un valor LIMIT limitado evita el uso excesivo de memoria, salvaguardando la estabilidad general del sistema y evitando la degradación del rendimiento.",
+      "component": {
+        "number": {
+          "title": "Valor máximo"
+        }
+      }
     },
     "statement-maximum-join-table-count": {
       "title": "Limite el número de tablas a unir",
-      "description": "Cuanto más tablas unes, más compleja se vuelve la consulta y más tardará en ejecutarse. En general, es recomendable mantener el número de uniones al mínimo."
+      "description": "Cuanto más tablas unes, más compleja se vuelve la consulta y más tardará en ejecutarse. En general, es recomendable mantener el número de uniones al mínimo.",
+      "component": {
+        "number": {
+          "title": "Valor máximo"
+        }
+      }
     },
     "statement-maximum-statements-in-transaction": {
       "title": "Limitar el número de sentencias en una transacción",
-      "description": "Las transacciones grandes pueden impactar significativamente el rendimiento de la base de datos. Si se involucra una gran cantidad de sentencias y una falla, revertir toda la transacción se vuelve complejo. Limitar las sentencias minimiza el daño potencial causado por una sola falla y simplifica los procedimientos de recuperación."
+      "description": "Las transacciones grandes pueden impactar significativamente el rendimiento de la base de datos. Si se involucra una gran cantidad de sentencias y una falla, revertir toda la transacción se vuelve complejo. Limitar las sentencias minimiza el daño potencial causado por una sola falla y simplifica los procedimientos de recuperación.",
+      "component": {
+        "number": {
+          "title": "Valor máximo"
+        }
+      }
     },
     "statement-join-strict-column-attrs": {
       "title": "Los campos a unir deben tener tipos de datos y conjuntos de caracteres idénticos",
       "description": "Si los tipos de datos y los juegos de caracteres de las columnas de unión no son idénticos, es posible que la base de datos no pueda identificar correctamente las filas coincidentes, lo que dará lugar a resultados inexactos o incompletos."
     },
-    "statement-disallow-mix-dml": {
-      "title": "Prohibir DML en la misma tabla",
-      "description": "La realización de modificaciones concurrentes de datos en una tabla puede generar dificultades para identificar con precisión las filas afectadas. En consecuencia, esto complica el proceso de crear una copia de seguridad precisa de los datos modificados."
-    },
     "statement-disallow-mix-ddl-dml": {
       "title": "No se permite mezclar DDL y DML",
       "description": "Para un rendimiento óptimo e integridad de los datos, evite combinar sentencias DDL y DML dentro del mismo script."
+    },
+    "statement-prior-backup-check": {
+      "title": "Verificar la existencia de una copia de seguridad previa antes de cambiar los datos",
+      "description": "Esta regla verificará si se puede crear una copia de seguridad antes del cambio de datos. Para más detalles, contiene la existencia de la base de datos objetivo de la copia de seguridad y no permite la sentencia DDL."
     },
     "schema-backward-compatibility": {
       "title": "Comprobación de la compatibilidad con versiones anteriores de la aplicación",
@@ -559,6 +589,14 @@
           "title": "Valor de umbral"
         }
       }
+    },
+    "statement-add-foreign-key-not-valid": {
+      "description": "Agregar claves externas necesita verificar los datos existentes y requiere el bloqueo de tabla SHARE ROW EXCLUSIVE. \nEsto bloquea la escritura, lo que puede provocar la interrupción del negocio. \nSe recomienda agregar la opción \"NO VÁLIDO\" para validar datos nuevos y validar los datos existentes una vez completado el cambio. \nNivel de error de sugerencia: Advertencia",
+      "title": "Aplicar la opción \"NO VÁLIDO\" al agregar claves externas"
+    },
+    "statement-non-transactional": {
+      "description": "",
+      "title": "Detectar y reportar declaraciones no transaccionales"
     }
   },
   "level": {

@@ -52,8 +52,17 @@ func TestMySQLRules(t *testing.T) {
 		// advisor.SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
 		advisor.SchemaRuleStatementAffectedRowLimit,
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
-		// advisor.SchemaRuleStatementDMLDryRun,
+		advisor.SchemaRuleStatementDMLDryRun,
+		// advisor.SchemaRuleStatementNoEqualNull disallow the equal null.
 		advisor.SchemaRuleStatementWhereNoEqualNull,
+		// advisor.SchemaRuleStatementMaximumLimitValue enforce the maximum limit value.
+		advisor.SchemaRuleStatementMaximumLimitValue,
+		// advisor.SchemaRuleStatementMaximumJoinTableCount enforces maximum of tables in the joins.
+		advisor.SchemaRuleStatementMaximumJoinTableCount,
+		// advisor.SchemaRuleStatementWhereDisallowUsingFunction disallow using function in where clause.
+		advisor.SchemaRuleStatementWhereDisallowUsingFunction,
+		// advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount enforces maximum number of logical operators in the where clause.
+		advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount,
 
 		// Database related rules.
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
@@ -74,6 +83,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleTableDisallowTrigger,
 		// advisor.SchemaRuleTableNoDuplicateIndex require the table no duplicate index.
 		advisor.SchemaRuleTableNoDuplicateIndex,
+		// advisor.SchemaRuleTableDisallowSetCharset disallow set table charset when creating/altering table.
+		advisor.SchemaRuleTableDisallowSetCharset,
 
 		// Column related rules.
 		// advisor.SchemaRuleRequiredColumn enforce the required columns in each table.
@@ -108,6 +119,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
 		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
 		advisor.SchemaRuleColumnRequireDefault,
+		// advisor.SchemaRuleColumnDisallowMixDML disallows mixing different types of DML statements.
+		advisor.SchemaRuleStatementDisallowMixDDLDML,
 
 		// Index related rules.
 		// advisor.SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.

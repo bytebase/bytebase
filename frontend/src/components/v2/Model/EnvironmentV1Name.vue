@@ -5,7 +5,7 @@
     class="inline-flex items-center gap-x-1"
     :class="[link && !plain && 'normal-link', link && 'hover:underline']"
   >
-    <span class="line-clamp-1" :class="textClass">
+    <span class="line-clamp-1 select-none" :class="textClass">
       {{ prefix }}
       {{ environmentV1Name(environment) }}
       {{ suffix }}
@@ -21,8 +21,9 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { Environment } from "@/types/proto/v1/environment_service";
-import { VueClass, environmentV1Name } from "@/utils";
+import type { Environment } from "@/types/proto/v1/environment_service";
+import type { VueClass } from "@/utils";
+import { environmentV1Name } from "@/utils";
 import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";
 
 const props = withDefaults(

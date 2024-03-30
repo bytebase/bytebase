@@ -1,14 +1,15 @@
 import type monaco from "monaco-editor";
-import { Ref, unref, watch, watchEffect } from "vue";
+import type { Ref } from "vue";
+import { unref, watch, watchEffect } from "vue";
 import type { MaybeRef } from "@/types";
 import type { MonacoModule } from "../types";
-import { EditorType } from "./common";
+import type { EditorType } from "./common";
 
 type OptionsType<E> = E extends monaco.editor.IStandaloneCodeEditor
   ? monaco.editor.IEditorOptions
   : E extends monaco.editor.IStandaloneDiffEditor
-  ? monaco.editor.IDiffEditorOptions
-  : never;
+    ? monaco.editor.IDiffEditorOptions
+    : never;
 
 export const useOptions = <E extends EditorType>(
   monaco: MonacoModule,
@@ -27,7 +28,7 @@ export const useOptions = <E extends EditorType>(
 
 export const useOptionByKey = <
   E extends EditorType,
-  K extends keyof OptionsType<E>
+  K extends keyof OptionsType<E>,
 >(
   monaco: MonacoModule,
   editor: E,

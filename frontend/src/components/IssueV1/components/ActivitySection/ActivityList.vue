@@ -41,7 +41,7 @@
             :content="item.activity.comment"
             :issue-list="issueList"
             :project="issue.projectEntity"
-            @change="(val: string) => state.editComment = val"
+            @change="(val: string) => (state.editComment = val)"
             @submit="doUpdateComment"
             @cancel="cancelEditComment"
           />
@@ -89,7 +89,7 @@
             :content="state.newComment"
             :issue-list="issueList"
             :project="issue.projectEntity"
-            @change="(val: string) => state.newComment = val"
+            @change="(val: string) => (state.newComment = val)"
             @submit="doCreateComment(state.newComment)"
           />
           <div class="my-4 flex items-center justify-between">
@@ -113,14 +113,15 @@ import MarkdownEditor from "@/components/MarkdownEditor";
 import { IssueBuiltinFieldId } from "@/plugins";
 import { useActivityV1Store, useCurrentUserV1, useIssueV1Store } from "@/store";
 import { getLogId } from "@/store/modules/v1/common";
-import { ActivityIssueFieldUpdatePayload, UNKNOWN_PROJECT_NAME } from "@/types";
-import type { ComposedIssue } from "@/types";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { UNKNOWN_PROJECT_NAME } from "@/types";
+import type { ComposedIssue, ActivityIssueFieldUpdatePayload } from "@/types";
+import type { LogEntity } from "@/types/proto/v1/logging_service";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 import { doSubscribeIssue, useIssueContext } from "../../logic";
+import type { DistinctActivity } from "./Activity";
 import {
   ActivityItem,
-  DistinctActivity,
   isSimilarActivity,
   isUserEditableActivity,
 } from "./Activity";

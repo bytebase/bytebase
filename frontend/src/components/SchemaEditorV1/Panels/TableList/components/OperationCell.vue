@@ -21,7 +21,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { Table } from "@/types/v1/schemaEditor";
+import type { Table } from "@/types/v1/schemaEditor";
 
 defineProps<{
   table: Table;

@@ -61,15 +61,14 @@ import { TrashIcon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, BBGridColumn } from "@/bbkit";
+import type { BBGridColumn } from "@/bbkit";
+import { BBGrid } from "@/bbkit";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
 import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
-import {
-  SchemaTemplateSetting,
-  SchemaTemplateSetting_FieldTemplate,
-} from "@/types/proto/v1/setting_service";
+import type { Engine } from "@/types/proto/v1/common";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import { SchemaTemplateSetting } from "@/types/proto/v1/setting_service";
 import { classificationConfig } from "./utils";
 
 const props = defineProps<{

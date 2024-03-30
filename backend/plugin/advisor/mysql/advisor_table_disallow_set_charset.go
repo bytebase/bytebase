@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"fmt"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -53,7 +55,6 @@ func (*TableDisallowSetCharsetAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	return checker.adviceList, nil
 }
 
-// TODO(sql-review): implement me please.
 type tableDisallowSetCharsetChecker struct {
 	*mysql.BaseMySQLParserListener
 
@@ -66,4 +67,52 @@ type tableDisallowSetCharsetChecker struct {
 
 func (checker *tableDisallowSetCharsetChecker) EnterQuery(ctx *mysql.QueryContext) {
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+func (checker *tableDisallowSetCharsetChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
+	if ctx.CreateTableOptions() != nil {
+		for _, option := range ctx.CreateTableOptions().AllCreateTableOption() {
+			if option.DefaultCharset() != nil {
+				checker.adviceList = append(checker.adviceList, advisor.Advice{
+					Status:  checker.level,
+					Code:    advisor.DisallowSetCharset,
+					Title:   checker.title,
+					Content: fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", checker.text),
+					Line:    checker.baseLine + ctx.GetStart().GetLine(),
+				})
+			}
+		}
+	}
+}
+
+func (checker *tableDisallowSetCharsetChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
+	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+
+	alterList := ctx.AlterTableActions().AlterCommandList().AlterList()
+	if alterList == nil {
+		return
+	}
+	for _, alterListItem := range alterList.AllAlterListItem() {
+		if alterListItem == nil {
+			continue
+		}
+
+		if alterListItem.Charset() != nil {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.DisallowSetCharset,
+				Title:   checker.title,
+				Content: fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", checker.text),
+				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			})
+		}
+	}
 }

@@ -1,24 +1,23 @@
 import { orderBy } from "lodash-es";
-import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
+import type { SimpleExpr } from "@/plugins/cel";
 import {
   hasFeature,
   useCurrentUserIamPolicy,
-  usePolicyV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { policyNamePrefix } from "@/store/modules/v1/common";
-import { ComposedDatabase, UNKNOWN_ID, PresetRoleType } from "@/types";
-import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
-import { User } from "@/types/proto/v1/auth_service";
+import {
+  databaseNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
+import { UNKNOWN_ID } from "@/types";
+import type { ComposedDatabase } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import {
-  PolicyType,
-  policyTypeToJSON,
-} from "@/types/proto/v1/org_policy_service";
-import {
   hasPermissionToCreateChangeDatabaseIssue,
   hasProjectPermissionV2,
+  hasWorkspaceLevelProjectPermission,
 } from "../iam";
 import { isDev, semverCompare } from "../util";
 import {
@@ -29,12 +28,8 @@ import {
 
 export const databaseV1Url = (db: ComposedDatabase) => {
   const project = extractProjectResourceName(db.project);
-  const { instance, database } = extractDatabaseResourceName(db.name);
-  return `/projects/${encodeURIComponent(
-    project
-  )}/instances/${encodeURIComponent(instance)}/databases/${encodeURIComponent(
-    database
-  )}`;
+  const { databaseName, instanceName } = extractDatabaseResourceName(db.name);
+  return `/projects/${encodeURIComponent(project)}/${instanceNamePrefix}${encodeURIComponent(instanceName)}/${databaseNamePrefix}${encodeURIComponent(databaseName)}`;
 };
 
 export const extractDatabaseResourceName = (
@@ -42,24 +37,22 @@ export const extractDatabaseResourceName = (
 ): {
   instance: string;
   database: string;
-  full: string;
+  databaseName: string;
+  instanceName: string;
 } => {
   const pattern =
-    /(?:^|\/)instances\/(?<instance>[^/]+)\/databases\/(?<database>[^/]+)(?:$|\/)/;
+    /(?:^|\/)instances\/(?<instanceName>[^/]+)\/databases\/(?<databaseName>[^/]+)(?:$|\/)/;
   const matches = resource.match(pattern);
-  if (matches) {
-    const { instance = String(UNKNOWN_ID), database = "" } =
-      matches.groups ?? {};
-    return {
-      instance,
-      database,
-      full: `instances/${instance}/databases/${database}`,
-    };
-  }
+
+  const {
+    databaseName = String(UNKNOWN_ID),
+    instanceName = String(UNKNOWN_ID),
+  } = matches?.groups ?? {};
   return {
-    instance: String(UNKNOWN_ID),
-    database: "",
-    full: `instances/${UNKNOWN_ID}/databases/`,
+    instance: `${instanceNamePrefix}${instanceName}`,
+    instanceName,
+    database: `${instanceNamePrefix}${instanceName}/${databaseNamePrefix}${databaseName}`,
+    databaseName,
   };
 };
 
@@ -74,11 +67,6 @@ export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
     ],
     ["desc", "asc", "asc", "asc"]
   );
-};
-
-export const isPITRDatabaseV1 = (db: ComposedDatabase): boolean => {
-  // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_del
-  return !!db.databaseName.match(/^(.+?)_pitr_(\d+)(_del)?$/);
 };
 
 export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
@@ -128,37 +116,13 @@ export const isDatabaseV1Queryable = (
     return true;
   }
 
-  if (
-    hasProjectPermissionV2(database.projectEntity, user, "bb.databases.query")
-  ) {
+  if (hasWorkspaceLevelProjectPermission(user, "bb.databases.query")) {
     return true;
   }
 
   const currentUserIamPolicy = useCurrentUserIamPolicy();
   if (currentUserIamPolicy.allowToQueryDatabaseV1(database)) {
     return true;
-  }
-
-  const name = `${policyNamePrefix}${policyTypeToJSON(
-    PolicyType.WORKSPACE_IAM
-  )}`;
-  const policy = usePolicyV1Store().getPolicyByName(name);
-  if (policy) {
-    const bindings = policy.workspaceIamPolicy?.bindings;
-    if (bindings) {
-      const querierBinding = bindings.find(
-        (binding) => binding.role === PresetRoleType.PROJECT_QUERIER
-      );
-      if (querierBinding) {
-        const simpleExpr = resolveCELExpr(
-          querierBinding.parsedExpr?.expr || Expr.fromPartial({})
-        );
-        const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-        if (envNameList.includes(database.effectiveEnvironment)) {
-          return true;
-        }
-      }
-    }
   }
 
   // denied otherwise
@@ -172,37 +136,7 @@ export const isTableQueryable = (
   table: string,
   user: User
 ): boolean => {
-  if (!hasFeature("bb.feature.access-control")) {
-    // The current plan doesn't have access control feature.
-    // Fallback to true.
-    return true;
-  } else {
-    const name = `${policyNamePrefix}${policyTypeToJSON(
-      PolicyType.WORKSPACE_IAM
-    )}`;
-    const policy = usePolicyV1Store().getPolicyByName(name);
-    if (policy) {
-      const bindings = policy.workspaceIamPolicy?.bindings;
-      if (bindings) {
-        const querierBinding = bindings.find(
-          (binding) => binding.role === PresetRoleType.PROJECT_QUERIER
-        );
-        if (querierBinding) {
-          const simpleExpr = resolveCELExpr(
-            querierBinding.parsedExpr?.expr || Expr.fromPartial({})
-          );
-          const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-          if (envNameList.includes(database.effectiveEnvironment)) {
-            return true;
-          }
-        }
-      }
-    }
-  }
-
-  if (
-    hasProjectPermissionV2(database.projectEntity, user, "bb.databases.query")
-  ) {
+  if (hasWorkspaceLevelProjectPermission(user, "bb.databases.query")) {
     // The current user has the super privilege to access all databases.
     // AKA. Owners and DBAs
     return true;

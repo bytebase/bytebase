@@ -168,7 +168,7 @@
 import { isEmpty } from "lodash-es";
 import { NInput } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, PropType } from "vue";
+import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import InstanceRoleSelect from "@/components/InstanceRoleSelect.vue";
 import {
@@ -186,27 +186,21 @@ import {
   useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
+import type { ComposedInstance } from "@/types";
 import {
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
   UNKNOWN_ID,
-  ComposedInstance,
   unknownInstance,
 } from "@/types";
 import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import { Engine } from "@/types/proto/v1/common";
-import { Backup } from "@/types/proto/v1/database_service";
-import { InstanceRole } from "@/types/proto/v1/instance_role_service";
+import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import type { Plan_CreateDatabaseConfig } from "@/types/proto/v1/rollout_service";
+import { Plan, Plan_Spec } from "@/types/proto/v1/rollout_service";
 import {
-  Plan,
-  Plan_CreateDatabaseConfig,
-  Plan_Spec,
-} from "@/types/proto/v1/rollout_service";
-import {
-  extractBackupResourceName,
-  extractDatabaseResourceName,
   extractProjectResourceName,
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
@@ -239,11 +233,6 @@ const props = defineProps({
   },
   instanceId: {
     type: String,
-    default: undefined,
-  },
-  // If specified, then we are creating a database from the backup.
-  backup: {
-    type: Object as PropType<Backup>,
     default: undefined,
   },
 });
@@ -407,7 +396,6 @@ const createV1 = async () => {
       defaultCollationOfEngineV1(selectedInstance.value.engine),
     cluster: state.cluster,
     owner,
-    backup: "",
   };
   const spec = Plan_Spec.fromPartial({
     id: uuidv4(),
@@ -419,20 +407,8 @@ const createV1 = async () => {
     creator: `users/${currentUserV1.value.email}`,
   });
 
-  if (props.backup) {
-    spec.restoreDatabaseConfig = {
-      backup: props.backup.name,
-      createDatabaseConfig,
-      // `target` here is the original db
-      target: extractDatabaseResourceName(props.backup.name).full,
-    };
-    const backupTitle = extractBackupResourceName(props.backup.name);
-    issueCreate.title = `Create database '${databaseName}' from backup '${backupTitle}'`;
-    issueCreate.description = `Creating database '${databaseName}' from backup '${backupTitle}'`;
-  } else {
-    issueCreate.title = `Create database '${databaseName}'`;
-    spec.createDatabaseConfig = createDatabaseConfig;
-  }
+  issueCreate.title = `Create database '${databaseName}'`;
+  spec.createDatabaseConfig = createDatabaseConfig;
 
   state.creating = true;
   try {

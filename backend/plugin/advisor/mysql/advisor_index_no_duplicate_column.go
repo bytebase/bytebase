@@ -71,6 +71,9 @@ type indexNoDuplicateColumnChecker struct {
 }
 
 func (checker *indexNoDuplicateColumnChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -91,6 +94,9 @@ func (checker *indexNoDuplicateColumnChecker) EnterCreateTable(ctx *mysql.Create
 }
 
 func (checker *indexNoDuplicateColumnChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}
@@ -121,6 +127,9 @@ func (checker *indexNoDuplicateColumnChecker) EnterAlterTable(ctx *mysql.AlterTa
 }
 
 func (checker *indexNoDuplicateColumnChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserFULLTEXT_SYMBOL, mysql.MySQLParserSPATIAL_SYMBOL:
 		return

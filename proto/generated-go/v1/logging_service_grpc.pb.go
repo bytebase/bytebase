@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	LoggingService_ListLogs_FullMethodName   = "/bytebase.v1.LoggingService/ListLogs"
+	LoggingService_SearchLogs_FullMethodName = "/bytebase.v1.LoggingService/SearchLogs"
 	LoggingService_GetLog_FullMethodName     = "/bytebase.v1.LoggingService/GetLog"
 	LoggingService_ExportLogs_FullMethodName = "/bytebase.v1.LoggingService/ExportLogs"
 )
@@ -28,7 +28,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LoggingServiceClient interface {
-	ListLogs(ctx context.Context, in *ListLogsRequest, opts ...grpc.CallOption) (*ListLogsResponse, error)
+	SearchLogs(ctx context.Context, in *SearchLogsRequest, opts ...grpc.CallOption) (*SearchLogsResponse, error)
 	GetLog(ctx context.Context, in *GetLogRequest, opts ...grpc.CallOption) (*LogEntity, error)
 	ExportLogs(ctx context.Context, in *ExportLogsRequest, opts ...grpc.CallOption) (*ExportLogsResponse, error)
 }
@@ -41,9 +41,9 @@ func NewLoggingServiceClient(cc grpc.ClientConnInterface) LoggingServiceClient {
 	return &loggingServiceClient{cc}
 }
 
-func (c *loggingServiceClient) ListLogs(ctx context.Context, in *ListLogsRequest, opts ...grpc.CallOption) (*ListLogsResponse, error) {
-	out := new(ListLogsResponse)
-	err := c.cc.Invoke(ctx, LoggingService_ListLogs_FullMethodName, in, out, opts...)
+func (c *loggingServiceClient) SearchLogs(ctx context.Context, in *SearchLogsRequest, opts ...grpc.CallOption) (*SearchLogsResponse, error) {
+	out := new(SearchLogsResponse)
+	err := c.cc.Invoke(ctx, LoggingService_SearchLogs_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (c *loggingServiceClient) ExportLogs(ctx context.Context, in *ExportLogsReq
 // All implementations must embed UnimplementedLoggingServiceServer
 // for forward compatibility
 type LoggingServiceServer interface {
-	ListLogs(context.Context, *ListLogsRequest) (*ListLogsResponse, error)
+	SearchLogs(context.Context, *SearchLogsRequest) (*SearchLogsResponse, error)
 	GetLog(context.Context, *GetLogRequest) (*LogEntity, error)
 	ExportLogs(context.Context, *ExportLogsRequest) (*ExportLogsResponse, error)
 	mustEmbedUnimplementedLoggingServiceServer()
@@ -82,8 +82,8 @@ type LoggingServiceServer interface {
 type UnimplementedLoggingServiceServer struct {
 }
 
-func (UnimplementedLoggingServiceServer) ListLogs(context.Context, *ListLogsRequest) (*ListLogsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListLogs not implemented")
+func (UnimplementedLoggingServiceServer) SearchLogs(context.Context, *SearchLogsRequest) (*SearchLogsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchLogs not implemented")
 }
 func (UnimplementedLoggingServiceServer) GetLog(context.Context, *GetLogRequest) (*LogEntity, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLog not implemented")
@@ -104,20 +104,20 @@ func RegisterLoggingServiceServer(s grpc.ServiceRegistrar, srv LoggingServiceSer
 	s.RegisterService(&LoggingService_ServiceDesc, srv)
 }
 
-func _LoggingService_ListLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListLogsRequest)
+func _LoggingService_SearchLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchLogsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LoggingServiceServer).ListLogs(ctx, in)
+		return srv.(LoggingServiceServer).SearchLogs(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: LoggingService_ListLogs_FullMethodName,
+		FullMethod: LoggingService_SearchLogs_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LoggingServiceServer).ListLogs(ctx, req.(*ListLogsRequest))
+		return srv.(LoggingServiceServer).SearchLogs(ctx, req.(*SearchLogsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -166,8 +166,8 @@ var LoggingService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*LoggingServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ListLogs",
-			Handler:    _LoggingService_ListLogs_Handler,
+			MethodName: "SearchLogs",
+			Handler:    _LoggingService_SearchLogs_Handler,
 		},
 		{
 			MethodName: "GetLog",

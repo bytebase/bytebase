@@ -58,7 +58,7 @@ import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useDatabaseV1Store } from "@/store";
-import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   extractDatabaseResourceName,
@@ -88,9 +88,7 @@ const changeHistory = computed(() => {
 });
 
 const database = computed(() => {
-  const { full: databaseResourceName } = extractDatabaseResourceName(
-    changeHistory.value.name
-  );
-  return useDatabaseV1Store().getDatabaseByName(databaseResourceName);
+  const { database } = extractDatabaseResourceName(changeHistory.value.name);
+  return useDatabaseV1Store().getDatabaseByName(database);
 });
 </script>

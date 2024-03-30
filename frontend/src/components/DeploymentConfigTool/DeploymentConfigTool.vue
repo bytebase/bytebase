@@ -19,9 +19,13 @@
 
 <script lang="ts">
 /* eslint-disable vue/no-mutating-props */
-import { defineComponent, PropType } from "vue";
-import { ComposedDatabase } from "@/types";
-import { Schedule, ScheduleDeployment } from "@/types/proto/v1/project_service";
+import type { PropType } from "vue";
+import { defineComponent } from "vue";
+import type { ComposedDatabase } from "@/types";
+import type {
+  Schedule,
+  ScheduleDeployment,
+} from "@/types/proto/v1/project_service";
 import DeploymentStage from "./DeploymentStage.vue";
 
 export default defineComponent({

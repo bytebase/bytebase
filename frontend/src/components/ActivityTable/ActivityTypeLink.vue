@@ -16,8 +16,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType } from "vue";
-import { LogEntity } from "@/types/proto/v1/logging_service";
+import type { PropType } from "vue";
+import { computed } from "vue";
+import type { LogEntity } from "@/types/proto/v1/logging_service";
 import { getLinkFromActivity } from "./utils";
 
 const props = defineProps({

@@ -138,6 +138,7 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { ArchiveIcon } from "lucide-vue-next";
+import type { SelectGroupOption, SelectOption } from "naive-ui";
 import {
   NPopconfirm,
   NButton,
@@ -147,8 +148,6 @@ import {
   NSelect,
   NRadioGroup,
   NRadio,
-  SelectGroupOption,
-  SelectOption,
 } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -165,11 +164,8 @@ import {
   PresetRoleType,
   emptyUser,
 } from "@/types";
-import {
-  UpdateUserRequest,
-  User,
-  UserType,
-} from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
+import { UpdateUserRequest, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { displayRoleTitle, randomString } from "@/utils";
 

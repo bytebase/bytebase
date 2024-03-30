@@ -1,6 +1,7 @@
 import Emittery from "emittery";
-import { InjectionKey, Ref, inject, provide, ref } from "vue";
-import { TabInfo } from "@/types";
+import type { InjectionKey, Ref } from "vue";
+import { inject, provide, ref } from "vue";
+import type { SQLEditorTab } from "@/types";
 
 export type CloseTabAction =
   | "CLOSE"
@@ -10,14 +11,14 @@ export type CloseTabAction =
   | "CLOSE_ALL";
 
 type TabListEvents = Emittery<{
-  "close-tab": { tab: TabInfo; index: number; action: CloseTabAction };
-  "rename-tab": { tab: TabInfo; index: number };
+  "close-tab": { tab: SQLEditorTab; index: number; action: CloseTabAction };
+  "rename-tab": { tab: SQLEditorTab; index: number };
 }>;
 
 export type TabListContextMenuState = {
   x: number;
   y: number;
-  tab: TabInfo;
+  tab: SQLEditorTab;
   index: number;
 };
 

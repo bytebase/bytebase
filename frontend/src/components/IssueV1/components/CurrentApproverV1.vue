@@ -43,7 +43,7 @@ import {
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1";
 import { useCurrentUserV1 } from "@/store";
-import { ComposedIssue } from "@/types";
+import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 
 const props = defineProps<{

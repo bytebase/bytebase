@@ -15,22 +15,16 @@
 
 <script lang="ts" setup>
 import { intersection } from "lodash-es";
-import { NSelect, SelectOption } from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCurrentUserV1, useProjectV1Store, useProjectV1List } from "@/store";
-import {
-  ComposedProject,
-  DEFAULT_PROJECT_ID,
-  UNKNOWN_ID,
-  unknownProject,
-} from "@/types";
+import type { ComposedProject } from "@/types";
+import { DEFAULT_PROJECT_ID, UNKNOWN_ID, unknownProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import {
-  Project,
-  TenantMode,
-  Workflow,
-} from "@/types/proto/v1/project_service";
+import type { Project } from "@/types/proto/v1/project_service";
+import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2, roleListInProjectV1 } from "@/utils";
 
 interface ProjectSelectOption extends SelectOption {
@@ -41,7 +35,7 @@ interface ProjectSelectOption extends SelectOption {
 const props = withDefaults(
   defineProps<{
     disabled?: boolean;
-    project?: string | undefined; // UNKNOWN_ID(-1) to "ALL"
+    project?: string | undefined | null; // UNKNOWN_ID(-1) to "ALL"
     allowedProjectRoleList?: string[]; // Empty array([]) to "ALL"
     allowedProjectTenantModeList?: TenantMode[];
     allowedProjectWorkflowTypeList?: Workflow[];
@@ -165,8 +159,8 @@ const options = computed(() => {
         project.uid === String(DEFAULT_PROJECT_ID)
           ? t("common.unassigned")
           : project.uid === String(UNKNOWN_ID)
-          ? t("project.all")
-          : project.title,
+            ? t("project.all")
+            : project.title,
     };
   });
 });

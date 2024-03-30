@@ -4,7 +4,10 @@
     :disabled="disabled"
     @change="
       (e) => {
-        $emit('select-data-source-id', parseInt((e.target as HTMLOptionElement).value));
+        $emit(
+          'select-data-source-id',
+          parseInt((e.target as HTMLOptionElement).value)
+        );
       }
     "
   >
@@ -33,8 +36,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, reactive } from "vue";
-import { Database } from "../types";
+import type { PropType } from "vue";
+import { defineComponent, reactive } from "vue";
+import type { Database } from "../types";
 
 interface LocalState {
   selectedId?: number;

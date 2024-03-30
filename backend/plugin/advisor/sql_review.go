@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -93,6 +94,9 @@ const (
 	SchemaRuleStatementDisallowAddColumnWithDefault = "statement.disallow-add-column-with-default"
 	// SchemaRuleStatementAddCheckNotValid require add check constraints not valid.
 	SchemaRuleStatementAddCheckNotValid = "statement.add-check-not-valid"
+	// SchemaRuleStatementAddFKNotValid require add foreign key not valid.
+	SchemaRuleStatementAddFKNotValid = "statement.add-foreign-key-not-valid"
+
 	// SchemaRuleStatementDisallowAddNotNull disallow to add NOT NULL.
 	SchemaRuleStatementDisallowAddNotNull = "statement.disallow-add-not-null"
 	// SchemaRuleStatementDisallowAddColumn disallow to add column.
@@ -121,10 +125,12 @@ const (
 	SchemaRuleStatementMaximumStatementsInTransaction = "statement.maximum-statements-in-transaction"
 	// SchemaRuleStatementJoinStrictColumnAttrs enforce the join strict column attributes.
 	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
-	// SchemaRuleStatementDisallowMixDML disallow mix DML on the same table.
-	SchemaRuleStatementDisallowMixDML = "statement.disallow-mix-dml"
-	// SchemaRuleStatementDisallowMixDDLDML disallow mix DDL and DML.
+	// SchemaRuleStatementDisallowMixDDLDML disallow mix DDL and DML on the same table.
 	SchemaRuleStatementDisallowMixDDLDML = "statement.disallow-mix-ddl-dml"
+	// SchemaRuleStatementPriorBackupCheck checks for prior backup.
+	SchemaRuleStatementPriorBackupCheck = "statement.prior-backup-check"
+	// SchemaRuleStatementNonTransactional checks for non-transactional statements.
+	SchemaRuleStatementNonTransactional = "statement.non-transactional"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -296,6 +302,11 @@ type NumberTypeRulePayload struct {
 	Number int `json:"number"`
 }
 
+// StringTypeRulePayload is the string type payload.
+type StringTypeRulePayload struct {
+	String string `json:"string"`
+}
+
 // NamingCaseRulePayload is the payload for naming case rule.
 type NamingCaseRulePayload struct {
 	// Upper is true means the case should be upper case, otherwise lower case.
@@ -421,6 +432,15 @@ func UnmarshalNumberTypeRulePayload(payload string) (*NumberTypeRulePayload, err
 	return &nlr, nil
 }
 
+// UnmarshalStringTypeRulePayload will unmarshal payload to StringTypeRulePayload.
+func UnmarshalStringTypeRulePayload(payload string) (*StringTypeRulePayload, error) {
+	var slr StringTypeRulePayload
+	if err := json.Unmarshal([]byte(payload), &slr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal string type rule payload %q", payload)
+	}
+	return &slr, nil
+}
+
 // UnmarshalStringArrayTypeRulePayload will unmarshal payload to StringArrayTypeRulePayload.
 func UnmarshalStringArrayTypeRulePayload(payload string) (*StringArrayTypeRulePayload, error) {
 	var trr StringArrayTypeRulePayload
@@ -441,14 +461,15 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 
 // SQLReviewCheckContext is the context for SQL review check.
 type SQLReviewCheckContext struct {
-	Charset    string
-	Collation  string
-	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType
-	DBSchema   *storepb.DatabaseSchemaMetadata
-	DbType     storepb.Engine
-	Catalog    catalog.Catalog
-	Driver     *sql.DB
-	Context    context.Context
+	Charset               string
+	Collation             string
+	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
+	DBSchema              *storepb.DatabaseSchemaMetadata
+	DbType                storepb.Engine
+	Catalog               catalog.Catalog
+	Driver                *sql.DB
+	Context               context.Context
+	PreUpdateBackupDetail *storepb.PlanCheckRunConfig_PreUpdateBackupDetail
 
 	// Snowflake specific fields
 	CurrentDatabase string
@@ -664,6 +685,24 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 	return res, nil
 }
 
+func relocationTiDBErrorLine(errorMessage string, baseLine int) string {
+	re := regexp.MustCompile(`line\s+(\d+)`)
+	modified := re.ReplaceAllStringFunc(errorMessage, func(match string) string {
+		matchSlice := re.FindStringSubmatch(match)
+		if len(matchSlice) != 2 {
+			return match
+		}
+		lineStr := matchSlice[1]
+		lineNum, err := strconv.Atoi(lineStr)
+		if err != nil {
+			return match
+		}
+		newLine := lineNum + baseLine
+		return fmt.Sprintf("line %d", newLine)
+	})
+	return modified
+}
+
 func tidbSyntaxCheck(statement string) (any, []Advice) {
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
@@ -681,6 +720,7 @@ func tidbSyntaxCheck(statement string) (any, []Advice) {
 	p := newTiDBParser()
 	var returnNodes []tidbast.StmtNode
 	var adviceList []Advice
+	baseLine := 0
 	for _, singleSQL := range singleSQLs {
 		nodes, _, err := p.Parse(singleSQL.Text, "", "")
 		if err != nil {
@@ -689,8 +729,8 @@ func tidbSyntaxCheck(statement string) (any, []Advice) {
 					Status:  Warn,
 					Code:    Internal,
 					Title:   "Parse error",
-					Content: err.Error(),
-					Line:    1,
+					Content: relocationTiDBErrorLine(err.Error(), baseLine),
+					Line:    1 + baseLine,
 				},
 			}
 		}
@@ -714,6 +754,7 @@ func tidbSyntaxCheck(statement string) (any, []Advice) {
 			}
 		}
 		returnNodes = append(returnNodes, node)
+		baseLine = singleSQL.LastLine
 	}
 
 	return returnNodes, adviceList
@@ -754,18 +795,19 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 			checkContext.DbType,
 			advisorType,
 			Context{
-				Charset:         checkContext.Charset,
-				Collation:       checkContext.Collation,
-				DBSchema:        checkContext.DBSchema,
-				ChangeType:      checkContext.ChangeType,
-				AST:             ast,
-				Statements:      statements,
-				Rule:            rule,
-				Catalog:         finder,
-				Driver:          checkContext.Driver,
-				Context:         checkContext.Context,
-				CurrentSchema:   checkContext.CurrentSchema,
-				CurrentDatabase: checkContext.CurrentDatabase,
+				Charset:               checkContext.Charset,
+				Collation:             checkContext.Collation,
+				DBSchema:              checkContext.DBSchema,
+				ChangeType:            checkContext.ChangeType,
+				PreUpdateBackupDetail: checkContext.PreUpdateBackupDetail,
+				AST:                   ast,
+				Statements:            statements,
+				Rule:                  rule,
+				Catalog:               finder,
+				Driver:                checkContext.Driver,
+				Context:               checkContext.Context,
+				CurrentSchema:         checkContext.CurrentSchema,
+				CurrentDatabase:       checkContext.CurrentDatabase,
 			},
 			statements,
 		)
@@ -1413,9 +1455,19 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementDisallowUsingTemporary, nil
 		}
-	case SchemaRuleStatementDisallowMixDML:
-		if engine == storepb.Engine_MYSQL {
-			return MySQLStatementDisallowMixDML, nil
+	case SchemaRuleStatementDisallowMixDDLDML:
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+			return MySQLStatementDisallowMixDDLDML, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLStatementDisallowMixDDLDML, nil
+		}
+	case SchemaRuleStatementPriorBackupCheck:
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+			return MySQLStatementPriorBackupCheck, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLStatementPriorBackupCheck, nil
 		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {
@@ -1518,6 +1570,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLAddCheckNotValid, nil
 		}
+	case SchemaRuleStatementAddFKNotValid:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLAddFKNotValid, nil
+		}
 	case SchemaRuleStatementDisallowAddNotNull:
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLDisallowAddNotNull, nil
@@ -1594,6 +1650,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleOnlineMigration:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLOnlineMigration, nil
+		}
+	case SchemaRuleStatementNonTransactional:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLNonTransactional, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

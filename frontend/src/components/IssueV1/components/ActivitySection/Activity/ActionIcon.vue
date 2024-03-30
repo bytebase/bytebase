@@ -103,14 +103,15 @@ import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
 import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
 import { useUserStore } from "@/store";
-import {
+import type {
   ActivityIssueCommentCreatePayload,
   ActivityPipelineTaskRunStatusUpdatePayload,
   ActivityStageStatusUpdatePayload,
   ActivityTaskStatusUpdatePayload,
-  SYSTEM_BOT_EMAIL,
 } from "@/types";
-import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { SYSTEM_BOT_EMAIL } from "@/types";
+import type { LogEntity } from "@/types/proto/v1/logging_service";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
 
 type ActionIconType =
@@ -223,10 +224,6 @@ const icon = computed((): ActionIconType => {
         return "complete";
       }
     }
-  } else if (
-    activity.action == LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT
-  ) {
-    return "commit";
   } else if (
     activity.action == LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE
   ) {

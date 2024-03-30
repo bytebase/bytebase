@@ -110,7 +110,6 @@
     "schema": "Esquema",
     "anomalies": "Anomalías",
     "do-not-show-again": "No mostrar de nuevo",
-    "backups": "Copias de seguridad",
     "detail": "Detalle",
     "type": "Tipo",
     "language": "Idioma",
@@ -195,7 +194,6 @@
     "enable": "Habilitar",
     "disable": "Inhabilitar",
     "view-doc": "Ver doc",
-    "backup-and-restore": "Respaldo y restauración",
     "write-only": "solo escritura",
     "pitr": "PITR",
     "fix": "Corregir",
@@ -272,11 +270,12 @@
     "missing-permission": "Faltan permisos requeridos",
     "continue-anyway": "De todas maneras, continúe",
     "permissions": "Permisos",
-    "backup": "Respaldo",
     "cutover": "transición",
     "baseline": "Base",
     "project-member": "Miembro del proyecto",
-    "leave-without-saving": "¿Salir sin ahorrar?"
+    "leave-without-saving": "¿Salir sin ahorrar?",
+    "configure-now": "Configurar ahora",
+    "connection": "Conexión"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -317,7 +316,7 @@
       "statement-type": "Tipo de declaración",
       "lgtm": "LGTM",
       "pitr": "PITR",
-      "affected-rows": "Filas afectadas estimadas",
+      "affected-rows": "Filas afectadas (estimación basada en información estadística)",
       "sql-type": "Tipo de SQL",
       "summary-report": "Informe resumido"
     },
@@ -366,7 +365,8 @@
       "generating": "Generando",
       "empty-rollback-statement": "La declaración de reversión está vacía",
       "cancel-generating": "Cancelar la generación del SQL de reversión",
-      "sql-rollback-tips": "Cuando está habilitado, Bytebase mantendrá los registros de reversión para el cambio de datos\ny te permitirá crear una nueva incidencia para revertir este cambio.\nAdvertencia: Si la tabla no tiene una clave primaria. El SQL de reversión puede afectar\nfilas duplicadas. Por favor, confirma cuidadosamente antes de ejecutarlo.\n{enlace}"
+      "sql-rollback-tips": "Cuando está habilitado, Bytebase mantendrá los registros de reversión para el cambio de datos\ny te permitirá crear una nueva incidencia para revertir este cambio.\nAdvertencia: Si la tabla no tiene una clave primaria. El SQL de reversión puede afectar\nfilas duplicadas. Por favor, confirma cuidadosamente antes de ejecutarlo.\n{enlace}",
+      "maximum-size-tips": "El tamaño máximo de datos de retroceso admitido es de 32MB"
     },
     "skip-failed-in-current-stage": "Saltar tareas fallidas en la etapa actual",
     "apply-change-to-all-pending-tasks": {
@@ -427,8 +427,7 @@
     "cloud": "Cloud",
     "request-demo": "Reserva una demo de producto de 30 minutos.",
     "readonly": "Bytebase está en modo de solo lectura. Todavía puede ver la consola, pero cualquier intento de cambio fallará.",
-    "external-url": "Bytebase no ha configurado --external-url",
-    "configure-now": "Configurar ahora"
+    "external-url": "Bytebase no ha configurado --external-url"
   },
   "intro": {
     "doc": "doc",
@@ -829,14 +828,6 @@
         "override-confirm": "Aún subiendo"
       }
     },
-    "access-control": {
-      "description": "Configura un flujo de aprobación para controlar la consulta y exportación de datos. {link}",
-      "skip-approval": "Saltar aprobación manual",
-      "query-data": "Consulta de datos",
-      "export-data": "Exportación de datos",
-      "disallowed": "no permitido",
-      "copy-data-from-sql-editor": "Copiar datos del editor de SQL"
-    },
     "release": {
       "new-version-available": "Nueva versión disponible",
       "new-version-content": "¡La nueva versión {tag} está disponible ahora! Consulte nuestra documentación para la instalación.",
@@ -871,7 +862,6 @@
       "issue-status-update": "actualizar estado de la incidencia",
       "pipeline-stage-status-update": "actualizar estado de la etapa de la incidencia",
       "pipeline-task-status-update": "actualizar estado de la tarea de la incidencia",
-      "pipeline-task-file-commit": "commit al archivo",
       "pipeline-task-statement-update": "actualización SQL",
       "pipeline-task-prior-backup": "Respaldo Previo",
       "member-create": "crear miembro",
@@ -1185,7 +1175,14 @@
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "preview": "Problema de vista previa",
     "missing-sql-statement": "Sentencia SQL faltante. Para aplicar este cambio a todas las tareas, haz clic en el botón '@:{'issue.apply-to-other-tasks'}'.",
-    "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas"
+    "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas",
+    "data-export": {
+      "title": "Exportación de Datos",
+      "options": "Opciones de exportación",
+      "format": "Formato",
+      "encrypt": "Cifrar",
+      "exported-file-downloaded": "Archivo exportado descargado"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1346,7 +1343,36 @@
     "type-or-paste-credentials": "Escriba o pegue las CREDENCIALES",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "password-write-only": "SU_DB_PWD - solo escritura",
-    "secret-manager-tip": "También puede especificar un punto final de gestión de secreto externo",
+    "password-type": {
+      "password": "Contraseña",
+      "password-tip": "También puede especificar un punto final de gestión de secreto externo",
+      "external-secret": "Secreto externo (Vault)"
+    },
+    "external-secret": {
+      "vault-url": "Vault URL",
+      "vault-auth-type": {
+        "self": "Vault auth type",
+        "token": {
+          "self": "Simbólico",
+          "api-token": "Vault API token",
+          "tips": "Un token raíz sin TTL."
+        },
+        "app-role": {
+          "self": "App role",
+          "role-id": "Auth role id",
+          "secret-id": "Auth secret id",
+          "secret-id-plain-text": "Texto sin formato para identificación secreta de rol",
+          "secret-id-environment": "Nombre del entorno para la identificación secreta del rol",
+          "secret-plain-text": "Texto sin formato",
+          "secret-env-name": "Nombre del entorno",
+          "secret-tips": "Una identificación secreta desenvuelta sin TTL. Puede utilizar texto sin formato o colocarlo en el entorno o en el archivo local. {learn_more}"
+        }
+      },
+      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-tips": "Solo admite motor KV v2.",
+      "vault-secret-name": "Vault secret name",
+      "vault-key-name": "Vault key name for password"
+    },
     "test-connection": "Probar conexión",
     "ignore-and-create": "Ignorar y crear",
     "add-a-postgresql-sample-instance": "Agregue una instancia de muestra de PostgreSQL en su lugar",
@@ -1401,11 +1427,11 @@
     "create": "Crear entorno",
     "restore": "Restaurar este entorno",
     "successfully-updated-environment": "entorno '{name}' actualizado exitosamente.",
-    "disable-auto-backup": {
-      "self": "Desactivar copia de seguridad automática de la base de datos",
-      "content": "La política de desactivación de copias de seguridad automáticas no se aplica de forma retroactiva.\n¿Está seguro de aplicarla a todas las bases de datos en este entorno?"
-    },
-    "production-environment": "Entorno de producción"
+    "production-environment": "Entorno de producción",
+    "access-control": {
+      "title": "Control de acceso",
+      "disable-copy-data-from-sql-editor": "Desactivar copiar datos desde el editor SQL"
+    }
   },
   "quick-start": {
     "self": "Inicio rápido",
@@ -1481,16 +1507,6 @@
       "manual-by-workspace-admin": "Administrador del espacio de trabajo",
       "manual-by-custom-project-roles": "Roles de proyecto personalizados"
     },
-    "backup": {
-      "name": "Política de programación de copias de seguridad de la base de datos",
-      "tip": "La política no se aplica retrospectivamente.",
-      "not-enforced": "No obligatoria",
-      "not-enforced-info": "No se aplica ninguna programación de copias de seguridad.",
-      "daily": "Copia de seguridad diaria",
-      "daily-info": "Aplica copias de seguridad diarias para cada base de datos.",
-      "weekly": "Copia de seguridad semanal",
-      "weekly-info": "Aplica copias de seguridad semanales para cada base de datos."
-    },
     "environment-tier": {
       "name": "Nivel de entorno",
       "description": "El entorno aparecerá de manera diferente a otros entornos.",
@@ -1539,7 +1555,6 @@
     "sync-status": "Estado de sincronización",
     "last-successful-sync": "Última sincronización exitosa",
     "filter-database": "Filtrar base de datos",
-    "database-backup": "copia de seguridad de la base de datos",
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
     "unassign-alert-title": "Desasignar bases de datos",
@@ -1563,49 +1578,13 @@
     "batch-action-permission-denied": "No tengo permiso para {action} para bases de datos",
     "batch-action-disabled": "No se puede {action} para las bases de datos de diferentes proyectos",
     "batch-action-disabled-for-unassigned": "No se puede {action} para una base de datos no asignada",
+    "data-export-action-disabled": "No se puede exportar datos de más de una base de datos",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Se transfirió correctamente '{0}' al proyecto '{1}'.",
-    "backup-name": "Nombre de la copia de seguridad",
-    "create-backup": "Crear copia de seguridad",
-    "automatic-x-backup": "Copia de seguridad automática cada {freq}",
-    "automatic-backup": "Copia de seguridad automática",
-    "disable-automatic-backup": "Desactivar copia de seguridad automática",
-    "backuppolicy-backup-enforced-and-cant-be-disabled": "Copia de seguridad {0} obligatoria y no se puede desactivar",
-    "backup-policy": {
-      "DAILY": "DIARIA",
-      "WEEKLY": "SEMANAL"
-    },
-    "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "Se enviará una solicitud HTTP POST después de una copia de seguridad exitosa.",
-    "backup-info": {
-      "template": "Se realizará una copia de seguridad todos los {dayOrWeek} a las {time}. Los datos de copia de seguridad se conservarán durante {retentionDays} días."
-    },
-    "week": {
-      "Sunday": "Domingo",
-      "Monday": "Lunes",
-      "Tuesday": "Martes",
-      "Wednesday": "Miércoles",
-      "Thursday": "Jueves",
-      "Friday": "Viernes",
-      "Saturday": "Sábado",
-      "day": "día"
-    },
-    "enable-backup": "Activar copia de seguridad",
-    "backup-now": "Realizar copia de seguridad ahora",
-    "create-a-manual-backup": "Crear una copia de seguridad manual",
-    "disabled": "Desactivado",
-    "enabled": "Activado",
-    "action-automatic-backup-for-database-props-database-name": "Copia de seguridad automática {0} para la base de datos '{1}'.",
-    "updated-backup-webhook-url-for-database-props-database-name": "Se actualizó la URL del webhook de copia de seguridad para la base de datos '{0}'.",
     "last-sync-status": "Estado de sincronización anterior",
     "last-sync-status-long": "Estado de sincronización anterior {0} a las {1}",
     "gitops-enabled": "GitOps habilitado",
-    "restore-backup": "Restaurar copia de seguridad '{0}' en una nueva base de datos",
     "nullable": "Anulable",
-    "restore": "Restaurar",
-    "backup": {
-      "enabled": "habilitado",
-      "disabled": "deshabilitado"
-    },
     "expression": "Expresión",
     "position": "Posición",
     "unique": "Único",
@@ -1640,20 +1619,6 @@
     },
     "show-reserved-tables": "Mostrar tablas reservadas de Bytebase",
     "show-reserved-databases": "Mostrar bases de datos reservadas de Bytebase",
-    "backup-setting": {
-      "schedule": {
-        "disabled": "Desactivado",
-        "weekly": "Cada semana",
-        "daily": "Cada día"
-      },
-      "form": {
-        "schedule": "Programar",
-        "day-of-week": "Día de la semana",
-        "time-of-day": "Hora del día",
-        "retention-period": "Período de retención (días)"
-      }
-    },
-    "backup-policy-violation": "Violación de la política de copias de seguridad",
     "synced-at": "Sincronizado en {time}",
     "not-found-last-successful-sync-was": "No encontrado, última sincronización exitosa fue {time}",
     "view-unassigned-databases": "Ver bases de datos no asignadas",
@@ -1763,13 +1728,7 @@
     "file-path-template-description": "Bytebase solo observa la ruta del archivo que coincida con el patrón de plantilla en relación al directorio base.",
     "file-path-example-schema-migration": "Ejemplo de ruta de archivo para el tipo de migración de esquema",
     "file-path-example-data-migration": "Ejemplo de ruta de archivo para el tipo de migración de datos",
-    "schema-path-template": "Plantilla de ruta de esquema",
-    "schema-writeback-description": "Cuando se especifica, después de cada migración, Bytebase escribirá el último esquema en la ruta de esquema en relación al directorio base en la misma rama que el commit original que activó la migración. Deje en blanco si no desea que Bytebase haga esto.",
-    "schema-writeback-protected-branch": "Asegúrese de que la rama modificada no esté protegida o permita que el mantenedor del repositorio haga push a esa rama protegida.",
     "if-specified": "Si se especifica",
-    "schema-path-example": "Ejemplo de ruta de esquema",
-    "sheet-path-template": "Plantilla de ruta de hoja",
-    "sheet-path-template-description": "Bytebase solo observa archivos con nombres de ruta que coincidan con el patrón de plantilla en relación al directorio base. Los archivos coincidentes se sincronizarán con el editor de SQL para su uso allí.",
     "sql-review-ci": "Revisión de SQL CI",
     "sql-review-ci-enable": "Habilitar la revisión de SQL CI",
     "sql-review-ci-enable-gitlab": "Habilitar la revisión de SQL CI a través de GitLab CI",
@@ -1791,8 +1750,6 @@
     "gitops-status": "@.capitalize:common.gitops es {status}",
     "gitops-description-file-path": "Los scripts de migración de la base de datos se almacenan en {fullPath}. Para realizar cambios en el esquema, un desarrollador crearía un script de migración que coincida con el patrón de la ruta de acceso del archivo {fullPathTemplate}.",
     "gitops-description-branch": "Después de que el script sea aprobado y fusionado en la rama {branch}, Bytebase iniciará automáticamente el proceso para aplicar el nuevo cambio de esquema.",
-    "gitops-description-description-schema-path": "Después de aplicar el cambio de esquema, Bytebase también escribirá el esquema más reciente en la ubicación del esquema especificado {schemaPathTemplate}.",
-    "gitops-description-sdl": "Los scripts de migración de la base de datos se almacenan en {fullPath}. Para realizar cambios en el esquema, un desarrollador modificaría el script completo de esquema que coincide con el patrón de la ruta de acceso del archivo {schemaPathTemplate}. Para realizar cambios en los datos, un desarrollador crearía un script de migración que coincida con el patrón de la ruta de acceso del archivo {filePathTemplate}. Una vez que el script se fusiona en la rama {branch}, Bytebase iniciará automáticamente el proceso para aplicar el nuevo cambio de base de datos.",
     "restore-to-ui-workflow": "Restaurar al flujo de trabajo de UI",
     "restore-ui-workflow-description": "Al usar el flujo de trabajo de UI, el desarrollador envía directamente un ticket de revisión de SQL desde la consola de Bytebase y espera a que el DBA o el desarrollador asignado revise. Bytebase aplica el cambio de SQL después de la aprobación de la revisión.",
     "restore-ui-workflow-success": "Restaurado con éxito al flujo de trabajo de UI",
@@ -1838,8 +1795,6 @@
     },
     "action": {
       "check-instance": "Ver instancia",
-      "view-backup": "Ver copia de seguridad",
-      "configure-backup": "Configurar copia de seguridad",
       "view-diff": "Ver diferencia"
     },
     "last-seen": "Último visto",
@@ -2005,7 +1960,9 @@
       "roles": "Roles",
       "search-member": "Buscar miembro",
       "revoke-members": "Revocar miembros",
-      "clean-up-expired-roles": "Limpiar roles caducados"
+      "clean-up-expired-roles": "Limpiar roles caducados",
+      "workspace-level-roles": "Roles a nivel de espacio de trabajo",
+      "project-level-roles": "Roles a nivel de proyecto"
     },
     "mode": {
       "standard": "Modo Estándar",
@@ -2021,25 +1978,30 @@
     },
     "successfully-updated-db-name-template": "Plantilla de nombre de base de datos actualizada con éxito.",
     "all": "Todos los proyectos",
-    "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto.."
+    "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto..",
+    "gitops-connector": {
+      "self": "Conector GitOps",
+      "add": "Agregar conector GitOps",
+      "delete": "Eliminar conector GitOps",
+      "update-success": "Conector GitOps actualizado correctamente",
+      "create-success": "Conector GitOps creado correctamente",
+      "delete-success": "Se elimina el conector GitOps"
+    }
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase admite el flujo de trabajo de GitOps, donde los scripts de migración de la base de datos se almacenan en el sistema de control de versiones (VCS) y los scripts de migración recién creados activarán automáticamente el cambio de base de datos correspondiente. Los administrador de Bytebase administran todos los VCS aplicables aquí para que los propietarios de proyectos puedan vincular los proyectos con sus repositorios de Git desde estos VCS.",
-      "description-highlight": "Si desea habilitar el inicio de sesión de terceros a través de sus VCS configurados, configure en SSO.",
+      "description": "En el flujo de trabajo GitOps de Bytebase, los desarrolladores almacenan scripts de migración en VCS. Las solicitudes de extracción provocan revisiones SQL, y las fusionadas inician planes de migración. Los administradores configuran proveedores de VCS, mientras que los propietarios del proyecto establecen conexiones de VCS dentro de los proyectos.",
       "add-git-provider": {
         "self": "Agregar un proveedor de Git",
         "description": "Antes de que cualquier proyecto pueda habilitar el flujo de trabajo de GitOps, Bytebase primero debe integrarse con el sistema de control de versiones (VCS) correspondiente registrándose como una aplicación OAuth en ese VCS. A continuación se muestran los pasos para configurar esto, también puede seguir nuestra {guide}.",
         "gitlab-self-host": "GitLab autohospedado",
-        "gitlab-self-host-admin-requirement": "Debe ser un administrador de su instancia de GitLab elegida para configurar esto. De lo contrario, debe solicitar al administrador de su instancia de GitLab que registre Bytebase como una aplicación OAuth de instancia de GitLab y luego proporcionarle ese ID de aplicación y secreto para completar en el paso 'información de la aplicación OAuth'.",
-        "gitlab-com-admin-requirement": "Su cuenta debe tener acceso de administrador a cualquiera de los repositorios que se van a vincular. Por lo general, esta cuenta corresponde a un usuario de servicio dedicado en lugar de a un usuario humano.",
-        "github-self-host-ee": "Autohospedado de GitHub Enterprise Edition (EE)",
-        "github-com-admin-requirement": "Debe ser administrador de la organización de GitHub elegida para configurar esto. De lo contrario, debe solicitar al administrador de su organización de GitHub que registre Bytebase como una aplicación OAuth de organización de GitHub y luego proporcionarle ese ID de aplicación y secreto para completar en el paso 'información de la aplicación OAuth'.",
-        "bitbucket-admin-requirement": "Necesitas ser administrador de tu espacio de trabajo de Bitbucket elegido para configurar esto. De lo contrario, debes pedirle al administrador de tu espacio de trabajo de Bitbucket que registre Bytebase como una aplicación OAuth para todo el espacio de trabajo de Bitbucket, y luego proporcionarte la ID de la aplicación y la clave secreta para que las ingreses en el paso 'Información de la aplicación OAuth'.",
+        "gitlab-self-host-admin-requirement": "Debes ser administrador de la instancia de GitLab.",
+        "gitlab-com-admin-requirement": "Debes ser administrador de los proyectos o grupos.",
+        "github-self-host": "GitHub autohospedado",
+        "github-com-admin-requirement": "Debes ser administrador de la organización de GitHub.",
+        "bitbucket-admin-requirement": "Debes ser el administrador del espacio de trabajo de Bitbucket.",
         "azure-devops-service": "Servicio Azure DevOps",
-        "azure-admin-requirement": "Necesitas ser administrador de la organización de Azure DevOps que haya elegido para configurar esto. De lo contrario, debe pedirle al administrador del espacio de trabajo de Bitbucket que registre Bytebase como una aplicación de OAuth para toda la organización de Azure DevOps y luego proporcionarle el ID de la aplicación y el secreto del cliente para completar en el paso 'Información de la aplicación de OAuth'.",
-        "oauth-info-correct": "La información de OAuth verificada es correcta",
-        "check-oauth-info-match": "Por favor asegúrate de que la clave secreta coincida con la de tu instancia de GitLab de la aplicación.",
+        "azure-admin-requirement": "Debes ser administrador de la organización de Azure DevOps.",
         "add-success": "Proveedor de Git {vcs} agregado exitosamente",
         "choose": "Elige proveedor de Git",
         "basic-info": {
@@ -2053,38 +2015,15 @@
           "display-name": "Nombre para mostrar",
           "display-name-label": "Un nombre opcional para identificar entre diferentes configuraciones que utilizan el mismo proveedor de Git."
         },
-        "oauth-info": {
+        "access-token": {
           "self": "Información de aplicación OAuth",
-          "gitlab-self-host-register-oauth-application": "Registrar Bytebase como una aplicación OAuth para toda la instancia de GitLab alojada en sí misma.",
-          "gitlab-self-host-login-as-admin": "Inicie sesión como usuario Admin en la instancia de GitLab. La cuenta debe ser un Admin de toda la instancia de GitLab (tiene un icono de llave inglesa en la barra superior).",
-          "gitlab-self-host-visit-admin-page": "Vaya a la página de administrador haciendo clic en el icono de llave inglesa, luego vaya a la sección \"Aplicaciones\" y haga clic en el botón \"Nueva aplicación\".",
-          "gitlab-com-register-oauth-application": "Registrar Bytebase como una aplicación OAuth de usuario de GitLab.",
-          "gitlab-com-login": "Inicie sesión como la cuenta que desea que Bytebase actúe. Por lo general, esta cuenta corresponde a un usuario de servicio dedicado en lugar de un usuario humano.",
-          "azure-devops-login": "Inicie sesión con la cuenta con la que desee que actúe Bytebase. Por lo general, esta cuenta corresponde a un usuario de servicio dedicado en lugar de un usuario humano.",
-          "gitlab-com-visit-application-page": "Vaya a la página de Preferencias -> Aplicaciones. Puede acceder a ella a través de su foto de perfil en la esquina superior derecha.",
-          "azure-devops-visit-application-page": "Ir a la página de aplicaciones.",
-          "gitlab-paste-oauth-info": "Pegue la ID de la aplicación y la clave secreta de la aplicación recién creada en los campos a continuación.",
-          "azure-paste-oauth-info": "Pegue el ID de la aplicación y el secreto del cliente de la aplicación que acaba de crear en los campos a continuación.",
-          "github-register-oauth-application": "Registrar Bytebase como una aplicación OAuth de organización en GitHub.",
-          "github-login-as-admin": "Inicie sesión como usuario administrador de la organización en GitHub.com. La cuenta debe ser un administrador de la organización de GitHub (capaz de acceder a la página de Configuración de la organización).",
-          "github-visit-admin-page": "Vaya a la página de Configuración, luego vaya a la sección \"Configuración de desarrollador > Aplicaciones OAuth\" y haga clic en el botón \"Registrar una aplicación\".",
-          "github-paste-oauth-info": "Pegue el ID de cliente y el secreto de cliente de la aplicación recién creada en los campos a continuación.",
-          "bitbucket-register-oauth-application": "Registrar Bytebase como un consumidor OAuth de toda la organización de Bitbucket.",
-          "azure-register-oauth-application": "Registre Bytebase como consumidor de OAuth de toda la organización de Azure DevOps.",
-          "bitbucket-login-as-admin": "Inicie sesión como usuario administrador de la organización en Bitbucket.org. La cuenta debe ser un administrador de la organización de Bitbucket (capaz de acceder a la página de Configuración de la organización).",
-          "bitbucket-visit-admin-page": "Vaya a la página de Configuración, luego vaya a la sección \"APPS AND FEATURES > OAuth consumers\" y haga clic en el botón \"Add a consumer\".",
-          "bitbucket-paste-oauth-info": "Pegue la Clave y el Secreto del consumidor recién creado en los campos a continuación.",
-          "copy-homepage-url": "URL de la página de inicio copiada al portapapeles. Péguela en el campo correspondiente en el formulario de aplicación OAuth.",
-          "copy-redirect-uri": "URI de redireccionamiento copiado al portapapeles. Péguelo en el campo correspondiente en el formulario de aplicación OAuth.",
-          "direct-link": "Enlace directo",
-          "create-oauth-app": "Cree su aplicación OAuth de Bytebase con la siguiente información.",
-          "gitlab-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 64 caracteres",
-          "gitlab-secret-error": "El secreto debe ser una cadena alfanumérica de 64 caracteres",
-          "github-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 20 caracteres. Asegúrese de que sea una aplicación OAuth en lugar de una aplicación GitHub.",
-          "github-secret-error": "El secreto debe ser una cadena alfanumérica de 40 caracteres",
-          "bitbucket-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 18 caracteres",
-          "bitbucket-secret-error": "El secreto debe ser una cadena alfanumérica de 32 caracteres",
-          "github-enterprise-login-as-admin": "Inicia sesión en tu sitio GitHub Enterprise como administrador de la organización. Esta cuenta debe ser un administrador de organización de GitHub (con acceso a la página de configuración de la organización)."
+          "gitlab-project-access-token": "Genera un token de acceso al proyecto para administrar un solo proyecto.",
+          "gitlab-group-access-token": "Genera un token de acceso de grupo para administrar todos los proyectos dentro del grupo.",
+          "gitlab-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de mantenedor para el grupo o todos los proyectos que se deseen gestionar.",
+          "github-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de miembro para la organización o todos los proyectos que se deseen gestionar.",
+          "bitbucket-resource-access-token": "Genera un token de acceso para repositorios, proyectos o espacios de trabajo para gestionar recursos en diferentes niveles.",
+          "bitbucket-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con permisos de lectura y escritura para las organizaciones, proyectos o repositorios que se deseen gestionar.",
+          "azure-devops-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de miembro para la organización o todos los proyectos que se deseen gestionar."
         },
         "confirm": {
           "confirm-info": "Confirmar la información",
@@ -2254,9 +2193,10 @@
     "link-access": "Acceso al enlace",
     "private": "Privado",
     "private-desc": "Solo tú puedes acceder a esta hoja",
-    "project-desc": "Tanto el DUEÑO de la hoja como el DUEÑO del proyecto pueden leer/escribir, y el DESARROLLADOR del proyecto solo puede leer",
-    "public": "Público",
-    "public-desc": "El DUEÑO de la hoja puede leer/escribir, y todos los demás pueden leer",
+    "project-read": "Lectura del proyecto",
+    "project-read-desc": "Tanto el PROPIETARIO de la hoja como el PROPIETARIO del proyecto pueden leer/escribir, otros miembros del proyecto pueden leer",
+    "project-write": "Escritura del proyecto",
+    "project-write-desc": "Tanto el PROPIETARIO de la hoja como los miembros del proyecto pueden leer/escribir",
     "create-read-only-data-source": "Ir a crear",
     "go-back": "Volver",
     "save-sheet": "Guardar hoja",
@@ -2312,7 +2252,15 @@
     "previous-row": "Fila anterior",
     "next-row": "siguiente fila",
     "copy-success": "Copiado al portapapeles",
-    "missing-permission-to-load-db-metadata": "Faltan los permisos necesarios para cargar metadatos de db {db}."
+    "missing-permission-to-load-db-metadata": "Faltan los permisos necesarios para cargar metadatos de db {db}.",
+    "connect-in-new-tab": "Conéctate en una nueva pestaña",
+    "copy-name": "Copiar nombre",
+    "copy-select-statement": "Copiar declaración SELECT",
+    "preview-table-data": "Vista previa de datos de la tabla",
+    "view-table-detail": "Ver detalle de la tabla",
+    "view-database-detail": "Ver detalle de la base de datos",
+    "copy-all-column-names": "Copiar todos los nombres de las columnas",
+    "view-schema-text": "Ver texto del esquema"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2463,7 +2411,7 @@
     "request-with-qr": "Escanear código QR",
     "successfully-start-trial": "Prueba gratuita iniciada con éxito por {days} días",
     "successfully-upgrade-trial": "Prueba gratuita actualizada con éxito a {plan}",
-    "require-subscription": "Esta función requiere una suscripción a {requiredPlan}. Compre una licencia de Bytebase para desbloquear esta función.",
+    "require-subscription": "Esta función requiere una suscripción a {requiredPlan}. Compre una licencia de Bytebase para desbloquearla.",
     "feature-require-subscription": "{feature} requiere suscripción a {requiredPlan}.",
     "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}",
     "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito.",
@@ -2500,6 +2448,10 @@
       "instance-count-exceeds": "El número de instancias {count} excedió el límite {limit}"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "Establecer secreto externo",
+        "desc": "Utilice Vault o una URL personalizada como secreto externo para la contraseña de la base de datos."
+      },
       "bb-feature-task-schedule-time": {
         "title": "Establecer horario de tareas",
         "desc": "Establecer horario de tareas te permite programar una hora específica para ejecutar tus tareas."
@@ -2526,10 +2478,6 @@
         "title": "Política de implementación",
         "desc": "La política de implementación controla si la tarea de cambio de esquema requiere una implementación manual."
       },
-      "bb-feature-backup-policy": {
-        "title": "Política de respaldo",
-        "desc": "La política de respaldo realizará una copia de seguridad automática de su base de datos según la programación establecida."
-      },
       "bb-feature-environment-tier-policy": {
         "title": "Nivel de entorno",
         "desc": "Marque el entorno como producción."
@@ -2540,7 +2488,7 @@
       },
       "bb-feature-access-control": {
         "title": "Control de acceso a datos",
-        "desc": "Configura un flujo de aprobación para controlar la consulta y exportación de datos."
+        "desc": "Restringir el acceso de los usuarios a los datos, como prohibir a los usuarios copiar los resultados de consultas de datos."
       },
       "bb-feature-lgtm": {
         "title": "Verificación LGTM",
@@ -2557,14 +2505,6 @@
       "bb-feature-custom-approval": {
         "title": "Aprobación personalizada",
         "desc": "Configure el nivel de riesgo y el flujo de aprobación para diferentes tareas."
-      },
-      "bb-feature-vcs-schema-write-back": {
-        "title": "Escritura de esquema",
-        "desc": "Después de un cambio de esquema exitoso, la escritura de esquema permite a Bytebase escribir de nuevo la última instantánea completa del esquema en su repositorio de VCS."
-      },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "Sincronizar scripts SQL desde VCS",
-        "desc": "Sincronice los scripts SQL almacenados en VCS en la hoja de cálculo."
       },
       "bb-feature-vcs-sql-review": {
         "title": "Revisión de SQL en el flujo de trabajo de GitOps",
@@ -2597,10 +2537,6 @@
       "bb-feature-online-migration": {
         "title": "Migración en línea",
         "desc": "Basado en gh-ost. Para tablas grandes, puede reducir la duración del bloqueo de la tabla de horas a segundos."
-      },
-      "bb-feature-disaster-recovery-pitr": {
-        "title": "Recuperación en punto en el tiempo (PITR)",
-        "desc": "Restaura el estado de la base de datos a un punto en el tiempo."
       },
       "bb-feature-sync-schema-all-versions": {
         "title": "Sincronización de esquemas de todas las versiones",
@@ -2859,7 +2795,9 @@
     "role": "Rol",
     "database-group": "grupo de bases de datos",
     "schema-group": "grupo de mesas",
-    "changelist": "Lista de cambios"
+    "changelist": "Lista de cambios",
+    "vcs-provider": "Proveedor GitOps",
+    "vcs-connector": "Conector GitOps"
   },
   "resource-id": {
     "self": "ID de {resource}",
@@ -2999,8 +2937,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Crear base de datos",
-          "query": "Solicitar consulta",
-          "export": "Solicitar exportación"
+          "data_export": "Exportación de Datos",
+          "request_query": "Solicitar Rol de Consultor",
+          "request_export": "Solicitar Rol de Exportador"
         }
       },
       "template": {
@@ -3317,7 +3256,7 @@
     "search-tables": "Buscar tablas",
     "use-tips": "Selecciona las tablas a diseñar",
     "apply-to-database": "Aplicar cambio a la base de datos",
-    "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB)",
+    "select-database-placeholder": "Seleccione una base de datos (solo MySQL, PostgreSQL, TiDB y Oracle)",
     "message": {
       "created-succeed": "Diseño de esquema creado con éxito",
       "updated-succeed": "Diseño de esquema actualizado con éxito",

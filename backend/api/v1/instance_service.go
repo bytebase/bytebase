@@ -60,11 +60,11 @@ func NewInstanceService(store *store.Store, licenseService enterprise.LicenseSer
 
 // GetInstance gets an instance.
 func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInstanceRequest) (*v1pb.Instance, error) {
-	instance, err := s.getInstanceMessage(ctx, request.Name)
+	instance, err := getInstanceMessage(ctx, s.store, request.Name)
 	if err != nil {
 		return nil, err
 	}
-	return convertToInstance(instance), nil
+	return convertToInstance(instance)
 }
 
 // ListInstances lists all instances.
@@ -92,7 +92,11 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 	}
 	response := &v1pb.ListInstancesResponse{}
 	for _, instance := range instances {
-		response.Instances = append(response.Instances, convertToInstance(instance))
+		ins, err := convertToInstance(instance)
+		if err != nil {
+			return nil, err
+		}
+		response.Instances = append(response.Instances, ins)
 	}
 	return response, nil
 }
@@ -139,7 +143,11 @@ func (s *InstanceService) SearchInstances(ctx context.Context, request *v1pb.Sea
 	}
 	response := &v1pb.SearchInstancesResponse{}
 	for _, instance := range instances {
-		response.Instances = append(response.Instances, convertToInstance(instance))
+		ins, err := convertToInstance(instance)
+		if err != nil {
+			return nil, err
+		}
+		response.Instances = append(response.Instances, ins)
 	}
 	return response, nil
 }
@@ -180,7 +188,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 				return nil, err
 			}
 		}
-		return convertToInstance(instanceMessage), nil
+		return convertToInstance(instanceMessage)
 	}
 
 	instanceCountLimit := s.licenseService.GetInstanceLicenseCount(ctx)
@@ -192,10 +200,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 	}
-	for _, ds := range instanceMessage.DataSources {
-		if err := s.checkDataSource(instanceMessage, ds); err != nil {
-			return nil, err
-		}
+
+	if err := s.checkInstanceDataSources(instanceMessage, instanceMessage.DataSources); err != nil {
+		return nil, err
 	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -235,20 +242,44 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		},
 	})
 
-	return convertToInstance(instance), nil
+	return convertToInstance(instance)
+}
+
+func (s *InstanceService) checkInstanceDataSources(instance *store.InstanceMessage, dataSources []*store.DataSourceMessage) error {
+	dsIDMap := map[string]bool{}
+	for _, ds := range dataSources {
+		if err := s.checkDataSource(instance, ds); err != nil {
+			return err
+		}
+		if dsIDMap[ds.ID] {
+			return status.Errorf(codes.InvalidArgument, `duplicate data source id "%s"`, ds.ID)
+		}
+		dsIDMap[ds.ID] = true
+	}
+
+	return nil
 }
 
 func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataSource *store.DataSourceMessage) error {
+	if dataSource.ID == "" {
+		return status.Errorf(codes.InvalidArgument, "data source id is required")
+	}
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, s.secret)
 	if err != nil {
-		return err
+		return status.Errorf(codes.Internal, err.Error())
 	}
-	if ok, _ := secret.GetExternalSecretURL(password); !ok {
-		return nil
-	}
+
 	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureExternalSecretManager, instance); err != nil {
-		return status.Errorf(codes.PermissionDenied, err.Error())
+		missingFeatureError := status.Errorf(codes.PermissionDenied, err.Error())
+		if dataSource.ExternalSecret != nil {
+			return missingFeatureError
+		}
+		if ok, _ := secret.GetExternalSecretURL(password); !ok {
+			return nil
+		}
+		return missingFeatureError
 	}
+
 	return nil
 }
 
@@ -261,7 +292,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	instance, err := s.getInstanceMessage(ctx, request.Instance.Name)
+	instance, err := getInstanceMessage(ctx, s.store, request.Instance.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -274,14 +305,19 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	patch := &store.UpdateInstanceMessage{
-		UpdaterID:     principalID,
-		EnvironmentID: instance.EnvironmentID,
-		ResourceID:    instance.ResourceID,
+		ResourceID: instance.ResourceID,
+		UpdaterID:  principalID,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "title":
 			patch.Title = &request.Instance.Title
+		case "environment":
+			environmentID, err := common.GetEnvironmentID(request.Instance.Environment)
+			if err != nil {
+				return nil, err
+			}
+			patch.EnvironmentID = &environmentID
 		case "external_link":
 			patch.ExternalLink = &request.Instance.ExternalLink
 		case "data_sources":
@@ -289,10 +325,8 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
 			}
-			for _, ds := range datasources {
-				if err := s.checkDataSource(instance, ds); err != nil {
-					return nil, err
-				}
+			if err := s.checkInstanceDataSources(instance, datasources); err != nil {
+				return nil, err
 			}
 			patch.DataSources = &datasources
 		case "activation":
@@ -331,11 +365,11 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertToInstance(ins), nil
+	return convertToInstance(ins)
 }
 
 func (s *InstanceService) syncSlowQueriesForInstance(ctx context.Context, instanceName string) (*emptypb.Empty, error) {
-	instance, err := s.getInstanceMessage(ctx, instanceName)
+	instance, err := getInstanceMessage(ctx, s.store, instanceName)
 	if err != nil {
 		return nil, err
 	}
@@ -500,7 +534,7 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 
 // DeleteInstance deletes an instance.
 func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.DeleteInstanceRequest) (*emptypb.Empty, error) {
-	instance, err := s.getInstanceMessage(ctx, request.Name)
+	instance, err := getInstanceMessage(ctx, s.store, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -535,10 +569,9 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
-		UpdaterID:     principalID,
-		EnvironmentID: instance.EnvironmentID,
-		ResourceID:    instance.ResourceID,
-		Delete:        &deletePatch,
+		ResourceID: instance.ResourceID,
+		Delete:     &deletePatch,
+		UpdaterID:  principalID,
 	}, -1 /* don't need to pass the instance limition */); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -548,7 +581,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 
 // UndeleteInstance undeletes an instance.
 func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.UndeleteInstanceRequest) (*v1pb.Instance, error) {
-	instance, err := s.getInstanceMessage(ctx, request.Name)
+	instance, err := getInstanceMessage(ctx, s.store, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -561,21 +594,20 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
-		UpdaterID:     principalID,
-		EnvironmentID: instance.EnvironmentID,
-		ResourceID:    instance.ResourceID,
-		Delete:        &undeletePatch,
+		ResourceID: instance.ResourceID,
+		Delete:     &undeletePatch,
+		UpdaterID:  principalID,
 	}, -1 /* don't need to pass the instance limition */)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToInstance(ins), nil
+	return convertToInstance(ins)
 }
 
 // SyncInstance syncs the instance.
 func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncInstanceRequest) (*v1pb.SyncInstanceResponse, error) {
-	instance, err := s.getInstanceMessage(ctx, request.Name)
+	instance, err := getInstanceMessage(ctx, s.store, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -597,7 +629,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 // SyncInstance syncs the instance.
 func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.BatchSyncInstanceRequest) (*v1pb.BatchSyncInstanceResponse, error) {
 	for _, r := range request.Requests {
-		instance, err := s.getInstanceMessage(ctx, r.Name)
+		instance, err := getInstanceMessage(ctx, s.store, r.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -627,7 +659,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
 	}
 
-	instance, err := s.getInstanceMessage(ctx, request.Instance)
+	instance, err := getInstanceMessage(ctx, s.store, request.Instance)
 	if err != nil {
 		return nil, err
 	}
@@ -659,7 +691,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		if err != nil {
 			return nil, err
 		}
-		return convertToInstance(instance), nil
+		return convertToInstance(instance)
 	}
 
 	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
@@ -681,7 +713,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToInstance(instance), nil
+	return convertToInstance(instance)
 }
 
 // UpdateDataSource updates a data source of an instance.
@@ -693,7 +725,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	instance, err := s.getInstanceMessage(ctx, request.Instance)
+	instance, err := getInstanceMessage(ctx, s.store, request.Instance)
 	if err != nil {
 		return nil, err
 	}
@@ -797,6 +829,13 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			obfuscated := common.Obfuscate(request.DataSource.AuthenticationPrivateKey, s.secret)
 			patch.AuthenticationPrivateKeyObfuscated = &obfuscated
 			dataSource.AuthenticationPrivateKeyObfuscated = obfuscated
+		case "external_secret":
+			externalSecret, err := convertToStoreDataSourceExternalSecret(request.DataSource.ExternalSecret)
+			if err != nil {
+				return nil, err
+			}
+			patch.ExternalSecret = externalSecret
+			patch.RemoveExternalSecret = externalSecret == nil
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -824,7 +863,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		if err != nil {
 			return nil, err
 		}
-		return convertToInstance(instance), nil
+		return convertToInstance(instance)
 	}
 
 	if err := s.store.UpdateDataSourceV2(ctx, patch); err != nil {
@@ -838,7 +877,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToInstance(instance), nil
+	return convertToInstance(instance)
 }
 
 // RemoveDataSource removes a data source to an instance.
@@ -847,7 +886,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
 	}
 
-	instance, err := s.getInstanceMessage(ctx, request.Instance)
+	instance, err := getInstanceMessage(ctx, s.store, request.Instance)
 	if err != nil {
 		return nil, err
 	}
@@ -892,7 +931,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return convertToInstance(instance), nil
+	return convertToInstance(instance)
 }
 
 func (s *InstanceService) getProjectMessage(ctx context.Context, name string) (*store.ProjectMessage, error) {
@@ -923,7 +962,7 @@ func (s *InstanceService) getProjectMessage(ctx context.Context, name string) (*
 	return project, nil
 }
 
-func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (*store.InstanceMessage, error) {
+func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {
 	instanceID, err := common.GetInstanceID(name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -937,7 +976,7 @@ func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (
 		find.ResourceID = &instanceID
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, find)
+	instance, err := stores.GetInstanceV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -948,32 +987,13 @@ func (s *InstanceService) getInstanceMessage(ctx context.Context, name string) (
 	return instance, nil
 }
 
-func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
+func convertToInstance(instance *store.InstanceMessage) (*v1pb.Instance, error) {
 	engine := convertToEngine(instance.Engine)
-	dataSourceList := []*v1pb.DataSource{}
-	for _, ds := range instance.DataSources {
-		dataSourceType := v1pb.DataSourceType_DATA_SOURCE_UNSPECIFIED
-		switch ds.Type {
-		case api.Admin:
-			dataSourceType = v1pb.DataSourceType_ADMIN
-		case api.RO:
-			dataSourceType = v1pb.DataSourceType_READ_ONLY
-		}
-
-		dataSourceList = append(dataSourceList, &v1pb.DataSource{
-			Id:       ds.ID,
-			Type:     dataSourceType,
-			Username: ds.Username,
-			// We don't return the password and SSLs on reads.
-			Host:                   ds.Host,
-			Port:                   ds.Port,
-			Database:               ds.Database,
-			Srv:                    ds.SRV,
-			AuthenticationDatabase: ds.AuthenticationDatabase,
-			Sid:                    ds.SID,
-			ServiceName:            ds.ServiceName,
-		})
+	dataSourceList, err := convertToV1DataSources(instance.DataSources)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert data source with error: %v", err.Error())
 	}
+
 	return &v1pb.Instance{
 		Name:          fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID),
 		Uid:           fmt.Sprintf("%d", instance.UID),
@@ -986,7 +1006,7 @@ func convertToInstance(instance *store.InstanceMessage) *v1pb.Instance {
 		Environment:   fmt.Sprintf("environments/%s", instance.EnvironmentID),
 		Activation:    instance.Activation,
 		Options:       convertToInstanceOptions(instance.Options),
-	}
+	}, nil
 }
 
 func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
@@ -1011,15 +1031,18 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 	}, nil
 }
 
-func convertToInstanceResource(instanceMessage *store.InstanceMessage) *v1pb.InstanceResource {
-	instance := convertToInstance(instanceMessage)
+func convertToInstanceResource(instanceMessage *store.InstanceMessage) (*v1pb.InstanceResource, error) {
+	instance, err := convertToInstance(instanceMessage)
+	if err != nil {
+		return nil, err
+	}
 	return &v1pb.InstanceResource{
 		Title:         instance.Title,
 		Engine:        instance.Engine,
 		EngineVersion: instance.EngineVersion,
 		DataSources:   instance.DataSources,
 		Activation:    instance.Activation,
-	}
+	}, nil
 }
 
 func (s *InstanceService) convertToDataSourceMessages(dataSources []*v1pb.DataSource) ([]*store.DataSourceMessage, error) {
@@ -1035,8 +1058,109 @@ func (s *InstanceService) convertToDataSourceMessages(dataSources []*v1pb.DataSo
 	return datasources, nil
 }
 
+func convertToV1DataSourceExternalSecret(externalSecret *storepb.DataSourceExternalSecret) (*v1pb.DataSourceExternalSecret, error) {
+	if externalSecret == nil {
+		return nil, nil
+	}
+	secret := new(v1pb.DataSourceExternalSecret)
+	if err := convertV1PbToStorePb(externalSecret, secret); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert external secret with error: %v", err.Error())
+	}
+
+	resp := &v1pb.DataSourceExternalSecret{
+		SecretType:      secret.SecretType,
+		Url:             secret.Url,
+		AuthType:        secret.AuthType,
+		EngineName:      secret.EngineName,
+		SecretName:      secret.SecretName,
+		PasswordKeyName: secret.PasswordKeyName,
+	}
+
+	// clear sensitive data.
+	switch resp.AuthType {
+	case v1pb.DataSourceExternalSecret_APP_ROLE:
+		appRole := secret.GetAppRole()
+		resp.AuthOption = &v1pb.DataSourceExternalSecret_AppRole{
+			AppRole: &v1pb.DataSourceExternalSecret_AppRoleAuthOption{
+				Type:      appRole.Type,
+				MountPath: appRole.MountPath,
+			},
+		}
+	case v1pb.DataSourceExternalSecret_TOKEN:
+		resp.AuthOption = &v1pb.DataSourceExternalSecret_Token{
+			Token: "",
+		}
+	}
+
+	return resp, nil
+}
+
+func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.DataSource, error) {
+	dataSourceList := []*v1pb.DataSource{}
+	for _, ds := range dataSources {
+		externalSecret, err := convertToV1DataSourceExternalSecret(ds.ExternalSecret)
+		if err != nil {
+			return nil, err
+		}
+
+		dataSourceType := v1pb.DataSourceType_DATA_SOURCE_UNSPECIFIED
+		switch ds.Type {
+		case api.Admin:
+			dataSourceType = v1pb.DataSourceType_ADMIN
+		case api.RO:
+			dataSourceType = v1pb.DataSourceType_READ_ONLY
+		}
+
+		dataSourceList = append(dataSourceList, &v1pb.DataSource{
+			Id:       ds.ID,
+			Type:     dataSourceType,
+			Username: ds.Username,
+			// We don't return the password and SSLs on reads.
+			Host:                   ds.Host,
+			Port:                   ds.Port,
+			Database:               ds.Database,
+			Srv:                    ds.SRV,
+			AuthenticationDatabase: ds.AuthenticationDatabase,
+			Sid:                    ds.SID,
+			ServiceName:            ds.ServiceName,
+			ExternalSecret:         externalSecret,
+		})
+	}
+
+	return dataSourceList, nil
+}
+
+func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSecret) (*storepb.DataSourceExternalSecret, error) {
+	if externalSecret == nil {
+		return nil, nil
+	}
+	secret := new(storepb.DataSourceExternalSecret)
+	if err := convertV1PbToStorePb(externalSecret, secret); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert external secret with error: %v", err.Error())
+	}
+	if secret.Url == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "missing Vault URL")
+	}
+
+	switch secret.AuthType {
+	case storepb.DataSourceExternalSecret_TOKEN:
+	case storepb.DataSourceExternalSecret_APP_ROLE:
+		if secret.GetAppRole() == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "missing Vault app role")
+		}
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupport auth type: %v", secret.AuthType)
+	}
+
+	return secret, nil
+}
+
 func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource) (*store.DataSourceMessage, error) {
 	dsType, err := convertDataSourceTp(dataSource.Type)
+	if err != nil {
+		return nil, err
+	}
+	externalSecret, err := convertToStoreDataSourceExternalSecret(dataSource.ExternalSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -1062,6 +1186,7 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		SSHObfuscatedPassword:              common.Obfuscate(dataSource.SshPassword, s.secret),
 		SSHObfuscatedPrivateKey:            common.Obfuscate(dataSource.SshPrivateKey, s.secret),
 		AuthenticationPrivateKeyObfuscated: common.Obfuscate(dataSource.AuthenticationPrivateKey, s.secret),
+		ExternalSecret:                     externalSecret,
 	}, nil
 }
 

@@ -275,11 +275,11 @@ const (
 	// MySQLStatementJoinStrictColumnAttrs is an advisor type for MySQL statement strict column attrs(type, charset) in join.
 	MySQLStatementJoinStrictColumnAttrs Type = "bb.plugin.advisor.mysql.statement.join-strict-column-attrs"
 
-	// MySQLStatementDisallowMixDML is an advisor type for MySQL disallow mix DML on same table.
-	MySQLStatementDisallowMixDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-dml"
-
 	// MySQLStatementDisallowMixDDLDML is an advisor type for MySQL disallow mix DDL and DML.
 	MySQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-ddl-dml"
+
+	// MySQLStatementPriorBackupCheck is an advisor type for MySQL prior backup check.
+	MySQLStatementPriorBackupCheck Type = "bb.plugin.advisor.mysql.statement.prior-backup-check"
 
 	// MySQLProcedureDisallowCreate is an advisor type for MySQL disallow create procedure.
 	MySQLProcedureDisallowCreate Type = "bb.plugin.advisor.mysql.procedure.disallow-create"
@@ -403,11 +403,17 @@ const (
 	// PostgreSQLAddCheckNotValid is an advisor type for PostgreSQL to add check not valid.
 	PostgreSQLAddCheckNotValid Type = "bb.plugin.advisor.postgresql.statement.add-check-not-valid"
 
+	// PostgreSQLAddFKNotValid is a PostgreSQL advisor type requiring add foreign key not valid.
+	PostgreSQLAddFKNotValid Type = "bb.plugin.advisor.postgresql.statement.add-foreign-key-not-valid"
+
 	// PostgreSQLDisallowAddColumnWithDefault is an advisor type for PostgreSQL to disallow add column with default.
 	PostgreSQLDisallowAddColumnWithDefault Type = "bb.plugin.advisor.postgresql.statement.disallow-add-column-with-default"
 
 	// PostgreSQLDisallowAddNotNull is an advisor type for PostgreSQl to disallow add not null.
 	PostgreSQLDisallowAddNotNull Type = "bb.plugin.advisor.postgresql.statement.disallow-add-not-null"
+
+	// PostgreSQLNonTransactional is an advisor type for PostgreSQL to disallow non-transactional statements.
+	PostgreSQLNonTransactional Type = "bb.plugin.advisor.postgresql.statement.non-transactional"
 
 	// PostgreSQLTableDropNamingConvention is an advisor type for PostgreSQL table drop with naming convention.
 	PostgreSQLTableDropNamingConvention Type = "bb.plugin.advisor.postgresql.table.drop-naming-convention"
@@ -423,6 +429,12 @@ const (
 
 	// PostgreSQLStatementCheckSetRoleVariable is an advisor type for PostgreSQL to check set role variable.
 	PostgreSQLStatementCheckSetRoleVariable Type = "bb.plugin.advisor.postgresql.statement.check-set-role-variable"
+
+	// PostgreSQLStatementDisallowMixDDLDML is an advisor type for PostgreSQL disallow mix DDL and DML.
+	PostgreSQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-ddl-dml"
+
+	// PostgreSQLStatementPriorBackupCheck is an advisor type for PostgreSQL do prior backup check.
+	PostgreSQLStatementPriorBackupCheck Type = "bb.plugin.advisor.postgresql.statement.prior-backup-check"
 
 	// Oracle Advisor.
 
@@ -594,11 +606,12 @@ const (
 
 // Context is the context for advisor.
 type Context struct {
-	Charset    string
-	Collation  string
-	DBSchema   *storepb.DatabaseSchemaMetadata
-	SyntaxMode SyntaxMode
-	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType
+	Charset               string
+	Collation             string
+	DBSchema              *storepb.DatabaseSchemaMetadata
+	SyntaxMode            SyntaxMode
+	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
+	PreUpdateBackupDetail *storepb.PlanCheckRunConfig_PreUpdateBackupDetail
 
 	// SQL review rule special fields.
 	AST     any

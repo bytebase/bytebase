@@ -110,7 +110,6 @@
     "schema": "スキーマ",
     "anomalies": "異常",
     "do-not-show-again": "再表示しない",
-    "backups": "バックアップ",
     "detail": "詳細",
     "type": "タイプ",
     "language": "言語",
@@ -195,7 +194,6 @@
     "enable": "有効にする",
     "disable": "無効にする",
     "view-doc": "ドキュメントを表示",
-    "backup-and-restore": "バックアップと復元",
     "write-only": "書き込み専用",
     "pitr": "PITR",
     "fix": "修正",
@@ -272,11 +270,12 @@
     "missing-permission": "必要な権限が不足しています",
     "continue-anyway": "とにかく続けます",
     "permissions": "権限",
-    "backup": "バックアップ",
     "cutover": "カットオーバー",
     "baseline": "ベースライン",
     "project-member": "プロジェクトメンバー",
-    "leave-without-saving": "保存せずに終了しますか?"
+    "leave-without-saving": "保存せずに終了しますか?",
+    "configure-now": "今すぐ設定する",
+    "connection": "繋がり"
   },
   "error-page": {
     "go-back-home": "ホームに戻る"
@@ -317,7 +316,7 @@
       "statement-type": "ステートメントタイプ",
       "lgtm": "LGTM",
       "pitr": "PITR",
-      "affected-rows": "推定される影響を受ける行数",
+      "affected-rows": "影響行数（統計情報に基づく推定）",
       "sql-type": "SQLタイプ",
       "summary-report": "サマリーレポート"
     },
@@ -366,7 +365,8 @@
       "generating": "生成中",
       "empty-rollback-statement": "ロールバックステートメントが空です",
       "cancel-generating": "SQLロールバックの生成をキャンセル",
-      "sql-rollback-tips": "有効にすると、Bytebaseはデータ変更のロールバックログを保持し、この変更を元に戻すための新しい問題を作成できます。\n注意：テーブルに主キーがない場合、元に戻すSQLは重複した行に影響を与える可能性があります。実行する前に注意深く確認してください。\n{link}"
+      "sql-rollback-tips": "有効にすると、Bytebaseはデータ変更のロールバックログを保持し、この変更を元に戻すための新しい問題を作成できます。\n注意：テーブルに主キーがない場合、元に戻すSQLは重複した行に影響を与える可能性があります。実行する前に注意深く確認してください。\n{link}",
+      "maximum-size-tips": "サポートされる最大ロールバックデータサイズは 32MB です"
     },
     "skip-failed-in-current-stage": "現在のステージで失敗したタスクをスキップ",
     "apply-change-to-all-pending-tasks": {
@@ -427,8 +427,7 @@
     "cloud": "クラウド",
     "request-demo": "30分の製品デモを予約する",
     "readonly": "Bytebase は読み取り専用モードです。コンソールを表示することはできますが、変更の試みは失敗します。",
-    "external-url": "Bytebase は --external-url を設定していません",
-    "configure-now": "今すぐ設定する"
+    "external-url": "Bytebase は --external-url を設定していません"
   },
   "intro": {
     "doc": "ドキュメント",
@@ -829,14 +828,6 @@
         "override-confirm": "Still upload"
       }
     },
-    "access-control": {
-      "description": "Configure approval flow to control data query and export. {link}",
-      "skip-approval": "Skip approval",
-      "query-data": "Query Data",
-      "export-data": "Export Data",
-      "disallowed": "Disallowed",
-      "copy-data-from-sql-editor": "Copy Data From SQL Editor"
-    },
     "release": {
       "new-version-available": "New version is available",
       "new-version-content": "The new version {tag} is available now! Please check our docs for installation.",
@@ -871,7 +862,6 @@
       "issue-status-update": "課題ステータスを更新する",
       "pipeline-stage-status-update": "課題ステージステータスを更新する",
       "pipeline-task-status-update": "課題タスクステータスを更新する",
-      "pipeline-task-file-commit": "ファイルをコミットする",
       "pipeline-task-statement-update": "SQLを更新する",
       "pipeline-task-prior-backup": "データをバックアップする",
       "member-create": "メンバーを作成する",
@@ -1185,7 +1175,14 @@
     "some-tasks-are-not-executed-successfully": "（一部のタスクが正常に実行されていません）",
     "preview": "問題のプレビュー",
     "missing-sql-statement": "SQLステートメントが見つかりません。この変更をすべてのタスクに適用するには、「@:{'issue.apply-to-other-tasks'}」ボタンをクリックしてください。",
-    "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました"
+    "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました",
+    "data-export": {
+      "title": "データエクスポート",
+      "options": "エクスポートオプション",
+      "format": "フォーマット",
+      "encrypt": "暗号化",
+      "exported-file-downloaded": "エクスポートされたファイルがダウンロードされました"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "このプロジェクトはVCSベースのバージョン管理が有効になっており、以下のデータベースを選択すると、対応するGitリポジトリに移動して変更プロセスを開始できます。",
@@ -1346,7 +1343,36 @@
     "type-or-paste-credentials": "CREDENTIALS を入力または貼り付けしてください - 書き込みのみ",
     "type-or-paste-credentials-write-only": "YOUR_DB_PWD - 書き込みのみ",
     "password-write-only": "外部シークレット管理エンドポイントを指定することもできます",
-    "secret-manager-tip": "接続をテストする",
+    "password-type": {
+      "password": "パスワード",
+      "password-tip": "外部シークレット管理エンドポイントを指定することもできます",
+      "external-secret": "外部シークレット (Vault)"
+    },
+    "external-secret": {
+      "vault-url": "Vault URL",
+      "vault-auth-type": {
+        "self": "Vault auth type",
+        "token": {
+          "self": "Token",
+          "api-token": "Vault API token",
+          "tips": "TTL のないルート トークン。"
+        },
+        "app-role": {
+          "self": "App role",
+          "role-id": "Auth role id",
+          "secret-id": "Auth secret id",
+          "secret-id-plain-text": "ロールシークレットIDのプレーンテキスト",
+          "secret-id-environment": "ロールシークレットIDの環境名",
+          "secret-plain-text": "プレーンテキスト",
+          "secret-env-name": "環境名",
+          "secret-tips": "TTL なしのラップされていないシークレット ID。 プレーン テキストを使用することも、環境ファイルまたはローカル ファイルに置くこともできます。{learn_more}"
+        }
+      },
+      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-tips": "KV v2 エンジンのみをサポートします。",
+      "vault-secret-name": "Vault secret name",
+      "vault-key-name": "Vault key name for password"
+    },
     "test-connection": "無視して作成する",
     "ignore-and-create": "代わりに PostgreSQL のサンプルインスタンスを追加する",
     "add-a-postgresql-sample-instance": "PostgreSQL のサンプルインスタンスが正常に追加され、接続情報が入力されました。",
@@ -1401,11 +1427,11 @@
     "create": "環境を作成する",
     "restore": "この環境を復元する",
     "successfully-updated-environment": "環境'{name}'が正常に更新されました。",
-    "disable-auto-backup": {
-      "self": "データベースの自動バックアップを無効にする",
-      "content": "自動バックアップポリシーの無効化は過去に適用されません。\nこの環境のすべてのデータベースに適用することを確認していますか？"
-    },
-    "production-environment": "本番環境"
+    "production-environment": "本番環境",
+    "access-control": {
+      "title": "アクセス制御",
+      "disable-copy-data-from-sql-editor": "SQLエディターからのデータコピーを無効にする"
+    }
   },
   "quick-start": {
     "self": "クイックスタート",
@@ -1481,16 +1507,6 @@
       "manual-by-workspace-admin": "ワークスペース管理者",
       "manual-by-custom-project-roles": "カスタムプロジェクト役割"
     },
-    "backup": {
-      "name": "データベースバックアップスケジュールポリシー",
-      "tip": "このポリシーは遡及的に適用されません。",
-      "not-enforced": "強制されていません",
-      "not-enforced-info": "バックアップスケジュールは強制されていません。",
-      "daily": "毎日のバックアップ",
-      "daily-info": "すべてのデータベースを毎日バックアップするように強制します。",
-      "weekly": "週次バックアップ",
-      "weekly-info": "すべてのデータベースを週次バックアップするように強制します。"
-    },
     "environment-tier": {
       "name": "環境ティア",
       "description": "この環境は他の環境とは異なる表示になります。",
@@ -1539,7 +1555,6 @@
     "sync-status": "同期ステータス",
     "last-successful-sync": "最後の成功した同期",
     "filter-database": "データベースをフィルターする",
-    "database-backup": "データベースのバックアップ",
     "transfer-project": "プロジェクトの転送",
     "unassign": "アンアサイン",
     "unassign-alert-title": "データベースのアンアサイン",
@@ -1563,49 +1578,13 @@
     "batch-action-permission-denied": "データベースの{action}の権限がありません",
     "batch-action-disabled": "異なるプロジェクトのデータベースに対して{action}することはできません",
     "batch-action-disabled-for-unassigned": "アンアサインされたデータベースに対して{action}することはできません",
+    "data-export-action-disabled": "複数のデータベースに対してデータをエクスポートすることはできません",
     "successfully-transferred-databases": "データベースが正常に転送されました",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "'{0}'がプロジェクト'{1}'に正常に転送されました",
-    "backup-name": "バックアップ名",
-    "create-backup": "バックアップを作成する",
-    "automatic-x-backup": "自動{freq}バックアップ",
-    "automatic-backup": "自動バックアップ",
-    "disable-automatic-backup": "自動バックアップを無効にする",
-    "backuppolicy-backup-enforced-and-cant-be-disabled": "{0}バックアップが強制されており、無効にすることはできません",
-    "backup-policy": {
-      "DAILY": "毎日",
-      "WEEKLY": "毎週"
-    },
-    "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "バックアップが成功した場合には、HTTP POSTリクエストが送信されます。",
-    "backup-info": {
-      "template": "バックアップは毎週の{dayOrWeek}の{time}に実行されます。バックアップデータは{retentionDays}日間保持されます。"
-    },
-    "week": {
-      "Sunday": "日曜日",
-      "Monday": "月曜日",
-      "Tuesday": "火曜日",
-      "Wednesday": "水曜日",
-      "Thursday": "木曜日",
-      "Friday": "金曜日",
-      "Saturday": "土曜日",
-      "day": "日"
-    },
-    "enable-backup": "バックアップを有効にする",
-    "backup-now": "今すぐバックアップ",
-    "create-a-manual-backup": "手動でバックアップを作成",
-    "disabled": "無効",
-    "enabled": "有効",
-    "action-automatic-backup-for-database-props-database-name": "データベース '{1}' の自動バックアップ {0}。",
-    "updated-backup-webhook-url-for-database-props-database-name": "データベース '{0}' のバックアップ Webhook URL を更新しました。",
     "last-sync-status": "最後の同期ステータス",
     "last-sync-status-long": "最後の同期ステータス {0} {1}",
     "gitops-enabled": "GitOps が有効になっています",
-    "restore-backup": "バックアップ '{0}' を新しいデータベースに復元",
     "nullable": "Nullable",
-    "restore": "復元",
-    "backup": {
-      "enabled": "有効",
-      "disabled": "無効"
-    },
     "expression": "式",
     "position": "位置",
     "unique": "ユニーク",
@@ -1640,20 +1619,6 @@
     },
     "show-reserved-tables": "Bytebaseの予約済みテーブルを表示します",
     "show-reserved-databases": "Bytebaseの予約済みデータベースを表示します",
-    "backup-setting": {
-      "schedule": {
-        "disabled": "無効",
-        "weekly": "毎週",
-        "daily": "毎日"
-      },
-      "form": {
-        "schedule": "スケジュール",
-        "day-of-week": "曜日",
-        "time-of-day": "時刻",
-        "retention-period": "保持期間（日）"
-      }
-    },
-    "backup-policy-violation": "バックアップポリシーの違反",
     "synced-at": "{time}に同期済み",
     "not-found-last-successful-sync-was": "見つかりませんでした、最後の成功した同期は{time}でした",
     "view-unassigned-databases": "未割り当てのデータベースを表示する",
@@ -1764,13 +1729,7 @@
     "file-path-template-description": "Bytebaseは、ベースディレクトリに対して相対的なテンプレートパターンに一致するファイルパス名のみを監視します。",
     "file-path-example-schema-migration": "スキーママイグレーションタイプのファイルパスの例",
     "file-path-example-data-migration": "データマイグレーションタイプのファイルパスの例",
-    "schema-path-template": "スキーマパスのテンプレート",
-    "schema-writeback-description": "指定された場合、各マイグレーションの後、Bytebaseは元のコミットがトリガーとなったブランチ内のベースディレクトリに対するスキーマパスに最新のスキーマを書き込みます。これを行いたくない場合は空にしてください。",
-    "schema-writeback-protected-branch": "変更されたブランチが保護されていないことを確認するか、リポジトリのメンテナがその保護されたブランチにプッシュできるようにします。",
     "if-specified": "指定された場合",
-    "schema-path-example": "スキーマパスの例",
-    "sheet-path-template": "シートパスのテンプレート",
-    "sheet-path-template-description": "Bytebaseは、ベースディレクトリに対して相対的なテンプレートパターンに一致するパス名を持つファイルのみを監視します。一致したファイルはSQLエディタに同期され、そこで使用されます。",
     "sql-review-ci": "SQLレビューCI",
     "sql-review-ci-enable": "SQLレビューCIを有効にする",
     "sql-review-ci-enable-gitlab": "GitLab CIを介してSQLレビューCIを有効にする",
@@ -1792,8 +1751,6 @@
     "gitops-status": "@.capitalize:common.gitopsは{status}です",
     "gitops-description-file-path": "データベースのマイグレーションスクリプトは{fullPath}に保存されます。スキーマの変更を行うには、開発者が{fullPathTemplate}と一致するファイルパスパターンのマイグレーションスクリプトを作成します。",
     "gitops-description-branch": "スクリプトがレビュー承認され、{branch} ブランチにマージされた後、Bytebase は自動的にパイプラインを開始して新しいスキーマ変更を適用します。",
-    "gitops-description-description-schema-path": "スキーマ変更を適用した後、Bytebase は最新のスキーマを指定されたスキーマパスの場所 {schemaPathTemplate} にも書き込みます。",
-    "gitops-description-sdl": "データベースのマイグレーションスクリプトは {fullPath} に保存されます。スキーマの変更を行うには、開発者はスキーマパスのパターン {schemaPathTemplate} に一致するフルスキーマスクリプトを変更します。データの変更を行うには、開発者はファイルパスのパターン {filePathTemplate} に一致するマイグレーションスクリプトを作成します。スクリプトが {branch} ブランチにマージされると、Bytebase は自動的にパイプラインを開始して新しいデータベースの変更を適用します。",
     "restore-to-ui-workflow": "UI ワークフローに復元",
     "restore-ui-workflow-description": "UI ワークフローを使用する場合、開発者は Bytebase コンソールから直接 SQL レビューチケットを提出し、割り当てられた DBA または同僚の開発者がレビューを待ちます。レビューが承認された後、Bytebase は SQL 変更を適用します。",
     "restore-ui-workflow-success": "UI ワークフローに正常に復元しました",
@@ -1838,8 +1795,6 @@
     },
     "action": {
       "check-instance": "インスタンスのチェック",
-      "view-backup": "バックアップの表示",
-      "configure-backup": "バックアップの設定",
       "view-diff": "差分の表示"
     },
     "last-seen": "最終確認日時",
@@ -2005,7 +1960,9 @@
       "roles": "ロール",
       "search-member": "メンバーを検索",
       "revoke-members": "これらのメンバーを取り消す",
-      "clean-up-expired-roles": "期限切れのロールをクリーンアップする"
+      "clean-up-expired-roles": "期限切れのロールをクリーンアップする",
+      "workspace-level-roles": "ワークスペースレベルの役割",
+      "project-level-roles": "プロジェクトレベルの役割"
     },
     "mode": {
       "standard": "標準モード",
@@ -2021,25 +1978,30 @@
     },
     "successfully-updated-db-name-template": "データベース名テンプレートが正常に更新されました。",
     "all": "すべてのプロジェクト",
-    "key-hint": "このプロジェクトを識別するための短い説明的な英数字文字列。"
+    "key-hint": "このプロジェクトを識別するための短い説明的な英数字文字列。",
+    "gitops-connector": {
+      "self": "GitOps コネクタ",
+      "add": "GitOpsコネクタの追加",
+      "delete": "GitOpsコネクタの削除",
+      "update-success": "GitOps コネクタが正常に更新されました",
+      "create-success": "GitOps コネクタが正常に作成されました",
+      "delete-success": "GitOps コネクタが削除されました"
+    }
   },
   "gitops": {
     "setting": {
-      "description": "Bytebaseは、データベースのマイグレーションスクリプトがバージョン管理システム（VCS）に保存され、新しく作成されたマイグレーションスクリプトが対応するデータベースの変更を自動的にトリガーするGitOpsワークフローをサポートしています。Bytebaseの管理者はここで適用可能なすべてのVCSを管理し、プロジェクトの所有者はこれらのVCSから自分のGitリポジトリにプロジェクトをリンクすることができます。",
-      "description-highlight": "設定済みのVCSを介したサードパーティのログインを有効にする場合は、SSOでそれを設定してください。",
+      "description": "BytebaseのGitOpsワークフローでは、開発者はマイグレーションスクリプトをVCSに保存します。プルリクエストはSQLレビューを促し、マージされたものはマイグレーション計画を開始します。管理者はVCSプロバイダを設定し、プロジェクトオーナーはプロジェクト内でVCS接続を確立します。",
       "add-git-provider": {
         "self": "Gitプロバイダを追加する",
         "description": "プロジェクトがGitOpsワークフローを有効にする前に、Bytebaseはまず対応するバージョン管理システム（VCS）と統合する必要があります。そのためには、VCSでOAuthアプリケーションとして登録する必要があります。以下にその手順を示します。また、{guide}に従っても設定できます。",
         "gitlab-self-host": "GitLab Self-Hosted",
-        "gitlab-self-host-admin-requirement": "これを設定するには、選択したGitLabインスタンスの管理者である必要があります。そうでない場合は、GitLabインスタンスの管理者にBytebaseをGitLabインスタンス全体のOAuthアプリケーションとして登録してもらい、そのアプリケーションIDとシークレットを「OAuthアプリケーション情報」のステップで入力してもらう必要があります。",
-        "gitlab-com-admin-requirement": "リンクするためには、アカウントにはリポジトリのいずれかに対する管理者アクセス権限が必要です。通常、このアカウントは人間のユーザーではなく、専用のサービスユーザーに対応しています。",
-        "github-self-host-ee": "GitHub セルフホストエンタープライズエディション（EE）",
-        "github-com-admin-requirement": "これを設定するには、選択した GitHub 組織の管理者である必要があります。そうでない場合は、GitHub 組織の管理者に Bytebase を GitHub 組織全体の OAuth アプリケーションとして登録してもらい、そのアプリケーション ID とシークレットを 'OAuth アプリケーション情報' ステップで入力してもらう必要があります。",
-        "bitbucket-admin-requirement": "これを設定するには、選択した Bitbucket ワークスペースの管理者である必要があります。そうでない場合は、Bitbucket ワークスペースの管理者に Bytebase を Bitbucket ワークスペース全体の OAuth アプリケーションとして登録してもらい、そのアプリケーション ID とシークレットを 'OAuth アプリケーション情報' ステップで入力してもらう必要があります。",
+        "gitlab-self-host-admin-requirement": "GitLabインスタンスの管理者である必要があります。",
+        "gitlab-com-admin-requirement": "プロジェクトまたはグループの管理者である必要があります。",
+        "github-self-host": "GitLab Self-Hosted",
+        "github-com-admin-requirement": "GitHubの組織の管理者である必要があります。",
+        "bitbucket-admin-requirement": "Bitbucketのワークスペースの管理者でなければなりません。",
         "azure-devops-service": "Azure DevOps サービス",
-        "azure-admin-requirement": "これを設定するには、選択した Azure DevOps 組織の管理者である必要があります。そうでない場合は、Azure DevOps 組織の管理者に Bytebase を Azure DevOps 組織全体の OAuth アプリケーションとして登録してもらい、そのアプリケーション ID とクライアントシークレットを 'OAuth アプリケーション情報' ステップで入力してもらう必要があります。",
-        "oauth-info-correct": "OAuth情報が正しいことを確認してください",
-        "check-oauth-info-match": "SecretがGitLabインスタンスアプリケーションと一致していることを確認してください。",
+        "azure-admin-requirement": "Azure DevOpsの組織の管理者である必要があります。",
         "add-success": "Gitプロバイダー {vcs} を正常に追加しました",
         "choose": "Gitプロバイダーを選択してください",
         "basic-info": {
@@ -2053,38 +2015,15 @@
           "display-name": "表示名",
           "display-name-label": "同じGitプロバイダーを使用する異なる設定の識別に役立つオプションの表示名です。"
         },
-        "oauth-info": {
+        "access-token": {
           "self": "OAuthアプリケーション情報",
-          "gitlab-self-host-register-oauth-application": "BytebaseをGitLabインスタンス全体のOAuthアプリケーションとして登録します。",
-          "gitlab-self-host-login-as-admin": "GitLabインスタンスの管理者ユーザーとしてログインします。アカウントはGitLabインスタンス全体の管理者である必要があります（上部バーにレンチアイコンが表示されます）。",
-          "gitlab-self-host-visit-admin-page": "レンチアイコンをクリックして管理ページに移動し、「Applications」セクションに移動し、「New application」ボタンをクリックします。",
-          "gitlab-com-register-oauth-application": "BytebaseをGitLabユーザーのOAuthアプリケーションとして登録します。",
-          "gitlab-com-login": "Bytebaseが動作するアカウントとしてログインします。通常、このアカウントは人間のユーザーではなく、専用のサービスユーザーに対応します。",
-          "azure-devops-login": "Bytebaseが動作するアカウントとしてログインしてください。通常、このアカウントは人間のユーザーではなく、専用のサービスユーザーに対応しています。",
-          "gitlab-com-visit-application-page": "環境設定->アプリケーションページに移動してください。右上隅のプロフィール画像からアクセスできます。",
-          "azure-devops-visit-application-page": "アプリケーションページに移動してください。",
-          "gitlab-paste-oauth-info": "作成したアプリケーションからApplication IDとSecretを以下のフィールドに貼り付けてください。",
-          "azure-paste-oauth-info": "作成したアプリケーションからApplication IDとClient Secretを以下のフィールドに貼り付けてください。",
-          "github-register-oauth-application": "BytebaseをGitHubの組織全体のOAuthアプリケーションとして登録してください。",
-          "github-login-as-admin": "GitHub.comの組織管理者ユーザーとしてログインしてください。アカウントはGitHub組織の管理者である必要があります（組織の設定ページにアクセスできる）。",
-          "github-visit-admin-page": "設定ページに移動し、「開発者設定 > OAuthアプリ」セクションに移動し、「アプリケーションを登録する」ボタンをクリックしてください。",
-          "github-paste-oauth-info": "作成したアプリケーションからClient IDとClient Secretを以下のフィールドに貼り付けてください。",
-          "github-enterprise-login-as-admin": "ホストされているGitHub Enterpriseサイトに組織管理者ユーザーとしてログインしてください。アカウントはGitHub組織の管理者である必要があります（組織の設定ページにアクセスできる）。",
-          "bitbucket-register-oauth-application": "Bitbucketのワークスペース全体のOAuthコンシューマーとしてBytebaseを登録します。",
-          "azure-register-oauth-application": "Azure DevOpsの組織全体のOAuthコンシューマーとしてBytebaseを登録します。",
-          "bitbucket-login-as-admin": "Bitbucket.orgのワークスペース管理者ユーザーとしてログインします。アカウントはBitbucketワークスペースの管理者である必要があります（ワークスペースの設定ページにアクセスできる）。",
-          "bitbucket-visit-admin-page": "設定ページに移動し、「APPS AND FEATURES > OAuth consumers」セクションに移動し、「コンシューマーを追加」ボタンをクリックします。",
-          "bitbucket-paste-oauth-info": "作成したコンシューマーからキーとシークレットを以下のフィールドに貼り付けます。",
-          "copy-homepage-url": "ホームページのURLがクリップボードにコピーされました。OAuthアプリケーションのフォームの対応するフィールドに貼り付けてください。",
-          "copy-redirect-uri": "リダイレクトURIがクリップボードにコピーされました。OAuthアプリケーションのフォームの対応するフィールドに貼り付けてください。",
-          "direct-link": "直接リンク",
-          "create-oauth-app": "以下の情報でBytebaseのOAuthアプリケーションを作成します。",
-          "gitlab-application-id-error": "アプリケーションIDは64文字の英数字である必要があります。",
-          "gitlab-secret-error": "シークレットは64文字の英数字である必要があります。",
-          "github-application-id-error": "アプリケーションIDは20文字の英数字である必要があります。GitHubアプリではなくOAuthアプリであることを確認してください。",
-          "github-secret-error": "シークレットは40文字の英数字である必要があります。",
-          "bitbucket-application-id-error": "アプリケーションIDは18文字の英数字である必要があります",
-          "bitbucket-secret-error": "シークレットは32文字の英数字である必要があります"
+          "gitlab-project-access-token": "単一のプロジェクトを管理するためにプロジェクトアクセストークンを生成してください。",
+          "gitlab-group-access-token": "グループ内のすべてのプロジェクトを管理するために、グループアクセストークンを生成します。",
+          "gitlab-personal-access-token": "専用のサービスユーザーを作成し、管理対象のグループまたはすべてのプロジェクトのメンテナー役割用の個人アクセス トークンを生成します。",
+          "github-personal-access-token": "専用のサービスユーザーを作成し、管理される組織またはすべてのプロジェクト用にメンバーの役割を持つ個人アクセス トークンを生成します。",
+          "bitbucket-resource-access-token": "リポジトリ、プロジェクト、またはワークスペースのリソースを異なるレベルで管理するためのアクセストークンを生成します。",
+          "bitbucket-personal-access-token": "専用のサービスユーザーを作成し、管理対象の組織、プロジェクト、またはリポジトリに対する読み書き権限を持つ個人アクセス トークンを生成してください。",
+          "azure-devops-personal-access-token": "専用のサービスユーザーを作成し、管理される組織またはすべてのプロジェクト用にメンバーの役割を持つ個人アクセス トークンを生成します。"
         },
         "confirm": {
           "confirm-info": "情報を確認してください",
@@ -2254,9 +2193,10 @@
     "link-access": "リンクアクセス",
     "private": "プライベート",
     "private-desc": "このシートにはあなたのみがアクセスできます",
-    "project-desc": "シートの所有者とプロジェクトの所有者は読み書きができ、プロジェクトの開発者は読み取りができます",
-    "public": "パブリック",
-    "public-desc": "シートの所有者は読み書きができ、他の全員は読み取りができます",
+    "project-read": "プロジェクトの読み取り",
+    "project-read-desc": "シート OWNER とプロジェクト OWNER の両方が読み取り/書き込み可能、他のプロジェクト メンバーは読み取り可能",
+    "project-write": "プロジェクトの書き込み",
+    "project-write-desc": "シート所有者とプロジェクト メンバーの両方が読み取り/書き込み可能",
     "create-read-only-data-source": "作成へ進む",
     "go-back": "戻る",
     "save-sheet": "シートを保存",
@@ -2312,7 +2252,15 @@
     "previous-row": "前の行",
     "next-row": "次の行",
     "copy-success": "コピーが成功しました",
-    "missing-permission-to-load-db-metadata": "データベース {db} のメタデータをロードするために必要な権限がありません。"
+    "missing-permission-to-load-db-metadata": "データベース {db} のメタデータをロードするために必要な権限がありません。",
+    "connect-in-new-tab": "新しいタブで接続する",
+    "copy-name": "名前をコピーする",
+    "copy-select-statement": "SELECT ステートメントをコピーする",
+    "preview-table-data": "テーブルデータのプレビュー",
+    "view-table-detail": "テーブルの詳細を表示する",
+    "view-database-detail": "データベースの詳細を表示する",
+    "copy-all-column-names": "すべての列名をコピーします",
+    "view-schema-text": "スキーマテキストの表示"
   },
   "schema-editor": {
     "self": "スキーマエディター",
@@ -2463,7 +2411,7 @@
     "request-with-qr": "QRコードをスキャン",
     "successfully-start-trial": "{days}日間の無料トライアルが正常に開始されました",
     "successfully-upgrade-trial": "無料トライアルを{plan}に正常にアップグレードしました",
-    "require-subscription": "この機能には{requiredPlan}のサブスクリプションが必要です。Bytebaseライセンスを購入してこの機能をアンロックしてください。",
+    "require-subscription": "この機能には {requiredPlan} のサブスクリプションが必要です。ロックを解除するには Bytebase ライセンスを購入してください。",
     "feature-require-subscription": "{feature}には{requiredPlan}のサブスクリプションが必要です。",
     "required-plan-with-trial": "この機能には{requiredPlan}が必要です。{startTrial}",
     "trial-for-plan": "{days}日間の無料トライアルを開始できます - クレジットカード不要です。",
@@ -2500,6 +2448,10 @@
       "instance-count-exceeds": "インスタンス数が制限{limit}を超えています"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "外部シークレットを設定する",
+        "desc": "データベース パスワードの外部シークレットとして Vault またはカスタム URL を使用します。"
+      },
       "bb-feature-task-schedule-time": {
         "title": "タスクスケジュール時間の設定",
         "desc": "タスクスケジュール時間の設定を使用すると、タスクを実行する特定の時間を設定できます。"
@@ -2526,10 +2478,6 @@
         "title": "展開ポリシー",
         "desc": "展開ポリシーは、スキーマ変更タスクが手動で展開が必要かどうかを制御します。"
       },
-      "bb-feature-backup-policy": {
-        "title": "バックアップポリシー",
-        "desc": "バックアップポリシーは、スケジュールに基づいてデータベースを自動バックアップします。"
-      },
       "bb-feature-environment-tier-policy": {
         "title": "環境ティア",
         "desc": "環境を本番環境としてマークします。"
@@ -2540,7 +2488,7 @@
       },
       "bb-feature-access-control": {
         "title": "データアクセス制御",
-        "desc": "データのクエリとエクスポートを制御するための承認フローを設定します。"
+        "desc": "ユーザーがデータクエリ結果をコピーするのを禁止するなど、データへのユーザーアクセスを制限します。"
       },
       "bb-feature-lgtm": {
         "title": "LGTMチェック",
@@ -2557,14 +2505,6 @@
       "bb-feature-custom-approval": {
         "title": "カスタム承認",
         "desc": "さまざまなタスクに対してリスクレベルと承認フローを設定します。"
-      },
-      "bb-feature-vcs-schema-write-back": {
-        "title": "スキーマの書き戻し",
-        "desc": "スキーマの変更が成功した後、スキーマの書き戻しにより、Bytebaseは最新の完全なスキーマスナップショットをVCSリポジトリに書き戻すことができます。"
-      },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "VCSからSQLスクリプトを同期する",
-        "desc": "VCSに保存されているSQLスクリプトをシートに同期します。"
       },
       "bb-feature-vcs-sql-review": {
         "title": "GitOpsワークフローでのSQLレビュー",
@@ -2597,10 +2537,6 @@
       "bb-feature-online-migration": {
         "title": "オンラインマイグレーション",
         "desc": "gh-ostをベースにしています。大きなテーブルの場合、テーブルのロック時間を数時間から数秒に短縮することができます。"
-      },
-      "bb-feature-disaster-recovery-pitr": {
-        "title": "ポイントインタイムリカバリ（PITR）",
-        "desc": "データベースの状態を特定の時点に復元します。"
       },
       "bb-feature-sync-schema-all-versions": {
         "title": "すべてのバージョンのスキーマを同期します",
@@ -2859,7 +2795,9 @@
     "role": "役割",
     "database-group": "データベースグループ",
     "schema-group": "テーブルグループ",
-    "changelist": "変更リスト"
+    "changelist": "変更リスト",
+    "vcs-provider": "GitOpsプロバイダー",
+    "vcs-connector": "GitOpsコネクタ"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -2999,8 +2937,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "データベースの作成",
-          "query": "クエリのリクエスト",
-          "export": "エクスポートのリクエスト"
+          "data_export": "データエクスポート",
+          "request_query": "クエリ役割をリクエスト",
+          "request_export": "エクスポーター役割をリクエスト"
         }
       },
       "template": {
@@ -3317,7 +3256,7 @@
     "search-tables": "テーブルを検索する",
     "use-tips": "テーブルをクリックして開始します。",
     "apply-to-database": "データベースに変更を適用する",
-    "select-database-placeholder": "データベースを選択する（MySQL、PostgreSQL、TiDBのみ）",
+    "select-database-placeholder": "データベースを選択します (MySQL、PostgreSQL、TiDB、Oracle のみ)",
     "message": {
       "created-succeed": "ブランチが正常に作成されました",
       "updated-succeed": "ブランチが正常に更新されました",

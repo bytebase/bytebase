@@ -1,6 +1,5 @@
 export * from "./environment";
 export * from "./database";
-export * from "./backup";
 export * from "./project";
 export * from "./projectIamPolicy";
 export * from "./projectWebhook";
@@ -17,9 +16,8 @@ export * from "./experimental-issue";
 export * from "./subscription";
 export * from "./actuator";
 export * from "./sql";
-export * from "./webTerminal";
-export * from "./repository";
 export * from "./vcs";
+export * from "./vcs_connector";
 export * from "./changeHistory";
 export * from "./dbSchema";
 export * from "./activity";

@@ -1,4 +1,5 @@
-import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+import type { Action } from "@bytebase/vue-kbar";
+import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { computed, unref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -7,12 +8,8 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1List,
 } from "@/store";
-import {
-  ComposedDatabase,
-  ComposedProject,
-  DEFAULT_PROJECT_V1_NAME,
-  MaybeRef,
-} from "@/types";
+import type { ComposedDatabase, ComposedProject, MaybeRef } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   groupBy,

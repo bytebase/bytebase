@@ -1,17 +1,15 @@
 import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
-import { BackupSetting } from "./backup";
 import { EMPTY_ID, UNKNOWN_ID } from "./const";
-import { DataSource } from "./dataSource";
-import { Database } from "./database";
-import { Environment } from "./environment";
-import { CommandId, CommandRegisterId } from "./id";
-import { Instance } from "./instance";
-import { Issue } from "./issue";
-import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
-import { Principal } from "./principal";
-import { Project, ProjectMember } from "./project";
-import { SQLReviewPolicy } from "./sqlReview";
-import { VCS } from "./vcs";
+import type { DataSource } from "./dataSource";
+import type { Database } from "./database";
+import type { Environment } from "./environment";
+import type { CommandId, CommandRegisterId } from "./id";
+import type { Instance } from "./instance";
+import type { Issue } from "./issue";
+import type { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
+import type { Principal } from "./principal";
+import type { Project, ProjectMember } from "./project";
+import type { SQLReviewPolicy } from "./sqlReview";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -64,7 +62,6 @@ export type ResourceType =
   | "INSTANCE"
   | "DATABASE"
   | "DATA_SOURCE"
-  | "BACKUP_SETTING"
   | "ISSUE"
   | "PIPELINE"
   | "POLICY"
@@ -72,7 +69,6 @@ export type ResourceType =
   | "TASK_PROGRESS"
   | "TASK"
   | "ACTIVITY"
-  | "VCS"
   | "REPOSITORY"
   | "ANOMALY"
   | "DEPLOYMENT_CONFIG"
@@ -88,13 +84,11 @@ interface ResourceMaker {
   (type: "INSTANCE"): Instance;
   (type: "DATABASE"): Database;
   (type: "DATA_SOURCE"): DataSource;
-  (type: "BACKUP_SETTING"): BackupSetting;
   (type: "ISSUE"): Issue;
   (type: "PIPELINE"): Pipeline;
   (type: "STAGE"): Stage;
   (type: "TASK_PROGRESS"): TaskProgress;
   (type: "TASK"): Task;
-  (type: "VCS"): VCS;
   (type: "SQL_REVIEW"): SQLReviewPolicy;
 }
 
@@ -125,9 +119,7 @@ const makeUnknown = (type: ResourceType) => {
     key: "UNK",
     memberList: [],
     workflowType: "UI",
-    visibility: "PUBLIC",
     tenantMode: "DISABLED",
-    schemaChangeType: "DDL",
   };
 
   const UNKNOWN_PROJECT_MEMBER: ProjectMember = {
@@ -184,6 +176,7 @@ const makeUnknown = (type: ResourceType) => {
     options: {
       srv: false,
       authenticationDatabase: "",
+      authenticationPrivateKey: "",
       sid: "",
       serviceName: "",
       sshHost: "",
@@ -194,16 +187,6 @@ const makeUnknown = (type: ResourceType) => {
     },
     // UI-only fields
     updateSsl: false,
-  };
-
-  const UNKNOWN_BACKUP_SETTING: BackupSetting = {
-    id: UNKNOWN_ID,
-    databaseId: UNKNOWN_ID,
-    enabled: false,
-    hour: 0,
-    dayOfWeek: 0,
-    hookUrl: "",
-    retentionPeriodTs: 0,
   };
 
   const UNKNOWN_PIPELINE: Pipeline = {
@@ -265,17 +248,6 @@ const makeUnknown = (type: ResourceType) => {
     progress: { ...UNKNOWN_TASK_PROGRESS },
   };
 
-  const UNKNOWN_VCS: VCS = {
-    id: UNKNOWN_ID,
-    name: "",
-    type: "GITLAB",
-    uiType: "GITLAB_SELF_HOST",
-    instanceUrl: "",
-    apiUrl: "",
-    applicationId: "",
-    secret: "",
-  };
-
   const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
     id: UNKNOWN_ID,
     enforce: false,
@@ -299,8 +271,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_DATABASE;
     case "DATA_SOURCE":
       return UNKNOWN_DATA_SOURCE;
-    case "BACKUP_SETTING":
-      return UNKNOWN_BACKUP_SETTING;
     case "ISSUE":
       return UNKNOWN_ISSUE;
     case "PIPELINE":
@@ -311,8 +281,6 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_TASK_PROGRESS;
     case "TASK":
       return UNKNOWN_TASK;
-    case "VCS":
-      return UNKNOWN_VCS;
     case "SQL_REVIEW":
       return UNKNOWN_SQL_REVIEW_POLICY;
   }
@@ -347,9 +315,7 @@ const makeEmpty = (type: ResourceType) => {
     key: "",
     memberList: [],
     workflowType: "UI",
-    visibility: "PUBLIC",
     tenantMode: "DISABLED",
-    schemaChangeType: "DDL",
   };
 
   const EMPTY_PROJECT_MEMBER: ProjectMember = {
@@ -406,6 +372,7 @@ const makeEmpty = (type: ResourceType) => {
     options: {
       srv: false,
       authenticationDatabase: "",
+      authenticationPrivateKey: "",
       sid: "",
       serviceName: "",
       sshHost: "",
@@ -416,16 +383,6 @@ const makeEmpty = (type: ResourceType) => {
     },
     // UI-only fields
     updateSsl: false,
-  };
-
-  const EMPTY_BACKUP_SETTING: BackupSetting = {
-    id: EMPTY_ID,
-    databaseId: UNKNOWN_ID,
-    enabled: false,
-    hour: 0,
-    dayOfWeek: 0,
-    hookUrl: "",
-    retentionPeriodTs: 0,
   };
 
   const EMPTY_PIPELINE: Pipeline = {
@@ -487,17 +444,6 @@ const makeEmpty = (type: ResourceType) => {
     progress: { ...EMPTY_TASK_PROGRESS },
   };
 
-  const EMPTY_VCS: VCS = {
-    id: EMPTY_ID,
-    name: "",
-    type: "GITLAB",
-    uiType: "GITLAB_SELF_HOST",
-    instanceUrl: "",
-    apiUrl: "",
-    applicationId: "",
-    secret: "",
-  };
-
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -513,8 +459,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_DATABASE;
     case "DATA_SOURCE":
       return EMPTY_DATA_SOURCE;
-    case "BACKUP_SETTING":
-      return EMPTY_BACKUP_SETTING;
     case "ISSUE":
       return EMPTY_ISSUE;
     case "PIPELINE":
@@ -525,8 +469,6 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_TASK_PROGRESS;
     case "TASK":
       return EMPTY_TASK;
-    case "VCS":
-      return EMPTY_VCS;
   }
 };
 

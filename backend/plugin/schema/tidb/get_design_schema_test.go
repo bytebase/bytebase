@@ -39,7 +39,7 @@ func TestGetDesignSchema(t *testing.T) {
 	for i, t := range tests {
 		targetMeta := &storepb.DatabaseSchemaMetadata{}
 		a.NoError(protojson.Unmarshal([]byte(t.Target), targetMeta))
-		result, err := GetDesignSchema(t.Baseline, targetMeta)
+		result, err := GetDesignSchema("", t.Baseline, targetMeta)
 		a.NoError(err)
 		if record {
 			tests[i].Result = result

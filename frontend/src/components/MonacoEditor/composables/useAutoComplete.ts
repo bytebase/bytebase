@@ -1,5 +1,6 @@
 import type monaco from "monaco-editor";
-import { Ref, computed, watch } from "vue";
+import type { Ref } from "vue";
+import { computed, watch } from "vue";
 import { UNKNOWN_ID } from "@/types";
 import {
   extractDatabaseResourceName,
@@ -36,9 +37,7 @@ export const useAutoComplete = async (
       if (instance && instance !== String(UNKNOWN_ID)) {
         p.instanceId = ctx.instance;
       }
-      const databaseName = extractDatabaseResourceName(
-        ctx.database ?? ""
-      ).database;
+      const { databaseName } = extractDatabaseResourceName(ctx.database ?? "");
       if (databaseName && databaseName !== String(UNKNOWN_ID)) {
         p.databaseName = databaseName;
       }

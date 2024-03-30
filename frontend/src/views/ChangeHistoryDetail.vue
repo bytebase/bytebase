@@ -345,20 +345,17 @@ import {
   useInstanceV1Store,
   useSettingV1Store,
 } from "@/store";
-import {
-  databaseNamePrefix,
-  instanceNamePrefix,
-} from "@/store/modules/v1/common";
-import { AffectedTable } from "@/types/changeHistory";
+import type { AffectedTable } from "@/types/changeHistory";
 import { Engine } from "@/types/proto/v1/common";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
-  ChangeHistory,
   ChangeHistory_Type,
   changeHistory_SourceToJSON,
   changeHistory_TypeToJSON,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
-import { PushEvent, VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
+import type { PushEvent } from "@/types/proto/v1/vcs";
+import { VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
 import {
   changeHistoryLink,
   extractIssueUID,
@@ -377,8 +374,8 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  instanceId: string;
-  databaseName: string;
+  instance: string;
+  database: string;
   changeHistoryId: string;
 }>();
 
@@ -396,9 +393,7 @@ const changeHistoryStore = useChangeHistoryStore();
 const selectedAffectedTable = ref<AffectedTable | undefined>();
 
 const v1Instance = computed(() => {
-  return instanceStore.getInstanceByName(
-    `${instanceNamePrefix}${props.instanceId}`
-  );
+  return instanceStore.getInstanceByName(props.instance);
 });
 
 // eslint-disable-next-line vue/no-dupe-keys
@@ -421,7 +416,7 @@ const classificationConfig = computed(() => {
 });
 
 const changeHistoryParent = computed(() => {
-  return `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`;
+  return props.database;
 });
 
 const changeHistoryName = computed(() => {
@@ -440,19 +435,17 @@ const showSchemaSnapshot = computed(() => {
 });
 
 watch(
-  () => [changeHistoryParent.value, changeHistoryName.value],
-  async () => {
-    const database = await databaseStore.getOrFetchDatabaseByName(
-      changeHistoryParent.value
-    );
+  [changeHistoryParent, changeHistoryName],
+  async ([parent, name]) => {
+    const database = await databaseStore.getOrFetchDatabaseByName(parent);
     await Promise.all([
       dbSchemaStore.getOrFetchDatabaseMetadata({
         database: database.name,
         skipCache: false,
       }),
       changeHistoryStore.getOrFetchChangeHistoryByName(
-        changeHistoryName.value,
-        ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC
+        name,
+        ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
       ),
     ]);
   },
@@ -551,17 +544,20 @@ const fetchFullPreviousHistory = async () => {
     ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
   );
 };
+
 const fetchFullHistory = async () => {
   if (state.loading) {
     return;
   }
   state.loading = true;
   try {
-    await changeHistoryStore.getOrFetchChangeHistoryByName(
-      changeHistoryName.value,
-      ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
-    );
-    await fetchFullPreviousHistory();
+    await Promise.all([
+      changeHistoryStore.getOrFetchChangeHistoryByName(
+        changeHistoryName.value,
+        ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
+      ),
+      fetchFullPreviousHistory(),
+    ]);
   } finally {
     state.loading = false;
   }
@@ -619,10 +615,6 @@ const pushEvent = computed((): PushEvent | undefined => {
 });
 
 const vcsCommit = computed(() => {
-  const fileCommit = pushEvent.value?.fileCommit;
-  if (fileCommit && fileCommit.id) {
-    return fileCommit;
-  }
   const commit = pushEvent.value?.commits[0];
   if (commit && commit.id) {
     return commit;

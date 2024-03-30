@@ -78,6 +78,9 @@ func (checker *insertMustSpecifyColumnChecker) EnterQuery(ctx *mysql.QueryContex
 
 // EnterInsertStatement is called when production insertStatement is entered.
 func (checker *insertMustSpecifyColumnChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.InsertQueryExpression() != nil {
 		checker.hasSelect = true
 	}

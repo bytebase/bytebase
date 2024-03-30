@@ -47,9 +47,13 @@
             :checked="state.environmentTier === EnvironmentTier.PROTECTED"
             :disabled="!allowEdit"
             style="--n-label-padding: 0 0 0 1rem"
-            @update:checked="(on: boolean) => {
-                state.environmentTier = on ? EnvironmentTier.PROTECTED : EnvironmentTier.UNPROTECTED
-              }"
+            @update:checked="
+              (on: boolean) => {
+                state.environmentTier = on
+                  ? EnvironmentTier.PROTECTED
+                  : EnvironmentTier.UNPROTECTED;
+              }
+            "
           >
             {{ $t("policy.environment-tier.mark-env-as-production") }}
           </NCheckbox>
@@ -80,65 +84,6 @@
           />
         </div>
 
-        <div
-          v-if="showBackupSchedulePolicySection"
-          class="flex flex-col gap-y-2"
-        >
-          <label class="textlabel"> {{ $t("policy.backup.name") }} </label>
-          <span
-            v-show="valueChanged('backupPolicy')"
-            class="textlabeltip !ml-0"
-            >{{ $t("policy.backup.tip") }}</span
-          >
-          <NRadioGroup
-            v-model:value="state.backupPolicy.backupPlanPolicy!.schedule"
-            :disabled="!allowEdit"
-            class="!flex flex-col gap-y-2"
-          >
-            <NRadio
-              :value="BackupPlanSchedule.UNSET"
-              style="--n-label-padding: 0 0 0 1rem"
-            >
-              <div class="flex flex-col">
-                <div class="textlabel">
-                  {{ $t("policy.backup.not-enforced") }}
-                </div>
-                <div class="textinfolabel">
-                  {{ $t("policy.backup.not-enforced-info") }}
-                </div>
-              </div>
-            </NRadio>
-            <NRadio
-              :value="BackupPlanSchedule.DAILY"
-              style="--n-label-padding: 0 0 0 1rem"
-            >
-              <div class="flex flex-col">
-                <div class="textlabel flex">
-                  {{ $t("policy.backup.daily") }}
-                  <FeatureBadge feature="bb.feature.backup-policy" />
-                </div>
-                <div class="textinfolabel">
-                  {{ $t("policy.backup.daily-info") }}
-                </div>
-              </div>
-            </NRadio>
-            <NRadio
-              :value="BackupPlanSchedule.WEEKLY"
-              style="--n-label-padding: 0 0 0 1rem"
-            >
-              <div class="flex flex-col">
-                <div class="textlabel flex">
-                  {{ $t("policy.backup.weekly") }}
-                  <FeatureBadge feature="bb.feature.backup-policy" />
-                </div>
-                <div class="mt-1 textinfolabel">
-                  {{ $t("policy.backup.weekly-info") }}
-                </div>
-              </div>
-            </NRadio>
-          </NRadioGroup>
-        </div>
-
         <div v-if="!create" class="flex flex-col gap-y-2">
           <label class="textlabel">
             {{ $t("sql-review.title") }}
@@ -154,13 +99,11 @@
                 :text="true"
                 @update:value="toggleSQLReviewPolicy"
               />
-              <NButton
-                quaternary
-                type="primary"
+              <span
+                class="textlabel normal-link !text-accent"
                 @click="onSQLReviewPolicyClick"
+                >{{ sqlReviewPolicy.name }}</span
               >
-                {{ sqlReviewPolicy.name }}
-              </NButton>
             </div>
             <NButton
               v-else-if="hasPermission('bb.policies.update')"
@@ -171,6 +114,28 @@
             <span v-else class="textinfolabel">
               {{ $t("sql-review.no-policy-set") }}
             </span>
+          </div>
+        </div>
+
+        <div v-if="!create" class="flex flex-col gap-y-2">
+          <label class="textlabel flex items-center">
+            {{ $t("environment.access-control.title") }}
+            <FeatureBadge feature="bb.feature.access-control" />
+          </label>
+          <div>
+            <div class="inline-flex items-center gap-x-2">
+              <Switch
+                :value="disableCopyDataPolicy"
+                :text="true"
+                :disabled="!allowEditDisableCopyData"
+                @update:value="upsertPolicy"
+              />
+              <span class="textlabel">{{
+                $t(
+                  "environment.access-control.disable-copy-data-from-sql-editor"
+                )
+              }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -185,8 +150,9 @@
             :button-text="$t('environment.archive')"
             :ok-text="$t('common.archive')"
             :confirm-title="
-            $t('environment.archive') + ` '${(state.environment as Environment).title}'?`
-          "
+              $t('environment.archive') +
+              ` '${(state.environment as Environment).title}'?`
+            "
             :confirm-description="$t('environment.archive-info')"
             :require-confirm="true"
             @confirm="archiveEnvironment"
@@ -201,8 +167,9 @@
             :button-text="$t('environment.restore')"
             :ok-text="$t('common.restore')"
             :confirm-title="
-            $t('environment.restore') + ` '${(state.environment as Environment).title}'?`
-          "
+              $t('environment.restore') +
+              ` '${(state.environment as Environment).title}'?`
+            "
             :confirm-description="''"
             :require-confirm="true"
             @confirm="restoreEnvironment"
@@ -244,45 +211,53 @@
       <!-- Update button group -->
     </template>
   </component>
+
+  <FeatureModal
+    :open="state.missingRequiredFeature != undefined"
+    :feature="state.missingRequiredFeature"
+    @cancel="state.missingRequiredFeature = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
-import { NButton, NCheckbox, NInput, NRadioGroup } from "naive-ui";
+import { NButton, NCheckbox, NInput } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, reactive, PropType, watch, watchEffect, ref } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive, watch, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { DrawerContent, Switch } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
-} from "@/router/dashboard/workspaceSetting";
+  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+} from "@/router/dashboard/workspaceRoutes";
 import {
+  hasFeature,
   pushNotification,
   useCurrentUserV1,
   useEnvironmentV1List,
+  usePolicyV1Store,
+  useReviewPolicyByEnvironmentName,
   useSQLReviewStore,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import type {
+  FeatureType,
   ResourceId,
-  SQLReviewPolicy,
   ValidatedMessage,
   WorkspacePermission,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import type { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
+import type { Policy } from "@/types/proto/v1/org_policy_service";
 import {
-  Environment,
-  EnvironmentTier,
-} from "@/types/proto/v1/environment_service";
-import {
-  Policy,
   PolicyType,
-  BackupPlanSchedule,
+  PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
 import {
   extractEnvironmentResourceName,
@@ -295,8 +270,8 @@ import RolloutPolicyConfig from "./EnvironmentForm/RolloutPolicyConfig.vue";
 interface LocalState {
   environment: Environment;
   rolloutPolicy: Policy;
-  backupPolicy: Policy;
   environmentTier: EnvironmentTier;
+  missingRequiredFeature?: FeatureType;
 }
 
 const props = defineProps({
@@ -309,10 +284,6 @@ const props = defineProps({
     type: Object as PropType<Environment>,
   },
   rolloutPolicy: {
-    required: true,
-    type: Object as PropType<Policy>,
-  },
-  backupPolicy: {
     required: true,
     type: Object as PropType<Policy>,
   },
@@ -329,24 +300,21 @@ const emit = defineEmits([
   "archive",
   "restore",
   "update-policy",
+  "update-access-control",
 ]);
 
 const { t } = useI18n();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
+const policyStore = usePolicyV1Store();
 const environmentV1Store = useEnvironmentV1Store();
 const environmentList = useEnvironmentV1List();
-const sqlReviewStore = useSQLReviewStore();
 const state = reactive<LocalState>({
   environment: cloneDeep(props.environment),
   rolloutPolicy: cloneDeep(props.rolloutPolicy),
-  backupPolicy: cloneDeep(props.backupPolicy),
   environmentTier: props.environmentTier,
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
-const showBackupSchedulePolicySection = computed(() => {
-  return false; // Hide for now
-});
 
 const bindings = computed(() => {
   if (props.create) {
@@ -357,49 +325,51 @@ const bindings = computed(() => {
   return {};
 });
 
-const environmentId = computed(() => {
-  if (props.create) {
-    return;
-  }
-  return extractEnvironmentResourceName(
-    (props.environment as Environment).name
-  );
-});
+const sqlReviewPolicy = useReviewPolicyByEnvironmentName(
+  computed(() => {
+    return props.create ? undefined : (props.environment as Environment).name;
+  })
+);
 
-const prepareSQLReviewPolicy = () => {
-  if (!environmentId.value) {
-    return;
-  }
-  return sqlReviewStore.getOrFetchReviewPolicyByEnvironmentId(
-    environmentId.value
+const disableCopyDataPolicy = computed(() => {
+  const policies = policyStore.policyList.filter(
+    (policy) =>
+      policy.resourceType === PolicyResourceType.ENVIRONMENT &&
+      policy.type === PolicyType.DISABLE_COPY_DATA &&
+      policy.resourceUid === (props.environment as Environment).uid &&
+      policy.disableCopyDataPolicy?.active
   );
-};
-watchEffect(prepareSQLReviewPolicy);
-
-const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
-  if (!environmentId.value) {
-    return;
-  }
-  return sqlReviewStore.getReviewPolicyByEnvironmentId(environmentId.value);
+  return policies.length > 0;
 });
 
 const onSQLReviewPolicyClick = () => {
   if (sqlReviewPolicy.value) {
     router.push({
-      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
+      name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
       params: {
         sqlReviewPolicySlug: sqlReviewPolicySlug(sqlReviewPolicy.value),
       },
     });
   } else {
     router.push({
-      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
+      name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
       query: {
-        environmentId: environmentId.value,
+        environmentId: (props.environment as Environment).uid,
       },
     });
   }
 };
+
+const prepareEnvironmentDisableCopyDataPolicy = async () => {
+  await policyStore.fetchPolicies({
+    resourceType: PolicyResourceType.ENVIRONMENT,
+    policyType: PolicyType.DISABLE_COPY_DATA,
+  });
+};
+
+onMounted(() => {
+  prepareEnvironmentDisableCopyDataPolicy();
+});
 
 watch(
   () => props.environment,
@@ -412,13 +382,6 @@ watch(
   () => props.rolloutPolicy,
   (cur: Policy) => {
     state.rolloutPolicy = cloneDeep(cur);
-  }
-);
-
-watch(
-  () => props.backupPolicy,
-  (cur: Policy) => {
-    state.backupPolicy = cloneDeep(cur);
   }
 );
 
@@ -481,6 +444,10 @@ const allowEdit = computed(() => {
   );
 });
 
+const allowEditDisableCopyData = computed(() => {
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
+});
+
 const allowCreate = computed(() => {
   return (
     !isEmpty(state.environment?.title) &&
@@ -494,20 +461,13 @@ const allowEditSQLReviewPolicy = computed(() => {
 });
 
 const valueChanged = (
-  field?:
-    | "environment"
-    | "approvalPolicy"
-    | "rolloutPolicy"
-    | "backupPolicy"
-    | "environmentTier"
+  field?: "environment" | "approvalPolicy" | "rolloutPolicy" | "environmentTier"
 ): boolean => {
   switch (field) {
     case "environment":
       return !isEqual(props.environment, state.environment);
     case "rolloutPolicy":
       return !isEqual(props.rolloutPolicy, state.rolloutPolicy);
-    case "backupPolicy":
-      return !isEqual(props.backupPolicy, state.backupPolicy);
     case "environmentTier":
       return !isEqual(props.environmentTier, state.environmentTier);
 
@@ -515,7 +475,6 @@ const valueChanged = (
       return (
         !isEqual(props.environment, state.environment) ||
         !isEqual(props.rolloutPolicy, state.rolloutPolicy) ||
-        !isEqual(props.backupPolicy, state.backupPolicy) ||
         !isEqual(props.environmentTier, state.environmentTier)
       );
   }
@@ -541,7 +500,6 @@ onBeforeRouteLeave((to, from, next) => {
 const revertEnvironment = () => {
   state.environment = cloneDeep(props.environment!);
   state.rolloutPolicy = cloneDeep(props.rolloutPolicy!);
-  state.backupPolicy = cloneDeep(props.backupPolicy!);
   state.environmentTier = cloneDeep(props.environmentTier!);
 };
 
@@ -553,7 +511,6 @@ const createEnvironment = () => {
       title: state.environment.title,
     },
     state.rolloutPolicy,
-    state.backupPolicy,
     state.environmentTier
   );
 };
@@ -579,15 +536,6 @@ const updateEnvironment = () => {
       state.rolloutPolicy
     );
   }
-
-  if (!isEqual(props.backupPolicy, state.backupPolicy)) {
-    emit(
-      "update-policy",
-      state.environment,
-      PolicyType.BACKUP_PLAN,
-      state.backupPolicy
-    );
-  }
 };
 
 const archiveEnvironment = () => {
@@ -611,6 +559,26 @@ const toggleSQLReviewPolicy = async (on: boolean) => {
     module: "bytebase",
     style: "SUCCESS",
     title: t("sql-review.policy-updated"),
+  });
+};
+
+const upsertPolicy = async (on: boolean) => {
+  if (!hasFeature("bb.feature.access-control")) {
+    state.missingRequiredFeature = "bb.feature.access-control";
+    return;
+  }
+
+  await policyStore.createPolicy(props.environment.name, {
+    type: PolicyType.DISABLE_COPY_DATA,
+    resourceType: PolicyResourceType.ENVIRONMENT,
+    disableCopyDataPolicy: {
+      active: on,
+    },
+  });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
   });
 };
 </script>

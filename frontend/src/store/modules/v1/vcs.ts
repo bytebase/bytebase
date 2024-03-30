@@ -1,81 +1,99 @@
+import { uniqBy } from "lodash-es";
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
-import { reactive } from "vue";
-import { externalVersionControlServiceClient } from "@/grpcweb";
-import { VCSId } from "@/types";
-import {
-  ExternalVersionControl,
-  ExternalVersionControl_Type,
-} from "@/types/proto/v1/externalvs_service";
-import { externalVersionControlPrefix } from "./common";
+import { computed } from "vue";
+import { vcsProviderServiceClient } from "@/grpcweb";
+import { useCache } from "@/store/cache";
+import type { VCSId } from "@/types";
+import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
+import { vcsProviderPrefix } from "./common";
+
+type VCSProviderCacheKey = [string /* vcs name */];
 
 export const useVCSV1Store = defineStore("vcs_v1", () => {
-  const vcsMapByName = reactive(new Map<string, ExternalVersionControl>());
+  const cacheByName = useCache<VCSProviderCacheKey, VCSProvider | undefined>(
+    "bb.vcs-provider.by-name"
+  );
 
-  const listVCSExternalProjects = async (
-    vcsName: string,
-    accessToken: string,
-    refreshToken: string
-  ) => {
-    const resp =
-      await externalVersionControlServiceClient.searchExternalVersionControlProjects(
-        {
-          name: vcsName,
-          accessToken,
-          refreshToken,
-        }
-      );
+  const vcsList = computed(() => {
+    const list = Array.from(cacheByName.entityCacheMap.values())
+      .map((entry) => entry.entity)
+      .filter((vcs): vcs is VCSProvider => vcs !== undefined);
+    return uniqBy(list, (vcs) => vcs.name);
+  });
+
+  const listVCSExternalProjects = async (vcsName: string) => {
+    const resp = await vcsProviderServiceClient.searchVCSProviderProjects({
+      name: vcsName,
+    });
     return resp.projects;
   };
 
   const fetchVCSList = async () => {
-    const resp =
-      await externalVersionControlServiceClient.listExternalVersionControls({});
-    for (const vcs of resp.externalVersionControls) {
-      vcsMapByName.set(vcs.name, vcs);
-    }
-    return resp.externalVersionControls;
+    const resp = await vcsProviderServiceClient.listVCSProviders({});
+    return resp.vcsProviders;
   };
 
-  const fetchVCSByName = async (name: string) => {
-    const vcs =
-      await externalVersionControlServiceClient.getExternalVersionControl({
-        name,
-      });
+  const getOrFetchVCSList = async () => {
+    if (vcsList.value.length > 0) {
+      return vcsList.value;
+    }
+    const list = await fetchVCSList();
+    for (const vcs of list) {
+      cacheByName.setEntity([vcs.name], vcs);
+    }
+    return list;
+  };
 
-    vcsMapByName.set(vcs.name, vcs);
+  const fetchVCSByName = async (name: string, silent = false) => {
+    const vcs = await vcsProviderServiceClient.getVCSProvider(
+      {
+        name,
+      },
+      { silent }
+    );
+
     return vcs;
   };
 
-  const fetchVCSByUid = async (vcsId: VCSId) => {
-    return fetchVCSByName(`${externalVersionControlPrefix}${vcsId}`);
+  const getOrFetchVCSByName = async (name: string) => {
+    const entity = cacheByName.getEntity([name]);
+    if (entity) {
+      return entity;
+    }
+
+    const vcs = await vcsProviderServiceClient.getVCSProvider({
+      name,
+    });
+    cacheByName.setEntity([vcs.name], vcs);
+    return vcs;
   };
 
-  const getVCSByUid = (vcsId: VCSId) => {
-    return vcsMapByName.get(`${externalVersionControlPrefix}${vcsId}`);
+  const getVCSById = (vcsId: VCSId) => {
+    return getVCSByName(`${vcsProviderPrefix}${vcsId}`);
   };
 
-  const getVCSList = () => {
-    return [...vcsMapByName.values()];
+  const getVCSByName = (vcs: string) => {
+    return cacheByName.getEntity([vcs]);
   };
 
   const deleteVCS = async (name: string) => {
-    await externalVersionControlServiceClient.deleteExternalVersionControl({
+    await vcsProviderServiceClient.deleteVCSProvider({
       name,
     });
-    vcsMapByName.delete(name);
+    cacheByName.invalidateEntity([name]);
   };
 
-  const createVCS = async (vcs: ExternalVersionControl) => {
-    const resp =
-      await externalVersionControlServiceClient.createExternalVersionControl({
-        externalVersionControl: vcs,
-      });
-    vcsMapByName.set(resp.name, resp);
-    return resp;
+  const createVCS = async (resourceId: string, vcs: VCSProvider) => {
+    const provider = await vcsProviderServiceClient.createVCSProvider({
+      vcsProvider: vcs,
+      vcsProviderId: resourceId,
+    });
+    cacheByName.setEntity([provider.name], provider);
+    return provider;
   };
 
-  const updateVCS = async (vcs: Partial<ExternalVersionControl>) => {
+  const updateVCS = async (vcs: Partial<VCSProvider>) => {
     if (!vcs.name) {
       return;
     }
@@ -84,71 +102,40 @@ export const useVCSV1Store = defineStore("vcs_v1", () => {
     if (updateMask.length === 0) {
       return existed;
     }
-    const resp =
-      await externalVersionControlServiceClient.updateExternalVersionControl({
-        externalVersionControl: vcs,
-        updateMask,
-      });
-    vcsMapByName.set(resp.name, resp);
-    return resp;
-  };
-
-  const exchangeToken = async ({
-    vcsName,
-    vcsType,
-    instanceUrl,
-    clientId,
-    clientSecret,
-    code,
-  }: {
-    vcsName?: string;
-    vcsType?: ExternalVersionControl_Type;
-    instanceUrl?: string;
-    clientId?: string;
-    clientSecret?: string;
-    code: string;
-  }) => {
-    const oauthToken = await externalVersionControlServiceClient.exchangeToken({
-      exchangeToken: {
-        name: vcsName ?? `${externalVersionControlPrefix}-`,
-        code,
-        type: vcsType,
-        instanceUrl,
-        clientId,
-        clientSecret,
-      },
+    const provider = await vcsProviderServiceClient.updateVCSProvider({
+      vcsProvider: vcs,
+      updateMask,
     });
-
-    return oauthToken;
+    cacheByName.setEntity([provider.name], provider);
+    return provider;
   };
 
   return {
+    vcsList,
     listVCSExternalProjects,
-    getVCSByUid,
-    getVCSList,
-    fetchVCSByName,
-    fetchVCSByUid,
-    fetchVCSList,
+    getVCSById,
+    getVCSByName,
+    getOrFetchVCSByName,
+    getOrFetchVCSList,
     deleteVCS,
     createVCS,
     updateVCS,
-    exchangeToken,
   };
 });
 
 const getUpdateMaskForVCS = (
-  origin: ExternalVersionControl,
-  update: Partial<ExternalVersionControl>
+  origin: VCSProvider,
+  update: Partial<VCSProvider>
 ): string[] => {
   const updateMask: string[] = [];
   if (!isUndefined(update.title) && !isEqual(origin.title, update.title)) {
     updateMask.push("title");
   }
   if (
-    !isUndefined(update.applicationId) &&
-    !isEqual(origin.applicationId, update.applicationId)
+    !isUndefined(update.accessToken) &&
+    !isEqual(origin.accessToken, update.accessToken)
   ) {
-    updateMask.push("application_id");
+    updateMask.push("access_token");
   }
   return updateMask;
 };

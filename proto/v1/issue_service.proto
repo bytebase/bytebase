@@ -44,6 +44,11 @@ service IssueService {
     option (google.api.method_signature) = "issue,update_mask";
   }
 
+  rpc ListIssueComments(ListIssueCommentsRequest) returns (ListIssueCommentsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*/issues/*}/issueComments"};
+    option (google.api.method_signature) = "parent";
+  }
+
   rpc CreateIssueComment(CreateIssueCommentRequest) returns (IssueComment) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/issues/*}:comment"
@@ -243,6 +248,7 @@ message Issue {
     TYPE_UNSPECIFIED = 0;
     DATABASE_CHANGE = 1;
     GRANT_REQUEST = 2;
+    DATABASE_DATA_EXPORT = 3;
   }
   Type type = 5;
 
@@ -406,6 +412,32 @@ message ApprovalNode {
   }
 }
 
+message ListIssueCommentsRequest {
+  // Format: projects/{projects}/issues/{issue}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The maximum number of issues to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 issues will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListIssues` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListIssues` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListIssueCommentsResponse {
+  repeated IssueComment issue_comments = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
 message CreateIssueCommentRequest {
   // The issue name
   // Format: projects/{project}/issues/{issue}
@@ -436,4 +468,80 @@ message IssueComment {
   google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}
+  string name = 6;
+
+  // Format: users/{email}
+  string creator = 7;
+
+  oneof event {
+    Approval approval = 8;
+    IssueUpdate issue_update = 9;
+    StageEnd stage_end = 10;
+    TaskRunUpdate task_run_update = 11;
+    TaskUpdate task_update = 12;
+    TaskPriorBackup task_prior_backup = 13;
+  }
+
+  message Approval {
+    Status status = 1;
+
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      PENDING = 1;
+      APPROVED = 2;
+      REJECTED = 3;
+    }
+  }
+
+  message IssueUpdate {
+    optional string from_title = 1;
+    optional string to_title = 2;
+    optional string from_description = 3;
+    optional string to_description = 4;
+    optional IssueStatus from_status = 5;
+    optional IssueStatus to_status = 6;
+    // Format: users/{email}
+    optional string from_assignee = 7;
+    // Format: users/{email}
+    optional string to_assignee = 8;
+  }
+
+  message StageEnd {
+    string stage = 1;
+  }
+
+  message TaskRunUpdate {
+    repeated string task_runs = 1;
+    optional Status to_status = 2;
+
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      PENDING = 1;
+      RUNNING = 2;
+      DONE = 3;
+      FAILED = 4;
+    }
+  }
+
+  message TaskUpdate {
+    repeated string tasks = 1;
+    // Format: projects/{project}/sheets/{sheet}
+    optional string from_sheet = 2;
+    // Format: projects/{project}/sheets/{sheet}
+    optional string to_sheet = 3;
+    optional google.protobuf.Timestamp from_earliest_allowed_time = 4;
+    optional google.protobuf.Timestamp to_earliest_allowed_time = 5;
+  }
+
+  message TaskPriorBackup {
+    string task = 1;
+    repeated Table tables = 2;
+
+    message Table {
+      string schema = 1;
+      string table = 2;
+    }
+  }
 }

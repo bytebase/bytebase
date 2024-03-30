@@ -37,14 +37,14 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 import { TrashIcon } from "lucide-vue-next";
-import { NInputGroup, NSelect, SelectOption, SelectProps } from "naive-ui";
-import { computed, CSSProperties, PropType, watch } from "vue";
+import type { SelectOption, SelectProps } from "naive-ui";
+import { NInputGroup, NSelect } from "naive-ui";
+import type { CSSProperties, PropType } from "vue";
+import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { ComposedDatabase } from "@/types";
-import {
-  LabelSelectorRequirement,
-  OperatorType,
-} from "@/types/proto/v1/project_service";
+import type { ComposedDatabase } from "@/types";
+import type { LabelSelectorRequirement } from "@/types/proto/v1/project_service";
+import { OperatorType } from "@/types/proto/v1/project_service";
 import {
   displayDeploymentMatchSelectorKey,
   getAvailableDeploymentConfigMatchSelectorKeyList,

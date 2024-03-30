@@ -122,7 +122,7 @@
         >
           <FeatureBadge
             feature="bb.feature.branding"
-            custom-class="text-white pointer-events-none"
+            custom-class="mr-1 text-white pointer-events-none"
           />
           {{ $t("common.update") }}
         </NButton>

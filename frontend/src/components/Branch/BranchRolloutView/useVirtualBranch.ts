@@ -1,12 +1,10 @@
 import { cloneDeep, uniqueId } from "lodash-es";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { useDBSchemaV1Store } from "@/store";
-import { ComposedDatabase, ComposedProject, MaybeRef } from "@/types";
+import type { ComposedDatabase, ComposedProject, MaybeRef } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
-import {
-  DatabaseMetadata,
-  DatabaseMetadataView,
-} from "@/types/proto/v1/database_service";
+import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { filterDatabaseMetadata } from "@/utils";
 
 /**

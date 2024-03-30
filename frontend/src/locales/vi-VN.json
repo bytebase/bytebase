@@ -110,7 +110,6 @@
     "schema": "Lược đồ",
     "anomalies": "dị thường",
     "do-not-show-again": "Không hiển thị trở lại",
-    "backups": "Sao lưu",
     "detail": "Chi tiết",
     "type": "Kiểu",
     "language": "Ngôn ngữ",
@@ -195,7 +194,6 @@
     "enable": "Cho phép",
     "disable": "Vô hiệu hóa",
     "view-doc": "Xem tài liệu",
-    "backup-and-restore": "Sao lưu và khôi phục",
     "write-only": "chỉ viết",
     "pitr": "PITR",
     "fix": "Sửa chữa",
@@ -272,11 +270,12 @@
     "missing-permission": "Thiếu quyền cần thiết",
     "continue-anyway": "Vẫn tiếp tục",
     "permissions": "Quyền",
-    "backup": "Hỗ trợ",
     "cutover": "Chuyển đổi",
     "baseline": "Đường cơ sở",
     "project-member": "Thành viên dự án",
-    "leave-without-saving": "Rời đi mà không lưu?"
+    "leave-without-saving": "Rời đi mà không lưu?",
+    "configure-now": "Cấu hình ngay bây giờ",
+    "connection": "Sự liên quan"
   },
   "error-page": {
     "go-back-home": "Trở về nhà"
@@ -317,7 +316,7 @@
       "statement-type": "Loại câu lệnh",
       "lgtm": "LGTM",
       "pitr": "PITR",
-      "affected-rows": "Dòng bị ảnh hưởng ước tính",
+      "affected-rows": "Số lượng hàng bị ảnh hưởng (ước tính dựa trên thông tin thống kê)",
       "sql-type": "kiểu SQL",
       "summary-report": "Báo cáo tổng hợp"
     },
@@ -366,7 +365,8 @@
       "generating": "Đang tạo",
       "empty-rollback-statement": "Câu lệnh rollback trống",
       "cancel-generating": "Hủy việc tạo khôi phục SQL",
-      "sql-rollback-tips": "Khi được bật, Bytebase sẽ giữ nhật ký khôi phục cho thay đổi dữ liệu\nvà cho phép bạn tạo một vấn đề mới để hoàn nguyên thay đổi này.\nCảnh báo: Nếu bảng không có khóa chính. Hoàn tác SQL có thể ảnh hưởng\nhàng trùng lặp. Vui lòng xác nhận cẩn thận trước khi thực hiện.\n{link}"
+      "sql-rollback-tips": "Khi được bật, Bytebase sẽ giữ nhật ký khôi phục cho thay đổi dữ liệu\nvà cho phép bạn tạo một vấn đề mới để hoàn nguyên thay đổi này.\nCảnh báo: Nếu bảng không có khóa chính. Hoàn tác SQL có thể ảnh hưởng\nhàng trùng lặp. Vui lòng xác nhận cẩn thận trước khi thực hiện.\n{link}",
+      "maximum-size-tips": "Kích thước dữ liệu khôi phục tối đa được hỗ trợ là 32MB"
     },
     "skip-failed-in-current-stage": "Bỏ qua các nhiệm vụ thất bại trong giai đoạn hiện tại",
     "apply-change-to-all-pending-tasks": {
@@ -427,8 +427,7 @@
     "cloud": "Đám mây",
     "request-demo": "Đặt bản demo sản phẩm trong 30 phút.",
     "readonly": "Bytebase ở chế độ chỉ đọc. Bạn vẫn có thể xem bảng điều khiển nhưng mọi nỗ lực thay đổi sẽ không thành công.",
-    "external-url": "Bytebase chưa được định cấu hình --external-url",
-    "configure-now": "Cấu hình ngay bây giờ"
+    "external-url": "Bytebase chưa được định cấu hình --external-url"
   },
   "intro": {
     "doc": "bác sĩ",
@@ -829,14 +828,6 @@
         "override-confirm": "Vẫn tải lên"
       }
     },
-    "access-control": {
-      "description": "Định cấu hình luồng phê duyệt để kiểm soát truy vấn và xuất dữ liệu. {link}",
-      "skip-approval": "Bỏ qua phê duyệt",
-      "query-data": "Truy vấn dữ liệu",
-      "export-data": "Xuất dữ liệu",
-      "disallowed": "Không được phép",
-      "copy-data-from-sql-editor": "Sao chép dữ liệu từ SQL Editor"
-    },
     "release": {
       "new-version-available": "Phiên bản mới có sẵn",
       "new-version-content": "Hiện đã có phiên bản mới {tag}! Vui lòng kiểm tra tài liệu của chúng tôi để cài đặt.",
@@ -871,7 +862,6 @@
       "issue-status-update": "Cập nhật trạng thái sự cố",
       "pipeline-stage-status-update": "Cập nhật trạng thái giai đoạn vấn đề",
       "pipeline-task-status-update": "Cập nhật trạng thái nhiệm vụ sự cố",
-      "pipeline-task-file-commit": "Tệp cam kết",
       "pipeline-task-statement-update": "Cập nhật SQL",
       "pipeline-task-prior-backup": "Sao lưu dữ liệu trước",
       "member-create": "Tạo thành viên",
@@ -1185,7 +1175,14 @@
     "some-tasks-are-not-executed-successfully": "(Một số tác vụ không được thực hiện thành công)",
     "preview": "Vấn đề xem trước",
     "missing-sql-statement": "Câu lệnh SQL không tồn tại. Để áp dụng thay đổi này cho tất cả các nhiệm vụ, nhấn vào nút '@:{'issue.apply-to-other-tasks'}'.",
-    "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công"
+    "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công",
+    "data-export": {
+      "title": "Xuất Dữ Liệu",
+      "options": "Tùy chọn xuất",
+      "format": "Định dạng",
+      "encrypt": "Mã hóa",
+      "exported-file-downloaded": "Tệp đã xuất đã được tải xuống"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Dự án này đã kích hoạt tính năng kiểm soát phiên bản dựa trên VCS và việc chọn cơ sở dữ liệu bên dưới sẽ điều hướng bạn đến kho lưu trữ Git tương ứng để bắt đầu quá trình thay đổi.",
@@ -1346,7 +1343,36 @@
     "type-or-paste-credentials": "Nhập hoặc dán THÔNG TIN XÁC NHẬN",
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC NHẬN - chỉ viết",
     "password-write-only": "YOUR_DB_PWD - chỉ viết",
-    "secret-manager-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
+    "password-type": {
+      "password": "Mật khẩu",
+      "password-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
+      "external-secret": "Bí mật bên ngoài (Vault)"
+    },
+    "external-secret": {
+      "vault-url": "Vault URL",
+      "vault-auth-type": {
+        "self": "Vault auth type",
+        "token": {
+          "self": "Token",
+          "api-token": "Vault API token",
+          "tips": "Mã thông báo gốc không có TTL."
+        },
+        "app-role": {
+          "self": "App role",
+          "role-id": "Auth role id",
+          "secret-id": "Auth secret id",
+          "secret-id-plain-text": "Văn bản thuần túy cho id bí mật của vai trò",
+          "secret-id-environment": "Tên môi trường cho id bí mật vai trò",
+          "secret-plain-text": "Văn bản thô",
+          "secret-env-name": "Tên môi trường",
+          "secret-tips": "Một id bí mật chưa được gói mà không có TTL. Bạn có thể sử dụng văn bản thuần túy hoặc đặt nó vào môi trường hoặc tệp cục bộ. {learn_more}"
+        }
+      },
+      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-tips": "Chỉ hỗ trợ động cơ KV v2.",
+      "vault-secret-name": "Vault secret name",
+      "vault-key-name": "Vault key name for password"
+    },
     "test-connection": "Kiểm tra kết nối",
     "ignore-and-create": "Bỏ qua và tạo",
     "add-a-postgresql-sample-instance": "Thay vào đó, hãy thêm một phiên bản mẫu PostgreSQL",
@@ -1401,11 +1427,11 @@
     "create": "Tạo môi trường",
     "restore": "Khôi phục môi trường này",
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'.",
-    "disable-auto-backup": {
-      "self": "Vô hiệu hóa sao lưu tự động cơ sở dữ liệu",
-      "content": "Việc tắt chính sách sao lưu tự động không được áp dụng trở về trước.\nBạn có chắc chắn về việc áp dụng cho tất cả cơ sở dữ liệu trong môi trường này không?"
-    },
-    "production-environment": "Môi trường sản xuất"
+    "production-environment": "Môi trường sản xuất",
+    "access-control": {
+      "title": "Kiểm soát truy cập",
+      "disable-copy-data-from-sql-editor": "Vô hiệu hóa sao chép dữ liệu từ trình chỉnh sửa SQL"
+    }
   },
   "quick-start": {
     "self": "Bắt đầu nhanh",
@@ -1481,16 +1507,6 @@
       "manual-by-workspace-admin": "Quản trị viên không gian làm việc",
       "manual-by-custom-project-roles": "Vai trò dự án tùy chỉnh"
     },
-    "backup": {
-      "name": "Chính sách lịch trình sao lưu cơ sở dữ liệu",
-      "tip": "Chính sách này không được áp dụng hồi tố.",
-      "not-enforced": "Không thực thi",
-      "not-enforced-info": "Không có lịch trình sao lưu nào được thực thi.",
-      "daily": "Sao lưu hàng ngày",
-      "daily-info": "Thực thi mọi cơ sở dữ liệu để sao lưu hàng ngày.",
-      "weekly": "Sao lưu hàng tuần",
-      "weekly-info": "Thực thi mọi cơ sở dữ liệu để sao lưu hàng tuần."
-    },
     "environment-tier": {
       "name": "Cấp môi trường",
       "description": "Môi trường sẽ xuất hiện khác với các môi trường khác.",
@@ -1539,7 +1555,6 @@
     "sync-status": "Trạng thái đồng bộ hóa",
     "last-successful-sync": "Đồng bộ hóa thành công lần cuối",
     "filter-database": "Lọc cơ sở dữ liệu",
-    "database-backup": "sao lưu cơ sở dữ liệu",
     "transfer-project": "Dự án chuyển nhượng",
     "unassign": "Bỏ chỉ định",
     "unassign-alert-title": "Bỏ gán cơ sở dữ liệu",
@@ -1563,49 +1578,13 @@
     "batch-action-permission-denied": "Không có quyền {action} đối với cơ sở dữ liệu",
     "batch-action-disabled": "Không thể {action} đối với cơ sở dữ liệu từ các dự án khác nhau",
     "batch-action-disabled-for-unassigned": "Không thể {action} đối với cơ sở dữ liệu chưa được chỉ định",
+    "data-export-action-disabled": "Không thể xuất dữ liệu cho nhiều hơn một cơ sở dữ liệu",
     "successfully-transferred-databases": "Đã chuyển cơ sở dữ liệu thành công",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Đã chuyển thành công '{0}' sang dự án '{1}'.",
-    "backup-name": "Tên dự phòng",
-    "create-backup": "Tạo bản sao",
-    "automatic-x-backup": "Tự động sao lưu {freq}",
-    "automatic-backup": "Tự động sao lưu",
-    "disable-automatic-backup": "Vô hiệu hóa sao lưu tự động",
-    "backuppolicy-backup-enforced-and-cant-be-disabled": "Sao lưu {0} đã được thực thi và không thể tắt được",
-    "backup-policy": {
-      "DAILY": "HẰNG NGÀY",
-      "WEEKLY": "HÀNG TUẦN"
-    },
-    "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "Một yêu cầu HTTP POST sẽ được gửi tới nó sau khi sao lưu thành công.",
-    "backup-info": {
-      "template": "Quá trình sao lưu sẽ được thực hiện vào {dayOrWeek} hàng tuần vào lúc {time}. Dữ liệu sao lưu sẽ được lưu giữ trong {retentionDays} ngày."
-    },
-    "week": {
-      "Sunday": "Chủ nhật",
-      "Monday": "Thứ hai",
-      "Tuesday": "Thứ ba",
-      "Wednesday": "Thứ Tư",
-      "Thursday": "Thứ năm",
-      "Friday": "Thứ sáu",
-      "Saturday": "Thứ bảy",
-      "day": "ngày"
-    },
-    "enable-backup": "Bật sao lưu",
-    "backup-now": "Sao lưu ngay bây giờ",
-    "create-a-manual-backup": "Tạo bản sao lưu thủ công",
-    "disabled": "Tàn tật",
-    "enabled": "Đã bật",
-    "action-automatic-backup-for-database-props-database-name": "{0} sao lưu tự động cho cơ sở dữ liệu '{1}'.",
-    "updated-backup-webhook-url-for-database-props-database-name": "Đã cập nhật URL webhook sao lưu cho cơ sở dữ liệu '{0}'.",
     "last-sync-status": "Trạng thái đồng bộ hóa lần cuối",
     "last-sync-status-long": "Trạng thái đồng bộ hóa lần cuối {0} lúc {1}",
     "gitops-enabled": "Đã bật GitOps",
-    "restore-backup": "Khôi phục bản sao lưu '{0}' sang cơ sở dữ liệu mới",
     "nullable": "Có thể rỗng",
-    "restore": "Khôi phục",
-    "backup": {
-      "enabled": "đã bật",
-      "disabled": "tàn tật"
-    },
     "expression": "Sự biểu lộ",
     "position": "Chức vụ",
     "unique": "Độc nhất",
@@ -1640,20 +1619,6 @@
     },
     "show-reserved-tables": "Hiển thị các bảng dành riêng của Bytebase",
     "show-reserved-databases": "Hiển thị cơ sở dữ liệu dành riêng Bytebase",
-    "backup-setting": {
-      "schedule": {
-        "disabled": "Tàn tật",
-        "weekly": "Mỗi tuần",
-        "daily": "Hằng ngày"
-      },
-      "form": {
-        "schedule": "Lịch trình",
-        "day-of-week": "Ngày trong tuần",
-        "time-of-day": "Thời gian trong ngày",
-        "retention-period": "Thời gian lưu giữ (ngày)"
-      }
-    },
-    "backup-policy-violation": "Vi phạm chính sách sao lưu",
     "synced-at": "Đã đồng bộ hóa lúc {time}",
     "not-found-last-successful-sync-was": "Không tìm thấy, đồng bộ hóa thành công lần cuối là {time}",
     "view-unassigned-databases": "Xem cơ sở dữ liệu chưa được chỉ định",
@@ -1764,13 +1729,7 @@
     "file-path-template-description": "Bytebase chỉ quan sát tên đường dẫn tệp khớp với mẫu mẫu liên quan đến thư mục cơ sở.",
     "file-path-example-schema-migration": "Ví dụ về đường dẫn tệp cho kiểu di chuyển lược đồ",
     "file-path-example-data-migration": "Ví dụ về đường dẫn tệp cho loại di chuyển dữ liệu",
-    "schema-path-template": "Mẫu đường dẫn lược đồ",
-    "schema-writeback-description": "Khi được chỉ định, sau mỗi lần di chuyển, Bytebase sẽ ghi lược đồ mới nhất vào đường dẫn lược đồ tương ứng với thư mục cơ sở trong cùng nhánh với cam kết ban đầu kích hoạt quá trình di chuyển. Để trống nếu bạn không muốn Bytebase thực hiện việc này.",
-    "schema-writeback-protected-branch": "Đảm bảo nhánh đã thay đổi không được bảo vệ hoặc cho phép người bảo trì kho lưu trữ đẩy tới nhánh được bảo vệ đó.",
     "if-specified": "Nếu được chỉ định",
-    "schema-path-example": "Ví dụ về đường dẫn lược đồ",
-    "sheet-path-template": "Mẫu đường dẫn trang tính",
-    "sheet-path-template-description": "Bytebase chỉ quan sát các tệp có tên đường dẫn khớp với mẫu mẫu liên quan đến thư mục cơ sở. Các tệp phù hợp sẽ được đồng bộ hóa với SQL Editor để sử dụng ở đó.",
     "sql-review-ci": "CI đánh giá SQL",
     "sql-review-ci-enable": "Bật CI đánh giá SQL",
     "sql-review-ci-enable-gitlab": "Kích hoạt CI đánh giá SQL thông qua GitLab CI",
@@ -1792,8 +1751,6 @@
     "gitops-status": "@.capitalize:common.gitops là {status}",
     "gitops-description-file-path": "Tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong {fullPath}. Để thực hiện thay đổi lược đồ, nhà phát triển sẽ tạo tập lệnh di chuyển khớp với mẫu đường dẫn tệp {fullPathTemplate}.",
     "gitops-description-branch": "Sau khi tập lệnh được phê duyệt xem xét và hợp nhất vào nhánh {branch}, Bytebase sẽ tự động khởi động quy trình để áp dụng thay đổi lược đồ mới.",
-    "gitops-description-description-schema-path": "Sau khi áp dụng thay đổi lược đồ, Bytebase cũng sẽ ghi lược đồ mới nhất vào vị trí đường dẫn lược đồ đã chỉ định {schemaPathTemplate}.",
-    "gitops-description-sdl": "Tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong {fullPath}. Để thực hiện thay đổi lược đồ, nhà phát triển sẽ sửa đổi tập lệnh lược đồ đầy đủ khớp với mẫu đường dẫn tệp {schemaPathTemplate}. Để thực hiện thay đổi dữ liệu, nhà phát triển sẽ tạo tập lệnh di chuyển khớp với mẫu đường dẫn tệp {filePathTemplate}. Sau khi tập lệnh được hợp nhất vào nhánh {branch}, Bytebase sẽ tự động khởi động quy trình để áp dụng thay đổi cơ sở dữ liệu mới.",
     "restore-to-ui-workflow": "Khôi phục quy trình làm việc UI",
     "restore-ui-workflow-description": "Khi sử dụng quy trình làm việc UI, nhà phát triển sẽ gửi phiếu đánh giá SQL trực tiếp từ bảng điều khiển Bytebase và đợi DBA được chỉ định hoặc nhà phát triển ngang hàng xem xét. Bytebase áp dụng thay đổi SQL sau khi phê duyệt đánh giá.",
     "restore-ui-workflow-success": "Đã khôi phục thành công quy trình làm việc trên giao diện người dùng",
@@ -1838,8 +1795,6 @@
     },
     "action": {
       "check-instance": "Kiểm tra phiên bản",
-      "view-backup": "Xem bản sao lưu",
-      "configure-backup": "Định cấu hình sao lưu",
       "view-diff": "Xem khác biệt"
     },
     "last-seen": "Nhìn thấy lần cuối",
@@ -2005,7 +1960,9 @@
       "roles": "Vai trò",
       "search-member": "Tìm kiếm thành viên",
       "revoke-members": "Thu hồi các thành viên này",
-      "clean-up-expired-roles": "Dọn dẹp các vai trò đã hết hạn"
+      "clean-up-expired-roles": "Dọn dẹp các vai trò đã hết hạn",
+      "workspace-level-roles": "Vai trò cấp độ không gian làm việc",
+      "project-level-roles": "Vai trò cấp độ dự án"
     },
     "mode": {
       "standard": "Chế độ căn bản",
@@ -2021,25 +1978,30 @@
     },
     "successfully-updated-db-name-template": "Đã cập nhật thành công mẫu tên cơ sở dữ liệu.",
     "all": "Tất cả dự án",
-    "key-hint": "Các chữ cái chữ và số mô tả ngắn để xác định dự án này."
+    "key-hint": "Các chữ cái chữ và số mô tả ngắn để xác định dự án này.",
+    "gitops-connector": {
+      "self": "Trình kết nối GitOps",
+      "add": "Thêm trình kết nối GitOps",
+      "delete": "Xóa trình kết nối GitOps",
+      "update-success": "Đã cập nhật thành công trình kết nối GitOps",
+      "create-success": "Đã tạo thành công trình kết nối GitOps",
+      "delete-success": "Trình kết nối GitOps bị xóa"
+    }
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase hỗ trợ quy trình làm việc GitOps trong đó các tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong hệ thống kiểm soát phiên bản (VCS) và các tập lệnh di chuyển mới được tạo sẽ tự động kích hoạt thay đổi cơ sở dữ liệu tương ứng. Quản trị viên Bytebase quản lý tất cả các VCS hiện hành tại đây để chủ dự án có thể liên kết các dự án với kho Git của họ từ các VCS này.",
-      "description-highlight": "Nếu bạn muốn cho phép đăng nhập bên thứ ba thông qua các VCS đã định cấu hình của mình, vui lòng định cấu hình nó trong SSO.",
+      "description": "Trong luồng làm việc GitOps của Bytebase, các nhà phát triển lưu trữ các tập lệnh di chuyển trong VCS. Các yêu cầu kéo gợi nhớ xem xét SQL, và các yêu cầu được hợp nhất khởi động kế hoạch di chuyển. Người quản trị cấu hình các nhà cung cấp VCS, trong khi chủ dự án thiết lập kết nối VCS trong các dự án.",
       "add-git-provider": {
         "self": "Thêm nhà cung cấp Git",
         "description": "Trước khi bất kỳ dự án nào có thể kích hoạt quy trình làm việc GitOps, trước tiên Bytebase cần tích hợp với hệ thống kiểm soát phiên bản (VCS) tương ứng bằng cách đăng ký làm ứng dụng OAuth trong VCS đó. Dưới đây là các bước để định cấu hình tính năng này, bạn cũng có thể làm theo {guide} của chúng tôi.",
         "gitlab-self-host": "GitLab tự lưu trữ",
-        "gitlab-self-host-admin-requirement": "Bạn cần phải là Quản trị viên của phiên bản GitLab đã chọn để định cấu hình phiên bản này. Nếu không, bạn cần yêu cầu Quản trị viên phiên bản GitLab của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn phiên bản GitLab, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
-        "gitlab-com-admin-requirement": "Tài khoản của bạn cần có quyền truy cập Quản trị viên vào bất kỳ kho lưu trữ nào để được liên kết. Thông thường tài khoản này tương ứng với người dùng dịch vụ chuyên dụng thay vì người dùng con người.",
-        "github-self-host-ee": "Phiên bản doanh nghiệp tự lưu trữ GitHub (EE)",
-        "github-com-admin-requirement": "Bạn cần phải là quản trị viên của tổ chức GitHub đã chọn để định cấu hình tổ chức này. Nếu không, bạn cần yêu cầu quản trị viên tổ chức GitHub của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn tổ chức GitHub, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
+        "gitlab-self-host-admin-requirement": "Bạn phải là một quản trị viên của GitLab để có thể thực hiện điều này.",
+        "gitlab-com-admin-requirement": "Bạn phải là quản trị viên của các dự án hoặc nhóm.",
+        "github-self-host": "GitHub tự lưu trữ",
+        "github-com-admin-requirement": "TBạn phải là quản trị viên của tổ chức GitHub.",
         "bitbucket-admin-requirement": "Bạn cần phải là quản trị viên của không gian làm việc Bitbucket đã chọn để định cấu hình điều này. Nếu không, bạn cần yêu cầu quản trị viên không gian làm việc Bitbucket của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn không gian làm việc Bitbucket, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
         "azure-devops-service": "Dịch vụ Azure DevOps",
-        "azure-admin-requirement": "Bạn cần phải là quản trị viên của tổ chức Azure DevOps đã chọn để đặt cấu hình này. Nếu không, bạn cần yêu cầu quản trị viên không gian làm việc Bitbucket của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn tổ chức Azure DevOps, sau đó cung cấp cho bạn ID ứng dụng và Bí mật ứng dụng khách đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
-        "oauth-info-correct": "Thông tin OAuth đã được xác minh là chính xác",
-        "check-oauth-info-match": "Vui lòng đảm bảo Bí mật khớp với bí mật từ Ứng dụng phiên bản GitLab của bạn.",
+        "azure-admin-requirement": "TBạn phải là quản trị viên của tổ chức Azure DevOps.",
         "add-success": "Đã thêm thành công nhà cung cấp Git {vcs}",
         "choose": "Chọn nhà cung cấp Git",
         "basic-info": {
@@ -2053,38 +2015,15 @@
           "display-name": "Tên hiển thị",
           "display-name-label": "Tên hiển thị tùy chọn để giúp xác định giữa các cấu hình khác nhau bằng cách sử dụng cùng một nhà cung cấp Git."
         },
-        "oauth-info": {
+        "access-token": {
           "self": "Thông tin ứng dụng OAuth",
-          "gitlab-self-host-register-oauth-application": "Đăng ký Bytebase dưới dạng ứng dụng OAuth trên toàn phiên bản GitLab.",
-          "gitlab-self-host-login-as-admin": "Đăng nhập với tư cách người dùng Quản trị viên vào phiên bản GitLab. Tài khoản phải là Quản trị viên của toàn bộ phiên bản GitLab (tài khoản có biểu tượng cờ lê ở thanh trên cùng).",
-          "gitlab-self-host-visit-admin-page": "Đi tới trang Quản trị bằng cách nhấp vào biểu tượng cờ lê, sau đó điều hướng đến phần \"Ứng dụng\" và nhấp vào nút \"Ứng dụng mới\".",
-          "gitlab-com-register-oauth-application": "Đăng ký Bytebase làm ứng dụng OAuth của người dùng GitLab.",
-          "gitlab-com-login": "Đăng nhập bằng bất kỳ tài khoản nào bạn muốn Bytebase hoạt động. Thông thường tài khoản này tương ứng với người dùng dịch vụ chuyên dụng thay vì người dùng con người.",
-          "azure-devops-login": "Đăng nhập bằng bất kỳ tài khoản nào bạn muốn Bytebase hoạt động. Thông thường tài khoản này tương ứng với người dùng dịch vụ chuyên dụng thay vì người dùng con người.",
-          "gitlab-com-visit-application-page": "Chuyển đến trang Tùy chọn -> Ứng dụng. Bạn có thể tiếp cận nó thông qua ảnh hồ sơ của bạn ở góc trên bên phải.",
-          "azure-devops-visit-application-page": "Đi đến trang ứng dụng.",
-          "gitlab-paste-oauth-info": "Dán ID ứng dụng và Bí mật từ ứng dụng vừa tạo vào các trường bên dưới.",
-          "azure-paste-oauth-info": "Dán ID ứng dụng và Bí mật ứng dụng khách từ ứng dụng vừa tạo vào các trường bên dưới.",
-          "github-register-oauth-application": "Đăng ký Bytebase dưới dạng ứng dụng OAuth trên toàn tổ chức GitHub.",
-          "github-login-as-admin": "Đăng nhập với tư cách là người dùng quản trị viên tổ chức vào GitHub.com. Tài khoản phải là quản trị viên tổ chức của tổ chức GitHub (có thể truy cập trang Cài đặt của tổ chức).",
-          "github-visit-admin-page": "Đi tới trang Cài đặt, sau đó điều hướng đến phần \"Cài đặt dành cho nhà phát triển > Ứng dụng OAuth\" và nhấp vào nút \"Đăng ký ứng dụng\".",
-          "github-paste-oauth-info": "Dán ID khách hàng và Bí mật khách hàng từ ứng dụng vừa tạo vào các trường bên dưới.",
-          "github-enterprise-login-as-admin": "Đăng nhập với tư cách người dùng quản trị tổ chức vào trang GitHub Enterprise được lưu trữ của bạn. Tài khoản phải là quản trị viên tổ chức của tổ chức GitHub (có thể truy cập trang Cài đặt của tổ chức).",
-          "bitbucket-register-oauth-application": "Đăng ký Bytebase với tư cách là người tiêu dùng OAuth trên toàn không gian làm việc của Bitbucket.",
-          "azure-register-oauth-application": "Đăng ký Bytebase với tư cách là người tiêu dùng OAuth trên toàn tổ chức Azure DevOps.",
-          "bitbucket-login-as-admin": "Đăng nhập với tư cách người dùng quản trị không gian làm việc vào Bitbucket.org. Tài khoản phải là quản trị viên không gian làm việc của không gian làm việc Bitbucket (có thể truy cập trang Cài đặt không gian làm việc).",
-          "bitbucket-visit-admin-page": "Chuyển đến trang Cài đặt, sau đó điều hướng đến phần \"ỨNG DỤNG VÀ TÍNH NĂNG > Người tiêu dùng OAuth\" và nhấp vào nút \"Thêm người tiêu dùng\".",
-          "bitbucket-paste-oauth-info": "Dán Khóa và Bí mật từ người tiêu dùng vừa tạo vào các trường bên dưới.",
-          "copy-homepage-url": "Đã sao chép URL trang chủ vào khay nhớ tạm. Dán vào trường tương ứng trên mẫu đơn đăng ký OAuth.",
-          "copy-redirect-uri": "URI chuyển hướng được sao chép vào clipboard. Dán vào trường tương ứng trên mẫu đơn đăng ký OAuth.",
-          "direct-link": "Đương dân trực tiêp",
-          "create-oauth-app": "Tạo ứng dụng Bytebase OAuth của bạn với thông tin sau.",
-          "gitlab-application-id-error": "ID ứng dụng phải là chuỗi chữ và số gồm 64 ký tự",
-          "gitlab-secret-error": "Bí mật phải là chuỗi chữ và số gồm 64 ký tự",
-          "github-application-id-error": "ID ứng dụng phải là chuỗi gồm 20 ký tự chữ và số. Vui lòng đảm bảo rằng đó là Ứng dụng OAuth thay vì Ứng dụng GitHub.",
-          "github-secret-error": "Bí mật phải là chuỗi chữ và số gồm 40 ký tự",
-          "bitbucket-application-id-error": "ID ứng dụng phải là chuỗi chữ và số gồm 18 ký tự",
-          "bitbucket-secret-error": "Bí mật phải là chuỗi chữ và số gồm 32 ký tự"
+          "gitlab-project-access-token": "Tạo một mã thông báo truy cập dự án để quản lý một dự án duy nhất.",
+          "gitlab-group-access-token": "Tạo một mã truy cập nhóm để quản lý tất cả các dự án trong nhóm.",
+          "gitlab-personal-access-token": "Tạo một người dùng dịch vụ riêng và tạo một mã thông bảo cá nhân với vai trò người quản lý cho nhóm hoặc tất cả các dự án cần quản lý.",
+          "github-personal-access-token": "Tạo một người dùng dịch vụ riêng và tạo một mã thông báo truy cập cá nhân với vai trò thành viên cho tổ chức hoặc tất cả các dự án cần quản lý.",
+          "bitbucket-resource-access-token": "Tạo một mã truy cập cho các kho lưu trữ, dự án hoặc không gian làm việc để quản lý tài nguyên ở các cấp độ khác nhau.",
+          "bitbucket-personal-access-token": "Tạo một người dùng dịch vụ riêng và tạo một mã thông báo truy cập cá nhân với quyền đọc và ghi cho các tổ chức, dự án hoặc kho lưu trữ cần được quản lý.",
+          "azure-devops-personal-access-token": "Tạo một người dùng dịch vụ riêng và tạo một mã thông báo truy cập cá nhân với vai trò thành viên cho tổ chức hoặc tất cả các dự án cần quản lý."
         },
         "confirm": {
           "confirm-info": "Xác nhận thông tin",
@@ -2254,9 +2193,10 @@
     "link-access": "Truy cập liên kết",
     "private": "Riêng tư",
     "private-desc": "Chỉ bạn mới có thể truy cập trang tính này",
-    "project-desc": "Cả trang tính CHỦ SỞ HỮU và CHỦ SỞ HỮU dự án đều có thể đọc/ghi và NHÀ PHÁT TRIỂN dự án có thể đọc",
-    "public": "Công cộng",
-    "public-desc": "Trang tính CHỦ SỞ HỮU có thể đọc/ghi và tất cả những người khác có thể đọc",
+    "project-read": "Dự án đọc",
+    "project-read-desc": "Cả trang tính CHỦ SỞ HỮU và CHỦ SỞ HỮU dự án đều có thể đọc/ghi, các thành viên dự án khác có thể đọc",
+    "project-write": "Viết dự án",
+    "project-write-desc": "Cả trang tính CHỦ SỞ HỮU và thành viên dự án đều có thể đọc/ghi",
     "create-read-only-data-source": "Đi để tạo",
     "go-back": "Quay lại",
     "save-sheet": "Lưu trang tính",
@@ -2312,7 +2252,15 @@
     "previous-row": "Hàng trước",
     "next-row": "Hàng tiếp theo",
     "copy-success": "Sao chép thành công",
-    "missing-permission-to-load-db-metadata": "Thiếu quyền cần thiết để tải siêu dữ liệu của db {db}."
+    "missing-permission-to-load-db-metadata": "Thiếu quyền cần thiết để tải siêu dữ liệu của db {db}.",
+    "connect-in-new-tab": "Kết nối trong tab mới",
+    "copy-name": "Sao chép tên",
+    "copy-select-statement": "Sao chép câu lệnh CHỌN",
+    "preview-table-data": "Xem trước dữ liệu bảng",
+    "view-table-detail": "Xem chi tiết bảng",
+    "view-database-detail": "Xem chi tiết cơ sở dữ liệu",
+    "copy-all-column-names": "Sao chép tất cả tên cột",
+    "view-schema-text": "Xem văn bản lược đồ"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",
@@ -2463,7 +2411,7 @@
     "request-with-qr": "Quét mã QR",
     "successfully-start-trial": "Bắt đầu dùng thử miễn phí thành công trong {days} ngày",
     "successfully-upgrade-trial": "Nâng cấp thành công bản dùng thử miễn phí lên {plan}",
-    "require-subscription": "Tính năng này yêu cầu đăng ký {requiredPlan}, vui lòng mua giấy phép Bytebase để mở khóa tính năng này.",
+    "require-subscription": "Tính năng này yêu cầu đăng ký {requiredPlan}, vui lòng mua giấy phép Bytebase để mở khóa.",
     "feature-require-subscription": "{feature} yêu cầu đăng ký {requiredPlan}.",
     "required-plan-with-trial": "Tính năng này yêu cầu {requiredPlan}. {startTrial}",
     "trial-for-plan": "Bạn có thể bắt đầu dùng thử miễn phí {plan} trong {days} ngày - không cần thẻ tín dụng.",
@@ -2500,6 +2448,10 @@
       "instance-count-exceeds": "Số lượng phiên bản {count} vượt quá giới hạn {limit}"
     },
     "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "Đặt bí mật bên ngoài",
+        "desc": "Sử dụng Vault hoặc URL tùy chỉnh làm bí mật bên ngoài cho mật khẩu cơ sở dữ liệu."
+      },
       "bb-feature-task-schedule-time": {
         "title": "Đặt thời gian thực hiện nhiệm vụ",
         "desc": "Đặt thời gian lập lịch tác vụ cho phép bạn đặt thời gian cụ thể để thực hiện các tác vụ của mình."
@@ -2526,10 +2478,6 @@
         "title": "Chính sách triển khai",
         "desc": "Chính sách triển khai kiểm soát xem tác vụ thay đổi lược đồ có yêu cầu triển khai thủ công hay không."
       },
-      "bb-feature-backup-policy": {
-        "title": "Chính sách dự phòng",
-        "desc": "Chính sách sao lưu sẽ tự động sao lưu cơ sở dữ liệu của bạn theo lịch trình."
-      },
       "bb-feature-environment-tier-policy": {
         "title": "Cấp môi trường",
         "desc": "Đánh dấu môi trường là sản xuất."
@@ -2540,7 +2488,7 @@
       },
       "bb-feature-access-control": {
         "title": "Kiểm soát truy cập dữ liệu",
-        "desc": "Định cấu hình luồng phê duyệt để kiểm soát truy vấn và xuất dữ liệu."
+        "desc": "Hạn chế quyền truy cập dữ liệu của người dùng, chẳng hạn như cấm người dùng sao chép kết quả truy vấn dữ liệu."
       },
       "bb-feature-lgtm": {
         "title": "Kiểm tra LGTM",
@@ -2557,14 +2505,6 @@
       "bb-feature-custom-approval": {
         "title": "Phê duyệt tùy chỉnh",
         "desc": "Định cấu hình mức độ rủi ro và luồng phê duyệt cho các nhiệm vụ khác nhau."
-      },
-      "bb-feature-vcs-schema-write-back": {
-        "title": "Viết lại lược đồ",
-        "desc": "Sau khi thay đổi lược đồ thành công, việc ghi lại lược đồ cho phép Bytebase ghi lại ảnh chụp nhanh lược đồ đầy đủ mới nhất vào kho lưu trữ VCS của bạn."
-      },
-      "bb-feature-vcs-sheet-sync": {
-        "title": "Đồng bộ hóa tập lệnh SQL từ VCS",
-        "desc": "Đồng bộ hóa các tập lệnh SQL được lưu trữ trong VCS sang Trang tính."
       },
       "bb-feature-vcs-sql-review": {
         "title": "Đánh giá SQL trong quy trình làm việc GitOps",
@@ -2597,10 +2537,6 @@
       "bb-feature-online-migration": {
         "title": "Di chuyển trực tuyến",
         "desc": "Dựa trên gh-ost. Đối với các bảng lớn, nó có thể giảm thời gian khóa bảng từ vài giờ xuống còn vài giây."
-      },
-      "bb-feature-disaster-recovery-pitr": {
-        "title": "Phục hồi tại thời điểm (PITR)",
-        "desc": "Khôi phục trạng thái cơ sở dữ liệu về một thời điểm."
       },
       "bb-feature-sync-schema-all-versions": {
         "title": "Đồng bộ hóa lược đồ tất cả các phiên bản",
@@ -2859,7 +2795,9 @@
     "role": "Vai trò",
     "database-group": "Nhóm cơ sở dữ liệu",
     "schema-group": "Nhóm bảng",
-    "changelist": "Danh sách thay đổi"
+    "changelist": "Danh sách thay đổi",
+    "vcs-provider": "Nhà cung cấp GitOps",
+    "vcs-connector": "Trình kết nối GitOps"
   },
   "resource-id": {
     "self": "ID {resource}",
@@ -2999,8 +2937,9 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Tạo nên cơ sở dữ liệu",
-          "query": "Yêu cầu truy vấn",
-          "export": "Yêu cầu xuất"
+          "data_export": "Xuất Dữ Liệu",
+          "request_query": "Yêu Cầu Vai Trò Người Truy Vấn",
+          "request_export": "Yêu Cầu Vai Trò Người Xuất khẩu"
         }
       },
       "template": {
@@ -3317,7 +3256,7 @@
     "search-tables": "Tìm kiếm bảng",
     "use-tips": "Bấm vào một bảng để bắt đầu.",
     "apply-to-database": "Áp dụng thay đổi cho cơ sở dữ liệu",
-    "select-database-placeholder": "Chọn cơ sở dữ liệu (chỉ MySQL, PostgreSQL và TiDB)",
+    "select-database-placeholder": "Chọn cơ sở dữ liệu (chỉ MySQL, PostgreSQL, TiDB và Oracle)",
     "message": {
       "created-succeed": "Chi nhánh được tạo thành công",
       "updated-succeed": "Chi nhánh được cập nhật thành công",

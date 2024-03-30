@@ -2,6 +2,8 @@ package api
 
 import (
 	"encoding/json"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // TaskStatus is the status of a task.
@@ -44,54 +46,13 @@ const (
 	TaskDatabaseSchemaUpdateGhostCutover TaskType = "bb.task.database.schema.update.ghost.cutover"
 	// TaskDatabaseDataUpdate is the task type for updating database data.
 	TaskDatabaseDataUpdate TaskType = "bb.task.database.data.update"
-	// TaskDatabaseBackup is the task type for creating database backups.
-	TaskDatabaseBackup TaskType = "bb.task.database.backup"
-	// TaskDatabaseRestorePITRRestore is the task type for restoring databases using PITR.
-	TaskDatabaseRestorePITRRestore TaskType = "bb.task.database.restore.pitr.restore"
-	// TaskDatabaseRestorePITRCutover is the task type for swapping the pitr and original database.
-	TaskDatabaseRestorePITRCutover TaskType = "bb.task.database.restore.pitr.cutover"
+	// TaskDatabaseDataExport is the task type for exporting database data.
+	TaskDatabaseDataExport TaskType = "bb.task.database.data.export"
 )
 
 // These payload types are only used when marshalling to the json format for saving into the database.
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
-
-// TaskDatabasePITRRestorePayload is the task payload for database PITR restore.
-type TaskDatabasePITRRestorePayload struct {
-	// Common fields
-	Skipped       bool   `json:"skipped,omitempty"`
-	SkippedReason string `json:"skippedReason,omitempty"`
-	SpecID        string `json:"specId,omitempty"`
-
-	// The project owning the database.
-	ProjectID int `json:"projectId,omitempty"`
-
-	// DatabaseName is the target database name.
-	// It is nil for the case of in-place PITR.
-	DatabaseName *string `json:"databaseName,omitempty"`
-
-	// TargetInstanceId must be within the same environment as the instance of the original database.
-	// Only used when doing PITR to a new database now.
-	TargetInstanceID *int `json:"targetInstanceId,omitempty"`
-
-	// BackupID and PointInTimeTs only allow one non-nil.
-
-	// Only used when doing restore full backup only.
-	BackupID *int `json:"backupId,omitempty"`
-
-	// After the PITR operations, the database will be recovered to the state at this time.
-	// Represented in UNIX timestamp in seconds.
-	PointInTimeTs *int64 `json:"pointInTimeTs,omitempty"`
-}
-
-// TaskDatabasePITRCutoverPayload is the task payload for PITR cutover.
-// It is currently only a placeholder.
-type TaskDatabasePITRCutoverPayload struct {
-	// Common fields
-	Skipped       bool   `json:"skipped,omitempty"`
-	SkippedReason string `json:"skippedReason,omitempty"`
-	SpecID        string `json:"specId,omitempty"`
-}
 
 // TaskDatabaseCreatePayload is the task payload for creating databases.
 type TaskDatabaseCreatePayload struct {
@@ -230,14 +191,14 @@ type PreUpdateBackupDetail struct {
 	Database string `json:"database,omitempty"`
 }
 
-// TaskDatabaseBackupPayload is the task payload for database backup.
-type TaskDatabaseBackupPayload struct {
+// TaskDatabaseDataExportPayload is the task payload for database data export.
+type TaskDatabaseDataExportPayload struct {
 	// Common fields
-	Skipped       bool   `json:"skipped,omitempty"`
-	SkippedReason string `json:"skippedReason,omitempty"`
-	SpecID        string `json:"specId,omitempty"`
+	SpecID string `json:"specId,omitempty"`
 
-	BackupID int `json:"backupId,omitempty"`
+	SheetID  int                  `json:"sheetId,omitempty"`
+	Format   storepb.ExportFormat `json:"format,omitempty"`
+	Password string               `json:"password,omitempty"`
 }
 
 // Progress is a generalized struct which can track the progress of a task.

@@ -7,7 +7,10 @@
         :options="items"
         :value="value"
         :consistent-menu-width="false"
-        @update:value="(value: ValueType, option: TabFilterItem<ValueType>) => $emit('update:value', value, option)"
+        @update:value="
+          (value: ValueType, option: TabFilterItem<ValueType>) =>
+            $emit('update:value', value, option)
+        "
       />
     </div>
     <div
@@ -37,7 +40,7 @@
 
 <script lang="ts" setup>
 import { NSelect } from "naive-ui";
-import { TabFilterItem } from "./types";
+import type { TabFilterItem } from "./types";
 
 type ValueType = string | number; // Use generic typed component in the future
 

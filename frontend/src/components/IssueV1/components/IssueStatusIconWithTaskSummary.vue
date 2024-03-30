@@ -21,7 +21,7 @@
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { ComposedIssue } from "@/types";
+import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
 

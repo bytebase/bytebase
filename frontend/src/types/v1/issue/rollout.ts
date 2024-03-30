@@ -69,9 +69,9 @@ export const TaskTypeListWithStatement: Task_Type[] = [
   Task_Type.DATABASE_SCHEMA_UPDATE,
   Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
   Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
+  Task_Type.DATABASE_DATA_EXPORT,
 ];
 
 export const TaskTypeListWithProgress: Task_Type[] = [
   Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
-  Task_Type.DATABASE_RESTORE_RESTORE,
 ];

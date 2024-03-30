@@ -10,12 +10,14 @@
 </template>
 
 <script lang="ts" setup>
-import { DataTableColumn, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { PresetRoleType } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
-import { displayRoleTitle } from "@/utils";
+import { useRoleStore } from "@/store";
+import { PRESET_WORKSPACE_ROLES } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
+import { displayRoleTitle, sortRoles } from "@/utils";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 
@@ -40,6 +42,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const roleStore = useRoleStore();
 
 const columns = computed(() => {
   return [
@@ -62,6 +65,15 @@ const columns = computed(() => {
                 },
                 displayRoleTitle(row.name)
               ),
+              // Show additional tips for project roles.
+              !PRESET_WORKSPACE_ROLES.includes(row.name) &&
+                h(
+                  "span",
+                  {
+                    class: "ml-1 font-normal text-control-light",
+                  },
+                  `(${t("role.project-roles.apply-to-all-projects")})`
+                ),
               h(
                 "span",
                 {
@@ -99,7 +111,7 @@ const columns = computed(() => {
 });
 
 const userListByRole = computed(() => {
-  const roles = Object.values(PresetRoleType);
+  const roles = sortRoles(roleStore.roleList.map((role) => role.name));
   const rowDataList: RoleRowData[] = [];
 
   for (const role of roles) {

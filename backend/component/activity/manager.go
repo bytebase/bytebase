@@ -59,12 +59,13 @@ func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, tasks []
 		}
 
 		activityCreate := &store.ActivityMessage{
-			CreatorUID:   updaterUID,
-			ContainerUID: task.PipelineID,
-			Type:         api.ActivityPipelineTaskRunStatusUpdate,
-			Level:        api.ActivityInfo,
-			Comment:      comment,
-			Payload:      string(payload),
+			CreatorUID:        updaterUID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      task.PipelineID,
+			Type:              api.ActivityPipelineTaskRunStatusUpdate,
+			Level:             api.ActivityInfo,
+			Comment:           comment,
+			Payload:           string(payload),
 		}
 		creates = append(creates, activityCreate)
 	}
@@ -145,12 +146,13 @@ func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks [
 		}
 
 		activityCreate := &store.ActivityMessage{
-			CreatorUID:   updaterID,
-			ContainerUID: task.PipelineID,
-			Type:         api.ActivityPipelineTaskRunStatusUpdate,
-			Level:        api.ActivityInfo,
-			Comment:      comment,
-			Payload:      string(payload),
+			CreatorUID:        updaterID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      task.PipelineID,
+			Type:              api.ActivityPipelineTaskRunStatusUpdate,
+			Level:             api.ActivityInfo,
+			Comment:           comment,
+			Payload:           string(payload),
 		}
 		creates = append(creates, activityCreate)
 	}
@@ -230,12 +232,13 @@ func (m *Manager) BatchCreateActivitiesForCancelTaskRuns(ctx context.Context, ta
 		}
 
 		activityCreate := &store.ActivityMessage{
-			CreatorUID:   updaterUID,
-			ContainerUID: task.PipelineID,
-			Type:         api.ActivityPipelineTaskRunStatusUpdate,
-			Level:        api.ActivityInfo,
-			Comment:      comment,
-			Payload:      string(payload),
+			CreatorUID:        updaterUID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      task.PipelineID,
+			Type:              api.ActivityPipelineTaskRunStatusUpdate,
+			Level:             api.ActivityInfo,
+			Comment:           comment,
+			Payload:           string(payload),
 		}
 		creates = append(creates, activityCreate)
 	}
@@ -563,8 +566,8 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 				return taskRuns[i].ID > taskRuns[j].ID
 			})
 
-			var result api.TaskRunResultPayload
-			if err := json.Unmarshal([]byte(taskRuns[0].Result), &result); err != nil {
+			var result storepb.TaskRunResult
+			if err := protojson.Unmarshal([]byte(taskRuns[0].Result), &result); err != nil {
 				err := errors.Wrap(err, "failed to unmarshal TaskRun Result")
 				slog.Warn(err.Error(),
 					slog.Any("TaskRun", taskRuns[0]),

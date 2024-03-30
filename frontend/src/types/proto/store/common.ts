@@ -25,6 +25,7 @@ export enum Engine {
   OCEANBASE_ORACLE = 17,
   STARROCKS = 18,
   DORIS = 19,
+  HIVE = 20,
   UNRECOGNIZED = -1,
 }
 
@@ -90,6 +91,9 @@ export function engineFromJSON(object: any): Engine {
     case 19:
     case "DORIS":
       return Engine.DORIS;
+    case 20:
+    case "HIVE":
+      return Engine.HIVE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -139,6 +143,8 @@ export function engineToJSON(object: Engine): string {
       return "STARROCKS";
     case Engine.DORIS:
       return "DORIS";
+    case Engine.HIVE:
+      return "HIVE";
     case Engine.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -230,6 +236,57 @@ export function maskingLevelToJSON(object: MaskingLevel): string {
     case MaskingLevel.FULL:
       return "FULL";
     case MaskingLevel.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum ExportFormat {
+  FORMAT_UNSPECIFIED = 0,
+  CSV = 1,
+  JSON = 2,
+  SQL = 3,
+  XLSX = 4,
+  UNRECOGNIZED = -1,
+}
+
+export function exportFormatFromJSON(object: any): ExportFormat {
+  switch (object) {
+    case 0:
+    case "FORMAT_UNSPECIFIED":
+      return ExportFormat.FORMAT_UNSPECIFIED;
+    case 1:
+    case "CSV":
+      return ExportFormat.CSV;
+    case 2:
+    case "JSON":
+      return ExportFormat.JSON;
+    case 3:
+    case "SQL":
+      return ExportFormat.SQL;
+    case 4:
+    case "XLSX":
+      return ExportFormat.XLSX;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ExportFormat.UNRECOGNIZED;
+  }
+}
+
+export function exportFormatToJSON(object: ExportFormat): string {
+  switch (object) {
+    case ExportFormat.FORMAT_UNSPECIFIED:
+      return "FORMAT_UNSPECIFIED";
+    case ExportFormat.CSV:
+      return "CSV";
+    case ExportFormat.JSON:
+      return "JSON";
+    case ExportFormat.SQL:
+      return "SQL";
+    case ExportFormat.XLSX:
+      return "XLSX";
+    case ExportFormat.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }

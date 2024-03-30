@@ -1,6 +1,8 @@
 package oracle
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -206,7 +208,7 @@ func (t *transformerListener) EnterCreate_index(ctx *plsqlparser.Create_indexCon
 	for _, expr := range indexDefine.AllIndex_expr_option() {
 		if expr.Index_expr().Column_name() != nil {
 			_, _, columnName := plsql.NormalizeColumnName(expr.Index_expr().Column_name())
-			keys = append(keys, columnName)
+			keys = append(keys, fmt.Sprintf("\"%s\"", columnName))
 		} else if expr.Index_expr().Expression() != nil {
 			keys = append(keys, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr.Index_expr().Expression()))
 		}

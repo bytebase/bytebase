@@ -39,7 +39,7 @@ type TaskMessage struct {
 	Type              api.TaskType
 	Payload           string
 	EarliestAllowedTs int64
-	BlockedBy         []int
+	DependsOn         []int
 
 	DatabaseName string
 	// Statement used by grouping batch change, Bytebase use it to render.
@@ -248,7 +248,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	var tasks []*TaskMessage
 	for rows.Next() {
 		task := &TaskMessage{}
-		var blockedBy pgtype.Int4Array
+		var dependsOn pgtype.Int4Array
 		if err := rows.Scan(
 			&task.ID,
 			&task.CreatorID,
@@ -264,11 +264,11 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			&task.Type,
 			&task.Payload,
 			&task.EarliestAllowedTs,
-			&blockedBy,
+			&dependsOn,
 		); err != nil {
 			return nil, err
 		}
-		if err := blockedBy.AssignTo(&task.BlockedBy); err != nil {
+		if err := dependsOn.AssignTo(&task.DependsOn); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, task)
@@ -399,7 +399,8 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 // 2. are not skipped
 // 3. are associated with an open issue or no issue
 // 4. are in an environment that has auto rollout enabled
-// 5. are in the stage that is the first among the selected stages in the pipeline.
+// 5. are in the stage that is the first among the selected stages in the pipeline
+// 6. are not data export tasks.
 func (s *Store) ListTasksToAutoRollout(ctx context.Context, environmentIDs []int) ([]int, error) {
 	rows, err := s.db.db.QueryContext(ctx, `
 	SELECT
@@ -414,6 +415,7 @@ func (s *Store) ListTasksToAutoRollout(ctx context.Context, environmentIDs []int
 		(SELECT 1 AS e FROM task_run WHERE task_run.task_id = task.id LIMIT 1) task_run
 		ON TRUE
 	WHERE task_run.e IS NULL
+	AND task.type != 'bb.task.database.data.export'
 	AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
 	AND COALESCE(issue.status, 'OPEN') = 'OPEN'
 	AND stage.environment_id = ANY($1)

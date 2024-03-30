@@ -38,9 +38,10 @@ import { escape } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBGrid, BBGridRow, BBGridColumn } from "@/bbkit";
+import type { BBGridRow, BBGridColumn } from "@/bbkit";
+import { BBGrid } from "@/bbkit";
 import { useUserStore } from "@/store";
-import { Changelist } from "@/types/proto/v1/changelist_service";
+import type { Changelist } from "@/types/proto/v1/changelist_service";
 import {
   extractUserResourceName,
   getHighlightHTMLByRegExp,

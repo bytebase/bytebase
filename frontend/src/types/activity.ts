@@ -1,25 +1,18 @@
-import {
-  LogEntity_Action,
-  LogEntity_Level,
-} from "@/types/proto/v1/logging_service";
-import { FieldId } from "../plugins";
+import type { LogEntity_Level } from "@/types/proto/v1/logging_service";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
+import type { FieldId } from "../plugins";
 import { t } from "../plugins/i18n";
-import { ExternalApprovalEvent } from "./externalApproval";
-import {
-  DatabaseId,
-  InstanceId,
-  IssueId,
-  PrincipalId,
-  SheetId,
-  StageId,
-  TaskId,
-} from "./id";
-import { IssueStatus } from "./issue";
-import { MemberStatus, RoleType } from "./member";
-import { StageStatusUpdateType, TaskRunStatus, TaskStatus } from "./pipeline";
-import { ApprovalEvent } from "./review";
-import { Advice } from "./sqlAdvice";
-import { VCSPushEvent } from "./vcs";
+import type { ExternalApprovalEvent } from "./externalApproval";
+import type { IssueId, PrincipalId, SheetId, StageId, TaskId } from "./id";
+import type { IssueStatus } from "./issue";
+import type { MemberStatus, RoleType } from "./member";
+import type {
+  StageStatusUpdateType,
+  TaskRunStatus,
+  TaskStatus,
+} from "./pipeline";
+import type { ApprovalEvent } from "./review";
+import type { VCSPushEvent } from "./vcs";
 
 export function activityName(action: LogEntity_Action): string {
   switch (action) {
@@ -39,8 +32,6 @@ export function activityName(action: LogEntity_Action): string {
       return t("activity.type.pipeline-task-status-update");
     case LogEntity_Action.ACTION_PIPELINE_TASK_PRIOR_BACKUP:
       return t("activity.type.pipeline-task-prior-backup");
-    case LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT:
-      return t("activity.type.pipeline-task-file-commit");
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
       return t("activity.type.pipeline-task-statement-update");
     case LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
@@ -61,8 +52,6 @@ export function activityName(action: LogEntity_Action): string {
       return t("activity.type.project-member-create");
     case LogEntity_Action.ACTION_PROJECT_MEMBER_DELETE:
       return t("activity.type.project-member-delete");
-    case LogEntity_Action.ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE:
-      return t("activity.type.database-recovery-pitr-done");
   }
   console.assert(false, `undefined text for activity type "${action}"`);
   return "";
@@ -123,15 +112,6 @@ export type ActivityPipelineTaskRunStatusUpdatePayload = {
   newStatus: TaskRunStatus;
   issueName: string;
   taskName: string;
-};
-
-export type ActivityTaskFileCommitPayload = {
-  taskId: TaskId;
-  vcsInstanceUrl: string;
-  repositoryFullPath: string;
-  branch: string;
-  filePath: string;
-  commitId: string;
 };
 
 export type ActivityTaskStatementUpdatePayload = {
@@ -198,32 +178,19 @@ export type ActivityProjectDatabaseTransferPayload = {
   databaseName: string;
 };
 
-export type ActivitySQLEditorQueryPayload = {
-  statement: string;
-  durationNs: number;
-  instanceId: InstanceId;
-  instanceName: string;
-  databaseId: DatabaseId;
-  databaseName: string;
-  error: string;
-  adviceList: Advice[];
-};
-
 export type ActionPayloadType =
   | ActivityIssueCreatePayload
   | ActivityIssueCommentCreatePayload
   | ActivityIssueFieldUpdatePayload
   | ActivityIssueStatusUpdatePayload
   | ActivityTaskStatusUpdatePayload
-  | ActivityTaskFileCommitPayload
   | ActivityTaskStatementUpdatePayload
   | ActivityTaskEarliestAllowedTimeUpdatePayload
   | ActivityMemberCreatePayload
   | ActivityMemberRoleUpdatePayload
   | ActivityMemberActivateDeactivatePayload
   | ActivityProjectRepositoryPushPayload
-  | ActivityProjectDatabaseTransferPayload
-  | ActivitySQLEditorQueryPayload;
+  | ActivityProjectDatabaseTransferPayload;
 
 export interface FindActivityMessage {
   resource?: string;

@@ -24,10 +24,11 @@
 
 <script setup lang="ts">
 import { orderBy, uniqBy } from "lodash-es";
-import { CascaderOption, NCascader } from "naive-ui";
+import type { CascaderOption } from "naive-ui";
+import { NCascader } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { ComposedDatabase } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { groupBy } from "@/utils";
 
 type KV = { key: string; value: string };
@@ -99,7 +100,8 @@ const options = computed(() => {
     };
   });
 });
-const renderLabel = (option: KeyOption | KeyValueOption) => {
+const renderLabel = (cascaderOption: CascaderOption) => {
+  const option = cascaderOption as KeyOption | KeyValueOption;
   if (option.type === "key") {
     const { key } = option;
     return key;

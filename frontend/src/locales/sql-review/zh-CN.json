@@ -67,7 +67,12 @@
     },
     "table-text-fields-total-length": {
       "title": "限制表格文本字段的总长度",
-      "description": "该规则限制了表格所能容纳的数据量，防止存储空间的使用过量。"
+      "description": "该规则限制了表格所能容纳的数据量，防止存储空间的使用过量。",
+      "component": {
+        "number": {
+          "title": "最大长度"
+        }
+      }
     },
     "table-disallow-set-charset": {
       "title": "禁止在表格属性中定义字符集",
@@ -355,7 +360,7 @@
       }
     },
     "statement-affected-row-limit": {
-      "title": "限制最大更新或删除行数",
+      "title": "限制最大更新或删除行数(预估)",
       "description": "通过提示更新或删除的行数辅助判断语句是否符合业务预期。建议错误等级：警告",
       "component": {
         "number": {
@@ -373,7 +378,7 @@
     },
     "statement-add-check-not-valid": {
       "title": "强制添加 \"CHECK\" 约束时附带 \"NOT VALID\" 选项",
-      "description": "在 PostgreSQL 11 之前的版本中，添加 CHECK 约束将对已有数据进行校验并导致全表锁定无法读写，这可能导致业务中断。建议附带 \"NOT VALID\" 选项只对新数据进行校验，变更完成后再手动校验已有数据。在 PostgreSQL 11 及以上版本中该问题已得到优化，无需关注此规范。建议错误等级：警告"
+      "description": "添加 CHECK 约束将对已有数据进行校验并要求 ACCESS EXCLUSIVE 表锁，阻塞读写，这可能导致业务中断。建议附带 \"NOT VALID\" 选项只对新数据进行校验，变更完成后再手动校验已有数据。建议错误等级：警告"
     },
     "statement-disallow-add-not-null": {
       "title": "限制向已有列添加 \"NOT NULL\" 约束",
@@ -407,37 +412,62 @@
       "title": "在 WHERE 子句中避免对索引字段应用函数或执行计算",
       "description": "如果对索引字段应用函数或执行计算，则数据库无法使用索引，而必须扫描整个表。"
     },
-    "statement-where-statement-query-minimum-plan-level": {
+    "statement-query-minimum-plan-level": {
       "title": "限制查询访问方法的最大级别",
-      "description": "在 SQL 性能优化中，追求常量访问速度，以引用级别作为基线，区间级别的性能尚可接受。"
+      "description": "在 SQL 性能优化中，追求常量访问速度，以引用级别作为基线，区间级别的性能尚可接受。",
+      "component": {
+        "level": {
+          "title": "最大级别"
+        }
+      }
     },
     "statement-where-maximum-logical-operator-count": {
       "title": "限制 WHERE 子句中的 IN 或 OR 子句中的值的数量",
-      "description": "这可以防止因频繁对比和资源限制导致性能下降。"
+      "description": "这可以防止因频繁对比和资源限制导致性能下降。",
+      "component": {
+        "number": {
+          "title": "最大数量"
+        }
+      }
     },
     "statement-maximum-limit-value": {
       "title": "限制 LIMIT 子句的最大行数",
-      "description": "通过 LIMIT 限制行数可以确保数据库处理可管理的大小块数据，从而提高查询执行速度。 限制 LIMIT 的值可以防止过度使用内存，从而保护系统整体稳定性和防止性能下降。"
+      "description": "通过 LIMIT 限制行数可以确保数据库处理可管理的大小块数据，从而提高查询执行速度。 限制 LIMIT 的值可以防止过度使用内存，从而保护系统整体稳定性和防止性能下降。",
+      "component": {
+        "number": {
+          "title": "最大行数"
+        }
+      }
     },
     "statement-maximum-join-table-count": {
       "title": "限制语句中连接的表数量",
-      "description": "连接的表越多，查询就越复杂，执行时间也越长。 通常情况下，最好将连接数控制在最低限度。"
+      "description": "连接的表越多，查询就越复杂，执行时间也越长。 通常情况下，最好将连接数控制在最低限度。",
+      "component": {
+        "number": {
+          "title": "最大值"
+        }
+      }
     },
     "statement-maximum-statements-in-transaction": {
       "title": "限制事务中的语句数量",
-      "description": "巨大的事务会显著影响数据库性能。如果涉及大量语句并且其中一个语句失败，则回滚整个事务会变得复杂。限制语句数量可以最小化单个故障造成的潜在损害并简化回滚过程。"
+      "description": "巨大的事务会显著影响数据库性能。如果涉及大量语句并且其中一个语句失败，则回滚整个事务会变得复杂。限制语句数量可以最小化单个故障造成的潜在损害并简化回滚过程。",
+      "component": {
+        "number": {
+          "title": "最大行数"
+        }
+      }
     },
     "statement-join-strict-column-attrs": {
       "title": "要进行连接的字段必须具有相同的数据类型和字符集。",
       "description": "如果连接列的数据类型、字符集不一致，数据库可能无法正确识别匹配的行，从而导致结果不准确或不完整。"
     },
-    "statement-disallow-mix-dml": {
-      "title": "禁止在同一张表上进行多个 DML 操作",
-      "description": "对表格进行并发数据修改可能会给准确识别受影响的行带来挑战。 因此，这会使创建受影响数据的精确备份过程变得复杂。"
-    },
     "statement-disallow-mix-ddl-dml": {
       "title": "禁止混合 DDL 和 DML 操作",
       "description": "为了获得最佳性能和数据完整性，请避免在同一个脚本中混合使用 DDL 和 DML 语句。"
+    },
+    "statement-prior-backup-check": {
+      "title": "检查能否预前备份数据",
+      "description": "此规则将检查是否可以在数据更改前创建备份。该规则要求备份目标数据库存在且不存在DDL语句。"
     },
     "schema-backward-compatibility": {
       "title": "检查应用向后兼容性",
@@ -559,6 +589,14 @@
           "title": "阈值"
         }
       }
+    },
+    "statement-add-foreign-key-not-valid": {
+      "title": "强制添加外键时附带 \"NOT VALID\" 选项",
+      "description": "添加外键会校验已有数据并要求 SHARE ROW EXCLUSIVE 表锁，阻塞写入，这可能导致业务中断。建议附带 \"NOT VALID\" 选项只对新数据进行校验，变更完成后再校验已有数据。建议错误等级：警告"
+    },
+    "statement-non-transactional": {
+      "description": "",
+      "title": "检测并报告非事务性语句"
     }
   },
   "level": {

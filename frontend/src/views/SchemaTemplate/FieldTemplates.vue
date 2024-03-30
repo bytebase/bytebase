@@ -76,7 +76,7 @@ import {
   ColumnMetadata,
   ColumnConfig,
 } from "@/types/proto/v1/database_service";
-import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 
 interface LocalState {
   template: SchemaTemplateSetting_FieldTemplate;

@@ -6,6 +6,7 @@ import (
 	// Drivers.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/dm"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/hive"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/redis"
@@ -25,4 +26,10 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
+
+	// Schema designer.
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/oracle"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/tidb"
 )

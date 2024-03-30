@@ -2,13 +2,13 @@ import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { policyServiceClient } from "@/grpcweb";
 import { policyNamePrefix } from "@/store/modules/v1/common";
-import { MaybeRef, UNKNOWN_USER_NAME, VirtualRoleType } from "@/types";
+import type { MaybeRef } from "@/types";
+import { UNKNOWN_USER_NAME, VirtualRoleType } from "@/types";
+import type { Policy } from "@/types/proto/v1/org_policy_service";
 import {
-  Policy,
   PolicyType,
   PolicyResourceType,
   policyTypeToJSON,
-  BackupPlanSchedule,
   RolloutPolicy,
 } from "@/types/proto/v1/org_policy_service";
 import { useCurrentUserV1 } from "../auth";
@@ -245,32 +245,6 @@ export const usePolicyByParentAndType = (
     const res = store.getPolicyByName(name);
     return res;
   });
-};
-
-export const defaultBackupSchedule = BackupPlanSchedule.UNSET;
-
-export const getDefaultBackupPlanPolicy = (
-  parentPath: string,
-  resourceType: PolicyResourceType
-): Policy => {
-  const name = replacePolicyTypeNameToLowerCase(
-    `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
-      PolicyType.BACKUP_PLAN
-    )}`
-  );
-  return {
-    name,
-    uid: "",
-    resourceUid: "",
-    inheritFromParent: false,
-    type: PolicyType.BACKUP_PLAN,
-    resourceType: resourceType,
-    enforce: true,
-    backupPlanPolicy: {
-      schedule: defaultBackupSchedule,
-      retentionDuration: undefined,
-    },
-  };
 };
 
 // Default RolloutPolicy payload is somehow strict to prevent auto rollout

@@ -85,14 +85,10 @@ import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPa
 import ProjectRoleSelect from "@/components/v2/Select/ProjectRoleSelect.vue";
 import { useUserStore } from "@/store";
 import { getUserId } from "@/store/modules/v1/common";
-import {
-  ComposedProject,
-  DatabaseResource,
-  getUserEmailInBinding,
-  PresetRoleType,
-} from "@/types";
+import type { ComposedProject, DatabaseResource } from "@/types";
+import { getUserEmailInBinding, PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import { Binding } from "@/types/proto/v1/iam_policy";
+import type { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle, extractDatabaseResourceName } from "@/utils";
 
 const props = defineProps<{
@@ -133,8 +129,11 @@ onMounted(() => {
   if (props.binding) {
     const userUidList = [];
     for (const member of props.binding.members) {
-      // Member format: user:{email}
-      const user = userStore.getUserByEmail(member.slice(5));
+      let email = member;
+      if (member.startsWith("user:")) {
+        email = member.slice(5);
+      }
+      const user = userStore.getUserByEmail(email);
       if (user) {
         const userUid = getUserId(user.name);
         userUidList.push(String(userUid));
@@ -298,19 +297,19 @@ const generateConditionTitle = () => {
 };
 
 const getDatabaseResourceName = (databaseResource: DatabaseResource) => {
-  const { database } = extractDatabaseResourceName(
+  const { databaseName } = extractDatabaseResourceName(
     databaseResource.databaseName
   );
   if (databaseResource.table) {
     if (databaseResource.schema) {
-      return `${database}.${databaseResource.schema}.${databaseResource.table}`;
+      return `${databaseName}.${databaseResource.schema}.${databaseResource.table}`;
     } else {
-      return `${database}.${databaseResource.table}`;
+      return `${databaseName}.${databaseResource.table}`;
     }
   } else if (databaseResource.schema) {
-    return `${database}.${databaseResource.schema}`;
+    return `${databaseName}.${databaseResource.schema}`;
   } else {
-    return database;
+    return databaseName;
   }
 };
 

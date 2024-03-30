@@ -8,10 +8,6 @@ const (
 	AnomalyInstanceConnection AnomalyType = "bb.anomaly.instance.connection"
 	// AnomalyInstanceMigrationSchema is the anomaly type for schema migrations.
 	AnomalyInstanceMigrationSchema AnomalyType = "bb.anomaly.instance.migration-schema"
-	// AnomalyDatabaseBackupPolicyViolation is the anomaly type for backup policy violations.
-	AnomalyDatabaseBackupPolicyViolation AnomalyType = "bb.anomaly.database.backup.policy-violation"
-	// AnomalyDatabaseBackupMissing is the anomaly type for missing backups.
-	AnomalyDatabaseBackupMissing AnomalyType = "bb.anomaly.database.backup.missing"
 	// AnomalyDatabaseConnection is the anomaly type for database connections.
 	AnomalyDatabaseConnection AnomalyType = "bb.anomaly.database.connection"
 	// AnomalyDatabaseSchemaDrift is the anomaly type for database schema drifts.
@@ -22,20 +18,6 @@ const (
 type AnomalyInstanceConnectionPayload struct {
 	// Connection failure detail
 	Detail string `json:"detail,omitempty"`
-}
-
-// AnomalyDatabaseBackupPolicyViolationPayload is the API message for backup policy violation payloads.
-type AnomalyDatabaseBackupPolicyViolationPayload struct {
-	EnvironmentID          int                      `json:"environmentId,omitempty"`
-	ExpectedBackupSchedule BackupPlanPolicySchedule `json:"expectedSchedule,omitempty"`
-	ActualBackupSchedule   BackupPlanPolicySchedule `json:"actualSchedule,omitempty"`
-}
-
-// AnomalyDatabaseBackupMissingPayload is the API message for missing backup payloads.
-type AnomalyDatabaseBackupMissingPayload struct {
-	ExpectedBackupSchedule BackupPlanPolicySchedule `json:"expectedSchedule,omitempty"`
-	// Time of last successful backup created
-	LastBackupTs int64 `json:"lastBackupTs,omitempty"`
 }
 
 // AnomalyDatabaseConnectionPayload is the API message for database connection payloads.

@@ -110,9 +110,10 @@
 
 <script setup lang="ts">
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
-import { computed, unref, Ref, watchEffect } from "vue";
+import type { Ref } from "vue";
+import { computed, unref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouteLocationRaw } from "vue-router";
+import type { RouteLocationRaw } from "vue-router";
 import { ISSUE_ROUTE_DETAIL } from "@/router/dashboard/issue";
 import {
   DATABASE_ROUTE_DASHBOARD,
@@ -121,14 +122,15 @@ import {
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
 } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_MEMBER } from "@/router/dashboard/workspaceSetting";
-import { SQL_EDITOR_SHARE_MODULE } from "@/router/sqlEditor";
+import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
   useCurrentUserV1,
   useUIStateStore,
   useProjectV1Store,
 } from "@/store";
-import { WorkspacePermission, UNKNOWN_ID, PresetRoleType } from "@/types";
+import type { WorkspacePermission } from "@/types";
+import { UNKNOWN_ID, PresetRoleType } from "@/types";
 import {
   hasWorkspacePermissionV2,
   hasProjectPermissionV2,
@@ -195,9 +197,10 @@ const introList = computed(() => {
     {
       name: computed(() => t("quick-start.query-data")),
       link: {
-        name: SQL_EDITOR_SHARE_MODULE,
+        name: SQL_EDITOR_WORKSHEET_MODULE,
         params: {
-          sheetSlug: "project-sample-101",
+          project: "project-sample",
+          sheet: "101",
         },
       },
       done: computed(() => uiStateStore.getIntroStateByKey("data.query")),

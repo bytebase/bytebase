@@ -1,10 +1,9 @@
 import { MonacoLanguageClient } from "monaco-languageclient";
-import {
-  CloseAction,
-  ErrorAction,
+import type {
   ExecuteCommandParams,
   MessageTransports,
 } from "vscode-languageclient";
+import { CloseAction, ErrorAction } from "vscode-languageclient";
 import {
   WebSocketMessageReader,
   WebSocketMessageWriter,

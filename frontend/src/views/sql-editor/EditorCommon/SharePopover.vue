@@ -31,7 +31,7 @@
         </template>
         <div class="access-content space-y-2 w-80">
           <div
-            v-for="(option, idx) in accessOptions"
+            v-for="option in accessOptions"
             :key="option.label"
             class="p-2 rounded-sm flex justify-between"
             :class="[
@@ -40,24 +40,16 @@
             ]"
             @click="handleChangeAccess(option)"
           >
-            <div class="access-content--prefix flex">
-              <div v-if="idx === 0" class="mt-1">
-                <heroicons-outline:lock-closed class="h-5 w-5" />
-              </div>
-              <div v-if="idx === 1" class="mt-1">
-                <heroicons-outline:user-group class="h-5 w-5" />
-              </div>
-              <div v-if="idx === 2" class="mt-1">
-                <heroicons-outline:globe class="h-5 w-5" />
-              </div>
-              <section class="flex flex-col pl-2">
+            <div class="access-content--prefix">
+              <div class="flex space-x-2 items-center">
+                <component :is="option.icon" class="h-5 w-5" />
                 <h2 class="text-md flex">
                   {{ option.label }}
                 </h2>
-                <h3 class="text-xs">
-                  {{ option.description }}
-                </h3>
-              </section>
+              </div>
+              <span class="text-xs textinfolabel">
+                {{ option.description }}
+              </span>
             </div>
             <div
               v-show="option.value === currentAccess.value"
@@ -70,18 +62,18 @@
       </NPopover>
     </section>
     <NInputGroup class="flex items-center justify-center">
-      <n-input-group-label>
+      <NInputGroupLabel>
         <div
           class="w-full h-full flex flex-row items-center justify-center m-auto"
         >
           <heroicons-solid:link class="w-5 h-auto" />
         </div>
-      </n-input-group-label>
-      <n-input v-model:value="sharedTabLink" disabled />
+      </NInputGroupLabel>
+      <NInput v-model:value="sharedTabLink" disabled />
       <NButton
         class="w-20"
         :type="copied ? 'success' : 'primary'"
-        :disabled="!tabStore.currentTab.isSaved"
+        :disabled="tabStore.currentTab?.status !== 'CLEAN'"
         @click="handleCopy"
       >
         <heroicons-solid:check v-if="copied" class="h-4 w-4" />
@@ -93,24 +85,32 @@
 
 <script lang="ts" setup>
 import { useClipboard } from "@vueuse/core";
-import { ref, computed, onMounted } from "vue";
+import { LockKeyholeIcon, UsersIcon } from "lucide-vue-next";
+import {
+  NButton,
+  NInput,
+  NInputGroup,
+  NInputGroupLabel,
+  NPopover,
+} from "naive-ui";
+import { ref, computed, onMounted, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { SQL_EDITOR_SHARE_MODULE } from "@/router/sqlEditor";
+import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
-  useTabStore,
+  useSQLEditorTabStore,
   useWorkSheetStore,
   useWorkSheetAndTabStore,
 } from "@/store";
-import { AccessOption } from "@/types";
+import type { AccessOption } from "@/types";
 import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
-import { worksheetSlugV1 } from "@/utils";
+import { extractProjectResourceName, extractSheetUID } from "@/utils";
 
 const { t } = useI18n();
 
 const router = useRouter();
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const worksheetV1Store = useWorkSheetStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 
@@ -120,16 +120,19 @@ const accessOptions = computed<AccessOption[]>(() => {
       label: t("sql-editor.private"),
       value: Worksheet_Visibility.VISIBILITY_PRIVATE,
       description: t("sql-editor.private-desc"),
+      icon: h(LockKeyholeIcon),
     },
     {
-      label: t("common.project"),
-      value: Worksheet_Visibility.VISIBILITY_PROJECT,
-      description: t("sql-editor.project-desc"),
+      label: t("sql-editor.project-read"),
+      value: Worksheet_Visibility.VISIBILITY_PROJECT_READ,
+      description: t("sql-editor.project-read-desc"),
+      icon: h(UsersIcon),
     },
     {
-      label: t("sql-editor.public"),
-      value: Worksheet_Visibility.VISIBILITY_PUBLIC,
-      description: t("sql-editor.public-desc"),
+      label: t("sql-editor.project-write"),
+      value: Worksheet_Visibility.VISIBILITY_PROJECT_WRITE,
+      description: t("sql-editor.project-write-desc"),
+      icon: h(UsersIcon),
     },
   ];
 });
@@ -171,9 +174,10 @@ const sharedTabLink = computed(() => {
   }
 
   const route = router.resolve({
-    name: SQL_EDITOR_SHARE_MODULE,
+    name: SQL_EDITOR_WORKSHEET_MODULE,
     params: {
-      sheetSlug: worksheetSlugV1(sheet.value),
+      project: extractProjectResourceName(sheet.value.project),
+      sheet: extractSheetUID(sheet.value.name),
     },
   });
   return new URL(route.href, window.location.origin).href;

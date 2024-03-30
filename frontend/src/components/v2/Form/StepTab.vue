@@ -1,6 +1,12 @@
 <template>
   <div v-bind="$attrs" :class="[!sticky && 'space-y-8']">
-    <div :class="['px-0.5', sticky && 'pt-2 pb-4 sticky top-0 bg-white z-10']">
+    <div
+      :class="[
+        'px-0.5',
+        sticky && 'pt-2 pb-4 sticky top-0 bg-white z-10',
+        headerClass,
+      ]"
+    >
       <NSteps :current="currentIndex + 1" size="small" :status="'process'">
         <NStep
           v-for="(step, i) in stepList"
@@ -70,8 +76,9 @@
 </template>
 
 <script lang="ts" setup>
-import { NSteps, NStep, NButton, ButtonProps } from "naive-ui";
-import { VueClass } from "@/utils/types";
+import type { ButtonProps } from "naive-ui";
+import { NSteps, NStep, NButton } from "naive-ui";
+import type { VueClass } from "@/utils/types";
 
 withDefaults(
   defineProps<{
@@ -81,6 +88,7 @@ withDefaults(
     sticky?: boolean;
     finishTitle?: string;
     paneClass?: VueClass;
+    headerClass?: VueClass;
     footerClass?: VueClass;
     stepList: { title: string; description?: string; hideNext?: boolean }[];
     backButtonProps?: ButtonProps;
@@ -93,6 +101,7 @@ withDefaults(
     sticky: false,
     finishTitle: "bbkit.common.finish",
     paneClass: undefined,
+    headerClass: undefined,
     footerClass: undefined,
     backButtonProps: undefined,
     nextButtonProps: undefined,

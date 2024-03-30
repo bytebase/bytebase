@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { TreeNode } from "../types";
+import type { TreeNode } from "../common";
 import ColumnNodeCheckbox from "./ColumnNodeCheckbox.vue";
 import SchemaNodeCheckbox from "./SchemaNodeCheckbox.vue";
 import TableNodeCheckbox from "./TableNodeCheckbox.vue";

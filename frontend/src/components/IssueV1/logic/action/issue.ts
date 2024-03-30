@@ -1,13 +1,14 @@
-import { ButtonProps } from "naive-ui";
+import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { ComposedIssue } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { ComposedIssue } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   extractUserResourceName,
   flattenTaskV1List,
   hasProjectPermissionV2,
-  isDatabaseRelatedIssue,
+  isDatabaseChangeRelatedIssue,
+  isDatabaseDataExportIssue,
   isGrantRequestIssue,
 } from "@/utils";
 import { isTaskFinished } from "..";
@@ -41,13 +42,13 @@ export const getApplicableIssueStatusActionList = (
 ): IssueStatusAction[] => {
   const list = PossibleIssueStatusActionMap[issue.status];
   return list.filter((action) => {
-    if (isGrantRequestIssue(issue)) {
+    if (isGrantRequestIssue(issue) || isDatabaseDataExportIssue(issue)) {
       // Don't show RESOLVE or REOPEN for request granting issues.
       if (action === "RESOLVE" || action === "REOPEN") {
         return false;
       }
     }
-    if (isDatabaseRelatedIssue(issue) && action === "RESOLVE") {
+    if (isDatabaseChangeRelatedIssue(issue) && action === "RESOLVE") {
       const tasks = flattenTaskV1List(issue.rolloutEntity);
       // Ths issue cannot be resolved if some tasks are not finished yet.
       if (tasks.some((task) => !isTaskFinished(task))) {

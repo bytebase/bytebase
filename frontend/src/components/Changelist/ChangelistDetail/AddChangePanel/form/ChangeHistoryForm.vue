@@ -47,7 +47,6 @@
       :change-history-list="filteredChangeHistoryList"
       :is-fetching="state.isLoading"
       :keyword="state.keyword"
-      class="w-full"
       @click-item="state.detailChangeHistoryName = $event.name"
     />
 
@@ -70,10 +69,11 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
-import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { AffectedTable } from "@/types/changeHistory";
+import { EmptyAffectedTable } from "@/types/changeHistory";
+import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
-  ChangeHistory,
   ChangeHistory_Status,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
@@ -209,7 +209,7 @@ const handleRemoveChange = (change: Change) => {
 const handleClickChange = (change: Change) => {
   const changeHistoryName = change.source;
   const database = useDatabaseV1Store().getDatabaseByName(
-    extractDatabaseResourceName(changeHistoryName).full
+    extractDatabaseResourceName(changeHistoryName).database
   );
   state.databaseUID = database.uid;
   state.detailChangeHistoryName = changeHistoryName;

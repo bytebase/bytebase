@@ -77,6 +77,9 @@ type indexKeyNumberLimitChecker struct {
 }
 
 func (checker *indexKeyNumberLimitChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -133,6 +136,9 @@ func (checker *indexKeyNumberLimitChecker) handleConstraintDef(tableName string,
 }
 
 func (checker *indexKeyNumberLimitChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserFULLTEXT_SYMBOL, mysql.MySQLParserSPATIAL_SYMBOL:
 		return
@@ -163,6 +169,9 @@ func (checker *indexKeyNumberLimitChecker) EnterCreateIndex(ctx *mysql.CreateInd
 }
 
 func (checker *indexKeyNumberLimitChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

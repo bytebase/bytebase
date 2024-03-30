@@ -1,18 +1,15 @@
 import dayjs from "dayjs";
 import { defineStore } from "pinia";
-import { computed, Ref } from "vue";
+import type { Ref } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { subscriptionServiceClient } from "@/grpcweb";
-import {
-  PLANS,
-  FeatureType,
-  planTypeToString,
-  instanceLimitFeature,
-} from "@/types";
-import { Instance } from "@/types/proto/v1/instance_service";
+import type { FeatureType } from "@/types";
+import { PLANS, planTypeToString, instanceLimitFeature } from "@/types";
+import type { Instance } from "@/types/proto/v1/instance_service";
+import type { Subscription } from "@/types/proto/v1/subscription_service";
 import {
   PlanType,
-  Subscription,
   planTypeFromJSON,
   planTypeToJSON,
 } from "@/types/proto/v1/subscription_service";
@@ -236,18 +233,6 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       const subscription = await subscriptionServiceClient.updateSubscription({
         patch: {
           license,
-        },
-      });
-      this.setSubscription(subscription);
-      return subscription;
-    },
-    async trialSubscription(planType: PlanType) {
-      const subscription = await subscriptionServiceClient.trialSubscription({
-        trial: {
-          plan: planType,
-          days: this.trialingDays,
-          // Instance license count.
-          instanceCount: 10,
         },
       });
       this.setSubscription(subscription);

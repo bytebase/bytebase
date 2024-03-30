@@ -1,111 +1,56 @@
 <template>
-  <div class="flex justify-between">
-    <div class="text-lg leading-6 font-medium text-main">
-      <i18n-t keypath="repository.gitops-status">
-        <template #status>
-          <span class="text-success"> {{ $t("common.enabled") }} </span>
-        </template>
-      </i18n-t>
-    </div>
+  <div class="mt-2 textinfolabel">
+    <i18n-t keypath="repository.gitops-description-file-path">
+      <template #fullPath>
+        <a class="normal-link" :href="vcsConnector.webUrl" target="_blank">
+          {{ repositoryFormattedFullPath }}
+        </a>
+      </template>
+    </i18n-t>
+    <span>&nbsp;</span>
+    <i18n-t keypath="repository.gitops-description-branch">
+      <template #branch>
+        <span class="font-medium text-main">
+          <template v-if="state.repositoryConfig.branch">
+            {{ state.repositoryConfig.branch }}
+          </template>
+          <template v-else>
+            {{ $t("common.default") }}
+          </template>
+        </span>
+      </template>
+    </i18n-t>
+    <span>&nbsp;</span>
     <TroubleshootLink
       url="https://www.bytebase.com/docs/vcs-integration/troubleshoot/?source=console"
     />
   </div>
-  <div class="mt-2 textinfolabel">
-    <template v-if="isProjectSchemaChangeTypeDDL">
-      <i18n-t keypath="repository.gitops-description-file-path">
-        <template #fullPath>
-          <a class="normal-link" :href="repository.webUrl" target="_blank">
-            {{ repositoryFormattedFullPath }}
-          </a>
-        </template>
-        <template #fullPathTemplate>
-          <span class="font-medium text-main"
-            >{{ state.repositoryConfig.baseDirectory }}/{{
-              state.repositoryConfig.filePathTemplate
-            }}</span
-          >
-        </template>
-      </i18n-t>
-      <span>&nbsp;</span>
-      <i18n-t keypath="repository.gitops-description-branch">
-        <template #branch>
-          <span class="font-medium text-main">
-            <template v-if="state.repositoryConfig.branchFilter">
-              {{ state.repositoryConfig.branchFilter }}
-            </template>
-            <template v-else>
-              {{ $t("common.default") }}
-            </template>
-          </span>
-        </template>
-      </i18n-t>
-      <template v-if="state.repositoryConfig.schemaPathTemplate">
-        <span>&nbsp;</span>
-        <i18n-t keypath="repository.gitops-description-description-schema-path">
-          <template #schemaPathTemplate>
-            <span class="font-medium text-main">{{
-              state.repositoryConfig.schemaPathTemplate
-            }}</span>
-          </template>
-        </i18n-t>
-      </template>
-    </template>
-    <template v-if="isProjectSchemaChangeTypeSDL">
-      <i18n-t keypath="repository.gitops-description-sdl">
-        <template #fullPath>
-          <a class="normal-link" :href="repository.webUrl" target="_blank">
-            {{ repositoryFormattedFullPath }}
-          </a>
-        </template>
-        <template #branch>
-          <span class="font-medium text-main">
-            <template v-if="state.repositoryConfig.branchFilter">
-              {{ state.repositoryConfig.branchFilter }}
-            </template>
-            <template v-else>
-              {{ $t("common.default") }}
-            </template>
-          </span>
-        </template>
-        <template #filePathTemplate>
-          <span class="font-medium text-main">
-            {{ state.repositoryConfig.baseDirectory }}/{{
-              state.repositoryConfig.filePathTemplate
-            }}
-          </span>
-        </template>
-        <template #schemaPathTemplate>
-          <span class="font-medium text-main">
-            {{ state.repositoryConfig.schemaPathTemplate }}
-          </span>
-        </template>
-      </i18n-t>
-    </template>
-  </div>
   <RepositoryForm
     class="mt-4"
     :allow-edit="allowEdit"
-    :vcs-type="vcs.type"
-    :vcs-name="vcs.title"
+    :vcs-type="vcsProvider.type"
+    :vcs-name="vcsProvider.title"
     :repository-info="repositoryInfo"
     :repository-config="state.repositoryConfig"
     :project="project"
-    :schema-change-type="state.schemaChangeType"
-    @change-schema-change-type="(type: SchemaChange) => (state.schemaChangeType = type)"
-    @change-repository="$emit('change-repository')"
   />
-  <div v-if="allowEdit" class="mt-4 pt-4 flex border-t justify-between">
+  <div
+    v-if="allowEdit || allowDelete"
+    class="mt-6 pt-4 flex border-t justify-between"
+  >
     <BBButtonConfirm
-      :style="'RESTORE'"
-      :button-text="$t('repository.restore-to-ui-workflow')"
+      v-if="allowDelete"
+      :style="'DELETE'"
+      :button-text="$t('project.gitops-connector.delete')"
       :require-confirm="true"
-      :ok-text="$t('common.restore')"
-      :confirm-title="$t('repository.restore-to-ui-workflow') + '?'"
-      :confirm-description="$t('repository.restore-ui-workflow-description')"
-      @confirm="() => restoreToUIWorkflowType(true)"
+      :ok-text="$t('common.delete')"
+      :confirm-title="$t('project.gitops-connector.delete') + '?'"
+      @confirm="deleteConnector"
     />
-    <div class="ml-3">
+    <div v-if="allowEdit" class="ml-3 flex items-center space-x-3">
+      <NButton @click.prevent="$emit('cancel')">
+        {{ $t("common.cancel") }}
+      </NButton>
       <NButton
         type="primary"
         :disabled="!allowUpdate"
@@ -115,248 +60,70 @@
       </NButton>
     </div>
   </div>
-  <BBModal
-    v-if="supportSQLReviewCI && state.showSetupSQLReviewCIModal"
-    class="relative overflow-hidden"
-    :title="$t('repository.sql-review-ci-setup')"
-    @close="state.showSetupSQLReviewCIModal = false"
-  >
-    <div class="space-y-4 max-w-[32rem]">
-      <div class="whitespace-pre-wrap">
-        {{
-          $t("repository.sql-review-ci-setup-modal", {
-            pr:
-              vcs.type === ExternalVersionControl_Type.GITLAB
-                ? $t("repository.merge-request")
-                : $t("repository.pull-request"),
-          })
-        }}
-      </div>
-
-      <div class="flex justify-end pt-4 gap-x-2">
-        <a
-          class="btn-primary items-center space-x-2 mx-2 my-2"
-          :href="state.sqlReviewCIPullRequestURL"
-          target="_blank"
-        >
-          {{
-            $t("repository.sql-review-ci-setup-pr", {
-              pr:
-                vcs.type === ExternalVersionControl_Type.GITLAB
-                  ? $t("repository.merge-request")
-                  : $t("repository.pull-request"),
-            })
-          }}
-        </a>
-      </div>
-    </div>
-  </BBModal>
-  <BBAlert
-    v-if="supportSQLReview"
-    v-model:show="state.showSetupSQLReviewCIFailureModal"
-    type="warning"
-    :ok-text="$t('common.retry')"
-    :title="$t('repository.sql-review-ci-setup-failed')"
-    @ok="
-      () => {
-        state.showSetupSQLReviewCIFailureModal = false;
-        createSQLReviewCI();
-      }
-    "
-    @cancel="
-      () => {
-        state.showSetupSQLReviewCIFailureModal = false;
-      }
-    "
-  />
-  <BBModal
-    v-if="supportSQLReview && state.showLoadingSQLReviewPRModal"
-    class="relative overflow-hidden"
-    :show-close="false"
-    :close-on-esc="false"
-    :title="$t('repository.sql-review-ci-setup')"
-  >
-    <div
-      class="whitespace-pre-wrap max-w-[32rem] flex justify-start items-start gap-x-2"
-    >
-      <BBSpin class="mt-1" />
-      {{
-        $t("repository.sql-review-ci-loading-modal", {
-          pr:
-            vcs.type === ExternalVersionControl_Type.GITLAB
-              ? $t("repository.merge-request")
-              : $t("repository.pull-request"),
-        })
-      }}
-    </div>
-  </BBModal>
-  <BBModal
-    v-if="supportSQLReview && state.showRestoreSQLReviewCIModal"
-    class="relative overflow-hidden"
-    :title="$t('repository.sql-review-ci-remove')"
-    @close="onSQLReviewCIModalClose"
-  >
-    <div class="space-y-4 max-w-[32rem]">
-      <div class="whitespace-pre-wrap">
-        <i18n-t keypath="repository.sql-review-ci-restore-modal">
-          <template #vcs>
-            {{
-              vcs.type === ExternalVersionControl_Type.GITLAB
-                ? "GitLab CI"
-                : "GitHub Action"
-            }}
-          </template>
-          <template #repository>
-            <a class="normal-link" :href="repository.webUrl" target="_blank">
-              {{ repositoryFormattedFullPath }}
-            </a>
-          </template>
-        </i18n-t>
-      </div>
-
-      <div class="flex justify-end pt-4 gap-x-2">
-        <NButton @click.prevent="onSQLReviewCIModalClose">
-          {{ $t("common.close") }}
-        </NButton>
-      </div>
-    </div>
-  </BBModal>
-  <BBModal
-    v-if="supportSQLReviewCI && state.showDisableSQLReviewCIModal"
-    class="relative overflow-hidden"
-    :title="$t('repository.sql-review-ci-remove')"
-    @close="state.showDisableSQLReviewCIModal = false"
-  >
-    <div class="space-y-4 max-w-[32rem]">
-      <div class="whitespace-pre-wrap">
-        <i18n-t keypath="repository.sql-review-ci-remove-modal">
-          <template #vcs>
-            {{
-              vcs.type === ExternalVersionControl_Type.GITLAB
-                ? "GitLab CI"
-                : "GitHub Action"
-            }}
-          </template>
-          <template #repository>
-            <a class="normal-link" :href="repository.webUrl" target="_blank">
-              {{ repositoryFormattedFullPath }}
-            </a>
-          </template>
-        </i18n-t>
-      </div>
-
-      <div class="flex justify-end pt-4 gap-x-2">
-        <NButton @click.prevent="state.showDisableSQLReviewCIModal = false">
-          {{ $t("common.close") }}
-        </NButton>
-      </div>
-    </div>
-  </BBModal>
-  <FeatureModal
-    feature="bb.feature.vcs-sql-review"
-    :open="state.showFeatureModal"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import isEmpty from "lodash-es/isEmpty";
-import { computed, PropType, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import {
-  hasFeature,
-  pushNotification,
-  useProjectV1Store,
-  useRepositoryV1Store,
-} from "@/store";
-import { getVCSUid } from "@/store/modules/v1/common";
-import {
-  ProjectGitOpsInfo,
-  ExternalVersionControl,
-  ExternalVersionControl_Type,
-} from "@/types/proto/v1/externalvs_service";
-import { Project, SchemaChange } from "@/types/proto/v1/project_service";
-import { supportSQLReviewCI } from "@/utils";
-import { ExternalRepositoryInfo, RepositoryConfig } from "../types";
+import { computed, reactive, watch } from "vue";
+import { useVCSV1Store, useVCSConnectorStore } from "@/store";
+import { getVCSConnectorId } from "@/store/modules/v1/common";
+import type { Project } from "@/types/proto/v1/project_service";
+import { VCSConnector } from "@/types/proto/v1/vcs_connector_service";
+import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
+import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
+import type { ExternalRepositoryInfo, RepositoryConfig } from "../types";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
-  schemaChangeType: SchemaChange;
-  showFeatureModal: boolean;
-  showSetupSQLReviewCIModal: boolean;
-  showSetupSQLReviewCIFailureModal: boolean;
-  showLoadingSQLReviewPRModal: boolean;
-  showDisableSQLReviewCIModal: boolean;
-  showRestoreSQLReviewCIModal: boolean;
-  sqlReviewCIPullRequestURL: string;
   processing: boolean;
 }
 
-const props = defineProps({
-  project: {
-    required: true,
-    type: Object as PropType<Project>,
-  },
-  repository: {
-    required: true,
-    type: Object as PropType<ProjectGitOpsInfo>,
-  },
-  vcs: {
-    required: true,
-    type: Object as PropType<ExternalVersionControl>,
-  },
-  allowEdit: {
-    default: true,
-    type: Boolean,
-  },
-});
-
-const emit = defineEmits<{
-  (event: "change-repository"): void;
-  (event: "restore"): void;
+const props = defineProps<{
+  project: Project;
+  vcsConnector: VCSConnector;
+  allowEdit: boolean;
+  allowDelete: boolean;
 }>();
 
-const { t } = useI18n();
-const repositoryV1Store = useRepositoryV1Store();
-const projectV1Store = useProjectV1Store();
+const emit = defineEmits<{
+  (event: "delete"): void;
+  (event: "update"): void;
+  (event: "cancel"): void;
+}>();
+
+const vcsV1Store = useVCSV1Store();
+const vcsConnectorStore = useVCSConnectorStore();
+
 const state = reactive<LocalState>({
   repositoryConfig: {
-    baseDirectory: props.repository.baseDirectory,
-    branchFilter: props.repository.branchFilter,
-    filePathTemplate: props.repository.filePathTemplate,
-    schemaPathTemplate: props.repository.schemaPathTemplate,
-    sheetPathTemplate: props.repository.sheetPathTemplate,
-    enableSQLReviewCI: props.repository.enableSqlReviewCi,
+    resourceId: "",
+    baseDirectory: "",
+    branch: "",
   },
-  schemaChangeType: props.project.schemaChange,
-  showFeatureModal: false,
-  showSetupSQLReviewCIModal: false,
-  showSetupSQLReviewCIFailureModal: false,
-  showLoadingSQLReviewPRModal: false,
-  showDisableSQLReviewCIModal: false,
-  showRestoreSQLReviewCIModal: false,
-  sqlReviewCIPullRequestURL: "",
   processing: false,
 });
 
 watch(
-  () => props.repository,
+  () => props.vcsConnector,
   (cur) => {
     state.repositoryConfig = {
+      resourceId: getVCSConnectorId(props.vcsConnector.name).vcsConnectorId,
       baseDirectory: cur.baseDirectory,
-      branchFilter: cur.branchFilter,
-      filePathTemplate: cur.filePathTemplate,
-      schemaPathTemplate: cur.schemaPathTemplate,
-      sheetPathTemplate: cur.sheetPathTemplate,
-      enableSQLReviewCI: cur.enableSqlReviewCi,
+      branch: cur.branch,
     };
-  }
+  },
+  { deep: true, immediate: true }
+);
+
+const vcsProvider = computed(
+  () =>
+    vcsV1Store.getVCSByName(props.vcsConnector.vcsProvider) ??
+    VCSProvider.fromPartial({})
 );
 
 const repositoryFormattedFullPath = computed(() => {
-  const fullPath = props.repository.fullPath;
-  if (props.vcs.type !== ExternalVersionControl_Type.AZURE_DEVOPS) {
+  const fullPath = props.vcsConnector.fullPath;
+  if (vcsProvider.value.type !== VCSProvider_Type.AZURE_DEVOPS) {
     return fullPath;
   }
   if (!fullPath.includes("@dev.azure.com")) {
@@ -367,181 +134,52 @@ const repositoryFormattedFullPath = computed(() => {
 
 const repositoryInfo = computed((): ExternalRepositoryInfo => {
   return {
-    externalId: props.repository.externalId,
-    name: props.repository.name,
-    fullPath: props.repository.fullPath,
-    webUrl: props.repository.webUrl,
+    externalId: props.vcsConnector.externalId,
+    name: props.vcsConnector.title,
+    fullPath: props.vcsConnector.fullPath,
+    webUrl: props.vcsConnector.webUrl,
   };
-});
-
-const isProjectSchemaChangeTypeDDL = computed(() => {
-  return state.schemaChangeType === SchemaChange.DDL;
-});
-
-const isProjectSchemaChangeTypeSDL = computed(() => {
-  return state.schemaChangeType === SchemaChange.SDL;
-});
-
-const supportSQLReview = computed(() => {
-  const { type } = props.vcs;
-  return supportSQLReviewCI(type);
 });
 
 const allowUpdate = computed(() => {
   return (
     !state.processing &&
-    !isEmpty(state.repositoryConfig.branchFilter) &&
-    !isEmpty(state.repositoryConfig.filePathTemplate) &&
-    (props.repository.branchFilter !== state.repositoryConfig.branchFilter ||
-      props.repository.baseDirectory !== state.repositoryConfig.baseDirectory ||
-      props.repository.filePathTemplate !==
-        state.repositoryConfig.filePathTemplate ||
-      props.repository.schemaPathTemplate !==
-        state.repositoryConfig.schemaPathTemplate ||
-      props.repository.sheetPathTemplate !==
-        state.repositoryConfig.sheetPathTemplate ||
-      props.repository.enableSqlReviewCi !==
-        state.repositoryConfig.enableSQLReviewCI ||
-      props.project.schemaChange !== state.schemaChangeType)
+    !isEmpty(state.repositoryConfig.branch) &&
+    (props.vcsConnector.branch !== state.repositoryConfig.branch ||
+      props.vcsConnector.baseDirectory !== state.repositoryConfig.baseDirectory)
   );
 });
 
-const disableSQLReviewCI = computed(() => {
-  return (
-    props.repository.enableSqlReviewCi &&
-    !state.repositoryConfig.enableSQLReviewCI
-  );
-});
-
-const onSQLReviewCIModalClose = () => {
-  state.showRestoreSQLReviewCIModal = false;
-  restoreToUIWorkflowType(false);
-};
-
-const restoreToUIWorkflowType = async (checkSQLReviewCI: boolean) => {
-  if (checkSQLReviewCI && props.repository.enableSqlReviewCi) {
-    state.showRestoreSQLReviewCIModal = true;
-    return;
-  }
+const deleteConnector = async () => {
   if (state.processing) {
     return;
   }
   state.processing = true;
 
   try {
-    await repositoryV1Store.deleteRepository(props.project.name);
-    await projectV1Store.fetchProjectByName(props.project.name);
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("repository.restore-ui-workflow-success"),
-    });
-
-    emit("restore");
+    await vcsConnectorStore.deleteConnector(props.vcsConnector.name);
+    emit("delete");
   } finally {
     state.processing = false;
   }
 };
 
-const createSQLReviewCI = async () => {
-  state.showLoadingSQLReviewPRModal = true;
-
-  try {
-    const pullRequestURL = await repositoryV1Store.setupSQLReviewCI(
-      props.project.name
-    );
-    state.sqlReviewCIPullRequestURL = pullRequestURL;
-    state.showSetupSQLReviewCIModal = true;
-    window.open(pullRequestURL, "_blank");
-  } catch {
-    state.showSetupSQLReviewCIFailureModal = true;
-  } finally {
-    state.showLoadingSQLReviewPRModal = false;
-  }
-};
-
 const doUpdate = async () => {
-  if (
-    state.repositoryConfig.enableSQLReviewCI &&
-    !props.repository.enableSqlReviewCi &&
-    !hasFeature("bb.feature.vcs-sql-review")
-  ) {
-    state.showFeatureModal = true;
-    return;
-  }
-
   if (state.processing) {
     return;
   }
   state.processing = true;
 
-  const needSetupCI =
-    !props.repository.enableSqlReviewCi &&
-    state.repositoryConfig.enableSQLReviewCI;
-
-  const repositoryPatch: Partial<ProjectGitOpsInfo> = {};
-
-  repositoryPatch.vcsUid = `${getVCSUid(props.vcs.name)}`;
-
-  if (props.repository.branchFilter != state.repositoryConfig.branchFilter) {
-    repositoryPatch.branchFilter = state.repositoryConfig.branchFilter;
-  }
-  if (props.repository.baseDirectory != state.repositoryConfig.baseDirectory) {
-    repositoryPatch.baseDirectory = state.repositoryConfig.baseDirectory;
-  }
-  if (
-    props.repository.filePathTemplate != state.repositoryConfig.filePathTemplate
-  ) {
-    repositoryPatch.filePathTemplate = state.repositoryConfig.filePathTemplate;
-  }
-  if (
-    props.repository.schemaPathTemplate !=
-    state.repositoryConfig.schemaPathTemplate
-  ) {
-    repositoryPatch.schemaPathTemplate =
-      state.repositoryConfig.schemaPathTemplate;
-  }
-  if (
-    props.repository.sheetPathTemplate !=
-    state.repositoryConfig.sheetPathTemplate
-  ) {
-    repositoryPatch.sheetPathTemplate =
-      state.repositoryConfig.sheetPathTemplate;
-  }
-  if (
-    props.repository.enableSqlReviewCi !=
-    state.repositoryConfig.enableSQLReviewCI
-  ) {
-    repositoryPatch.enableSqlReviewCi =
-      state.repositoryConfig.enableSQLReviewCI;
-  }
-
   try {
-    const disableSQLReview = disableSQLReviewCI.value;
-
-    await repositoryV1Store.upsertRepository(
-      props.project.name,
-      repositoryPatch
+    await vcsConnectorStore.updateConnector(
+      VCSConnector.fromPartial({
+        ...props.vcsConnector,
+        branch: state.repositoryConfig.branch,
+        baseDirectory: state.repositoryConfig.baseDirectory,
+      }),
+      ["branch", "base_directory"]
     );
-    // Update project schemaChangeType field firstly.
-    if (state.schemaChangeType !== props.project.schemaChange) {
-      const projectPatch = cloneDeep(props.project);
-      projectPatch.schemaChange = state.schemaChangeType;
-      await projectV1Store.updateProject(projectPatch, ["schema_change"]);
-    }
-
-    if (needSetupCI) {
-      createSQLReviewCI();
-    } else if (disableSQLReview) {
-      state.showDisableSQLReviewCIModal = true;
-    }
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("repository.update-gitops-config-success"),
-    });
+    emit("update");
   } finally {
     state.processing = false;
   }

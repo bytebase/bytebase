@@ -47,7 +47,7 @@
                 </div>
                 <router-link
                   v-else-if="!isFreePlan || !hasPermission"
-                  to="/setting/subscription"
+                  :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
                   exact-active-class=""
                   class="text-sm flex"
                 >
@@ -111,7 +111,7 @@
               </div>
               <router-link
                 v-else-if="!isFreePlan || !hasPermission"
-                to="/setting/subscription"
+                :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
                 exact-active-class=""
                 class="text-sm flex whitespace-nowrap mr-1"
               >
@@ -194,7 +194,12 @@
         </HideInStandaloneMode>
 
         <!-- This area may scroll -->
-        <div id="bb-layout-main" class="md:min-w-0 flex-1 overflow-y-auto py-4">
+        <div
+          id="bb-layout-main"
+          ref="mainContainerRef"
+          class="md:min-w-0 flex-1 overflow-y-auto py-4"
+          :class="mainContainerClasses"
+        >
           <HideInStandaloneMode>
             <div class="w-full mx-auto md:flex">
               <div class="md:min-w-0 md:flex-1">
@@ -235,20 +240,23 @@
 
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
-import { computed, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useActuatorV1Store,
   useCurrentUserV1,
   useSubscriptionV1Store,
 } from "@/store";
-import { QuickActionType, QuickActionPermissionMap } from "@/types";
+import type { QuickActionType } from "@/types";
+import { QuickActionPermissionMap } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import DashboardHeader from "@/views/DashboardHeader.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 import Quickstart from "../components/Quickstart.vue";
+import { provideBodyLayoutContext } from "./common";
 
 interface LocalState {
   showMobileOverlay: boolean;
@@ -267,6 +275,7 @@ const state = reactive<LocalState>({
 });
 
 const currentUserV1 = useCurrentUserV1();
+const mainContainerRef = ref<HTMLDivElement>();
 
 const hasPermission = hasWorkspacePermissionV2(
   currentUserV1.value,
@@ -337,5 +346,9 @@ const currentPlan = computed((): string => {
 const isFreePlan = computed((): boolean => {
   const plan = subscriptionStore.currentPlan;
   return plan === PlanType.FREE;
+});
+
+const { mainContainerClasses } = provideBodyLayoutContext({
+  mainContainerRef,
 });
 </script>

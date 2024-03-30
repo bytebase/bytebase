@@ -106,11 +106,11 @@
 <script lang="ts" setup>
 import { nextTick, ref, reactive, watch, toRef } from "vue";
 import { useI18n } from "vue-i18n";
-import { ComposedIssue, ComposedProject } from "@/types";
+import type { ComposedIssue, ComposedProject } from "@/types";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import {
   activeTaskInRollout,
-  isDatabaseRelatedIssue,
+  isDatabaseChangeRelatedIssue,
   sizeToFit,
 } from "@/utils";
 import IssueStatusIcon from "../IssueV1/components/IssueStatusIcon.vue";
@@ -442,7 +442,7 @@ const onIssueSelect = (issue: ComposedIssue) => {
 
 const issueTaskStatus = (issue: ComposedIssue) => {
   // For grant request issue, we always show the status as "NOT_STARTED" as task status.
-  if (!isDatabaseRelatedIssue(issue)) {
+  if (!isDatabaseChangeRelatedIssue(issue)) {
     return Task_Status.NOT_STARTED;
   }
 

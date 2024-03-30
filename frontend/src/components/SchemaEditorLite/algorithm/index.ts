@@ -1,4 +1,4 @@
-import { SchemaEditorContext } from "../context";
+import type { SchemaEditorContext } from "../context";
 import { useApplyMetadataEdit } from "./apply";
 import { useApplySelectedMetadataEdit } from "./apply-selected";
 import { useRebuildMetadataEdit } from "./rebuild";

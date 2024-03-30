@@ -1,5 +1,5 @@
 <template>
-  <div class="label">
+  <div class="label" :class="[tab.status.toLowerCase()]">
     <NEllipsis
       class="name"
       :tooltip="{
@@ -9,37 +9,38 @@
       :class="state.editing && 'invisible'"
       @dblclick="beginEdit"
     >
-      {{ state.name }}
+      {{ state.title }}
     </NEllipsis>
 
     <input
       v-if="state.editing"
       ref="inputRef"
-      v-model="state.name"
+      v-model="state.title"
       type="text"
       class="edit"
       @blur="confirmEdit"
-      @keyup.enter="e => (e.target as HTMLInputElement).blur()"
+      @keyup.enter="(e) => (e.target as HTMLInputElement).blur()"
       @keyup.esc="cancelEdit"
     />
   </div>
 </template>
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
-import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
+import type { PropType } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useWorkSheetStore, useTabStore } from "@/store";
-import type { TabInfo } from "@/types";
+import { useSQLEditorTabStore, useWorkSheetStore } from "@/store";
+import type { SQLEditorTab } from "@/types";
 import { useTabListContext } from "../context";
 
 type LocalState = {
   editing: boolean;
-  name: string;
+  title: string;
 };
 
 const props = defineProps({
   tab: {
-    type: Object as PropType<TabInfo>,
+    type: Object as PropType<SQLEditorTab>,
     required: true,
   },
   index: {
@@ -50,10 +51,10 @@ const props = defineProps({
 
 const state = reactive<LocalState>({
   editing: false,
-  name: props.tab.name,
+  title: props.tab.title,
 });
 
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const worksheetV1Store = useWorkSheetStore();
 const inputRef = ref<HTMLInputElement>();
 const { events } = useTabListContext();
@@ -69,7 +70,7 @@ useEmitteryEventListener(events, "rename-tab", ({ tab }) => {
 
 const beginEdit = () => {
   state.editing = true;
-  state.name = props.tab.name;
+  state.title = props.tab.title;
   nextTick(() => {
     inputRef.value?.focus();
   });
@@ -78,20 +79,25 @@ const beginEdit = () => {
 const confirmEdit = () => {
   const { tab } = props;
 
-  const name = state.name.trim();
-  if (name === "") {
+  const title = state.title.trim();
+  if (title === "") {
     return cancelEdit();
   }
 
-  tab.name = name;
-  if (tab.sheetName) {
-    worksheetV1Store.patchSheet(
-      {
-        name: tab.sheetName,
-        title: name,
-      },
-      ["title"]
-    );
+  tab.title = title;
+  tab.status = "DIRTY";
+  if (tab.sheet) {
+    worksheetV1Store
+      .patchSheet(
+        {
+          name: tab.sheet,
+          title,
+        },
+        ["title"]
+      )
+      .then(() => {
+        tab.status = "CLEAN";
+      });
   }
 
   state.editing = false;
@@ -99,13 +105,13 @@ const confirmEdit = () => {
 
 const cancelEdit = () => {
   state.editing = false;
-  state.name = props.tab.name;
+  state.title = props.tab.title;
 };
 
 watch(
-  () => props.tab.name,
-  (name) => {
-    state.name = name;
+  () => props.tab.title,
+  (title) => {
+    state.title = title;
   }
 );
 watch(isCurrentTab, (value) => {
@@ -120,14 +126,14 @@ watch(isCurrentTab, (value) => {
   @apply relative flex items-center whitespace-nowrap min-w-[6rem] max-w-[12rem] truncate;
 }
 
-.name {
+.label :deep(.name) {
   @apply h-6 w-full flex items-center text-sm;
 }
 .edit {
   @apply border-0 border-b absolute inset-0 p-0 text-sm;
 }
 
-.temp .name {
+.label.new :deep(.name) {
   @apply italic;
 }
 </style>

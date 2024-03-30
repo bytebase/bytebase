@@ -1,5 +1,5 @@
 import { inject, provide, type InjectionKey, type Ref } from "vue";
-import { Risk } from "@/types/proto/v1/risk_service";
+import type { Risk } from "@/types/proto/v1/risk_service";
 
 export type DialogContext = {
   mode: "EDIT" | "CREATE";

@@ -27,7 +27,8 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { NDataTable, DataTableColumn } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
 import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock";

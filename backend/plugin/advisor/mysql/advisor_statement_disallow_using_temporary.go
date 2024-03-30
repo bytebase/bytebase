@@ -75,6 +75,9 @@ type disallowUsingTemporaryChecker struct {
 }
 
 func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
 		return
 	}

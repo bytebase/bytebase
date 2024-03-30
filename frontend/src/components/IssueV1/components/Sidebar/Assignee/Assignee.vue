@@ -41,7 +41,8 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
-import { NTooltip, SelectGroupOption } from "naive-ui";
+import type { SelectGroupOption } from "naive-ui";
+import { NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -49,7 +50,8 @@ import {
   useIssueContext,
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1/logic";
-import ErrorList, { ErrorItem } from "@/components/misc/ErrorList.vue";
+import type { ErrorItem } from "@/components/misc/ErrorList.vue";
+import ErrorList from "@/components/misc/ErrorList.vue";
 import { UserSelect } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
@@ -66,13 +68,13 @@ import {
   UNKNOWN_ID,
   unknownUser,
 } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/auth_service";
 import { Issue } from "@/types/proto/v1/issue_service";
 import {
   extractUserResourceName,
   extractUserUID,
   hasProjectPermissionV2,
-  isDatabaseRelatedIssue,
+  isDatabaseChangeRelatedIssue,
 } from "@/utils";
 
 const { t } = useI18n();
@@ -87,7 +89,7 @@ const shouldShowAssignee = computed(() => {
   return (
     !isCreating.value &&
     pageMode.value === "BUNDLED" &&
-    isDatabaseRelatedIssue(issue.value)
+    isDatabaseChangeRelatedIssue(issue.value)
   );
 });
 
@@ -168,8 +170,8 @@ const mapUserOptions = (users: User[]) => {
   const phase = isCreating.value
     ? "PREVIEW"
     : reviewContext.done.value
-    ? "CD"
-    : "CI";
+      ? "CD"
+      : "CI";
   const added = new Set<string>(); // by user.name
   const groups: SelectGroupOption[] = [];
   const mapUserOption = (user: User) => ({

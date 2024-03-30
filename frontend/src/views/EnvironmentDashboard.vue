@@ -41,7 +41,6 @@
       :create="true"
       :environment="getEnvironmentCreate()"
       :rollout-policy="DEFAULT_NEW_ROLLOUT_POLICY"
-      :backup-policy="DEFAULT_NEW_BACKUP_PLAN_POLICY"
       :environment-tier="defaultEnvironmentTier"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
@@ -73,31 +72,21 @@ import {
 } from "@/store";
 import {
   usePolicyV1Store,
-  defaultBackupSchedule,
-  getDefaultBackupPlanPolicy,
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
 import { VirtualRoleType, emptyEnvironment } from "@/types";
-import {
+import type {
   Environment,
   EnvironmentTier,
 } from "@/types/proto/v1/environment_service";
-import {
-  Policy,
-  PolicyResourceType,
-} from "@/types/proto/v1/org_policy_service";
+import type { Policy } from "@/types/proto/v1/org_policy_service";
+import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
 import type { BBTabItem } from "../bbkit/types";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import { arraySwap, extractEnvironmentResourceName } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 
 const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(
-  "",
-  PolicyResourceType.ENVIRONMENT
-);
-
-// The default value should be consistent with the GetDefaultPolicy from the backend.
-const DEFAULT_NEW_BACKUP_PLAN_POLICY: Policy = getDefaultBackupPlanPolicy(
   "",
   PolicyResourceType.ENVIRONMENT
 );
@@ -110,7 +99,6 @@ interface LocalState {
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
     | "bb.feature.custom-approval"
-    | "bb.feature.backup-policy"
     | "bb.feature.environment-tier-policy";
 }
 
@@ -207,7 +195,6 @@ const createEnvironment = () => {
 const doCreate = async (
   newEnvironment: Environment,
   rolloutPolicy: Policy,
-  backupPolicy: Policy,
   environmentTier: EnvironmentTier
 ) => {
   const rp = rolloutPolicy.rolloutPolicy;
@@ -223,20 +210,6 @@ const doCreate = async (
       return;
     }
   }
-  if (
-    backupPolicy.backupPlanPolicy?.schedule !== defaultBackupSchedule &&
-    !hasFeature("bb.feature.backup-policy")
-  ) {
-    state.missingRequiredFeature = "bb.feature.backup-policy";
-    return;
-  }
-  if (
-    environmentTier !== defaultEnvironmentTier &&
-    !hasFeature("bb.feature.backup-policy")
-  ) {
-    state.missingRequiredFeature = "bb.feature.environment-tier-policy";
-    return;
-  }
 
   const environment = await environmentV1Store.createEnvironment({
     name: newEnvironment.name,
@@ -251,11 +224,6 @@ const doCreate = async (
       parentPath: environment.name,
       updateMask: ["payload"],
       policy: rolloutPolicy,
-    }),
-    policyV1Store.upsertPolicy({
-      parentPath: environment.name,
-      updateMask: ["payload"],
-      policy: backupPolicy,
     }),
   ];
   await Promise.all(requests);

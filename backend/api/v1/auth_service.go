@@ -385,7 +385,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		}
 	}
 	if passwordPatch != nil {
-		passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.User.Password), bcrypt.DefaultCost)
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte((*passwordPatch)), bcrypt.DefaultCost)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
 		}

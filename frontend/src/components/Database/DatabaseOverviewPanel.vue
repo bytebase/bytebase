@@ -188,9 +188,10 @@
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { NSelect } from "naive-ui";
-import { computed, reactive, watch, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { BBTableSectionDataSource } from "@/bbkit/types";
+import type { BBTableSectionDataSource } from "@/bbkit/types";
 import AnomalyTable from "@/components/AnomalyCenter/AnomalyTable.vue";
 import DBExtensionDataTable from "@/components/DBExtensionDataTable.vue";
 import { useDatabaseDetailContext } from "@/components/Database/context";
@@ -201,8 +202,8 @@ import TableDataTable from "@/components/TableDataTable.vue";
 import TaskTable from "@/components/TaskTable.vue";
 import ViewDataTable from "@/components/ViewDataTable.vue";
 import { useDBSchemaV1Store } from "@/store";
-import { ComposedDatabase, DataSource } from "@/types";
-import { Anomaly } from "@/types/proto/v1/anomaly_service";
+import type { ComposedDatabase, DataSource } from "@/types";
+import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 

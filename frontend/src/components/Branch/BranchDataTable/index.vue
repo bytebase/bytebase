@@ -5,17 +5,20 @@
     :columns="columns"
     :data="branches"
     :row-key="rowKey"
-    :pagination="pagination"
+    :pagination="{
+      pageSize: 5,
+    }"
     :paginate-single-page="false"
   />
 </template>
 
 <script lang="ts" setup>
-import { NDataTable, DataTableColumn, PaginationProps } from "naive-ui";
-import { computed, h, ref } from "vue";
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import BranchBaseline from "@/components/Branch/BranchBaseline.vue";
-import { Branch } from "@/types/proto/v1/branch_service";
+import type { Branch } from "@/types/proto/v1/branch_service";
 import AsyncBranchNameCell from "./cells/AsyncBranchNameCell.vue";
 import BranchNameCell from "./cells/BranchNameCell.vue";
 import BranchUpdatedCell from "./cells/BranchUpdatedCell.vue";
@@ -31,10 +34,6 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-
-const pagination = ref<PaginationProps>({
-  pageSize: 5,
-});
 
 const columns = computed(() => {
   const columns: (DataTableColumn<Branch> & { hide?: boolean })[] = [

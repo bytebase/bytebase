@@ -13,12 +13,11 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType } from "vue";
+import type { PropType } from "vue";
+import { computed, defineComponent } from "vue";
 import { featureToRef } from "@/store";
-import {
-  Environment,
-  EnvironmentTier,
-} from "@/types/proto/v1/environment_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 
 export default defineComponent({
   name: "ProductionEnvironmentV1Icon",

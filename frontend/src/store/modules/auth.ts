@@ -3,13 +3,14 @@ import { isEqual } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed } from "vue";
 import { authServiceClient } from "@/grpcweb";
-import { SignupInfo, ActivateInfo, unknownUser, PresetRoleType } from "@/types";
-import {
+import type { SignupInfo, ActivateInfo } from "@/types";
+import { unknownUser, PresetRoleType } from "@/types";
+import type {
   LoginRequest,
   LoginResponse,
   User,
-  UserType,
 } from "@/types/proto/v1/auth_service";
+import { UserType } from "@/types/proto/v1/auth_service";
 import { getIntCookie } from "@/utils";
 import { useUserStore } from ".";
 

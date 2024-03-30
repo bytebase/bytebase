@@ -10,7 +10,7 @@
         #item="{
           item: { environment, review },
         }: {
-          item: EnvironmentReviewPolicy,
+          item: EnvironmentReviewPolicy;
         }"
       >
         <div class="bb-grid-cell">
@@ -142,20 +142,21 @@ import { NCheckbox } from "naive-ui";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBButtonConfirm, BBGrid, BBGridColumn } from "@/bbkit";
+import type { BBGridColumn } from "@/bbkit";
+import { BBButtonConfirm, BBGrid } from "@/bbkit";
 import { EnvironmentV1Name } from "@/components/v2";
 import {
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
-} from "@/router/dashboard/workspaceSetting";
+  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+} from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
   useCurrentUserV1,
   useSQLReviewStore,
   useEnvironmentV1List,
 } from "@/store";
-import { SQLReviewPolicy } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
+import type { SQLReviewPolicy } from "@/types";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import {
   extractEnvironmentResourceName,
   hasWorkspacePermissionV2,
@@ -234,7 +235,7 @@ const toggleReviewEnabled = async (review: SQLReviewPolicy, on: boolean) => {
 const handleClickCreate = (environment: Environment) => {
   if (hasUpdatePolicyPermission.value) {
     router.push({
-      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
+      name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
       query: {
         environmentId: extractEnvironmentResourceName(environment.name),
       },
@@ -250,7 +251,7 @@ const handleClickCreate = (environment: Environment) => {
 
 const handleClickEdit = (review: SQLReviewPolicy) => {
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
+    name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
     params: {
       sqlReviewPolicySlug: sqlReviewPolicySlug(review),
     },

@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	migrationStatement = `
+	migrationStatement1 = `
 	CREATE TABLE book (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
@@ -46,25 +46,14 @@ var (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
 	);`
-	migrationStatement3 = `
-	CREATE TABLE book3 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);`
-	migrationStatement4 = `
-	CREATE TABLE book4 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);`
 
 	//go:embed test-data/book_schema.result
 	wantBookSchema string
 
-	//go:embed test-data/book_3_schema.result
-	want3BookSchema string
+	//go:embed test-data/book_2_schema.result
+	want2BookSchema string
 
-	dataUpdateStatementWrong = "INSERT INTO book(name) xxx"
-	dataUpdateStatement      = `
+	dataUpdateStatement = `
 	INSERT INTO book(name) VALUES
 		("byte"),
 		(NULL);
@@ -83,36 +72,7 @@ CREATE TABLE book2 (
 		name TEXT NULL
 	);
 `
-	dumpedSchema3 = `CREATE TABLE book (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-CREATE TABLE book2 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-CREATE TABLE book3 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-`
-	dumpedSchema4 = `CREATE TABLE book (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-CREATE TABLE book2 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-CREATE TABLE book3 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-CREATE TABLE book4 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-`
+
 	deploySchedule = &v1pb.Schedule{
 		Deployments: []*v1pb.ScheduleDeployment{
 			{
@@ -164,13 +124,14 @@ type controller struct {
 	rolloutServiceClient      v1pb.RolloutServiceClient
 	orgPolicyServiceClient    v1pb.OrgPolicyServiceClient
 	projectServiceClient      v1pb.ProjectServiceClient
+	vcsConnectorServiceClient v1pb.VCSConnectorServiceClient
 	authServiceClient         v1pb.AuthServiceClient
 	settingServiceClient      v1pb.SettingServiceClient
 	environmentServiceClient  v1pb.EnvironmentServiceClient
 	instanceServiceClient     v1pb.InstanceServiceClient
 	databaseServiceClient     v1pb.DatabaseServiceClient
 	sheetServiceClient        v1pb.SheetServiceClient
-	evcsClient                v1pb.ExternalVersionControlServiceClient
+	evcsClient                v1pb.VCSProviderServiceClient
 	sqlServiceClient          v1pb.SQLServiceClient
 	subscriptionServiceClient v1pb.SubscriptionServiceClient
 	actuatorServiceClient     v1pb.ActuatorServiceClient
@@ -423,13 +384,14 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.rolloutServiceClient = v1pb.NewRolloutServiceClient(ctl.grpcConn)
 	ctl.orgPolicyServiceClient = v1pb.NewOrgPolicyServiceClient(ctl.grpcConn)
 	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
+	ctl.vcsConnectorServiceClient = v1pb.NewVCSConnectorServiceClient(ctl.grpcConn)
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)
 	ctl.settingServiceClient = v1pb.NewSettingServiceClient(ctl.grpcConn)
 	ctl.environmentServiceClient = v1pb.NewEnvironmentServiceClient(ctl.grpcConn)
 	ctl.instanceServiceClient = v1pb.NewInstanceServiceClient(ctl.grpcConn)
 	ctl.databaseServiceClient = v1pb.NewDatabaseServiceClient(ctl.grpcConn)
 	ctl.sheetServiceClient = v1pb.NewSheetServiceClient(ctl.grpcConn)
-	ctl.evcsClient = v1pb.NewExternalVersionControlServiceClient(ctl.grpcConn)
+	ctl.evcsClient = v1pb.NewVCSProviderServiceClient(ctl.grpcConn)
 	ctl.sqlServiceClient = v1pb.NewSQLServiceClient(ctl.grpcConn)
 	ctl.subscriptionServiceClient = v1pb.NewSubscriptionServiceClient(ctl.grpcConn)
 	ctl.actuatorServiceClient = v1pb.NewActuatorServiceClient(ctl.grpcConn)

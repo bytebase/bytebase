@@ -5,8 +5,8 @@
       message.status === 'DONE'
         ? 'w-[80%]'
         : message.status === 'FAILED'
-        ? 'max-w-[60%]'
-        : 'w-auto',
+          ? 'max-w-[60%]'
+          : 'w-auto',
     ]"
   >
     <CodeView v-if="message.status === 'DONE'" :message="message" />

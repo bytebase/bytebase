@@ -15,9 +15,10 @@
 import isChinese from "is-chinese";
 import { computed, withDefaults } from "vue";
 import { SYSTEM_BOT_EMAIL } from "@/types";
-import { VueClass, callCssVariable } from "@/utils";
+import type { VueClass } from "@/utils";
+import { callCssVariable } from "@/utils";
 import { hashCode } from "./BBUtil";
-import { BBAvatarSizeType } from "./types";
+import type { BBAvatarSizeType } from "./types";
 
 const DEFAULT_BRANDING_COLOR = "#4f46e5";
 

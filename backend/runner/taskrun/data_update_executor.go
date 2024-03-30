@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -52,7 +53,7 @@ type DataUpdateExecutor struct {
 }
 
 // RunOnce will run the data update (DML) task executor once.
-func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
 		state.TaskRunExecutionStatus{
 			ExecutionStatus: v1pb.TaskRun_PRE_EXECUTING,
@@ -72,7 +73,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 		return true, nil, err
 	}
 	version := model.Version{Version: payload.SchemaVersion}
-	return runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, taskRunUID, db.Data, statement, version, &payload.SheetID)
+	return runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.Data, statement, version, &payload.SheetID)
 }
 
 func (exec *DataUpdateExecutor) backupData(
@@ -145,11 +146,12 @@ func (exec *DataUpdateExecutor) backupData(
 			return errors.Wrapf(err, "failed to marshal ActivityIssueCreate activity")
 		}
 		activityCreate := &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: task.PipelineID,
-			Type:         api.ActivityPipelineTaskPriorBackup,
-			Level:        api.ActivityInfo,
-			Payload:      string(bytes),
+			CreatorUID:        api.SystemBotID,
+			ResourceContainer: issue.Project.GetName(),
+			ContainerUID:      task.PipelineID,
+			Type:              api.ActivityPipelineTaskPriorBackup,
+			Level:             api.ActivityInfo,
+			Payload:           string(bytes),
 		}
 		if _, err := exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
 			slog.Error("failed to create activity",

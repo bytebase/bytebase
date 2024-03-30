@@ -83,7 +83,7 @@
               >
                 <TableCell
                   :table="table"
-                  :value="cell.getValue()"
+                  :value="cell.getValue() as RowValue"
                   :keyword="keyword"
                   :set-index="setIndex"
                   :row-index="offset + rowIndex"
@@ -105,9 +105,10 @@
 </template>
 
 <script lang="ts" setup>
-import { Table } from "@tanstack/vue-table";
+import type { Table } from "@tanstack/vue-table";
 import { computed, nextTick, ref, watch } from "vue";
 import { useSubscriptionV1Store } from "@/store";
+import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import { useSQLResultViewContext } from "../context";
 import ColumnSortedIcon from "./ColumnSortedIcon.vue";
 import SensitiveDataIcon from "./SensitiveDataIcon.vue";
@@ -120,7 +121,7 @@ export type DataTableColumn = {
 };
 
 const props = defineProps<{
-  table: Table<string[]>;
+  table: Table<QueryRow>;
   setIndex: number;
   offset: number;
   isSensitiveColumn: (index: number) => boolean;

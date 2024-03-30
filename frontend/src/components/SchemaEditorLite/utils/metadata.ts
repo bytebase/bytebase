@@ -1,5 +1,5 @@
 import { uniq } from "lodash-es";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 
 export const validateDatabaseMetadata = (
   databaseMetadata: DatabaseMetadata

@@ -5,7 +5,7 @@
       <div v-for="(item, i) in filteredSidebarList" :key="i">
         <router-link
           v-if="item.type === 'route'"
-          :to="{ path: item.path ?? '', name: item.name ?? '' }"
+          :to="{ path: item.path, name: item.name }"
           :class="[parentRouteClass, getItemClass(item)]"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
@@ -54,7 +54,7 @@
             </a>
             <router-link
               v-else-if="child.type === 'route'"
-              :to="{ path: child.path ?? '', name: child.name ?? '' }"
+              :to="{ path: child.path, name: child.name }"
               :class="[childRouteClass, getItemClass(child)]"
             >
               {{ child.title }}
@@ -75,7 +75,8 @@
 
 <script setup lang="ts">
 import { ChevronDown, ChevronRight } from "lucide-vue-next";
-import { computed, VNode, reactive, watch } from "vue";
+import type { VNode } from "vue";
+import { computed, reactive, watch } from "vue";
 
 export interface SidebarItem {
   title?: string;
@@ -86,6 +87,7 @@ export interface SidebarItem {
   icon?: VNode;
   hide?: boolean;
   type: "route" | "div" | "divider" | "link";
+  expand?: boolean;
   children?: SidebarItem[];
 }
 
@@ -149,7 +151,10 @@ watch(
   () => {
     state.expandedSidebar.clear();
     for (let i = 0; i < filteredSidebarList.value.length; i++) {
-      if (filteredSidebarList.value[i].children.length > 0) {
+      if (
+        filteredSidebarList.value[i].children.length > 0 &&
+        filteredSidebarList.value[i].expand
+      ) {
         state.expandedSidebar.add(`${i}`);
       }
     }

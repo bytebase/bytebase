@@ -159,9 +159,12 @@
                   :show-sql-editor-button="false"
                   :show-placeholder="true"
                   @select-database="
-                (db: ComposedDatabase) =>
-                  toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))
-              "
+                    (db: ComposedDatabase) =>
+                      toggleDatabasesSelection(
+                        [db as ComposedDatabase],
+                        !isDatabaseSelected(db)
+                      )
+                  "
                 >
                   <template
                     #selection-all="{ databaseList: selectedDatabaseList }"
@@ -169,7 +172,11 @@
                     <NCheckbox
                       v-if="selectedDatabaseList.length > 0"
                       class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                      v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
+                      v-bind="
+                        getAllSelectionState(
+                          selectedDatabaseList as ComposedDatabase[]
+                        )
+                      "
                       @update:checked="
                         toggleDatabasesSelection(
                           selectedDatabaseList as ComposedDatabase[],
@@ -180,7 +187,9 @@
                   </template>
                   <template #selection="{ database }">
                     <NCheckbox
-                      :checked="isDatabaseSelected(database as ComposedDatabase)"
+                      :checked="
+                        isDatabaseSelected(database as ComposedDatabase)
+                      "
                       @update:checked="
                         toggleDatabasesSelection(
                           [database as ComposedDatabase],
@@ -308,7 +317,8 @@ import {
   NInputGroupLabel,
   NCheckbox,
 } from "naive-ui";
-import { computed, reactive, PropType, ref, watch, watchEffect, h } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive, ref, watch, watchEffect, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
@@ -322,23 +332,21 @@ import {
   useProjectV1Store,
   useDBGroupStore,
 } from "@/store";
-import {
+import type {
   ComposedDatabase,
   ComposedDatabaseGroup,
   FeatureType,
-  UNKNOWN_ID,
-  DEFAULT_PROJECT_V1_NAME,
 } from "@/types";
+import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import type { SearchScopeId, SearchParams } from "@/utils";
 import {
   allowUsingSchemaEditorV1,
   instanceV1HasAlterSchema,
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
   generateIssueName,
-  SearchScopeId,
-  SearchParams,
   extractEnvironmentResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
@@ -477,7 +485,7 @@ watch(
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
 const { ready } = useSearchDatabaseV1List({
-  parent: "instances/-",
+  filter: "instance = instances/-",
 });
 
 const prepareDatabaseGroupList = async () => {

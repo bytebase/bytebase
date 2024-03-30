@@ -16,7 +16,7 @@
 </template>
 
 <script lang="ts" setup>
-import { HTMLAttributes } from "vue";
+import type { HTMLAttributes } from "vue";
 
 defineProps<{
   imgAttrs?: HTMLAttributes;

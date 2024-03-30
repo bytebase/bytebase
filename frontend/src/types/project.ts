@@ -1,20 +1,12 @@
-import {
-  OAuthToken,
-  ExternalVersionControl,
-} from "@/types/proto/v1/externalvs_service";
-import { SchemaChange } from "@/types/proto/v1/project_service";
-import { RowStatus } from "./common";
-import { ProjectId } from "./id";
-import { Principal } from "./principal";
-import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
+import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
+import type { RowStatus } from "./common";
+import type { ProjectId } from "./id";
+import type { Principal } from "./principal";
+import type { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
 
 export type ProjectWorkflowType = "UI" | "VCS";
 
-export type ProjectVisibility = "PUBLIC" | "PRIVATE";
-
 export type ProjectTenantMode = "DISABLED" | "TENANT";
-
-export type SchemaChangeType = "DDL" | "SDL";
 
 // Project
 export type Project = {
@@ -29,9 +21,7 @@ export type Project = {
   // to do various access check.
   memberList: ProjectMember[];
   workflowType: ProjectWorkflowType;
-  visibility: ProjectVisibility;
   tenantMode: ProjectTenantMode;
-  schemaChangeType: SchemaChangeType;
 };
 
 // Project Member
@@ -47,11 +37,8 @@ export type ProjectMember = {
 };
 
 export type ProjectRepositoryConfig = {
-  vcs: ExternalVersionControl;
-  // TODO(zilong): get rid of the token in the frontend.
-  token: OAuthToken;
+  vcs: VCSProvider;
   code: string;
   repositoryInfo: ExternalRepositoryInfo;
   repositoryConfig: RepositoryConfig;
-  schemaChangeType: SchemaChange;
 };

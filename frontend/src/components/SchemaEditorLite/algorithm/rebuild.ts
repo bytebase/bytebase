@@ -1,7 +1,7 @@
 import { nextTick } from "vue";
-import { ComposedDatabase } from "@/types";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { SchemaEditorContext } from "../context";
+import type { ComposedDatabase } from "@/types";
+import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import type { SchemaEditorContext } from "../context";
 import { DiffMerge } from "./diff-merge";
 
 export type RebuildMetadataEditReset = "tabs" | "tree";

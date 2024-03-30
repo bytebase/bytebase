@@ -76,16 +76,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
+import type { PropType } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBTableSectionDataSource } from "@/bbkit/types";
+import type { BBTableSectionDataSource } from "@/bbkit/types";
 import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
-import { useEnvironmentV1Store } from "@/store";
-import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
+import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import {
-  Anomaly,
   Anomaly_AnomalyType,
   Anomaly_AnomalySeverity,
 } from "@/types/proto/v1/anomaly_service";
@@ -93,7 +92,6 @@ import {
   humanizeTs,
   extractDatabaseResourceName,
   extractInstanceResourceName,
-  databaseV1Url,
 } from "@/utils";
 import { DiffEditor } from "../MonacoEditor";
 
@@ -146,10 +144,6 @@ const typeName = (type: Anomaly_AnomalyType): string => {
       return t("anomaly.types.connection-failure");
     case Anomaly_AnomalyType.MIGRATION_SCHEMA:
       return t("anomaly.types.missing-migration-schema");
-    case Anomaly_AnomalyType.DATABASE_BACKUP_POLICY_VIOLATION:
-      return t("anomaly.types.backup-enforcement-violation");
-    case Anomaly_AnomalyType.DATABASE_BACKUP_MISSING:
-      return t("anomaly.types.missing-backup");
     case Anomaly_AnomalyType.DATABASE_CONNECTION:
       return t("anomaly.types.connection-failure");
     case Anomaly_AnomalyType.DATABASE_SCHEMA_DRIFT:
@@ -166,28 +160,6 @@ const detail = (anomaly: Anomaly): string => {
     }
     case Anomaly_AnomalyType.MIGRATION_SCHEMA:
       return "Please create migration schema on the instance first.";
-    case Anomaly_AnomalyType.DATABASE_BACKUP_POLICY_VIOLATION: {
-      const environment = useEnvironmentV1Store().getEnvironmentByName(
-        anomaly.databaseBackupPolicyViolationDetail?.parent ??
-          UNKNOWN_ENVIRONMENT_NAME
-      );
-      if (!environment) {
-        return "";
-      }
-      return `'${environment.title}' environment requires ${anomaly.databaseBackupPolicyViolationDetail?.expectedSchedule} auto-backup.`;
-    }
-    case Anomaly_AnomalyType.DATABASE_BACKUP_MISSING: {
-      const payload = anomaly.databaseBackupMissingDetail;
-      const missingSentence = `Missing ${payload?.expectedSchedule} backup, `;
-      return (
-        missingSentence +
-        (payload?.latestBackupTime
-          ? `last successful backup taken on ${humanizeTs(
-              (payload?.latestBackupTime.getTime() ?? 0) / 1000
-            )}.`
-          : "no successful backup taken.")
-      );
-    }
     case Anomaly_AnomalyType.DATABASE_CONNECTION: {
       return anomaly.databaseConnectionDetail?.detail ?? "";
     }
@@ -229,33 +201,9 @@ const action = (anomaly: Anomaly): Action => {
         title: t("anomaly.action.check-instance"),
       };
     }
-    case Anomaly_AnomalyType.DATABASE_BACKUP_POLICY_VIOLATION: {
-      const database = useDatabaseV1Store().getDatabaseByName(anomaly.resource);
-      return {
-        onClick: () => {
-          router.push({
-            path: databaseV1Url(database),
-            hash: "#backup-and-restore",
-          });
-        },
-        title: t("anomaly.action.configure-backup"),
-      };
-    }
-    case Anomaly_AnomalyType.DATABASE_BACKUP_MISSING: {
-      const database = useDatabaseV1Store().getDatabaseByName(anomaly.resource);
-      return {
-        onClick: () => {
-          router.push({
-            path: databaseV1Url(database),
-            hash: "#backup-and-restore",
-          });
-        },
-        title: t("anomaly.action.view-backup"),
-      };
-    }
     case Anomaly_AnomalyType.DATABASE_CONNECTION: {
       const instance = useInstanceV1Store().getInstanceByName(
-        `instances/${extractDatabaseResourceName(anomaly.resource).instance}`
+        extractDatabaseResourceName(anomaly.resource).instance
       );
       return {
         onClick: () => {
