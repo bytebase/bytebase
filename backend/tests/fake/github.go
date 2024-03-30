@@ -430,7 +430,7 @@ func (gh *GitHub) SendWebhookPush(repositoryID string, payload []byte) error {
 			}
 			signature := "sha256=" + hex.EncodeToString(m.Sum(nil))
 			req.Header.Set("X-Hub-Signature-256", signature)
-			req.Header.Set("X-GitHub-Event", "push")
+			req.Header.Set("X-GitHub-Event", "pull_request")
 
 			resp, err := gh.client.Do(req)
 			if err != nil {

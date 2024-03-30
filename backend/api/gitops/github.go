@@ -25,7 +25,6 @@ func getGitHubPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 	if err := json.Unmarshal(body, &pushEvent); err != nil {
 		return nil, errors.Errorf("failed to unmarshal push event, error %v", err)
 	}
-	fmt.Printf("Barny1: %+v\n", pushEvent)
 	if pushEvent.Action != closeAction {
 		return nil, errors.Errorf("invalid webhook event action, got %s, want closed", pushEvent.Action)
 	}
