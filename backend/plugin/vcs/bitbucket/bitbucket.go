@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"mime/multipart"
 	"net/http"
 	"net/url"
 	"path"
@@ -77,39 +76,6 @@ type Commit struct {
 	Date time.Time `json:"date"`
 }
 
-// FetchCommitByID fetches the commit data by its ID from the repository.
-//
-// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-commits/#api-repositories-workspace-repo-slug-commit-commit-get
-func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
-	url := fmt.Sprintf("%s/repositories/%s/commit/%s", p.APIURL(instanceURL), url.PathEscape(repositoryID), commitID)
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "GET")
-	}
-
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to fetch commit data from URL %s", url)
-	} else if code >= 300 {
-		return nil, errors.Errorf("failed to fetch commit data from URL %s, status code: %d, body: %s", url, code, body)
-	}
-
-	commit := &Commit{}
-	if err := json.Unmarshal([]byte(body), commit); err != nil {
-		return nil, errors.Wrap(err, "unmarshal body")
-	}
-
-	return &vcs.Commit{
-		ID:         commit.Hash,
-		AuthorName: commit.Author.User.DisplayName,
-		CreatedTs:  commit.Date.Unix(),
-	}, nil
-}
-
 // CommitFile represents a Bitbucket Cloud API response for a file at a commit.
 type CommitFile struct {
 	Path  string `json:"path"`
@@ -122,46 +88,6 @@ type CommitDiffStat struct {
 	// "modified", "renamed".
 	Status string     `json:"status"`
 	New    CommitFile `json:"new"`
-}
-
-// GetDiffFileList gets the diff files list between two commits.
-//
-// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-commits/#api-repositories-workspace-repo-slug-diffstat-spec-get
-func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]vcs.FileDiff, error) {
-	var bbcDiffs []*CommitDiffStat
-	next := fmt.Sprintf("%s/repositories/%s/diffstat/%s..%s?pagelen=%d", p.APIURL(instanceURL), repositoryID, afterCommit, beforeCommit, apiPageSize)
-	for next != "" {
-		var err error
-		var diffs []*CommitDiffStat
-		diffs, next, err = p.fetchPaginatedDiffFileList(ctx, oauthCtx, instanceURL, next)
-		if err != nil {
-			return nil, errors.Wrap(err, "fetch paginated list")
-		}
-		bbcDiffs = append(bbcDiffs, diffs...)
-	}
-
-	var diffs []vcs.FileDiff
-	for _, d := range bbcDiffs {
-		diff := vcs.FileDiff{
-			Path: d.New.Path,
-		}
-		switch d.Status {
-		case "added":
-			diff.Type = vcs.FileDiffTypeAdded
-		case "modified":
-			diff.Type = vcs.FileDiffTypeModified
-		case "removed":
-			diff.Type = vcs.FileDiffTypeRemoved
-		// To be consistent with GitLab, we treat renamed as added.
-		case "renamed":
-			diff.Type = vcs.FileDiffTypeAdded
-		default:
-			// Skip because we don't care about file diff in other status
-			continue
-		}
-		diffs = append(diffs, diff)
-	}
-	return diffs, nil
 }
 
 func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, url string) (diffs []*CommitDiffStat, next string, err error) {
@@ -367,59 +293,6 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 	return resp.Values, resp.Next, nil
 }
 
-// CreateFile creates a file at given path in the repository.
-//
-// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#api-repositories-workspace-repo-slug-src-post
-func (p *Provider) CreateFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
-	var body bytes.Buffer
-	w := multipart.NewWriter(&body)
-	part, err := w.CreateFormField(filePath)
-	if err != nil {
-		return errors.Wrap(err, "failed to create form file")
-	}
-	_, err = part.Write([]byte(fileCommitCreate.Content))
-	if err != nil {
-		return errors.Wrap(err, "failed to write file to form")
-	}
-	_ = w.WriteField("message", fileCommitCreate.CommitMessage)
-	_ = w.WriteField("parents", fileCommitCreate.LastCommitID)
-	_ = w.WriteField("branch", fileCommitCreate.Branch)
-	_ = w.Close()
-
-	url := fmt.Sprintf("%s/repositories/%s/src", p.APIURL(instanceURL), repositoryID)
-	code, _, resp, err := oauth.PostWithHeader(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-		&body,
-		map[string]string{
-			"Content-Type": w.FormDataContentType(),
-		},
-	)
-	if err != nil {
-		return errors.Wrapf(err, "POST %s", url)
-	}
-
-	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, "failed to create/update file through URL %s", url)
-	} else if code >= 300 {
-		return errors.Errorf("failed to create/update file through URL %s, status code: %d, body: %s",
-			url,
-			code,
-			resp,
-		)
-	}
-	return nil
-}
-
-// OverwriteFile overwrites an existing file at given path in the repository.
-//
-// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#api-repositories-workspace-repo-slug-src-post
-func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
-	return p.CreateFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, fileCommitCreate)
-}
-
 // ReadFileMeta reads the metadata of the given file in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#file-meta-data
@@ -538,53 +411,6 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext,
 	}, nil
 }
 
-type branchCreateTarget struct {
-	Hash string `json:"hash"`
-}
-
-type branchCreate struct {
-	Name   string             `json:"name"`
-	Target branchCreateTarget `json:"target"`
-}
-
-// CreateBranch creates the branch in the repository.
-//
-// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-refs/#api-repositories-workspace-repo-slug-refs-branches-post
-func (p *Provider) CreateBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
-	body, err := json.Marshal(
-		branchCreate{
-			Name:   branch.Name,
-			Target: branchCreateTarget{Hash: branch.LastCommitID},
-		},
-	)
-	if err != nil {
-		return errors.Wrap(err, "marshal branch create")
-	}
-
-	url := fmt.Sprintf("%s/repositories/%s/refs/branches", p.APIURL(instanceURL), repositoryID)
-	code, _, resp, err := oauth.Post(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-		bytes.NewReader(body),
-	)
-	if err != nil {
-		return errors.Wrapf(err, "POST %s", url)
-	}
-
-	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, "failed to create branch from URL %s", url)
-	} else if code >= 300 {
-		return errors.Errorf("failed to create branch from URL %s, status code: %d, body: %s",
-			url,
-			code,
-			resp,
-		)
-	}
-	return nil
-}
-
 // ListPullRequestFile lists the changed files in the pull request.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/#api-repositories-workspace-repo-slug-pullrequests-pull-request-id-diffstat-get
@@ -623,219 +449,6 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.Oau
 		files = append(files, file)
 	}
 	return files, nil
-}
-
-type pullRequestCreateBranch struct {
-	Name string `json:"name"`
-}
-type pullRequestCreateTarget struct {
-	Branch pullRequestCreateBranch `json:"branch"`
-}
-
-type pullRequestCreate struct {
-	Title             string                  `json:"title"`
-	Description       string                  `json:"description"`
-	CloseSourceBranch bool                    `json:"close_source_branch"`
-	Source            pullRequestCreateTarget `json:"source"`
-	Destination       pullRequestCreateTarget `json:"destination"`
-}
-
-// CreatePullRequest creates the pull request in the repository.
-//
-// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/#api-repositories-workspace-repo-slug-pullrequests-post
-func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, create *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
-	payload, err := json.Marshal(
-		pullRequestCreate{
-			Title:             create.Title,
-			Description:       create.Body,
-			CloseSourceBranch: create.RemoveHeadAfterMerged,
-			Source: pullRequestCreateTarget{
-				Branch: pullRequestCreateBranch{Name: create.Head},
-			},
-			Destination: pullRequestCreateTarget{
-				Branch: pullRequestCreateBranch{Name: create.Base},
-			},
-		},
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal pull request create")
-	}
-
-	url := fmt.Sprintf("%s/repositories/%s/pullrequests", p.APIURL(instanceURL), repositoryID)
-	code, _, body, err := oauth.Post(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-		bytes.NewReader(payload),
-	)
-	if err != nil {
-		return nil, errors.Wrapf(err, "POST %s", url)
-	}
-
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to create pull request from URL %s", url)
-	} else if code >= 300 {
-		return nil, errors.Errorf("failed to create pull request from URL %s, status code: %d, body: %s",
-			url,
-			code,
-			body,
-		)
-	}
-
-	var resp struct {
-		Links struct {
-			HTML struct {
-				Href string `json:"href"`
-			} `json:"html"`
-		} `json:"links"`
-	}
-	if err := json.Unmarshal([]byte(body), &resp); err != nil {
-		return nil, err
-	}
-
-	return &vcs.PullRequest{
-		URL: resp.Links.HTML.Href,
-	}, nil
-}
-
-type pipelineVariable struct {
-	// Type should always be "pipeline_variable"
-	Type    string `json:"type,omitempty"`
-	UUID    string `json:"uuid,omitempty"`
-	Key     string `json:"key,omitempty"`
-	Value   string `json:"value,omitempty"`
-	Secured bool   `json:"secured,omitempty"`
-}
-
-type listPipelineVariable struct {
-	Values []*pipelineVariable `json:"values"`
-}
-
-// UpsertEnvironmentVariable creates or updates the pipeline variable in the repository.
-func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, key, value string) error {
-	existed, err := p.getPipelineVariable(ctx, oauthCtx, instanceURL, repositoryID, key)
-	if err != nil {
-		return err
-	}
-
-	if existed == nil {
-		return p.createPipelineVariable(ctx, oauthCtx, instanceURL, repositoryID, key, value)
-	}
-	return p.updatePipelineVariable(ctx, oauthCtx, instanceURL, repositoryID, existed.UUID, value)
-}
-
-// getPipelineVariable gets the pipeline variable in the repository.
-//
-// https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pipelines/#api-repositories-workspace-repo-slug-pipelines-config-variables-get.
-func (p *Provider) getPipelineVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, key string) (*pipelineVariable, error) {
-	url := fmt.Sprintf("%s/repositories/%s/pipelines_config/variables", p.APIURL(instanceURL), repositoryID)
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-	)
-	if err != nil {
-		return nil, errors.Wrapf(err, "GET %s", url)
-	}
-
-	if code == http.StatusNotFound {
-		return nil, nil
-	} else if code >= 300 {
-		return nil,
-			errors.Errorf("failed to found variable from URL %s, status code: %d, body: %s",
-				url,
-				code,
-				body,
-			)
-	}
-
-	variables := new(listPipelineVariable)
-	if err := json.Unmarshal([]byte(body), variables); err != nil {
-		return nil, err
-	}
-
-	for _, variable := range variables.Values {
-		if variable.Key == key {
-			return variable, nil
-		}
-	}
-
-	return nil, nil
-}
-
-// createPipelineVariable creates the pipeline variable in the repository.
-//
-// https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pipelines/#api-repositories-workspace-repo-slug-pipelines-config-variables-post.
-func (p *Provider) createPipelineVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, key, value string) error {
-	url := fmt.Sprintf("%s/repositories/%s/pipelines_config/variables", p.APIURL(instanceURL), repositoryID)
-	body, err := json.Marshal(
-		pipelineVariable{
-			Type:    "pipeline_variable",
-			Key:     key,
-			Value:   value,
-			Secured: true,
-		},
-	)
-	if err != nil {
-		return errors.Wrap(err, "marshal variable create")
-	}
-	code, _, resp, err := oauth.Post(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-		bytes.NewReader(body),
-	)
-	if err != nil {
-		return errors.Wrapf(err, "POST %s", url)
-	}
-	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, "failed to create pipeline variable through URL %s", url)
-	} else if code >= 300 {
-		return errors.Errorf("failed to create pipeline variable through URL %s, status code: %d, body: %s",
-			url,
-			code,
-			resp,
-		)
-	}
-	return nil
-}
-
-// updatePipelineVariable updates the environment variable in the repository.
-//
-// https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pipelines/#api-repositories-workspace-repo-slug-pipelines-config-variables-variable-uuid-put.
-func (p *Provider) updatePipelineVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, variableID, value string) error {
-	url := fmt.Sprintf("%s/repositories/%s/pipelines_config/variables/%s", p.APIURL(instanceURL), repositoryID, variableID)
-	body, err := json.Marshal(
-		pipelineVariable{
-			Value: value,
-		},
-	)
-	if err != nil {
-		return errors.Wrap(err, "marshal variable update")
-	}
-	code, _, resp, err := oauth.Put(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-		bytes.NewReader(body),
-	)
-	if err != nil {
-		return errors.Wrapf(err, "PUT %s", url)
-	}
-	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, "failed to update pipeline variable through URL %s", url)
-	} else if code >= 300 {
-		return errors.Errorf("failed to update pipeline variable through URL %s, status code: %d, body: %s",
-			url,
-			code,
-			resp,
-		)
-	}
-	return nil
 }
 
 // Link is the API message for link.
@@ -934,34 +547,6 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthCont
 		return "", errors.Wrap(err, "unmarshal body")
 	}
 	return resp.UUID, nil
-}
-
-// PatchWebhook patches the webhook in the repository with given payload.
-//
-// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-repo-slug-hooks-uid-put
-func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
-	url := fmt.Sprintf("%s/repositories/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
-	code, _, body, err := oauth.Put(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-		bytes.NewReader(payload),
-	)
-	if err != nil {
-		return errors.Wrapf(err, "PUT %s", url)
-	}
-
-	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, "failed to patch webhook through URL %s", url)
-	} else if code >= 300 {
-		return errors.Errorf("failed to patch webhook through URL %s, status code: %d, body: %s",
-			url,
-			code,
-			body,
-		)
-	}
-	return nil
 }
 
 // DeleteWebhook deletes the webhook from the repository.
