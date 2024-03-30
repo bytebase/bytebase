@@ -287,7 +287,7 @@ func (bb *Bitbucket) SendWebhookPush(repositoryID string, payload []byte) error 
 			if err != nil {
 				return errors.Wrapf(err, "failed to create a new POST request to %q", webhook.URL)
 			}
-			req.Header.Set("X-Event-Key", "repo:push")
+			req.Header.Set("X-Event-Key", "pullrequest:fulfilled")
 			resp, err := bb.client.Do(req)
 			if err != nil {
 				return errors.Wrapf(err, "failed to send POST request to %q", webhook.URL)
