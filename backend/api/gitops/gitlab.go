@@ -21,7 +21,7 @@ const (
 	mergeAction            = "merge"
 )
 
-func getMergeRequestChangeFileContent(ctx context.Context, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, body []byte) (*pullRequestInfo, error) {
+func getGitLabPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, body []byte) (*pullRequestInfo, error) {
 	var pushEvent gitlab.MergeRequestPushEvent
 	if err := json.Unmarshal(body, &pushEvent); err != nil {
 		return nil, errors.Errorf("failed to unmarshal push event, error %v", err)
