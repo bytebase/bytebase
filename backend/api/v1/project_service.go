@@ -2136,7 +2136,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 			Description: "Bytebase GitOps",
 			URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 			Active:      true,
-			Events:      []string{"pullrequest:created", "pullrequest:updated", "pullrequest:comment_created"},
+			Events:      []string{"pullrequest:created", "pullrequest:updated", "pullrequest:fulfilled", "pullrequest:comment_created"},
 		}
 		webhookCreatePayload, err = json.Marshal(webhookPost)
 		if err != nil {
@@ -2156,8 +2156,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 				URL:                  fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 				AcceptUntrustedCerts: true,
 			},
-			EventType: "git.pullrequest.merged",
-			// TODO(d): We cannot create a few webhooks together with "git.pullrequest.created", "git.pullrequest.updated", and work items.
+			EventType:   "git.pullrequest.merged",
 			PublisherID: "tfs",
 			PublisherInputs: azure.WebhookCreatePublisherInputs{
 				Repository: repositoryID,
