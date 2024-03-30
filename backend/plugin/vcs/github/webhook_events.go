@@ -3,9 +3,8 @@ package github
 // PullRequestPushEvent is the json message for pull request push event.
 type PullRequestPushEvent struct {
 	// opened, edited, closed.
-	Action string `json:"action"`
-	Number int    `json:"number"`
-
+	Action      string           `json:"action"`
+	Number      int              `json:"number"`
 	PullRequest EventPullRequest `json:"pull_request"`
 }
 
