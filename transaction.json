@@ -1,0 +1,22 @@
+[
+ ["eth_ sendRawTransaction"]
+
+   "?module=proxy"
+   "&_action=eth_call"
+{
+  Token:"USDT"
+  gasLimit: "31000",
+  maxFeePerGas: "300",
+  maxPriorityFeePerGas: "10",
+  nonce: "0",
+  value: "2000000000"
+}
+   
+ {
+   &boolean=true
+   &Merkle Root Hash:"0cdfd7603c93aa018ddcb893c49d0546076075b0a3c363a689e0ac52466d662a"
+   &address="0x3025d1aE95B19f04dD7B474e1E4D0880f0F54425"
+   &tag=latest
+   &Internaltypes
+ }
+   ]
