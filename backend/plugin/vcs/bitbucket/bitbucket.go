@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -212,128 +211,6 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx *c
 		)
 	}
 	return repos, resp.Next, nil
-}
-
-// TreeEntry represents a Bitbucket Cloud API response for a repository tree
-// entry.
-type TreeEntry struct {
-	Type   string `json:"type"`
-	Path   string `json:"path"`
-	Size   int64  `json:"size"`
-	Commit Commit `json:"commit"`
-}
-
-// FetchRepositoryFileList fetches the all files from the given repository tree
-// recursively.
-//
-// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#directory-listings
-func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
-	var bbcTreeEntries []*TreeEntry
-	params := url.Values{}
-	// NOTE: There is no way to ask the Bitbucket Cloud API to return all
-	// subdirectories recursively, 10 levels down is just a good guess.
-	params.Add("max_depth", "10")
-	params.Add("q", `type="commit_file"`)
-	params.Add("pagelen", strconv.Itoa(apiPageSize))
-	next := fmt.Sprintf("%s/repositories/%s/src/%s/%s?%s", p.APIURL(instanceURL), repositoryID, url.PathEscape(ref), url.PathEscape(filePath), params.Encode())
-	for next != "" {
-		var err error
-		var treeEntries []*TreeEntry
-		treeEntries, next, err = p.fetchPaginatedRepositoryFileList(ctx, oauthCtx, next)
-		if err != nil {
-			return nil, errors.Wrap(err, "fetch paginated list")
-		}
-		bbcTreeEntries = append(bbcTreeEntries, treeEntries...)
-	}
-
-	var treeNodes []*vcs.RepositoryTreeNode
-	for _, n := range bbcTreeEntries {
-		treeNodes = append(treeNodes,
-			&vcs.RepositoryTreeNode{
-				Path: n.Path,
-				Type: n.Type,
-			},
-		)
-	}
-	return treeNodes, nil
-}
-
-// fetchPaginatedRepositoryFileList fetches files under a repository tree
-// recursively in given page. It returns the paginated results along with a
-// string indicating URL of the next page (if exists).
-func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx *common.OauthContext, url string) (_ []*TreeEntry, next string, err error) {
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-	)
-	if err != nil {
-		return nil, "", errors.Wrapf(err, "GET %s", url)
-	}
-
-	if code == http.StatusNotFound {
-		return nil, "", common.Errorf(common.NotFound, "failed to fetch repository file list from URL %s", url)
-	} else if code >= 300 {
-		return nil, "",
-			errors.Errorf("failed to fetch repository file list from URL %s, status code: %d, body: %s",
-				url,
-				code,
-				body,
-			)
-	}
-
-	var resp struct {
-		Values []*TreeEntry `json:"values"`
-		Next   string       `json:"next"`
-	}
-	if err := json.Unmarshal([]byte(body), &resp); err != nil {
-		return nil, "", errors.Wrap(err, "unmarshal body")
-	}
-	return resp.Values, resp.Next, nil
-}
-
-// ReadFileMeta reads the metadata of the given file in the repository.
-//
-// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#file-meta-data
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
-	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?format=meta", p.APIURL(instanceURL), repositoryID, url.PathEscape(refInfo.RefName), url.PathEscape(filePath))
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-	)
-	if err != nil {
-		return nil, errors.Wrapf(err, "GET %s", url)
-	}
-
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to read file from URL %s", url)
-	} else if code >= 300 {
-		return nil,
-			errors.Errorf("failed to read file from URL %s, status code: %d, body: %s",
-				url,
-				code,
-				body,
-			)
-	}
-
-	var treeEntry TreeEntry
-	if err = json.Unmarshal([]byte(body), &treeEntry); err != nil {
-		return nil, errors.Wrap(err, "unmarshal body")
-	}
-
-	if treeEntry.Type != "commit_file" {
-		return nil, errors.Errorf("%q is not a file", filePath)
-	}
-
-	return &vcs.FileMeta{
-		Name:         path.Base(treeEntry.Path),
-		Path:         treeEntry.Path,
-		Size:         treeEntry.Size,
-		LastCommitID: treeEntry.Commit.Hash,
-	}, nil
 }
 
 // ReadFileContent reads the content of the given file in the repository.
