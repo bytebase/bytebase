@@ -46,9 +46,10 @@ func getMergeRequestChangeFileContent(ctx context.Context, vcsProvider *store.VC
 	}
 
 	prInfo := &pullRequestInfo{
-		email: pushEvent.User.Email,
-		title: pushEvent.ObjectAttributes.Title,
-		url:   pushEvent.ObjectAttributes.URL,
+		email:       pushEvent.User.Email,
+		url:         pushEvent.ObjectAttributes.URL,
+		title:       pushEvent.ObjectAttributes.Title,
+		description: pushEvent.ObjectAttributes.Description,
 	}
 	for _, v := range mrFiles {
 		if v.IsDeleted {
