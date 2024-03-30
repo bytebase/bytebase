@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -117,23 +116,6 @@ func (bb *Bitbucket) getRepositoryContent(c echo.Context) error {
 		return err
 	}
 
-	if strings.Contains(c.QueryString(), `type="commit_file"`) {
-		var treeEntries []*bitbucket.TreeEntry
-		for filePath := range r.files {
-			treeEntries = append(treeEntries,
-				&bitbucket.TreeEntry{
-					Type: "blob",
-					Path: filePath,
-				},
-			)
-		}
-		resp, err := json.Marshal(map[string]any{"values": treeEntries})
-		if err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository content: %v", err))
-		}
-		return c.String(http.StatusOK, string(resp))
-	}
-
 	filePathEscaped := c.Param("filepath")
 	filePath, err := url.QueryUnescape(filePathEscaped)
 	if err != nil {
@@ -143,20 +125,6 @@ func (bb *Bitbucket) getRepositoryContent(c echo.Context) error {
 	content, ok := r.files[filePath]
 	if !ok {
 		return c.String(http.StatusNotFound, fmt.Sprintf("file %q not found", filePath))
-	}
-
-	if strings.Contains(c.QueryString(), `format=meta`) {
-		resp, err := json.Marshal(
-			bitbucket.TreeEntry{
-				Type: "commit_file",
-				Path: filePath,
-				Size: int64(len(content)),
-			},
-		)
-		if err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository file meta: %v", err))
-		}
-		return c.String(http.StatusOK, string(resp))
 	}
 	return c.String(http.StatusOK, content)
 }
