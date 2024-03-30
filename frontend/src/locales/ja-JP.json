@@ -274,7 +274,8 @@
     "baseline": "ベースライン",
     "project-member": "プロジェクトメンバー",
     "leave-without-saving": "保存せずに終了しますか?",
-    "configure-now": "今すぐ設定する"
+    "configure-now": "今すぐ設定する",
+    "connection": "繋がり"
   },
   "error-page": {
     "go-back-home": "ホームに戻る"
@@ -1176,6 +1177,7 @@
     "missing-sql-statement": "SQLステートメントが見つかりません。この変更をすべてのタスクに適用するには、「@:{'issue.apply-to-other-tasks'}」ボタンをクリックしてください。",
     "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました",
     "data-export": {
+      "title": "データエクスポート",
       "options": "エクスポートオプション",
       "format": "フォーマット",
       "encrypt": "暗号化",
@@ -1576,6 +1578,7 @@
     "batch-action-permission-denied": "データベースの{action}の権限がありません",
     "batch-action-disabled": "異なるプロジェクトのデータベースに対して{action}することはできません",
     "batch-action-disabled-for-unassigned": "アンアサインされたデータベースに対して{action}することはできません",
+    "data-export-action-disabled": "複数のデータベースに対してデータをエクスポートすることはできません",
     "successfully-transferred-databases": "データベースが正常に転送されました",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "'{0}'がプロジェクト'{1}'に正常に転送されました",
     "last-sync-status": "最後の同期ステータス",
@@ -2249,7 +2252,15 @@
     "previous-row": "前の行",
     "next-row": "次の行",
     "copy-success": "コピーが成功しました",
-    "missing-permission-to-load-db-metadata": "データベース {db} のメタデータをロードするために必要な権限がありません。"
+    "missing-permission-to-load-db-metadata": "データベース {db} のメタデータをロードするために必要な権限がありません。",
+    "connect-in-new-tab": "新しいタブで接続する",
+    "copy-name": "名前をコピーする",
+    "copy-select-statement": "SELECT ステートメントをコピーする",
+    "preview-table-data": "テーブルデータのプレビュー",
+    "view-table-detail": "テーブルの詳細を表示する",
+    "view-database-detail": "データベースの詳細を表示する",
+    "copy-all-column-names": "すべての列名をコピーします",
+    "view-schema-text": "スキーマテキストの表示"
   },
   "schema-editor": {
     "self": "スキーマエディター",

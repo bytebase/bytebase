@@ -274,7 +274,8 @@
     "baseline": "基线",
     "project-member": "项目成员",
     "leave-without-saving": "不保存变动？",
-    "configure-now": "现在配置"
+    "configure-now": "现在配置",
+    "connection": "连接"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1176,6 +1177,7 @@
     "missing-sql-statement": "SQL 语句缺失。要将此更改应用于所有任务，请单击 “@:{'issue.apply-to-other-tasks'}” 按钮。",
     "task-summary-tooltip": "{failed} 个任务失败",
     "data-export": {
+      "title": "数据导出",
       "options": "配置项",
       "format": "导出格式",
       "encrypt": "加密",
@@ -1576,6 +1578,7 @@
     "batch-action-permission-denied": "没有权限对数据库{action}",
     "batch-action-disabled": "无法对来自不同项目的数据库{action}",
     "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
+    "data-export-action-disabled": "无法对多个数据库进行数据导出",
     "successfully-transferred-databases": "数据库转移完成",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "成功将'{0}'转移到项目'{1}'。",
     "last-sync-status": "最后一次同步状态",
@@ -2249,7 +2252,15 @@
     "previous-row": "上一行",
     "next-row": "下一行",
     "copy-success": "复制成功",
-    "missing-permission-to-load-db-metadata": "缺少加载数据库 {db} 元数据所需的权限。"
+    "missing-permission-to-load-db-metadata": "缺少加载数据库 {db} 元数据所需的权限。",
+    "connect-in-new-tab": "在新选项卡中连接",
+    "copy-name": "复制名称",
+    "copy-select-statement": "复制 SELECT 语句",
+    "preview-table-data": "预览表数据",
+    "view-table-detail": "查看表详情",
+    "view-database-detail": "查看数据库详情",
+    "copy-all-column-names": "复制所有列名",
+    "view-schema-text": "查看文本 Schema"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

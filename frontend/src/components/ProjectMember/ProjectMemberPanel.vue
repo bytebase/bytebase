@@ -98,13 +98,11 @@ import {
   DEFAULT_PROJECT_V1_NAME,
   getUserEmailInBinding,
   unknownUser,
-  PresetRoleType,
   ALL_USERS_USER_EMAIL,
   PRESET_WORKSPACE_ROLES,
 } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
 import ProjectMemberDataTable from "./ProjectMemberDataTable/index.vue";
 import ProjectMemberDataTableByRole from "./ProjectMemberDataTableByRole/index.vue";
@@ -154,19 +152,7 @@ const allowAdmin = computed(() => {
 });
 
 const projectIAMPolicyBindings = computed(() => {
-  return iamPolicy.value.bindings.filter((binding) => {
-    // Don't show EXPORTER role if it has a non-empty statement condition.
-    if (binding.role === PresetRoleType.PROJECT_EXPORTER) {
-      const parsedExpr = binding.parsedExpr;
-      if (parsedExpr?.expr) {
-        const expression = convertFromExpr(parsedExpr.expr);
-        if (expression.statement && expression.statement !== "") {
-          return false;
-        }
-      }
-    }
-    return true;
-  });
+  return iamPolicy.value.bindings;
 });
 
 const activeUserList = computed(() => {

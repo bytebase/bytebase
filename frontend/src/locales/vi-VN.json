@@ -274,7 +274,8 @@
     "baseline": "Đường cơ sở",
     "project-member": "Thành viên dự án",
     "leave-without-saving": "Rời đi mà không lưu?",
-    "configure-now": "Cấu hình ngay bây giờ"
+    "configure-now": "Cấu hình ngay bây giờ",
+    "connection": "Sự liên quan"
   },
   "error-page": {
     "go-back-home": "Trở về nhà"
@@ -1176,6 +1177,7 @@
     "missing-sql-statement": "Câu lệnh SQL không tồn tại. Để áp dụng thay đổi này cho tất cả các nhiệm vụ, nhấn vào nút '@:{'issue.apply-to-other-tasks'}'.",
     "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công",
     "data-export": {
+      "title": "Xuất Dữ Liệu",
       "options": "Tùy chọn xuất",
       "format": "Định dạng",
       "encrypt": "Mã hóa",
@@ -1576,6 +1578,7 @@
     "batch-action-permission-denied": "Không có quyền {action} đối với cơ sở dữ liệu",
     "batch-action-disabled": "Không thể {action} đối với cơ sở dữ liệu từ các dự án khác nhau",
     "batch-action-disabled-for-unassigned": "Không thể {action} đối với cơ sở dữ liệu chưa được chỉ định",
+    "data-export-action-disabled": "Không thể xuất dữ liệu cho nhiều hơn một cơ sở dữ liệu",
     "successfully-transferred-databases": "Đã chuyển cơ sở dữ liệu thành công",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Đã chuyển thành công '{0}' sang dự án '{1}'.",
     "last-sync-status": "Trạng thái đồng bộ hóa lần cuối",
@@ -2249,7 +2252,15 @@
     "previous-row": "Hàng trước",
     "next-row": "Hàng tiếp theo",
     "copy-success": "Sao chép thành công",
-    "missing-permission-to-load-db-metadata": "Thiếu quyền cần thiết để tải siêu dữ liệu của db {db}."
+    "missing-permission-to-load-db-metadata": "Thiếu quyền cần thiết để tải siêu dữ liệu của db {db}.",
+    "connect-in-new-tab": "Kết nối trong tab mới",
+    "copy-name": "Sao chép tên",
+    "copy-select-statement": "Sao chép câu lệnh CHỌN",
+    "preview-table-data": "Xem trước dữ liệu bảng",
+    "view-table-detail": "Xem chi tiết bảng",
+    "view-database-detail": "Xem chi tiết cơ sở dữ liệu",
+    "copy-all-column-names": "Sao chép tất cả tên cột",
+    "view-schema-text": "Xem văn bản lược đồ"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",

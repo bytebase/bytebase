@@ -274,7 +274,8 @@
     "baseline": "Base",
     "project-member": "Miembro del proyecto",
     "leave-without-saving": "¿Salir sin ahorrar?",
-    "configure-now": "Configurar ahora"
+    "configure-now": "Configurar ahora",
+    "connection": "Conexión"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1176,6 +1177,7 @@
     "missing-sql-statement": "Sentencia SQL faltante. Para aplicar este cambio a todas las tareas, haz clic en el botón '@:{'issue.apply-to-other-tasks'}'.",
     "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas",
     "data-export": {
+      "title": "Exportación de Datos",
       "options": "Opciones de exportación",
       "format": "Formato",
       "encrypt": "Cifrar",
@@ -1576,6 +1578,7 @@
     "batch-action-permission-denied": "No tengo permiso para {action} para bases de datos",
     "batch-action-disabled": "No se puede {action} para las bases de datos de diferentes proyectos",
     "batch-action-disabled-for-unassigned": "No se puede {action} para una base de datos no asignada",
+    "data-export-action-disabled": "No se puede exportar datos de más de una base de datos",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Se transfirió correctamente '{0}' al proyecto '{1}'.",
     "last-sync-status": "Estado de sincronización anterior",
@@ -2249,7 +2252,15 @@
     "previous-row": "Fila anterior",
     "next-row": "siguiente fila",
     "copy-success": "Copiado al portapapeles",
-    "missing-permission-to-load-db-metadata": "Faltan los permisos necesarios para cargar metadatos de db {db}."
+    "missing-permission-to-load-db-metadata": "Faltan los permisos necesarios para cargar metadatos de db {db}.",
+    "connect-in-new-tab": "Conéctate en una nueva pestaña",
+    "copy-name": "Copiar nombre",
+    "copy-select-statement": "Copiar declaración SELECT",
+    "preview-table-data": "Vista previa de datos de la tabla",
+    "view-table-detail": "Ver detalle de la tabla",
+    "view-database-detail": "Ver detalle de la base de datos",
+    "copy-all-column-names": "Copiar todos los nombres de las columnas",
+    "view-schema-text": "Ver texto del esquema"
   },
   "schema-editor": {
     "self": "Editor de esquema",
