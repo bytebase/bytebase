@@ -61,7 +61,6 @@ import {
   humanizeDurationV1,
   isDescendantOf,
 } from "@/utils";
-import GitIcon from "../GitIcon.vue";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
 

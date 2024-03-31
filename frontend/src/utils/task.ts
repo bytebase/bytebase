@@ -11,13 +11,7 @@ import type {
   TaskCheckType,
   TaskCreate,
   TaskDatabaseCreatePayload,
-  TaskDatabaseDataUpdatePayload,
-  TaskDatabaseSchemaBaselinePayload,
-  TaskDatabaseSchemaUpdateGhostSyncPayload,
-  TaskDatabaseSchemaUpdatePayload,
-  TaskDatabaseSchemaUpdateSDLPayload,
   TaskStatus,
-  TaskType,
 } from "@/types";
 import { unknownDatabase } from "@/types";
 import { hasProjectPermissionV2 } from "./iam";
