@@ -188,12 +188,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repositor
 // with a boolean indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, page int) (repos []Repository, hasNextPage bool, err error) {
 	url := fmt.Sprintf("%s/user/repos?page=%d&per_page=%d", p.APIURL(p.instanceURL), page, apiPageSize)
-	code, _, body, err := internal.Get(
-		ctx,
-		p.client,
-		url,
-		p.authToken,
-	)
+	code, body, err := internal.Get(ctx, url, p.authToken)
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "GET %s", url)
 	}
@@ -225,11 +220,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, page int) (
 // Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
 func (p *Provider) ReadFileContent(ctx context.Context, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
 	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(p.instanceURL), repositoryID, url.QueryEscape(filePath), refInfo.RefName)
-	code, _, body, err := internal.GetWithHeader(
-		ctx,
-		p.client,
-		url,
-		p.authToken,
+	code, body, err := internal.GetWithHeader(ctx, url, p.authToken,
 		map[string]string{
 			"Accept": "application/vnd.github.raw",
 		},
@@ -321,12 +312,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRe
 // listPaginatedPullRequestFile lists the changed files in the pull request with pagination.
 func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, repositoryID, pullRequestID string, page int) ([]PullRequestFile, error) {
 	requestURL := fmt.Sprintf("%s/repos/%s/pulls/%s/files?per_page=%d&page=%d", p.APIURL(p.instanceURL), repositoryID, pullRequestID, apiPageSize, page)
-	code, _, body, err := internal.Get(
-		ctx,
-		p.client,
-		requestURL,
-		p.authToken,
-	)
+	code, body, err := internal.Get(ctx, requestURL, p.authToken)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", requestURL)
 	}
@@ -369,12 +355,7 @@ type ReferenceObject struct {
 // Docs: https://docs.github.com/en/rest/git/refs#get-a-reference
 func (p *Provider) GetBranch(ctx context.Context, repositoryID, branchName string) (*vcs.BranchInfo, error) {
 	url := fmt.Sprintf("%s/repos/%s/git/ref/heads/%s", p.APIURL(p.instanceURL), repositoryID, branchName)
-	code, _, body, err := internal.Get(
-		ctx,
-		p.client,
-		url,
-		p.authToken,
-	)
+	code, body, err := internal.Get(ctx, url, p.authToken)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -415,13 +396,7 @@ type PullRequest struct {
 // Docs: https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
 func (p *Provider) CreateWebhook(ctx context.Context, repositoryID string, payload []byte) (string, error) {
 	url := fmt.Sprintf("%s/repos/%s/hooks", p.APIURL(p.instanceURL), repositoryID)
-	code, _, body, err := internal.Post(
-		ctx,
-		p.client,
-		url,
-		p.authToken,
-		payload,
-	)
+	code, body, err := internal.Post(ctx, url, p.authToken, payload)
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
@@ -452,12 +427,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, repositoryID string, paylo
 // Docs: https://docs.github.com/en/rest/webhooks/repos#delete-a-repository-webhook
 func (p *Provider) DeleteWebhook(ctx context.Context, repositoryID, webhookID string) error {
 	url := fmt.Sprintf("%s/repos/%s/hooks/%s", p.APIURL(p.instanceURL), repositoryID, webhookID)
-	code, _, body, err := internal.Delete(
-		ctx,
-		p.client,
-		url,
-		p.authToken,
-	)
+	code, body, err := internal.Delete(ctx, url, p.authToken)
 	if err != nil {
 		return errors.Wrapf(err, "DELETE %s", url)
 	}
