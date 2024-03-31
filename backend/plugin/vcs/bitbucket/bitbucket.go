@@ -34,15 +34,16 @@ var _ vcs.Provider = (*Provider)(nil)
 
 // Provider is a Bitbucket Cloud VCS provider.
 type Provider struct {
-	client *http.Client
+	client      *http.Client
+	instanceURL string
+	authToken   string
 }
 
 func newProvider(config vcs.ProviderConfig) vcs.Provider {
-	if config.Client == nil {
-		config.Client = &http.Client{}
-	}
 	return &Provider{
-		client: config.Client,
+		client:      &http.Client{},
+		instanceURL: config.InstanceURL,
+		authToken:   config.AuthToken,
 	}
 }
 
@@ -88,12 +89,12 @@ type CommitDiffStat struct {
 	New    CommitFile `json:"new"`
 }
 
-func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, url string) (diffs []*CommitDiffStat, next string, err error) {
+func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, url string) (diffs []*CommitDiffStat, next string, err error) {
 	code, _, body, err := internal.Get(
 		ctx,
 		p.client,
 		url,
-		oauthCtx.AccessToken,
+		p.authToken,
 	)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "GET %s", url)
@@ -114,7 +115,7 @@ func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, oauthCtx *com
 		Next   string            `json:"next"`
 	}
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
-		return nil, "", errors.Wrapf(err, "failed to unmarshal file diff data from Bitbucket Cloud instance %s", instanceURL)
+		return nil, "", errors.Wrapf(err, "failed to unmarshal file diff data from Bitbucket Cloud instance %s", url)
 	}
 	return resp.Values, resp.Next, nil
 }
@@ -137,16 +138,16 @@ type RepositoryPermission struct {
 // has admin permissions, which is required to create webhook in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-user-permissions-repositories-get
-func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repository, error) {
 	var bbcRepos []*Repository
 	params := url.Values{}
 	params.Add("q", `permission="admin"`)
 	params.Add("pagelen", strconv.Itoa(apiPageSize))
-	next := fmt.Sprintf(`%s/user/permissions/repositories?%s`, p.APIURL(instanceURL), params.Encode())
+	next := fmt.Sprintf(`%s/user/permissions/repositories?%s`, p.APIURL(p.instanceURL), params.Encode())
 	for next != "" {
 		var err error
 		var repos []*Repository
-		repos, next, err = p.fetchPaginatedRepositoryList(ctx, oauthCtx, next)
+		repos, next, err = p.fetchPaginatedRepositoryList(ctx, next)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
 		}
@@ -160,7 +161,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.
 				ID:       r.UUID,
 				Name:     r.Name,
 				FullPath: r.FullName,
-				WebURL:   fmt.Sprintf("%s/%s", instanceURL, r.FullName),
+				WebURL:   fmt.Sprintf("%s/%s", p.instanceURL, r.FullName),
 			},
 		)
 	}
@@ -170,12 +171,12 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.
 // fetchPaginatedRepositoryList fetches repositories in given page. It returns
 // the paginated results along with a string indicating the URL of the next page
 // (if exists).
-func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, url string) (repos []*Repository, next string, err error) {
+func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, url string) (repos []*Repository, next string, err error) {
 	code, _, body, err := internal.Get(
 		ctx,
 		p.client,
 		url,
-		oauthCtx.AccessToken,
+		p.authToken,
 	)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "GET %s", url)
@@ -215,13 +216,13 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx *c
 // ReadFileContent reads the content of the given file in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#raw-file-contents
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
-	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s", p.APIURL(instanceURL), repositoryID, url.PathEscape(refInfo.RefName), url.PathEscape(filePath))
+func (p *Provider) ReadFileContent(ctx context.Context, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
+	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s", p.APIURL(p.instanceURL), repositoryID, url.PathEscape(refInfo.RefName), url.PathEscape(filePath))
 	code, _, body, err := internal.Get(
 		ctx,
 		p.client,
 		url,
-		oauthCtx.AccessToken,
+		p.authToken,
 	)
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
@@ -254,13 +255,13 @@ type Branch struct {
 // GetBranch gets the given branch in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-refs/#api-repositories-workspace-repo-slug-refs-branches-name-get
-func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
-	url := fmt.Sprintf("%s/repositories/%s/refs/branches/%s", p.APIURL(instanceURL), repositoryID, branchName)
+func (p *Provider) GetBranch(ctx context.Context, repositoryID, branchName string) (*vcs.BranchInfo, error) {
+	url := fmt.Sprintf("%s/repositories/%s/refs/branches/%s", p.APIURL(p.instanceURL), repositoryID, branchName)
 	code, _, body, err := internal.Get(
 		ctx,
 		p.client,
 		url,
-		oauthCtx.AccessToken,
+		p.authToken,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
@@ -290,13 +291,13 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext,
 // ListPullRequestFile lists the changed files in the pull request.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/#api-repositories-workspace-repo-slug-pullrequests-pull-request-id-diffstat-get
-func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
+func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
 	var bbcDiffs []*CommitDiffStat
-	next := fmt.Sprintf("%s/repositories/%s/pullrequests/%s/diffstat?pagelen=%d", p.APIURL(instanceURL), url.PathEscape(repositoryID), pullRequestID, apiPageSize)
+	next := fmt.Sprintf("%s/repositories/%s/pullrequests/%s/diffstat?pagelen=%d", p.APIURL(p.instanceURL), url.PathEscape(repositoryID), pullRequestID, apiPageSize)
 	for next != "" {
 		var err error
 		var diffs []*CommitDiffStat
-		diffs, next, err = p.fetchPaginatedDiffFileList(ctx, oauthCtx, instanceURL, next)
+		diffs, next, err = p.fetchPaginatedDiffFileList(ctx, next)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
 		}
@@ -391,13 +392,13 @@ type Webhook struct {
 // CreateWebhook creates a webhook in the repository with given payload.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-repo-slug-hooks-post
-func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
-	url := fmt.Sprintf("%s/repositories/%s/hooks", p.APIURL(instanceURL), repositoryID)
+func (p *Provider) CreateWebhook(ctx context.Context, repositoryID string, payload []byte) (string, error) {
+	url := fmt.Sprintf("%s/repositories/%s/hooks", p.APIURL(p.instanceURL), repositoryID)
 	code, _, body, err := internal.Post(
 		ctx,
 		p.client,
 		url,
-		oauthCtx.AccessToken,
+		p.authToken,
 		payload,
 	)
 	if err != nil {
@@ -428,13 +429,13 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthCont
 // DeleteWebhook deletes the webhook from the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-repo-slug-hooks-uid-delete
-func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string) error {
-	url := fmt.Sprintf("%s/repositories/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
+func (p *Provider) DeleteWebhook(ctx context.Context, repositoryID, webhookID string) error {
+	url := fmt.Sprintf("%s/repositories/%s/hooks/%s", p.APIURL(p.instanceURL), repositoryID, webhookID)
 	code, _, body, err := internal.Delete(
 		ctx,
 		p.client,
 		url,
-		oauthCtx.AccessToken,
+		p.authToken,
 	)
 	if err != nil {
 		return errors.Wrapf(err, "DELETE %s", url)

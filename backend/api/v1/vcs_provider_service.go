@@ -131,13 +131,10 @@ func (s *VCSProviderService) SearchVCSProviderProjects(ctx context.Context, requ
 		return nil, err
 	}
 
-	apiExternalProjectList, err := vcs.Get(vcsProvider.Type, vcs.ProviderConfig{}).FetchAllRepositoryList(
-		ctx,
-		&common.OauthContext{
-			AccessToken: vcsProvider.AccessToken,
-		},
-		vcsProvider.InstanceURL,
-	)
+	apiExternalProjectList, err := vcs.Get(
+		vcsProvider.Type,
+		vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
+	).FetchAllRepositoryList(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch external project list: %v", err)
 	}
