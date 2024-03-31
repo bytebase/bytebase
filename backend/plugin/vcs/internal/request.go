@@ -6,95 +6,52 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 
 	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/common/log"
 )
 
-// Post makes a HTTP POST request to the given URL using the token. It refreshes
-// token and retries the request in the case of the token has expired.
-func Post(ctx context.Context, client *http.Client, url string, token string, body []byte) (code int, header http.Header, respBody string, err error) {
-	//nolint:bodyclose
-	return retry(ctx, requesterWithHeader(ctx, client, http.MethodPost, url, token, bytes.NewReader(body), nil))
+// Post makes a HTTP POST request to the given URL using the token.
+func Post(ctx context.Context, url string, token string, body []byte) (code int, respBody string, err error) {
+	return request(ctx, http.MethodPost, url, token, nil, bytes.NewReader(body))
 }
 
-// Get makes a HTTP GET request to the given URL using the token. It refreshes
-// token and retries the request in the case of the token has expired.
-func Get(ctx context.Context, client *http.Client, url string, token string) (code int, header http.Header, respBody string, err error) {
-	//nolint:bodyclose
-	return retry(ctx, requesterWithHeader(ctx, client, http.MethodGet, url, token, nil, nil))
+// Get makes a HTTP GET request to the given URL using the token.
+func Get(ctx context.Context, url string, token string) (code int, respBody string, err error) {
+	return request(ctx, http.MethodGet, url, token, nil, bytes.NewReader(nil))
 }
 
-// GetWithHeader makes a HTTP GET request to the given URL using the token and
-// additional header. It refreshes token and retries the request in the case of
-// the token has expired.
-func GetWithHeader(ctx context.Context, client *http.Client, url string, token string, header map[string]string) (code int, _ http.Header, respBody string, err error) {
-	//nolint:bodyclose
-	return retry(ctx, requesterWithHeader(ctx, client, http.MethodGet, url, token, nil, header))
+// GetWithHeader makes a HTTP GET request to the given URL using the token and additional header.
+func GetWithHeader(ctx context.Context, url string, token string, header map[string]string) (code int, respBody string, err error) {
+	return request(ctx, http.MethodGet, url, token, header, bytes.NewReader(nil))
 }
 
-// Delete makes a HTTP DELETE request to the given URL using the token. It refreshes
-// token and retries the request in the case of the token has expired.
-func Delete(ctx context.Context, client *http.Client, url string, token string) (code int, header http.Header, respBody string, err error) {
-	//nolint:bodyclose
-	return retry(ctx, requesterWithHeader(ctx, client, http.MethodDelete, url, token, nil, nil))
+// Delete makes a HTTP DELETE request to the given URL using the token.
+func Delete(ctx context.Context, url string, token string) (code int, respBody string, err error) {
+	return request(ctx, http.MethodDelete, url, token, nil, bytes.NewReader(nil))
 }
 
-func requesterWithHeader(ctx context.Context, client *http.Client, method, url string, token string, body io.Reader, header map[string]string) func() (*http.Response, error) {
-	// The body may be read multiple times but io.Reader is meant to be read once,
-	// so we read the body first and build the reader every time.
-	var bodyBytes []byte
-	if body != nil {
-		b, err := io.ReadAll(body)
-		if err != nil {
-			return func() (*http.Response, error) {
-				return nil, errors.Wrap(err, "failed to read from body")
-			}
-		}
-		bodyBytes = b
-	}
-	return func() (*http.Response, error) {
-		req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(bodyBytes))
-		if err != nil {
-			return nil, errors.Wrapf(err, "construct %s %s", method, url)
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
-		for k, v := range header {
-			req.Header.Set(k, v)
-		}
-
-		resp, err := client.Do(req)
-		if err != nil {
-			return nil, errors.Wrapf(err, "%s %s", method, url)
-		}
-		return resp, nil
-	}
-}
-
-func retry(ctx context.Context, f func() (*http.Response, error)) (code int, header http.Header, respBody string, err error) {
-	// TODO(d): handle timeout retries.
-	select {
-	case <-ctx.Done():
-		return 0, nil, "", ctx.Err()
-	default:
-	}
-
-	resp, err := f()
+func request(ctx context.Context, method, url string, token string, header map[string]string, requestBody *bytes.Reader) (int, string, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, requestBody)
 	if err != nil {
-		return 0, nil, "", err
+		return 0, "", errors.Wrapf(err, "failed to build delete request for url %s", url)
 	}
-
-	body, err := io.ReadAll(resp.Body)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+	for k, v := range header {
+		req.Header.Set(k, v)
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
-		return 0, nil, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
+		return 0, "", errors.Wrapf(err, "failed to send delete request for url %s", url)
+	}
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, "", errors.Wrapf(err, "read delete %s response body with status code %d", url, resp.StatusCode)
 	}
 	if err := resp.Body.Close(); err != nil {
-		slog.Warn("failed to close resp body", log.BBError(err))
+		return 0, "", errors.Wrapf(err, "failed to close delete %s response body with status code %d", url, resp.StatusCode)
 	}
-	return resp.StatusCode, resp.Header, string(body), nil
+	return resp.StatusCode, string(respBody), nil
 }
