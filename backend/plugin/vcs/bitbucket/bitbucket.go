@@ -423,5 +423,5 @@ func (p *Provider) DeleteWebhook(ctx context.Context, repositoryID, webhookID st
 }
 
 func (p *Provider) getAuthorization() string {
-	return fmt.Sprintf("Bearer %s", p.authToken)
+	return fmt.Sprintf("Basic %s", p.authToken)
 }
