@@ -109,6 +109,20 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
+		case vcs.Bitbucket:
+			eventType := c.Request().Header.Get("X-Event-Key")
+			switch eventType {
+			case "pullrequest:created", "pullrequest:updated":
+				return c.String(http.StatusOK, "OK")
+			case "pullrequest:fulfilled":
+			default:
+				return c.String(http.StatusOK, "OK")
+			}
+
+			prInfo, err = getBitBucketPullRequestInfo(ctx, vcsProvider, vcsConnector, body)
+			if err != nil {
+				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
+			}
 		default:
 			return nil
 		}

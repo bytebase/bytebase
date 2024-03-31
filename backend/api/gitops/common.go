@@ -45,14 +45,13 @@ func getFileChange(path string) (*fileChange, error) {
 	switch {
 	case strings.HasPrefix(description, "ddl"):
 		description = strings.TrimPrefix(description, "ddl")
-	case strings.HasPrefix(description, "migrate"):
-		description = strings.TrimPrefix(description, "migrate")
+		changeType = v1pb.Plan_ChangeDatabaseConfig_MIGRATE
 	case strings.HasPrefix(description, "dml"):
 		description = strings.TrimPrefix(description, "dml")
 		changeType = v1pb.Plan_ChangeDatabaseConfig_DATA
-	case strings.HasPrefix(description, "data"):
-		description = strings.TrimPrefix(description, "data")
-		changeType = v1pb.Plan_ChangeDatabaseConfig_DATA
+	case strings.HasPrefix(description, "ghost"):
+		description = strings.TrimPrefix(description, "ghost")
+		changeType = v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST
 	}
 	description = strings.TrimLeft(description, "_-#")
 	return &fileChange{

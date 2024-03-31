@@ -40,6 +40,11 @@ type bitbucketRepositoryData struct {
 	// diffStats is the map for commits compare. The map key has the format
 	// "to..from" which is SHA or branch name.
 	diffStats map[string][]*bitbucket.CommitDiffStat
+	// pullRequests is the map for repository pull request.
+	// the map key is the pull request id.
+	pullRequests map[int]struct {
+		Files []*bitbucket.CommitDiffStat
+	}
 }
 
 // NewBitbucket creates a new fake implementation of Bitbucket VCS provider.
@@ -60,6 +65,7 @@ func NewBitbucket(port int) VCSProvider {
 	g.POST("/repositories/:owner/:repo/src", bb.createRepositoryFile)
 	g.GET("/repositories/:owner/:repo/refs/branches/:branchName", bb.getRepositoryBranch)
 	g.GET("/repositories/:owner/:repo/diffstat/:baseHead", bb.compareCommits)
+	g.GET("/repositories/:owner/:repo/pullrequests/:prID/diffstat", bb.listPullRequestFile)
 	return bb
 }
 
@@ -221,6 +227,9 @@ func (bb *Bitbucket) CreateRepository(id string) {
 		files:     make(map[string]string),
 		refs:      map[string]*bitbucket.Branch{},
 		diffStats: map[string][]*bitbucket.CommitDiffStat{},
+		pullRequests: map[int]struct {
+			Files []*bitbucket.CommitDiffStat
+		}{},
 	}
 }
 
@@ -341,6 +350,56 @@ func (bb *Bitbucket) GetFiles(repositoryID string, filePaths ...string) (map[str
 }
 
 // AddPullRequest creates a new pull request and add changed files to it.
-func (*Bitbucket) AddPullRequest(string, int, []*vcs.PullRequestFile) error {
-	return errors.New("not implemented yet")
+func (bb *Bitbucket) AddPullRequest(repositoryID string, prID int, files []*vcs.PullRequestFile) error {
+	r, ok := bb.repositories[repositoryID]
+	if !ok {
+		return errors.Errorf("Bitbucket repository %q does not exist", repositoryID)
+	}
+	var pullRequestFiles []*bitbucket.CommitDiffStat
+	for _, file := range files {
+		status := "added"
+		if file.IsDeleted {
+			status = "removed"
+		}
+		pullRequestFiles = append(pullRequestFiles, &bitbucket.CommitDiffStat{
+			Status: status,
+			New: bitbucket.CommitFile{
+				Path: file.Path,
+			},
+		})
+	}
+
+	r.pullRequests[prID] = struct {
+		Files []*bitbucket.CommitDiffStat
+	}{
+		Files: pullRequestFiles,
+	}
+	return nil
+}
+
+func (bb *Bitbucket) listPullRequestFile(c echo.Context) error {
+	r, err := bb.validRepository(c)
+	if err != nil {
+		return err
+	}
+
+	prNumber, err := strconv.Atoi(c.Param("prID"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, fmt.Sprintf("The pull request id is invalid: %v", c.Param("prID")))
+	}
+
+	pullRequest, ok := r.pullRequests[prNumber]
+	if !ok {
+		return c.String(http.StatusNotFound, fmt.Sprintf("Cannot found the pull request: %v", c.Param("prID")))
+	}
+
+	rep := bitbucket.PullRequestResponse{
+		Values: pullRequest.Files,
+	}
+
+	buf, err := json.Marshal(rep)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
 }
