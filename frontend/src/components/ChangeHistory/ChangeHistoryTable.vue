@@ -111,7 +111,6 @@ const columnList = computed(() => {
         return (
           <div class="flex items-center gap-x-1">
             {getHistoryChangeType(history.type)}
-            {history.pushEvent && <GitIcon class="w-4 h-4 text-control" />}
           </div>
         );
       },

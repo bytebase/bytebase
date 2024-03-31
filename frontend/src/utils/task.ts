@@ -134,33 +134,6 @@ export const isTaskSkipped = (task: Task): boolean => {
   return false;
 };
 
-export const isTaskTriggeredByVCS = (task: Task): boolean => {
-  const taskTypesWithPushEvent: TaskType[] = [
-    "bb.task.database.data.update",
-    "bb.task.database.schema.update",
-    "bb.task.database.schema.update-sdl",
-    "bb.task.database.schema.update.ghost.sync",
-    "bb.task.database.schema.baseline",
-  ];
-
-  type PayloadTypesWithPushEvent =
-    | TaskDatabaseDataUpdatePayload
-    | TaskDatabaseSchemaUpdatePayload
-    | TaskDatabaseSchemaUpdateSDLPayload
-    | TaskDatabaseSchemaUpdateGhostSyncPayload
-    | TaskDatabaseSchemaBaselinePayload;
-
-  if (taskTypesWithPushEvent.includes(task.type)) {
-    const payload = task.payload as PayloadTypesWithPushEvent | undefined;
-
-    if (payload && payload.pushEvent) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
 export const isTaskEntity = (task: Task | TaskCreate): task is Task => {
   const obj = task as any;
   return typeof obj["id"] === "number";

@@ -87,12 +87,6 @@
   
     - [InstanceService](#bytebase-v1-InstanceService)
   
-- [v1/vcs.proto](#v1_vcs-proto)
-    - [Commit](#bytebase-v1-Commit)
-    - [PushEvent](#bytebase-v1-PushEvent)
-  
-    - [VcsType](#bytebase-v1-VcsType)
-  
 - [v1/database_service.proto](#v1_database_service-proto)
     - [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest)
     - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
@@ -1845,82 +1839,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="v1_vcs-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/vcs.proto
-
-
-
-<a name="bytebase-v1-Commit"></a>
-
-### Commit
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| title | [string](#string) |  |  |
-| message | [string](#string) |  |  |
-| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| url | [string](#string) |  |  |
-| author_name | [string](#string) |  |  |
-| author_email | [string](#string) |  |  |
-| added_list | [string](#string) | repeated |  |
-| modified_list | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PushEvent"></a>
-
-### PushEvent
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| vcs_type | [VcsType](#bytebase-v1-VcsType) |  |  |
-| ref | [string](#string) |  |  |
-| before | [string](#string) |  |  |
-| after | [string](#string) |  |  |
-| repository_id | [string](#string) |  |  |
-| repository_url | [string](#string) |  |  |
-| repository_full_path | [string](#string) |  |  |
-| author_name | [string](#string) |  |  |
-| commits | [Commit](#bytebase-v1-Commit) | repeated |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-VcsType"></a>
-
-### VcsType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| VCS_TYPE_UNSPECIFIED | 0 |  |
-| GITLAB | 1 |  |
-| GITHUB | 2 |  |
-| BITBUCKET | 3 |  |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="v1_database_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2021,7 +1939,6 @@ AdviseIndexResponse is the response of advising index.
 | prev_schema_size | [int64](#int64) |  |  |
 | execution_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
 | issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
-| push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 
 
@@ -9065,7 +8982,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
 | payload | [SheetPayload](#bytebase-v1-SheetPayload) |  |  |
-| push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |
 
 
 

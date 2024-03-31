@@ -3,26 +3,13 @@ syntax = "proto3";
 package bytebase.store;
 
 import "store/database.proto";
-import "store/vcs.proto";
 
 option go_package = "generated-go/store";
 
 message SheetPayload {
-  message VCSPayload {
-    string file_name = 1;
-    string file_path = 2;
-    int64 size = 3;
-    string author = 4;
-    string last_commit_id = 5;
-    int64 last_sync_ts = 6;
-
-    PushEvent push_event = 7;
-  }
-  VCSPayload vcs_payload = 2;
-
   // The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database.
-  DatabaseConfig database_config = 4;
+  DatabaseConfig database_config = 1;
 
   // The snapshot of the baseline database config when creating the sheet.
-  DatabaseConfig baseline_database_config = 5;
+  DatabaseConfig baseline_database_config = 2;
 }
