@@ -141,44 +141,11 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	return affectedRows, nil
 }
 
-func (*Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if connPool == nil {
-		return nil, errors.Errorf("no database connection established")
-	}
-
-	var results []*v1pb.QueryResult
-
-	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	results, err := d.QueryWithConn(ctx, d.conn, statementsStr, queryCtx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to split statements")
+		return nil, err
 	}
-
-	conn, err := connPool.Get("")
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get connection from pool")
-	}
-
-	if queryCtx != nil && !queryCtx.ReadOnly {
-		if err := SetRole(ctx, conn, "admin"); err != nil {
-			return nil, err
-		}
-	}
-
-	for _, statement := range statements {
-		statementStr := strings.TrimRight(statement.Text, ";")
-		if queryCtx != nil && queryCtx.Limit > 0 {
-			statementStr = fmt.Sprintf("%s LIMIT %d", statementStr, queryCtx.Limit)
-		}
-
-		result, err := runSingleStatement(ctx, conn, statementStr)
-		if err != nil {
-			result.Error = err.Error()
-			return nil, err
-		}
-
-		results = append(results, result)
-	}
-
 	return results, nil
 }
 
@@ -288,4 +255,48 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 		return &result, nil
 	}
 	return nil, nil
+}
+
+func (*Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if connPool == nil {
+		return nil, errors.Errorf("no database connection established")
+	}
+
+	if conn == nil {
+		var err error
+		conn, err = connPool.Get("")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var results []*v1pb.QueryResult
+
+	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split statements")
+	}
+
+	if queryCtx != nil && !queryCtx.ReadOnly {
+		if err := SetRole(ctx, conn, "admin"); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, statement := range statements {
+		statementStr := strings.TrimRight(statement.Text, ";")
+		if queryCtx != nil && queryCtx.Limit > 0 {
+			statementStr = fmt.Sprintf("%s LIMIT %d", statementStr, queryCtx.Limit)
+		}
+
+		result, err := runSingleStatement(ctx, conn, statementStr)
+		if err != nil {
+			result.Error = err.Error()
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
 }
