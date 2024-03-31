@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"reflect"
@@ -24,11 +23,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	vcsplugin "github.com/bytebase/bytebase/backend/plugin/vcs"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/azure"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -2080,107 +2074,4 @@ func validateMember(member string) error {
 		}
 	}
 	return errors.Errorf("invalid user %s", member)
-}
-
-func isBranchNotFound(
-	ctx context.Context,
-	vcs *store.VCSProviderMessage,
-	accessToken, externalID, branch string,
-) (bool, error) {
-	oauthContext := &common.OauthContext{
-		AccessToken: accessToken,
-	}
-	_, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).GetBranch(ctx,
-		oauthContext,
-		vcs.InstanceURL, externalID, branch)
-
-	if common.ErrorCode(err) == common.NotFound {
-		return true, nil
-	}
-	return false, err
-}
-
-func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID, bytebaseEndpointURL string) (string, error) {
-	// Create a new webhook and retrieve the created webhook ID
-	var webhookCreatePayload []byte
-	var err error
-	switch vcsType {
-	case vcsplugin.GitLab:
-		webhookCreate := gitlab.WebhookCreate{
-			URL:                   fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
-			SecretToken:           secretToken,
-			MergeRequestsEvents:   true,
-			NoteEvents:            true,
-			EnableSSLVerification: false,
-		}
-		webhookCreatePayload, err = json.Marshal(webhookCreate)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
-		}
-	case vcsplugin.GitHub:
-		webhookPost := github.WebhookCreateOrUpdate{
-			Config: github.WebhookConfig{
-				URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
-				ContentType: "json",
-				Secret:      secretToken,
-				InsecureSSL: 1,
-			},
-			Events: []string{"pull_request", "pull_request_review_comment"},
-		}
-		webhookCreatePayload, err = json.Marshal(webhookPost)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
-		}
-	case vcsplugin.Bitbucket:
-		webhookPost := bitbucket.WebhookCreateOrUpdate{
-			Description: "Bytebase GitOps",
-			URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
-			Active:      true,
-			Events:      []string{"pullrequest:created", "pullrequest:updated", "pullrequest:fulfilled", "pullrequest:comment_created"},
-		}
-		webhookCreatePayload, err = json.Marshal(webhookPost)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
-		}
-	case vcsplugin.AzureDevOps:
-		part := strings.Split(externalRepoID, "/")
-		if len(part) != 3 {
-			return "", errors.Errorf("invalid external repo id %q", externalRepoID)
-		}
-		projectID, repositoryID := part[1], part[2]
-
-		webhookPost := azure.WebhookCreateOrUpdate{
-			ConsumerActionID: "httpRequest",
-			ConsumerID:       "webHooks",
-			ConsumerInputs: azure.WebhookCreateConsumerInputs{
-				URL:                  fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
-				AcceptUntrustedCerts: true,
-			},
-			EventType:   "git.pullrequest.merged",
-			PublisherID: "tfs",
-			PublisherInputs: azure.WebhookCreatePublisherInputs{
-				Repository: repositoryID,
-				Branch:     "", /* Any branches */
-				PushedBy:   "", /* Any users */
-				ProjectID:  projectID,
-			},
-		}
-		webhookCreatePayload, err = json.Marshal(webhookPost)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
-		}
-	}
-	webhookID, err := vcsplugin.Get(vcsType, vcsplugin.ProviderConfig{}).CreateWebhook(
-		ctx,
-		&common.OauthContext{
-			AccessToken: accessToken,
-		},
-		instanceURL,
-		externalRepoID,
-		webhookCreatePayload,
-	)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create webhook")
-	}
-	return webhookID, nil
 }

@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -11,9 +12,14 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	vcsplugin "github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/azure"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -80,19 +86,18 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsResourceID})
+	vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
-	if vcs == nil {
+	if vcsProvider == nil {
 		return nil, status.Errorf(codes.NotFound, "vcs %s not found", vcsResourceID)
 	}
 
 	// Check branch existence.
 	notFound, err := isBranchNotFound(
 		ctx,
-		vcs,
-		vcs.AccessToken,
+		vcsProvider,
 		request.GetVcsConnector().ExternalId,
 		request.GetVcsConnector().Branch,
 	)
@@ -105,7 +110,7 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 
 	baseDir := request.GetVcsConnector().BaseDirectory
 	// Azure DevOps base directory should start with /.
-	if vcs.Type == vcsplugin.AzureDevOps {
+	if vcsProvider.Type == vcs.AzureDevOps {
 		if !strings.HasPrefix(baseDir, "/") {
 			baseDir = "/" + request.GetVcsConnector().BaseDirectory
 		}
@@ -122,12 +127,11 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, "failed to generate random secret token for vcs with error: %v", err.Error())
 	}
 	vcsConnectorCreate := &store.VCSConnectorMessage{
-		ProjectID:  project.ResourceID,
-		ResourceID: request.VcsConnectorId,
-		CreatorID:  principalID,
-
-		VCSUID:        vcs.ID,
-		VCSResourceID: vcs.ResourceID,
+		ProjectID:     project.ResourceID,
+		ResourceID:    request.VcsConnectorId,
+		CreatorID:     principalID,
+		VCSUID:        vcsProvider.ID,
+		VCSResourceID: vcsProvider.ResourceID,
 		Payload: &storepb.VCSConnector{
 			Title:              request.GetVcsConnector().Title,
 			FullPath:           request.GetVcsConnector().FullPath,
@@ -145,7 +149,7 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 		bytebaseEndpointURL = setting.ExternalUrl
 	}
 	webhookEndpointID := fmt.Sprintf("workspaces/%s/projects/%s/vcsConnectors/%s", workspaceID, project.ResourceID, request.VcsConnectorId)
-	webhookID, err := createVCSWebhook(ctx, vcs.Type, webhookEndpointID, secretToken, vcs.AccessToken, vcs.InstanceURL, vcsConnectorCreate.Payload.ExternalId, bytebaseEndpointURL)
+	webhookID, err := createVCSWebhook(ctx, vcsProvider, webhookEndpointID, secretToken, vcsConnectorCreate.Payload.ExternalId, bytebaseEndpointURL)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create webhook for project %s with error: %v", vcsConnectorCreate.ProjectID, err.Error())
 	}
@@ -255,11 +259,11 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "vcs connector %q not found", vcsConnectorID)
 	}
 
-	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
+	vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
-	if vcs == nil {
+	if vcsProvider == nil {
 		return nil, status.Errorf(codes.NotFound, "vcs %s not found", vcsConnector.VCSResourceID)
 	}
 
@@ -280,7 +284,7 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 		case "base_directory":
 			baseDir := request.GetVcsConnector().BaseDirectory
 			// Azure DevOps base directory should start with /.
-			if vcs.Type == vcsplugin.AzureDevOps {
+			if vcsProvider.Type == vcs.AzureDevOps {
 				if !strings.HasPrefix(baseDir, "/") {
 					baseDir = "/" + request.GetVcsConnector().BaseDirectory
 				}
@@ -298,8 +302,7 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 		}
 		notFound, err := isBranchNotFound(
 			ctx,
-			vcs,
-			vcs.AccessToken,
+			vcsProvider,
 			vcsConnector.Payload.ExternalId,
 			*v,
 		)
@@ -350,11 +353,11 @@ func (s *VCSConnectorService) DeleteVCSConnector(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "vcs connector %q not found", vcsConnectorID)
 	}
 
-	vcs, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
+	vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
-	if vcs == nil {
+	if vcsProvider == nil {
 		return nil, status.Errorf(codes.NotFound, "vcs %d not found", vcsConnector.UID)
 	}
 
@@ -363,12 +366,11 @@ func (s *VCSConnectorService) DeleteVCSConnector(ctx context.Context, request *v
 	}
 
 	// Delete the webhook, and fail-open.
-	if err = vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).DeleteWebhook(
+	if err = vcs.Get(
+		vcsProvider.Type,
+		vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
+	).DeleteWebhook(
 		ctx,
-		&common.OauthContext{
-			AccessToken: vcs.AccessToken,
-		},
-		vcs.InstanceURL,
 		vcsConnector.Payload.ExternalId,
 		vcsConnector.Payload.ExternalWebhookId,
 	); err != nil {
@@ -408,4 +410,94 @@ func convertStoreVCSConnector(ctx context.Context, stores *store.Store, vcsConne
 		FullPath:      vcsConnector.Payload.FullPath,
 	}
 	return v1VCSConnector, nil
+}
+
+func isBranchNotFound(ctx context.Context, vcsProvider *store.VCSProviderMessage, externalID, branch string) (bool, error) {
+	_, err := vcs.Get(vcsProvider.Type, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).GetBranch(ctx, externalID, branch)
+
+	if common.ErrorCode(err) == common.NotFound {
+		return true, nil
+	}
+	return false, err
+}
+
+func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage, webhookEndpointID, webhookSecretToken, externalRepoID, bytebaseEndpointURL string) (string, error) {
+	// Create a new webhook and retrieve the created webhook ID
+	var webhookCreatePayload []byte
+	var err error
+	switch vcsProvider.Type {
+	case vcs.GitLab:
+		webhookCreate := gitlab.WebhookCreate{
+			URL:                   fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
+			SecretToken:           webhookSecretToken,
+			MergeRequestsEvents:   true,
+			NoteEvents:            true,
+			EnableSSLVerification: false,
+		}
+		webhookCreatePayload, err = json.Marshal(webhookCreate)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	case vcs.GitHub:
+		webhookPost := github.WebhookCreateOrUpdate{
+			Config: github.WebhookConfig{
+				URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
+				ContentType: "json",
+				Secret:      webhookSecretToken,
+				InsecureSSL: 1,
+			},
+			Events: []string{"pull_request", "pull_request_review_comment"},
+		}
+		webhookCreatePayload, err = json.Marshal(webhookPost)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	case vcs.Bitbucket:
+		webhookPost := bitbucket.WebhookCreateOrUpdate{
+			Description: "Bytebase GitOps",
+			URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
+			Active:      true,
+			Events:      []string{"pullrequest:created", "pullrequest:updated", "pullrequest:fulfilled", "pullrequest:comment_created"},
+		}
+		webhookCreatePayload, err = json.Marshal(webhookPost)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	case vcs.AzureDevOps:
+		part := strings.Split(externalRepoID, "/")
+		if len(part) != 3 {
+			return "", errors.Errorf("invalid external repo id %q", externalRepoID)
+		}
+		projectID, repositoryID := part[1], part[2]
+
+		webhookPost := azure.WebhookCreateOrUpdate{
+			ConsumerActionID: "httpRequest",
+			ConsumerID:       "webHooks",
+			ConsumerInputs: azure.WebhookCreateConsumerInputs{
+				URL:                  fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
+				AcceptUntrustedCerts: true,
+			},
+			EventType:   "git.pullrequest.merged",
+			PublisherID: "tfs",
+			PublisherInputs: azure.WebhookCreatePublisherInputs{
+				Repository: repositoryID,
+				Branch:     "", /* Any branches */
+				PushedBy:   "", /* Any users */
+				ProjectID:  projectID,
+			},
+		}
+		webhookCreatePayload, err = json.Marshal(webhookPost)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
+		}
+	}
+	webhookID, err := vcs.Get(vcsProvider.Type, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).CreateWebhook(
+		ctx,
+		externalRepoID,
+		webhookCreatePayload,
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create webhook")
+	}
+	return webhookID, nil
 }

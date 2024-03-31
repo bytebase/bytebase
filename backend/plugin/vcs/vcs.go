@@ -2,10 +2,7 @@ package vcs
 
 import (
 	"context"
-	"net/http"
 	"sync"
-
-	"github.com/bytebase/bytebase/backend/common"
 )
 
 // Type is the type of a VCS.
@@ -210,46 +207,22 @@ type Provider interface {
 	APIURL(instanceURL string) string
 
 	// Fetch all repository within a given user's scope
-	//
-	// oauthCtx: OAuth context to write the file content
-	// instanceURL: VCS instance URL
-	FetchAllRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL string) ([]*Repository, error)
+	FetchAllRepositoryList(ctx context.Context) ([]*Repository, error)
 
 	// Reads the file content
-	//
-	// oauthCtx: OAuth context to read the file content
-	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	// filePath: file path to be read
-	// ref: the specific file version to be read, could be a name of branch, tag or commit
-	ReadFileContent(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo RefInfo) (string, error)
+	ReadFileContent(ctx context.Context, repositoryID, filePath string, refInfo RefInfo) (string, error)
 
 	// GetBranch gets the given branch in the repository.
-	//
-	// oauthCtx: OAuth context to create the webhook
-	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	// branchName: the target branch name
-	GetBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, branchName string) (*BranchInfo, error)
+	GetBranch(ctx context.Context, repositoryID, branchName string) (*BranchInfo, error)
 
 	// CreatePullRequest creates the pull request in the repository.
-	//
-	// oauthCtx: OAuth context to create the webhook
-	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	// pullRequestID: the pull request id
-	ListPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*PullRequestFile, error)
+	ListPullRequestFile(ctx context.Context, repositoryID, pullRequestID string) ([]*PullRequestFile, error)
 
 	// Creates a webhook. Returns the created webhook ID on success.
-	//
-	// oauthCtx: OAuth context to create the webhook
-	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	// payload: the webhook payload
-	CreateWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error)
+	CreateWebhook(ctx context.Context, repositoryID string, payload []byte) (string, error)
 
 	// Deletes a webhook.
-	DeleteWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string) error
+	DeleteWebhook(ctx context.Context, repositoryID, webhookID string) error
 }
 
 var (
@@ -259,7 +232,8 @@ var (
 
 // ProviderConfig is the provider configuration.
 type ProviderConfig struct {
-	Client *http.Client
+	InstanceURL string
+	AuthToken   string
 }
 
 type providerFunc func(ProviderConfig) Provider
