@@ -173,7 +173,7 @@ func (p *Provider) getChangesByCommit(ctx context.Context, externalRepositoryID,
 	values := &url.Values{}
 	values.Set("api-version", "7.0")
 	url := fmt.Sprintf("%s/commits/%s/changes?%s", apiURL, url.PathEscape(commitID), values.Encode())
-	code, body, err := internal.Get(ctx, url, p.authToken)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -231,7 +231,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repositor
 	for _, organization := range organizations {
 		if err := func() error {
 			url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories?%s", url.PathEscape(organization), urlParams.Encode())
-			code, body, err := internal.Get(ctx, url, p.authToken)
+			code, body, err := internal.Get(ctx, url, p.getAuthorization())
 			if err != nil {
 				return errors.Wrapf(err, "GET %s", url)
 			}
@@ -286,7 +286,7 @@ func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context) (stri
 	values.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/profile/profiles/me?%s", values.Encode())
 
-	code, body, err := internal.Get(ctx, url, p.authToken)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
 	}
@@ -315,7 +315,7 @@ func (p *Provider) listOrganizationsForMember(ctx context.Context, memberID stri
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/accounts?%s", urlParams.Encode())
 
-	code, body, err := internal.Get(ctx, url, p.authToken)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -374,7 +374,7 @@ func (p *Provider) ReadFileContent(ctx context.Context, repositoryID, filePath s
 	values.Set("versionDescriptor.version", refInfo.RefName)
 	url := fmt.Sprintf("%s/items?%s", apiURL, values.Encode())
 
-	code, body, err := internal.Get(ctx, url, p.authToken)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
 	}
@@ -406,7 +406,7 @@ func (p *Provider) GetBranch(ctx context.Context, repositoryID, branchName strin
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("%s/stats/branches?%s", apiURL, urlParams.Encode())
 
-	code, body, err := internal.Get(ctx, url, p.authToken)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -452,7 +452,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRe
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("%s/pullrequests/%s?%s", apiURL, pullRequestID, urlParams.Encode())
 
-	code, resp, err := internal.Get(ctx, url, p.authToken)
+	code, resp, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -497,7 +497,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, externalRepositoryID strin
 	urlParams := &url.Values{}
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/hooks/subscriptions?%s", url.PathEscape(organizationName), urlParams.Encode())
-	code, body, err := internal.Post(ctx, url, p.authToken, payload)
+	code, body, err := internal.Post(ctx, url, p.getAuthorization(), payload)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create webhook")
 	}
@@ -530,7 +530,7 @@ func (p *Provider) DeleteWebhook(ctx context.Context, _, webhookID string) error
 	values.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/hooks/subscriptions/%s?%s", url.PathEscape(organizationName), url.PathEscape(webhookID), values.Encode())
 
-	code, body, err := internal.Delete(ctx, url, p.authToken)
+	code, body, err := internal.Delete(ctx, url, p.getAuthorization())
 	if err != nil {
 		return errors.Wrapf(err, "failed to send delete webhook request")
 	}
@@ -550,4 +550,8 @@ func getRepositoryAPIURL(repositoryID string) (string, error) {
 	organizationName, projectName, repositoryID := parts[0], parts[1], parts[2]
 
 	return fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/repositories/%s", url.PathEscape(organizationName), url.PathEscape(projectName), url.PathEscape(repositoryID)), nil
+}
+
+func (p *Provider) getAuthorization() string {
+	return fmt.Sprintf("Basic %s", p.authToken)
 }
