@@ -204,7 +204,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, page int) (
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
 	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40&page=%d&per_page=%d", p.APIURL(p.instanceURL), page, apiPageSize)
-	code, body, err := internal.Get(ctx, url, p.authToken)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "GET %s", url)
 	}
@@ -262,7 +262,7 @@ type MergeRequestFile struct {
 // Docs: https://docs.gitlab.com/ee/api/merge_requests.html#get-single-mr-changes
 func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
 	url := fmt.Sprintf("%s/projects/%s/merge_requests/%s/changes", p.APIURL(p.instanceURL), repositoryID, pullRequestID)
-	code, body, err := internal.Get(ctx, url, p.authToken)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -319,7 +319,7 @@ type MergeRequestCreate struct {
 // Docs: https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch
 func (p *Provider) GetBranch(ctx context.Context, repositoryID, branchName string) (*vcs.BranchInfo, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/branches/%s", p.APIURL(p.instanceURL), repositoryID, branchName)
-	code, body, err := internal.Get(ctx, url, p.authToken)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -355,7 +355,7 @@ type MergeRequest struct {
 // Docs: https://docs.gitlab.com/ee/api/projects.html#add-project-hook
 func (p *Provider) CreateWebhook(ctx context.Context, repositoryID string, payload []byte) (string, error) {
 	url := fmt.Sprintf("%s/projects/%s/hooks", p.APIURL(p.instanceURL), repositoryID)
-	code, body, err := internal.Post(ctx, url, p.authToken, payload)
+	code, body, err := internal.Post(ctx, url, p.getAuthorization(), payload)
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
@@ -391,7 +391,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, repositoryID string, paylo
 // Docs: https://docs.gitlab.com/ee/api/projects.html#delete-project-hook
 func (p *Provider) DeleteWebhook(ctx context.Context, repositoryID, webhookID string) error {
 	url := fmt.Sprintf("%s/projects/%s/hooks/%s", p.APIURL(p.instanceURL), repositoryID, webhookID)
-	code, body, err := internal.Delete(ctx, url, p.authToken)
+	code, body, err := internal.Delete(ctx, url, p.getAuthorization())
 	if err != nil {
 		return errors.Wrapf(err, "DELETE %s", url)
 	}
@@ -417,7 +417,7 @@ func (p *Provider) readFile(ctx context.Context, repositoryID, filePath string, 
 	// In such cases, the HTTP header "Content-Encoding" will, for example, be changed to "gzip" and makes the value of "Content-Length" untrustworthy.
 	// We can avoid dealing with this type of problem by using the raw API instead of the typical JSON API.
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s/raw?ref=%s", p.APIURL(p.instanceURL), repositoryID, url.QueryEscape(filePath), url.QueryEscape(refInfo.RefName))
-	code, body, err := internal.Get(ctx, url, p.authToken)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -436,4 +436,8 @@ func (p *Provider) readFile(ctx context.Context, repositoryID, filePath string, 
 	return &File{
 		Content: body,
 	}, nil
+}
+
+func (p *Provider) getAuthorization() string {
+	return fmt.Sprintf("Bearer %s", p.authToken)
 }
