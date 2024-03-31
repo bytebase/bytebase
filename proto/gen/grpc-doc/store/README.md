@@ -2388,7 +2388,6 @@ InstanceOptions is the option for instances.
 | ----- | ---- | ----- | ----------- |
 | vcs_connector | [string](#string) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
 | pull_request_url | [string](#string) |  |  |
-| commit_url | [string](#string) |  |  |
 
 
 

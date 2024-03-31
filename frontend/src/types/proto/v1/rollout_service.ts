@@ -301,7 +301,6 @@ export interface Plan_VCSSource {
    */
   vcsConnector: string;
   pullRequestUrl: string;
-  commitUrl: string;
 }
 
 export interface ListPlanCheckRunsRequest {
@@ -2761,7 +2760,7 @@ export const Plan_ExportDataConfig = {
 };
 
 function createBasePlan_VCSSource(): Plan_VCSSource {
-  return { vcsConnector: "", pullRequestUrl: "", commitUrl: "" };
+  return { vcsConnector: "", pullRequestUrl: "" };
 }
 
 export const Plan_VCSSource = {
@@ -2771,9 +2770,6 @@ export const Plan_VCSSource = {
     }
     if (message.pullRequestUrl !== "") {
       writer.uint32(18).string(message.pullRequestUrl);
-    }
-    if (message.commitUrl !== "") {
-      writer.uint32(26).string(message.commitUrl);
     }
     return writer;
   },
@@ -2799,13 +2795,6 @@ export const Plan_VCSSource = {
 
           message.pullRequestUrl = reader.string();
           continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.commitUrl = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2819,7 +2808,6 @@ export const Plan_VCSSource = {
     return {
       vcsConnector: isSet(object.vcsConnector) ? globalThis.String(object.vcsConnector) : "",
       pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
-      commitUrl: isSet(object.commitUrl) ? globalThis.String(object.commitUrl) : "",
     };
   },
 
@@ -2831,9 +2819,6 @@ export const Plan_VCSSource = {
     if (message.pullRequestUrl !== "") {
       obj.pullRequestUrl = message.pullRequestUrl;
     }
-    if (message.commitUrl !== "") {
-      obj.commitUrl = message.commitUrl;
-    }
     return obj;
   },
 
@@ -2844,7 +2829,6 @@ export const Plan_VCSSource = {
     const message = createBasePlan_VCSSource();
     message.vcsConnector = object.vcsConnector ?? "";
     message.pullRequestUrl = object.pullRequestUrl ?? "";
-    message.commitUrl = object.commitUrl ?? "";
     return message;
   },
 };

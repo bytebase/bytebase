@@ -299,7 +299,6 @@ message Plan {
     // Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
     string vcs_connector = 1;
     string pull_request_url = 2;
-    string commit_url = 3;
   }
 }
 
