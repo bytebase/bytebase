@@ -196,9 +196,8 @@ message Plan {
       ChangeDatabaseConfig change_database_config = 2;
       ExportDataConfig export_data_config = 7;
     }
-
-    VCSSource vcs_source = 8;
   }
+  VCSSource vcs_source = 7;
 
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
@@ -299,7 +298,6 @@ message Plan {
     // Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
     string vcs_connector = 1;
     string pull_request_url = 2;
-    string commit_url = 3;
   }
 }
 

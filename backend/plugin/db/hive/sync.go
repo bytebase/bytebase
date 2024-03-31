@@ -84,7 +84,7 @@ func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
-	results, err := d.QueryConn(ctx, nil, "SELECT VERSION()", nil)
+	results, err := d.QueryWithConn(ctx, nil, "SELECT VERSION()", nil)
 	if err != nil || len(results) == 0 {
 		return "", errors.Wrap(err, "failed to get version from instance")
 	}
@@ -93,7 +93,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 
 func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
 	var databaseNames []string
-	results, err := d.QueryConn(ctx, nil, "SHOW DATABASES", nil)
+	results, err := d.QueryWithConn(ctx, nil, "SHOW DATABASES", nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get databases from instance")
 	}
@@ -105,7 +105,7 @@ func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
 
 func (d *Driver) listTablesNames(ctx context.Context, databaseName string) ([]string, error) {
 	var tabNames []string
-	tabResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("SHOW TABLES FROM %s", databaseName), nil)
+	tabResults, err := d.QueryWithConn(ctx, nil, fmt.Sprintf("SHOW TABLES FROM %s", databaseName), nil)
 
 	for _, row := range tabResults[0].Rows {
 		tabNames = append(tabNames, row.Values[0].GetStringValue())
@@ -145,7 +145,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 			continue
 		}
 
-		tabInfo, err := d.getTableInfo(ctx, tabName, databaseName)
+		tabInfo, err := getTableInfo(ctx, tabName, databaseName)
 		if err != nil {
 			return nil, nil, nil, nil, errors.Wrapf(err, "failed to describe table %s's type", tabName)
 		}
@@ -178,13 +178,13 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 		var tableMetadata storepb.TableMetadata
 
 		// indexes.
-		indexResults, err := d.getIndexesByTableName(ctx, tabName, databaseName)
+		indexResults, err := getIndexesByTableName(ctx, tabName, databaseName)
 		if err != nil {
 			return nil, nil, nil, nil, errors.Wrapf(err, "failed to get index info from tab %s", tabName)
 		}
 
 		// partitions.
-		partitionResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tabName), nil)
+		partitionResults, err := d.QueryWithConn(ctx, nil, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tabName), nil)
 		if err == nil {
 			for _, row := range partitionResults[0].Rows {
 				tableMetadata.Partitions = append(tableMetadata.Partitions, &storepb.TablePartitionMetadata{
@@ -227,18 +227,20 @@ func (d *Driver) getRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata,
 	return roleMetadata, nil
 }
 
-func (d *Driver) getIndexesByTableName(ctx context.Context, tableName string, databaseName string) ([]*storepb.IndexMetadata, error) {
+func getIndexesByTableName(ctx context.Context, tableName string, databaseName string) ([]*storepb.IndexMetadata, error) {
 	var (
 		indexMetadata []*storepb.IndexMetadata
 	)
 
-	conn, err := d.ConnPool.Get()
+	conn, err := connPool.Get("")
 	if err != nil {
 		return nil, err
 	}
 	cursor := conn.Cursor()
-	defer cursor.Close()
-	defer d.ConnPool.Put(conn)
+	defer func() {
+		cursor.Close()
+		connPool.Put(conn)
+	}()
 
 	cursor.Execute(ctx, fmt.Sprintf("use %s", databaseName), false)
 	if cursor.Err != nil {
@@ -289,7 +291,7 @@ type TableInfo struct {
 	comment      string
 }
 
-func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName string) (
+func getTableInfo(ctx context.Context, tabName string, databaseName string) (
 	*TableInfo,
 	error,
 ) {
@@ -302,14 +304,14 @@ func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName 
 		numRows         int
 		hasReadColumns  = false
 	)
-	conn, err := d.ConnPool.Get()
+	conn, err := connPool.Get("")
 	if err != nil {
 		return nil, err
 	}
 	cursor := conn.Cursor()
 	defer func() {
 		cursor.Close()
-		d.ConnPool.Put(conn)
+		connPool.Put(conn)
 	}()
 
 	cursor.Exec(ctx, fmt.Sprintf("DESCRIBE FORMATTED `%s`.`%s`", databaseName, tabName))

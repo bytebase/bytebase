@@ -39,6 +39,10 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		Title:       plan.Name,
 		Description: plan.Description,
 		Steps:       convertToPlanSteps(plan.Config.Steps),
+		VcsSource: &v1pb.Plan_VCSSource{
+			VcsConnector:   plan.Config.GetVcsSource().GetVcsConnector(),
+			PullRequestUrl: plan.Config.GetVcsSource().GetPullRequestUrl(),
+		},
 	}
 
 	issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &plan.UID})

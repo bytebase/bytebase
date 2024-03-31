@@ -109,10 +109,24 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
+		case vcs.Bitbucket:
+			eventType := c.Request().Header.Get("X-Event-Key")
+			switch eventType {
+			case "pullrequest:created", "pullrequest:updated":
+				return c.String(http.StatusOK, "OK")
+			case "pullrequest:fulfilled":
+			default:
+				return c.String(http.StatusOK, "OK")
+			}
+
+			prInfo, err = getBitBucketPullRequestInfo(ctx, vcsProvider, vcsConnector, body)
+			if err != nil {
+				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
+			}
 		default:
 			return nil
 		}
-		if err := s.createIssueFromPRInfo(ctx, project, prInfo); err != nil {
+		if err := s.createIssueFromPRInfo(ctx, project, vcsConnector, prInfo); err != nil {
 			return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))
 		}
 		return nil
@@ -135,7 +149,7 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
 }
 
-func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, prInfo *pullRequestInfo) error {
+func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) error {
 	creatorID := api.SystemBotID
 	user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &prInfo.email})
 	if err != nil {
@@ -204,6 +218,10 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		Plan: &v1pb.Plan{
 			Title: prInfo.title,
 			Steps: steps,
+			VcsSource: &v1pb.Plan_VCSSource{
+				VcsConnector:   fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, vcsConnector.ProjectID, common.VCSConnectorPrefix, vcsConnector.ResourceID),
+				PullRequestUrl: prInfo.url,
+			},
 		},
 	})
 	if err != nil {

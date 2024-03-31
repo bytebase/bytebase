@@ -30,13 +30,15 @@ func init() {
 }
 
 type Driver struct {
-	config   db.ConnectionConfig
-	ctx      db.ConnectionContext
-	ConnPool *FixedConnPool
+	config db.ConnectionConfig
+	ctx    db.ConnectionContext
+	conn   *gohive.Connection
 }
 
 var (
-	_ db.Driver = (*Driver)(nil)
+	_          db.Driver = (*Driver)(nil)
+	connPool   *FixedConnPool
+	numMaxConn = 5
 )
 
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
@@ -61,32 +63,41 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 
 	// TODO(tommy): actually there are various kinds of authentication to choose among [SASL, KERBEROS, NOSASL, PLAIN SASL]
 	// "NONE" refers to PLAIN SASL that doesn't need authentication.
-	pool, err := CreateHiveConnPool(5, ConnPoolConfig{
-		Host:   config.Host,
-		Port:   port,
-		Config: configuration,
-	}, PlainSASLConnFactory)
-	if err != nil {
-		return nil, err
+	if connPool == nil {
+		pool, err := CreateHiveConnPool(numMaxConn, ConnPoolConfig{
+			Host:   config.Host,
+			Port:   port,
+			Config: configuration,
+		}, PlainSASLConnFactory)
+		if err != nil {
+			return nil, err
+		}
+		connPool = pool
 	}
-	d.ConnPool = pool
+
+	newConn, err := connPool.Get(config.Database)
+	if err != nil {
+		return nil, errors.New("failed to get connection from pool")
+	}
+	d.conn = newConn
 
 	return d, nil
 }
 
 func (d *Driver) Close(_ context.Context) error {
-	err := d.ConnPool.Destroy()
-	if err != nil {
-		return errors.Errorf("faild to close connection")
-	}
+	connPool.Put(d.conn)
 	return nil
 }
 
 func (d *Driver) Ping(ctx context.Context) error {
-	if d.ConnPool == nil {
+	if d.conn == nil {
 		return errors.Errorf("no database connection established")
 	}
-	if _, err := d.QueryConn(ctx, nil, "SELECT 1", &db.QueryContext{}); err != nil {
+	cursor := d.conn.Cursor()
+	defer cursor.Close()
+
+	cursor.Exec(ctx, "SELECT 1")
+	if cursor.Err != nil {
 		return errors.Errorf("bad connection")
 	}
 	return nil
@@ -104,21 +115,14 @@ func (*Driver) GetDB() *sql.DB {
 // Even in Hive's bucketed transaction table, all the statements are committed automatically by
 // the Hive server.
 func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
-	if d.ConnPool == nil {
+	if connPool == nil {
 		return 0, errors.Errorf("no database connection established")
 	}
 
 	var affectedRows int64
 
-	conn, err := d.ConnPool.Get()
-	if err != nil {
-		return 0, err
-	}
-	cursor := conn.Cursor()
-	defer func() {
-		cursor.Close()
-		d.ConnPool.Put(conn)
-	}()
+	cursor := d.conn.Cursor()
+	defer cursor.Close()
 
 	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
 	if err != nil {
@@ -138,10 +142,15 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 }
 
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if d.ConnPool == nil {
-		return nil, errors.Errorf("no database connection established")
+	results, err := d.QueryWithConn(ctx, d.conn, statementsStr, queryCtx)
+	if err != nil {
+		return nil, err
 	}
+	return results, nil
+}
 
+// this func is used for admin mode in SQL Editor.
+func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statementsStr string) ([]*v1pb.QueryResult, error) {
 	var results []*v1pb.QueryResult
 
 	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
@@ -149,34 +158,20 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 		return nil, errors.Wrapf(err, "failed to split statements")
 	}
 
-	isAdminMode := false
-	if queryCtx != nil && !queryCtx.ReadOnly {
-		isAdminMode = true
+	if err := SetRole(ctx, d.conn, "admin"); err != nil {
+		return nil, err
 	}
 
 	for _, statement := range statements {
 		statementStr := strings.TrimRight(statement.Text, ";")
-		if queryCtx != nil && queryCtx.Limit > 0 {
-			statementStr = fmt.Sprintf("%s LIMIT %d", statementStr, queryCtx.Limit)
-		}
 
-		result, err := d.runSingleStatement(ctx, statementStr, isAdminMode)
+		result, err := runSingleStatement(ctx, d.conn, statementStr)
 		if err != nil {
 			result.Error = err.Error()
 			return nil, err
 		}
 
 		results = append(results, result)
-	}
-
-	return results, nil
-}
-
-// this func is used for admin mode in SQL Editor.
-func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	results, err := d.QueryConn(ctx, nil, statement, &db.QueryContext{ReadOnly: false})
-	if err != nil {
-		return nil, errors.Wrapf(err, "")
 	}
 	return results, nil
 }
@@ -214,27 +209,14 @@ func parseValueType(value any, gohiveType string) (*v1pb.RowValue, error) {
 	return &rowValue, nil
 }
 
-func (d *Driver) runSingleStatement(ctx context.Context, statement string, readOnly bool) (*v1pb.QueryResult, error) {
+func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement string) (*v1pb.QueryResult, error) {
 	var (
 		result    = v1pb.QueryResult{}
 		startTime = time.Now()
 	)
 
-	conn, err := d.ConnPool.Get()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get connection from pool")
-	}
 	cursor := conn.Cursor()
-	defer func() {
-		cursor.Close()
-		d.ConnPool.Put(conn)
-	}()
-
-	if readOnly {
-		if err := SetRole(ctx, conn, "admin"); err != nil {
-			return nil, err
-		}
-	}
+	defer cursor.Close()
 
 	// run query.
 	cursor.Execute(ctx, statement, false)
@@ -273,4 +255,48 @@ func (d *Driver) runSingleStatement(ctx context.Context, statement string, readO
 		return &result, nil
 	}
 	return nil, nil
+}
+
+func (*Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if connPool == nil {
+		return nil, errors.Errorf("no database connection established")
+	}
+
+	if conn == nil {
+		var err error
+		conn, err = connPool.Get("")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var results []*v1pb.QueryResult
+
+	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split statements")
+	}
+
+	if queryCtx != nil && !queryCtx.ReadOnly {
+		if err := SetRole(ctx, conn, "admin"); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, statement := range statements {
+		statementStr := strings.TrimRight(statement.Text, ";")
+		if queryCtx != nil && queryCtx.Limit > 0 {
+			statementStr = fmt.Sprintf("%s LIMIT %d", statementStr, queryCtx.Limit)
+		}
+
+		result, err := runSingleStatement(ctx, conn, statementStr)
+		if err != nil {
+			result.Error = err.Error()
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
 }
