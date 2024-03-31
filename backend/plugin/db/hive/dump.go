@@ -174,7 +174,7 @@ func (d *Driver) showCreateSchemaDDL(ctx context.Context, schemaType string, sch
 		queryStatement = fmt.Sprintf("SHOW CREATE TABLE %s", schemaName)
 	}
 
-	schemaDDLResults, err := d.QueryConn(ctx, nil, queryStatement, nil)
+	schemaDDLResults, err := d.QueryWithConn(ctx, nil, queryStatement, nil)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to dump %s %s", schemaType, schemaName)
 	}
