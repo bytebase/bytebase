@@ -130,14 +130,6 @@
             •
             {{
               $t(
-                "gitops.setting.add-git-provider.access-token.bitbucket-resource-access-token"
-              )
-            }}
-          </li>
-          <li>
-            •
-            {{
-              $t(
                 "gitops.setting.add-git-provider.access-token.bitbucket-personal-access-token"
               )
             }}
