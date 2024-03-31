@@ -1,6 +1,8 @@
 package hive
 
 import (
+	"context"
+	"fmt"
 	"sync"
 
 	"github.com/beltran/gohive"
@@ -8,16 +10,18 @@ import (
 )
 
 type ConnPool interface {
-	Get() (*gohive.Connection, error)
+	Get(dbName string) (*gohive.Connection, error)
 	Put(*gohive.Connection)
 	Destroy() error
 }
 
 type FixedConnPool struct {
-	RWMutex     sync.RWMutex
-	Connections chan *gohive.Connection
-	IsActivated bool
-	NumMaxConns int
+	RWMutex         sync.RWMutex
+	Connections     chan *gohive.Connection
+	IsActivated     bool
+	NumMaxConns     int
+	PoolConfig      ConnPoolConfig
+	HiveConnFactory func(ConnPoolConfig) (*gohive.Connection, error)
 }
 
 var _ ConnPool = &FixedConnPool{}
@@ -54,21 +58,45 @@ func CreateHiveConnPool(
 	}
 
 	return &FixedConnPool{
-			RWMutex:     sync.RWMutex{},
-			Connections: conns,
-			IsActivated: true,
-			NumMaxConns: numMaxConn,
+			RWMutex:         sync.RWMutex{},
+			Connections:     conns,
+			IsActivated:     true,
+			NumMaxConns:     numMaxConn,
+			HiveConnFactory: hiveConnFactory,
+			PoolConfig:      poolConfig,
 		},
 		nil
 }
 
-func (pool *FixedConnPool) Get() (*gohive.Connection, error) {
+func (pool *FixedConnPool) Get(dbName string) (*gohive.Connection, error) {
 	pool.RWMutex.RLock()
 	if !pool.IsActivated {
 		return nil, errors.New("connection pool has been closed")
 	}
 	pool.RWMutex.RUnlock()
-	return <-pool.Connections, nil
+
+	var conn *gohive.Connection
+
+	select {
+	case conn = <-pool.Connections:
+
+	default:
+		var err error
+		conn, err = pool.HiveConnFactory(pool.PoolConfig)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create new connection")
+		}
+	}
+
+	if dbName != "" {
+		cursor := conn.Cursor()
+		cursor.Exec(context.Background(), fmt.Sprintf("use %s", dbName))
+		if cursor.Err != nil {
+			return nil, cursor.Err
+		}
+	}
+
+	return conn, nil
 }
 
 func (pool *FixedConnPool) Put(conn *gohive.Connection) {
@@ -78,7 +106,12 @@ func (pool *FixedConnPool) Put(conn *gohive.Connection) {
 		return
 	}
 	pool.RWMutex.RUnlock()
-	pool.Connections <- conn
+	select {
+	case pool.Connections <- conn:
+		return
+	default:
+		conn.Close()
+	}
 }
 
 func (pool *FixedConnPool) Destroy() error {

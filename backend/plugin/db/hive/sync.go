@@ -145,7 +145,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 			continue
 		}
 
-		tabInfo, err := d.getTableInfo(ctx, tabName, databaseName)
+		tabInfo, err := getTableInfo(ctx, tabName, databaseName)
 		if err != nil {
 			return nil, nil, nil, nil, errors.Wrapf(err, "failed to describe table %s's type", tabName)
 		}
@@ -178,7 +178,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 		var tableMetadata storepb.TableMetadata
 
 		// indexes.
-		indexResults, err := d.getIndexesByTableName(ctx, tabName, databaseName)
+		indexResults, err := getIndexesByTableName(ctx, tabName, databaseName)
 		if err != nil {
 			return nil, nil, nil, nil, errors.Wrapf(err, "failed to get index info from tab %s", tabName)
 		}
@@ -227,18 +227,20 @@ func (d *Driver) getRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata,
 	return roleMetadata, nil
 }
 
-func (d *Driver) getIndexesByTableName(ctx context.Context, tableName string, databaseName string) ([]*storepb.IndexMetadata, error) {
+func getIndexesByTableName(ctx context.Context, tableName string, databaseName string) ([]*storepb.IndexMetadata, error) {
 	var (
 		indexMetadata []*storepb.IndexMetadata
 	)
 
-	conn, err := d.ConnPool.Get()
+	conn, err := connPool.Get("")
 	if err != nil {
 		return nil, err
 	}
 	cursor := conn.Cursor()
-	defer cursor.Close()
-	defer d.ConnPool.Put(conn)
+	defer func() {
+		cursor.Close()
+		connPool.Put(conn)
+	}()
 
 	cursor.Execute(ctx, fmt.Sprintf("use %s", databaseName), false)
 	if cursor.Err != nil {
@@ -289,7 +291,7 @@ type TableInfo struct {
 	comment      string
 }
 
-func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName string) (
+func getTableInfo(ctx context.Context, tabName string, databaseName string) (
 	*TableInfo,
 	error,
 ) {
@@ -302,14 +304,14 @@ func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName 
 		numRows         int
 		hasReadColumns  = false
 	)
-	conn, err := d.ConnPool.Get()
+	conn, err := connPool.Get("")
 	if err != nil {
 		return nil, err
 	}
 	cursor := conn.Cursor()
 	defer func() {
 		cursor.Close()
-		d.ConnPool.Put(conn)
+		connPool.Put(conn)
 	}()
 
 	cursor.Exec(ctx, fmt.Sprintf("DESCRIBE FORMATTED `%s`.`%s`", databaseName, tabName))
