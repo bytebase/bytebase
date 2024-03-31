@@ -2,7 +2,6 @@
 package gitlab
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -15,7 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/internal/oauth"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/internal"
 )
 
 const (
@@ -124,8 +123,7 @@ type RepositoryTreeNode struct {
 
 // File represents a GitLab API response for a repository file.
 type File struct {
-	Content      string
-	LastCommitID string
+	Content string
 }
 
 // CommitsDiff represents a GitLab API response for comparing two commits.
@@ -205,7 +203,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx *c
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
 	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40&page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
-	code, _, body, err := oauth.Get(
+	code, _, body, err := internal.Get(
 		ctx,
 		p.client,
 		url,
@@ -268,7 +266,7 @@ type MergeRequestFile struct {
 // Docs: https://docs.gitlab.com/ee/api/merge_requests.html#get-single-mr-changes
 func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
 	url := fmt.Sprintf("%s/projects/%s/merge_requests/%s/changes", p.APIURL(instanceURL), repositoryID, pullRequestID)
-	code, _, body, err := oauth.Get(
+	code, _, body, err := internal.Get(
 		ctx,
 		p.client,
 		url,
@@ -330,7 +328,7 @@ type MergeRequestCreate struct {
 // Docs: https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch
 func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/branches/%s", p.APIURL(instanceURL), repositoryID, branchName)
-	code, _, body, err := oauth.Get(
+	code, _, body, err := internal.Get(
 		ctx,
 		p.client,
 		url,
@@ -371,12 +369,12 @@ type MergeRequest struct {
 // Docs: https://docs.gitlab.com/ee/api/projects.html#add-project-hook
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
 	url := fmt.Sprintf("%s/projects/%s/hooks", p.APIURL(instanceURL), repositoryID)
-	code, _, body, err := oauth.Post(
+	code, _, body, err := internal.Post(
 		ctx,
 		p.client,
 		url,
 		oauthCtx.AccessToken,
-		bytes.NewReader(payload),
+		payload,
 	)
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
@@ -413,7 +411,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthCont
 // Docs: https://docs.gitlab.com/ee/api/projects.html#delete-project-hook
 func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string) error {
 	url := fmt.Sprintf("%s/projects/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
-	code, _, body, err := oauth.Delete(
+	code, _, body, err := internal.Delete(
 		ctx,
 		p.client,
 		url,
@@ -444,7 +442,7 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx *common.OauthContext, 
 	// In such cases, the HTTP header "Content-Encoding" will, for example, be changed to "gzip" and makes the value of "Content-Length" untrustworthy.
 	// We can avoid dealing with this type of problem by using the raw API instead of the typical JSON API.
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s/raw?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), url.QueryEscape(refInfo.RefName))
-	code, header, body, err := oauth.Get(
+	code, _, body, err := internal.Get(
 		ctx,
 		p.client,
 		url,
@@ -466,7 +464,6 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx *common.OauthContext, 
 	}
 
 	return &File{
-		Content:      body,
-		LastCommitID: header.Get("x-gitlab-last-commit-id"),
+		Content: body,
 	}, nil
 }

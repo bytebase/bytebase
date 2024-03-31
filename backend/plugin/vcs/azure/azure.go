@@ -2,7 +2,6 @@
 package azure
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -17,7 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/internal/oauth"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/internal"
 )
 
 func init() {
@@ -176,7 +175,7 @@ func getChangesByCommit(ctx context.Context, oauthCtx *common.OauthContext, exte
 	values := &url.Values{}
 	values.Set("api-version", "7.0")
 	url := fmt.Sprintf("%s/commits/%s/changes?%s", apiURL, url.PathEscape(commitID), values.Encode())
-	code, _, body, err := oauth.Get(ctx, client, url, oauthCtx.AccessToken)
+	code, _, body, err := internal.Get(ctx, client, url, oauthCtx.AccessToken)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -234,7 +233,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.
 	for _, organization := range organizations {
 		if err := func() error {
 			url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories?%s", url.PathEscape(organization), urlParams.Encode())
-			code, _, body, err := oauth.Get(ctx, p.client, url, oauthCtx.AccessToken)
+			code, _, body, err := internal.Get(ctx, p.client, url, oauthCtx.AccessToken)
 			if err != nil {
 				return errors.Wrapf(err, "GET %s", url)
 			}
@@ -289,7 +288,7 @@ func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauth
 	values.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/profile/profiles/me?%s", values.Encode())
 
-	code, _, body, err := oauth.Get(ctx, p.client, url, oauthCtx.AccessToken)
+	code, _, body, err := internal.Get(ctx, p.client, url, oauthCtx.AccessToken)
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
 	}
@@ -318,7 +317,7 @@ func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx *com
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/accounts?%s", urlParams.Encode())
 
-	code, _, body, err := oauth.Get(ctx, p.client, url, oauthCtx.AccessToken)
+	code, _, body, err := internal.Get(ctx, p.client, url, oauthCtx.AccessToken)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -377,7 +376,7 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx *common.OauthCo
 	values.Set("versionDescriptor.version", refInfo.RefName)
 	url := fmt.Sprintf("%s/items?%s", apiURL, values.Encode())
 
-	code, _, body, err := oauth.Get(ctx, p.client, url, oauthCtx.AccessToken)
+	code, _, body, err := internal.Get(ctx, p.client, url, oauthCtx.AccessToken)
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
 	}
@@ -409,7 +408,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext,
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("%s/stats/branches?%s", apiURL, urlParams.Encode())
 
-	code, _, body, err := oauth.Get(ctx, p.client, url, oauthCtx.AccessToken)
+	code, _, body, err := internal.Get(ctx, p.client, url, oauthCtx.AccessToken)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -455,7 +454,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.Oau
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("%s/pullrequests/%s?%s", apiURL, pullRequestID, urlParams.Encode())
 
-	code, _, resp, err := oauth.Get(
+	code, _, resp, err := internal.Get(
 		ctx,
 		p.client,
 		url,
@@ -505,12 +504,12 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthCont
 	urlParams := &url.Values{}
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/hooks/subscriptions?%s", url.PathEscape(organizationName), urlParams.Encode())
-	code, _, body, err := oauth.Post(
+	code, _, body, err := internal.Post(
 		ctx,
 		p.client,
 		url,
 		oauthCtx.AccessToken,
-		bytes.NewReader(payload),
+		payload,
 	)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create webhook")
@@ -544,7 +543,7 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthCont
 	values.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/hooks/subscriptions/%s?%s", url.PathEscape(organizationName), url.PathEscape(webhookID), values.Encode())
 
-	code, _, body, err := oauth.Delete(
+	code, _, body, err := internal.Delete(
 		ctx,
 		p.client,
 		url,

@@ -2,7 +2,6 @@
 package github
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -17,7 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/internal/oauth"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/internal"
 )
 
 const (
@@ -188,7 +187,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.
 // with a boolean indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL string, page int) (repos []Repository, hasNextPage bool, err error) {
 	url := fmt.Sprintf("%s/user/repos?page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
-	code, _, body, err := oauth.Get(
+	code, _, body, err := internal.Get(
 		ctx,
 		p.client,
 		url,
@@ -225,7 +224,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx *c
 // Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
 func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
 	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), refInfo.RefName)
-	code, _, body, err := oauth.GetWithHeader(
+	code, _, body, err := internal.GetWithHeader(
 		ctx,
 		p.client,
 		url,
@@ -321,7 +320,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.Oau
 // listPaginatedPullRequestFile lists the changed files in the pull request with pagination.
 func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, pullRequestID string, page int) ([]PullRequestFile, error) {
 	requestURL := fmt.Sprintf("%s/repos/%s/pulls/%s/files?per_page=%d&page=%d", p.APIURL(instanceURL), repositoryID, pullRequestID, apiPageSize, page)
-	code, _, body, err := oauth.Get(
+	code, _, body, err := internal.Get(
 		ctx,
 		p.client,
 		requestURL,
@@ -369,7 +368,7 @@ type ReferenceObject struct {
 // Docs: https://docs.github.com/en/rest/git/refs#get-a-reference
 func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
 	url := fmt.Sprintf("%s/repos/%s/git/ref/heads/%s", p.APIURL(instanceURL), repositoryID, branchName)
-	code, _, body, err := oauth.Get(
+	code, _, body, err := internal.Get(
 		ctx,
 		p.client,
 		url,
@@ -415,12 +414,12 @@ type PullRequest struct {
 // Docs: https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
 	url := fmt.Sprintf("%s/repos/%s/hooks", p.APIURL(instanceURL), repositoryID)
-	code, _, body, err := oauth.Post(
+	code, _, body, err := internal.Post(
 		ctx,
 		p.client,
 		url,
 		oauthCtx.AccessToken,
-		bytes.NewReader(payload),
+		payload,
 	)
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
@@ -452,7 +451,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthCont
 // Docs: https://docs.github.com/en/rest/webhooks/repos#delete-a-repository-webhook
 func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string) error {
 	url := fmt.Sprintf("%s/repos/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
-	code, _, body, err := oauth.Delete(
+	code, _, body, err := internal.Delete(
 		ctx,
 		p.client,
 		url,
