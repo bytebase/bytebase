@@ -89,6 +89,11 @@ type CommitDiffStat struct {
 	New    CommitFile `json:"new"`
 }
 
+type PullRequestResponse struct {
+	Values []*CommitDiffStat `json:"values"`
+	Next   string            `json:"next"`
+}
+
 func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, url string) (diffs []*CommitDiffStat, next string, err error) {
 	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
@@ -105,10 +110,7 @@ func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, url string) (
 		)
 	}
 
-	var resp struct {
-		Values []*CommitDiffStat `json:"values"`
-		Next   string            `json:"next"`
-	}
+	var resp PullRequestResponse
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil, "", errors.Wrapf(err, "failed to unmarshal file diff data from Bitbucket Cloud instance %s", url)
 	}
@@ -273,7 +275,7 @@ func (p *Provider) GetBranch(ctx context.Context, repositoryID, branchName strin
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/#api-repositories-workspace-repo-slug-pullrequests-pull-request-id-diffstat-get
 func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
 	var bbcDiffs []*CommitDiffStat
-	next := fmt.Sprintf("%s/repositories/%s/pullrequests/%s/diffstat?pagelen=%d", p.APIURL(p.instanceURL), url.PathEscape(repositoryID), pullRequestID, apiPageSize)
+	next := fmt.Sprintf("%s/repositories/%s/pullrequests/%s/diffstat?pagelen=%d", p.APIURL(p.instanceURL), repositoryID, pullRequestID, apiPageSize)
 	for next != "" {
 		var err error
 		var diffs []*CommitDiffStat
