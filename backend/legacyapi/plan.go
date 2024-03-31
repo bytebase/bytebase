@@ -127,11 +127,6 @@ const (
 	// FeatureSchemaTemplate allows user to create and use the schema template.
 	FeatureSchemaTemplate FeatureType = "bb.feature.schema-template"
 
-	// VCS Integration.
-
-	// FeatureVCSSQLReviewWorkflow allows user to enable the SQL review CI in VCS workflow.
-	FeatureVCSSQLReviewWorkflow FeatureType = "bb.feature.vcs-sql-review"
-
 	// Database management.
 
 	// FeatureReadReplicaConnection allows user to set a read replica connection
@@ -237,9 +232,6 @@ func (e FeatureType) Name() string {
 		return "Database grouping"
 	case FeatureSchemaTemplate:
 		return "Schema template"
-	// VCS Integration
-	case FeatureVCSSQLReviewWorkflow:
-		return "VCS SQL review workflow"
 	// Database management
 	case FeatureReadReplicaConnection:
 		return "Read replica connection"
@@ -321,8 +313,6 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureEncryptedSecrets: {false, true, true},
 	FeatureDatabaseGrouping: {false, false, true},
 	FeatureSchemaTemplate:   {false, false, true},
-	// VCS Integration
-	FeatureVCSSQLReviewWorkflow: {true, true, true},
 	// Database management
 	FeatureReadReplicaConnection:      {false, false, true},
 	FeatureInstanceSSHConnection:      {false, false, true},
@@ -353,9 +343,7 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	FeatureEncryptedSecrets: true,
 	FeatureTaskScheduleTime: true,
 	FeatureOnlineMigration:  true,
-	// VCS Integration
-	FeatureVCSSQLReviewWorkflow: true,
-	FeatureMybatisSQLReview:     true,
+	FeatureMybatisSQLReview: true,
 	// Database management
 	FeatureReadReplicaConnection:      true,
 	FeatureInstanceSSHConnection:      true,

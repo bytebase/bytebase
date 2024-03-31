@@ -12,6 +12,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // CountInstanceMessage is the message for counting instances.
@@ -132,9 +133,21 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 	defer tx.Rollback()
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT tenant_mode, workflow_type, row_status, COUNT(*)
-		FROM project
-		GROUP BY tenant_mode, workflow_type, row_status`,
+		WITH project_workflow AS (
+			SELECT
+				project.tenant_mode as tenant_mode,
+				project.row_status as row_status,
+				(SELECT COUNT(1) FROM vcs_connector WHERE project.id = vcs_connector.project_id) > 0 AS has_connector
+			FROM project
+			WHERE resource_id != 'default'
+		)
+		SELECT
+			tenant_mode,
+			has_connector,
+			row_status,
+			COUNT(*)
+		FROM project_workflow
+		GROUP BY tenant_mode, has_connector, row_status`,
 	)
 	if err != nil {
 		return nil, err
@@ -144,9 +157,15 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 	var res []*metric.ProjectCountMetric
 	for rows.Next() {
 		var metric metric.ProjectCountMetric
-		if err := rows.Scan(&metric.TenantMode, &metric.WorkflowType, &metric.RowStatus, &metric.Count); err != nil {
+		var hasConnector bool
+		if err := rows.Scan(&metric.TenantMode, &hasConnector, &metric.RowStatus, &metric.Count); err != nil {
 			return nil, err
 		}
+		workflow := v1pb.Workflow_UI
+		if hasConnector {
+			workflow = v1pb.Workflow_VCS
+		}
+		metric.WorkflowType = workflow
 		res = append(res, &metric)
 	}
 	if err := rows.Err(); err != nil {

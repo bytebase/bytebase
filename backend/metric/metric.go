@@ -5,6 +5,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 const (
@@ -66,7 +67,7 @@ type IssueCountMetric struct {
 // ProjectCountMetric is the API message for project count metric.
 type ProjectCountMetric struct {
 	TenantMode   api.ProjectTenantMode
-	WorkflowType api.ProjectWorkflowType
+	WorkflowType v1pb.Workflow
 	RowStatus    api.RowStatus
 	Count        int
 }
