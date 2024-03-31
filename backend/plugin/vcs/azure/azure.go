@@ -27,15 +27,16 @@ var _ vcs.Provider = (*Provider)(nil)
 
 // Provider is a Azure DevOps VCS provider.
 type Provider struct {
-	client *http.Client
+	client      *http.Client
+	instanceURL string
+	authToken   string
 }
 
 func newProvider(config vcs.ProviderConfig) vcs.Provider {
-	if config.Client == nil {
-		config.Client = &http.Client{}
-	}
 	return &Provider{
-		client: config.Client,
+		client:      &http.Client{},
+		instanceURL: config.InstanceURL,
+		authToken:   config.AuthToken,
 	}
 }
 
@@ -165,7 +166,7 @@ type ChangesResponse struct {
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/commits/get-changes?view=azure-devops-rest-7.0&tabs=HTTP
 // TODO(zp): We should GET the changes pagenated, otherwise it may hit the Azure DevOps API limit.
-func getChangesByCommit(ctx context.Context, oauthCtx *common.OauthContext, externalRepositoryID, commitID string) (*ChangesResponse, error) {
+func (p *Provider) getChangesByCommit(ctx context.Context, externalRepositoryID, commitID string) (*ChangesResponse, error) {
 	client := &http.Client{}
 	apiURL, err := getRepositoryAPIURL(externalRepositoryID)
 	if err != nil {
@@ -175,7 +176,7 @@ func getChangesByCommit(ctx context.Context, oauthCtx *common.OauthContext, exte
 	values := &url.Values{}
 	values.Set("api-version", "7.0")
 	url := fmt.Sprintf("%s/commits/%s/changes?%s", apiURL, url.PathEscape(commitID), values.Encode())
-	code, _, body, err := internal.Get(ctx, client, url, oauthCtx.AccessToken)
+	code, _, body, err := internal.Get(ctx, client, url, p.authToken)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -210,13 +211,13 @@ func getChangesByCommit(ctx context.Context, oauthCtx *common.OauthContext, exte
 // The request included in this function requires the following scopes:
 // vso.profile, vso.project.
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/repositories/list?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, _ string) ([]*vcs.Repository, error) {
-	publicAlias, err := p.getAuthenticatedProfilePublicAlias(ctx, oauthCtx)
+func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repository, error) {
+	publicAlias, err := p.getAuthenticatedProfilePublicAlias(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get authenticated profile public alias")
 	}
 
-	organizations, err := p.listOrganizationsForMember(ctx, oauthCtx, publicAlias)
+	organizations, err := p.listOrganizationsForMember(ctx, publicAlias)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list organizations for member")
 	}
@@ -233,7 +234,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.
 	for _, organization := range organizations {
 		if err := func() error {
 			url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories?%s", url.PathEscape(organization), urlParams.Encode())
-			code, _, body, err := internal.Get(ctx, p.client, url, oauthCtx.AccessToken)
+			code, _, body, err := internal.Get(ctx, p.client, url, p.authToken)
 			if err != nil {
 				return errors.Wrapf(err, "GET %s", url)
 			}
@@ -283,12 +284,12 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.
 // profile response.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/profile/profiles/get?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauthCtx *common.OauthContext) (string, error) {
+func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context) (string, error) {
 	values := &url.Values{}
 	values.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/profile/profiles/me?%s", values.Encode())
 
-	code, _, body, err := internal.Get(ctx, p.client, url, oauthCtx.AccessToken)
+	code, _, body, err := internal.Get(ctx, p.client, url, p.authToken)
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
 	}
@@ -311,13 +312,13 @@ func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauth
 // listOrganizationsForMember lists all organization for a given member.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/account/accounts/list?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx *common.OauthContext, memberID string) ([]string, error) {
+func (p *Provider) listOrganizationsForMember(ctx context.Context, memberID string) ([]string, error) {
 	urlParams := &url.Values{}
 	urlParams.Set("memberId", memberID)
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/accounts?%s", urlParams.Encode())
 
-	code, _, body, err := internal.Get(ctx, p.client, url, oauthCtx.AccessToken)
+	code, _, body, err := internal.Get(ctx, p.client, url, p.authToken)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -349,7 +350,7 @@ func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx *com
 // ReadFileContent reads the content of the given file in the repository.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/items/get?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx *common.OauthContext, _ string, repositoryID string, filePath string, refInfo vcs.RefInfo) (string, error) {
+func (p *Provider) ReadFileContent(ctx context.Context, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
 	apiURL, err := getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return "", err
@@ -376,7 +377,7 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx *common.OauthCo
 	values.Set("versionDescriptor.version", refInfo.RefName)
 	url := fmt.Sprintf("%s/items?%s", apiURL, values.Encode())
 
-	code, _, body, err := internal.Get(ctx, p.client, url, oauthCtx.AccessToken)
+	code, _, body, err := internal.Get(ctx, p.client, url, p.authToken)
 	if err != nil {
 		return "", errors.Wrapf(err, "GET %s", url)
 	}
@@ -393,7 +394,7 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx *common.OauthCo
 // - branchName: The branch name.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/stats/get?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext, _, repositoryID, branchName string) (*vcs.BranchInfo, error) {
+func (p *Provider) GetBranch(ctx context.Context, repositoryID, branchName string) (*vcs.BranchInfo, error) {
 	if branchName == "" {
 		return nil, errors.New("branch name is required")
 	}
@@ -408,7 +409,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext,
 	urlParams.Set("api-version", "7.0")
 	url := fmt.Sprintf("%s/stats/branches?%s", apiURL, urlParams.Encode())
 
-	code, _, body, err := internal.Get(ctx, p.client, url, oauthCtx.AccessToken)
+	code, _, body, err := internal.Get(ctx, p.client, url, p.authToken)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -437,7 +438,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext,
 // ListPullRequestFile lists the changed files in the pull request.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get-pull-request?view=azure-devops-rest-7.1
-func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, _, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
+func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
 	type mergeCommit struct {
 		CommitID string `json:"commitId"`
 	}
@@ -458,7 +459,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.Oau
 		ctx,
 		p.client,
 		url,
-		oauthCtx.AccessToken,
+		p.authToken,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
@@ -476,7 +477,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.Oau
 		return nil, err
 	}
 
-	changeResponse, err := getChangesByCommit(ctx, oauthCtx, repositoryID, res.LastMergeCommit.CommitID)
+	changeResponse, err := p.getChangesByCommit(ctx, repositoryID, res.LastMergeCommit.CommitID)
 	if err != nil {
 		return nil, err
 	}
@@ -495,7 +496,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.Oau
 // API Version 7.0 do not specify the OAuth scope for creating webhook explicitly, but it works.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/hooks/subscriptions/create?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthContext, _, externalRepositoryID string, payload []byte) (string, error) {
+func (p *Provider) CreateWebhook(ctx context.Context, externalRepositoryID string, payload []byte) (string, error) {
 	parts := strings.Split(externalRepositoryID, "/")
 	if len(parts) != 3 {
 		return "", errors.Errorf("invalid repository ID %q", externalRepositoryID)
@@ -508,7 +509,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthCont
 		ctx,
 		p.client,
 		url,
-		oauthCtx.AccessToken,
+		p.authToken,
 		payload,
 	)
 	if err != nil {
@@ -531,7 +532,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthCont
 // DeleteWebhook deletes the webhook in the repository.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/hooks/subscriptions/delete?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthContext, _, _, webhookID string) error {
+func (p *Provider) DeleteWebhook(ctx context.Context, _, webhookID string) error {
 	// By design, we encode the webhook ID as <organization>/<webhookID> for Azure DevOps.
 	parts := strings.Split(webhookID, "/")
 	if len(parts) != 2 {
@@ -547,7 +548,7 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthCont
 		ctx,
 		p.client,
 		url,
-		oauthCtx.AccessToken,
+		p.authToken,
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to send delete webhook request")
