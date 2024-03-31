@@ -5,4 +5,12 @@
   ></div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { computed } from "vue";
+
+defineExpose({
+  shown: computed(() => {
+    return false;
+  }),
+});
+</script>
