@@ -184,6 +184,12 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 			Steps: convertPlanSteps(request.Plan.Steps),
 		},
 	}
+	if request.GetPlan().VcsSource != nil {
+		planMessage.Config.VcsSource = &storepb.PlanConfig_VCSSource{
+			VcsConnector:   request.GetPlan().GetVcsSource().GetVcsConnector(),
+			PullRequestUrl: request.GetPlan().GetVcsSource().GetPullRequestUrl(),
+		}
+	}
 
 	if _, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, planMessage.Config.GetSteps(), project); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
