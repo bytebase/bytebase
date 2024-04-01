@@ -7,7 +7,6 @@ import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON, State, stateFromJSON, stateToJSON } from "./common";
 import { InstanceResource } from "./instance_service";
-import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -1165,7 +1164,6 @@ export interface ChangeHistory {
     | undefined;
   /** Format: projects/{project}/issues/{issue} */
   issue: string;
-  pushEvent: PushEvent | undefined;
   changedResources: ChangedResources | undefined;
 }
 
@@ -7030,7 +7028,6 @@ function createBaseChangeHistory(): ChangeHistory {
     prevSchemaSize: Long.ZERO,
     executionDuration: undefined,
     issue: "",
-    pushEvent: undefined,
     changedResources: undefined,
   };
 }
@@ -7099,9 +7096,6 @@ export const ChangeHistory = {
     }
     if (message.issue !== "") {
       writer.uint32(138).string(message.issue);
-    }
-    if (message.pushEvent !== undefined) {
-      PushEvent.encode(message.pushEvent, writer.uint32(146).fork()).ldelim();
     }
     if (message.changedResources !== undefined) {
       ChangedResources.encode(message.changedResources, writer.uint32(154).fork()).ldelim();
@@ -7263,13 +7257,6 @@ export const ChangeHistory = {
 
           message.issue = reader.string();
           continue;
-        case 18:
-          if (tag !== 146) {
-            break;
-          }
-
-          message.pushEvent = PushEvent.decode(reader, reader.uint32());
-          continue;
         case 19:
           if (tag !== 154) {
             break;
@@ -7309,7 +7296,6 @@ export const ChangeHistory = {
       prevSchemaSize: isSet(object.prevSchemaSize) ? Long.fromValue(object.prevSchemaSize) : Long.ZERO,
       executionDuration: isSet(object.executionDuration) ? Duration.fromJSON(object.executionDuration) : undefined,
       issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
-      pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
       changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
     };
   },
@@ -7379,9 +7365,6 @@ export const ChangeHistory = {
     if (message.issue !== "") {
       obj.issue = message.issue;
     }
-    if (message.pushEvent !== undefined) {
-      obj.pushEvent = PushEvent.toJSON(message.pushEvent);
-    }
     if (message.changedResources !== undefined) {
       obj.changedResources = ChangedResources.toJSON(message.changedResources);
     }
@@ -7422,9 +7405,6 @@ export const ChangeHistory = {
       ? Duration.fromPartial(object.executionDuration)
       : undefined;
     message.issue = object.issue ?? "";
-    message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
-      ? PushEvent.fromPartial(object.pushEvent)
-      : undefined;
     message.changedResources = (object.changedResources !== undefined && object.changedResources !== null)
       ? ChangedResources.fromPartial(object.changedResources)
       : undefined;

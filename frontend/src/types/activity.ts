@@ -12,7 +12,6 @@ import type {
   TaskStatus,
 } from "./pipeline";
 import type { ApprovalEvent } from "./review";
-import type { VCSPushEvent } from "./vcs";
 
 export function activityName(action: LogEntity_Action): string {
   switch (action) {
@@ -168,7 +167,6 @@ export type ActivityMemberActivateDeactivatePayload = {
 };
 
 export type ActivityProjectRepositoryPushPayload = {
-  pushEvent: VCSPushEvent;
   issueId?: number;
   issueName?: string;
 };
