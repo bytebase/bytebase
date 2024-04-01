@@ -285,7 +285,7 @@ func (s *Service) getChangeSteps(
 		}, nil
 	}
 
-	databases, err := s.listDatabases(ctx, project, vcsConnector)
+	databases, err := s.listDatabases(ctx, project)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +314,7 @@ func (s *Service) getChangeSteps(
 	return steps, nil
 }
 
-func (s *Service) listDatabases(ctx context.Context, project *store.ProjectMessage, vcsConnector *store.VCSConnectorMessage) ([]*store.DatabaseMessage, error) {
+func (s *Service) listDatabases(ctx context.Context, project *store.ProjectMessage) ([]*store.DatabaseMessage, error) {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, err
