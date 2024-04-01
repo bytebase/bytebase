@@ -2,7 +2,7 @@
 
     { 
 
-     "Transfer" ("index_topic_1 address"  to  "index_topic_2 address" , "unit256_value")
+     "Transfer" ("index_topic_1 address"  to  "index_topic_2 address" , "unit256" "value")
  “Token_USDT”
   “Erc20”
   "index_topic_1 _Address"
@@ -10,9 +10,10 @@
 “ Move Too “
     "index_topic_2 _Address"
 “0x9e1562b6031d26d10b871ee735f3ab0addd97ff0“
-'inputs': [],
+'inputs': [Usdt],
  ‘name’:’150000’,
-        'outputs': [{'internalType': 'uint256', 'name': '', 'type': 'uint256'}],
+'nmp:string'
+        'outputs': [{'internalType': 'uint_256', 'name': '', 'type': 'uint_256'}],
         'stateMutability': 'view', 'type': 'function', 'constant': True
     }
 ]
