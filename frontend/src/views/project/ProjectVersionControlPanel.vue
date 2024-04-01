@@ -32,7 +32,7 @@ import {
   useVCSConnectorStore,
   useProjectV1Store,
   useCurrentUserV1,
-  useVCSV1Store,
+  useVCSProviderStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getVCSConnectorId } from "@/store/modules/v1/common";
@@ -46,7 +46,7 @@ const props = defineProps<{
 
 const projectV1Store = useProjectV1Store();
 const currentUser = useCurrentUserV1();
-const vcsV1Store = useVCSV1Store();
+const vcsV1Store = useVCSProviderStore();
 const vcsConnectorStore = useVCSConnectorStore();
 const router = useRouter();
 const { t } = useI18n();

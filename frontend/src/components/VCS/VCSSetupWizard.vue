@@ -21,7 +21,11 @@ import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
-import { pushNotification, useVCSV1Store, useCurrentUserV1 } from "@/store";
+import {
+  pushNotification,
+  useVCSProviderStore,
+  useCurrentUserV1,
+} from "@/store";
 import type { VCSConfig } from "@/types";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
@@ -43,7 +47,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const router = useRouter();
-const vcsV1Store = useVCSV1Store();
+const vcsV1Store = useVCSProviderStore();
 const currentUser = useCurrentUserV1();
 
 const state = reactive<LocalState>({

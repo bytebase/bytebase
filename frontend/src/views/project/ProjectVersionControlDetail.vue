@@ -18,7 +18,7 @@ import { PROJECT_V1_ROUTE_GITOPS } from "@/router/dashboard/projectV1";
 import {
   useVCSConnectorStore,
   useProjectV1Store,
-  useVCSV1Store,
+  useVCSProviderStore,
   useCurrentUserV1,
   pushNotification,
 } from "@/store";
@@ -33,7 +33,7 @@ const props = defineProps<{
 }>();
 
 const vcsConnectorStore = useVCSConnectorStore();
-const vcsProviderStore = useVCSV1Store();
+const vcsProviderStore = useVCSProviderStore();
 const projectV1Store = useProjectV1Store();
 const currentUser = useCurrentUserV1();
 const router = useRouter();

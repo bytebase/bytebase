@@ -43,7 +43,11 @@
 import { RefreshCwIcon, ChevronRightIcon } from "lucide-vue-next";
 import { reactive, computed, onMounted } from "vue";
 import BBSpin from "@/bbkit/BBSpin.vue";
-import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  useVCSProviderStore,
+} from "@/store";
 import type { ProjectRepositoryConfig } from "@/types";
 import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
@@ -63,7 +67,7 @@ const emit = defineEmits<{
 }>();
 
 const currentUser = useCurrentUserV1();
-const vcsV1Store = useVCSV1Store();
+const vcsV1Store = useVCSProviderStore();
 const state = reactive<LocalState>({
   repositoryList: [],
   searchText: "",
