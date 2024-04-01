@@ -34,7 +34,12 @@ func TestExtractMSSQLNormalizedResourceListFromSelectStatement(t *testing.T) {
 				{
 					Database: "MyDB",
 					Schema:   "dbo",
-					Table:    "mytable",
+					Table:    "MyTable",
+				},
+				{
+					Database: "MyDB",
+					Schema:   "dbo",
+					Table:    "myTable",
 				},
 			},
 		},
@@ -44,12 +49,12 @@ func TestExtractMSSQLNormalizedResourceListFromSelectStatement(t *testing.T) {
 				{
 					Database: "MyDB",
 					Schema:   "dbo",
-					Table:    "tableone",
+					Table:    "TableOne",
 				},
 				{
 					Database: "MyDB",
 					Schema:   "dbo",
-					Table:    "tabletwo",
+					Table:    "TableTwo",
 				},
 			},
 		},
@@ -57,14 +62,14 @@ func TestExtractMSSQLNormalizedResourceListFromSelectStatement(t *testing.T) {
 			statement: `SELECT * FROM DatabaseA.dbo.[TableOne] JOIN DatabaseB.dbo.TableTwo ON DatabaseA.dbo.TableOne.ID = DatabaseB.dbo.TableTwo.ID;`,
 			want: []base.SchemaResource{
 				{
-					Database: "databasea",
+					Database: "DatabaseA",
 					Schema:   "dbo",
-					Table:    "tableone",
+					Table:    "TableOne",
 				},
 				{
-					Database: "databaseb",
+					Database: "DatabaseB",
 					Schema:   "dbo",
-					Table:    "tabletwo",
+					Table:    "TableTwo",
 				},
 			},
 		},
