@@ -7,6 +7,7 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
+import "v1/common.proto";
 import "v1/vcs_connector_service.proto";
 
 option go_package = "generated-go/v1";
@@ -149,19 +150,7 @@ message VCSProvider {
   // The title of the vcs provider. It is used to display in the UI. Specified by the client.
   string title = 2 [(google.api.field_behavior) = REQUIRED];
 
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    // GitHub type. Using for GitHub community edition(ce).
-    GITHUB = 1;
-    // GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee).
-    GITLAB = 2;
-    // BitBucket type. Using for BitBucket cloud or BitBucket server.
-    BITBUCKET = 3;
-    // Azure DevOps. Using for Azure DevOps GitOps workflow.
-    AZURE_DEVOPS = 4;
-  }
-
-  Type type = 3 [(google.api.field_behavior) = REQUIRED];
+  VCSType type = 3 [(google.api.field_behavior) = REQUIRED];
 
   // The url of the vcs provider. Specified by the client.
   // For example: github.com, gitlab.com, gitlab.bytebase.com.

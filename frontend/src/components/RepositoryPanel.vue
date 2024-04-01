@@ -67,10 +67,10 @@ import isEmpty from "lodash-es/isEmpty";
 import { computed, reactive, watch } from "vue";
 import { useVCSProviderStore, useVCSConnectorStore } from "@/store";
 import { getVCSConnectorId } from "@/store/modules/v1/common";
+import { VCSType } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { VCSConnector } from "@/types/proto/v1/vcs_connector_service";
 import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
-import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
 import type { RepositoryConfig } from "../types";
 
@@ -126,7 +126,7 @@ const vcsProvider = computed(
 
 const repositoryFormattedFullPath = computed(() => {
   const fullPath = props.vcsConnector.fullPath;
-  if (vcsProvider.value.type !== VCSProvider_Type.AZURE_DEVOPS) {
+  if (vcsProvider.value.type !== VCSType.AZURE_DEVOPS) {
     return fullPath;
   }
   if (!fullPath.includes("@dev.azure.com")) {

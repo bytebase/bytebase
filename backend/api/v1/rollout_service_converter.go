@@ -40,6 +40,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		Description: plan.Description,
 		Steps:       convertToPlanSteps(plan.Config.Steps),
 		VcsSource: &v1pb.Plan_VCSSource{
+			VcsType:        v1pb.VCSType(plan.Config.GetVcsSource().GetVcsType()),
 			VcsConnector:   plan.Config.GetVcsSource().GetVcsConnector(),
 			PullRequestUrl: plan.Config.GetVcsSource().GetPullRequestUrl(),
 		},

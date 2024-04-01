@@ -188,6 +188,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 		planMessage.Config.VcsSource = &storepb.PlanConfig_VCSSource{
 			VcsConnector:   request.GetPlan().GetVcsSource().GetVcsConnector(),
 			PullRequestUrl: request.GetPlan().GetVcsSource().GetPullRequestUrl(),
+			VcsType:        storepb.VCSType(request.GetPlan().GetVcsSource().VcsType),
 		}
 	}
 

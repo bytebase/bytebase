@@ -103,8 +103,8 @@ import { DatabaseGroupSelect } from "@/components/v2/Select";
 import { useVCSConnectorStore } from "@/store";
 import type { RepositoryConfig } from "@/types";
 import type { ResourceId, ValidatedMessage } from "@/types";
+import { VCSType } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
-import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
 import { getErrorCode } from "@/utils/grpcweb";
 
@@ -112,7 +112,7 @@ const props = withDefaults(
   defineProps<{
     allowEdit?: boolean;
     create?: boolean;
-    vcsType: VCSProvider_Type;
+    vcsType: VCSType;
     vcsName: string;
     repositoryInfo: VCSRepository;
     repositoryConfig: RepositoryConfig;
@@ -129,7 +129,7 @@ const vcsConnectorStore = useVCSConnectorStore();
 
 const getWebhookLink = computed(() => {
   switch (props.vcsType) {
-    case VCSProvider_Type.AZURE_DEVOPS: {
+    case VCSType.AZURE_DEVOPS: {
       const parts = props.repositoryInfo.id.split("/");
       if (parts.length !== 3) {
         return "";
@@ -137,7 +137,7 @@ const getWebhookLink = computed(() => {
       const [organization, project, _] = parts;
       return `https://dev.azure.com/${organization}/${project}/_settings/serviceHooks`;
     }
-    case VCSProvider_Type.GITHUB:
+    case VCSType.GITHUB:
       return `${props.repositoryInfo.webUrl}/settings/hooks`;
   }
   return "";

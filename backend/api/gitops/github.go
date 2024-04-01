@@ -31,12 +31,12 @@ func getGitHubPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 
 	mrFiles, err := vcs.Get(vcs.GitHub, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ListPullRequestFile(ctx, vcsConnector.Payload.ExternalId, fmt.Sprintf("%d", pushEvent.Number))
 	if err != nil {
-		return nil, errors.Errorf("failed to list merge %q request files, error %v", pushEvent.PullRequest.URL, err)
+		return nil, errors.Errorf("failed to list merge %q request files, error %v", pushEvent.PullRequest.HTMLURL, err)
 	}
 
 	prInfo := &pullRequestInfo{
 		// email. How do we determine the user for GitHub user?
-		url:         pushEvent.PullRequest.URL,
+		url:         pushEvent.PullRequest.HTMLURL,
 		title:       pushEvent.PullRequest.Title,
 		description: pushEvent.PullRequest.Body,
 		changes:     getChangesByFileList(mrFiles, vcsConnector.Payload.BaseDirectory),
@@ -45,7 +45,7 @@ func getGitHubPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 	for _, file := range prInfo.changes {
 		content, err := vcs.Get(vcs.GitHub, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ReadFileContent(ctx, vcsConnector.Payload.ExternalId, file.path, vcs.RefInfo{RefType: vcs.RefTypeCommit, RefName: pushEvent.PullRequest.Head.SHA})
 		if err != nil {
-			return nil, errors.Errorf("failed read file content, merge request %q, file %q, error %v", pushEvent.PullRequest.URL, file.path, err)
+			return nil, errors.Errorf("failed read file content, merge request %q, file %q, error %v", pushEvent.PullRequest.HTMLURL, file.path, err)
 		}
 		file.content = content
 	}

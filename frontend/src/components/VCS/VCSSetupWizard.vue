@@ -27,8 +27,8 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import type { VCSConfig } from "@/types";
+import { VCSType } from "@/types/proto/v1/common";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
-import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
 
@@ -52,7 +52,7 @@ const currentUser = useCurrentUserV1();
 
 const state = reactive<LocalState>({
   config: {
-    type: VCSProvider_Type.GITLAB,
+    type: VCSType.GITLAB,
     uiType: "GITLAB_SELF_HOST",
     resourceId: "",
     name: t("gitops.setting.add-git-provider.gitlab-self-host"),
