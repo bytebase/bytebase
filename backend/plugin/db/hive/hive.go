@@ -3,7 +3,6 @@ package hive
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -285,9 +284,6 @@ func (*Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, state
 
 	for _, statement := range statements {
 		statementStr := strings.TrimRight(statement.Text, ";")
-		if queryCtx != nil && queryCtx.Limit > 0 {
-			statementStr = fmt.Sprintf("%s LIMIT %d", statementStr, queryCtx.Limit)
-		}
 
 		result, err := runSingleStatement(ctx, conn, statementStr)
 		if err != nil {
@@ -297,6 +293,5 @@ func (*Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, state
 
 		results = append(results, result)
 	}
-
 	return results, nil
 }
