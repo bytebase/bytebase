@@ -143,6 +143,9 @@ func groupStatement(parseResults []*mysqlparser.ParseResult) ([]*stmtGroup, erro
 				break
 			}
 		}
+		if nextIdx > i {
+			i = nextIdx - 1
+		}
 		if infos[i].tp == currentStmtTypeCreateFunction {
 			groups = append(groups, &stmtGroup{
 				tp:         groupTypeCreateFunction,
@@ -150,6 +153,7 @@ func groupStatement(parseResults []*mysqlparser.ParseResult) ([]*stmtGroup, erro
 				endIdx:     i,
 				objectName: infos[i].normalizedObjectName,
 			})
+			continue
 		}
 		if infos[i].tp == currentStmtTypeCreateProcedure {
 			groups = append(groups, &stmtGroup{
@@ -158,16 +162,13 @@ func groupStatement(parseResults []*mysqlparser.ParseResult) ([]*stmtGroup, erro
 				endIdx:     i,
 				objectName: infos[i].normalizedObjectName,
 			})
+			continue
 		}
-		if nextIdx > i {
-			i = nextIdx - 1
-		} else {
-			groups = append(groups, &stmtGroup{
-				tp:       groupTypeUnknown,
-				beginIdx: i,
-				endIdx:   i,
-			})
-		}
+		groups = append(groups, &stmtGroup{
+			tp:       groupTypeUnknown,
+			beginIdx: i,
+			endIdx:   i,
+		})
 	}
 
 	return groups, nil

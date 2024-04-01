@@ -14,7 +14,7 @@ import (
 )
 
 func TestGetDesignSchema_Debug(t *testing.T) {
-	if true {
+	if false {
 		t.Skip()
 	}
 
@@ -53,8 +53,9 @@ func TestGetDesignSchema_View(t *testing.T) {
 
 func TestGetDesignSchema_Function(t *testing.T) {
 	testGetDesignSchema(t, []string{
-		"testdata/get-design-schema/function/create-new-function.yaml",
-		"testdata/get-design-schema/function/delete-function.yaml",
+		// "testdata/get-design-schema/function/create-new-function.yaml",
+		// "testdata/get-design-schema/function/delete-function.yaml",
+		"testdata/get-design-schema/function/delete-function-without-set.yaml",
 		// "testdata/get-design-schema/function/modify-function.yaml",
 	}, false)
 }

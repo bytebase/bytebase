@@ -24,7 +24,7 @@ func init() {
 
 func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
-	list, err := mysqlparser.ParseMySQL(baselineSchema, tokenizer.KeepEmptyBlocks(), tokenizer.SplitCommentBeforeDelimiter())
+	list, err := mysqlparser.ParseMySQL(baselineSchema, tokenizer.KeepEmptyBlocks())
 	if err != nil {
 		return "", err
 	}

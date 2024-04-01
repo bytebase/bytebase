@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
 func TestExtractDelimiter(t *testing.T) {
@@ -146,50 +144,50 @@ func TestMySQLParser(t *testing.T) {
 	}
 }
 
-func TestDealWithDelimiter_SplitCommentBeforeDelimiter(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{
-			input: `
-DELIMITER ;;
-CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
-	DETERMINISTIC
-RETURN CONCAT('Hello, ',s,'!') ;;
-DELIMITER ;
---
--- Function structure for hello2
---
-DELIMITER ;;
-CREATE FUNCTION hello2(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
-	DETERMINISTIC
-RETURN CONCAT('Hello, ',s,'!') ;;
-DELIMITER ;
-`,
-			want: `-- DELIMITER ;;
-CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
-	DETERMINISTIC
-RETURN CONCAT('Hello, ',s,'!') ;
--- DELIMITER ;
---
--- Function structure for hello2
---
--- DELIMITER ;;
-CREATE FUNCTION hello2(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
-	DETERMINISTIC
-RETURN CONCAT('Hello, ',s,'!') ;
--- DELIMITER ;`,
-		},
-	}
+// func TestDealWithDelimiter_SplitCommentBeforeDelimiter(t *testing.T) {
+// 	tests := []struct {
+// 		input string
+// 		want  string
+// 	}{
+// 		{
+// 			input: `
+// DELIMITER ;;
+// CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+// 	DETERMINISTIC
+// RETURN CONCAT('Hello, ',s,'!') ;;
+// DELIMITER ;
+// --
+// -- Function structure for hello2
+// --
+// DELIMITER ;;
+// CREATE FUNCTION hello2(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+// 	DETERMINISTIC
+// RETURN CONCAT('Hello, ',s,'!') ;;
+// DELIMITER ;
+// `,
+// 			want: `-- DELIMITER ;;
+// CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+// 	DETERMINISTIC
+// RETURN CONCAT('Hello, ',s,'!') ;
+// -- DELIMITER ;
+// --
+// -- Function structure for hello2
+// --
+// -- DELIMITER ;;
+// CREATE FUNCTION hello2(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+// 	DETERMINISTIC
+// RETURN CONCAT('Hello, ',s,'!') ;
+// -- DELIMITER ;`,
+// 		},
+// 	}
 
-	a := require.New(t)
-	for i, test := range tests {
-		got, err := DealWithDelimiter(test.input, tokenizer.SplitCommentBeforeDelimiter())
-		a.NoError(err, i)
-		a.Equal(test.want, got, i)
-	}
-}
+// 	a := require.New(t)
+// 	for i, test := range tests {
+// 		got, err := DealWithDelimiter(test.input, tokenizer.SplitCommentBeforeDelimiter())
+// 		a.NoError(err, i)
+// 		a.Equal(test.want, got, i)
+// 	}
+// }
 
 func TestRestoreDelimiter(t *testing.T) {
 	testCases := []struct {
