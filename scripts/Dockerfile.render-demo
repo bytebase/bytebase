@@ -1,6 +1,6 @@
 # This script is for PR preview and demo.bytebase.com on Render ONLY.
 
-FROM node:20.11.1 as frontend
+FROM node:20.12.0 as frontend
 
 # RENDER_GIT_COMMIT is a render.com provided env var during build.
 # https://render.com/docs/environment-variables
