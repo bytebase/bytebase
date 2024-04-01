@@ -11,7 +11,6 @@ import type {
 } from "../id";
 import type { Instance } from "../instance";
 import type { Principal } from "../principal";
-import type { VCSPushEvent } from "../vcs";
 import type { Pipeline } from "./pipeline";
 import type { Stage } from "./stage";
 
@@ -60,7 +59,6 @@ export type TaskDatabaseSchemaBaselinePayload = {
   statement: string;
   sheetId: SheetId;
   schemaVersion: string;
-  pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdatePayload = {
@@ -69,14 +67,12 @@ export type TaskDatabaseSchemaUpdatePayload = {
   statement: string;
   sheetId: SheetId;
   schemaGroupName?: string;
-  pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdateSDLPayload = {
   skipped: boolean;
   skippedReason: string;
   sheetId: SheetId;
-  pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdateGhostSyncPayload = {
@@ -84,7 +80,6 @@ export type TaskDatabaseSchemaUpdateGhostSyncPayload = {
   skippedReason: string;
   statement: string;
   sheetId: SheetId;
-  pushEvent?: VCSPushEvent;
 };
 
 export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
@@ -100,7 +95,6 @@ export type TaskDatabaseDataUpdatePayload = {
   statement: string;
   sheetId: SheetId;
   schemaGroupName?: string;
-  pushEvent?: VCSPushEvent;
   rollbackEnabled: boolean;
   rollbackSqlStatus?: RollbackSQLStatus;
   rollbackSheetId?: SheetId;

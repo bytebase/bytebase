@@ -70,7 +70,6 @@ func NewGitHub(port int) VCSProvider {
 	g.PUT("/repos/:owner/:repo/contents/:filePath", gh.createRepositoryFile)
 	g.GET("/repos/:owner/:repo/git/ref/heads/:branchName", gh.getRepositoryBranch)
 	g.POST("/repos/:owner/:repo/git/refs", gh.createRepositoryBranch)
-	g.POST("/repos/:owner/:repo/pulls", gh.createRepositoryPullRequest)
 	g.GET("/repos/:owner/:repo/pulls/:prID/files", gh.listPullRequestFile)
 	g.GET("/repos/:owner/:repo/compare/:baseHead", gh.compareCommits)
 	return gh
@@ -221,46 +220,6 @@ func (gh *GitHub) createRepositoryBranch(c echo.Context) error {
 	}
 
 	return c.String(http.StatusOK, "")
-}
-
-func (gh *GitHub) createRepositoryPullRequest(c echo.Context) error {
-	r, err := gh.validRepository(c)
-	if err != nil {
-		return err
-	}
-
-	body, err := io.ReadAll(c.Request().Body)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read request body for creating repository pull request: %v", err))
-	}
-
-	var pullRequestCreate vcs.PullRequestCreate
-	if err = json.Unmarshal(body, &pullRequestCreate); err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal request body for creating repository pull request: %v", err))
-	}
-
-	if _, ok := r.refs[fmt.Sprintf("refs/heads/%s", pullRequestCreate.Head)]; !ok {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("the head branch not exists: %v", pullRequestCreate.Head))
-	}
-
-	prID := len(r.pullRequests) + 1
-	r.pullRequests[prID] = struct {
-		Files []*github.PullRequestFile
-		*github.PullRequest
-	}{
-		Files: []*github.PullRequestFile{},
-		PullRequest: &github.PullRequest{
-			HTMLURL: fmt.Sprintf("https://github.com/%s/%s/pull/%d", c.Param("owner"), c.Param("repo"), prID),
-		},
-	}
-
-	buf, err := json.Marshal(
-		r.pullRequests[prID],
-	)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for creating repository pull request: %v", err))
-	}
-	return c.String(http.StatusOK, string(buf))
 }
 
 func (gh *GitHub) listPullRequestFile(c echo.Context) error {
