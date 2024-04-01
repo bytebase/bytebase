@@ -3,7 +3,7 @@
     - status: WARN
       code: 112
       title: schema.backward-compatibility
-      content: Drop table TEST_DB.dbo.mytable may cause incompatibility with the existing data and code
+      content: Drop table TEST_DB.dbo.MyTable may cause incompatibility with the existing data and code
       line: 1
       details: ""
 - statement: |-

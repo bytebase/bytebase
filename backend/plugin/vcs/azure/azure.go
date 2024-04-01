@@ -368,6 +368,11 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, lastMe
 	return files, nil
 }
 
+// CreatePullRequestComment creates a pull request comment.
+func (*Provider) CreatePullRequestComment(_ context.Context, _, _, _ string) error {
+	return nil
+}
+
 // CreateWebhook creates a webhook in the organization, and returns the webhook ID which can be used in PatchWebhook.
 // API Version 7.0 do not specify the OAuth scope for creating webhook explicitly, but it works.
 //

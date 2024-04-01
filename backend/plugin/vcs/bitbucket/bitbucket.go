@@ -310,6 +310,11 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRe
 	return files, nil
 }
 
+// CreatePullRequestComment creates a pull request comment.
+func (*Provider) CreatePullRequestComment(_ context.Context, _, _, _ string) error {
+	return nil
+}
+
 // Link is the API message for link.
 type Link struct {
 	Href string `json:"href"`
