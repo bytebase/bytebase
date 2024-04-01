@@ -123,8 +123,8 @@ dependencies:
     specifier: ^3.3.2
     version: 3.3.3(ws@8.16.0)
   node-sql-parser:
-    specifier: 4.18.0
-    version: 4.18.0
+    specifier: 5.0.0
+    version: 5.0.0
   normalize-wheel:
     specifier: ^1.0.1
     version: 1.0.1
@@ -1856,6 +1856,10 @@ packages:
     dependencies:
       '@types/node': 20.12.2
     dev: true
+
+  /@types/pegjs@0.10.6:
+    resolution: {integrity: sha512-eLYXDbZWXh2uxf+w8sXS8d6KSoXTswfps6fvCUuVAGN8eRpfe7h9eSRydxiSJvo9Bf+GzifsDOr9TMQlmJdmkw==}
+    dev: false
 
   /@types/pouchdb-adapter-cordova-sqlite@1.0.4:
     resolution: {integrity: sha512-1MGjmAMux3OIyJ+iXfhJ5hNIzS+KjGJ05O3bF5Gen5TiJUFNK1bOp3VVV9SxXgz+hGwnBruBAWdAqhbB6ZHhSA==}
@@ -5135,10 +5139,11 @@ packages:
     resolution: {integrity: sha512-y10wOWt8yZpqXmOgRo77WaHEmhYQYGNA6y421PKsKYWEK8aW+cqAphborZDhqfyKrbZEN92CN1X2KbafY2s7Yw==}
     dev: true
 
-  /node-sql-parser@4.18.0:
-    resolution: {integrity: sha512-2YEOR5qlI1zUFbGMLKNfsrR5JUvFg9LxIRVE+xJe962pfVLH0rnItqLzv96XVs1Y1UIR8FxsXAuvX/lYAWZ2BQ==}
+  /node-sql-parser@5.0.0:
+    resolution: {integrity: sha512-hkNU1gIT8BNe8vmcsU7uYie0gzow/6AIj5KnGRBJQSZlgEu1NNuLVS11it5gAEdpmvJHelc34BwR439Iela+zQ==}
     engines: {node: '>=8'}
     dependencies:
+      '@types/pegjs': 0.10.6
       big-integer: 1.6.52
     dev: false
 
