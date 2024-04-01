@@ -70,6 +70,7 @@ func NewGitHub(port int) VCSProvider {
 	g.PUT("/repos/:owner/:repo/contents/:filePath", gh.createRepositoryFile)
 	g.GET("/repos/:owner/:repo/git/ref/heads/:branchName", gh.getRepositoryBranch)
 	g.GET("/repos/:owner/:repo/pulls/:prID/files", gh.listPullRequestFile)
+	g.POST("/repos/:owner/:repo/issues/:prID/comments", gh.createIssueComment)
 	g.GET("/repos/:owner/:repo/compare/:baseHead", gh.compareCommits)
 	return gh
 }
@@ -242,6 +243,10 @@ func (gh *GitHub) compareCommits(c echo.Context) error {
 	}
 
 	return c.String(http.StatusOK, string(buf))
+}
+
+func (*GitHub) createIssueComment(echo.Context) error {
+	return nil
 }
 
 func (gh *GitHub) validRepository(c echo.Context) (*githubRepositoryData, error) {

@@ -1,6 +1,7 @@
 package gitops
 
 import (
+	"fmt"
 	"log/slog"
 	"path/filepath"
 	"regexp"
@@ -84,4 +85,16 @@ func getFileChange(path string) (*fileChange, error) {
 		changeType:  changeType,
 		description: description,
 	}, nil
+}
+
+func getPullRequestID(url string) string {
+	fields := strings.Split(url, "/")
+	if len(fields) == 0 {
+		return ""
+	}
+	return fields[len(fields)-1]
+}
+
+func getPullRequestComment(externalURL, issue string) string {
+	return fmt.Sprintf("Bytebase Bot: this pull request has triggered a Bytebase rollout 🚀. Check out the status at %s/%s.", externalURL, issue)
 }
