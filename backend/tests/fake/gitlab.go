@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -65,7 +64,6 @@ func NewGitLab(port int) VCSProvider {
 	projectGroup := e.Group("/api/v4")
 	projectGroup.POST("/projects/:id/hooks", gl.createProjectHook)
 	projectGroup.GET("/projects/:id/repository/commits/:commitID", gl.getFakeCommit)
-	projectGroup.GET("/projects/:id/repository/tree", gl.readProjectTree)
 	projectGroup.GET("/projects/:id/repository/files/:filePath/raw", gl.readProjectFile)
 	projectGroup.POST("/projects/:id/repository/files/:filePath", gl.createProjectFile)
 	projectGroup.PUT("/projects/:id/repository/files/:filePath", gl.createProjectFile)
@@ -157,33 +155,6 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 	return c.JSON(http.StatusCreated, &gitlab.WebhookInfo{
 		ID: gl.nextWebhookID,
 	})
-}
-
-// readProjectTree reads a project file nodes.
-func (gl *GitLab) readProjectTree(c echo.Context) error {
-	pd, err := gl.validProject(c)
-	if err != nil {
-		return err
-	}
-
-	path := c.QueryParam("path")
-	fileNodes := []*vcs.RepositoryTreeNode{}
-
-	for filePath := range pd.files {
-		if strings.HasPrefix(filePath, path) {
-			fileNodes = append(fileNodes, &vcs.RepositoryTreeNode{
-				Path: filePath,
-				Type: "blob",
-			})
-		}
-	}
-
-	buf, err := json.Marshal(&fileNodes)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal fileNodes, error: %v", err))
-	}
-
-	return c.String(http.StatusOK, string(buf))
 }
 
 // readProjectFile reads a project file.

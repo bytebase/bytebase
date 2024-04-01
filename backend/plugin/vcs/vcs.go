@@ -18,14 +18,6 @@ const (
 	Bitbucket Type = "BITBUCKET"
 	// AzureDevOps is the VCS type for Azure DevOps.
 	AzureDevOps Type = "AZURE_DEVOPS"
-
-	// SQLReviewAPISecretName is the api secret name used in GitHub action or GitLab CI workflow.
-	SQLReviewAPISecretName = "SQL_REVIEW_API_SECRET"
-
-	// BytebaseAuthorName is the author name of bytebase.
-	BytebaseAuthorName = "Bytebase"
-	// BytebaseAuthorEmail is the author email of bytebase.
-	BytebaseAuthorEmail = "support@bytebase.com"
 )
 
 // RefType is the type of a ref.
@@ -44,66 +36,6 @@ const (
 type RefInfo struct {
 	RefType RefType
 	RefName string
-}
-
-// OAuthToken is the API message for OAuthToken.
-type OAuthToken struct {
-	AccessToken  string `json:"access_token" `
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int64  `json:"expires_in"`
-	CreatedAt    int64  `json:"created_at"`
-	// ExpiresTs is a derivative from ExpiresIn and CreatedAt.
-	// ExpiresTs = ExpiresIn == 0 ? 0 : CreatedAt + ExpiresIn
-	ExpiresTs int64 `json:"expires_ts"`
-}
-
-// These payload types are only used when marshalling to the json format for saving into the database.
-// So we annotate with json tag using camelCase naming which is consistent with normal
-// json naming convention
-
-// Commit records the commit data.
-type Commit struct {
-	ID           string   `json:"id"`
-	Title        string   `json:"title"`
-	Message      string   `json:"message"`
-	CreatedTs    int64    `json:"createdTs"`
-	URL          string   `json:"url"`
-	AuthorName   string   `json:"authorName"`
-	AuthorEmail  string   `json:"authorEmail"`
-	AddedList    []string `json:"addedList"`
-	ModifiedList []string `json:"modifiedList"`
-}
-
-// FileCommit is the API message for a VCS file commit.
-type FileCommit struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Message     string `json:"message"`
-	CreatedTs   int64  `json:"createdTs"`
-	URL         string `json:"url"`
-	AuthorName  string `json:"authorName"`
-	AuthorEmail string `json:"authorEmail"`
-	Added       string `json:"added"`
-}
-
-// FileCommitCreate is the payload for committing a new file.
-type FileCommitCreate struct {
-	Branch        string
-	Content       string
-	CommitMessage string
-	LastCommitID  string
-	SHA           string
-	AuthorName    string
-	AuthorEmail   string
-}
-
-// FileMeta records the file metadata.
-type FileMeta struct {
-	Name         string
-	Path         string
-	Size         int64
-	LastCommitID string
-	SHA          string
 }
 
 // FileDiffType is the type of file diff.
@@ -127,43 +59,6 @@ type FileDiff struct {
 	Type FileDiffType
 }
 
-// RepositoryTreeNode records the node(file/folder) of a repository tree from `git ls-tree`.
-type RepositoryTreeNode struct {
-	Path string
-	Type string
-}
-
-// PushEvent is the API message for a VCS push event.
-type PushEvent struct {
-	VCSType            Type     `json:"vcsType"`
-	Ref                string   `json:"ref"`
-	Before             string   `json:"before"`
-	After              string   `json:"after"`
-	RepositoryID       string   `json:"repositoryId"`
-	RepositoryURL      string   `json:"repositoryUrl"`
-	RepositoryFullPath string   `json:"repositoryFullPath"`
-	AuthorName         string   `json:"authorName"`
-	CommitList         []Commit `json:"commits"`
-}
-
-// State is the state of a VCS user account.
-type State string
-
-const (
-	// StateActive is the active state for VCS user state.
-	StateActive State = "active"
-	// StateArchived is the archived state for VCS user state.
-	StateArchived State = "archived"
-)
-
-// UserInfo is the API message for user info.
-type UserInfo struct {
-	// NOTICE: we use public email here because user's primary email can only be accessed by the admin
-	PublicEmail string `json:"public_email"`
-	Name        string `json:"name"`
-	State       State  `json:"state"`
-}
-
 // Repository is the API message for repository info.
 type Repository struct {
 	ID       string `json:"id"`
@@ -183,22 +78,6 @@ type PullRequestFile struct {
 type BranchInfo struct {
 	Name         string
 	LastCommitID string
-}
-
-// PullRequestCreate is the API message to create pull request in repository.
-type PullRequestCreate struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
-	Head  string `json:"head"`
-	Base  string `json:"base"`
-	// Flag indicating if a merge request should remove the source branch after merging.
-	// Only support GitLab.
-	RemoveHeadAfterMerged bool `json:"-"`
-}
-
-// PullRequest is the API message for pull request in repository.
-type PullRequest struct {
-	URL string `json:"url"`
 }
 
 // Provider is the interface for VCS provider.

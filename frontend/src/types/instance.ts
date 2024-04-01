@@ -3,7 +3,6 @@ import type { RowStatus } from "./common";
 import type { Environment } from "./environment";
 import type { InstanceId, MigrationHistoryId } from "./id";
 import { Engine } from "./proto/v1/common";
-import type { VCSPushEvent } from "./vcs";
 
 export const EngineTypeList = [
   "CLICKHOUSE",
@@ -200,10 +199,6 @@ export type MigrationType = "BASELINE" | "MIGRATE" | "BRANCH" | "DATA";
 
 export type MigrationStatus = "PENDING" | "DONE" | "FAILED";
 
-export type MigrationHistoryPayload = {
-  pushEvent?: VCSPushEvent;
-};
-
 export type MigrationHistory = {
   id: MigrationHistoryId;
   creator: string;
@@ -222,5 +217,4 @@ export type MigrationHistory = {
   schemaPrev: string;
   executionDurationNs: number;
   issueId: number;
-  payload?: MigrationHistoryPayload;
 };
