@@ -2,7 +2,7 @@ import type { SQLEditorTreeNode } from "@/types";
 import {
   useHoverStateContext as _useHoverStateContext,
   provideHoverStateContext as _provideHoverStateContext,
-} from "../../hover-state";
+} from "../../../EditorCommon";
 
 export const KEY = "connection-pane";
 
