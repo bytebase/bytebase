@@ -1,0 +1,41 @@
+- description: Case insensitive query but resource column should take original case.
+  statement: SELECT dbo.mytable1.a FROM dbo.[mytable1] ;
+  connectedDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "dbo",
+          "tables":  [
+            {
+              "name":  "MyTable1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: dbo
+              table: MyTable1
+              column: a
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: dbo
+          table: mytable1
+          column: ""
