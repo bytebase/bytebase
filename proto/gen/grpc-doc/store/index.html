@@ -8635,6 +8635,14 @@ For GitLab, this is the project webhook id. e.g. 123 </p></td>
                   <td><p>For GitLab, webhook request contains this in the &#39;X-Gitlab-Token&#34; header and we compare it with the one stored in db to validate it sends to the expected endpoint. </p></td>
                 </tr>
               
+                <tr>
+                  <td>database_group</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Apply changes to the database group. Optional, if not set, will apply changes to all databases in the project.
+Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
+                </tr>
+              
             </tbody>
           </table>
 

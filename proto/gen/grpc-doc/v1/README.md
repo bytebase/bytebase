@@ -9664,6 +9664,7 @@ The vcsConnector&#39;s `name` field is used to identify the vcsConnector to upda
 | branch | [string](#string) |  | The branch Bytebase listens to for changes. For example: main. |
 | full_path | [string](#string) |  | TODO(d): move these to create VCS connector API. The full_path of the repository. For example: bytebase/sample. |
 | web_url | [string](#string) |  | The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. |
+| database_group | [string](#string) |  | Apply changes to the database group. Optional, if not set, will apply changes to all databases in the project. Format: projects/{project}/databaseGroups/{databaseGroup} |
 
 
 

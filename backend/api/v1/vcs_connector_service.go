@@ -140,6 +140,7 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 			BaseDirectory:      baseDir,
 			ExternalId:         request.GetVcsConnector().ExternalId,
 			WebhookSecretToken: secretToken,
+			DatabaseGroup:      request.GetVcsConnector().DatabaseGroup,
 		},
 	}
 
@@ -299,6 +300,8 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 				baseDir = strings.Trim(request.GetVcsConnector().BaseDirectory, "/")
 			}
 			update.BaseDirectory = &baseDir
+		case "database_group":
+			update.DatabaseGroup = &request.GetVcsConnector().DatabaseGroup
 		}
 	}
 
@@ -416,6 +419,7 @@ func convertStoreVCSConnector(ctx context.Context, stores *store.Store, vcsConne
 		Branch:        vcsConnector.Payload.Branch,
 		FullPath:      vcsConnector.Payload.FullPath,
 		WebUrl:        vcsConnector.Payload.WebUrl,
+		DatabaseGroup: vcsConnector.Payload.DatabaseGroup,
 	}
 	return v1VCSConnector, nil
 }

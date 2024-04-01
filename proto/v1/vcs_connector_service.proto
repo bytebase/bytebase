@@ -157,4 +157,8 @@ message VCSConnector {
 
   // The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample.
   string web_url = 13;
+
+  // Apply changes to the database group. Optional, if not set, will apply changes to all databases in the project.
+  // Format: projects/{project}/databaseGroups/{databaseGroup}
+  string database_group = 14;
 }

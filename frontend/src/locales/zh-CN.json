@@ -3204,6 +3204,7 @@
   },
   "database-group": {
     "self": "数据库分组",
+    "select": "选择数据库分组",
     "create": "新建数据库分组",
     "edit": "编辑数据库分组",
     "matched-database": "相匹配的数据库",
