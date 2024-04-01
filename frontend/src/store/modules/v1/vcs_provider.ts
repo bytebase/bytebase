@@ -10,7 +10,7 @@ import { vcsProviderPrefix } from "./common";
 
 type VCSProviderCacheKey = [string /* vcs name */];
 
-export const useVCSV1Store = defineStore("vcs_v1", () => {
+export const useVCSProviderStore = defineStore("vcs_provider", () => {
   const cacheByName = useCache<VCSProviderCacheKey, VCSProvider | undefined>(
     "bb.vcs-provider.by-name"
   );

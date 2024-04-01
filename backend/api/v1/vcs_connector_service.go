@@ -484,7 +484,7 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 			ConsumerInputs: azure.WebhookCreateConsumerInputs{
 				URL:                  fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 				AcceptUntrustedCerts: true,
-				HTTPHeaders:          fmt.Sprintf("X-Azure-Token: Bearer %s", webhookSecretToken),
+				HTTPHeaders:          fmt.Sprintf("X-Azure-Token: %s", webhookSecretToken),
 			},
 			EventType:   "git.pullrequest.merged",
 			PublisherID: "tfs",

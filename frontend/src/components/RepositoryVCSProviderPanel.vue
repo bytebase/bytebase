@@ -38,7 +38,7 @@ export default { name: "RepositoryVCSProviderPanel" };
 <script setup lang="ts">
 import { reactive, computed, watchEffect } from "vue";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { useCurrentUserV1, useVCSV1Store } from "@/store";
+import { useCurrentUserV1, useVCSProviderStore } from "@/store";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
 
@@ -51,7 +51,7 @@ const emit = defineEmits<{
   (event: "set-vcs", payload: VCSProvider): void;
 }>();
 
-const vcsV1Store = useVCSV1Store();
+const vcsV1Store = useVCSProviderStore();
 const state = reactive<LocalState>({});
 
 const currentUserV1 = useCurrentUserV1();

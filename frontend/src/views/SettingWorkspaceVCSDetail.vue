@@ -127,7 +127,7 @@ import {
   pushNotification,
   useCurrentUserV1,
   useVCSConnectorStore,
-  useVCSV1Store,
+  useVCSProviderStore,
 } from "@/store";
 import { vcsProviderPrefix } from "@/store/modules/v1/common";
 import type { VCSUIType } from "@/types";
@@ -145,7 +145,7 @@ const props = defineProps<{
 
 const router = useRouter();
 const currentUser = useCurrentUserV1();
-const vcsV1Store = useVCSV1Store();
+const vcsV1Store = useVCSProviderStore();
 const vcsConnectorStore = useVCSConnectorStore();
 
 const vcs = computed((): VCSProvider | undefined => {
