@@ -2506,15 +2506,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SearchVCSProviderProjectsRequest"><span class="badge">M</span>SearchVCSProviderProjectsRequest</a>
+                  <a href="#bytebase.v1.SearchVCSProviderRepositoriesRequest"><span class="badge">M</span>SearchVCSProviderRepositoriesRequest</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SearchVCSProviderProjectsResponse"><span class="badge">M</span>SearchVCSProviderProjectsResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SearchVCSProviderProjectsResponse.Project"><span class="badge">M</span>SearchVCSProviderProjectsResponse.Project</a>
+                  <a href="#bytebase.v1.SearchVCSProviderRepositoriesResponse"><span class="badge">M</span>SearchVCSProviderRepositoriesResponse</a>
                 </li>
               
                 <li>
@@ -2523,6 +2519,10 @@
               
                 <li>
                   <a href="#bytebase.v1.VCSProvider"><span class="badge">M</span>VCSProvider</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.VCSRepository"><span class="badge">M</span>VCSRepository</a>
                 </li>
               
               
@@ -26983,7 +26983,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.SearchVCSProviderProjectsRequest">SearchVCSProviderProjectsRequest</h3>
+        <h3 id="bytebase.v1.SearchVCSProviderRepositoriesRequest">SearchVCSProviderRepositoriesRequest</h3>
         <p></p>
 
         
@@ -27008,7 +27008,7 @@ Format: vcsProviders/{vcsProvider} </p></td>
 
         
       
-        <h3 id="bytebase.v1.SearchVCSProviderProjectsResponse">SearchVCSProviderProjectsResponse</h3>
+        <h3 id="bytebase.v1.SearchVCSProviderRepositoriesResponse">SearchVCSProviderRepositoriesResponse</h3>
         <p></p>
 
         
@@ -27019,55 +27019,10 @@ Format: vcsProviders/{vcsProvider} </p></td>
             <tbody>
               
                 <tr>
-                  <td>projects</td>
-                  <td><a href="#bytebase.v1.SearchVCSProviderProjectsResponse.Project">SearchVCSProviderProjectsResponse.Project</a></td>
+                  <td>repositories</td>
+                  <td><a href="#bytebase.v1.VCSRepository">VCSRepository</a></td>
                   <td>repeated</td>
-                  <td><p>The list of project in vcs provider. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SearchVCSProviderProjectsResponse.Project">SearchVCSProviderProjectsResponse.Project</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The id of the project in vcs provider. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The title of the project in vcs provider. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>fullpath</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The fullpath of the project in vcs provider. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>web_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Web url of the project in vcs provider. </p></td>
+                  <td><p>The list of repositories in vcs provider. </p></td>
                 </tr>
               
             </tbody>
@@ -27153,6 +27108,55 @@ For example: github.com, gitlab.com, gitlab.bytebase.com. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The access token of the vcs provider. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.VCSRepository">VCSRepository</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The id of the repository in vcs provider.
+e.g. In GitLab, this is the corresponding project id. e.g. 123 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The title of the repository in vcs provider.
+e.g. sample-project </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The full_path of the repository in vcs provider.
+e.g. bytebase/sample-project </p></td>
+                </tr>
+              
+                <tr>
+                  <td>web_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Web url of the repository in vcs provider.
+e.g. http://gitlab.bytebase.com/bytebase/sample-project </p></td>
                 </tr>
               
             </tbody>
@@ -27253,9 +27257,9 @@ For example: github.com, gitlab.com, gitlab.bytebase.com. </p></td>
               </tr>
             
               <tr>
-                <td>SearchVCSProviderProjects</td>
-                <td><a href="#bytebase.v1.SearchVCSProviderProjectsRequest">SearchVCSProviderProjectsRequest</a></td>
-                <td><a href="#bytebase.v1.SearchVCSProviderProjectsResponse">SearchVCSProviderProjectsResponse</a></td>
+                <td>SearchVCSProviderRepositories</td>
+                <td><a href="#bytebase.v1.SearchVCSProviderRepositoriesRequest">SearchVCSProviderRepositoriesRequest</a></td>
+                <td><a href="#bytebase.v1.SearchVCSProviderRepositoriesResponse">SearchVCSProviderRepositoriesResponse</a></td>
                 <td><p></p></td>
               </tr>
             
@@ -27337,9 +27341,9 @@ For example: github.com, gitlab.com, gitlab.bytebase.com. </p></td>
               
               
               <tr>
-                <td>SearchVCSProviderProjects</td>
+                <td>SearchVCSProviderRepositories</td>
                 <td>POST</td>
-                <td>/v1/{name=vcsProviders/*}:searchProjects</td>
+                <td>/v1/{name=vcsProviders/*}:searchRepositories</td>
                 <td>*</td>
               </tr>
               

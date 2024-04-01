@@ -29,7 +29,7 @@
         >
           <div class="flex items-center px-3 py-2">
             <div class="min-w-0 flex-1 flex items-center">
-              {{ repository.fullpath }}
+              {{ repository.fullPath }}
             </div>
             <ChevronRightIcon class="h-5 w-5 text-control" />
           </div>
@@ -44,13 +44,13 @@ import { RefreshCwIcon, ChevronRightIcon } from "lucide-vue-next";
 import { reactive, computed, onMounted } from "vue";
 import BBSpin from "@/bbkit/BBSpin.vue";
 import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
-import type { ExternalRepositoryInfo, ProjectRepositoryConfig } from "@/types";
-import type { SearchVCSProviderProjectsResponse_Project } from "@/types/proto/v1/vcs_provider_service";
+import type { ProjectRepositoryConfig } from "@/types";
+import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
-  repositoryList: SearchVCSProviderProjectsResponse_Project[];
+  repositoryList: VCSRepository[];
   searchText: string;
   loading: boolean;
 }
@@ -59,7 +59,7 @@ const props = defineProps<{ config: ProjectRepositoryConfig }>();
 
 const emit = defineEmits<{
   (event: "next"): void;
-  (event: "set-repository", payload: ExternalRepositoryInfo): void;
+  (event: "set-repository", payload: VCSRepository): void;
 }>();
 
 const currentUser = useCurrentUserV1();
@@ -90,7 +90,7 @@ const refreshRepositoryList = async () => {
   }
 
   state.loading = true;
-  const projects = await vcsV1Store.listVCSExternalProjects(
+  const projects = await vcsV1Store.searchVCSProviderRepositories(
     props.config.vcs.name
   );
   state.repositoryList = projects;
@@ -101,11 +101,9 @@ const repositoryList = computed(() => {
   if (state.searchText == "") {
     return state.repositoryList;
   }
-  return state.repositoryList.filter(
-    (repository: SearchVCSProviderProjectsResponse_Project) => {
-      return repository.fullpath.toLowerCase().includes(state.searchText);
-    }
-  );
+  return state.repositoryList.filter((repository: VCSRepository) => {
+    return repository.fullPath.toLowerCase().includes(state.searchText);
+  });
 });
 
 const attentionText = computed((): string => {
@@ -121,15 +119,8 @@ const attentionText = computed((): string => {
   return "";
 });
 
-const selectRepository = (
-  repository: SearchVCSProviderProjectsResponse_Project
-) => {
-  emit("set-repository", {
-    externalId: repository.id,
-    name: repository.title,
-    fullPath: repository.fullpath,
-    webUrl: repository.webUrl,
-  });
+const selectRepository = (repository: VCSRepository) => {
+  emit("set-repository", repository);
   emit("next");
 };
 </script>

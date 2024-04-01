@@ -20,13 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	VCSProviderService_GetVCSProvider_FullMethodName              = "/bytebase.v1.VCSProviderService/GetVCSProvider"
-	VCSProviderService_ListVCSProviders_FullMethodName            = "/bytebase.v1.VCSProviderService/ListVCSProviders"
-	VCSProviderService_CreateVCSProvider_FullMethodName           = "/bytebase.v1.VCSProviderService/CreateVCSProvider"
-	VCSProviderService_UpdateVCSProvider_FullMethodName           = "/bytebase.v1.VCSProviderService/UpdateVCSProvider"
-	VCSProviderService_DeleteVCSProvider_FullMethodName           = "/bytebase.v1.VCSProviderService/DeleteVCSProvider"
-	VCSProviderService_SearchVCSProviderProjects_FullMethodName   = "/bytebase.v1.VCSProviderService/SearchVCSProviderProjects"
-	VCSProviderService_ListVCSConnectorsInProvider_FullMethodName = "/bytebase.v1.VCSProviderService/ListVCSConnectorsInProvider"
+	VCSProviderService_GetVCSProvider_FullMethodName                = "/bytebase.v1.VCSProviderService/GetVCSProvider"
+	VCSProviderService_ListVCSProviders_FullMethodName              = "/bytebase.v1.VCSProviderService/ListVCSProviders"
+	VCSProviderService_CreateVCSProvider_FullMethodName             = "/bytebase.v1.VCSProviderService/CreateVCSProvider"
+	VCSProviderService_UpdateVCSProvider_FullMethodName             = "/bytebase.v1.VCSProviderService/UpdateVCSProvider"
+	VCSProviderService_DeleteVCSProvider_FullMethodName             = "/bytebase.v1.VCSProviderService/DeleteVCSProvider"
+	VCSProviderService_SearchVCSProviderRepositories_FullMethodName = "/bytebase.v1.VCSProviderService/SearchVCSProviderRepositories"
+	VCSProviderService_ListVCSConnectorsInProvider_FullMethodName   = "/bytebase.v1.VCSProviderService/ListVCSConnectorsInProvider"
 )
 
 // VCSProviderServiceClient is the client API for VCSProviderService service.
@@ -38,7 +38,7 @@ type VCSProviderServiceClient interface {
 	CreateVCSProvider(ctx context.Context, in *CreateVCSProviderRequest, opts ...grpc.CallOption) (*VCSProvider, error)
 	UpdateVCSProvider(ctx context.Context, in *UpdateVCSProviderRequest, opts ...grpc.CallOption) (*VCSProvider, error)
 	DeleteVCSProvider(ctx context.Context, in *DeleteVCSProviderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	SearchVCSProviderProjects(ctx context.Context, in *SearchVCSProviderProjectsRequest, opts ...grpc.CallOption) (*SearchVCSProviderProjectsResponse, error)
+	SearchVCSProviderRepositories(ctx context.Context, in *SearchVCSProviderRepositoriesRequest, opts ...grpc.CallOption) (*SearchVCSProviderRepositoriesResponse, error)
 	ListVCSConnectorsInProvider(ctx context.Context, in *ListVCSConnectorsInProviderRequest, opts ...grpc.CallOption) (*ListVCSConnectorsInProviderResponse, error)
 }
 
@@ -95,9 +95,9 @@ func (c *vCSProviderServiceClient) DeleteVCSProvider(ctx context.Context, in *De
 	return out, nil
 }
 
-func (c *vCSProviderServiceClient) SearchVCSProviderProjects(ctx context.Context, in *SearchVCSProviderProjectsRequest, opts ...grpc.CallOption) (*SearchVCSProviderProjectsResponse, error) {
-	out := new(SearchVCSProviderProjectsResponse)
-	err := c.cc.Invoke(ctx, VCSProviderService_SearchVCSProviderProjects_FullMethodName, in, out, opts...)
+func (c *vCSProviderServiceClient) SearchVCSProviderRepositories(ctx context.Context, in *SearchVCSProviderRepositoriesRequest, opts ...grpc.CallOption) (*SearchVCSProviderRepositoriesResponse, error) {
+	out := new(SearchVCSProviderRepositoriesResponse)
+	err := c.cc.Invoke(ctx, VCSProviderService_SearchVCSProviderRepositories_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ type VCSProviderServiceServer interface {
 	CreateVCSProvider(context.Context, *CreateVCSProviderRequest) (*VCSProvider, error)
 	UpdateVCSProvider(context.Context, *UpdateVCSProviderRequest) (*VCSProvider, error)
 	DeleteVCSProvider(context.Context, *DeleteVCSProviderRequest) (*emptypb.Empty, error)
-	SearchVCSProviderProjects(context.Context, *SearchVCSProviderProjectsRequest) (*SearchVCSProviderProjectsResponse, error)
+	SearchVCSProviderRepositories(context.Context, *SearchVCSProviderRepositoriesRequest) (*SearchVCSProviderRepositoriesResponse, error)
 	ListVCSConnectorsInProvider(context.Context, *ListVCSConnectorsInProviderRequest) (*ListVCSConnectorsInProviderResponse, error)
 	mustEmbedUnimplementedVCSProviderServiceServer()
 }
@@ -146,8 +146,8 @@ func (UnimplementedVCSProviderServiceServer) UpdateVCSProvider(context.Context, 
 func (UnimplementedVCSProviderServiceServer) DeleteVCSProvider(context.Context, *DeleteVCSProviderRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteVCSProvider not implemented")
 }
-func (UnimplementedVCSProviderServiceServer) SearchVCSProviderProjects(context.Context, *SearchVCSProviderProjectsRequest) (*SearchVCSProviderProjectsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SearchVCSProviderProjects not implemented")
+func (UnimplementedVCSProviderServiceServer) SearchVCSProviderRepositories(context.Context, *SearchVCSProviderRepositoriesRequest) (*SearchVCSProviderRepositoriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchVCSProviderRepositories not implemented")
 }
 func (UnimplementedVCSProviderServiceServer) ListVCSConnectorsInProvider(context.Context, *ListVCSConnectorsInProviderRequest) (*ListVCSConnectorsInProviderResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListVCSConnectorsInProvider not implemented")
@@ -255,20 +255,20 @@ func _VCSProviderService_DeleteVCSProvider_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
-func _VCSProviderService_SearchVCSProviderProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SearchVCSProviderProjectsRequest)
+func _VCSProviderService_SearchVCSProviderRepositories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchVCSProviderRepositoriesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(VCSProviderServiceServer).SearchVCSProviderProjects(ctx, in)
+		return srv.(VCSProviderServiceServer).SearchVCSProviderRepositories(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: VCSProviderService_SearchVCSProviderProjects_FullMethodName,
+		FullMethod: VCSProviderService_SearchVCSProviderRepositories_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VCSProviderServiceServer).SearchVCSProviderProjects(ctx, req.(*SearchVCSProviderProjectsRequest))
+		return srv.(VCSProviderServiceServer).SearchVCSProviderRepositories(ctx, req.(*SearchVCSProviderRepositoriesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -319,8 +319,8 @@ var VCSProviderService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _VCSProviderService_DeleteVCSProvider_Handler,
 		},
 		{
-			MethodName: "SearchVCSProviderProjects",
-			Handler:    _VCSProviderService_SearchVCSProviderProjects_Handler,
+			MethodName: "SearchVCSProviderRepositories",
+			Handler:    _VCSProviderService_SearchVCSProviderRepositories_Handler,
 		},
 		{
 			MethodName: "ListVCSConnectorsInProvider",

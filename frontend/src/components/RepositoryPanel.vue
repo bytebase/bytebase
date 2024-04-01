@@ -71,7 +71,8 @@ import type { Project } from "@/types/proto/v1/project_service";
 import { VCSConnector } from "@/types/proto/v1/vcs_connector_service";
 import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
-import type { ExternalRepositoryInfo, RepositoryConfig } from "../types";
+import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
+import type { RepositoryConfig } from "../types";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -132,10 +133,10 @@ const repositoryFormattedFullPath = computed(() => {
   return `https://dev.azure.com${fullPath.split("@dev.azure.com")[1]}`;
 });
 
-const repositoryInfo = computed((): ExternalRepositoryInfo => {
+const repositoryInfo = computed((): VCSRepository => {
   return {
-    externalId: props.vcsConnector.externalId,
-    name: props.vcsConnector.title,
+    id: props.vcsConnector.externalId,
+    title: props.vcsConnector.title,
     fullPath: props.vcsConnector.fullPath,
     webUrl: props.vcsConnector.webUrl,
   };

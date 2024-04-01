@@ -2,7 +2,7 @@
   <div class="textlabel">
     {{ $t("repository.choose-git-provider-description") }}
   </div>
-  <div class="mt-4 flex flex-wrap">
+  <div class="mt-4 flex flex-wrap space-x-2 gap-y-2">
     <template v-for="(vcs, index) in vcsList" :key="index">
       <NButton type="default" @click.prevent="selectVCS(vcs)">
         <template #icon>
@@ -49,7 +49,6 @@ interface LocalState {
 const emit = defineEmits<{
   (event: "next"): void;
   (event: "set-vcs", payload: VCSProvider): void;
-  (event: "set-code", payload: string): void;
 }>();
 
 const vcsV1Store = useVCSV1Store();
