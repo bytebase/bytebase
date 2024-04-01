@@ -1,0 +1,6 @@
+{
+  "compilerOptions": {
+    // To allow iterating Set<string> with for...of and calling async translating API in sequential order.
+    "target": "ES2015"
+  }
+}
