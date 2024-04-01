@@ -49,8 +49,8 @@ import {
   useVCSProviderStore,
 } from "@/store";
 import type { ProjectRepositoryConfig } from "@/types";
+import { VCSType } from "@/types/proto/v1/common";
 import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
-import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
@@ -111,13 +111,13 @@ const repositoryList = computed(() => {
 });
 
 const attentionText = computed((): string => {
-  if (props.config.vcs.type === VCSProvider_Type.GITLAB) {
+  if (props.config.vcs.type === VCSType.GITLAB) {
     return "repository.select-repository-attention-gitlab";
-  } else if (props.config.vcs.type === VCSProvider_Type.GITHUB) {
+  } else if (props.config.vcs.type === VCSType.GITHUB) {
     return "repository.select-repository-attention-github";
-  } else if (props.config.vcs.type === VCSProvider_Type.BITBUCKET) {
+  } else if (props.config.vcs.type === VCSType.BITBUCKET) {
     return "repository.select-repository-attention-bitbucket";
-  } else if (props.config.vcs.type === VCSProvider_Type.AZURE_DEVOPS) {
+  } else if (props.config.vcs.type === VCSType.AZURE_DEVOPS) {
     return "repository.select-repository-attention-azure-devops";
   }
   return "";

@@ -293,6 +293,10 @@
                   <a href="#bytebase.v1.State"><span class="badge">E</span>State</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.VCSType"><span class="badge">E</span>VCSType</a>
+                </li>
+              
               
               
             </ul>
@@ -2526,10 +2530,6 @@
                 </li>
               
               
-                <li>
-                  <a href="#bytebase.v1.VCSProvider.Type"><span class="badge">E</span>VCSProvider.Type</a>
-                </li>
-              
               
               
                 <li>
@@ -3708,6 +3708,47 @@ e.g. the database schema had been changed without bytebase migration.</p></td>
                 <td>DELETED</td>
                 <td>2</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.VCSType">VCSType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>VCS_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GITHUB</td>
+                <td>1</td>
+                <td><p>GitHub type. Using for GitHub community edition(ce).</p></td>
+              </tr>
+            
+              <tr>
+                <td>GITLAB</td>
+                <td>2</td>
+                <td><p>GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee).</p></td>
+              </tr>
+            
+              <tr>
+                <td>BITBUCKET</td>
+                <td>3</td>
+                <td><p>BitBucket type. Using for BitBucket cloud or BitBucket server.</p></td>
+              </tr>
+            
+              <tr>
+                <td>AZURE_DEVOPS</td>
+                <td>4</td>
+                <td><p>Azure DevOps. Using for Azure DevOps GitOps workflow.</p></td>
               </tr>
             
           </tbody>
@@ -20836,12 +20877,19 @@ Must be a subset of the specs in the same step. </p></td>
             <tbody>
               
                 <tr>
-                  <td>vcs_connector</td>
-                  <td><a href="#string">string</a></td>
+                  <td>vcs_type</td>
+                  <td><a href="#bytebase.v1.VCSType">VCSType</a></td>
                   <td></td>
                   <td><p>Optional.
 If present, we will update the pull request for rollout status.
 Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vcs_connector</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
@@ -27098,7 +27146,7 @@ Format: vcsProviders/{vcsProvider} </p></td>
               
                 <tr>
                   <td>type</td>
-                  <td><a href="#bytebase.v1.VCSProvider.Type">VCSProvider.Type</a></td>
+                  <td><a href="#bytebase.v1.VCSType">VCSType</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -27175,47 +27223,6 @@ e.g. http://gitlab.bytebase.com/bytebase/sample-project </p></td>
         
       
 
-      
-        <h3 id="bytebase.v1.VCSProvider.Type">VCSProvider.Type</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>GITHUB</td>
-                <td>1</td>
-                <td><p>GitHub type. Using for GitHub community edition(ce).</p></td>
-              </tr>
-            
-              <tr>
-                <td>GITLAB</td>
-                <td>2</td>
-                <td><p>GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee).</p></td>
-              </tr>
-            
-              <tr>
-                <td>BITBUCKET</td>
-                <td>3</td>
-                <td><p>BitBucket type. Using for BitBucket cloud or BitBucket server.</p></td>
-              </tr>
-            
-              <tr>
-                <td>AZURE_DEVOPS</td>
-                <td>4</td>
-                <td><p>Azure DevOps. Using for Azure DevOps GitOps workflow.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       

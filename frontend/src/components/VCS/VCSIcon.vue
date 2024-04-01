@@ -4,26 +4,26 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
+import { VCSType } from "@/types/proto/v1/common";
 
 const props = defineProps<{
   customClass?: string;
-  type: VCSProvider_Type;
+  type: VCSType;
 }>();
 
 const icon = computed(() => {
   let iconType = "";
   switch (props.type) {
-    case VCSProvider_Type.AZURE_DEVOPS:
+    case VCSType.AZURE_DEVOPS:
       iconType = "azure-devops";
       break;
-    case VCSProvider_Type.GITLAB:
+    case VCSType.GITLAB:
       iconType = "gitlab";
       break;
-    case VCSProvider_Type.GITHUB:
+    case VCSType.GITHUB:
       iconType = "github";
       break;
-    case VCSProvider_Type.BITBUCKET:
+    case VCSType.BITBUCKET:
       iconType = "bitbucket";
       break;
     default:

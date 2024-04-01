@@ -34,6 +34,18 @@ enum Engine {
   HIVE = 20;
 }
 
+enum VCSType {
+  VCS_TYPE_UNSPECIFIED = 0;
+  // GitHub type. Using for GitHub community edition(ce).
+  GITHUB = 1;
+  // GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee).
+  GITLAB = 2;
+  // BitBucket type. Using for BitBucket cloud or BitBucket server.
+  BITBUCKET = 3;
+  // Azure DevOps. Using for Azure DevOps GitOps workflow.
+  AZURE_DEVOPS = 4;
+}
+
 enum MaskingLevel {
   MASKING_LEVEL_UNSPECIFIED = 0;
   NONE = 1;

@@ -11,7 +11,9 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -33,24 +35,45 @@ func TestVCS(t *testing.T) {
 	tests := []struct {
 		name               string
 		vcsProviderCreator fake.VCSProviderCreator
-		vcsType            v1pb.VCSProvider_Type
+		vcsType            v1pb.VCSType
 		externalID         string
 		repositoryFullPath string
 		webhookPushEvent   any
 	}{
 		{
+			name:               "GitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            v1pb.VCSType_GITLAB,
+			externalID:         "121",
+			repositoryFullPath: "test/vcs",
+			webhookPushEvent: gitlab.MergeRequestPushEvent{
+				ObjectKind: "merge_request",
+				ObjectAttributes: gitlab.EventObjectAttributes{
+					IID:          pullRequestID,
+					URL:          "https://gitlab.com/test/vcs/-/merge_requests/2250",
+					TargetBranch: branchName,
+					Action:       "merge",
+					Title:        pullRequestTitle,
+					Description:  pullRequestDescription,
+					LastCommit: gitlab.LastCommit{
+						ID: "cc63b0592388a7ab1b05b005ad8c8dc14ce432b1",
+					},
+				},
+			},
+		},
+		{
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
-			vcsType:            v1pb.VCSProvider_GITHUB,
+			vcsType:            v1pb.VCSType_GITHUB,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
 			webhookPushEvent: github.PullRequestPushEvent{
 				Action: "closed",
 				Number: pullRequestID,
 				PullRequest: github.EventPullRequest{
-					URL:   fmt.Sprintf("https://github.com/test/vcs/pull/%d", pullRequestID),
-					Title: pullRequestTitle,
-					Body:  pullRequestDescription,
+					HTMLURL: fmt.Sprintf("https://github.com/test/vcs/pull/%d", pullRequestID),
+					Title:   pullRequestTitle,
+					Body:    pullRequestDescription,
 					Base: github.EventBranch{
 						Ref: branchName,
 						SHA: "cc63b0592388a7ab1b05b005ad8c8dc14ce432b0",
@@ -59,6 +82,27 @@ func TestVCS(t *testing.T) {
 						Ref: "test-branch",
 						SHA: "cc63b0592388a7ab1b05b005ad8c8dc14ce432b1",
 					},
+				},
+			},
+		},
+		{
+			name:               "Bitbucket",
+			vcsProviderCreator: fake.NewBitbucket,
+			vcsType:            v1pb.VCSType_BITBUCKET,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			webhookPushEvent: bitbucket.PullRequestPushEvent{
+				PullRequest: bitbucket.EventPullRequest{
+					ID:          pullRequestID,
+					Title:       pullRequestTitle,
+					Description: pullRequestDescription,
+					Destination: bitbucket.EventBranch{
+						Branch: bitbucket.EventBranchName{Name: branchName},
+					},
+					Source: bitbucket.EventBranch{
+						Commit: bitbucket.EventCommit{Hash: "cc63b0592388a7ab1b05b005ad8c8dc14ce432b1"},
+					},
+					Links: bitbucket.EventLinks{HTML: bitbucket.EventHTML{Href: fmt.Sprintf("https://bitbucket.org/test/vcs/pull-requests/%d", pullRequestID)}},
 				},
 			},
 		},

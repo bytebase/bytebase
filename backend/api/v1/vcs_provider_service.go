@@ -202,16 +202,16 @@ func convertToVCSProviders(vcsProviders []*store.VCSProviderMessage) []*v1pb.VCS
 }
 
 func convertVCSProvider(vcsProvider *store.VCSProviderMessage) *v1pb.VCSProvider {
-	tp := v1pb.VCSProvider_TYPE_UNSPECIFIED
+	tp := v1pb.VCSType_VCS_TYPE_UNSPECIFIED
 	switch vcsProvider.Type {
 	case vcs.GitHub:
-		tp = v1pb.VCSProvider_GITHUB
+		tp = v1pb.VCSType_GITHUB
 	case vcs.GitLab:
-		tp = v1pb.VCSProvider_GITLAB
+		tp = v1pb.VCSType_GITLAB
 	case vcs.Bitbucket:
-		tp = v1pb.VCSProvider_BITBUCKET
+		tp = v1pb.VCSType_BITBUCKET
 	case vcs.AzureDevOps:
-		tp = v1pb.VCSProvider_AZURE_DEVOPS
+		tp = v1pb.VCSType_AZURE_DEVOPS
 	}
 
 	return &v1pb.VCSProvider{
@@ -227,7 +227,7 @@ func convertV1VCSProvider(request *v1pb.CreateVCSProviderRequest) (*store.VCSPro
 	if v1VCSProvider.GetTitle() == "" {
 		return nil, errors.Errorf("Empty VCSProvider.Title")
 	}
-	if v1VCSProvider.GetType() == v1pb.VCSProvider_TYPE_UNSPECIFIED {
+	if v1VCSProvider.GetType() == v1pb.VCSType_VCS_TYPE_UNSPECIFIED {
 		return nil, errors.Errorf("Empty VCSProvider.Type")
 	}
 	if v1VCSProvider.GetUrl() == "" {
@@ -252,15 +252,15 @@ func convertV1VCSProvider(request *v1pb.CreateVCSProviderRequest) (*store.VCSPro
 	return storeVCSProvider, nil
 }
 
-func convertVCSProviderTypeToVCSType(tp v1pb.VCSProvider_Type) (vcs.Type, error) {
+func convertVCSProviderTypeToVCSType(tp v1pb.VCSType) (vcs.Type, error) {
 	switch tp {
-	case v1pb.VCSProvider_GITHUB:
+	case v1pb.VCSType_GITHUB:
 		return vcs.GitHub, nil
-	case v1pb.VCSProvider_GITLAB:
+	case v1pb.VCSType_GITLAB:
 		return vcs.GitLab, nil
-	case v1pb.VCSProvider_BITBUCKET:
+	case v1pb.VCSType_BITBUCKET:
 		return vcs.Bitbucket, nil
-	case v1pb.VCSProvider_AZURE_DEVOPS:
+	case v1pb.VCSType_AZURE_DEVOPS:
 		return vcs.AzureDevOps, nil
 	}
 	return "", errors.Errorf("unknown vcs provider type: %v", tp)

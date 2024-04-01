@@ -151,6 +151,61 @@ export function engineToJSON(object: Engine): string {
   }
 }
 
+export enum VCSType {
+  VCS_TYPE_UNSPECIFIED = 0,
+  /** GITHUB - GitHub type. Using for GitHub community edition(ce). */
+  GITHUB = 1,
+  /** GITLAB - GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). */
+  GITLAB = 2,
+  /** BITBUCKET - BitBucket type. Using for BitBucket cloud or BitBucket server. */
+  BITBUCKET = 3,
+  /** AZURE_DEVOPS - Azure DevOps. Using for Azure DevOps GitOps workflow. */
+  AZURE_DEVOPS = 4,
+  UNRECOGNIZED = -1,
+}
+
+export function vCSTypeFromJSON(object: any): VCSType {
+  switch (object) {
+    case 0:
+    case "VCS_TYPE_UNSPECIFIED":
+      return VCSType.VCS_TYPE_UNSPECIFIED;
+    case 1:
+    case "GITHUB":
+      return VCSType.GITHUB;
+    case 2:
+    case "GITLAB":
+      return VCSType.GITLAB;
+    case 3:
+    case "BITBUCKET":
+      return VCSType.BITBUCKET;
+    case 4:
+    case "AZURE_DEVOPS":
+      return VCSType.AZURE_DEVOPS;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return VCSType.UNRECOGNIZED;
+  }
+}
+
+export function vCSTypeToJSON(object: VCSType): string {
+  switch (object) {
+    case VCSType.VCS_TYPE_UNSPECIFIED:
+      return "VCS_TYPE_UNSPECIFIED";
+    case VCSType.GITHUB:
+      return "GITHUB";
+    case VCSType.GITLAB:
+      return "GITLAB";
+    case VCSType.BITBUCKET:
+      return "BITBUCKET";
+    case VCSType.AZURE_DEVOPS:
+      return "AZURE_DEVOPS";
+    case VCSType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum MaskingLevel {
   MASKING_LEVEL_UNSPECIFIED = 0,
   NONE = 1,

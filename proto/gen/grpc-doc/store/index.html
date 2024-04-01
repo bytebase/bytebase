@@ -466,6 +466,10 @@
                   <a href="#bytebase.store.MaskingLevel"><span class="badge">E</span>MaskingLevel</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.VCSType"><span class="badge">E</span>VCSType</a>
+                </li>
+              
               
               
             </ul>
@@ -3789,6 +3793,47 @@ Example: projects/project-id/branches/branch-id. </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.store.VCSType">VCSType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>VCS_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GITHUB</td>
+                <td>1</td>
+                <td><p>GitHub type. Using for GitHub community edition(ce).</p></td>
+              </tr>
+            
+              <tr>
+                <td>GITLAB</td>
+                <td>2</td>
+                <td><p>GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee).</p></td>
+              </tr>
+            
+              <tr>
+                <td>BITBUCKET</td>
+                <td>3</td>
+                <td><p>BitBucket type. Using for BitBucket cloud or BitBucket server.</p></td>
+              </tr>
+            
+              <tr>
+                <td>AZURE_DEVOPS</td>
+                <td>4</td>
+                <td><p>Azure DevOps. Using for Azure DevOps GitOps workflow.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
 
@@ -5842,6 +5887,13 @@ Use a generated title if empty. </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
+              
+                <tr>
+                  <td>vcs_type</td>
+                  <td><a href="#bytebase.store.VCSType">VCSType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
               
                 <tr>
                   <td>vcs_connector</td>

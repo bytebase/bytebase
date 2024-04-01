@@ -12,6 +12,22 @@
       {{ `${vcsConnector.branch}@${vcsConnector.fullPath}` }}
     </a>
   </div>
+  <div
+    v-if="
+      issue.planEntity?.vcsSource?.pullRequestUrl !== undefined &&
+      vcsProvider === undefined
+    "
+    class="text-sm text-control-light flex space-x-1 items-center"
+  >
+    <VCSIcon :type="issue.planEntity?.vcsSource.vcsType" />
+    <a
+      :href="issue.planEntity?.vcsSource.pullRequestUrl"
+      target="_blank"
+      class="normal-link"
+    >
+      {{ issue.planEntity?.vcsSource.pullRequestUrl }}
+    </a>
+  </div>
 </template>
 
 <script setup lang="ts">

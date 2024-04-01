@@ -9,11 +9,11 @@ type PullRequestPushEvent struct {
 }
 
 type EventPullRequest struct {
-	URL   string      `json:"url"`
-	Title string      `json:"title"`
-	Body  string      `json:"body"`
-	Base  EventBranch `json:"base"`
-	Head  EventBranch `json:"head"`
+	HTMLURL string      `json:"html_url"`
+	Title   string      `json:"title"`
+	Body    string      `json:"body"`
+	Base    EventBranch `json:"base"`
+	Head    EventBranch `json:"head"`
 }
 
 type EventBranch struct {
