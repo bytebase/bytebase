@@ -66,6 +66,7 @@ func NewBitbucket(port int) VCSProvider {
 	g.GET("/repositories/:owner/:repo/refs/branches/:branchName", bb.getRepositoryBranch)
 	g.GET("/repositories/:owner/:repo/diffstat/:baseHead", bb.compareCommits)
 	g.GET("/repositories/:owner/:repo/pullrequests/:prID/diffstat", bb.listPullRequestFile)
+	g.GET("/repositories/:owner/:repo/pullrequests/:prID/comments", bb.createPullRequestComment)
 	return bb
 }
 
@@ -402,4 +403,8 @@ func (bb *Bitbucket) listPullRequestFile(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body: %v", err))
 	}
 	return c.String(http.StatusOK, string(buf))
+}
+
+func (*Bitbucket) createPullRequestComment(echo.Context) error {
+	return nil
 }

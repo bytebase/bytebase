@@ -3007,12 +3007,12 @@ type Plan_VCSSource struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	VcsType VCSType `protobuf:"varint,1,opt,name=vcs_type,json=vcsType,proto3,enum=bytebase.v1.VCSType" json:"vcs_type,omitempty"`
 	// Optional.
 	// If present, we will update the pull request for rollout status.
 	// Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
-	VcsType        VCSType `protobuf:"varint,1,opt,name=vcs_type,json=vcsType,proto3,enum=bytebase.v1.VCSType" json:"vcs_type,omitempty"`
-	VcsConnector   string  `protobuf:"bytes,2,opt,name=vcs_connector,json=vcsConnector,proto3" json:"vcs_connector,omitempty"`
-	PullRequestUrl string  `protobuf:"bytes,3,opt,name=pull_request_url,json=pullRequestUrl,proto3" json:"pull_request_url,omitempty"`
+	VcsConnector   string `protobuf:"bytes,2,opt,name=vcs_connector,json=vcsConnector,proto3" json:"vcs_connector,omitempty"`
+	PullRequestUrl string `protobuf:"bytes,3,opt,name=pull_request_url,json=pullRequestUrl,proto3" json:"pull_request_url,omitempty"`
 }
 
 func (x *Plan_VCSSource) Reset() {
