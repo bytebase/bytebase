@@ -34,6 +34,7 @@
     - [ExportFormat](#bytebase-v1-ExportFormat)
     - [MaskingLevel](#bytebase-v1-MaskingLevel)
     - [State](#bytebase-v1-State)
+    - [VCSType](#bytebase-v1-VCSType)
   
 - [v1/auth_service.proto](#v1_auth_service-proto)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
@@ -613,8 +614,6 @@
     - [VCSProvider](#bytebase-v1-VCSProvider)
     - [VCSRepository](#bytebase-v1-VCSRepository)
   
-    - [VCSProvider.Type](#bytebase-v1-VCSProvider-Type)
-  
     - [VCSProviderService](#bytebase-v1-VCSProviderService)
   
 - [v1/worksheet_service.proto](#v1_worksheet_service-proto)
@@ -1060,6 +1059,21 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 | STATE_UNSPECIFIED | 0 |  |
 | ACTIVE | 1 |  |
 | DELETED | 2 |  |
+
+
+
+<a name="bytebase-v1-VCSType"></a>
+
+### VCSType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VCS_TYPE_UNSPECIFIED | 0 |  |
+| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
+| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
+| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
+| AZURE_DEVOPS | 4 | Azure DevOps. Using for Azure DevOps GitOps workflow. |
 
 
  
@@ -7498,7 +7512,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| vcs_connector | [string](#string) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
+| vcs_type | [VCSType](#bytebase-v1-VCSType) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
+| vcs_connector | [string](#string) |  |  |
 | pull_request_url | [string](#string) |  |  |
 
 
@@ -9867,7 +9882,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the vcs provider. Format: vcsProviders/{vcsProvider} |
 | title | [string](#string) |  | The title of the vcs provider. It is used to display in the UI. Specified by the client. |
-| type | [VCSProvider.Type](#bytebase-v1-VCSProvider-Type) |  |  |
+| type | [VCSType](#bytebase-v1-VCSType) |  |  |
 | url | [string](#string) |  | The url of the vcs provider. Specified by the client. For example: github.com, gitlab.com, gitlab.bytebase.com. |
 | access_token | [string](#string) |  | The access token of the vcs provider. |
 
@@ -9894,21 +9909,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
  
-
-
-<a name="bytebase-v1-VCSProvider-Type"></a>
-
-### VCSProvider.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
-| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
-| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
-| AZURE_DEVOPS | 4 | Azure DevOps. Using for Azure DevOps GitOps workflow. |
-
 
  
 

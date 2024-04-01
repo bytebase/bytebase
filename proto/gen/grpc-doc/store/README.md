@@ -76,6 +76,7 @@
     - [Engine](#bytebase-store-Engine)
     - [ExportFormat](#bytebase-store-ExportFormat)
     - [MaskingLevel](#bytebase-store-MaskingLevel)
+    - [VCSType](#bytebase-store-VCSType)
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
@@ -1345,6 +1346,21 @@ Used internally for obfuscating the page token.
 | FULL | 3 |  |
 
 
+
+<a name="bytebase-store-VCSType"></a>
+
+### VCSType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VCS_TYPE_UNSPECIFIED | 0 |  |
+| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
+| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
+| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
+| AZURE_DEVOPS | 4 | Azure DevOps. Using for Azure DevOps GitOps workflow. |
+
+
  
 
  
@@ -2258,6 +2274,7 @@ InstanceOptions is the option for instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| vcs_type | [VCSType](#bytebase-store-VCSType) |  |  |
 | vcs_connector | [string](#string) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
 | pull_request_url | [string](#string) |  |  |
 

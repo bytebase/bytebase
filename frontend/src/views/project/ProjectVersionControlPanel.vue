@@ -36,8 +36,8 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getVCSConnectorId } from "@/store/modules/v1/common";
+import { VCSType } from "@/types/proto/v1/common";
 import type { VCSConnector } from "@/types/proto/v1/vcs_connector_service";
-import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
 const props = defineProps<{
@@ -89,7 +89,7 @@ const columnList = computed((): DataTableColumn<VCSConnector>[] => {
         const vcs = vcsV1Store.getVCSByName(connector.vcsProvider);
         return h("div", { class: "flex items-center gap-x-2" }, [
           h(VCSIcon, {
-            type: vcs?.type ?? VCSProvider_Type.TYPE_UNSPECIFIED,
+            type: vcs?.type ?? VCSType.VCS_TYPE_UNSPECIFIED,
             customClass: "h-4",
           }),
           vcs?.title ?? "",

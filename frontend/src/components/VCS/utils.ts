@@ -1,11 +1,11 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { VCSUIType } from "@/types";
-import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
+import { VCSType } from "@/types/proto/v1/common";
 
 export const vcsListByUIType = computed(
   (): {
-    type: VCSProvider_Type;
+    type: VCSType;
     uiType: VCSUIType;
     title: string;
   }[] => {
@@ -13,32 +13,32 @@ export const vcsListByUIType = computed(
 
     return [
       {
-        type: VCSProvider_Type.GITLAB,
+        type: VCSType.GITLAB,
         uiType: "GITLAB_SELF_HOST",
         title: t("gitops.setting.add-git-provider.gitlab-self-host"),
       },
       {
-        type: VCSProvider_Type.GITLAB,
+        type: VCSType.GITLAB,
         uiType: "GITLAB_COM",
         title: "GitLab.com",
       },
       {
-        type: VCSProvider_Type.GITHUB,
+        type: VCSType.GITHUB,
         uiType: "GITHUB_COM",
         title: "GitHub.com",
       },
       {
-        type: VCSProvider_Type.GITHUB,
+        type: VCSType.GITHUB,
         uiType: "GITHUB_ENTERPRISE",
         title: t("gitops.setting.add-git-provider.github-self-host"),
       },
       {
-        type: VCSProvider_Type.AZURE_DEVOPS,
+        type: VCSType.AZURE_DEVOPS,
         uiType: "AZURE_DEVOPS",
         title: t("gitops.setting.add-git-provider.azure-devops-service"),
       },
       {
-        type: VCSProvider_Type.BITBUCKET,
+        type: VCSType.BITBUCKET,
         uiType: "BITBUCKET_ORG",
         title: "Bitbucket.org",
       },
