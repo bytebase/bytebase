@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -202,22 +203,10 @@ func convertToVCSProviders(vcsProviders []*store.VCSProviderMessage) []*v1pb.VCS
 }
 
 func convertVCSProvider(vcsProvider *store.VCSProviderMessage) *v1pb.VCSProvider {
-	tp := v1pb.VCSType_VCS_TYPE_UNSPECIFIED
-	switch vcsProvider.Type {
-	case vcs.GitHub:
-		tp = v1pb.VCSType_GITHUB
-	case vcs.GitLab:
-		tp = v1pb.VCSType_GITLAB
-	case vcs.Bitbucket:
-		tp = v1pb.VCSType_BITBUCKET
-	case vcs.AzureDevOps:
-		tp = v1pb.VCSType_AZURE_DEVOPS
-	}
-
 	return &v1pb.VCSProvider{
 		Name:  fmt.Sprintf("%s%s", common.VCSProviderPrefix, vcsProvider.ResourceID),
 		Title: vcsProvider.Title,
-		Type:  tp,
+		Type:  v1pb.VCSType(vcsProvider.Type),
 		Url:   vcsProvider.InstanceURL,
 	}
 }
@@ -236,32 +225,14 @@ func convertV1VCSProvider(request *v1pb.CreateVCSProviderRequest) (*store.VCSPro
 	if v1VCSProvider.GetAccessToken() == "" {
 		return nil, errors.Errorf("Empty VCSProvider.Secret")
 	}
-	tp, err := convertVCSProviderTypeToVCSType(v1VCSProvider.GetType())
-	if err != nil {
-		return nil, err
-	}
 
 	storeVCSProvider := &store.VCSProviderMessage{
 		ResourceID:  request.GetVcsProviderId(),
 		Title:       v1VCSProvider.GetTitle(),
-		Type:        tp,
+		Type:        storepb.VCSType(v1VCSProvider.GetType()),
 		InstanceURL: strings.TrimRight(v1VCSProvider.GetUrl(), "/"),
 		AccessToken: v1VCSProvider.GetAccessToken(),
 	}
 
 	return storeVCSProvider, nil
-}
-
-func convertVCSProviderTypeToVCSType(tp v1pb.VCSType) (vcs.Type, error) {
-	switch tp {
-	case v1pb.VCSType_GITHUB:
-		return vcs.GitHub, nil
-	case v1pb.VCSType_GITLAB:
-		return vcs.GitLab, nil
-	case v1pb.VCSType_BITBUCKET:
-		return vcs.Bitbucket, nil
-	case v1pb.VCSType_AZURE_DEVOPS:
-		return vcs.AzureDevOps, nil
-	}
-	return "", errors.Errorf("unknown vcs provider type: %v", tp)
 }

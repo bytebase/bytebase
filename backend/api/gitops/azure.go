@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/azure"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func getAzurePullRequestInfo(ctx context.Context, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, body []byte) (*pullRequestInfo, error) {
@@ -35,7 +36,7 @@ func getAzurePullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvider
 	}
 
 	mrFiles, err := vcs.Get(
-		vcs.AzureDevOps,
+		storepb.VCSType_AZURE_DEVOPS,
 		vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
 	).ListPullRequestFile(
 		ctx,
@@ -56,7 +57,7 @@ func getAzurePullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvider
 
 	for _, file := range prInfo.changes {
 		content, err := vcs.Get(
-			vcs.AzureDevOps,
+			storepb.VCSType_AZURE_DEVOPS,
 			vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
 		).ReadFileContent(
 			ctx,

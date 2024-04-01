@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func getBitBucketPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, body []byte) (*pullRequestInfo, error) {
@@ -22,7 +23,7 @@ func getBitBucketPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProv
 		return nil, errors.Errorf("committed to branch %q, want branch %q", pushEvent.PullRequest.Destination.Branch.Name, vcsConnector.Payload.Branch)
 	}
 
-	mrFiles, err := vcs.Get(vcs.Bitbucket, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ListPullRequestFile(ctx, vcsConnector.Payload.ExternalId, fmt.Sprintf("%d", pushEvent.PullRequest.ID))
+	mrFiles, err := vcs.Get(storepb.VCSType_BITBUCKET, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ListPullRequestFile(ctx, vcsConnector.Payload.ExternalId, fmt.Sprintf("%d", pushEvent.PullRequest.ID))
 	if err != nil {
 		return nil, errors.Errorf("failed to list merge %q request files, error %v", pushEvent.PullRequest.Links.HTML.Href, err)
 	}
@@ -36,7 +37,7 @@ func getBitBucketPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProv
 	}
 
 	for _, file := range prInfo.changes {
-		content, err := vcs.Get(vcs.Bitbucket, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ReadFileContent(ctx, vcsConnector.Payload.ExternalId, file.path, vcs.RefInfo{RefType: vcs.RefTypeCommit, RefName: pushEvent.PullRequest.Source.Commit.Hash})
+		content, err := vcs.Get(storepb.VCSType_BITBUCKET, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ReadFileContent(ctx, vcsConnector.Payload.ExternalId, file.path, vcs.RefInfo{RefType: vcs.RefTypeCommit, RefName: pushEvent.PullRequest.Source.Commit.Hash})
 		if err != nil {
 			return nil, errors.Errorf("failed read file content, merge request %q, file %q, error %v", pushEvent.PullRequest.Links.HTML.Href, file.path, err)
 		}

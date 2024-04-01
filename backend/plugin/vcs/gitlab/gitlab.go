@@ -15,7 +15,14 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/internal"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+var _ vcs.Provider = (*Provider)(nil)
+
+func init() {
+	vcs.Register(storepb.VCSType_GITLAB, newProvider)
+}
 
 const (
 	// SecretTokenLength is the length of secret token.
@@ -26,8 +33,6 @@ const (
 	// apiPageSize is the default page size when making API requests.
 	apiPageSize = 100
 )
-
-var _ vcs.Provider = (*Provider)(nil)
 
 // WebhookType is the GitLab webhook type.
 type WebhookType string
@@ -137,10 +142,6 @@ type gitLabRepository struct {
 	Name              string `json:"name"`
 	PathWithNamespace string `json:"path_with_namespace"`
 	WebURL            string `json:"web_url"`
-}
-
-func init() {
-	vcs.Register(vcs.GitLab, newProvider)
 }
 
 // Provider is a GitLab self host VCS provider.
