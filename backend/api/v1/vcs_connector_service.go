@@ -110,7 +110,7 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 
 	baseDir := request.GetVcsConnector().BaseDirectory
 	// Azure DevOps base directory should start with /.
-	if vcsProvider.Type == vcs.AzureDevOps {
+	if vcsProvider.Type == storepb.VCSType_AZURE_DEVOPS {
 		if !strings.HasPrefix(baseDir, "/") {
 			baseDir = "/" + request.GetVcsConnector().BaseDirectory
 		}
@@ -292,7 +292,7 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 		case "base_directory":
 			baseDir := request.GetVcsConnector().BaseDirectory
 			// Azure DevOps base directory should start with /.
-			if vcsProvider.Type == vcs.AzureDevOps {
+			if vcsProvider.Type == storepb.VCSType_AZURE_DEVOPS {
 				if !strings.HasPrefix(baseDir, "/") {
 					baseDir = "/" + request.GetVcsConnector().BaseDirectory
 				}
@@ -438,7 +438,7 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 	var webhookCreatePayload []byte
 	var err error
 	switch vcsProvider.Type {
-	case vcs.GitLab:
+	case storepb.VCSType_GITLAB:
 		webhookCreate := gitlab.WebhookCreate{
 			URL:                   fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 			SecretToken:           webhookSecretToken,
@@ -450,7 +450,7 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
-	case vcs.GitHub:
+	case storepb.VCSType_GITHUB:
 		webhookPost := github.WebhookCreateOrUpdate{
 			Config: github.WebhookConfig{
 				URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
@@ -464,7 +464,7 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
-	case vcs.Bitbucket:
+	case storepb.VCSType_BITBUCKET:
 		webhookPost := bitbucket.WebhookCreateOrUpdate{
 			Description: "Bytebase GitOps",
 			URL:         fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
@@ -475,7 +475,7 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
-	case vcs.AzureDevOps:
+	case storepb.VCSType_AZURE_DEVOPS:
 		part := strings.Split(externalRepoID, "/")
 		if len(part) != 3 {
 			return "", errors.Errorf("invalid external repo id %q", externalRepoID)

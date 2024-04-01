@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // VCSProviderMessage is a message for VCS provider.
@@ -17,7 +17,7 @@ type VCSProviderMessage struct {
 	// ResourceID is the unique resource ID.
 	ResourceID string
 	// Type is the type of the VCS provider.
-	Type vcs.Type
+	Type storepb.VCSType
 	// InstanceURL is the URL for the VCS provider instance.
 	InstanceURL string
 	// Title is the name of the VCS provider.
@@ -118,24 +118,18 @@ func (s *Store) CreateVCSProvider(ctx context.Context, principalUID int, create 
 			access_token
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, resource_id, name, type, instance_url, access_token
+		RETURNING id
 	`
-	var vcsProvider VCSProviderMessage
 	if err := tx.QueryRowContext(ctx, query,
 		principalUID,
 		principalUID,
 		create.ResourceID,
 		create.Title,
-		create.Type,
+		create.Type.String(),
 		create.InstanceURL,
 		create.AccessToken,
 	).Scan(
-		&vcsProvider.ID,
-		&vcsProvider.ResourceID,
-		&vcsProvider.Title,
-		&vcsProvider.Type,
-		&vcsProvider.InstanceURL,
-		&vcsProvider.AccessToken,
+		&create.ID,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -147,8 +141,8 @@ func (s *Store) CreateVCSProvider(ctx context.Context, principalUID int, create 
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.vcsIDCache.Add(vcsProvider.ID, &vcsProvider)
-	return &vcsProvider, nil
+	s.vcsIDCache.Add(create.ID, create)
+	return create, nil
 }
 
 // UpdateVCSProvider updates an VCS provider.
@@ -170,7 +164,7 @@ func (s *Store) UpdateVCSProvider(ctx context.Context, principalUID int, vcsProv
 	defer tx.Rollback()
 
 	var vcsProvider VCSProviderMessage
-	// Execute update query with RETURNING.
+	var vcsType string
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
@@ -182,15 +176,17 @@ func (s *Store) UpdateVCSProvider(ctx context.Context, principalUID int, vcsProv
 		&vcsProvider.ID,
 		&vcsProvider.ResourceID,
 		&vcsProvider.Title,
-		&vcsProvider.Type,
+		&vcsType,
 		&vcsProvider.InstanceURL,
 		&vcsProvider.AccessToken,
 	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("vcs ID not found: %d", vcsProviderUID)}
-		}
 		return nil, err
 	}
+	vcsTypeValue, ok := storepb.VCSType_value[vcsType]
+	if !ok {
+		return nil, errors.Errorf("invalid vcs type %s", vcsType)
+	}
+	vcsProvider.Type = storepb.VCSType(vcsTypeValue)
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
@@ -247,16 +243,22 @@ func (*Store) findVCSProvidersImpl(ctx context.Context, tx *Tx, find *FindVCSPro
 	var vcsProviders []*VCSProviderMessage
 	for rows.Next() {
 		var vcsProvider VCSProviderMessage
+		var vcsType string
 		if err := rows.Scan(
 			&vcsProvider.ID,
 			&vcsProvider.ResourceID,
 			&vcsProvider.Title,
-			&vcsProvider.Type,
+			&vcsType,
 			&vcsProvider.InstanceURL,
 			&vcsProvider.AccessToken,
 		); err != nil {
 			return nil, err
 		}
+		vcsTypeValue, ok := storepb.VCSType_value[vcsType]
+		if !ok {
+			return nil, errors.Errorf("invalid vcs type %s", vcsType)
+		}
+		vcsProvider.Type = storepb.VCSType(vcsTypeValue)
 		vcsProviders = append(vcsProviders, &vcsProvider)
 	}
 	if err := rows.Err(); err != nil {
