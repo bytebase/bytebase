@@ -25,4 +25,7 @@ message VCSConnector {
   string external_webhook_id = 7;
   // For GitLab, webhook request contains this in the 'X-Gitlab-Token" header and we compare it with the one stored in db to validate it sends to the expected endpoint.
   string webhook_secret_token = 8;
+  // Apply changes to the database group. Optional, if not set, will apply changes to all databases in the project.
+  // Format: projects/{project}/databaseGroups/{databaseGroup}
+  string database_group = 9;
 }
