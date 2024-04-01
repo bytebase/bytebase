@@ -591,17 +591,17 @@
       }
     },
     "statement-add-foreign-key-not-valid": {
-      "description": "Agregar claves externas necesita verificar los datos existentes y requiere el bloqueo de tabla SHARE ROW EXCLUSIVE. \nEsto bloquea la escritura, lo que puede provocar la interrupción del negocio. \nSe recomienda agregar la opción \"NO VÁLIDO\" para validar datos nuevos y validar los datos existentes una vez completado el cambio. \nNivel de error de sugerencia: Advertencia",
-      "title": "Aplicar la opción \"NO VÁLIDO\" al agregar claves externas"
+      "title": "Aplicar la opción \"NO VÁLIDO\" al agregar claves externas",
+      "description": "Agregar claves externas necesita verificar los datos existentes y requiere el bloqueo de tabla SHARE ROW EXCLUSIVE. \nEsto bloquea la escritura, lo que puede provocar la interrupción del negocio. \nSe recomienda agregar la opción \"NO VÁLIDO\" para validar datos nuevos y validar los datos existentes una vez completado el cambio. \nNivel de error de sugerencia: Advertencia"
     },
     "statement-non-transactional": {
-      "description": "",
-      "title": "Detectar y reportar declaraciones no transaccionales"
+      "title": "Detectar y reportar declaraciones no transaccionales",
+      "description": ""
     }
   },
   "level": {
-    "error": "Error",
     "name": "Nivel de Error",
+    "error": "Error",
     "warning": "Advertencia",
     "disabled": "Deshabilitado"
   }

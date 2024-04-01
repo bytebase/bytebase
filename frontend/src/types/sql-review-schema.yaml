@@ -591,6 +591,7 @@ ruleList:
       - OCEANBASE_ORACLE
       - OCEANBASE
       - MARIADB
+      - MSSQL
     componentList:
       - key: list
         payload:

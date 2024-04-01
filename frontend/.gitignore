@@ -5,6 +5,7 @@ node_modules
 components.d.ts
 
 # local env files
+.env.i18n
 .env.local
 .env.*.local
 

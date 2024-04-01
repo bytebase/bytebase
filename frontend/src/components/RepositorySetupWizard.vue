@@ -47,10 +47,8 @@ import { useI18n } from "vue-i18n";
 import { StepTab } from "@/components/v2";
 import { useVCSConnectorStore, useCurrentUserV1 } from "@/store";
 import type { ComposedProject } from "@/types";
-import {
-  VCSProvider,
-  VCSProvider_Type,
-} from "@/types/proto/v1/vcs_provider_service";
+import { VCSType } from "@/types/proto/v1/common";
+import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import type { ProjectRepositoryConfig } from "../types";
@@ -137,8 +135,8 @@ const tryFinishSetup = async () => {
   const createFunc = async () => {
     let externalId = state.config.repositoryInfo.id;
     if (
-      state.config.vcs.type === VCSProvider_Type.GITHUB ||
-      state.config.vcs.type === VCSProvider_Type.BITBUCKET
+      state.config.vcs.type === VCSType.GITHUB ||
+      state.config.vcs.type === VCSType.BITBUCKET
     ) {
       externalId = state.config.repositoryInfo.fullPath;
     }

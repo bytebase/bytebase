@@ -2,8 +2,7 @@
   <NTooltip placement="right" :delay="300" :disabled="disabled">
     <template #trigger>
       <div class="px-2 py-3 select-none" :class="classes" v-bind="$attrs">
-        <LinkIcon v-if="tab === 'CONNECTION'" class="w-4 h-4" />
-        <FileCodeIcon v-else-if="tab === 'WORKSHEET'" class="w-4 h-4" />
+        <FileCodeIcon v-if="tab === 'WORKSHEET'" class="w-4 h-4" />
         <DatabaseIcon v-else-if="tab === 'SCHEMA'" class="w-4 h-4" />
         <HistoryIcon v-else-if="tab === 'HISTORY'" class="w-4 h-4" />
         <span v-else></span>
@@ -16,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { LinkIcon, FileCodeIcon, HistoryIcon } from "lucide-vue-next";
+import { FileCodeIcon, HistoryIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -48,8 +47,6 @@ const classes = computed(() => {
 
 const text = computed(() => {
   switch (props.tab) {
-    case "CONNECTION":
-      return t("common.connection");
     case "WORKSHEET":
       return t("sheet.sheet");
     case "SCHEMA":

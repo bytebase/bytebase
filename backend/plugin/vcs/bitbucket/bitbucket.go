@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/internal"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -27,7 +28,7 @@ const (
 )
 
 func init() {
-	vcs.Register(vcs.Bitbucket, newProvider)
+	vcs.Register(storepb.VCSType_BITBUCKET, newProvider)
 }
 
 var _ vcs.Provider = (*Provider)(nil)

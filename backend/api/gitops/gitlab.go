@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -33,7 +34,7 @@ func getGitLabPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 		return nil, errors.Errorf("committed to branch %q, want branch %q", pushEvent.ObjectAttributes.TargetBranch, vcsConnector.Payload.Branch)
 	}
 
-	mrFiles, err := vcs.Get(vcs.GitLab, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ListPullRequestFile(ctx, vcsConnector.Payload.ExternalId, fmt.Sprintf("%d", pushEvent.ObjectAttributes.IID))
+	mrFiles, err := vcs.Get(storepb.VCSType_GITLAB, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ListPullRequestFile(ctx, vcsConnector.Payload.ExternalId, fmt.Sprintf("%d", pushEvent.ObjectAttributes.IID))
 	if err != nil {
 		return nil, errors.Errorf("failed to list merge %q request files, error %v", pushEvent.ObjectAttributes.URL, err)
 	}
@@ -47,7 +48,7 @@ func getGitLabPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 	}
 
 	for _, file := range prInfo.changes {
-		content, err := vcs.Get(vcs.GitLab, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ReadFileContent(ctx, vcsConnector.Payload.ExternalId, file.path, vcs.RefInfo{RefType: vcs.RefTypeCommit, RefName: pushEvent.ObjectAttributes.LastCommit.ID})
+		content, err := vcs.Get(storepb.VCSType_GITLAB, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ReadFileContent(ctx, vcsConnector.Payload.ExternalId, file.path, vcs.RefInfo{RefType: vcs.RefTypeCommit, RefName: pushEvent.ObjectAttributes.LastCommit.ID})
 		if err != nil {
 			return nil, errors.Errorf("failed read file content, merge request %q, file %q, error %v", pushEvent.ObjectAttributes.URL, file.path, err)
 		}

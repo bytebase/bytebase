@@ -26,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -33,6 +34,14 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 	g.POST(":id", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		// The id start with "/".
+		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return c.String(http.StatusOK, fmt.Sprintf("failed to get setting, error %v", err))
+		}
+		if setting.ExternalUrl == "" {
+			return c.String(http.StatusOK, "external URL is empty")
+		}
+
 		url := strings.TrimPrefix(c.Param("id"), "/")
 		workspaceID, projectID, vcsConnectorID, err := common.GetWorkspaceProjectVCSConnectorID(url)
 		if err != nil {
@@ -74,7 +83,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 
 		var prInfo *pullRequestInfo
 		switch vcsProvider.Type {
-		case vcs.GitHub:
+		case storepb.VCSType_GITHUB:
 			secretToken := c.Request().Header.Get("X-Hub-Signature-256")
 			ok, err := validateGitHubWebhookSignature256(secretToken, vcsConnector.Payload.WebhookSecretToken, body)
 			if err != nil {
@@ -99,7 +108,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
-		case vcs.GitLab:
+		case storepb.VCSType_GITLAB:
 			secretToken := c.Request().Header.Get("X-Gitlab-Token")
 			if secretToken != vcsConnector.Payload.WebhookSecretToken {
 				return c.String(http.StatusOK, fmt.Sprintf("invalid webhook secret token %q", secretToken))
@@ -109,7 +118,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
-		case vcs.Bitbucket:
+		case storepb.VCSType_BITBUCKET:
 			eventType := c.Request().Header.Get("X-Event-Key")
 			switch eventType {
 			case "pullrequest:created", "pullrequest:updated":
@@ -123,7 +132,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
-		case vcs.AzureDevOps:
+		case storepb.VCSType_AZURE_DEVOPS:
 			secretToken := c.Request().Header.Get("X-Azure-Token")
 			if secretToken != vcsConnector.Payload.WebhookSecretToken {
 				return c.String(http.StatusOK, fmt.Sprintf("invalid webhook secret token %q", secretToken))
@@ -136,8 +145,19 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		default:
 			return nil
 		}
-		if err := s.createIssueFromPRInfo(ctx, project, vcsConnector, prInfo); err != nil {
+		issue, err := s.createIssueFromPRInfo(ctx, project, vcsProvider, vcsConnector, prInfo)
+		if err != nil {
 			return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))
+		}
+		if vcsProvider.Type == storepb.VCSType_GITHUB || vcsProvider.Type == storepb.VCSType_GITLAB {
+			comment := getPullRequestComment(setting.ExternalUrl, issue.Name)
+			pullRequestID := getPullRequestID(prInfo.url)
+			if err := vcs.Get(
+				vcsProvider.Type,
+				vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
+			).CreatePullRequestComment(ctx, vcsConnector.Payload.ExternalId, pullRequestID, comment); err != nil {
+				return c.String(http.StatusOK, fmt.Sprintf("failed to create pull request comment, error %v", err))
+			}
 		}
 		return nil
 	})
@@ -159,7 +179,7 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
 }
 
-func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) error {
+func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) (*v1pb.Issue, error) {
 	creatorID := api.SystemBotID
 	user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &prInfo.email})
 	if err != nil {
@@ -178,14 +198,14 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 			Statement:  change.content,
 		})
 		if err != nil {
-			return errors.Wrapf(err, "failed to create sheet for file %s", change.path)
+			return nil, errors.Wrapf(err, "failed to create sheet for file %s", change.path)
 		}
 		sheets = append(sheets, sheet.UID)
 	}
 
 	steps, err := s.getChangeSteps(ctx, project, vcsConnector, prInfo.changes, sheets)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
@@ -199,11 +219,12 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 			VcsSource: &v1pb.Plan_VCSSource{
 				VcsConnector:   fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, vcsConnector.ProjectID, common.VCSConnectorPrefix, vcsConnector.ResourceID),
 				PullRequestUrl: prInfo.url,
+				VcsType:        v1pb.VCSType(vcsProvider.Type),
 			},
 		},
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create plan")
+		return nil, errors.Wrapf(err, "failed to create plan")
 	}
 	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
@@ -216,7 +237,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		},
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create issue")
+		return nil, errors.Wrapf(err, "failed to create issue")
 	}
 	if _, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
@@ -224,12 +245,12 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 			Plan: plan.Name,
 		},
 	}); err != nil {
-		return errors.Wrapf(err, "failed to create rollout")
+		return nil, errors.Wrapf(err, "failed to create rollout")
 	}
 
 	issueUID, err := strconv.Atoi(issue.Uid)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// Create a project activity after successfully creating the issue from the push event.
 	activityPayload, err := json.Marshal(
@@ -240,7 +261,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		},
 	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create activity payload")
+		return nil, errors.Wrapf(err, "failed to create activity payload")
 	}
 
 	activityCreate := &store.ActivityMessage{
@@ -253,9 +274,9 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		Payload:           string(activityPayload),
 	}
 	if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{}); err != nil {
-		return errors.Wrapf(err, "failed to activity after creating issue %d from push event", issueUID)
+		return nil, errors.Wrapf(err, "failed to activity after creating issue %d from push event", issueUID)
 	}
-	return nil
+	return issue, nil
 }
 
 func (s *Service) getChangeSteps(

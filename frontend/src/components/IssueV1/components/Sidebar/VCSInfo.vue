@@ -3,13 +3,29 @@
     v-if="issue.planEntity?.vcsSource && vcsConnector"
     class="text-sm text-control-light flex space-x-1 items-center"
   >
-    <VCSIcon v-if="vcsProvider" :type="vcsProvider.type" />
+    <VCSIcon :type="issue.planEntity?.vcsSource.vcsType" />
     <a
       :href="issue.planEntity?.vcsSource.pullRequestUrl"
       target="_blank"
       class="normal-link"
     >
       {{ `${vcsConnector.branch}@${vcsConnector.fullPath}` }}
+    </a>
+  </div>
+  <div
+    v-if="
+      issue.planEntity?.vcsSource?.pullRequestUrl !== undefined &&
+      vcsProvider === undefined
+    "
+    class="text-sm text-control-light flex space-x-1 items-center"
+  >
+    <VCSIcon :type="issue.planEntity?.vcsSource.vcsType" />
+    <a
+      :href="issue.planEntity?.vcsSource.pullRequestUrl"
+      target="_blank"
+      class="normal-link"
+    >
+      {{ issue.planEntity?.vcsSource.pullRequestUrl }}
     </a>
   </div>
 </template>

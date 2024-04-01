@@ -2,7 +2,8 @@
   <NPopover v-if="showReadonlyDatasourceHint" trigger="hover">
     <template #trigger>
       <heroicons-outline:information-circle
-        class="h-5 w-5 flex-shrink-0 mr-2 text-info"
+        class="h-5 w-5 flex-shrink-0 text-info"
+        v-bind="$attrs"
       />
     </template>
     <p class="py-1">

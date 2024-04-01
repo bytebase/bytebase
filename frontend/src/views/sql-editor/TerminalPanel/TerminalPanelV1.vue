@@ -2,9 +2,9 @@
   <div
     class="flex h-full w-full flex-col justify-start items-start overflow-hidden bg-dark-bg"
   >
-    <EditorAction @execute="handleExecute" @clear-screen="handleClearScreen" />
-
     <ConnectionPathBar />
+
+    <EditorAction @execute="handleExecute" @clear-screen="handleClearScreen" />
 
     <div
       v-if="!tabStore.isDisconnected"

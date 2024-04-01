@@ -52,13 +52,12 @@ type MaterializedViewDDLOptions struct {
 	as             string
 }
 
-func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) {
+func (d *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, error) {
 	instanceMetadata, err := d.SyncInstance(ctx)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to sync instance")
 	}
-
-	var dumpStrBuilder strings.Builder
+	var builder strings.Builder
 
 	for _, database := range instanceMetadata.Databases {
 		schema := database.Schemas[0]
@@ -68,7 +67,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to dump database %s", schema.Name)
 		}
-		_, _ = dumpStrBuilder.WriteString(databaseDDL)
+		_, _ = builder.WriteString(databaseDDL)
 
 		// dump managed tables.
 		for _, table := range schema.Tables {
@@ -79,7 +78,6 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 
 			// dump indexes.
 			for _, index := range table.Indexes {
-				// TODO(tommy): get more index size from SyncInstance.
 				indexDDL, err := genIndexDDL(&IndexDDLOptions{
 					databaseName:          schema.Name,
 					indexName:             index.Name,
@@ -100,9 +98,9 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 					return "", errors.Wrapf(err, "failed to generate DDL for index %s", index.Name)
 				}
 
-				_, _ = dumpStrBuilder.WriteString(fmt.Sprintf(schemaStmtFmt, "INDEX", fmt.Sprintf("`%s`", index.Name), indexDDL))
+				_, _ = builder.WriteString(fmt.Sprintf(schemaStmtFmt, "INDEX", fmt.Sprintf("`%s`", index.Name), indexDDL))
 			}
-			_, _ = dumpStrBuilder.WriteString(tabDDL)
+			_, _ = builder.WriteString(tabDDL)
 		}
 
 		// dump external tables.
@@ -111,7 +109,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to dump table %s", extTable.Name)
 			}
-			_, _ = dumpStrBuilder.WriteString(tabDDL)
+			_, _ = builder.WriteString(tabDDL)
 		}
 
 		// dump views.
@@ -120,7 +118,7 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to dump view %s", view.Name)
 			}
-			_, _ = dumpStrBuilder.WriteString(viewDDL)
+			_, _ = builder.WriteString(viewDDL)
 		}
 
 		// dump materialized views.
@@ -146,11 +144,12 @@ func (d *Driver) Dump(ctx context.Context, _ io.Writer, _ bool) (string, error) 
 				return "", errors.Wrapf(err, "failed to generate DDL for materialized view %s", mtView.Name)
 			}
 
-			_, _ = dumpStrBuilder.WriteString(fmt.Sprintf(schemaStmtFmt, "MATERIALIZED VIEW", fmt.Sprintf("`%s`.`%s`", schema.Name, mtView.Name), mtViewDDL))
+			_, _ = builder.WriteString(fmt.Sprintf(schemaStmtFmt, "MATERIALIZED VIEW", fmt.Sprintf("`%s`.`%s`", schema.Name, mtView.Name), mtViewDDL))
 		}
 	}
 
-	return dumpStrBuilder.String(), nil
+	_, _ = io.WriteString(out, builder.String())
+	return builder.String(), nil
 }
 
 // Restore the database from src, which is a full backup.
