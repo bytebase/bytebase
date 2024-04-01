@@ -5,7 +5,7 @@ go 1.21.6
 require (
 	cloud.google.com/go/spanner v1.60.0
 	gitee.com/chunanyong/dm v1.8.14
-	github.com/ClickHouse/clickhouse-go/v2 v2.22.2
+	github.com/ClickHouse/clickhouse-go/v2 v2.23.0
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
 	github.com/antlr4-go/antlr/v4 v4.13.0
 	github.com/aws/aws-sdk-go-v2 v1.26.1
