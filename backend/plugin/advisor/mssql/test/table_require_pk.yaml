@@ -9,6 +9,7 @@
       title: table.require-pk
       content: Table MySchema.MyTable requires PRIMARY KEY.
       line: 1
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE MySchema.MyTable (
@@ -21,6 +22,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE MySchema.MyTable (
@@ -34,6 +36,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: ALTER TABLE MySchema.MyTable ADD CONSTRAINT PK_MyTable PRIMARY KEY (Id);
   want:
@@ -42,4 +45,5 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""

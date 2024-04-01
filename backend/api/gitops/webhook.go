@@ -169,22 +169,6 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		creatorID = user.ID
 	}
 
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return err
-	}
-	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
-	if err != nil {
-		return err
-	}
-	environmentOrders := make(map[string]int32)
-	for _, environment := range environments {
-		environmentOrders[environment.ResourceID] = environment.Order
-	}
-	sort.Slice(databases, func(i, j int) bool {
-		return environmentOrders[databases[i].EffectiveEnvironmentID] < environmentOrders[databases[j].EffectiveEnvironmentID]
-	})
-
 	var sheets []int
 	for _, change := range prInfo.changes {
 		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
@@ -199,25 +183,9 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		sheets = append(sheets, sheet.UID)
 	}
 
-	var steps []*v1pb.Plan_Step
-	for i, database := range databases {
-		if i == 0 || databases[i].EffectiveEnvironmentID != databases[i-1].EffectiveEnvironmentID {
-			steps = append(steps, &v1pb.Plan_Step{})
-		}
-		step := steps[len(steps)-1]
-		for i, change := range prInfo.changes {
-			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
-				Id: uuid.NewString(),
-				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Type:          change.changeType,
-						Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
-						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, sheets[i]),
-						SchemaVersion: change.version,
-					},
-				},
-			})
-		}
+	steps, err := s.getChangeSteps(ctx, project, vcsConnector, prInfo.changes, sheets)
+	if err != nil {
+		return err
 	}
 
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
@@ -288,4 +256,80 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return errors.Wrapf(err, "failed to activity after creating issue %d from push event", issueUID)
 	}
 	return nil
+}
+
+func (s *Service) getChangeSteps(
+	ctx context.Context,
+	project *store.ProjectMessage,
+	vcsConnector *store.VCSConnectorMessage,
+	changes []*fileChange,
+	sheetUIDList []int,
+) ([]*v1pb.Plan_Step, error) {
+	if vcsConnector.Payload.DatabaseGroup != "" {
+		step := &v1pb.Plan_Step{}
+		for i, change := range changes {
+			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
+				Id: uuid.NewString(),
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Type:          change.changeType,
+						Target:        vcsConnector.Payload.DatabaseGroup,
+						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, sheetUIDList[i]),
+						SchemaVersion: change.version,
+					},
+				},
+			})
+		}
+		return []*v1pb.Plan_Step{
+			step,
+		}, nil
+	}
+
+	databases, err := s.listDatabases(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+
+	var steps []*v1pb.Plan_Step
+	for i, database := range databases {
+		if i == 0 || databases[i].EffectiveEnvironmentID != databases[i-1].EffectiveEnvironmentID {
+			steps = append(steps, &v1pb.Plan_Step{})
+		}
+		step := steps[len(steps)-1]
+		for i, change := range changes {
+			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
+				Id: uuid.NewString(),
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Type:          change.changeType,
+						Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
+						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, sheetUIDList[i]),
+						SchemaVersion: change.version,
+					},
+				},
+			})
+		}
+	}
+
+	return steps, nil
+}
+
+func (s *Service) listDatabases(ctx context.Context, project *store.ProjectMessage) ([]*store.DatabaseMessage, error) {
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, err
+	}
+	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	if err != nil {
+		return nil, err
+	}
+	environmentOrders := make(map[string]int32)
+	for _, environment := range environments {
+		environmentOrders[environment.ResourceID] = environment.Order
+	}
+	sort.Slice(databases, func(i, j int) bool {
+		return environmentOrders[databases[i].EffectiveEnvironmentID] < environmentOrders[databases[j].EffectiveEnvironmentID]
+	})
+
+	return databases, nil
 }

@@ -69,7 +69,6 @@ func NewGitHub(port int) VCSProvider {
 	g.GET("/repos/:owner/:repo/contents/:filePath", gh.readRepositoryFile)
 	g.PUT("/repos/:owner/:repo/contents/:filePath", gh.createRepositoryFile)
 	g.GET("/repos/:owner/:repo/git/ref/heads/:branchName", gh.getRepositoryBranch)
-	g.POST("/repos/:owner/:repo/git/refs", gh.createRepositoryBranch)
 	g.GET("/repos/:owner/:repo/pulls/:prID/files", gh.listPullRequestFile)
 	g.GET("/repos/:owner/:repo/compare/:baseHead", gh.compareCommits)
 	return gh
@@ -190,36 +189,6 @@ func (gh *GitHub) getRepositoryBranch(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository branch: %v", err))
 	}
 	return c.String(http.StatusOK, string(buf))
-}
-
-func (gh *GitHub) createRepositoryBranch(c echo.Context) error {
-	r, err := gh.validRepository(c)
-	if err != nil {
-		return err
-	}
-
-	body, err := io.ReadAll(c.Request().Body)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read request body for creating repository branch: %v", err))
-	}
-
-	var branchCreate github.BranchCreate
-	if err = json.Unmarshal(body, &branchCreate); err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal request body for creating repository branch: %v", err))
-	}
-
-	if _, ok := r.refs[branchCreate.Ref]; ok {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("the branch already exists: %v", branchCreate.Ref))
-	}
-
-	r.refs[branchCreate.Ref] = &github.Branch{
-		Ref: branchCreate.Ref,
-		Object: github.ReferenceObject{
-			SHA: branchCreate.SHA,
-		},
-	}
-
-	return c.String(http.StatusOK, "")
 }
 
 func (gh *GitHub) listPullRequestFile(c echo.Context) error {

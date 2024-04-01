@@ -136,6 +136,11 @@ export interface VCSConnector {
   fullPath: string;
   /** The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. */
   webUrl: string;
+  /**
+   * Apply changes to the database group. Optional, if not set, will apply changes to all databases in the project.
+   * Format: projects/{project}/databaseGroups/{databaseGroup}
+   */
+  databaseGroup: string;
 }
 
 function createBaseCreateVCSConnectorRequest(): CreateVCSConnectorRequest {
@@ -598,6 +603,7 @@ function createBaseVCSConnector(): VCSConnector {
     branch: "",
     fullPath: "",
     webUrl: "",
+    databaseGroup: "",
   };
 }
 
@@ -638,6 +644,9 @@ export const VCSConnector = {
     }
     if (message.webUrl !== "") {
       writer.uint32(106).string(message.webUrl);
+    }
+    if (message.databaseGroup !== "") {
+      writer.uint32(114).string(message.databaseGroup);
     }
     return writer;
   },
@@ -733,6 +742,13 @@ export const VCSConnector = {
 
           message.webUrl = reader.string();
           continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.databaseGroup = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -756,6 +772,7 @@ export const VCSConnector = {
       branch: isSet(object.branch) ? globalThis.String(object.branch) : "",
       fullPath: isSet(object.fullPath) ? globalThis.String(object.fullPath) : "",
       webUrl: isSet(object.webUrl) ? globalThis.String(object.webUrl) : "",
+      databaseGroup: isSet(object.databaseGroup) ? globalThis.String(object.databaseGroup) : "",
     };
   },
 
@@ -797,6 +814,9 @@ export const VCSConnector = {
     if (message.webUrl !== "") {
       obj.webUrl = message.webUrl;
     }
+    if (message.databaseGroup !== "") {
+      obj.databaseGroup = message.databaseGroup;
+    }
     return obj;
   },
 
@@ -817,6 +837,7 @@ export const VCSConnector = {
     message.branch = object.branch ?? "";
     message.fullPath = object.fullPath ?? "";
     message.webUrl = object.webUrl ?? "";
+    message.databaseGroup = object.databaseGroup ?? "";
     return message;
   },
 };

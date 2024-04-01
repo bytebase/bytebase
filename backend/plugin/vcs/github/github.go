@@ -333,10 +333,41 @@ func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, repositoryI
 	return prFiles, nil
 }
 
-// BranchCreate is the API message to create the branch.
-type BranchCreate struct {
-	Ref string `json:"ref"`
-	SHA string `json:"sha"`
+type Comment struct {
+	Body string `json:"body"`
+}
+
+// CreatePullRequestComment creates a comment on the pull request.
+//
+// Issue comment makes comment on the pull request (Yes, you read it right).
+// Pull request comment makes a pull request comment on the line.
+// Pull request review makes a pull request review such as approval.
+// Docs: https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment
+func (p *Provider) CreatePullRequestComment(ctx context.Context, repositoryID, pullRequestID, comment string) error {
+	commentMessage := Comment{Body: comment}
+	commentCreatePayload, err := json.Marshal(commentMessage)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal request body for creating pull request comment")
+	}
+	url := fmt.Sprintf("%s/repos/%s/issues/%s/comments", p.APIURL(p.instanceURL), repositoryID, pullRequestID)
+	code, body, err := internal.Post(ctx, url, p.getAuthorization(), commentCreatePayload)
+	if err != nil {
+		return errors.Wrapf(err, "POST %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create pull request comment through URL %s", url)
+	}
+
+	// GitHub returns 201 HTTP status codes upon successful issue comment creation,
+	if code != http.StatusCreated {
+		return errors.Errorf("failed to create pull request comment through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+	return nil
 }
 
 // Branch is the API message for GitHub branch.

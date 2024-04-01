@@ -73,7 +73,7 @@ func (l *namingTableNoKeywordChecker) generateAdvice() ([]advisor.Advice, error)
 // EnterCreate_table is called when production create_table is entered.
 func (l *namingTableNoKeywordChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
 	tableName := ctx.Table_name().GetTable()
-	normalizedTableName := tsqlparser.NormalizeTSQLIdentifier(tableName)
+	_, normalizedTableName := tsqlparser.NormalizeTSQLIdentifier(tableName)
 	if tsqlparser.IsTSQLKeyword(normalizedTableName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,

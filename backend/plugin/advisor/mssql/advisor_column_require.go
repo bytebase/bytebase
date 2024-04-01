@@ -104,7 +104,7 @@ func (l *columnRequireChecker) EnterColumn_definition(ctx *parser.Column_definit
 		return
 	}
 
-	normalizedColumnName := tsqlparser.NormalizeTSQLIdentifier(ctx.Id_())
+	_, normalizedColumnName := tsqlparser.NormalizeTSQLIdentifier(ctx.Id_())
 	delete(l.currentMissingColumn, normalizedColumnName)
 }
 
@@ -142,7 +142,7 @@ func (l *columnRequireChecker) EnterAlter_table(ctx *parser.Alter_tableContext) 
 	tableName := ctx.Table_name(0).GetText()
 	allColumnNames := ctx.AllId_()
 	for _, columnName := range allColumnNames {
-		normalizedColumnName := tsqlparser.NormalizeTSQLIdentifier(columnName)
+		_, normalizedColumnName := tsqlparser.NormalizeTSQLIdentifier(columnName)
 		if _, ok := l.requireColumns[normalizedColumnName]; ok {
 			l.adviceList = append(l.adviceList, advisor.Advice{
 				Status:  l.level,
