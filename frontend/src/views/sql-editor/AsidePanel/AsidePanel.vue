@@ -20,7 +20,6 @@
         <GutterBar />
       </div>
       <div class="h-full flex-1 flex flex-col pt-1 overflow-hidden">
-        <ConnectionPane v-if="asidePanelTab === 'CONNECTION'" />
         <WorksheetPane v-if="asidePanelTab === 'WORKSHEET'" />
         <SchemaPane v-if="asidePanelTab === 'SCHEMA'" />
         <HistoryPane v-if="asidePanelTab === 'HISTORY'" />
@@ -40,7 +39,6 @@ import {
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { useSQLEditorContext } from "../context";
-import ConnectionPane from "./ConnectionPane";
 import GutterBar from "./GutterBar";
 import HistoryPane from "./HistoryPane";
 import SchemaPane from "./SchemaPane";

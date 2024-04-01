@@ -2188,7 +2188,7 @@
     },
     "view-all-tabs": "すべてのタブを表示",
     "sheets": "シート",
-    "connection-holder": "まず左側のデータベースパネルからデータベースを関連付けてください",
+    "connection-holder": "開始するデータベースを選択してください",
     "link-access": "リンクアクセス",
     "private": "プライベート",
     "private-desc": "このシートにはあなたのみがアクセスできます",

@@ -10,7 +10,7 @@ import type {
 import {
   useHoverStateContext as _useHoverStateContext,
   provideHoverStateContext as _provideHoverStateContext,
-} from "../../hover-state";
+} from "../../../EditorCommon";
 
 export const KEY = "schema-pane";
 

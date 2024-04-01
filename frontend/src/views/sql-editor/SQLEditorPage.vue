@@ -98,6 +98,8 @@
       <li>[Page]currentTab.id: {{ currentTab?.id }}</li>
       <li>[Page]currentTab.connection: {{ currentTab?.connection }}</li>
     </teleport>
+
+    <ConnectionPanel v-model:show="showConnectionPanel" />
   </div>
 </template>
 
@@ -124,6 +126,7 @@ import {
 } from "@/utils";
 import AccessDenied from "./AccessDenied.vue";
 import AsidePanel from "./AsidePanel";
+import ConnectionPanel from "./ConnectionPanel";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import ReadonlyModeNotSupported from "./ReadonlyModeNotSupported.vue";
 import ResultPanel from "./ResultPanel";
@@ -150,7 +153,7 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const actuatorStore = useActuatorV1Store();
 const tabStore = useSQLEditorTabStore();
-const { events: editorEvents } = useSQLEditorContext();
+const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
 const { showPanel: showSheetPanel } = useSheetContext();
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
