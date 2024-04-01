@@ -12,7 +12,7 @@ cmd = """
   -p=8 \
   -gcflags="all=-N -l" \
   -ldflags="-X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'" \
-  --tags "" \
+  --tags "minimal" \
   -o ./.air/bytebase ./backend/bin/server/main.go"""
 delay = 500
 exclude_dir = [
