@@ -11,7 +11,7 @@
         ******************************** {{ rowIndex + offset + 1 }}. row
         ********************************
       </p>
-      <div class="space-y-2 py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-sm">
+      <div class="py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-sm">
         <div
           v-for="header in table.getFlatHeaders()"
           :key="header.index"
