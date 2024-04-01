@@ -144,11 +144,10 @@ func databaseExists(ctx context.Context, driver *sql.DB, database string) bool {
 }
 
 type statementDisallowMixDMLChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
-	title      string
-	text       string
-	line       int
+	level advisor.Status
+	title string
+	text  string
+	line  int
 
 	dmlStatementCount map[table]map[string]int
 }
