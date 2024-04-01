@@ -85,7 +85,7 @@ dependencies:
     version: 3.10.1
   libphonenumber-js:
     specifier: ^1.10.56
-    version: 1.10.58
+    version: 1.10.59
   lodash-es:
     specifier: 4.17.21
     version: 4.17.21
@@ -100,7 +100,7 @@ dependencies:
     version: 6.3.4
   maz-ui:
     specifier: ^3.32.1
-    version: 3.36.3(dayjs@1.11.10)(libphonenumber-js@1.10.58)(typescript@5.4.3)(unplugin-vue-components@0.26.0)(vue-router@4.3.0)(vue@3.4.21)
+    version: 3.36.3(dayjs@1.11.10)(libphonenumber-js@1.10.59)(typescript@5.4.3)(unplugin-vue-components@0.26.0)(vue-router@4.3.0)(vue@3.4.21)
   monaco-editor:
     specifier: 0.45.0
     version: 0.45.0
@@ -749,7 +749,7 @@ packages:
     resolution: {integrity: sha512-Bkf2q8lMB0AFpX0NFEqSbx1OkTHf0f+0j82mkw+ZpzBnkk7e9Ql0891vlfgi+kHwOk8tQjiQHpqh4LaSa0fKEA==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/code-frame': 7.24.2
+      '@babel/code-frame': 7.23.5
       '@babel/parser': 7.24.0
       '@babel/types': 7.24.0
     dev: true
@@ -776,7 +776,7 @@ packages:
     resolution: {integrity: sha512-HfuJlI8qq3dEDmNU5ChzzpZRWq+oxCZQyMzIMEqLho+AQnhMnKQUzH6ydo3RBl/YjPCuk68Y6s0Gx0AeyULiWw==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/code-frame': 7.24.2
+      '@babel/code-frame': 7.23.5
       '@babel/generator': 7.23.6
       '@babel/helper-environment-visitor': 7.22.20
       '@babel/helper-function-name': 7.23.0
@@ -4694,8 +4694,8 @@ packages:
       type-check: 0.4.0
     dev: true
 
-  /libphonenumber-js@1.10.58:
-    resolution: {integrity: sha512-53A0IpJFL9LdHbpeatwizf8KSwPICrqn9H0g3Y7WQ+Jgeu9cQ4Ew3WrRtrLBu/CX2lXd5+rgT01/tGlkbkzOjw==}
+  /libphonenumber-js@1.10.59:
+    resolution: {integrity: sha512-HeTsOrDF/hWhEiKqZVwg9Cqlep5x2T+IYDENvT2VRj3iX8JQ7Y+omENv+AIn0vC8m6GYhivfCed5Cgfw27r5SA==}
     dev: false
 
   /lie@3.3.0:
@@ -4831,7 +4831,7 @@ packages:
       remove-accents: 0.5.0
     dev: false
 
-  /maz-ui@3.36.3(dayjs@1.11.10)(libphonenumber-js@1.10.58)(typescript@5.4.3)(unplugin-vue-components@0.26.0)(vue-router@4.3.0)(vue@3.4.21):
+  /maz-ui@3.36.3(dayjs@1.11.10)(libphonenumber-js@1.10.59)(typescript@5.4.3)(unplugin-vue-components@0.26.0)(vue-router@4.3.0)(vue@3.4.21):
     resolution: {integrity: sha512-5r9jWiI7Y4M+N1Ozf6clrI/xbF/ByaLsXCuiqXDhfc2QiTb7Gsx3ZAFOr0BCnEQwqZlVpXA0/q7gh56lqX3lyA==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
     hasBin: true
@@ -4868,7 +4868,7 @@ packages:
     dependencies:
       '@mazui/cli': 3.37.3(typescript@5.4.3)
       dayjs: 1.11.10
-      libphonenumber-js: 1.10.58
+      libphonenumber-js: 1.10.59
       unplugin-vue-components: 0.26.0(rollup@4.13.2)(vue@3.4.21)
       vue: 3.4.21(typescript@5.4.3)
       vue-router: 4.3.0(vue@3.4.21)
