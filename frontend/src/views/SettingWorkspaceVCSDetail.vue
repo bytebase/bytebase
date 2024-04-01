@@ -31,6 +31,7 @@
     <div>
       <label for="name" class="textlabel">
         {{ $t("gitops.setting.add-git-provider.basic-info.display-name") }}
+        <span class="text-red-600">*</span>
       </label>
       <p class="mt-1 textinfolabel">
         {{
@@ -41,6 +42,7 @@
         id="name"
         v-model:value="state.title"
         :disabled="!hasUpdateVCSPermission"
+        :required="true"
         name="name"
         class="mt-1 w-full"
       />
@@ -53,11 +55,15 @@
     </div>
 
     <div>
-      <label for="secret" class="textlabel"> Access Token </label>
+      <label for="secret" class="textlabel">
+        Access Token
+        <span class="text-red-600">*</span>
+      </label>
       <BBTextField
         id="secret"
         v-model:value="state.accessToken"
         :disabled="!hasUpdateVCSPermission"
+        :required="true"
         name="secret"
         class="mt-1 w-full"
         :placeholder="$t('common.sensitive-placeholder')"

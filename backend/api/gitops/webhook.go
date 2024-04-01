@@ -123,6 +123,16 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
+		case vcs.AzureDevOps:
+			secretToken := c.Request().Header.Get("X-Azure-Token")
+			if secretToken != vcsConnector.Payload.WebhookSecretToken {
+				return c.String(http.StatusOK, fmt.Sprintf("invalid webhook secret token %q", secretToken))
+			}
+
+			prInfo, err = getAzurePullRequestInfo(ctx, vcsProvider, vcsConnector, body)
+			if err != nil {
+				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
+			}
 		default:
 			return nil
 		}

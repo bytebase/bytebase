@@ -1,8 +1,11 @@
-import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
+import type {
+  VCSProvider,
+  VCSRepository,
+} from "@/types/proto/v1/vcs_provider_service";
 import type { RowStatus } from "./common";
 import type { ProjectId } from "./id";
 import type { Principal } from "./principal";
-import type { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
+import type { RepositoryConfig } from "./repository";
 
 export type ProjectWorkflowType = "UI" | "VCS";
 
@@ -38,7 +41,6 @@ export type ProjectMember = {
 
 export type ProjectRepositoryConfig = {
   vcs: VCSProvider;
-  code: string;
-  repositoryInfo: ExternalRepositoryInfo;
+  repositoryInfo: VCSRepository;
   repositoryConfig: RepositoryConfig;
 };

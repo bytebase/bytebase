@@ -24,11 +24,7 @@
       @cancel="cancel"
     >
       <template #0="{ next }">
-        <RepositoryVCSProviderPanel
-          @next="next()"
-          @set-vcs="setVCS"
-          @set-code="setCode"
-        />
+        <RepositoryVCSProviderPanel @next="next()" @set-vcs="setVCS" />
       </template>
       <template #1="{ next }">
         <RepositorySelectionPanel
@@ -51,10 +47,13 @@ import { useI18n } from "vue-i18n";
 import { StepTab } from "@/components/v2";
 import { useVCSConnectorStore, useCurrentUserV1 } from "@/store";
 import type { ComposedProject } from "@/types";
-import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
-import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
+import {
+  VCSProvider,
+  VCSProvider_Type,
+} from "@/types/proto/v1/vcs_provider_service";
+import { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
 import { hasProjectPermissionV2 } from "@/utils";
-import type { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
+import type { ProjectRepositoryConfig } from "../types";
 
 const CHOOSE_PROVIDER_STEP = 0;
 // const CHOOSE_REPOSITORY_STEP = 1;
@@ -88,14 +87,8 @@ const stepList = [
 
 const state = reactive<LocalState>({
   config: {
-    vcs: {} as VCSProvider,
-    code: "",
-    repositoryInfo: {
-      externalId: "",
-      name: "",
-      fullPath: "",
-      webUrl: "",
-    },
+    vcs: VCSProvider.fromPartial({}),
+    repositoryInfo: VCSRepository.fromPartial({}),
     repositoryConfig: {
       baseDirectory: "bytebase",
       branch: "main",
@@ -141,7 +134,7 @@ const tryFinishSetup = async () => {
   state.processing = true;
 
   const createFunc = async () => {
-    let externalId = state.config.repositoryInfo.externalId;
+    let externalId = state.config.repositoryInfo.id;
     if (
       state.config.vcs.type === VCSProvider_Type.GITHUB ||
       state.config.vcs.type === VCSProvider_Type.BITBUCKET
@@ -153,7 +146,7 @@ const tryFinishSetup = async () => {
       props.project.name,
       state.config.repositoryConfig.resourceId,
       {
-        title: state.config.repositoryInfo.name,
+        title: state.config.repositoryInfo.title,
         externalId,
         vcsProvider: state.config.vcs.name,
         baseDirectory: state.config.repositoryConfig.baseDirectory,
@@ -180,15 +173,11 @@ const cancel = () => {
   emit("cancel");
 };
 
-const setCode = (code: string) => {
-  state.config.code = code;
-};
-
 const setVCS = (vcs: VCSProvider) => {
   state.config.vcs = vcs;
 };
 
-const setRepository = (repository: ExternalRepositoryInfo) => {
+const setRepository = (repository: VCSRepository) => {
   state.config.repositoryInfo = repository;
 };
 </script>

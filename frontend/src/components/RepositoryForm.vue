@@ -6,9 +6,9 @@
         <label class="textlabel mt-2">
           <i18n-t keypath="repository.our-webhook-link">
             <template #webhookLink>
-              <a class="normal-link" :href="getWebhookLink" target="_blank">{{
-                getWebhookLink
-              }}</a>
+              <a class="normal-link" :href="getWebhookLink" target="_blank">
+                {{ getWebhookLink }}
+              </a>
             </template>
           </i18n-t>
         </label>
@@ -45,7 +45,7 @@
         class="max-w-full flex-nowrap mt-1.5"
         editing-class="mt-4"
         resource-type="vcs-connector"
-        :resource-title="repositoryInfo.name"
+        :resource-title="repositoryInfo.title"
         :validate="validateResourceId"
         :readonly="!create || !allowEdit"
       />
@@ -64,6 +64,7 @@
         class="mt-2 w-full"
         placeholder="e.g. main"
         :disabled="!allowEdit"
+        :required="true"
       />
     </div>
     <div>
@@ -87,10 +88,11 @@ import { Status } from "nice-grpc-common";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useVCSConnectorStore } from "@/store";
-import type { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
+import type { RepositoryConfig } from "@/types";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
+import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
 import { getErrorCode } from "@/utils/grpcweb";
 
 const props = withDefaults(
@@ -99,7 +101,7 @@ const props = withDefaults(
     create?: boolean;
     vcsType: VCSProvider_Type;
     vcsName: string;
-    repositoryInfo: ExternalRepositoryInfo;
+    repositoryInfo: VCSRepository;
     repositoryConfig: RepositoryConfig;
     project: Project;
   }>(),
@@ -113,13 +115,17 @@ const { t } = useI18n();
 const vcsConnectorStore = useVCSConnectorStore();
 
 const getWebhookLink = computed(() => {
-  if (props.vcsType === VCSProvider_Type.AZURE_DEVOPS) {
-    const parts = props.repositoryInfo.externalId.split("/");
-    if (parts.length !== 3) {
-      return "";
+  switch (props.vcsType) {
+    case VCSProvider_Type.AZURE_DEVOPS: {
+      const parts = props.repositoryInfo.id.split("/");
+      if (parts.length !== 3) {
+        return "";
+      }
+      const [organization, project, _] = parts;
+      return `https://dev.azure.com/${organization}/${project}/_settings/serviceHooks`;
     }
-    const [organization, project, _] = parts;
-    return `https://dev.azure.com/${organization}/${project}/_settings/serviceHooks`;
+    case VCSProvider_Type.GITHUB:
+      return `${props.repositoryInfo.webUrl}/settings/hooks`;
   }
   return "";
 });

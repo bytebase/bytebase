@@ -69,7 +69,7 @@ export interface DeleteVCSProviderRequest {
   name: string;
 }
 
-export interface SearchVCSProviderProjectsRequest {
+export interface SearchVCSProviderRepositoriesRequest {
   /**
    * The name of the vcs provider to retrieve the vcs provider repositories.
    * Format: vcsProviders/{vcsProvider}
@@ -77,20 +77,32 @@ export interface SearchVCSProviderProjectsRequest {
   name: string;
 }
 
-export interface SearchVCSProviderProjectsResponse {
-  /** The list of project in vcs provider. */
-  projects: SearchVCSProviderProjectsResponse_Project[];
+export interface VCSRepository {
+  /**
+   * The id of the repository in vcs provider.
+   * e.g. In GitLab, this is the corresponding project id. e.g. 123
+   */
+  id: string;
+  /**
+   * The title of the repository in vcs provider.
+   * e.g. sample-project
+   */
+  title: string;
+  /**
+   * The full_path of the repository in vcs provider.
+   * e.g. bytebase/sample-project
+   */
+  fullPath: string;
+  /**
+   * Web url of the repository in vcs provider.
+   * e.g. http://gitlab.bytebase.com/bytebase/sample-project
+   */
+  webUrl: string;
 }
 
-export interface SearchVCSProviderProjectsResponse_Project {
-  /** The id of the project in vcs provider. */
-  id: string;
-  /** The title of the project in vcs provider. */
-  title: string;
-  /** The fullpath of the project in vcs provider. */
-  fullpath: string;
-  /** Web url of the project in vcs provider. */
-  webUrl: string;
+export interface SearchVCSProviderRepositoriesResponse {
+  /** The list of repositories in vcs provider. */
+  repositories: VCSRepository[];
 }
 
 export interface ListVCSConnectorsInProviderRequest {
@@ -595,22 +607,22 @@ export const DeleteVCSProviderRequest = {
   },
 };
 
-function createBaseSearchVCSProviderProjectsRequest(): SearchVCSProviderProjectsRequest {
+function createBaseSearchVCSProviderRepositoriesRequest(): SearchVCSProviderRepositoriesRequest {
   return { name: "" };
 }
 
-export const SearchVCSProviderProjectsRequest = {
-  encode(message: SearchVCSProviderProjectsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const SearchVCSProviderRepositoriesRequest = {
+  encode(message: SearchVCSProviderRepositoriesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SearchVCSProviderProjectsRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchVCSProviderRepositoriesRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSearchVCSProviderProjectsRequest();
+    const message = createBaseSearchVCSProviderRepositoriesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -630,11 +642,11 @@ export const SearchVCSProviderProjectsRequest = {
     return message;
   },
 
-  fromJSON(object: any): SearchVCSProviderProjectsRequest {
+  fromJSON(object: any): SearchVCSProviderRepositoriesRequest {
     return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
-  toJSON(message: SearchVCSProviderProjectsRequest): unknown {
+  toJSON(message: SearchVCSProviderRepositoriesRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
@@ -642,91 +654,30 @@ export const SearchVCSProviderProjectsRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<SearchVCSProviderProjectsRequest>): SearchVCSProviderProjectsRequest {
-    return SearchVCSProviderProjectsRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<SearchVCSProviderRepositoriesRequest>): SearchVCSProviderRepositoriesRequest {
+    return SearchVCSProviderRepositoriesRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<SearchVCSProviderProjectsRequest>): SearchVCSProviderProjectsRequest {
-    const message = createBaseSearchVCSProviderProjectsRequest();
+  fromPartial(object: DeepPartial<SearchVCSProviderRepositoriesRequest>): SearchVCSProviderRepositoriesRequest {
+    const message = createBaseSearchVCSProviderRepositoriesRequest();
     message.name = object.name ?? "";
     return message;
   },
 };
 
-function createBaseSearchVCSProviderProjectsResponse(): SearchVCSProviderProjectsResponse {
-  return { projects: [] };
+function createBaseVCSRepository(): VCSRepository {
+  return { id: "", title: "", fullPath: "", webUrl: "" };
 }
 
-export const SearchVCSProviderProjectsResponse = {
-  encode(message: SearchVCSProviderProjectsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.projects) {
-      SearchVCSProviderProjectsResponse_Project.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SearchVCSProviderProjectsResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSearchVCSProviderProjectsResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.projects.push(SearchVCSProviderProjectsResponse_Project.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SearchVCSProviderProjectsResponse {
-    return {
-      projects: globalThis.Array.isArray(object?.projects)
-        ? object.projects.map((e: any) => SearchVCSProviderProjectsResponse_Project.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: SearchVCSProviderProjectsResponse): unknown {
-    const obj: any = {};
-    if (message.projects?.length) {
-      obj.projects = message.projects.map((e) => SearchVCSProviderProjectsResponse_Project.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SearchVCSProviderProjectsResponse>): SearchVCSProviderProjectsResponse {
-    return SearchVCSProviderProjectsResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SearchVCSProviderProjectsResponse>): SearchVCSProviderProjectsResponse {
-    const message = createBaseSearchVCSProviderProjectsResponse();
-    message.projects = object.projects?.map((e) => SearchVCSProviderProjectsResponse_Project.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseSearchVCSProviderProjectsResponse_Project(): SearchVCSProviderProjectsResponse_Project {
-  return { id: "", title: "", fullpath: "", webUrl: "" };
-}
-
-export const SearchVCSProviderProjectsResponse_Project = {
-  encode(message: SearchVCSProviderProjectsResponse_Project, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const VCSRepository = {
+  encode(message: VCSRepository, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
     if (message.title !== "") {
       writer.uint32(18).string(message.title);
     }
-    if (message.fullpath !== "") {
-      writer.uint32(26).string(message.fullpath);
+    if (message.fullPath !== "") {
+      writer.uint32(26).string(message.fullPath);
     }
     if (message.webUrl !== "") {
       writer.uint32(34).string(message.webUrl);
@@ -734,10 +685,10 @@ export const SearchVCSProviderProjectsResponse_Project = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SearchVCSProviderProjectsResponse_Project {
+  decode(input: _m0.Reader | Uint8Array, length?: number): VCSRepository {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSearchVCSProviderProjectsResponse_Project();
+    const message = createBaseVCSRepository();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -760,7 +711,7 @@ export const SearchVCSProviderProjectsResponse_Project = {
             break;
           }
 
-          message.fullpath = reader.string();
+          message.fullPath = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -778,16 +729,16 @@ export const SearchVCSProviderProjectsResponse_Project = {
     return message;
   },
 
-  fromJSON(object: any): SearchVCSProviderProjectsResponse_Project {
+  fromJSON(object: any): VCSRepository {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
-      fullpath: isSet(object.fullpath) ? globalThis.String(object.fullpath) : "",
+      fullPath: isSet(object.fullPath) ? globalThis.String(object.fullPath) : "",
       webUrl: isSet(object.webUrl) ? globalThis.String(object.webUrl) : "",
     };
   },
 
-  toJSON(message: SearchVCSProviderProjectsResponse_Project): unknown {
+  toJSON(message: VCSRepository): unknown {
     const obj: any = {};
     if (message.id !== "") {
       obj.id = message.id;
@@ -795,8 +746,8 @@ export const SearchVCSProviderProjectsResponse_Project = {
     if (message.title !== "") {
       obj.title = message.title;
     }
-    if (message.fullpath !== "") {
-      obj.fullpath = message.fullpath;
+    if (message.fullPath !== "") {
+      obj.fullPath = message.fullPath;
     }
     if (message.webUrl !== "") {
       obj.webUrl = message.webUrl;
@@ -804,17 +755,76 @@ export const SearchVCSProviderProjectsResponse_Project = {
     return obj;
   },
 
-  create(base?: DeepPartial<SearchVCSProviderProjectsResponse_Project>): SearchVCSProviderProjectsResponse_Project {
-    return SearchVCSProviderProjectsResponse_Project.fromPartial(base ?? {});
+  create(base?: DeepPartial<VCSRepository>): VCSRepository {
+    return VCSRepository.fromPartial(base ?? {});
   },
-  fromPartial(
-    object: DeepPartial<SearchVCSProviderProjectsResponse_Project>,
-  ): SearchVCSProviderProjectsResponse_Project {
-    const message = createBaseSearchVCSProviderProjectsResponse_Project();
+  fromPartial(object: DeepPartial<VCSRepository>): VCSRepository {
+    const message = createBaseVCSRepository();
     message.id = object.id ?? "";
     message.title = object.title ?? "";
-    message.fullpath = object.fullpath ?? "";
+    message.fullPath = object.fullPath ?? "";
     message.webUrl = object.webUrl ?? "";
+    return message;
+  },
+};
+
+function createBaseSearchVCSProviderRepositoriesResponse(): SearchVCSProviderRepositoriesResponse {
+  return { repositories: [] };
+}
+
+export const SearchVCSProviderRepositoriesResponse = {
+  encode(message: SearchVCSProviderRepositoriesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.repositories) {
+      VCSRepository.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchVCSProviderRepositoriesResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchVCSProviderRepositoriesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.repositories.push(VCSRepository.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchVCSProviderRepositoriesResponse {
+    return {
+      repositories: globalThis.Array.isArray(object?.repositories)
+        ? object.repositories.map((e: any) => VCSRepository.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: SearchVCSProviderRepositoriesResponse): unknown {
+    const obj: any = {};
+    if (message.repositories?.length) {
+      obj.repositories = message.repositories.map((e) => VCSRepository.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SearchVCSProviderRepositoriesResponse>): SearchVCSProviderRepositoriesResponse {
+    return SearchVCSProviderRepositoriesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SearchVCSProviderRepositoriesResponse>): SearchVCSProviderRepositoriesResponse {
+    const message = createBaseSearchVCSProviderRepositoriesResponse();
+    message.repositories = object.repositories?.map((e) => VCSRepository.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1311,22 +1321,22 @@ export const VCSProviderServiceDefinition = {
         },
       },
     },
-    searchVCSProviderProjects: {
-      name: "SearchVCSProviderProjects",
-      requestType: SearchVCSProviderProjectsRequest,
+    searchVCSProviderRepositories: {
+      name: "SearchVCSProviderRepositories",
+      requestType: SearchVCSProviderRepositoriesRequest,
       requestStream: false,
-      responseType: SearchVCSProviderProjectsResponse,
+      responseType: SearchVCSProviderRepositoriesResponse,
       responseStream: false,
       options: {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              45,
+              49,
               58,
               1,
               42,
               34,
-              40,
+              44,
               47,
               118,
               49,
@@ -1359,13 +1369,17 @@ export const VCSProviderServiceDefinition = {
               114,
               99,
               104,
-              80,
-              114,
-              111,
-              106,
+              82,
               101,
-              99,
+              112,
+              111,
+              115,
+              105,
               116,
+              111,
+              114,
+              105,
+              101,
               115,
             ]),
           ],

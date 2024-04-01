@@ -149,7 +149,14 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 		bytebaseEndpointURL = setting.ExternalUrl
 	}
 	webhookEndpointID := fmt.Sprintf("workspaces/%s/projects/%s/vcsConnectors/%s", workspaceID, project.ResourceID, request.VcsConnectorId)
-	webhookID, err := createVCSWebhook(ctx, vcsProvider, webhookEndpointID, secretToken, vcsConnectorCreate.Payload.ExternalId, bytebaseEndpointURL)
+	webhookID, err := createVCSWebhook(
+		ctx,
+		vcsProvider,
+		webhookEndpointID,
+		secretToken,
+		vcsConnectorCreate.Payload.ExternalId,
+		bytebaseEndpointURL,
+	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create webhook for project %s with error: %v", vcsConnectorCreate.ProjectID, err.Error())
 	}
@@ -408,6 +415,7 @@ func convertStoreVCSConnector(ctx context.Context, stores *store.Store, vcsConne
 		BaseDirectory: vcsConnector.Payload.BaseDirectory,
 		Branch:        vcsConnector.Payload.Branch,
 		FullPath:      vcsConnector.Payload.FullPath,
+		WebUrl:        vcsConnector.Payload.WebUrl,
 	}
 	return v1VCSConnector, nil
 }
@@ -476,14 +484,15 @@ func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage
 			ConsumerInputs: azure.WebhookCreateConsumerInputs{
 				URL:                  fmt.Sprintf("%s/hook/%s", bytebaseEndpointURL, webhookEndpointID),
 				AcceptUntrustedCerts: true,
+				HTTPHeaders:          fmt.Sprintf("X-Azure-Token: Bearer %s", webhookSecretToken),
 			},
 			EventType:   "git.pullrequest.merged",
 			PublisherID: "tfs",
 			PublisherInputs: azure.WebhookCreatePublisherInputs{
-				Repository: repositoryID,
-				Branch:     "", /* Any branches */
-				PushedBy:   "", /* Any users */
-				ProjectID:  projectID,
+				Repository:  repositoryID,
+				Branch:      "", /* Any branches */
+				MergeResult: azure.WebhookMergeResultSucceeded,
+				ProjectID:   projectID,
 			},
 		}
 		webhookCreatePayload, err = json.Marshal(webhookPost)
