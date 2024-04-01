@@ -53,6 +53,7 @@ func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadat
 	}
 
 	groupIdx := 0
+	previousDeleteFunctionBlockBuf, previousDeleteProcedureBlockBuf := make([]bool, len(groups)), make([]bool, len(groups))
 	for i, stmt := range list {
 		for groupIdx < len(groups) && groups[groupIdx].endIdx < i {
 			groupIdx++
@@ -90,6 +91,14 @@ func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadat
 		listener.inDeleteFunctionBlock = inDeleteFunctionBlock
 		listener.inCreateProcedureBlock = inCreateProcedureBlock
 		listener.inDeleteProcedureBlock = inDeleteProcedureBlock
+		previousDeleteFunctionBlockBuf[groupIdx] = inDeleteFunctionBlock
+		previousDeleteProcedureBlockBuf[groupIdx] = inDeleteProcedureBlock
+		listener.firstStatementInBlock = i == groups[groupIdx].beginIdx
+		if groupIdx > 0 {
+			listener.previousDeleteFunctionBlock = previousDeleteFunctionBlockBuf[groupIdx-1]
+			listener.previousDeleteProcedureBlock = previousDeleteProcedureBlockBuf[groupIdx-1]
+		}
+
 		antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
 		if listener.err != nil {
 			break
@@ -188,6 +197,10 @@ type mysqlDesignSchemaGenerator struct {
 	inDeleteFunctionBlock  bool
 	inCreateProcedureBlock bool
 	inDeleteProcedureBlock bool
+
+	previousDeleteFunctionBlock  bool
+	previousDeleteProcedureBlock bool
+	firstStatementInBlock        bool
 
 	to                  *databaseState
 	result              strings.Builder
@@ -1199,12 +1212,74 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateFunction(ctx *mysql.CreateFuncti
 		return
 	}
 
+	// The create function we wrote does not contain the set statement, so the delimiter may appear before the create function statement.
+	// But be carefully, the set statement in this block may had been keep/drop delemeter, so we dont't need to keep/drop it again.
+	// Before the create function statement, there may be heading delimiter comment, it belongs to the previous block. We follow the table below to handle it:
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | Current Delete | Previous Delete | Operation                                                      |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | True           | False           | Keep the heading delimiter, and skip the current statement     |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | True           | True            | Just skip the current statement                                |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | False          | False           | Nothing todo                                                   |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | False          | True            | Delete the heading delimiter, and remaining others.            |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	deleteRoutine := g.inDeleteFunctionBlock || g.inDeleteProcedureBlock
+	previousDeleteRoutine := g.previousDeleteFunctionBlock || g.previousDeleteProcedureBlock
+	if deleteRoutine {
+		if !previousDeleteRoutine && g.firstStatementInBlock {
+			headingTokens := pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: g.lastTokenIndex,
+				Stop:  pCtx.GetStart().GetTokenIndex() - 1,
+			})
+			delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+			headingNewLine := strings.HasPrefix(headingTokens, "\n")
+			if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+				s := v[0]
+				if headingNewLine {
+					s = "\n" + s
+				}
+				if _, err := g.result.WriteString(s); err != nil {
+					g.err = err
+					return
+				}
+			}
+			g.lastTokenIndex = pCtx.GetParser().GetTokenStream().Size() - 1
+		}
+		g.lastTokenIndex = pCtx.GetParser().GetTokenStream().Size() - 1
+	} else if previousDeleteRoutine && g.firstStatementInBlock {
+		headingTokens := pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  pCtx.GetStart().GetTokenIndex() - 1,
+		})
+		delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+		headingNewLineNumber := len(headingTokens) - len(strings.TrimLeft(headingTokens, "\n"))
+		trailingNewLine := len(headingTokens) - len(strings.TrimRight(headingTokens, "\n"))
+		if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+			if _, err := g.result.WriteString(strings.Repeat("\n", headingNewLineNumber)); err != nil {
+				g.err = err
+				return
+			}
+			remainning := strings.Join(v[1:], "\n")
+			if _, err := g.result.WriteString(remainning); err != nil {
+				g.err = err
+				return
+			}
+			if _, err := g.result.WriteString(strings.Repeat("\n", trailingNewLine)); err != nil {
+				g.err = err
+			}
+			g.lastTokenIndex = pCtx.GetStart().GetTokenIndex()
+		}
+	}
+
 	_, funcName := mysqlparser.NormalizeMySQLFunctionName(pCtx.CreateFunction().FunctionName())
 	schema, ok := g.to.schemas[""]
 	if !ok || schema == nil {
+		g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
 		return
 	}
-
 	// We follow the strategies below to handle the function definition:
 	// 1. If the function do not appear in the desired schema, we drop the function definition.
 	// TODO(zp): We should also remove the heading set statement.
@@ -1281,6 +1356,67 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateProcedure(ctx *mysql.CreateProce
 	ppp := pp.GetParent()
 	if _, ok := ppp.(*mysql.QueryContext); !ok {
 		return
+	}
+
+	// The create procedure we wrote does not contain the set statement, so the delimiter may appear before the create procedure statement.
+	// Before the create procedure statement, there may be heading delimiter comment, it belongs to the previous block. We follow the table below to handle it:
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | Current Delete | Previous Delete | Operation                                                      |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | True           | False           | Keep the heading delimiter, and skip the current statement     |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | True           | True            | Just skip the current statement                                |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | False          | False           | Nothing todo                                                   |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | False          | True            | Delete the heading delimiter, and remaining others.            |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	deleteRoutine := g.inDeleteFunctionBlock || g.inDeleteProcedureBlock
+	previousDeleteRoutine := g.previousDeleteFunctionBlock || g.previousDeleteProcedureBlock
+	if deleteRoutine {
+		if !previousDeleteRoutine && g.firstStatementInBlock {
+			headingTokens := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: g.lastTokenIndex,
+				Stop:  ctx.GetStart().GetTokenIndex() - 1,
+			})
+			delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+			headingNewLine := strings.HasPrefix(headingTokens, "\n")
+			if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+				s := v[0]
+				if headingNewLine {
+					s = "\n" + s
+				}
+				if _, err := g.result.WriteString(s); err != nil {
+					g.err = err
+					return
+				}
+			}
+			g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
+		}
+		g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
+	} else if previousDeleteRoutine && g.firstStatementInBlock {
+		headingTokens := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  ctx.GetStart().GetTokenIndex() - 1,
+		})
+		delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+		headingNewLineNumber := len(headingTokens) - len(strings.TrimLeft(headingTokens, "\n"))
+		trailingNewLine := len(headingTokens) - len(strings.TrimRight(headingTokens, "\n"))
+		if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+			if _, err := g.result.WriteString(strings.Repeat("\n", headingNewLineNumber)); err != nil {
+				g.err = err
+				return
+			}
+			remainning := strings.Join(v[1:], "\n")
+			if _, err := g.result.WriteString(remainning); err != nil {
+				g.err = err
+				return
+			}
+			if _, err := g.result.WriteString(strings.Repeat("\n", trailingNewLine)); err != nil {
+				g.err = err
+			}
+			g.lastTokenIndex = ctx.GetStart().GetTokenIndex()
+		}
 	}
 
 	_, procedureName := mysqlparser.NormalizeMySQLProcedureName(pCtx.CreateProcedure().ProcedureName())
@@ -1399,45 +1535,61 @@ func (g *mysqlDesignSchemaGenerator) EnterSetStatement(ctx *mysql.SetStatementCo
 	if _, ok := ctx.GetParent().GetParent().(*mysql.QueryContext); !ok {
 		return
 	}
-	if g.inDeleteFunctionBlock || g.inDeleteProcedureBlock {
-		// TODO(zp): The function/procedure we write do not contains the set statement, so the following logic may need
-		// to copy to EnterCreateProcedure/FunctionStatement.
-		// If we do not found the function in the desired schema, we should delete function block and the heading set statement.
-		// But we should keep the first delimiter comment if it exists. Because the first delimiter comment may related to the
-		// previous block. For example:
-		// -- DELIMITER ;;
-		// CREATE FUNCTION f1() RETURNS INT DETERMINISTIC
-		// BEGIN
-		//   RETURN 1;
-		// END;;
-		// -- DELIMITER ;
-		// -- FUNCTION f2
-		// SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-		// -- DELIMITER ;;
-		// CREATE FUNCTION f2() RETURNS INT DETERMINISTIC
-		// BEGIN
-		//   RETURN 2;
-		// END;;
-		// -- DELIMITER ;
-		// In this case, we should keep the first delimiter comment `-- DELIMITER ;` before the -- FUNCTION f2, because it belongs
-		// to the function `f1`.
+	// Before the set statement, there may be heading delimiter comment, it belongs to the previous block. We follow the table below to handle it:
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | Current Delete | Previous Delete | Operation                                                      |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | True           | False           | Keep the heading delimiter, and skip the current set statement |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | True           | True            | Just skip the current set statement                            |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | False          | False           | Nothing todo                                                   |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | False          | True            | Delete the heading delimiter, and remaining others.            |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	deleteRoutine := g.inDeleteFunctionBlock || g.inDeleteProcedureBlock
+	previousDeleteRoutine := g.previousDeleteFunctionBlock || g.previousDeleteProcedureBlock
+	if deleteRoutine {
+		if !previousDeleteRoutine && g.firstStatementInBlock {
+			headingTokens := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: g.lastTokenIndex,
+				Stop:  ctx.GetStart().GetTokenIndex() - 1,
+			})
+			delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+			headingNewLineNumber := len(headingTokens) - len(strings.TrimLeft(headingTokens, "\n"))
+			if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+				s := v[0]
+				s = strings.Repeat("\n", headingNewLineNumber) + s
+				if _, err := g.result.WriteString(s); err != nil {
+					g.err = err
+					return
+				}
+			}
+		}
+		g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
+	} else if previousDeleteRoutine && g.firstStatementInBlock {
 		headingTokens := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 			Start: g.lastTokenIndex,
 			Stop:  ctx.GetStart().GetTokenIndex() - 1,
 		})
 		delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
-		headingNewLine := strings.HasPrefix(headingTokens, "\n")
+		headingNewLine := len(headingTokens) - len(strings.TrimRight(headingTokens, "\n"))
+		trailingNewLine := len(headingTokens) - len(strings.TrimRight(headingTokens, "\n"))
 		if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
-			s := v[0]
-			if headingNewLine {
-				s = "\n" + s
-			}
-			if _, err := g.result.WriteString(s); err != nil {
+			if _, err := g.result.WriteString(strings.Repeat("\n", headingNewLine)); err != nil {
 				g.err = err
 				return
 			}
+			remainning := strings.Join(v[1:], "\n")
+			if _, err := g.result.WriteString(remainning); err != nil {
+				g.err = err
+				return
+			}
+			if _, err := g.result.WriteString(strings.Repeat("\n", trailingNewLine)); err != nil {
+				g.err = err
+			}
+			g.lastTokenIndex = ctx.GetStart().GetTokenIndex()
 		}
-		g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
 	}
 
 	curSet := strings.TrimSpace(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx))
