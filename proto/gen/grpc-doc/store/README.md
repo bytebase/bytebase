@@ -76,7 +76,6 @@
     - [Engine](#bytebase-store-Engine)
     - [ExportFormat](#bytebase-store-ExportFormat)
     - [MaskingLevel](#bytebase-store-MaskingLevel)
-    - [VcsType](#bytebase-store-VcsType)
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
@@ -104,12 +103,6 @@
 - [store/instance.proto](#store_instance-proto)
     - [InstanceMetadata](#bytebase-store-InstanceMetadata)
     - [InstanceOptions](#bytebase-store-InstanceOptions)
-  
-- [store/vcs.proto](#store_vcs-proto)
-    - [Commit](#bytebase-store-Commit)
-    - [FileCommit](#bytebase-store-FileCommit)
-    - [PushEvent](#bytebase-store-PushEvent)
-    - [VCSConnector](#bytebase-store-VCSConnector)
   
 - [store/instance_change_history.proto](#store_instance_change_history-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
@@ -225,7 +218,6 @@
   
 - [store/sheet.proto](#store_sheet-proto)
     - [SheetPayload](#bytebase-store-SheetPayload)
-    - [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload)
   
 - [store/slow_query.proto](#store_slow_query-proto)
     - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
@@ -238,6 +230,9 @@
   
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
+  
+- [store/vcs.proto](#store_vcs-proto)
+    - [VCSConnector](#bytebase-store-VCSConnector)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -1350,20 +1345,6 @@ Used internally for obfuscating the page token.
 | FULL | 3 |  |
 
 
-
-<a name="bytebase-store-VcsType"></a>
-
-### VcsType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| VCS_TYPE_UNSPECIFIED | 0 |  |
-| GITLAB | 1 |  |
-| GITHUB | 2 |  |
-| BITBUCKET | 3 |  |
-
-
  
 
  
@@ -1740,114 +1721,6 @@ InstanceOptions is the option for instances.
 
 
 
-<a name="store_vcs-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/vcs.proto
-
-
-
-<a name="bytebase-store-Commit"></a>
-
-### Commit
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| title | [string](#string) |  |  |
-| message | [string](#string) |  |  |
-| created_ts | [int64](#int64) |  |  |
-| url | [string](#string) |  |  |
-| author_name | [string](#string) |  |  |
-| author_email | [string](#string) |  |  |
-| added_list | [string](#string) | repeated |  |
-| modified_list | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-FileCommit"></a>
-
-### FileCommit
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| title | [string](#string) |  |  |
-| message | [string](#string) |  |  |
-| created_ts | [int64](#int64) |  |  |
-| url | [string](#string) |  |  |
-| author_name | [string](#string) |  |  |
-| author_email | [string](#string) |  |  |
-| added | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PushEvent"></a>
-
-### PushEvent
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| vcs_type | [VcsType](#bytebase-store-VcsType) |  |  |
-| base_dir | [string](#string) |  |  |
-| ref | [string](#string) |  |  |
-| before | [string](#string) |  |  |
-| after | [string](#string) |  |  |
-| repository_id | [string](#string) |  |  |
-| repository_url | [string](#string) |  |  |
-| repository_full_path | [string](#string) |  |  |
-| author_name | [string](#string) |  |  |
-| commits | [Commit](#bytebase-store-Commit) | repeated |  |
-| file_commit | [FileCommit](#bytebase-store-FileCommit) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-VCSConnector"></a>
-
-### VCSConnector
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  | The title or display name of the VCS connector. |
-| full_path | [string](#string) |  | Full path from the corresponding VCS provider. For GitLab, this is the project full path. e.g. group1/project-1 |
-| web_url | [string](#string) |  | Web url from the corresponding VCS provider. For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1 |
-| branch | [string](#string) |  | Branch to listen to. |
-| base_directory | [string](#string) |  | Base working directory we are interested. |
-| external_id | [string](#string) |  | Repository id from the corresponding VCS provider. For GitLab, this is the project id. e.g. 123 |
-| external_webhook_id | [string](#string) |  | Push webhook id from the corresponding VCS provider. For GitLab, this is the project webhook id. e.g. 123 |
-| webhook_secret_token | [string](#string) |  | For GitLab, webhook request contains this in the &#39;X-Gitlab-Token&#34; header and we compare it with the one stored in db to validate it sends to the expected endpoint. |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
 <a name="store_instance_change_history-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1926,7 +1799,6 @@ InstanceOptions is the option for instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| push_event | [PushEvent](#bytebase-store-PushEvent) |  |  |
 | changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
 
 
@@ -3466,30 +3338,8 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| vcs_payload | [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload) |  |  |
 | database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
 | baseline_database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-SheetPayload-VCSPayload"></a>
-
-### SheetPayload.VCSPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| file_name | [string](#string) |  |  |
-| file_path | [string](#string) |  |  |
-| size | [int64](#int64) |  |  |
-| author | [string](#string) |  |  |
-| last_commit_id | [string](#string) |  |  |
-| last_sync_ts | [int64](#int64) |  |  |
-| push_event | [PushEvent](#bytebase-store-PushEvent) |  |  |
 
 
 
@@ -3651,6 +3501,44 @@ MFAConfig is the MFA configuration for a user.
 | temp_otp_secret | [string](#string) |  | The temp_otp_secret is the temporary secret key used to validate the OTP code and will replace the otp_secret in two phase commits. |
 | recovery_codes | [string](#string) | repeated | The recovery_codes are the codes that can be used to recover the account. |
 | temp_recovery_codes | [string](#string) | repeated | The temp_recovery_codes are the temporary codes that will replace the recovery_codes in two phase commits. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_vcs-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/vcs.proto
+
+
+
+<a name="bytebase-store-VCSConnector"></a>
+
+### VCSConnector
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  | The title or display name of the VCS connector. |
+| full_path | [string](#string) |  | Full path from the corresponding VCS provider. For GitLab, this is the project full path. e.g. group1/project-1 |
+| web_url | [string](#string) |  | Web url from the corresponding VCS provider. For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1 |
+| branch | [string](#string) |  | Branch to listen to. |
+| base_directory | [string](#string) |  | Base working directory we are interested. |
+| external_id | [string](#string) |  | Repository id from the corresponding VCS provider. For GitLab, this is the project id. e.g. 123 |
+| external_webhook_id | [string](#string) |  | Push webhook id from the corresponding VCS provider. For GitLab, this is the project webhook id. e.g. 123 |
+| webhook_secret_token | [string](#string) |  | For GitLab, webhook request contains this in the &#39;X-Gitlab-Token&#34; header and we compare it with the one stored in db to validate it sends to the expected endpoint. |
 
 
 

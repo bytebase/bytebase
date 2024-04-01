@@ -256,7 +256,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	// Create a project activity after successfully creating the issue from the push event.
 	activityPayload, err := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
-			// TODO(d): redefine VCS push event.
+			// TODO(d): fix this activity.
 			IssueID:   issueUID,
 			IssueName: issue.Title,
 		},

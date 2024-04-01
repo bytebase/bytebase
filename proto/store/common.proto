@@ -34,13 +34,6 @@ enum Engine {
   HIVE = 20;
 }
 
-enum VcsType {
-  VCS_TYPE_UNSPECIFIED = 0;
-  GITLAB = 1;
-  GITHUB = 2;
-  BITBUCKET = 3;
-}
-
 enum MaskingLevel {
   MASKING_LEVEL_UNSPECIFIED = 0;
   NONE = 1;

@@ -11,7 +11,6 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/common.proto";
 import "v1/instance_service.proto";
-import "v1/vcs.proto";
 
 option go_package = "generated-go/v1";
 
@@ -1062,8 +1061,6 @@ message ChangeHistory {
   google.protobuf.Duration execution_duration = 16;
   // Format: projects/{project}/issues/{issue}
   string issue = 17;
-
-  PushEvent push_event = 18;
 
   ChangedResources changed_resources = 19;
 }
