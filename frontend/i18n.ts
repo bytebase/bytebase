@@ -1,6 +1,5 @@
 import { config } from "dotenv";
 import { promises as fs } from "fs";
-import { basename } from "path";
 
 // Create a file .env.i18n and add
 // GOOGLE_TRANSLATE_API_KEY=xxxx
@@ -118,31 +117,29 @@ async function addMissingKeysFromSource(
   const merged: JsonObject = {};
   const keys = new Set([...Object.keys(source), ...Object.keys(target)]);
 
-  keys.forEach((key) => {
-    (async () => {
-      if (key in source && !(key in target)) {
-        // Key exists in source but not in target
-        merged[key] = await translateJsonValue(source[key], lang);
-      } else if (
-        key in source &&
-        key in target &&
-        typeof source[key] === "object" &&
-        !Array.isArray(source[key]) &&
-        typeof target[key] === "object" &&
-        !Array.isArray(target[key])
-      ) {
-        // Both have the key and its value is an object, merge recursively
-        merged[key] = await addMissingKeysFromSource(
-          source[key] as JsonObject,
-          target[key] as JsonObject,
-          lang
-        );
-      } else {
-        // Key exists in target or both, prefer target's value
-        merged[key] = target[key];
-      }
-    })();
-  });
+  for (const key of keys) {
+    if (key in source && !(key in target)) {
+      // Key exists in source but not in target
+      merged[key] = await translateJsonValue(source[key], lang);
+    } else if (
+      key in source &&
+      key in target &&
+      typeof source[key] === "object" &&
+      !Array.isArray(source[key]) &&
+      typeof target[key] === "object" &&
+      !Array.isArray(target[key])
+    ) {
+      // Both have the key and its value is an object, merge recursively
+      merged[key] = await addMissingKeysFromSource(
+        source[key] as JsonObject,
+        target[key] as JsonObject,
+        lang
+      );
+    } else {
+      // Key exists in target or both, prefer target's value
+      merged[key] = target[key];
+    }
+  }
 
   return merged;
 }
@@ -165,7 +162,7 @@ async function updateLocalizationFiles() {
     await saveJsonFile(langFile, updatedData);
 
     const langSQLReviewFile = `src/locales/sql-review/${lang}.json`;
-    const targetSQLReviewData = await loadJsonFile(langFile);
+    const targetSQLReviewData = await loadJsonFile(langSQLReviewFile);
     const updatedSQLReviewData = await addMissingKeysFromSource(
       sourceSQLReviewData,
       targetSQLReviewData,

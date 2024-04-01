@@ -17,7 +17,7 @@
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest --coverage",
     "postinstall": "npm run copy:monaco-workers && monaco-treemending",
-    "i18n": "ts-node i18n.ts"
+    "i18n": "TS_NODE_PROJECT='./tsconfig.i18n.json' ts-node i18n.ts"
   },
   "dependencies": {
     "@bytebase/vue-kbar": "0.1.8",
