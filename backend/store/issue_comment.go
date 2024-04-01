@@ -112,10 +112,12 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 func (s *Store) UpdateIssueComment(ctx context.Context, comment string, uid int, updaterUID int) error {
 	query := `
 		UPDATE issue_comment
-		SET payload = payload || jsonb_build_object('comment', $1)
-		WHERE id = $2
+		SET 
+			updater_id = $1,
+			payload = payload || jsonb_build_object('comment', $2)
+		WHERE id = $3
 	`
-	if _, err := s.db.db.ExecContext(ctx, query, comment, uid); err != nil {
+	if _, err := s.db.db.ExecContext(ctx, query, updaterUID, comment, uid); err != nil {
 		return errors.Wrapf(err, "failed to update issue comment")
 	}
 	return nil
