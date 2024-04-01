@@ -71,6 +71,7 @@ func NewGitLab(port int) VCSProvider {
 	projectGroup.POST("/projects/:id/repository/branches", gl.createProjectBranch)
 	projectGroup.POST("/projects/:id/merge_requests", gl.createProjectPullRequest)
 	projectGroup.GET("/projects/:id/merge_requests/:mrID/changes", gl.getMergeRequestChanges)
+	projectGroup.GET("/projects/:id/merge_requests/:mrID/notes", gl.createMergeRequestComment)
 	projectGroup.GET("/projects/:id/repository/compare", gl.compareCommits)
 
 	return gl
@@ -355,6 +356,10 @@ func (gl *GitLab) getMergeRequestChanges(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body: %v", err))
 	}
 	return c.String(http.StatusOK, string(buf))
+}
+
+func (*GitLab) createMergeRequestComment(echo.Context) error {
+	return nil
 }
 
 func (gl *GitLab) compareCommits(c echo.Context) error {

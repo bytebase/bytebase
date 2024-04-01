@@ -295,7 +295,25 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRe
 }
 
 // CreatePullRequestComment creates a pull request comment.
-func (*Provider) CreatePullRequestComment(_ context.Context, _, _, _ string) error {
+func (p *Provider) CreatePullRequestComment(ctx context.Context, repositoryID, pullRequestID, comment string) error {
+	url := fmt.Sprintf("%s/projects/%s/merge_requests/%s/notes?body=%s", p.APIURL(p.instanceURL), repositoryID, pullRequestID, url.QueryEscape(comment))
+	code, body, err := internal.Post(ctx, url, p.getAuthorization(), nil)
+	if err != nil {
+		return errors.Wrapf(err, "POST %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create pull request comment through URL %s", url)
+	}
+
+	// GitLab returns 201 HTTP status codes upon successful issue comment creation,
+	if code != http.StatusCreated {
+		return errors.Errorf("failed to create pull request comment through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
 	return nil
 }
 

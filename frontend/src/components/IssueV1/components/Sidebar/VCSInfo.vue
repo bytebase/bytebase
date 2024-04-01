@@ -3,7 +3,7 @@
     v-if="issue.planEntity?.vcsSource && vcsConnector"
     class="text-sm text-control-light flex space-x-1 items-center"
   >
-    <VCSIcon v-if="vcsProvider" :type="vcsProvider.type" />
+    <VCSIcon :type="issue.planEntity?.vcsSource.vcsType" />
     <a
       :href="issue.planEntity?.vcsSource.pullRequestUrl"
       target="_blank"
