@@ -149,13 +149,13 @@ func (l *reasourceExtractListener) EnterTable_source_item(ctx *parser.Table_sour
 		var parts []string
 		var linkedServer string
 		if server := fullTableName.GetLinkedServer(); server != nil {
-			linkedServer = NormalizeTSQLIdentifier(server)
+			linkedServer, _ = NormalizeTSQLIdentifier(server)
 		}
 		parts = append(parts, linkedServer)
 
 		database := l.currentDatabase
 		if d := fullTableName.GetDatabase(); d != nil {
-			normalizedD := NormalizeTSQLIdentifier(d)
+			normalizedD, _ := NormalizeTSQLIdentifier(d)
 			if normalizedD != "" {
 				database = normalizedD
 			}
@@ -164,7 +164,7 @@ func (l *reasourceExtractListener) EnterTable_source_item(ctx *parser.Table_sour
 
 		schema := l.currentSchema
 		if s := fullTableName.GetSchema(); s != nil {
-			normalizedS := NormalizeTSQLIdentifier(s)
+			normalizedS, _ := NormalizeTSQLIdentifier(s)
 			if normalizedS != "" {
 				schema = normalizedS
 			}
@@ -173,7 +173,7 @@ func (l *reasourceExtractListener) EnterTable_source_item(ctx *parser.Table_sour
 
 		var table string
 		if t := fullTableName.GetTable(); t != nil {
-			normalizedT := NormalizeTSQLIdentifier(t)
+			normalizedT, _ := NormalizeTSQLIdentifier(t)
 			if normalizedT != "" {
 				table = normalizedT
 			}

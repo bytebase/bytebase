@@ -133,7 +133,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromSelectStatementStanda
 		allCommonTableExpression := ctx.With_expression().AllCommon_table_expression()
 		// TSQL do not have `RECURSIVE` keyword, if we detect `UNION`, we will treat it as `RECURSIVE`.
 		for _, commonTableExpression := range allCommonTableExpression {
-			normalizedCTEName := NormalizeTSQLIdentifier(commonTableExpression.GetExpression_name())
+			_, normalizedCTEName := NormalizeTSQLIdentifier(commonTableExpression.GetExpression_name())
 			var columns []base.QuerySpanResult
 			// If statement has more than one UNION, the first one is the anchor, and the rest are recursive.
 			recursiveCTE := false
@@ -223,7 +223,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromSelectStatementStanda
 					return nil, errors.Errorf("the number of column name list %d does not match the number of columns %d", len(v.AllId_()), len(columns))
 				}
 				for i, columnName := range v.AllId_() {
-					normalizedColumnName := NormalizeTSQLIdentifier(columnName)
+					_, normalizedColumnName := NormalizeTSQLIdentifier(columnName)
 					columns[i].Name = normalizedColumnName
 				}
 			}
@@ -487,7 +487,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(ctx p
 	// SELECT t1.id FROM blog.dbo.t1 AS TT1; -- The multi-part identifier "t1.id" could not be bound.
 	// SELECT TT1.id FROM blog.dbo.t1 AS TT1; -- OK
 	if asTableAlias := ctx.As_table_alias(); asTableAlias != nil {
-		asName := NormalizeTSQLIdentifier(asTableAlias.Table_alias().Id_())
+		_, asName := NormalizeTSQLIdentifier(asTableAlias.Table_alias().Id_())
 		result = &base.PseudoTable{
 			Name:    asName,
 			Columns: result.GetQuerySpanResult(),
@@ -501,7 +501,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(ctx p
 		}
 		for i := 0; i < len(allColumnAlias); i++ {
 			if allColumnAlias[i].Id_() != nil {
-				name := NormalizeTSQLIdentifier(allColumnAlias[i].Id_())
+				_, name := NormalizeTSQLIdentifier(allColumnAlias[i].Id_())
 				result = &base.PseudoTable{
 					Name:    result.GetTableName(),
 					Columns: result.GetQuerySpanResult(),
@@ -733,7 +733,7 @@ func (q *querySpanExtractor) tsqlIsFullColumnNameSensitive(ctx parser.IFull_colu
 	if normalizedLinkedServer != "" {
 		return base.QuerySpanResult{}, errors.Errorf("linked server is not supported yet, but found %q", ctx.GetText())
 	}
-	normalizedColumnName := NormalizeTSQLIdentifier(ctx.Id_())
+	_, normalizedColumnName := NormalizeTSQLIdentifier(ctx.Id_())
 
 	return q.tsqlIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 }
@@ -841,9 +841,9 @@ func (q *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleContext) (
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the expression element is sensitive")
 		}
 		if columnAlias := ctx.Column_alias(); columnAlias != nil {
-			querySpanResult.Name = NormalizeTSQLIdentifier(columnAlias.Id_())
+			_, querySpanResult.Name = NormalizeTSQLIdentifier(columnAlias.Id_())
 		} else if asColumnAlias := ctx.As_column_alias(); asColumnAlias != nil {
-			querySpanResult.Name = NormalizeTSQLIdentifier(asColumnAlias.Column_alias().Id_())
+			_, querySpanResult.Name = NormalizeTSQLIdentifier(asColumnAlias.Column_alias().Id_())
 		}
 		return querySpanResult, nil
 	case *parser.ExpressionContext:
@@ -3391,12 +3391,12 @@ func (l *accessTableListener) EnterTable_source_item(ctx *parser.Table_source_it
 	if fullTableName := ctx.Full_table_name(); fullTableName != nil {
 		var linkedServer string
 		if server := fullTableName.GetLinkedServer(); server != nil {
-			linkedServer = NormalizeTSQLIdentifier(server)
+			linkedServer, _ = NormalizeTSQLIdentifier(server)
 		}
 
 		database := l.currentDatabase
 		if d := fullTableName.GetDatabase(); d != nil {
-			normalizedD := NormalizeTSQLIdentifier(d)
+			normalizedD, _ := NormalizeTSQLIdentifier(d)
 			if normalizedD != "" {
 				database = normalizedD
 			}
@@ -3404,7 +3404,7 @@ func (l *accessTableListener) EnterTable_source_item(ctx *parser.Table_source_it
 
 		schema := l.currentSchema
 		if s := fullTableName.GetSchema(); s != nil {
-			normalizedS := NormalizeTSQLIdentifier(s)
+			normalizedS, _ := NormalizeTSQLIdentifier(s)
 			if normalizedS != "" {
 				schema = normalizedS
 			}
@@ -3412,7 +3412,7 @@ func (l *accessTableListener) EnterTable_source_item(ctx *parser.Table_source_it
 
 		var table string
 		if t := fullTableName.GetTable(); t != nil {
-			normalizedT := NormalizeTSQLIdentifier(t)
+			normalizedT, _ := NormalizeTSQLIdentifier(t)
 			if normalizedT != "" {
 				table = normalizedT
 			}
@@ -3469,7 +3469,7 @@ func isSystemResource(base.ColumnResource, bool) string {
 func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (string, string, string) {
 	var database string
 	if d := tableName.GetDatabase(); d != nil {
-		normalizedD := NormalizeTSQLIdentifier(d)
+		_, normalizedD := NormalizeTSQLIdentifier(d)
 		if normalizedD != "" {
 			database = normalizedD
 		}
@@ -3477,7 +3477,7 @@ func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (str
 
 	var schema string
 	if s := tableName.GetSchema(); s != nil {
-		normalizedS := NormalizeTSQLIdentifier(s)
+		_, normalizedS := NormalizeTSQLIdentifier(s)
 		if normalizedS != "" {
 			schema = normalizedS
 		}
@@ -3485,7 +3485,7 @@ func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (str
 
 	var table string
 	if t := tableName.GetTable(); t != nil {
-		normalizedT := NormalizeTSQLIdentifier(t)
+		_, normalizedT := NormalizeTSQLIdentifier(t)
 		if normalizedT != "" {
 			table = normalizedT
 		}
@@ -3501,12 +3501,12 @@ func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normal
 	// TODO(zp): unify here and the related code in sql_service.go
 	linkedServer := normalizedFallbackLinkedServerName
 	if server := fullTableName.GetLinkedServer(); server != nil {
-		linkedServer = NormalizeTSQLIdentifier(server)
+		_, linkedServer = NormalizeTSQLIdentifier(server)
 	}
 
 	database := normalizedFallbackDatabaseName
 	if d := fullTableName.GetDatabase(); d != nil {
-		normalizedD := NormalizeTSQLIdentifier(d)
+		_, normalizedD := NormalizeTSQLIdentifier(d)
 		if normalizedD != "" {
 			database = normalizedD
 		}
@@ -3514,7 +3514,7 @@ func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normal
 
 	schema := normalizedFallbackSchemaName
 	if s := fullTableName.GetSchema(); s != nil {
-		normalizedS := NormalizeTSQLIdentifier(s)
+		_, normalizedS := NormalizeTSQLIdentifier(s)
 		if normalizedS != "" {
 			schema = normalizedS
 		}
@@ -3522,7 +3522,7 @@ func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normal
 
 	var table string
 	if t := fullTableName.GetTable(); t != nil {
-		normalizedT := NormalizeTSQLIdentifier(t)
+		_, normalizedT := NormalizeTSQLIdentifier(t)
 		if normalizedT != "" {
 			table = normalizedT
 		}
