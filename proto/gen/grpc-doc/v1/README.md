@@ -607,11 +607,11 @@
     - [ListVCSConnectorsInProviderResponse](#bytebase-v1-ListVCSConnectorsInProviderResponse)
     - [ListVCSProvidersRequest](#bytebase-v1-ListVCSProvidersRequest)
     - [ListVCSProvidersResponse](#bytebase-v1-ListVCSProvidersResponse)
-    - [SearchVCSProviderProjectsRequest](#bytebase-v1-SearchVCSProviderProjectsRequest)
-    - [SearchVCSProviderProjectsResponse](#bytebase-v1-SearchVCSProviderProjectsResponse)
-    - [SearchVCSProviderProjectsResponse.Project](#bytebase-v1-SearchVCSProviderProjectsResponse-Project)
+    - [SearchVCSProviderRepositoriesRequest](#bytebase-v1-SearchVCSProviderRepositoriesRequest)
+    - [SearchVCSProviderRepositoriesResponse](#bytebase-v1-SearchVCSProviderRepositoriesResponse)
     - [UpdateVCSProviderRequest](#bytebase-v1-UpdateVCSProviderRequest)
     - [VCSProvider](#bytebase-v1-VCSProvider)
+    - [VCSRepository](#bytebase-v1-VCSRepository)
   
     - [VCSProvider.Type](#bytebase-v1-VCSProvider-Type)
   
@@ -9810,9 +9810,9 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
-<a name="bytebase-v1-SearchVCSProviderProjectsRequest"></a>
+<a name="bytebase-v1-SearchVCSProviderRepositoriesRequest"></a>
 
-### SearchVCSProviderProjectsRequest
+### SearchVCSProviderRepositoriesRequest
 
 
 
@@ -9825,33 +9825,15 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
-<a name="bytebase-v1-SearchVCSProviderProjectsResponse"></a>
+<a name="bytebase-v1-SearchVCSProviderRepositoriesResponse"></a>
 
-### SearchVCSProviderProjectsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| projects | [SearchVCSProviderProjectsResponse.Project](#bytebase-v1-SearchVCSProviderProjectsResponse-Project) | repeated | The list of project in vcs provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchVCSProviderProjectsResponse-Project"></a>
-
-### SearchVCSProviderProjectsResponse.Project
+### SearchVCSProviderRepositoriesResponse
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The id of the project in vcs provider. |
-| title | [string](#string) |  | The title of the project in vcs provider. |
-| fullpath | [string](#string) |  | The fullpath of the project in vcs provider. |
-| web_url | [string](#string) |  | Web url of the project in vcs provider. |
+| repositories | [VCSRepository](#bytebase-v1-VCSRepository) | repeated | The list of repositories in vcs provider. |
 
 
 
@@ -9892,6 +9874,24 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
+
+<a name="bytebase-v1-VCSRepository"></a>
+
+### VCSRepository
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The id of the repository in vcs provider. e.g. In GitLab, this is the corresponding project id. e.g. 123 |
+| title | [string](#string) |  | The title of the repository in vcs provider. e.g. sample-project |
+| full_path | [string](#string) |  | The full_path of the repository in vcs provider. e.g. bytebase/sample-project |
+| web_url | [string](#string) |  | Web url of the repository in vcs provider. e.g. http://gitlab.bytebase.com/bytebase/sample-project |
+
+
+
+
+
  
 
 
@@ -9926,7 +9926,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | CreateVCSProvider | [CreateVCSProviderRequest](#bytebase-v1-CreateVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
 | UpdateVCSProvider | [UpdateVCSProviderRequest](#bytebase-v1-UpdateVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
 | DeleteVCSProvider | [DeleteVCSProviderRequest](#bytebase-v1-DeleteVCSProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| SearchVCSProviderProjects | [SearchVCSProviderProjectsRequest](#bytebase-v1-SearchVCSProviderProjectsRequest) | [SearchVCSProviderProjectsResponse](#bytebase-v1-SearchVCSProviderProjectsResponse) |  |
+| SearchVCSProviderRepositories | [SearchVCSProviderRepositoriesRequest](#bytebase-v1-SearchVCSProviderRepositoriesRequest) | [SearchVCSProviderRepositoriesResponse](#bytebase-v1-SearchVCSProviderRepositoriesResponse) |  |
 | ListVCSConnectorsInProvider | [ListVCSConnectorsInProviderRequest](#bytebase-v1-ListVCSConnectorsInProviderRequest) | [ListVCSConnectorsInProviderResponse](#bytebase-v1-ListVCSConnectorsInProviderResponse) |  |
 
  

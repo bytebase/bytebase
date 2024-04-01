@@ -1,10 +1,13 @@
 package gitops
 
 import (
+	"log/slog"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -26,6 +29,27 @@ type fileChange struct {
 	changeType  v1pb.Plan_ChangeDatabaseConfig_Type
 	description string
 	content     string
+}
+
+func getChangesByFileList(files []*vcs.PullRequestFile, branch string) []*fileChange {
+	changes := []*fileChange{}
+	for _, v := range files {
+		if v.IsDeleted {
+			continue
+		}
+		if filepath.Dir(v.Path) != branch {
+			continue
+		}
+		change, err := getFileChange(v.Path)
+		if err != nil {
+			slog.Error("failed to get file change info", slog.String("path", v.Path), log.BBError(err))
+		}
+		if change != nil {
+			change.path = v.Path
+			changes = append(changes, change)
+		}
+	}
+	return changes
 }
 
 func getFileChange(path string) (*fileChange, error) {

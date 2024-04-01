@@ -42,9 +42,9 @@ service VCSProviderService {
     option (google.api.http) = {delete: "/v1/{name=vcsProviders/*}"};
   }
 
-  rpc SearchVCSProviderProjects(SearchVCSProviderProjectsRequest) returns (SearchVCSProviderProjectsResponse) {
+  rpc SearchVCSProviderRepositories(SearchVCSProviderRepositoriesRequest) returns (SearchVCSProviderRepositoriesResponse) {
     option (google.api.http) = {
-      post: "/v1/{name=vcsProviders/*}:searchProjects"
+      post: "/v1/{name=vcsProviders/*}:searchRepositories"
       body: "*"
     };
   }
@@ -104,25 +104,30 @@ message DeleteVCSProviderRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message SearchVCSProviderProjectsRequest {
+message SearchVCSProviderRepositoriesRequest {
   // The name of the vcs provider to retrieve the vcs provider repositories.
   // Format: vcsProviders/{vcsProvider}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message SearchVCSProviderProjectsResponse {
-  message Project {
-    // The id of the project in vcs provider.
-    string id = 1;
-    // The title of the project in vcs provider.
-    string title = 2;
-    // The fullpath of the project in vcs provider.
-    string fullpath = 3;
-    // Web url of the project in vcs provider.
-    string web_url = 4;
-  }
-  // The list of project in vcs provider.
-  repeated Project projects = 1;
+message VCSRepository {
+  // The id of the repository in vcs provider.
+  // e.g. In GitLab, this is the corresponding project id. e.g. 123
+  string id = 1;
+  // The title of the repository in vcs provider.
+  // e.g. sample-project
+  string title = 2;
+  // The full_path of the repository in vcs provider.
+  // e.g. bytebase/sample-project
+  string full_path = 3;
+  // Web url of the repository in vcs provider.
+  // e.g. http://gitlab.bytebase.com/bytebase/sample-project
+  string web_url = 4;
+}
+
+message SearchVCSProviderRepositoriesResponse {
+  // The list of repositories in vcs provider.
+  repeated VCSRepository repositories = 1;
 }
 
 message ListVCSConnectorsInProviderRequest {

@@ -124,8 +124,8 @@ func (s *VCSProviderService) DeleteVCSProvider(ctx context.Context, request *v1p
 	return &emptypb.Empty{}, nil
 }
 
-// SearchVCSProviderProjects searches vcs provider projects, for example, GitHub repository.
-func (s *VCSProviderService) SearchVCSProviderProjects(ctx context.Context, request *v1pb.SearchVCSProviderProjectsRequest) (*v1pb.SearchVCSProviderProjectsResponse, error) {
+// SearchVCSProviderRepositories searches vcs provider repositories, for example, GitHub repository.
+func (s *VCSProviderService) SearchVCSProviderRepositories(ctx context.Context, request *v1pb.SearchVCSProviderRepositoriesRequest) (*v1pb.SearchVCSProviderRepositoriesResponse, error) {
 	vcsProvider, err := s.getVCS(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -139,18 +139,18 @@ func (s *VCSProviderService) SearchVCSProviderProjects(ctx context.Context, requ
 		return nil, status.Errorf(codes.Internal, "Failed to fetch external project list: %v", err)
 	}
 
-	var externalProjects []*v1pb.SearchVCSProviderProjectsResponse_Project
+	var repositories []*v1pb.VCSRepository
 	for _, apiExternalProject := range apiExternalProjectList {
-		externalProjects = append(externalProjects, &v1pb.SearchVCSProviderProjectsResponse_Project{
+		repositories = append(repositories, &v1pb.VCSRepository{
 			Id:       apiExternalProject.ID,
 			Title:    apiExternalProject.Name,
-			Fullpath: apiExternalProject.FullPath,
+			FullPath: apiExternalProject.FullPath,
 			WebUrl:   apiExternalProject.WebURL,
 		})
 	}
 
-	return &v1pb.SearchVCSProviderProjectsResponse{
-		Projects: externalProjects,
+	return &v1pb.SearchVCSProviderRepositoriesResponse{
+		Repositories: repositories,
 	}, nil
 }
 

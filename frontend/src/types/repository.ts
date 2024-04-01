@@ -3,14 +3,3 @@ export type RepositoryConfig = {
   branch: string;
   resourceId: string;
 };
-
-export type ExternalRepositoryInfo = {
-  // e.g. In GitLab, this is the corresponding project id. e.g. 123
-  externalId: string;
-  // e.g. sample-project
-  name: string;
-  // e.g. bytebase/sample-project
-  fullPath: string;
-  // e.g. http://gitlab.bytebase.com/bytebase/sample-project
-  webUrl: string;
-};

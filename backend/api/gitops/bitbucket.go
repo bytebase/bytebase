@@ -4,12 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/store"
@@ -35,23 +32,9 @@ func getBitBucketPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProv
 		url:         pushEvent.PullRequest.Links.HTML.Href,
 		title:       pushEvent.PullRequest.Title,
 		description: pushEvent.PullRequest.Description,
+		changes:     getChangesByFileList(mrFiles, vcsConnector.Payload.BaseDirectory),
 	}
-	for _, v := range mrFiles {
-		if v.IsDeleted {
-			continue
-		}
-		if filepath.Dir(v.Path) != vcsConnector.Payload.BaseDirectory {
-			continue
-		}
-		change, err := getFileChange(v.Path)
-		if err != nil {
-			slog.Error("failed to get file change info", slog.String("path", v.Path), log.BBError(err))
-		}
-		if change != nil {
-			change.path = v.Path
-			prInfo.changes = append(prInfo.changes, change)
-		}
-	}
+
 	for _, file := range prInfo.changes {
 		content, err := vcs.Get(vcs.Bitbucket, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ReadFileContent(ctx, vcsConnector.Payload.ExternalId, file.path, vcs.RefInfo{RefType: vcs.RefTypeCommit, RefName: pushEvent.PullRequest.Source.Commit.Hash})
 		if err != nil {

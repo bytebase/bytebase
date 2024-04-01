@@ -72,11 +72,7 @@
               : $t('instance.password-write-only')
           "
           :disabled="!allowEdit || dataSource.useEmptyPassword"
-          :value="
-            dataSource.useEmptyPassword
-              ? ''
-              : getSensitiveValue(dataSource.updatedPassword)
-          "
+          :value="dataSource.useEmptyPassword ? '' : dataSource.updatedPassword"
           @update:value="dataSource.updatedPassword = $event.trim()"
         />
       </div>
@@ -131,7 +127,7 @@
             />
           </div>
           <BBTextField
-            :value="getSensitiveValue(dataSource.externalSecret.token ?? '')"
+            :value="dataSource.externalSecret.token ?? ''"
             class="mt-1 w-full"
             :disabled="!allowEdit"
             :placeholder="secretInputPlaceholder"
@@ -151,9 +147,7 @@
               }}
             </label>
             <BBTextField
-              :value="
-                getSensitiveValue(dataSource.externalSecret.appRole.roleId)
-              "
+              :value="dataSource.externalSecret.appRole.roleId"
               :required="true"
               class="mt-1 w-full"
               :disabled="!allowEdit"
@@ -216,9 +210,7 @@
               </NRadio>
             </NRadioGroup>
             <BBTextField
-              :value="
-                getSensitiveValue(dataSource.externalSecret.appRole.secretId)
-              "
+              :value="dataSource.externalSecret.appRole.secretId"
               class="mt-1 w-full"
               :disabled="!allowEdit"
               :placeholder="secretInputPlaceholder"
@@ -554,12 +546,6 @@ const secretInputPlaceholder = computed(() => {
 
   return "";
 });
-
-const getSensitiveValue = (val: string) => {
-  return Array.from({ length: val.length })
-    .map((_) => "*")
-    .join("");
-};
 
 const changePasswordType = (passwordType: "PLAIN" | "EXTERNAL_SECRET") => {
   const ds = props.dataSource;
