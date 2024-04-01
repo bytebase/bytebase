@@ -7512,8 +7512,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| vcs_type | [VCSType](#bytebase-v1-VCSType) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
-| vcs_connector | [string](#string) |  |  |
+| vcs_type | [VCSType](#bytebase-v1-VCSType) |  |  |
+| vcs_connector | [string](#string) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
 | pull_request_url | [string](#string) |  |  |
 
 

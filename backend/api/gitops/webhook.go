@@ -149,7 +149,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		if err != nil {
 			return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))
 		}
-		if vcsProvider.Type == storepb.VCSType_GITHUB || vcsProvider.Type == storepb.VCSType_GITLAB {
+		if vcsProvider.Type == storepb.VCSType_GITHUB || vcsProvider.Type == storepb.VCSType_GITLAB || vcsProvider.Type == storepb.VCSType_BITBUCKET {
 			comment := getPullRequestComment(setting.ExternalUrl, issue.Name)
 			pullRequestID := getPullRequestID(prInfo.url)
 			if err := vcs.Get(

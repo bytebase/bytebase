@@ -311,8 +311,39 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRe
 	return files, nil
 }
 
+type Comment struct {
+	Content CommentContent `json:"content"`
+}
+
+type CommentContent struct {
+	Raw string `json:"raw"`
+}
+
 // CreatePullRequestComment creates a pull request comment.
-func (*Provider) CreatePullRequestComment(_ context.Context, _, _, _ string) error {
+func (p *Provider) CreatePullRequestComment(ctx context.Context, repositoryID, pullRequestID, comment string) error {
+	commentMessage := Comment{Content: CommentContent{Raw: comment}}
+	commentCreatePayload, err := json.Marshal(commentMessage)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal request body for creating pull request comment")
+	}
+	url := fmt.Sprintf("%s/repositories/%s/pullrequests/%s/comments", p.APIURL(p.instanceURL), repositoryID, pullRequestID)
+	code, body, err := internal.Post(ctx, url, p.getAuthorization(), commentCreatePayload)
+	if err != nil {
+		return errors.Wrapf(err, "POST %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create pull request comment through URL %s", url)
+	}
+
+	// GitHub returns 201 HTTP status codes upon successful issue comment creation,
+	if code != http.StatusCreated {
+		return errors.Errorf("failed to create pull request comment through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
 	return nil
 }
 
