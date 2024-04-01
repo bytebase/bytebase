@@ -381,7 +381,7 @@ devDependencies:
     version: 3.4.3
   ts-proto:
     specifier: ^1.165.1
-    version: 1.169.1
+    version: 1.171.0
   typescript:
     specifier: 5.4.3
     version: 5.4.3
@@ -6428,8 +6428,8 @@ packages:
       protobufjs: 7.2.6
     dev: true
 
-  /ts-proto@1.169.1:
-    resolution: {integrity: sha512-MHdllDrtFCabxvIyUqze7/4vSh55SEgwirpthGVUGt3pMqIpmmrDyBv0vDk/RCjBxm0/LIWVMnXlOjBxYaE1rA==}
+  /ts-proto@1.171.0:
+    resolution: {integrity: sha512-NMwiqCixlk6MZ3TAIpVQUuWwUktCXhoP+07V7D7Eo2IlEwulZucOGrU82toHhPL/QTd+oMBM2RDeQk9qs8+ZEQ==}
     hasBin: true
     dependencies:
       case-anything: 2.1.13
