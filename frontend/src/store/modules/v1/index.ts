@@ -16,7 +16,7 @@ export * from "./experimental-issue";
 export * from "./subscription";
 export * from "./actuator";
 export * from "./sql";
-export * from "./vcs";
+export * from "./vcs_provider";
 export * from "./vcs_connector";
 export * from "./changeHistory";
 export * from "./dbSchema";

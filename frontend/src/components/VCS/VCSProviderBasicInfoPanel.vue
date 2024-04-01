@@ -169,7 +169,7 @@ import { NRadio, NRadioGroup } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, onUnmounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useVCSV1Store } from "@/store";
+import { useVCSProviderStore } from "@/store";
 import { vcsProviderPrefix } from "@/store/modules/v1/common";
 import type { VCSConfig } from "@/types";
 import { TEXT_VALIDATION_DELAY } from "@/types";
@@ -193,7 +193,7 @@ const state = reactive<LocalState>({
   showUrlError:
     !isEmpty(props.config.instanceUrl) && !isUrl(props.config.instanceUrl),
 });
-const vcsV1Store = useVCSV1Store();
+const vcsV1Store = useVCSProviderStore();
 
 onUnmounted(() => {
   if (state.urlValidationTimer) {
