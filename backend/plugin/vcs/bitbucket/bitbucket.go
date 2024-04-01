@@ -326,7 +326,7 @@ func (p *Provider) CreatePullRequestComment(ctx context.Context, repositoryID, p
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal request body for creating pull request comment")
 	}
-	url := fmt.Sprintf("%s/repos/%s/issues/%s/comments", p.APIURL(p.instanceURL), repositoryID, pullRequestID)
+	url := fmt.Sprintf("%s/repositories/%s/pullrequests/%s/comments", p.APIURL(p.instanceURL), repositoryID, pullRequestID)
 	code, body, err := internal.Post(ctx, url, p.getAuthorization(), commentCreatePayload)
 	if err != nil {
 		return errors.Wrapf(err, "POST %s", url)
