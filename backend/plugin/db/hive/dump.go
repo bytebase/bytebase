@@ -146,7 +146,6 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, error
 
 			_, _ = builder.WriteString(fmt.Sprintf(schemaStmtFmt, "MATERIALIZED VIEW", fmt.Sprintf("`%s`.`%s`", schema.Name, mtView.Name), mtViewDDL))
 		}
-
 	}
 
 	_, _ = io.WriteString(out, builder.String())
