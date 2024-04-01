@@ -41,7 +41,7 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "update:value", value: string | undefined): void;
 }>();
 
