@@ -293,6 +293,11 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRe
 	return res, nil
 }
 
+// CreatePullRequestComment creates a pull request comment.
+func (*Provider) CreatePullRequestComment(_ context.Context, _, _, _ string) error {
+	return nil
+}
+
 // Branch is the API message for GitLab branch.
 type Branch struct {
 	Name   string `json:"name"`

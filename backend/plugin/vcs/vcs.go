@@ -97,6 +97,9 @@ type Provider interface {
 	// CreatePullRequest creates the pull request in the repository.
 	ListPullRequestFile(ctx context.Context, repositoryID, pullRequestID string) ([]*PullRequestFile, error)
 
+	// CreatePullRequestComment creates a pull request comment.
+	CreatePullRequestComment(ctx context.Context, repositoryID, pullRequestID, comment string) error
+
 	// Creates a webhook. Returns the created webhook ID on success.
 	CreateWebhook(ctx context.Context, repositoryID string, payload []byte) (string, error)
 
