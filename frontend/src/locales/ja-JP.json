@@ -2098,6 +2098,7 @@
     "new-data-source": "新しいデータソース",
     "connection-name-string-copied-to-clipboard": "{0}の文字列がクリップボードにコピーされました。",
     "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBCはソケット{0}に接続できません",
+    "snowflake-keypair-tip": "キーペア認証",
     "ssl-type": {
       "ca": "@:{'data-source.ssl.ca-cert'}",
       "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
@@ -2129,8 +2130,7 @@
     "delete-read-only-data-source": "読み取り専用データソースを削除",
     "connection-string-schema": "接続文字列スキーマ",
     "admin": "管理者",
-    "read-only": "RO",
-    "snowflake-keypair-tip": "キーペア認証"
+    "read-only": "RO"
   },
   "setting": {
     "project": {
@@ -3271,6 +3271,7 @@
   "cel": {
     "factor": {
       "affected_rows": "影響を受ける行数",
+      "table_rows": "テーブルの行",
       "environment_id": "環境ID",
       "project_id": "プロジェクトID",
       "instance_id": "インスタンスID",
@@ -3284,8 +3285,7 @@
       "classification_level": "分類レベル",
       "resource_instance_id": "インスタンスID",
       "resource_database_name": "データベース名",
-      "resource_table_name": "テーブル名",
-      "table_rows": "テーブルの行"
+      "resource_table_name": "テーブル名"
     },
     "condition": {
       "self": "条件",

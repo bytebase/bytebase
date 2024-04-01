@@ -18,10 +18,10 @@
     "webhooks": "Webhook",
     "key": "键值",
     "workflow": "工作流",
-    "activity": "活动",
-    "activities": "活动",
     "unread": "未读",
     "read": "已读",
+    "activity": "活动",
+    "activities": "活动",
     "sign-in": "登录",
     "sign-up": "注册",
     "email": "邮箱",
@@ -175,8 +175,8 @@
     "history": "历史记录",
     "loading": "加载中",
     "from": "来自于",
-    "copied": "已拷贝",
     "copy": "拷贝",
+    "copied": "已拷贝",
     "manage": "管理",
     "table": "表",
     "search": "搜索",
@@ -322,13 +322,13 @@
     },
     "rollout-time": "指定发布时间",
     "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' 是您希望任务运行的时间；如果未指定，任务会在满足条件后立即执行。",
+    "earliest-allowed-time-unset": "未设置",
     "comment": "评论",
     "invoker": "执行者",
     "started": "开始于",
     "ended": "结束于",
     "view-change": "查看变更",
     "view-change-history": "查看变更历史",
-    "earliest-allowed-time-unset": "未设置",
     "status": {
       "running": "运行中",
       "failed": "失败",
@@ -568,11 +568,11 @@
         "scopes-description": "访问 Auth URL 时携带的范围参数，使用空格分隔多个值",
         "token-url-description": "用于获取 accessToken 的 API 地址",
         "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
-        "user-information-mapping": "用户信息映射",
-        "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
         "security-protocol": "安全协议",
         "connection-security": "安全性选项",
         "connection-security-skip-tls-verify": "跳过自签名证书验证",
+        "user-information-mapping": "用户信息映射",
+        "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
         "identifier": "Bytebase 用户的邮箱",
         "identifier-tips": "邮箱应该具有唯一性。如果实际值不是邮箱格式，将会和 domain 进行拼接。",
         "display-name": "Bytebase 用户的昵称",
@@ -837,14 +837,14 @@
       "description": "配置邮件信息可以让用户接收到数据库相关报告的电子邮件，如慢查询周报。",
       "field": {
         "smtp-server-host": "SMTP 服务器主机",
+        "smtp-server-port": "SMTP 服务器端口",
         "from": "发件人地址",
         "smtp-username": "SMTP 用户名",
         "smtp-password": "SMTP 密码",
         "send-test-email-to": "收件人测试地址",
+        "send": "发送",
         "authentication-method": "验证方式",
-        "encryption": "加密方式",
-        "smtp-server-port": "SMTP 服务器端口",
-        "send": "发送"
+        "encryption": "加密方式"
       },
       "updated-tip": "邮件传输配置更新成功",
       "tested-tip": "发送成功，请检查 {address} 的收件箱。"
@@ -982,13 +982,13 @@
           "title": "实例",
           "description": "根据实例过滤"
         },
-        "database": {
-          "title": "数据库",
-          "description": "根据数据库过滤"
-        },
         "environment": {
           "title": "环境",
           "description": "根据环境过滤"
+        },
+        "database": {
+          "title": "数据库",
+          "description": "根据数据库过滤"
         },
         "type": {
           "title": "变更类型",
@@ -1219,13 +1219,13 @@
   },
   "create-db": {
     "new-database-name": "新数据库名称",
-    "new-collection-name": "新集合名称",
     "database-owner-name": "数据库所有者",
     "cluster": "集群",
     "reserved-db-error": "{databaseName} 是一个预留名称",
     "generated-database-name": "生成的数据库名称",
     "db-name-generated-by-template": "依据模板 \"{template}\" 生成",
-    "input-label-value": "输入 {key}"
+    "input-label-value": "输入 {key}",
+    "new-collection-name": "新集合名称"
   },
   "db": {
     "encoding": "字符编码",
@@ -1238,6 +1238,7 @@
     "collections": "集合",
     "views": "视图",
     "extensions": "插件",
+    "external-tables": "外部表",
     "functions": "函数",
     "streams": "Streams",
     "tasks": "任务",
@@ -1250,7 +1251,6 @@
     "start-to-sync-schema": "开始同步 schema",
     "failed-to-sync-schema": "同步 schema 失败",
     "successfully-synced-schema": "Schema 同步完成",
-    "external-tables": "外部表",
     "create": "创建数据库"
   },
   "instance": {
@@ -1272,8 +1272,8 @@
     "successfully-created-migration-schema-for-instance-value-name": "成功为'{0}'创建变更Schema。",
     "failed-to-sync-schema-for-instance-instance-value-name": "为实例'{0}'同步 schema 失败。",
     "successfully-synced-schema-for-instance-instance-value-name": "成功为实例'{0}'同步 schema 。",
-    "archive-instance-instance-name": "归档实例'{0}'?",
     "archive-this-instance": "归档该实例",
+    "archive-instance-instance-name": "归档实例'{0}'?",
     "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
     "restore-this-instance": "恢复该实例",
     "restore": "恢复",
@@ -1287,6 +1287,7 @@
     "instance-id": "实例 ID",
     "your-snowflake-account-locator": "您的 Snowflake 账户定位符",
     "port": "端口",
+    "authentication-database": "认证数据库",
     "instance-name": "@:common.instance@:instance.name",
     "snowflake-web-console": "Snowflake @:{'instance.web-console'}",
     "external-link": "外部链接",
@@ -1319,21 +1320,21 @@
           "template": "创建用户 bytebase，密码 {password}，warehouse 为{warehouse}，并授予必要权限的例子如下。"
         },
         "mysql": {
-          "user": "bytebase{'@'}%",
           "password": "YOUR_DB_PWD",
+          "user": "bytebase{'@'}%",
           "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。"
         },
         "clickhouse": {
-          "sql-driven-workflow": "SQL 工作流",
-          "template": "创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。"
+          "template": "创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。",
+          "sql-driven-workflow": "SQL 工作流"
         },
         "postgresql": {
           "warn": "如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER 是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。 您应该对所有 role 用 'GRANT role_name TO bytebase;' 语句赋予 Bytebase 权限，否则 Bytebase 可能没有权限操作已有的数据库或者表导致操作失败。",
           "template": "创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。"
         },
         "redis": {
-          "user": "bytebase",
           "password": "YOUR_DB_PWD",
+          "user": "bytebase",
           "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。"
         }
       }
@@ -1387,7 +1388,6 @@
     "failed-to-connect-instance-localhost": "连接到实例失败。\n如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
     "filter-instance-name": "过滤实例名称",
     "grants": "权限",
-    "authentication-database": "认证数据库",
     "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
     "create-gcp-credentials": "创建凭据的方法见",
     "used-for-testing-connection": "仅作测试连接用",
@@ -1418,8 +1418,8 @@
     }
   },
   "environment": {
-    "id": "环境 ID",
     "all": "所有环境",
+    "id": "环境 ID",
     "id-description": "环境 ID 是环境的唯一标识符。一旦创建不能修改。",
     "select": "选择环境",
     "archive": "归档此环境",
@@ -1551,9 +1551,9 @@
   "database": {
     "select": "选择数据库",
     "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "该表每隔约10分钟刷新一次，所以展示的可能不是最新信息。",
-    "last-successful-sync": "最后一次成功的同步",
     "no-anomalies-detected": "没有检测到异常",
     "sync-status": "同步状态",
+    "last-successful-sync": "最后一次成功的同步",
     "filter-database": "过滤数据库",
     "transfer-project": "转移项目",
     "unassign": "取消分配",
@@ -1679,21 +1679,21 @@
     "unassigned": "不再分配",
     "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
     "secret": {
+      "self": "保密变量",
       "new": "添加保密变量",
       "edit": "编辑保密变量",
       "name-placeholder": "输入保密变量名称",
-      "description-placeholder": "输入描述",
-      "value": "值",
-      "value-placeholder": "输入值（仅写入）",
       "validation": {
-        "duplicated-name": "保密变量名称重复",
-        "name-pattern-mismatch": "秘密名称应该只由大写字母，数字和 _（下划线）组成",
         "cannot-be-changed-later": "创建之后无法修改",
+        "duplicated-name": "保密变量名称重复",
         "name-is-required": "变量名必需",
+        "name-pattern-mismatch": "秘密名称应该只由大写字母，数字和 _（下划线）组成",
         "name-cannot-prefix-with-bytebase": "秘密名称不能以 'BYTEBASE_' 为前缀",
         "name-cannot-start-with-number": "秘密名称不能以数字开头"
       },
-      "self": "保密变量",
+      "description-placeholder": "输入描述",
+      "value": "值",
+      "value-placeholder": "输入值（仅写入）",
       "delete-tips": "删除保密变量",
       "description": "您可以在变更脚本中使用保密变量，来隐藏敏感信息, 请参考{guide}"
     },
@@ -1721,6 +1721,7 @@
     "view-definition": "查看定义"
   },
   "repository": {
+    "our-webhook-link": "Bytebase 创建的 webhook 可以在 {webhookLink} 中找到。",
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
     "base-directory": "根目录",
     "base-directory-description": "Bytebase 跟踪文件变更的根目录。如果为空，则他会跟踪整个仓库。",
@@ -1765,10 +1766,9 @@
     "select-repository-attention-gitlab": "Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook 用来监听代码推送事件。",
     "select-repository-attention-github": "Bytebase 仅列出您拥有管理员权限的 GitHub 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
     "select-repository-attention-bitbucket": "Bytebase 仅列出您拥有管理员权限的 Bitbucket 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
-    "select-repository-search": "搜索仓库",
-    "linked": "关联的仓库",
     "select-repository-attention-azure-devops": "Bytebase 仅列出授予第三方应用程序通过 OAuth 访问的组织下的 Azure DevOps 存储库。\n如果您没有看到所需的存储库，请转到组织 -> 组织设置 -> 策略 以启用第三方应用程序访问。",
-    "our-webhook-link": "Bytebase 创建的 webhook 可以在 {webhookLink} 中找到。"
+    "select-repository-search": "搜索仓库",
+    "linked": "关联的仓库"
   },
   "workflow": {
     "current-workflow": "当前工作流",
@@ -1789,9 +1789,9 @@
     "types": {
       "connection-failure": "连接失败",
       "missing-migration-schema": "缺少变更 Schema",
-      "schema-drift": "Schema 偏差",
       "backup-enforcement-violation": "违反备份策略约束",
-      "missing-backup": "缺少备份"
+      "missing-backup": "缺少备份",
+      "schema-drift": "Schema 偏差"
     },
     "action": {
       "check-instance": "检查实例",
@@ -1865,6 +1865,10 @@
           "title": "工单状态变更",
           "label": "当一个工单的状态发生变更"
         },
+        "issue-stage-status-change": {
+          "title": "工单阶段状态变更",
+          "label": "当一个工单包含的阶段状态发生了变更"
+        },
         "issue-task-status-change": {
           "title": "工单任务状态变更",
           "label": "当一个工单包含的任务状态发生了变更"
@@ -1876,10 +1880,6 @@
         "issue-comment-creation": {
           "title": "工单被评论",
           "label": "当新的工单评论被创建"
-        },
-        "issue-stage-status-change": {
-          "title": "工单阶段状态变更",
-          "label": "当一个工单包含的阶段状态发生了变更"
         },
         "issue-approval-notify": {
           "title": "工单待审批",
@@ -2098,6 +2098,7 @@
     "new-data-source": "新数据源",
     "connection-name-string-copied-to-clipboard": "{0} 字符串已复制到剪贴板。",
     "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC 无法连接到 socket {0} ",
+    "snowflake-keypair-tip": "密钥对认证",
     "ssl-type": {
       "ca": "@:{'data-source.ssl.ca-cert'}",
       "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
@@ -2129,8 +2130,7 @@
     "delete-read-only-data-source": "删除只读数据源",
     "connection-string-schema": "连接串模式",
     "admin": "主库",
-    "read-only": "从库",
-    "snowflake-keypair-tip": "密钥对认证"
+    "read-only": "从库"
   },
   "setting": {
     "project": {
@@ -2162,8 +2162,8 @@
     "table-schema-placeholder": "选择一个表进行查看 Schema",
     "notify-empty-statement": "请在编辑器中输入 SQL 语句",
     "notify-multiple-statements": "检测到您输入了多条 SQL 语句。SQL 编辑器只支持执行第一条语句。您可以选择其他语句单独执行。",
-    "notify-invalid-sql-statement": "请检查您的 SQL 语句。",
     "goto-edit-schema-hint": "请从编辑器顶部选择一个数据库连接",
+    "notify-invalid-sql-statement": "请检查您的 SQL 语句。",
     "can-not-execute-query": "加载数据时无法执行查询",
     "rows": "条记录",
     "vertical-display": "竖向展示",
@@ -2411,6 +2411,7 @@
     "successfully-start-trial": "成功开启 {days} 天的免费试用",
     "successfully-upgrade-trial": "成功升级为{plan}试用",
     "require-subscription": "这个功能需要{requiredPlan}订阅，请购买 Bytebase 证书来解锁该功能。",
+    "feature-require-subscription": "{feature} 需要 {requiredPlan}。",
     "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，{startTrial}",
     "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费。",
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费。",
@@ -2548,6 +2549,10 @@
         "title": "SSH 实例连接",
         "desc": "通过 SSH 连接实例。"
       },
+      "bb-feature-custom-instance-scan-interval": {
+        "title": "自定义实例扫描间隔",
+        "desc": "自定义实例的 schema 和异常扫描间隔"
+      },
       "bb-feature-index-advisor": {
         "title": "索引建议",
         "desc": "索引建议可以找到导致慢查询的索引，并提供相关的优化建议。"
@@ -2599,21 +2604,16 @@
       "bb-feature-issue-advanced-search": {
         "title": "工单高级搜索",
         "desc": "通过高级搜索来访问无限制的历史工单。"
-      },
-      "bb-feature-custom-instance-scan-interval": {
-        "title": "自定义实例扫描间隔",
-        "desc": "自定义实例的 schema 和异常扫描间隔"
       }
-    },
-    "feature-require-subscription": "{feature} 需要 {requiredPlan}。"
+    }
   },
   "sheet": {
     "self": "工作表",
     "my-sheets": "我的工作表",
     "mine": "我的",
-    "starred": "收藏的",
     "star": "添加收藏",
     "unstar": "取消收藏",
+    "starred": "收藏的",
     "shared-with-me": "共享给我的",
     "actions": {
       "sync-from-vcs": "从 VCS 同步 SQL 脚本"
@@ -2665,8 +2665,8 @@
         "name": "基本信息",
         "display-name": "名称",
         "display-name-placeholder": "审核策略名称",
-        "display-name-label": "用以区分不同审核策略的名称。",
         "display-name-default": "SQL 审核策略",
+        "display-name-label": "用以区分不同审核策略的名称。",
         "environments": "环境",
         "environments-label": "将该审核策略应用于哪些环境。一个环境只能关联一个审核策略。",
         "environments-select": "选择环境",
@@ -2975,6 +2975,7 @@
       "node": {
         "nodes": "审批节点",
         "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
+        "order": "顺序",
         "approver": "审批人",
         "group": {
           "WORKSPACE_OWNER": "工作空间管理员",
@@ -2984,7 +2985,6 @@
         },
         "add": "增加节点",
         "delete": "删除审批节点",
-        "order": "顺序",
         "select-approver": "选择审批人",
         "roles": {
           "system": "系统角色",
@@ -3142,8 +3142,8 @@
       "description": "定义自定义角色，你可以将它们应用到项目成员和自定义审批。",
       "add": "添加角色",
       "edit": "编辑角色",
-      "name-placeholder": "输入角色名称",
       "title-placeholder": "输入角色称谓",
+      "name-placeholder": "输入角色名称",
       "description-placeholder": "输入角色描述",
       "validation": {
         "duplicated": "{resource}已存在",
