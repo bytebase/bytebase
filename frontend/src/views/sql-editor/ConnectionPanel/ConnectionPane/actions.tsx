@@ -37,7 +37,7 @@ type DropdownOptionWithTreeNode = DropdownOption & {
 
 export const useDropdown = () => {
   const router = useRouter();
-  const { events: editorEvents } = useSQLEditorContext();
+  const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
   const pageMode = usePageMode();
 
   const show = ref(false);
@@ -76,18 +76,23 @@ export const useDropdown = () => {
             key: "connect",
             label: t("sql-editor.connect"),
             icon: () => <LinkIcon class="w-4 h-4" />,
-            onSelect: () => setConnection(node),
+            onSelect: () => {
+              setConnection(node);
+              showConnectionPanel.value = false;
+            },
           });
           items.push({
             key: "connect-in-new-tab",
             label: t("sql-editor.connect-in-new-tab"),
             icon: () => <LinkIcon class="w-4 h-4" />,
-            onSelect: () =>
+            onSelect: () => {
               setConnection(
                 node,
                 { sheet: "", mode: DEFAULT_SQL_EDITOR_TAB_MODE },
                 /* newTab */ true
-              ),
+              );
+              showConnectionPanel.value = false;
+            },
           });
         }
         if (allowAdmin.value) {
@@ -95,7 +100,10 @@ export const useDropdown = () => {
             key: "connect-in-admin-mode",
             label: t("sql-editor.connect-in-admin-mode"),
             icon: () => <WrenchIcon class="w-4 h-4" />,
-            onSelect: () => setConnection(node, { sheet: "", mode: "ADMIN" }),
+            onSelect: () => {
+              setConnection(node, { sheet: "", mode: "ADMIN" });
+              showConnectionPanel.value = false;
+            },
           });
         }
       }
@@ -131,6 +139,7 @@ export const useDropdown = () => {
                   schema: "",
                   table: "",
                 });
+                showConnectionPanel.value = false;
               },
             });
           }
