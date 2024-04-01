@@ -209,8 +209,8 @@ dependencies:
 
 devDependencies:
   '@iconify/json':
-    specifier: 2.2.195
-    version: 2.2.195
+    specifier: 2.2.196
+    version: 2.2.196
   '@intlify/unplugin-vue-i18n':
     specifier: 1.6.0
     version: 1.6.0(rollup@4.13.0)(vue-i18n@9.10.2)
@@ -1265,8 +1265,8 @@ packages:
     resolution: {integrity: sha512-6EwiSjwWYP7pTckG6I5eyFANjPhmPjUX9JRLUSfNPC7FX7zK9gyZAfUEaECL6ALTpGX5AjnBq3C9XmVWPitNpw==}
     dev: true
 
-  /@iconify/json@2.2.195:
-    resolution: {integrity: sha512-oDO79OGefkm/F4xeRDWSiigxsf7yMJAHRzyOoqmkrerUDJ/5JxRSsezUJhYlVarbRFdaBLGh7joJwtLO5mAmXw==}
+  /@iconify/json@2.2.196:
+    resolution: {integrity: sha512-hRZ0pq77N+mkAbZvFi/pfsKcspA8PyGSASc6zQoq6n/RSLxb8xAgORatVHyDl0ow7shcS+dvyiZI8xmr6yI2WA==}
     dependencies:
       '@iconify/types': 2.0.0
       pathe: 1.1.2
@@ -1477,8 +1477,8 @@ packages:
       '@types/markdown-it': 12.2.3
     dev: false
 
-  /@mazui/cli@3.36.3(typescript@5.4.3):
-    resolution: {integrity: sha512-3OCx0MUvH94Jckzw9ELDqxNirZUJisYoIFqLCBv6/eLo8T3fnrdUWvUzyGWv3DZBDIpH0PPRxbkCwDYk9WNzEg==}
+  /@mazui/cli@3.37.3(typescript@5.4.3):
+    resolution: {integrity: sha512-bDgobniWE5pMxFQIHQ/VYCjoJNtkDave3GkBe8WZF9Lg1vDkUs+w427HLE37Hur2uHy9KuZVj36NIuvLvae7+g==}
     hasBin: true
     dependencies:
       '@clack/prompts': 0.7.0
@@ -4872,7 +4872,7 @@ packages:
       vue-router:
         optional: true
     dependencies:
-      '@mazui/cli': 3.36.3(typescript@5.4.3)
+      '@mazui/cli': 3.37.3(typescript@5.4.3)
       dayjs: 1.11.10
       libphonenumber-js: 1.10.58
       unplugin-vue-components: 0.26.0(rollup@4.13.0)(vue@3.4.21)
