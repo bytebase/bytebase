@@ -15,6 +15,10 @@ import (
 )
 
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	if connPool == nil {
+		return nil, errors.New("connection pool not created")
+	}
+
 	var instanceMetadata db.InstanceMetadata
 
 	// version.
@@ -88,7 +92,9 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	if err != nil || len(results) == 0 {
 		return "", errors.Wrap(err, "failed to get version from instance")
 	}
-	return results[0].Rows[0].Values[0].GetStringValue(), nil
+	versionRawStr := results[0].Rows[0].Values[0].GetStringValue()
+	version := strings.Split(versionRawStr, " ")[0]
+	return version, nil
 }
 
 func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
@@ -194,6 +200,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 		}
 
 		tableMetadata.Comment = tabInfo.comment
+		tableMetadata.Columns = tabInfo.colMetadatas
 		tableMetadata.DataSize = int64(tabInfo.totalSize)
 		tableMetadata.RowCount = int64(tabInfo.numRows)
 		tableMetadata.Name = tabName
