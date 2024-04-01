@@ -22,7 +22,7 @@ func TestGetDesignSchema_Debug(t *testing.T) {
 	TestGetDesignSchema_Partition(t)
 	TestGetDesignSchema_View(t)
 	TestGetDesignSchema_Function(t)
-	TestGetDesignSchema_Procedure(t)
+	// TestGetDesignSchema_Procedure(t)
 }
 
 func TestGetDesignSchema_Basic(t *testing.T) {
@@ -53,10 +53,10 @@ func TestGetDesignSchema_View(t *testing.T) {
 
 func TestGetDesignSchema_Function(t *testing.T) {
 	testGetDesignSchema(t, []string{
-		// "testdata/get-design-schema/function/create-new-function.yaml",
+		"testdata/get-design-schema/function/create-new-function.yaml",
 		"testdata/get-design-schema/function/delete-function.yaml",
 		// "testdata/get-design-schema/function/modify-function.yaml",
-	}, true)
+	}, false)
 }
 
 func TestGetDesignSchema_Procedure(t *testing.T) {
