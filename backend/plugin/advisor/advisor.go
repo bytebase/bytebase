@@ -579,6 +579,9 @@ const (
 
 	// MSSQLColumnRequirement is an advisor type for MSSQL column requirement.
 	MSSQLColumnRequirement Type = "bb.plugin.advisor.mssql.column.require"
+
+	// MSSQLColumnTypeDisallowList is an advisor type for MSSQL column type disallow list.
+	MSSQLColumnTypeDisallowList Type = "bb.plugin.advisor.mssql.column.type-disallow-list"
 )
 
 // Advice is the result of an advisor.
