@@ -184,6 +184,9 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	}
 
 	steps, err := s.getChangeSteps(ctx, project, vcsConnector, prInfo.changes, sheets)
+	if err != nil {
+		return err
+	}
 
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
 	childCtx = context.WithValue(childCtx, common.UserContextKey, user)
