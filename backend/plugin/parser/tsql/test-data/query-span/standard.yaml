@@ -50,7 +50,7 @@
         - server: ""
           database: db
           schema: dbo
-          table: myview1
+          table: MyView1
           column: ""
 - description: Simple select asterisk statement
   statement: SELECT * FROM MyTable1;
@@ -98,7 +98,7 @@
         - server: ""
           database: db
           schema: dbo
-          table: mytable1
+          table: MyTable1
           column: ""
 - description: Alias table source
   statement: SELECT T1.* FROM MyTable1 AS T1;
@@ -146,7 +146,7 @@
         - server: ""
           database: db
           schema: dbo
-          table: mytable1
+          table: MyTable1
           column: ""
 - description: Subquery in Select target list
   statement: SELECT (SELECT MAX(d) FROM MyTable2) FROM MyTable1;
@@ -198,12 +198,12 @@
         - server: ""
           database: db
           schema: dbo
-          table: mytable1
+          table: MyTable1
           column: ""
         - server: ""
           database: db
           schema: dbo
-          table: mytable2
+          table: MyTable2
           column: ""
 - description: Union
   statement: SELECT a FROM MyTable1 UNION SELECT c FROM MyTable2;
@@ -260,12 +260,12 @@
         - server: ""
           database: db
           schema: dbo
-          table: mytable1
+          table: MyTable1
           column: ""
         - server: ""
           database: db
           schema: dbo
-          table: mytable2
+          table: MyTable2
           column: ""
 - description: Join
   statement: SELECT a, b, c, d FROM MyTable1 JOIN MyTable2 ON MyTable1.a = MyTable2.d;
@@ -338,12 +338,12 @@
         - server: ""
           database: db
           schema: dbo
-          table: mytable1
+          table: MyTable1
           column: ""
         - server: ""
           database: db
           schema: dbo
-          table: mytable2
+          table: MyTable2
           column: ""
 - description: Table Source List
   statement: SELECT a, b, c, d FROM MyTable1, MyTable2;
@@ -416,12 +416,12 @@
         - server: ""
           database: db
           schema: dbo
-          table: mytable1
+          table: MyTable1
           column: ""
         - server: ""
           database: db
           schema: dbo
-          table: mytable2
+          table: MyTable2
           column: ""
 - description: Test for subquery in from cluase with as alias.
   statement: SELECT tt.a, b FROM (SELECT * FROM MyTable1) AS tt;
@@ -480,7 +480,7 @@
         - server: ""
           database: db
           schema: dbo
-          table: mytable1
+          table: MyTable1
           column: ""
 - description: Test for CTE
   statement: WITH tt1(aa, bb) AS ( SELECT a, b FROM MyTable1 ) SELECT tt1.aa, bb FROM tt1;
@@ -539,7 +539,7 @@
         - server: ""
           database: db
           schema: dbo
-          table: mytable1
+          table: MyTable1
           column: ""
         - server: ""
           database: db
@@ -617,12 +617,12 @@
         - server: ""
           database: db
           schema: dbo
-          table: mytable1
+          table: MyTable1
           column: ""
         - server: ""
           database: db
           schema: dbo
-          table: mytable2
+          table: MyTable2
           column: ""
         - server: ""
           database: db
@@ -718,10 +718,10 @@
         - server: ""
           database: db
           schema: dbo
-          table: cte_01
+          table: MyTable1
           column: ""
         - server: ""
           database: db
           schema: dbo
-          table: mytable1
+          table: cte_01
           column: ""
