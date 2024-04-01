@@ -26,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -82,7 +83,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 
 		var prInfo *pullRequestInfo
 		switch vcsProvider.Type {
-		case vcs.GitHub:
+		case storepb.VCSType_GITHUB:
 			secretToken := c.Request().Header.Get("X-Hub-Signature-256")
 			ok, err := validateGitHubWebhookSignature256(secretToken, vcsConnector.Payload.WebhookSecretToken, body)
 			if err != nil {
@@ -107,7 +108,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
-		case vcs.GitLab:
+		case storepb.VCSType_GITLAB:
 			secretToken := c.Request().Header.Get("X-Gitlab-Token")
 			if secretToken != vcsConnector.Payload.WebhookSecretToken {
 				return c.String(http.StatusOK, fmt.Sprintf("invalid webhook secret token %q", secretToken))
@@ -117,7 +118,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
-		case vcs.Bitbucket:
+		case storepb.VCSType_BITBUCKET:
 			eventType := c.Request().Header.Get("X-Event-Key")
 			switch eventType {
 			case "pullrequest:created", "pullrequest:updated":
@@ -131,7 +132,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
-		case vcs.AzureDevOps:
+		case storepb.VCSType_AZURE_DEVOPS:
 			secretToken := c.Request().Header.Get("X-Azure-Token")
 			if secretToken != vcsConnector.Payload.WebhookSecretToken {
 				return c.String(http.StatusOK, fmt.Sprintf("invalid webhook secret token %q", secretToken))
@@ -148,11 +149,11 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		if err != nil {
 			return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))
 		}
-		if vcsProvider.Type == vcs.GitHub {
+		if vcsProvider.Type == storepb.VCSType_GITHUB {
 			comment := getPullRequestComment(setting.ExternalUrl, issue.Name)
 			pullRequestID := getPullRequestID(prInfo.url)
 			if err := vcs.Get(
-				vcs.GitHub,
+				storepb.VCSType_GITHUB,
 				vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
 			).CreatePullRequestComment(ctx, vcsConnector.Payload.ExternalId, pullRequestID, comment); err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to create pull request comment, error %v", err))
@@ -218,7 +219,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 			VcsSource: &v1pb.Plan_VCSSource{
 				VcsConnector:   fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, vcsConnector.ProjectID, common.VCSConnectorPrefix, vcsConnector.ResourceID),
 				PullRequestUrl: prInfo.url,
-				VcsType:        getVCSType(vcsProvider.Type),
+				VcsType:        v1pb.VCSType(vcsProvider.Type),
 			},
 		},
 	})
@@ -276,20 +277,6 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return nil, errors.Wrapf(err, "failed to activity after creating issue %d from push event", issueUID)
 	}
 	return issue, nil
-}
-
-func getVCSType(tp vcs.Type) v1pb.VCSType {
-	switch tp {
-	case vcs.GitHub:
-		return v1pb.VCSType_GITHUB
-	case vcs.GitLab:
-		return v1pb.VCSType_GITLAB
-	case vcs.Bitbucket:
-		return v1pb.VCSType_BITBUCKET
-	case vcs.AzureDevOps:
-		return v1pb.VCSType_AZURE_DEVOPS
-	}
-	return v1pb.VCSType_VCS_TYPE_UNSPECIFIED
 }
 
 func (s *Service) getChangeSteps(
