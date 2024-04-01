@@ -2,22 +2,10 @@ package vcs
 
 import (
 	"context"
+	"fmt"
 	"sync"
-)
 
-// Type is the type of a VCS.
-// nolint
-type Type string
-
-const (
-	// GitLab is the VCS type for GitLab (both GitLab.com and self-hosted).
-	GitLab Type = "GITLAB"
-	// GitHub is the VCS type for GitHub (both GitHub.com and GitHun Enterprise).
-	GitHub Type = "GITHUB"
-	// Bitbucket is the VCS type for Bitbucket Cloud (bitbucket.org).
-	Bitbucket Type = "BITBUCKET"
-	// AzureDevOps is the VCS type for Azure DevOps.
-	AzureDevOps Type = "AZURE_DEVOPS"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // RefType is the type of a ref.
@@ -109,7 +97,7 @@ type Provider interface {
 
 var (
 	providerMu sync.RWMutex
-	providers  = make(map[Type]providerFunc)
+	providers  = make(map[storepb.VCSType]providerFunc)
 )
 
 // ProviderConfig is the provider configuration.
@@ -123,25 +111,25 @@ type providerFunc func(ProviderConfig) Provider
 // Register makes a vcs provider available by the provided type.
 // If Register is called twice with the same name or if provider is nil,
 // it panics.
-func Register(vcsType Type, f providerFunc) {
+func Register(vcsType storepb.VCSType, f providerFunc) {
 	providerMu.Lock()
 	defer providerMu.Unlock()
 	if f == nil {
 		panic("vcs: Register provider is nil")
 	}
 	if _, dup := providers[vcsType]; dup {
-		panic("vcs: Register called twice for provider " + vcsType)
+		panic(fmt.Sprintf("vcs: Register called twice for provider %q", vcsType.String()))
 	}
 	providers[vcsType] = f
 }
 
 // Get returns a vcs provider specified by its vcs type.
-func Get(vcsType Type, providerConfig ProviderConfig) Provider {
+func Get(vcsType storepb.VCSType, providerConfig ProviderConfig) Provider {
 	providerMu.RLock()
 	f, ok := providers[vcsType]
 	providerMu.RUnlock()
 	if !ok {
-		panic("vcs: unknown provider " + vcsType)
+		panic(fmt.Sprintf("vcs: unknown provider %q", vcsType.String()))
 	}
 
 	return f(providerConfig)
