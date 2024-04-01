@@ -24,7 +24,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
-	"github.com/bytebase/bytebase/backend/utils"
 
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -170,11 +169,6 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		creatorID = user.ID
 	}
 
-	databases, err := s.listDatabases(ctx, project, vcsConnector)
-	if err != nil {
-		return err
-	}
-
 	var sheets []int
 	for _, change := range prInfo.changes {
 		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
@@ -189,26 +183,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		sheets = append(sheets, sheet.UID)
 	}
 
-	var steps []*v1pb.Plan_Step
-	for i, database := range databases {
-		if i == 0 || databases[i].EffectiveEnvironmentID != databases[i-1].EffectiveEnvironmentID {
-			steps = append(steps, &v1pb.Plan_Step{})
-		}
-		step := steps[len(steps)-1]
-		for i, change := range prInfo.changes {
-			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
-				Id: uuid.NewString(),
-				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Type:          change.changeType,
-						Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
-						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, sheets[i]),
-						SchemaVersion: change.version,
-					},
-				},
-			})
-		}
-	}
+	steps, err := s.getChangeSteps(ctx, project, vcsConnector, prInfo.changes, sheets)
 
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
 	childCtx = context.WithValue(childCtx, common.UserContextKey, user)
@@ -280,11 +255,63 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	return nil
 }
 
-func (s *Service) listDatabases(ctx context.Context, project *store.ProjectMessage, vcsConnector *store.VCSConnectorMessage) ([]*store.DatabaseMessage, error) {
+func (s *Service) getChangeSteps(
+	ctx context.Context,
+	project *store.ProjectMessage,
+	vcsConnector *store.VCSConnectorMessage,
+	changes []*fileChange,
+	sheetUIDList []int,
+) ([]*v1pb.Plan_Step, error) {
 	if vcsConnector.Payload.DatabaseGroup != "" {
-		return listMatchedDatabasesInGroup(ctx, s.store, project, vcsConnector.Payload.DatabaseGroup)
+		step := &v1pb.Plan_Step{}
+		for i, change := range changes {
+			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
+				Id: uuid.NewString(),
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Type:          change.changeType,
+						Target:        vcsConnector.Payload.DatabaseGroup,
+						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, sheetUIDList[i]),
+						SchemaVersion: change.version,
+					},
+				},
+			})
+		}
+		return []*v1pb.Plan_Step{
+			step,
+		}, nil
 	}
 
+	databases, err := s.listDatabases(ctx, project, vcsConnector)
+	if err != nil {
+		return nil, err
+	}
+
+	var steps []*v1pb.Plan_Step
+	for i, database := range databases {
+		if i == 0 || databases[i].EffectiveEnvironmentID != databases[i-1].EffectiveEnvironmentID {
+			steps = append(steps, &v1pb.Plan_Step{})
+		}
+		step := steps[len(steps)-1]
+		for i, change := range changes {
+			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
+				Id: uuid.NewString(),
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Type:          change.changeType,
+						Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
+						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, sheetUIDList[i]),
+						SchemaVersion: change.version,
+					},
+				},
+			})
+		}
+	}
+
+	return steps, nil
+}
+
+func (s *Service) listDatabases(ctx context.Context, project *store.ProjectMessage, vcsConnector *store.VCSConnectorMessage) ([]*store.DatabaseMessage, error) {
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, err
@@ -302,37 +329,4 @@ func (s *Service) listDatabases(ctx context.Context, project *store.ProjectMessa
 	})
 
 	return databases, nil
-}
-
-func listMatchedDatabasesInGroup(ctx context.Context, stores *store.Store, project *store.ProjectMessage, databaseGroupName string) ([]*store.DatabaseMessage, error) {
-	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(databaseGroupName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project id and database group id from target %q", databaseGroupName)
-	}
-	if projectID != project.ResourceID {
-		return nil, errors.Errorf("project id %q in target %q does not match project id %q in plan config", projectID, databaseGroupName, project.ResourceID)
-	}
-
-	databaseGroup, err := stores.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
-	}
-	if databaseGroup == nil {
-		return nil, errors.Errorf("database group %q not found", databaseGroupID)
-	}
-
-	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
-	}
-
-	matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroupID)
-	}
-	if len(matchedDatabases) == 0 {
-		return nil, errors.Errorf("no matched databases found in database group %q", databaseGroupID)
-	}
-
-	return matchedDatabases, nil
 }
