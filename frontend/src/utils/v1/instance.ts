@@ -274,7 +274,7 @@ export const engineNameV1 = (type: Engine): string => {
     case Engine.DORIS:
       return "Doris";
     case Engine.HIVE:
-      return "Apache Hive";
+      return "Hive";
   }
   return "";
 };
