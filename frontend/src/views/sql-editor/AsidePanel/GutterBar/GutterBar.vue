@@ -1,7 +1,6 @@
 <template>
   <div class="h-full flex flex-col items-stretch justify-between text-sm pb-1">
     <div class="divide-y border-b">
-      <TabItem tab="CONNECTION" @click="handleClickTab('CONNECTION')" />
       <TabItem tab="WORKSHEET" @click="handleClickTab('WORKSHEET')" />
       <TabItem
         tab="SCHEMA"

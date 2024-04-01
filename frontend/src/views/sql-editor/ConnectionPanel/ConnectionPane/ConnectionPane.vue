@@ -53,6 +53,7 @@ import { useElementSize, useMounted } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NTree, NDropdown, type TreeOption } from "naive-ui";
 import { ref, computed, nextTick, watch, h } from "vue";
+import { onMounted } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
@@ -89,7 +90,7 @@ const tabStore = useSQLEditorTabStore();
 const databaseStore = useDatabaseV1Store();
 const instanceStore = useInstanceV1Store();
 const isLoggedIn = useIsLoggedIn();
-const { events: editorEvents } = useSQLEditorContext();
+const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
 const searchHistory = useSearchHistory();
 const {
   state: hoverState,
@@ -206,6 +207,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         // And ignore the fold/unfold arrow.
         if (type === "database") {
           setConnection(node);
+          showConnectionPanel.value = false;
         }
 
         // If the search pattern is not empty, append the selected database name to
@@ -303,7 +305,7 @@ watch(
   { immediate: true }
 );
 
-useEmitteryEventListener(editorEvents, "tree-ready", async () => {
+const calcDefaultExpandKeys = async () => {
   await nextTick();
   const openingDatabaseList = resolveOpeningDatabaseListFromSQLEditorTabList();
   const keys = new Set<string>();
@@ -313,17 +315,38 @@ useEmitteryEventListener(editorEvents, "tree-ready", async () => {
     const nodes = treeStore.nodesByTarget("database", db);
     nodes.forEach((node) => expandNodeRecursively(node.parent, keys));
   });
-  const tab = tabStore.currentTab;
-  // Expand current tab's connected database node
-  if (tab && tab.connection.database) {
-    const db = useDatabaseV1Store().getDatabaseByName(tab.connection.database);
-    const node = head(treeStore.nodesByTarget("database", db));
-    if (node) {
-      keys.add(node.key);
+  if (keys.size === 0) {
+    // Try expand till the first database node
+    const dfsWalk = (node: SQLEditorTreeNode) => {
+      if (node.meta.type === "database") {
+        expandNodeRecursively(node.parent, keys);
+        return true;
+      }
+      if (!node.children) return false;
+      for (let i = 0; i < node.children.length; i++) {
+        const child = node.children[i] as SQLEditorTreeNode;
+        if (dfsWalk(child)) {
+          return true;
+        }
+      }
+      return false;
+    };
+    for (let i = 0; i < treeStore.tree.length; i++) {
+      const node = treeStore.tree[i];
+      if (dfsWalk(node)) {
+        break;
+      }
     }
   }
+  console.log("defaultExpandKeys", Array.from(keys).join(","));
   expandedKeys.value = Array.from(keys);
+};
+
+useEmitteryEventListener(editorEvents, "tree-ready", () => {
+  calcDefaultExpandKeys();
 });
+
+onMounted(calcDefaultExpandKeys);
 </script>
 
 <style lang="postcss" scoped>

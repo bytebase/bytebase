@@ -1,12 +1,13 @@
 <template>
   <div class="flex h-full w-full flex-col justify-start items-start">
+    <ConnectionPathBar class="border-b" />
+
     <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
       <EditorAction @execute="handleExecute" />
 
       <ConnectionHolder v-if="!tab" />
-      <template v-else>
-        <ConnectionPathBar />
 
+      <template v-else>
         <Suspense>
           <SQLEditor @execute="handleExecute" />
           <template #fallback>

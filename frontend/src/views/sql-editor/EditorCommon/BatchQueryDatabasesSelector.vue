@@ -5,25 +5,24 @@
     trigger="click"
   >
     <template #trigger>
-      <div
-        class="flex flex-row justify-start items-center gap-1"
+      <NButton
+        size="small"
+        ghost
+        :type="
+          selectedDatabaseNames.length > 0 && hasBatchQueryFeature
+            ? 'primary'
+            : 'default'
+        "
         @click="handleTriggerClick"
       >
-        <div
-          class="!ml-2 w-auto h-6 px-2 border border-gray-400 flex flex-row justify-center items-center gap-1 cursor-pointer rounded hover:opacity-80"
-          :class="
-            selectedDatabaseNames.length > 0 && hasBatchQueryFeature
-              ? 'text-accent bg-blue-50 shadow !border-accent'
-              : 'text-gray-600'
-          "
-        >
+        <div class="flex flex-row justify-center items-center gap-1">
           <span>{{ $t("sql-editor.batch-query.batch") }}</span>
           <span v-if="selectedDatabaseNames.length > 0">
             ({{ selectedDatabaseNames.length }})
           </span>
           <FeatureBadge feature="bb.feature.batch-query" />
         </div>
-      </div>
+      </NButton>
     </template>
     <div class="w-128 max-h-128 overflow-y-auto p-1 pb-2">
       <p class="text-gray-500 mb-1 w-full leading-4">
@@ -96,7 +95,7 @@
 
 <script lang="ts" setup>
 import type { DataTableRowKey, DataTableColumn } from "naive-ui";
-import { NPopover, NDivider, NDataTable, NTag } from "naive-ui";
+import { NPopover, NDivider, NDataTable, NTag, NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";

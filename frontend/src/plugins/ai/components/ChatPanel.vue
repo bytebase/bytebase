@@ -12,7 +12,7 @@
       <ChatView :conversation="selectedConversation" @enter="requestAI" />
     </template>
 
-    <div :class="[isChatMode && 'px-4 py-2 flex flex-col gap-2']">
+    <div :class="[isChatMode && 'px-2 py-2 flex flex-col gap-2']">
       <div v-if="isChatMode" class="flex items-center gap-2 w-full">
         <DynamicSuggestions class="flex-1" @enter="requestAI" />
       </div>
