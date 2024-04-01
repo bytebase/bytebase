@@ -93,6 +93,7 @@ const state = reactive<LocalState>({
       baseDirectory: "bytebase",
       branch: "main",
       resourceId: "",
+      databaseGroup: "",
     },
   },
   currentStep: CHOOSE_PROVIDER_STEP,
@@ -151,6 +152,7 @@ const tryFinishSetup = async () => {
         vcsProvider: state.config.vcs.name,
         baseDirectory: state.config.repositoryConfig.baseDirectory,
         branch: state.config.repositoryConfig.branch,
+        databaseGroup: state.config.repositoryConfig.databaseGroup,
         fullPath: state.config.repositoryInfo.fullPath,
         webUrl: state.config.repositoryInfo.webUrl,
       }

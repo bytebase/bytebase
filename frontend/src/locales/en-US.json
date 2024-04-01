@@ -3204,6 +3204,7 @@
   },
   "database-group": {
     "self": "Database Group",
+    "select": "Select database group",
     "create": "New database group",
     "edit": "Edit database group",
     "matched-database": "Matched database",

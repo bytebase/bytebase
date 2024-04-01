@@ -52,6 +52,18 @@
     </div>
     <div>
       <div class="textlabel">
+        {{ $t("database-group.self") }}
+      </div>
+      <!-- TODO(ed): i18n -->
+      <DatabaseGroupSelect
+        v-model:value="repositoryConfig.databaseGroup"
+        class="mt-2"
+        style="width: 100%"
+        :project="project.name"
+      />
+    </div>
+    <div>
+      <div class="textlabel">
         {{ $t("common.branch") }} <span class="text-red-600">*</span>
       </div>
       <div class="mt-1 textinfolabel">
@@ -87,6 +99,7 @@
 import { Status } from "nice-grpc-common";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { DatabaseGroupSelect } from "@/components/v2/Select";
 import { useVCSConnectorStore } from "@/store";
 import type { RepositoryConfig } from "@/types";
 import type { ResourceId, ValidatedMessage } from "@/types";
