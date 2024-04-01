@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: CREATE TABLE [\\](ID INT);
   want:
@@ -13,6 +14,7 @@
       title: naming.table
       content: '[\\] mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"'
       line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE all_lowercase(ID INT);
   want:
@@ -21,6 +23,7 @@
       title: naming.table
       content: all_lowercase mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
       line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE PascalCase(ID INT);
   want:
@@ -29,6 +32,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: execute sp_rename 'Sales.SalesTerritory', 'SALESTERR';
   want:
@@ -37,6 +41,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: execute sp_rename 'Sales.SalesTerritory', 'salesTerr';
   want:
@@ -45,4 +50,5 @@
       title: naming.table
       content: salesTerr mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
       line: 1
+      column: 0
       details: ""

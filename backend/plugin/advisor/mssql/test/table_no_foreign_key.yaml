@@ -11,6 +11,7 @@
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table MyTable.
       line: 3
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE Customer
@@ -26,6 +27,7 @@
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table Customer.
       line: 6
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE Customer
@@ -41,6 +43,7 @@
       title: table.no-foreign-key
       content: FOREIGN KEY is not allowed in the table Customer.
       line: 7
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE Customer
@@ -61,4 +64,5 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
