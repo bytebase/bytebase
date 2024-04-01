@@ -5,6 +5,7 @@
       title: schema.backward-compatibility
       content: Drop table TEST_DB.dbo.MyTable may cause incompatibility with the existing data and code
       line: 1
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE MyTable(Id INT PRIMARY KEY);
@@ -15,6 +16,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: DROP SCHEMA MySchema;
   want:
@@ -23,6 +25,7 @@
       title: schema.backward-compatibility
       content: Drop schema TEST_DB.myschema may cause incompatibility with the existing data and code
       line: 1
+      column: 0
       details: ""
 - statement: |-
     CREATE SCHEMA AUTHORIZATION dbo;
@@ -33,6 +36,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: DROP DATABASE MyDB;
   want:
@@ -41,6 +45,7 @@
       title: schema.backward-compatibility
       content: Drop database mydb may cause incompatibility with the existing data and code
       line: 1
+      column: 0
       details: ""
 - statement: |-
     CREATE DATABASE MyDB;
@@ -51,6 +56,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     ALTER TABLE MyTable DROP COLUMN MyColumnOne, MyColumnTwo;
@@ -68,42 +74,49 @@
       title: schema.backward-compatibility
       content: Drop column mycolumnone, mycolumntwo may cause incompatibility with the existing data and code
       line: 1
+      column: 0
       details: ""
     - status: WARN
       code: 111
       title: schema.backward-compatibility
       content: Alter COLUMN mycolumnone may cause incompatibility with the existing data and code
       line: 2
+      column: 0
       details: ""
     - status: WARN
       code: 106
       title: schema.backward-compatibility
       content: Add PRIMARY KEY may cause incompatibility with the existing data and code
       line: 3
+      column: 0
       details: ""
     - status: WARN
       code: 107
       title: schema.backward-compatibility
       content: Add UNIQUE KEY may cause incompatibility with the existing data and code
       line: 4
+      column: 0
       details: ""
     - status: WARN
       code: 109
       title: schema.backward-compatibility
       content: Add CHECK may cause incompatibility with the existing data and code
       line: 5
+      column: 0
       details: ""
     - status: WARN
       code: 108
       title: schema.backward-compatibility
       content: Add CHECK WITH NO CHECK may cause incompatibility with the existing data and code
       line: 6
+      column: 0
       details: ""
     - status: WARN
       code: 108
       title: schema.backward-compatibility
       content: Add FOREIGN KEY WITH NO CHECK may cause incompatibility with the existing data and code
       line: 8
+      column: 0
       details: ""
 - statement: EXEC sp_rename 'Sales.SalesTerritory', 'SalesTerr';
   want:
@@ -112,6 +125,7 @@
       title: schema.backward-compatibility
       content: Rename Table 'Sales.SalesTerritory' WITH may cause incompatibility with the existing data and code
       line: 1
+      column: 0
       details: ""
 - statement: EXEC sp_rename 'dbo.ErrorLog.ErrorTime', 'ErrorDateTime', 'COLUMN';
   want:
@@ -120,4 +134,5 @@
       title: schema.backward-compatibility
       content: Rename COLUMN 'dbo.ErrorLog.ErrorTime' may cause incompatibility with the existing data and code
       line: 1
+      column: 0
       details: ""

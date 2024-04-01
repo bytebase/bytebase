@@ -7,22 +7,26 @@
       title: naming.identifier.no-keyword
       content: Identifier [exec] is a keyword identifier and should be avoided.
       line: 1
+      column: 0
       details: ""
     - status: WARN
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier [fillfactor] is a keyword identifier and should be avoided.
       line: 1
+      column: 0
       details: ""
     - status: WARN
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier [add] is a keyword identifier and should be avoided.
       line: 2
+      column: 0
       details: ""
     - status: WARN
       code: 308
       title: naming.identifier.no-keyword
       content: Identifier [fillfactor] is a keyword identifier and should be avoided.
       line: 2
+      column: 0
       details: ""

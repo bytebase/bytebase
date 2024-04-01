@@ -5,6 +5,7 @@
       title: statement.where.require
       content: WHERE clause is required for query specification.
       line: 1
+      column: 0
       details: ""
 - statement: SELECT * FROM MyTable WHERE a = 1;
   want:
@@ -13,6 +14,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: UPDATE MyTable SET a = 1;
   want:
@@ -21,6 +23,7 @@
       title: statement.where.require
       content: WHERE clause is required for UPDATE statement.
       line: 1
+      column: 0
       details: ""
 - statement: UPDATE MyTable SET a = 1 WHERE a = 1;
   want:
@@ -29,6 +32,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: DELETE FROM MyTable;
   want:
@@ -37,6 +41,7 @@
       title: statement.where.require
       content: WHERE clause is required for DELETE statement.
       line: 1
+      column: 0
       details: ""
 - statement: DELETE FROM MyTable WHERE a = 1;
   want:
@@ -45,6 +50,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     WITH CteA AS (SELECT * FROM TableA WHERE a = 1),
@@ -56,12 +62,14 @@
       title: statement.where.require
       content: WHERE clause is required for query specification.
       line: 2
+      column: 0
       details: ""
     - status: WARN
       code: 202
       title: statement.where.require
       content: WHERE clause is required for query specification.
       line: 3
+      column: 0
       details: ""
 - statement: SELECT 1;
   want:
@@ -70,4 +78,5 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
