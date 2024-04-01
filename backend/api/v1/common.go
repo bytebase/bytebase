@@ -444,6 +444,8 @@ func convertExportFormat(format storepb.ExportFormat) v1pb.ExportFormat {
 		return v1pb.ExportFormat_JSON
 	case storepb.ExportFormat_SQL:
 		return v1pb.ExportFormat_SQL
+	case storepb.ExportFormat_XLSX:
+		return v1pb.ExportFormat_XLSX
 	}
 	return v1pb.ExportFormat_FORMAT_UNSPECIFIED
 }
@@ -456,6 +458,8 @@ func convertToExportFormat(format v1pb.ExportFormat) storepb.ExportFormat {
 		return storepb.ExportFormat_JSON
 	case v1pb.ExportFormat_SQL:
 		return storepb.ExportFormat_SQL
+	case v1pb.ExportFormat_XLSX:
+		return storepb.ExportFormat_XLSX
 	}
 	return storepb.ExportFormat_FORMAT_UNSPECIFIED
 }
