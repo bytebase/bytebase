@@ -3204,6 +3204,7 @@
   },
   "database-group": {
     "self": "Nhóm cơ sở dữ liệu",
+    "select": "Chọn nhóm cơ sở dữ liệu",
     "create": "Nhóm cơ sở dữ liệu mới",
     "edit": "Chỉnh sửa nhóm cơ sở dữ liệu",
     "matched-database": "Cơ sở dữ liệu phù hợp",
