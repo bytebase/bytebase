@@ -144,7 +144,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		default:
 			return nil
 		}
-		issue, err := s.createIssueFromPRInfo(ctx, project, vcsConnector, prInfo)
+		issue, err := s.createIssueFromPRInfo(ctx, project, vcsProvider, vcsConnector, prInfo)
 		if err != nil {
 			return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))
 		}
@@ -178,7 +178,7 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
 }
 
-func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) (*v1pb.Issue, error) {
+func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) (*v1pb.Issue, error) {
 	creatorID := api.SystemBotID
 	user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &prInfo.email})
 	if err != nil {
@@ -218,6 +218,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 			VcsSource: &v1pb.Plan_VCSSource{
 				VcsConnector:   fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, vcsConnector.ProjectID, common.VCSConnectorPrefix, vcsConnector.ResourceID),
 				PullRequestUrl: prInfo.url,
+				VcsType:        getVCSType(vcsProvider.Type),
 			},
 		},
 	})
@@ -275,6 +276,20 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return nil, errors.Wrapf(err, "failed to activity after creating issue %d from push event", issueUID)
 	}
 	return issue, nil
+}
+
+func getVCSType(tp vcs.Type) v1pb.VCSType {
+	switch tp {
+	case vcs.GitHub:
+		return v1pb.VCSType_GITHUB
+	case vcs.GitLab:
+		return v1pb.VCSType_GITLAB
+	case vcs.Bitbucket:
+		return v1pb.VCSType_BITBUCKET
+	case vcs.AzureDevOps:
+		return v1pb.VCSType_AZURE_DEVOPS
+	}
+	return v1pb.VCSType_VCS_TYPE_UNSPECIFIED
 }
 
 func (s *Service) getChangeSteps(

@@ -134,10 +134,11 @@ message PlanConfig {
   }
 
   message VCSSource {
+    VCSType vcs_type = 1;
     // Optional.
     // If present, we will update the pull request for rollout status.
     // Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
-    string vcs_connector = 1;
-    string pull_request_url = 2;
+    string vcs_connector = 2;
+    string pull_request_url = 3;
   }
 }

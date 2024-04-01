@@ -3,6 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { VCSType, vCSTypeFromJSON, vCSTypeToJSON } from "./common";
 import { VCSConnector } from "./vcs_connector_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -126,7 +127,7 @@ export interface VCSProvider {
   name: string;
   /** The title of the vcs provider. It is used to display in the UI. Specified by the client. */
   title: string;
-  type: VCSProvider_Type;
+  type: VCSType;
   /**
    * The url of the vcs provider. Specified by the client.
    * For example: github.com, gitlab.com, gitlab.bytebase.com.
@@ -134,61 +135,6 @@ export interface VCSProvider {
   url: string;
   /** The access token of the vcs provider. */
   accessToken: string;
-}
-
-export enum VCSProvider_Type {
-  TYPE_UNSPECIFIED = 0,
-  /** GITHUB - GitHub type. Using for GitHub community edition(ce). */
-  GITHUB = 1,
-  /** GITLAB - GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). */
-  GITLAB = 2,
-  /** BITBUCKET - BitBucket type. Using for BitBucket cloud or BitBucket server. */
-  BITBUCKET = 3,
-  /** AZURE_DEVOPS - Azure DevOps. Using for Azure DevOps GitOps workflow. */
-  AZURE_DEVOPS = 4,
-  UNRECOGNIZED = -1,
-}
-
-export function vCSProvider_TypeFromJSON(object: any): VCSProvider_Type {
-  switch (object) {
-    case 0:
-    case "TYPE_UNSPECIFIED":
-      return VCSProvider_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "GITHUB":
-      return VCSProvider_Type.GITHUB;
-    case 2:
-    case "GITLAB":
-      return VCSProvider_Type.GITLAB;
-    case 3:
-    case "BITBUCKET":
-      return VCSProvider_Type.BITBUCKET;
-    case 4:
-    case "AZURE_DEVOPS":
-      return VCSProvider_Type.AZURE_DEVOPS;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return VCSProvider_Type.UNRECOGNIZED;
-  }
-}
-
-export function vCSProvider_TypeToJSON(object: VCSProvider_Type): string {
-  switch (object) {
-    case VCSProvider_Type.TYPE_UNSPECIFIED:
-      return "TYPE_UNSPECIFIED";
-    case VCSProvider_Type.GITHUB:
-      return "GITHUB";
-    case VCSProvider_Type.GITLAB:
-      return "GITLAB";
-    case VCSProvider_Type.BITBUCKET:
-      return "BITBUCKET";
-    case VCSProvider_Type.AZURE_DEVOPS:
-      return "AZURE_DEVOPS";
-    case VCSProvider_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
 }
 
 function createBaseCreateVCSProviderRequest(): CreateVCSProviderRequest {
@@ -1026,7 +972,7 @@ export const VCSProvider = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
-      type: isSet(object.type) ? vCSProvider_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? vCSTypeFromJSON(object.type) : 0,
       url: isSet(object.url) ? globalThis.String(object.url) : "",
       accessToken: isSet(object.accessToken) ? globalThis.String(object.accessToken) : "",
     };
@@ -1041,7 +987,7 @@ export const VCSProvider = {
       obj.title = message.title;
     }
     if (message.type !== 0) {
-      obj.type = vCSProvider_TypeToJSON(message.type);
+      obj.type = vCSTypeToJSON(message.type);
     }
     if (message.url !== "") {
       obj.url = message.url;

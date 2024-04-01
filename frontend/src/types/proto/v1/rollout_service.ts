@@ -3,7 +3,14 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
-import { ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
+import {
+  ExportFormat,
+  exportFormatFromJSON,
+  exportFormatToJSON,
+  VCSType,
+  vCSTypeFromJSON,
+  vCSTypeToJSON,
+} from "./common";
 import { ChangedResources } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -299,6 +306,7 @@ export interface Plan_VCSSource {
    * If present, we will update the pull request for rollout status.
    * Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
    */
+  vcsType: VCSType;
   vcsConnector: string;
   pullRequestUrl: string;
 }
@@ -2759,16 +2767,19 @@ export const Plan_ExportDataConfig = {
 };
 
 function createBasePlan_VCSSource(): Plan_VCSSource {
-  return { vcsConnector: "", pullRequestUrl: "" };
+  return { vcsType: 0, vcsConnector: "", pullRequestUrl: "" };
 }
 
 export const Plan_VCSSource = {
   encode(message: Plan_VCSSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.vcsType !== 0) {
+      writer.uint32(8).int32(message.vcsType);
+    }
     if (message.vcsConnector !== "") {
-      writer.uint32(10).string(message.vcsConnector);
+      writer.uint32(18).string(message.vcsConnector);
     }
     if (message.pullRequestUrl !== "") {
-      writer.uint32(18).string(message.pullRequestUrl);
+      writer.uint32(26).string(message.pullRequestUrl);
     }
     return writer;
   },
@@ -2781,14 +2792,21 @@ export const Plan_VCSSource = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.vcsType = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
           message.vcsConnector = reader.string();
           continue;
-        case 2:
-          if (tag !== 18) {
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
@@ -2805,6 +2823,7 @@ export const Plan_VCSSource = {
 
   fromJSON(object: any): Plan_VCSSource {
     return {
+      vcsType: isSet(object.vcsType) ? vCSTypeFromJSON(object.vcsType) : 0,
       vcsConnector: isSet(object.vcsConnector) ? globalThis.String(object.vcsConnector) : "",
       pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
     };
@@ -2812,6 +2831,9 @@ export const Plan_VCSSource = {
 
   toJSON(message: Plan_VCSSource): unknown {
     const obj: any = {};
+    if (message.vcsType !== 0) {
+      obj.vcsType = vCSTypeToJSON(message.vcsType);
+    }
     if (message.vcsConnector !== "") {
       obj.vcsConnector = message.vcsConnector;
     }
@@ -2826,6 +2848,7 @@ export const Plan_VCSSource = {
   },
   fromPartial(object: DeepPartial<Plan_VCSSource>): Plan_VCSSource {
     const message = createBasePlan_VCSSource();
+    message.vcsType = object.vcsType ?? 0;
     message.vcsConnector = object.vcsConnector ?? "";
     message.pullRequestUrl = object.pullRequestUrl ?? "";
     return message;
