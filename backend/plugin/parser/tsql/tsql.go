@@ -60,17 +60,17 @@ func NormalizeTSQLTableName(ctx parser.ITable_nameContext, fallbackDatabaseName,
 	schema := fallbackSchemaName
 	table := ""
 	if d := ctx.GetDatabase(); d != nil {
-		if id := NormalizeTSQLIdentifier(d); id != "" {
+		if id, _ := NormalizeTSQLIdentifier(d); id != "" {
 			database = id
 		}
 	}
 	if s := ctx.GetSchema(); s != nil {
-		if id := NormalizeTSQLIdentifier(s); id != "" {
+		if id, _ := NormalizeTSQLIdentifier(s); id != "" {
 			schema = id
 		}
 	}
 	if t := ctx.GetTable(); t != nil {
-		if id := NormalizeTSQLIdentifier(t); id != "" {
+		if id, _ := NormalizeTSQLIdentifier(t); id != "" {
 			table = id
 		}
 	}
@@ -79,14 +79,14 @@ func NormalizeTSQLTableName(ctx parser.ITable_nameContext, fallbackDatabaseName,
 
 // NormalizeTSQLIdentifier returns the normalized identifier.
 // https://learn.microsoft.com/zh-cn/sql/relational-databases/databases/database-identifiers?view=sql-server-ver15
-// TODO(zp): currently, we returns the lower case of the part, we may need to get the CI/CS from the server/database.
-func NormalizeTSQLIdentifier(part parser.IId_Context) string {
+// TODO(zp): currently, we returns the lowercase and original of the part, we may need to get the CI/CS from the server/database.
+func NormalizeTSQLIdentifier(part parser.IId_Context) (original string, lowercase string) {
 	if part == nil {
-		return ""
+		return "", ""
 	}
 	text := part.GetText()
 	if text == "" {
-		return ""
+		return "", ""
 	}
 	if text[0] == '[' && text[len(text)-1] == ']' {
 		text = text[1 : len(text)-1]
@@ -96,7 +96,7 @@ func NormalizeTSQLIdentifier(part parser.IId_Context) string {
 	for _, r := range text {
 		s += string(unicode.ToLower(r))
 	}
-	return s
+	return text, s
 }
 
 // IsTSQLKeyword returns true if the given keyword is a TSQL keywords.

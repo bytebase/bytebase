@@ -2,7 +2,6 @@
 package github
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -17,7 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
-	"github.com/bytebase/bytebase/backend/plugin/vcs/internal/oauth"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/internal"
 )
 
 const (
@@ -36,15 +35,16 @@ var _ vcs.Provider = (*Provider)(nil)
 
 // Provider is a GitHub VCS provider.
 type Provider struct {
-	client *http.Client
+	client      *http.Client
+	instanceURL string
+	authToken   string
 }
 
 func newProvider(config vcs.ProviderConfig) vcs.Provider {
-	if config.Client == nil {
-		config.Client = &http.Client{}
-	}
 	return &Provider{
-		client: config.Client,
+		client:      &http.Client{},
+		instanceURL: config.InstanceURL,
+		authToken:   config.AuthToken,
 	}
 }
 
@@ -150,11 +150,11 @@ type CommitsDiff struct {
 // the `permissions.admin` field.
 //
 // Docs: https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user
-func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repository, error) {
 	var githubRepos []Repository
 	page := 1
 	for {
-		repos, hasNextPage, err := p.fetchPaginatedRepositoryList(ctx, oauthCtx, instanceURL, page)
+		repos, hasNextPage, err := p.fetchPaginatedRepositoryList(ctx, page)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetch paginated list")
 		}
@@ -186,14 +186,9 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.
 // fetchPaginatedRepositoryList fetches repositories where the authenticated
 // user has access to in given page. It returns the paginated results along
 // with a boolean indicating whether the next page exists.
-func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL string, page int) (repos []Repository, hasNextPage bool, err error) {
-	url := fmt.Sprintf("%s/user/repos?page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-	)
+func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, page int) (repos []Repository, hasNextPage bool, err error) {
+	url := fmt.Sprintf("%s/user/repos?page=%d&per_page=%d", p.APIURL(p.instanceURL), page, apiPageSize)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "GET %s", url)
 	}
@@ -223,13 +218,9 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx *c
 // ReadFileContent reads the content of the given file in the repository.
 //
 // Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
-	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), refInfo.RefName)
-	code, _, body, err := oauth.GetWithHeader(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
+func (p *Provider) ReadFileContent(ctx context.Context, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(p.instanceURL), repositoryID, url.QueryEscape(filePath), refInfo.RefName)
+	code, body, err := internal.GetWithHeader(ctx, url, p.getAuthorization(),
 		map[string]string{
 			"Accept": "application/vnd.github.raw",
 		},
@@ -266,11 +257,11 @@ type PullRequestFile struct {
 // ListPullRequestFile lists the changed files in the pull request.
 //
 // Docs: https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files
-func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
+func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
 	var allPRFiles []PullRequestFile
 	page := 1
 	for {
-		fileList, err := p.listPaginatedPullRequestFile(ctx, oauthCtx, instanceURL, repositoryID, pullRequestID, page)
+		fileList, err := p.listPaginatedPullRequestFile(ctx, repositoryID, pullRequestID, page)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to list pull request file")
 		}
@@ -319,14 +310,9 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.Oau
 }
 
 // listPaginatedPullRequestFile lists the changed files in the pull request with pagination.
-func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, pullRequestID string, page int) ([]PullRequestFile, error) {
-	requestURL := fmt.Sprintf("%s/repos/%s/pulls/%s/files?per_page=%d&page=%d", p.APIURL(instanceURL), repositoryID, pullRequestID, apiPageSize, page)
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		requestURL,
-		oauthCtx.AccessToken,
-	)
+func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, repositoryID, pullRequestID string, page int) ([]PullRequestFile, error) {
+	requestURL := fmt.Sprintf("%s/repos/%s/pulls/%s/files?per_page=%d&page=%d", p.APIURL(p.instanceURL), repositoryID, pullRequestID, apiPageSize, page)
+	code, body, err := internal.Get(ctx, requestURL, p.getAuthorization())
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", requestURL)
 	}
@@ -347,10 +333,41 @@ func (p *Provider) listPaginatedPullRequestFile(ctx context.Context, oauthCtx *c
 	return prFiles, nil
 }
 
-// BranchCreate is the API message to create the branch.
-type BranchCreate struct {
-	Ref string `json:"ref"`
-	SHA string `json:"sha"`
+type Comment struct {
+	Body string `json:"body"`
+}
+
+// CreatePullRequestComment creates a comment on the pull request.
+//
+// Issue comment makes comment on the pull request (Yes, you read it right).
+// Pull request comment makes a pull request comment on the line.
+// Pull request review makes a pull request review such as approval.
+// Docs: https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment
+func (p *Provider) CreatePullRequestComment(ctx context.Context, repositoryID, pullRequestID, comment string) error {
+	commentMessage := Comment{Body: comment}
+	commentCreatePayload, err := json.Marshal(commentMessage)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal request body for creating pull request comment")
+	}
+	url := fmt.Sprintf("%s/repos/%s/issues/%s/comments", p.APIURL(p.instanceURL), repositoryID, pullRequestID)
+	code, body, err := internal.Post(ctx, url, p.getAuthorization(), commentCreatePayload)
+	if err != nil {
+		return errors.Wrapf(err, "POST %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create pull request comment through URL %s", url)
+	}
+
+	// GitHub returns 201 HTTP status codes upon successful issue comment creation,
+	if code != http.StatusCreated {
+		return errors.Errorf("failed to create pull request comment through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+	return nil
 }
 
 // Branch is the API message for GitHub branch.
@@ -367,14 +384,9 @@ type ReferenceObject struct {
 // GetBranch gets the given branch in the repository.
 //
 // Docs: https://docs.github.com/en/rest/git/refs#get-a-reference
-func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
-	url := fmt.Sprintf("%s/repos/%s/git/ref/heads/%s", p.APIURL(instanceURL), repositoryID, branchName)
-	code, _, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-	)
+func (p *Provider) GetBranch(ctx context.Context, repositoryID, branchName string) (*vcs.BranchInfo, error) {
+	url := fmt.Sprintf("%s/repos/%s/git/ref/heads/%s", p.APIURL(p.instanceURL), repositoryID, branchName)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
@@ -413,15 +425,9 @@ type PullRequest struct {
 // CreateWebhook creates a webhook in the repository with given payload.
 //
 // Docs: https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
-func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
-	url := fmt.Sprintf("%s/repos/%s/hooks", p.APIURL(instanceURL), repositoryID)
-	code, _, body, err := oauth.Post(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-		bytes.NewReader(payload),
-	)
+func (p *Provider) CreateWebhook(ctx context.Context, repositoryID string, payload []byte) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/hooks", p.APIURL(p.instanceURL), repositoryID)
+	code, body, err := internal.Post(ctx, url, p.getAuthorization(), payload)
 	if err != nil {
 		return "", errors.Wrapf(err, "POST %s", url)
 	}
@@ -450,14 +456,9 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthCont
 // DeleteWebhook deletes the webhook from the repository.
 //
 // Docs: https://docs.github.com/en/rest/webhooks/repos#delete-a-repository-webhook
-func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string) error {
-	url := fmt.Sprintf("%s/repos/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
-	code, _, body, err := oauth.Delete(
-		ctx,
-		p.client,
-		url,
-		oauthCtx.AccessToken,
-	)
+func (p *Provider) DeleteWebhook(ctx context.Context, repositoryID, webhookID string) error {
+	url := fmt.Sprintf("%s/repos/%s/hooks/%s", p.APIURL(p.instanceURL), repositoryID, webhookID)
+	code, body, err := internal.Delete(ctx, url, p.getAuthorization())
 	if err != nil {
 		return errors.Wrapf(err, "DELETE %s", url)
 	}
@@ -472,4 +473,8 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthCont
 		)
 	}
 	return nil
+}
+
+func (p *Provider) getAuthorization() string {
+	return fmt.Sprintf("Bearer %s", p.authToken)
 }

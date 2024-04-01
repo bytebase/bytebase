@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: DROP TABLE Foo;
   want:
@@ -13,6 +14,7 @@
       title: table.drop-naming-convention
       content: '[foo] mismatches drop table naming convention, naming format should be "_delete$"'
       line: 1
+      column: 0
       details: ""
 - statement: DROP TABLE [Foo], [Bar_delete];
   want:
@@ -21,4 +23,5 @@
       title: table.drop-naming-convention
       content: '[foo] mismatches drop table naming convention, naming format should be "_delete$"'
       line: 1
+      column: 0
       details: ""

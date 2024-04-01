@@ -4,13 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/store"
@@ -36,11 +32,8 @@ func getGitLabPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 	if pushEvent.ObjectAttributes.TargetBranch != vcsConnector.Payload.Branch {
 		return nil, errors.Errorf("committed to branch %q, want branch %q", pushEvent.ObjectAttributes.TargetBranch, vcsConnector.Payload.Branch)
 	}
-	oauthContext := &common.OauthContext{
-		AccessToken: vcsProvider.AccessToken,
-	}
 
-	mrFiles, err := vcs.Get(vcs.GitLab, vcs.ProviderConfig{}).ListPullRequestFile(ctx, oauthContext, vcsProvider.InstanceURL, vcsConnector.Payload.ExternalId, fmt.Sprintf("%d", pushEvent.ObjectAttributes.IID))
+	mrFiles, err := vcs.Get(vcs.GitLab, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ListPullRequestFile(ctx, vcsConnector.Payload.ExternalId, fmt.Sprintf("%d", pushEvent.ObjectAttributes.IID))
 	if err != nil {
 		return nil, errors.Errorf("failed to list merge %q request files, error %v", pushEvent.ObjectAttributes.URL, err)
 	}
@@ -50,25 +43,11 @@ func getGitLabPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 		url:         pushEvent.ObjectAttributes.URL,
 		title:       pushEvent.ObjectAttributes.Title,
 		description: pushEvent.ObjectAttributes.Description,
+		changes:     getChangesByFileList(mrFiles, vcsConnector.Payload.BaseDirectory),
 	}
-	for _, v := range mrFiles {
-		if v.IsDeleted {
-			continue
-		}
-		if filepath.Dir(v.Path) != vcsConnector.Payload.BaseDirectory {
-			continue
-		}
-		change, err := getFileChange(v.Path)
-		if err != nil {
-			slog.Error("failed to get file change info", slog.String("path", v.Path), log.BBError(err))
-		}
-		if change != nil {
-			change.path = v.Path
-			prInfo.changes = append(prInfo.changes, change)
-		}
-	}
+
 	for _, file := range prInfo.changes {
-		content, err := vcs.Get(vcs.GitLab, vcs.ProviderConfig{}).ReadFileContent(ctx, oauthContext, vcsProvider.InstanceURL, vcsConnector.Payload.ExternalId, file.path, vcs.RefInfo{RefType: vcs.RefTypeCommit, RefName: pushEvent.ObjectAttributes.LastCommit.ID})
+		content, err := vcs.Get(vcs.GitLab, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ReadFileContent(ctx, vcsConnector.Payload.ExternalId, file.path, vcs.RefInfo{RefType: vcs.RefTypeCommit, RefName: pushEvent.ObjectAttributes.LastCommit.ID})
 		if err != nil {
 			return nil, errors.Errorf("failed read file content, merge request %q, file %q, error %v", pushEvent.ObjectAttributes.URL, file.path, err)
 		}

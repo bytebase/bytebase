@@ -43,14 +43,3 @@ export type VCSCommit = {
   addedList: string[];
   modifiedList: string[];
 };
-
-export type VCSPushEvent = {
-  vcsType: VCSType;
-  ref: string;
-  repositoryId: string;
-  repositoryUrl: string;
-  repositoryFullPath: string;
-  authorName: string;
-  fileCommit: VCSFileCommit;
-  commits: VCSCommit[];
-};

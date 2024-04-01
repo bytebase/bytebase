@@ -63,44 +63,6 @@
               {{ `version ${changeHistory.releaseVersion}` }}
             </dd>
           </dl>
-          <div
-            v-if="pushEvent"
-            class="mt-1 text-sm text-control-light flex flex-row items-center space-x-1"
-          >
-            <template
-              v-if="vcsTypeToJSON(pushEvent?.vcsType).startsWith('GITLAB')"
-            >
-              <img class="h-4 w-auto" src="@/assets/gitlab-logo.svg" />
-            </template>
-            <template
-              v-if="vcsTypeToJSON(pushEvent?.vcsType).startsWith('GITHUB')"
-            >
-              <img class="h-4 w-auto" src="@/assets/github-logo.svg" />
-            </template>
-            <template
-              v-if="vcsTypeToJSON(pushEvent?.vcsType).startsWith('BITBUCKET')"
-            >
-              <img class="h-4 w-auto" src="@/assets/bitbucket-logo.svg" />
-            </template>
-            <a :href="vcsBranchUrl" target="_blank" class="normal-link">
-              {{ `${vcsBranch}@${pushEvent.repositoryFullPath}` }}
-            </a>
-            <span v-if="vcsCommit">
-              {{ $t("common.commit") }}
-              <a :href="vcsCommit.url" target="_blank" class="normal-link">
-                {{ vcsCommit.id.substring(0, 7) }}:
-              </a>
-              <span class="text-main mr-1">{{ vcsCommit.title }}</span>
-              <i18n-t keypath="change-history.commit-info">
-                <template #author>
-                  {{ pushEvent.authorName }}
-                </template>
-                <template #time>
-                  {{ humanizeDate(vcsCommit.createdTime) }}
-                </template>
-              </i18n-t>
-            </span>
-          </div>
         </div>
       </div>
 
@@ -354,8 +316,6 @@ import {
   changeHistory_TypeToJSON,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
-import type { PushEvent } from "@/types/proto/v1/vcs";
-import { VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
 import {
   changeHistoryLink,
   extractIssueUID,
@@ -608,45 +568,6 @@ const previousHistoryLink = computed(() => {
   const previous = previousHistory.value;
   if (!previous) return "";
   return changeHistoryLink(previous);
-});
-
-const pushEvent = computed((): PushEvent | undefined => {
-  return changeHistory.value?.pushEvent;
-});
-
-const vcsCommit = computed(() => {
-  const commit = pushEvent.value?.commits[0];
-  if (commit && commit.id) {
-    return commit;
-  }
-  return undefined;
-});
-
-const vcsBranch = computed((): string => {
-  if (pushEvent.value) {
-    if (
-      pushEvent.value.vcsType === VcsType.GITLAB ||
-      pushEvent.value.vcsType === VcsType.GITHUB ||
-      pushEvent.value.vcsType === VcsType.BITBUCKET
-    ) {
-      const parts = pushEvent.value.ref.split("/");
-      return parts[parts.length - 1];
-    }
-  }
-  return "";
-});
-
-const vcsBranchUrl = computed((): string => {
-  if (pushEvent.value) {
-    if (pushEvent.value.vcsType === VcsType.GITLAB) {
-      return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
-    } else if (pushEvent.value.vcsType === VcsType.GITHUB) {
-      return `${pushEvent.value.repositoryUrl}/tree/${vcsBranch.value}`;
-    } else if (pushEvent.value.vcsType === VcsType.BITBUCKET) {
-      return `${pushEvent.value.repositoryUrl}/src/${vcsBranch.value}`;
-    }
-  }
-  return "";
 });
 
 const copyStatement = async () => {

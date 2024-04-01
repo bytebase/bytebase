@@ -97,7 +97,7 @@ func (l *columnMaximumVarcharLengthChecker) EnterData_type(ctx *parser.Data_type
 		currentLength = math.MaxInt32 // 2 ^ 31 - 1
 		line = ctx.MAX().GetSymbol().GetLine()
 	} else if ctx.GetExt_type() != nil && ctx.GetScale() != nil && ctx.GetPrec() == nil && ctx.GetInc() == nil {
-		normalizedTypeString := tsqlparser.NormalizeTSQLIdentifier(ctx.GetExt_type())
+		_, normalizedTypeString := tsqlparser.NormalizeTSQLIdentifier(ctx.GetExt_type())
 		if _, ok := l.checkTypeString[normalizedTypeString]; !ok {
 			return
 		}
@@ -108,7 +108,7 @@ func (l *columnMaximumVarcharLengthChecker) EnterData_type(ctx *parser.Data_type
 		currentLength = length
 		line = ctx.GetScale().GetLine()
 	} else if ctx.GetUnscaled_type() != nil {
-		normalizedTypeString := tsqlparser.NormalizeTSQLIdentifier(ctx.GetUnscaled_type())
+		_, normalizedTypeString := tsqlparser.NormalizeTSQLIdentifier(ctx.GetUnscaled_type())
 		if _, ok := l.checkTypeString[normalizedTypeString]; !ok {
 			return
 		}

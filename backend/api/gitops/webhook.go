@@ -109,10 +109,34 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
+		case vcs.Bitbucket:
+			eventType := c.Request().Header.Get("X-Event-Key")
+			switch eventType {
+			case "pullrequest:created", "pullrequest:updated":
+				return c.String(http.StatusOK, "OK")
+			case "pullrequest:fulfilled":
+			default:
+				return c.String(http.StatusOK, "OK")
+			}
+
+			prInfo, err = getBitBucketPullRequestInfo(ctx, vcsProvider, vcsConnector, body)
+			if err != nil {
+				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
+			}
+		case vcs.AzureDevOps:
+			secretToken := c.Request().Header.Get("X-Azure-Token")
+			if secretToken != vcsConnector.Payload.WebhookSecretToken {
+				return c.String(http.StatusOK, fmt.Sprintf("invalid webhook secret token %q", secretToken))
+			}
+
+			prInfo, err = getAzurePullRequestInfo(ctx, vcsProvider, vcsConnector, body)
+			if err != nil {
+				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
+			}
 		default:
 			return nil
 		}
-		if err := s.createIssueFromPRInfo(ctx, project, prInfo); err != nil {
+		if err := s.createIssueFromPRInfo(ctx, project, vcsConnector, prInfo); err != nil {
 			return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))
 		}
 		return nil
@@ -135,7 +159,7 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1, nil
 }
 
-func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, prInfo *pullRequestInfo) error {
+func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) error {
 	creatorID := api.SystemBotID
 	user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &prInfo.email})
 	if err != nil {
@@ -144,22 +168,6 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	if user != nil {
 		creatorID = user.ID
 	}
-
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return err
-	}
-	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
-	if err != nil {
-		return err
-	}
-	environmentOrders := make(map[string]int32)
-	for _, environment := range environments {
-		environmentOrders[environment.ResourceID] = environment.Order
-	}
-	sort.Slice(databases, func(i, j int) bool {
-		return environmentOrders[databases[i].EffectiveEnvironmentID] < environmentOrders[databases[j].EffectiveEnvironmentID]
-	})
 
 	var sheets []int
 	for _, change := range prInfo.changes {
@@ -175,25 +183,9 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		sheets = append(sheets, sheet.UID)
 	}
 
-	var steps []*v1pb.Plan_Step
-	for i, database := range databases {
-		if i == 0 || databases[i].EffectiveEnvironmentID != databases[i-1].EffectiveEnvironmentID {
-			steps = append(steps, &v1pb.Plan_Step{})
-		}
-		step := steps[len(steps)-1]
-		for i, change := range prInfo.changes {
-			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
-				Id: uuid.NewString(),
-				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Type:          change.changeType,
-						Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
-						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, sheets[i]),
-						SchemaVersion: change.version,
-					},
-				},
-			})
-		}
+	steps, err := s.getChangeSteps(ctx, project, vcsConnector, prInfo.changes, sheets)
+	if err != nil {
+		return err
 	}
 
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
@@ -204,6 +196,10 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		Plan: &v1pb.Plan{
 			Title: prInfo.title,
 			Steps: steps,
+			VcsSource: &v1pb.Plan_VCSSource{
+				VcsConnector:   fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, vcsConnector.ProjectID, common.VCSConnectorPrefix, vcsConnector.ResourceID),
+				PullRequestUrl: prInfo.url,
+			},
 		},
 	})
 	if err != nil {
@@ -238,7 +234,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	// Create a project activity after successfully creating the issue from the push event.
 	activityPayload, err := json.Marshal(
 		api.ActivityProjectRepositoryPushPayload{
-			// TODO(d): redefine VCS push event.
+			// TODO(d): fix this activity.
 			IssueID:   issueUID,
 			IssueName: issue.Title,
 		},
@@ -260,4 +256,80 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return errors.Wrapf(err, "failed to activity after creating issue %d from push event", issueUID)
 	}
 	return nil
+}
+
+func (s *Service) getChangeSteps(
+	ctx context.Context,
+	project *store.ProjectMessage,
+	vcsConnector *store.VCSConnectorMessage,
+	changes []*fileChange,
+	sheetUIDList []int,
+) ([]*v1pb.Plan_Step, error) {
+	if vcsConnector.Payload.DatabaseGroup != "" {
+		step := &v1pb.Plan_Step{}
+		for i, change := range changes {
+			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
+				Id: uuid.NewString(),
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Type:          change.changeType,
+						Target:        vcsConnector.Payload.DatabaseGroup,
+						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, sheetUIDList[i]),
+						SchemaVersion: change.version,
+					},
+				},
+			})
+		}
+		return []*v1pb.Plan_Step{
+			step,
+		}, nil
+	}
+
+	databases, err := s.listDatabases(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+
+	var steps []*v1pb.Plan_Step
+	for i, database := range databases {
+		if i == 0 || databases[i].EffectiveEnvironmentID != databases[i-1].EffectiveEnvironmentID {
+			steps = append(steps, &v1pb.Plan_Step{})
+		}
+		step := steps[len(steps)-1]
+		for i, change := range changes {
+			step.Specs = append(step.Specs, &v1pb.Plan_Spec{
+				Id: uuid.NewString(),
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Type:          change.changeType,
+						Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
+						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, sheetUIDList[i]),
+						SchemaVersion: change.version,
+					},
+				},
+			})
+		}
+	}
+
+	return steps, nil
+}
+
+func (s *Service) listDatabases(ctx context.Context, project *store.ProjectMessage) ([]*store.DatabaseMessage, error) {
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, err
+	}
+	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	if err != nil {
+		return nil, err
+	}
+	environmentOrders := make(map[string]int32)
+	for _, environment := range environments {
+		environmentOrders[environment.ResourceID] = environment.Order
+	}
+	sort.Slice(databases, func(i, j int) bool {
+		return environmentOrders[databases[i].EffectiveEnvironmentID] < environmentOrders[databases[j].EffectiveEnvironmentID]
+	})
+
+	return databases, nil
 }

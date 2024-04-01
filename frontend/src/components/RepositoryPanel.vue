@@ -65,13 +65,14 @@
 <script lang="ts" setup>
 import isEmpty from "lodash-es/isEmpty";
 import { computed, reactive, watch } from "vue";
-import { useVCSV1Store, useVCSConnectorStore } from "@/store";
+import { useVCSProviderStore, useVCSConnectorStore } from "@/store";
 import { getVCSConnectorId } from "@/store/modules/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { VCSConnector } from "@/types/proto/v1/vcs_connector_service";
 import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { VCSProvider_Type } from "@/types/proto/v1/vcs_provider_service";
-import type { ExternalRepositoryInfo, RepositoryConfig } from "../types";
+import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
+import type { RepositoryConfig } from "../types";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -91,7 +92,7 @@ const emit = defineEmits<{
   (event: "cancel"): void;
 }>();
 
-const vcsV1Store = useVCSV1Store();
+const vcsV1Store = useVCSProviderStore();
 const vcsConnectorStore = useVCSConnectorStore();
 
 const state = reactive<LocalState>({
@@ -99,6 +100,7 @@ const state = reactive<LocalState>({
     resourceId: "",
     baseDirectory: "",
     branch: "",
+    databaseGroup: "",
   },
   processing: false,
 });
@@ -110,6 +112,7 @@ watch(
       resourceId: getVCSConnectorId(props.vcsConnector.name).vcsConnectorId,
       baseDirectory: cur.baseDirectory,
       branch: cur.branch,
+      databaseGroup: cur.databaseGroup,
     };
   },
   { deep: true, immediate: true }
@@ -132,10 +135,10 @@ const repositoryFormattedFullPath = computed(() => {
   return `https://dev.azure.com${fullPath.split("@dev.azure.com")[1]}`;
 });
 
-const repositoryInfo = computed((): ExternalRepositoryInfo => {
+const repositoryInfo = computed((): VCSRepository => {
   return {
-    externalId: props.vcsConnector.externalId,
-    name: props.vcsConnector.title,
+    id: props.vcsConnector.externalId,
+    title: props.vcsConnector.title,
     fullPath: props.vcsConnector.fullPath,
     webUrl: props.vcsConnector.webUrl,
   };
@@ -146,7 +149,9 @@ const allowUpdate = computed(() => {
     !state.processing &&
     !isEmpty(state.repositoryConfig.branch) &&
     (props.vcsConnector.branch !== state.repositoryConfig.branch ||
-      props.vcsConnector.baseDirectory !== state.repositoryConfig.baseDirectory)
+      props.vcsConnector.baseDirectory !==
+        state.repositoryConfig.baseDirectory ||
+      props.vcsConnector.databaseGroup !== state.repositoryConfig.databaseGroup)
   );
 });
 
@@ -176,8 +181,9 @@ const doUpdate = async () => {
         ...props.vcsConnector,
         branch: state.repositoryConfig.branch,
         baseDirectory: state.repositoryConfig.baseDirectory,
+        databaseGroup: state.repositoryConfig.databaseGroup,
       }),
-      ["branch", "base_directory"]
+      ["branch", "base_directory", "database_group"]
     );
     emit("update");
   } finally {

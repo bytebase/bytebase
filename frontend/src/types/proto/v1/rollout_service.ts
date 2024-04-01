@@ -91,6 +91,7 @@ export interface Plan {
   title: string;
   description: string;
   steps: Plan_Step[];
+  vcsSource: Plan_VCSSource | undefined;
 }
 
 export interface Plan_Step {
@@ -114,7 +115,6 @@ export interface Plan_Spec {
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
   exportDataConfig?: Plan_ExportDataConfig | undefined;
-  vcsSource: Plan_VCSSource | undefined;
 }
 
 export interface Plan_CreateDatabaseConfig {
@@ -301,7 +301,6 @@ export interface Plan_VCSSource {
    */
   vcsConnector: string;
   pullRequestUrl: string;
-  commitUrl: string;
 }
 
 export interface ListPlanCheckRunsRequest {
@@ -1570,7 +1569,7 @@ export const UpdatePlanRequest = {
 };
 
 function createBasePlan(): Plan {
-  return { name: "", uid: "", issue: "", title: "", description: "", steps: [] };
+  return { name: "", uid: "", issue: "", title: "", description: "", steps: [], vcsSource: undefined };
 }
 
 export const Plan = {
@@ -1592,6 +1591,9 @@ export const Plan = {
     }
     for (const v of message.steps) {
       Plan_Step.encode(v!, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.vcsSource !== undefined) {
+      Plan_VCSSource.encode(message.vcsSource, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -1645,6 +1647,13 @@ export const Plan = {
 
           message.steps.push(Plan_Step.decode(reader, reader.uint32()));
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.vcsSource = Plan_VCSSource.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1662,6 +1671,7 @@ export const Plan = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
       steps: globalThis.Array.isArray(object?.steps) ? object.steps.map((e: any) => Plan_Step.fromJSON(e)) : [],
+      vcsSource: isSet(object.vcsSource) ? Plan_VCSSource.fromJSON(object.vcsSource) : undefined,
     };
   },
 
@@ -1685,6 +1695,9 @@ export const Plan = {
     if (message.steps?.length) {
       obj.steps = message.steps.map((e) => Plan_Step.toJSON(e));
     }
+    if (message.vcsSource !== undefined) {
+      obj.vcsSource = Plan_VCSSource.toJSON(message.vcsSource);
+    }
     return obj;
   },
 
@@ -1699,6 +1712,9 @@ export const Plan = {
     message.title = object.title ?? "";
     message.description = object.description ?? "";
     message.steps = object.steps?.map((e) => Plan_Step.fromPartial(e)) || [];
+    message.vcsSource = (object.vcsSource !== undefined && object.vcsSource !== null)
+      ? Plan_VCSSource.fromPartial(object.vcsSource)
+      : undefined;
     return message;
   },
 };
@@ -1785,7 +1801,6 @@ function createBasePlan_Spec(): Plan_Spec {
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
     exportDataConfig: undefined,
-    vcsSource: undefined,
   };
 }
 
@@ -1808,9 +1823,6 @@ export const Plan_Spec = {
     }
     if (message.exportDataConfig !== undefined) {
       Plan_ExportDataConfig.encode(message.exportDataConfig, writer.uint32(58).fork()).ldelim();
-    }
-    if (message.vcsSource !== undefined) {
-      Plan_VCSSource.encode(message.vcsSource, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -1864,13 +1876,6 @@ export const Plan_Spec = {
 
           message.exportDataConfig = Plan_ExportDataConfig.decode(reader, reader.uint32());
           continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.vcsSource = Plan_VCSSource.decode(reader, reader.uint32());
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1898,7 +1903,6 @@ export const Plan_Spec = {
       exportDataConfig: isSet(object.exportDataConfig)
         ? Plan_ExportDataConfig.fromJSON(object.exportDataConfig)
         : undefined,
-      vcsSource: isSet(object.vcsSource) ? Plan_VCSSource.fromJSON(object.vcsSource) : undefined,
     };
   },
 
@@ -1922,9 +1926,6 @@ export const Plan_Spec = {
     if (message.exportDataConfig !== undefined) {
       obj.exportDataConfig = Plan_ExportDataConfig.toJSON(message.exportDataConfig);
     }
-    if (message.vcsSource !== undefined) {
-      obj.vcsSource = Plan_VCSSource.toJSON(message.vcsSource);
-    }
     return obj;
   },
 
@@ -1944,9 +1945,6 @@ export const Plan_Spec = {
       : undefined;
     message.exportDataConfig = (object.exportDataConfig !== undefined && object.exportDataConfig !== null)
       ? Plan_ExportDataConfig.fromPartial(object.exportDataConfig)
-      : undefined;
-    message.vcsSource = (object.vcsSource !== undefined && object.vcsSource !== null)
-      ? Plan_VCSSource.fromPartial(object.vcsSource)
       : undefined;
     return message;
   },
@@ -2761,7 +2759,7 @@ export const Plan_ExportDataConfig = {
 };
 
 function createBasePlan_VCSSource(): Plan_VCSSource {
-  return { vcsConnector: "", pullRequestUrl: "", commitUrl: "" };
+  return { vcsConnector: "", pullRequestUrl: "" };
 }
 
 export const Plan_VCSSource = {
@@ -2771,9 +2769,6 @@ export const Plan_VCSSource = {
     }
     if (message.pullRequestUrl !== "") {
       writer.uint32(18).string(message.pullRequestUrl);
-    }
-    if (message.commitUrl !== "") {
-      writer.uint32(26).string(message.commitUrl);
     }
     return writer;
   },
@@ -2799,13 +2794,6 @@ export const Plan_VCSSource = {
 
           message.pullRequestUrl = reader.string();
           continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.commitUrl = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2819,7 +2807,6 @@ export const Plan_VCSSource = {
     return {
       vcsConnector: isSet(object.vcsConnector) ? globalThis.String(object.vcsConnector) : "",
       pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
-      commitUrl: isSet(object.commitUrl) ? globalThis.String(object.commitUrl) : "",
     };
   },
 
@@ -2831,9 +2818,6 @@ export const Plan_VCSSource = {
     if (message.pullRequestUrl !== "") {
       obj.pullRequestUrl = message.pullRequestUrl;
     }
-    if (message.commitUrl !== "") {
-      obj.commitUrl = message.commitUrl;
-    }
     return obj;
   },
 
@@ -2844,7 +2828,6 @@ export const Plan_VCSSource = {
     const message = createBasePlan_VCSSource();
     message.vcsConnector = object.vcsConnector ?? "";
     message.pullRequestUrl = object.pullRequestUrl ?? "";
-    message.commitUrl = object.commitUrl ?? "";
     return message;
   },
 };

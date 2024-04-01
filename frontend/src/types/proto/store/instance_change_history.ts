@@ -1,12 +1,10 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.store";
 
 export interface InstanceChangeHistoryPayload {
-  pushEvent: PushEvent | undefined;
   changedResources: ChangedResources | undefined;
 }
 
@@ -31,16 +29,13 @@ export interface ChangedResourceTable {
 }
 
 function createBaseInstanceChangeHistoryPayload(): InstanceChangeHistoryPayload {
-  return { pushEvent: undefined, changedResources: undefined };
+  return { changedResources: undefined };
 }
 
 export const InstanceChangeHistoryPayload = {
   encode(message: InstanceChangeHistoryPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.pushEvent !== undefined) {
-      PushEvent.encode(message.pushEvent, writer.uint32(10).fork()).ldelim();
-    }
     if (message.changedResources !== undefined) {
-      ChangedResources.encode(message.changedResources, writer.uint32(18).fork()).ldelim();
+      ChangedResources.encode(message.changedResources, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -57,13 +52,6 @@ export const InstanceChangeHistoryPayload = {
             break;
           }
 
-          message.pushEvent = PushEvent.decode(reader, reader.uint32());
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
           message.changedResources = ChangedResources.decode(reader, reader.uint32());
           continue;
       }
@@ -77,16 +65,12 @@ export const InstanceChangeHistoryPayload = {
 
   fromJSON(object: any): InstanceChangeHistoryPayload {
     return {
-      pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
       changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
     };
   },
 
   toJSON(message: InstanceChangeHistoryPayload): unknown {
     const obj: any = {};
-    if (message.pushEvent !== undefined) {
-      obj.pushEvent = PushEvent.toJSON(message.pushEvent);
-    }
     if (message.changedResources !== undefined) {
       obj.changedResources = ChangedResources.toJSON(message.changedResources);
     }
@@ -98,9 +82,6 @@ export const InstanceChangeHistoryPayload = {
   },
   fromPartial(object: DeepPartial<InstanceChangeHistoryPayload>): InstanceChangeHistoryPayload {
     const message = createBaseInstanceChangeHistoryPayload();
-    message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
-      ? PushEvent.fromPartial(object.pushEvent)
-      : undefined;
     message.changedResources = (object.changedResources !== undefined && object.changedResources !== null)
       ? ChangedResources.fromPartial(object.changedResources)
       : undefined;

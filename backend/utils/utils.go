@@ -26,7 +26,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -630,53 +629,6 @@ func GetSecretMapFromDatabaseMessage(databaseMessage *store.DatabaseMessage) map
 		materials[item.Name] = item.Value
 	}
 	return materials
-}
-
-func convertVcsPushEventType(vcsType vcs.Type) storepb.VcsType {
-	switch vcsType {
-	case "GITLAB":
-		return storepb.VcsType_GITLAB
-	case "GITHUB":
-		return storepb.VcsType_GITHUB
-	case "BITBUCKET":
-		return storepb.VcsType_BITBUCKET
-	default:
-		return storepb.VcsType_VCS_TYPE_UNSPECIFIED
-	}
-}
-
-func convertVcsPushEventCommits(commits []vcs.Commit) []*storepb.Commit {
-	var result []*storepb.Commit
-	for i := range commits {
-		commit := &commits[i]
-		result = append(result, &storepb.Commit{
-			Id:           commit.ID,
-			Title:        commit.Title,
-			Message:      commit.Message,
-			CreatedTs:    commit.CreatedTs,
-			Url:          commit.URL,
-			AuthorName:   commit.AuthorName,
-			AuthorEmail:  commit.AuthorEmail,
-			AddedList:    commit.AddedList,
-			ModifiedList: commit.ModifiedList,
-		})
-	}
-	return result
-}
-
-// ConvertVcsPushEvent converts a vcs.pushEvent to a storepb.PushEvent.
-func ConvertVcsPushEvent(pushEvent *vcs.PushEvent) *storepb.PushEvent {
-	return &storepb.PushEvent{
-		VcsType:            convertVcsPushEventType(pushEvent.VCSType),
-		Ref:                pushEvent.Ref,
-		Before:             pushEvent.Before,
-		After:              pushEvent.After,
-		RepositoryId:       pushEvent.RepositoryID,
-		RepositoryUrl:      pushEvent.RepositoryURL,
-		RepositoryFullPath: pushEvent.RepositoryFullPath,
-		AuthorName:         pushEvent.AuthorName,
-		Commits:            convertVcsPushEventCommits(pushEvent.CommitList),
-	}
 }
 
 // GetMatchedAndUnmatchedDatabasesInDatabaseGroup returns the matched and unmatched databases in the given database group.

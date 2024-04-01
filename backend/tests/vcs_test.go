@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
 	"github.com/bytebase/bytebase/backend/tests/fake"
@@ -20,8 +21,8 @@ import (
 func TestVCS(t *testing.T) {
 	branchName := "feature/foo"
 	pullRequestFiles := []*vcs.PullRequestFile{
-		{Path: "bbtest/0001##migrate##😊create_table_book1.sql"},
-		{Path: "bbtest/0002##migrate##新建create_table_book2.sql"},
+		{Path: "bbtest/0001_😊create_table_book1.sql"},
+		{Path: "bbtest/0002_新建create_table_book2.sql"},
 	}
 	fileContentMap := map[string]string{
 		pullRequestFiles[0].Path: migrationStatement1,
@@ -81,6 +82,27 @@ func TestVCS(t *testing.T) {
 						Ref: "test-branch",
 						SHA: "cc63b0592388a7ab1b05b005ad8c8dc14ce432b1",
 					},
+				},
+			},
+		},
+		{
+			name:               "Bitbucket",
+			vcsProviderCreator: fake.NewBitbucket,
+			vcsType:            v1pb.VCSProvider_BITBUCKET,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			webhookPushEvent: bitbucket.PullRequestPushEvent{
+				PullRequest: bitbucket.EventPullRequest{
+					ID:          pullRequestID,
+					Title:       pullRequestTitle,
+					Description: pullRequestDescription,
+					Destination: bitbucket.EventBranch{
+						Branch: bitbucket.EventBranchName{Name: branchName},
+					},
+					Source: bitbucket.EventBranch{
+						Commit: bitbucket.EventCommit{Hash: "cc63b0592388a7ab1b05b005ad8c8dc14ce432b1"},
+					},
+					Links: bitbucket.EventLinks{HTML: bitbucket.EventHTML{Href: fmt.Sprintf("https://bitbucket.org/test/vcs/pull-requests/%d", pullRequestID)}},
 				},
 			},
 		},

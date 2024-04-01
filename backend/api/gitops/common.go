@@ -1,10 +1,13 @@
 package gitops
 
 import (
+	"log/slog"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -28,6 +31,27 @@ type fileChange struct {
 	content     string
 }
 
+func getChangesByFileList(files []*vcs.PullRequestFile, branch string) []*fileChange {
+	changes := []*fileChange{}
+	for _, v := range files {
+		if v.IsDeleted {
+			continue
+		}
+		if filepath.Dir(v.Path) != branch {
+			continue
+		}
+		change, err := getFileChange(v.Path)
+		if err != nil {
+			slog.Error("failed to get file change info", slog.String("path", v.Path), log.BBError(err))
+		}
+		if change != nil {
+			change.path = v.Path
+			changes = append(changes, change)
+		}
+	}
+	return changes
+}
+
 func getFileChange(path string) (*fileChange, error) {
 	filename := filepath.Base(path)
 	if filepath.Ext(filename) != ".sql" {
@@ -40,21 +64,20 @@ func getFileChange(path string) (*fileChange, error) {
 	}
 	version := matches[0]
 	description := strings.TrimPrefix(filename, version)
-	description = strings.TrimLeft(description, "_-#")
+	description = strings.TrimLeft(description, "_")
 	changeType := v1pb.Plan_ChangeDatabaseConfig_MIGRATE
 	switch {
 	case strings.HasPrefix(description, "ddl"):
 		description = strings.TrimPrefix(description, "ddl")
-	case strings.HasPrefix(description, "migrate"):
-		description = strings.TrimPrefix(description, "migrate")
+		changeType = v1pb.Plan_ChangeDatabaseConfig_MIGRATE
 	case strings.HasPrefix(description, "dml"):
 		description = strings.TrimPrefix(description, "dml")
 		changeType = v1pb.Plan_ChangeDatabaseConfig_DATA
-	case strings.HasPrefix(description, "data"):
-		description = strings.TrimPrefix(description, "data")
-		changeType = v1pb.Plan_ChangeDatabaseConfig_DATA
+	case strings.HasPrefix(description, "ghost"):
+		description = strings.TrimPrefix(description, "ghost")
+		changeType = v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST
 	}
-	description = strings.TrimLeft(description, "_-#")
+	description = strings.TrimLeft(description, "_")
 	return &fileChange{
 		path:        path,
 		version:     version,

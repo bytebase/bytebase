@@ -2,10 +2,7 @@ package vcs
 
 import (
 	"context"
-	"net/http"
 	"sync"
-
-	"github.com/bytebase/bytebase/backend/common"
 )
 
 // Type is the type of a VCS.
@@ -21,14 +18,6 @@ const (
 	Bitbucket Type = "BITBUCKET"
 	// AzureDevOps is the VCS type for Azure DevOps.
 	AzureDevOps Type = "AZURE_DEVOPS"
-
-	// SQLReviewAPISecretName is the api secret name used in GitHub action or GitLab CI workflow.
-	SQLReviewAPISecretName = "SQL_REVIEW_API_SECRET"
-
-	// BytebaseAuthorName is the author name of bytebase.
-	BytebaseAuthorName = "Bytebase"
-	// BytebaseAuthorEmail is the author email of bytebase.
-	BytebaseAuthorEmail = "support@bytebase.com"
 )
 
 // RefType is the type of a ref.
@@ -47,66 +36,6 @@ const (
 type RefInfo struct {
 	RefType RefType
 	RefName string
-}
-
-// OAuthToken is the API message for OAuthToken.
-type OAuthToken struct {
-	AccessToken  string `json:"access_token" `
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int64  `json:"expires_in"`
-	CreatedAt    int64  `json:"created_at"`
-	// ExpiresTs is a derivative from ExpiresIn and CreatedAt.
-	// ExpiresTs = ExpiresIn == 0 ? 0 : CreatedAt + ExpiresIn
-	ExpiresTs int64 `json:"expires_ts"`
-}
-
-// These payload types are only used when marshalling to the json format for saving into the database.
-// So we annotate with json tag using camelCase naming which is consistent with normal
-// json naming convention
-
-// Commit records the commit data.
-type Commit struct {
-	ID           string   `json:"id"`
-	Title        string   `json:"title"`
-	Message      string   `json:"message"`
-	CreatedTs    int64    `json:"createdTs"`
-	URL          string   `json:"url"`
-	AuthorName   string   `json:"authorName"`
-	AuthorEmail  string   `json:"authorEmail"`
-	AddedList    []string `json:"addedList"`
-	ModifiedList []string `json:"modifiedList"`
-}
-
-// FileCommit is the API message for a VCS file commit.
-type FileCommit struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Message     string `json:"message"`
-	CreatedTs   int64  `json:"createdTs"`
-	URL         string `json:"url"`
-	AuthorName  string `json:"authorName"`
-	AuthorEmail string `json:"authorEmail"`
-	Added       string `json:"added"`
-}
-
-// FileCommitCreate is the payload for committing a new file.
-type FileCommitCreate struct {
-	Branch        string
-	Content       string
-	CommitMessage string
-	LastCommitID  string
-	SHA           string
-	AuthorName    string
-	AuthorEmail   string
-}
-
-// FileMeta records the file metadata.
-type FileMeta struct {
-	Name         string
-	Path         string
-	Size         int64
-	LastCommitID string
-	SHA          string
 }
 
 // FileDiffType is the type of file diff.
@@ -130,43 +59,6 @@ type FileDiff struct {
 	Type FileDiffType
 }
 
-// RepositoryTreeNode records the node(file/folder) of a repository tree from `git ls-tree`.
-type RepositoryTreeNode struct {
-	Path string
-	Type string
-}
-
-// PushEvent is the API message for a VCS push event.
-type PushEvent struct {
-	VCSType            Type     `json:"vcsType"`
-	Ref                string   `json:"ref"`
-	Before             string   `json:"before"`
-	After              string   `json:"after"`
-	RepositoryID       string   `json:"repositoryId"`
-	RepositoryURL      string   `json:"repositoryUrl"`
-	RepositoryFullPath string   `json:"repositoryFullPath"`
-	AuthorName         string   `json:"authorName"`
-	CommitList         []Commit `json:"commits"`
-}
-
-// State is the state of a VCS user account.
-type State string
-
-const (
-	// StateActive is the active state for VCS user state.
-	StateActive State = "active"
-	// StateArchived is the archived state for VCS user state.
-	StateArchived State = "archived"
-)
-
-// UserInfo is the API message for user info.
-type UserInfo struct {
-	// NOTICE: we use public email here because user's primary email can only be accessed by the admin
-	PublicEmail string `json:"public_email"`
-	Name        string `json:"name"`
-	State       State  `json:"state"`
-}
-
 // Repository is the API message for repository info.
 type Repository struct {
 	ID       string `json:"id"`
@@ -188,68 +80,31 @@ type BranchInfo struct {
 	LastCommitID string
 }
 
-// PullRequestCreate is the API message to create pull request in repository.
-type PullRequestCreate struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
-	Head  string `json:"head"`
-	Base  string `json:"base"`
-	// Flag indicating if a merge request should remove the source branch after merging.
-	// Only support GitLab.
-	RemoveHeadAfterMerged bool `json:"-"`
-}
-
-// PullRequest is the API message for pull request in repository.
-type PullRequest struct {
-	URL string `json:"url"`
-}
-
 // Provider is the interface for VCS provider.
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
 
 	// Fetch all repository within a given user's scope
-	//
-	// oauthCtx: OAuth context to write the file content
-	// instanceURL: VCS instance URL
-	FetchAllRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL string) ([]*Repository, error)
+	FetchAllRepositoryList(ctx context.Context) ([]*Repository, error)
 
 	// Reads the file content
-	//
-	// oauthCtx: OAuth context to read the file content
-	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	// filePath: file path to be read
-	// ref: the specific file version to be read, could be a name of branch, tag or commit
-	ReadFileContent(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo RefInfo) (string, error)
+	ReadFileContent(ctx context.Context, repositoryID, filePath string, refInfo RefInfo) (string, error)
 
 	// GetBranch gets the given branch in the repository.
-	//
-	// oauthCtx: OAuth context to create the webhook
-	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	// branchName: the target branch name
-	GetBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, branchName string) (*BranchInfo, error)
+	GetBranch(ctx context.Context, repositoryID, branchName string) (*BranchInfo, error)
 
 	// CreatePullRequest creates the pull request in the repository.
-	//
-	// oauthCtx: OAuth context to create the webhook
-	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	// pullRequestID: the pull request id
-	ListPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*PullRequestFile, error)
+	ListPullRequestFile(ctx context.Context, repositoryID, pullRequestID string) ([]*PullRequestFile, error)
+
+	// CreatePullRequestComment creates a pull request comment.
+	CreatePullRequestComment(ctx context.Context, repositoryID, pullRequestID, comment string) error
 
 	// Creates a webhook. Returns the created webhook ID on success.
-	//
-	// oauthCtx: OAuth context to create the webhook
-	// instanceURL: VCS instance URL
-	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
-	// payload: the webhook payload
-	CreateWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error)
+	CreateWebhook(ctx context.Context, repositoryID string, payload []byte) (string, error)
 
 	// Deletes a webhook.
-	DeleteWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string) error
+	DeleteWebhook(ctx context.Context, repositoryID, webhookID string) error
 }
 
 var (
@@ -259,7 +114,8 @@ var (
 
 // ProviderConfig is the provider configuration.
 type ProviderConfig struct {
-	Client *http.Client
+	InstanceURL string
+	AuthToken   string
 }
 
 type providerFunc func(ProviderConfig) Provider

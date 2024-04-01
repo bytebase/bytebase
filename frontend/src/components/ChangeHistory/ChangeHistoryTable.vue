@@ -61,7 +61,6 @@ import {
   humanizeDurationV1,
   isDescendantOf,
 } from "@/utils";
-import GitIcon from "../GitIcon.vue";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
 
@@ -111,7 +110,6 @@ const columnList = computed(() => {
         return (
           <div class="flex items-center gap-x-1">
             {getHistoryChangeType(history.type)}
-            {history.pushEvent && <GitIcon class="w-4 h-4 text-control" />}
           </div>
         );
       },

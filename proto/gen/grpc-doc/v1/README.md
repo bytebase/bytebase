@@ -87,12 +87,6 @@
   
     - [InstanceService](#bytebase-v1-InstanceService)
   
-- [v1/vcs.proto](#v1_vcs-proto)
-    - [Commit](#bytebase-v1-Commit)
-    - [PushEvent](#bytebase-v1-PushEvent)
-  
-    - [VcsType](#bytebase-v1-VcsType)
-  
 - [v1/database_service.proto](#v1_database_service-proto)
     - [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest)
     - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
@@ -613,11 +607,11 @@
     - [ListVCSConnectorsInProviderResponse](#bytebase-v1-ListVCSConnectorsInProviderResponse)
     - [ListVCSProvidersRequest](#bytebase-v1-ListVCSProvidersRequest)
     - [ListVCSProvidersResponse](#bytebase-v1-ListVCSProvidersResponse)
-    - [SearchVCSProviderProjectsRequest](#bytebase-v1-SearchVCSProviderProjectsRequest)
-    - [SearchVCSProviderProjectsResponse](#bytebase-v1-SearchVCSProviderProjectsResponse)
-    - [SearchVCSProviderProjectsResponse.Project](#bytebase-v1-SearchVCSProviderProjectsResponse-Project)
+    - [SearchVCSProviderRepositoriesRequest](#bytebase-v1-SearchVCSProviderRepositoriesRequest)
+    - [SearchVCSProviderRepositoriesResponse](#bytebase-v1-SearchVCSProviderRepositoriesResponse)
     - [UpdateVCSProviderRequest](#bytebase-v1-UpdateVCSProviderRequest)
     - [VCSProvider](#bytebase-v1-VCSProvider)
+    - [VCSRepository](#bytebase-v1-VCSRepository)
   
     - [VCSProvider.Type](#bytebase-v1-VCSProvider-Type)
   
@@ -1845,82 +1839,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="v1_vcs-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/vcs.proto
-
-
-
-<a name="bytebase-v1-Commit"></a>
-
-### Commit
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| title | [string](#string) |  |  |
-| message | [string](#string) |  |  |
-| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| url | [string](#string) |  |  |
-| author_name | [string](#string) |  |  |
-| author_email | [string](#string) |  |  |
-| added_list | [string](#string) | repeated |  |
-| modified_list | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PushEvent"></a>
-
-### PushEvent
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| vcs_type | [VcsType](#bytebase-v1-VcsType) |  |  |
-| ref | [string](#string) |  |  |
-| before | [string](#string) |  |  |
-| after | [string](#string) |  |  |
-| repository_id | [string](#string) |  |  |
-| repository_url | [string](#string) |  |  |
-| repository_full_path | [string](#string) |  |  |
-| author_name | [string](#string) |  |  |
-| commits | [Commit](#bytebase-v1-Commit) | repeated |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-VcsType"></a>
-
-### VcsType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| VCS_TYPE_UNSPECIFIED | 0 |  |
-| GITLAB | 1 |  |
-| GITHUB | 2 |  |
-| BITBUCKET | 3 |  |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="v1_database_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2021,7 +1939,6 @@ AdviseIndexResponse is the response of advising index.
 | prev_schema_size | [int64](#int64) |  |  |
 | execution_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
 | issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
-| push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 
 
@@ -7404,6 +7321,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | steps | [Plan.Step](#bytebase-v1-Plan-Step) | repeated |  |
+| vcs_source | [Plan.VCSSource](#bytebase-v1-Plan-VCSSource) |  |  |
 
 
 
@@ -7550,7 +7468,6 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
 | change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
 | export_data_config | [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig) |  |  |
-| vcs_source | [Plan.VCSSource](#bytebase-v1-Plan-VCSSource) |  |  |
 
 
 
@@ -7583,7 +7500,6 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | vcs_connector | [string](#string) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
 | pull_request_url | [string](#string) |  |  |
-| commit_url | [string](#string) |  |  |
 
 
 
@@ -9066,7 +8982,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
 | payload | [SheetPayload](#bytebase-v1-SheetPayload) |  |  |
-| push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |
 
 
 
@@ -9749,6 +9664,7 @@ The vcsConnector&#39;s `name` field is used to identify the vcsConnector to upda
 | branch | [string](#string) |  | The branch Bytebase listens to for changes. For example: main. |
 | full_path | [string](#string) |  | TODO(d): move these to create VCS connector API. The full_path of the repository. For example: bytebase/sample. |
 | web_url | [string](#string) |  | The web url of the repository. For axample: https://gitlab.bytebase.com/bytebase/sample. |
+| database_group | [string](#string) |  | Apply changes to the database group. Optional, if not set, will apply changes to all databases in the project. Format: projects/{project}/databaseGroups/{databaseGroup} |
 
 
 
@@ -9895,9 +9811,9 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
-<a name="bytebase-v1-SearchVCSProviderProjectsRequest"></a>
+<a name="bytebase-v1-SearchVCSProviderRepositoriesRequest"></a>
 
-### SearchVCSProviderProjectsRequest
+### SearchVCSProviderRepositoriesRequest
 
 
 
@@ -9910,33 +9826,15 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
-<a name="bytebase-v1-SearchVCSProviderProjectsResponse"></a>
+<a name="bytebase-v1-SearchVCSProviderRepositoriesResponse"></a>
 
-### SearchVCSProviderProjectsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| projects | [SearchVCSProviderProjectsResponse.Project](#bytebase-v1-SearchVCSProviderProjectsResponse-Project) | repeated | The list of project in vcs provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchVCSProviderProjectsResponse-Project"></a>
-
-### SearchVCSProviderProjectsResponse.Project
+### SearchVCSProviderRepositoriesResponse
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The id of the project in vcs provider. |
-| title | [string](#string) |  | The title of the project in vcs provider. |
-| fullpath | [string](#string) |  | The fullpath of the project in vcs provider. |
-| web_url | [string](#string) |  | Web url of the project in vcs provider. |
+| repositories | [VCSRepository](#bytebase-v1-VCSRepository) | repeated | The list of repositories in vcs provider. |
 
 
 
@@ -9977,6 +9875,24 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
+
+<a name="bytebase-v1-VCSRepository"></a>
+
+### VCSRepository
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The id of the repository in vcs provider. e.g. In GitLab, this is the corresponding project id. e.g. 123 |
+| title | [string](#string) |  | The title of the repository in vcs provider. e.g. sample-project |
+| full_path | [string](#string) |  | The full_path of the repository in vcs provider. e.g. bytebase/sample-project |
+| web_url | [string](#string) |  | Web url of the repository in vcs provider. e.g. http://gitlab.bytebase.com/bytebase/sample-project |
+
+
+
+
+
  
 
 
@@ -10011,7 +9927,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | CreateVCSProvider | [CreateVCSProviderRequest](#bytebase-v1-CreateVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
 | UpdateVCSProvider | [UpdateVCSProviderRequest](#bytebase-v1-UpdateVCSProviderRequest) | [VCSProvider](#bytebase-v1-VCSProvider) |  |
 | DeleteVCSProvider | [DeleteVCSProviderRequest](#bytebase-v1-DeleteVCSProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| SearchVCSProviderProjects | [SearchVCSProviderProjectsRequest](#bytebase-v1-SearchVCSProviderProjectsRequest) | [SearchVCSProviderProjectsResponse](#bytebase-v1-SearchVCSProviderProjectsResponse) |  |
+| SearchVCSProviderRepositories | [SearchVCSProviderRepositoriesRequest](#bytebase-v1-SearchVCSProviderRepositoriesRequest) | [SearchVCSProviderRepositoriesResponse](#bytebase-v1-SearchVCSProviderRepositoriesResponse) |  |
 | ListVCSConnectorsInProvider | [ListVCSConnectorsInProviderRequest](#bytebase-v1-ListVCSConnectorsInProviderRequest) | [ListVCSConnectorsInProviderResponse](#bytebase-v1-ListVCSConnectorsInProviderResponse) |  |
 
  

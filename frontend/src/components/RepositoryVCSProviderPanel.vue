@@ -2,7 +2,7 @@
   <div class="textlabel">
     {{ $t("repository.choose-git-provider-description") }}
   </div>
-  <div class="mt-4 flex flex-wrap">
+  <div class="mt-4 flex flex-wrap space-x-2 gap-y-2">
     <template v-for="(vcs, index) in vcsList" :key="index">
       <NButton type="default" @click.prevent="selectVCS(vcs)">
         <template #icon>
@@ -38,7 +38,7 @@ export default { name: "RepositoryVCSProviderPanel" };
 <script setup lang="ts">
 import { reactive, computed, watchEffect } from "vue";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { useCurrentUserV1, useVCSV1Store } from "@/store";
+import { useCurrentUserV1, useVCSProviderStore } from "@/store";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
 
@@ -49,10 +49,9 @@ interface LocalState {
 const emit = defineEmits<{
   (event: "next"): void;
   (event: "set-vcs", payload: VCSProvider): void;
-  (event: "set-code", payload: string): void;
 }>();
 
-const vcsV1Store = useVCSV1Store();
+const vcsV1Store = useVCSProviderStore();
 const state = reactive<LocalState>({});
 
 const currentUserV1 = useCurrentUserV1();

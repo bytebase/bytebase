@@ -23,16 +23,6 @@ const (
 	DefaultProdEnvironmentUID = 102
 )
 
-// ProjectWorkflowType is the workflow type for projects.
-type ProjectWorkflowType string
-
-const (
-	// UIWorkflow is the UI workflow.
-	UIWorkflow ProjectWorkflowType = "UI"
-	// VCSWorkflow is the VCS workflow.
-	VCSWorkflow ProjectWorkflowType = "VCS"
-)
-
 // ProjectTenantMode is the tenant mode setting for project.
 type ProjectTenantMode string
 
