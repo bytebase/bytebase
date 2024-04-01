@@ -122,7 +122,7 @@ func (l *columnNoNullChecker) EnterTable_constraint(ctx *parser.Table_constraint
 	if ctx.PRIMARY() != nil {
 		allColumns := ctx.Column_name_list_with_order().AllId_()
 		for _, column := range allColumns {
-			columnName := tsqlparser.NormalizeTSQLIdentifier(column)
+			_, columnName := tsqlparser.NormalizeTSQLIdentifier(column)
 			l.isCurrentTableColumnNullable[columnName] = false
 		}
 	}
@@ -137,7 +137,7 @@ func (l *columnNoNullChecker) EnterColumn_definition(ctx *parser.Column_definiti
 	default:
 		return
 	}
-	columnName := tsqlparser.NormalizeTSQLIdentifier(ctx.Id_())
+	_, columnName := tsqlparser.NormalizeTSQLIdentifier(ctx.Id_())
 	l.isCurrentTableColumnNullable[columnName] = true
 	l.currentTableColumnIsNullableLine[columnName] = ctx.Id_().GetStart().GetLine()
 	allColumnDefinitionElements := ctx.AllColumn_definition_element()
