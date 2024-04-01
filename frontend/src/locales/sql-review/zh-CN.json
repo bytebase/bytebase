@@ -595,8 +595,8 @@
       "description": "添加外键会校验已有数据并要求 SHARE ROW EXCLUSIVE 表锁，阻塞写入，这可能导致业务中断。建议附带 \"NOT VALID\" 选项只对新数据进行校验，变更完成后再校验已有数据。建议错误等级：警告"
     },
     "statement-non-transactional": {
-      "description": "",
-      "title": "检测并报告非事务性语句"
+      "title": "检测并报告非事务性语句",
+      "description": ""
     }
   },
   "level": {

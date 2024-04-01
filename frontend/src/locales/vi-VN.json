@@ -2098,6 +2098,7 @@
     "new-data-source": "Nguồn dữ liệu mới",
     "connection-name-string-copied-to-clipboard": "Đã sao chép chuỗi {0} vào bảng nhớ tạm.",
     "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC không thể kết nối với ổ cắm {0}",
+    "snowflake-keypair-tip": "Xác thực cặp khóa",
     "ssl-type": {
       "ca": "@:{'data-source.ssl.ca-cert'}",
       "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
@@ -2129,8 +2130,7 @@
     "delete-read-only-data-source": "Xóa nguồn dữ liệu chỉ đọc",
     "connection-string-schema": "Lược đồ chuỗi kết nối",
     "admin": "Quản trị viên",
-    "read-only": "RO",
-    "snowflake-keypair-tip": "Xác thực cặp khóa"
+    "read-only": "RO"
   },
   "setting": {
     "project": {
@@ -3271,6 +3271,7 @@
   "cel": {
     "factor": {
       "affected_rows": "Hàng bị ảnh hưởng",
+      "table_rows": "Hàng của bảng",
       "environment_id": "ID môi trường",
       "project_id": "Mã dự án",
       "instance_id": "ID phiên bản",
@@ -3284,8 +3285,7 @@
       "classification_level": "Cấp độ phân loại",
       "resource_instance_id": "ID phiên bản",
       "resource_database_name": "Tên cơ sở dữ liệu",
-      "resource_table_name": "Tên bảng",
-      "table_rows": "Hàng của bảng"
+      "resource_table_name": "Tên bảng"
     },
     "condition": {
       "self": "Tình trạng",
