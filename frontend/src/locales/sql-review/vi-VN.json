@@ -591,12 +591,12 @@
       }
     },
     "statement-add-foreign-key-not-valid": {
-      "description": "Việc thêm khóa ngoại cần xác minh dữ liệu hiện có và yêu cầu khóa bảng SHARE ROW EXCLUSIVE. \nKhối này ghi, có thể gây gián đoạn kinh doanh. \nBạn nên thêm tùy chọn \"KHÔNG CÓ GIÁ TRỊ\" để xác thực dữ liệu mới và xác thực dữ liệu hiện có sau khi thay đổi hoàn tất. \nMức độ lỗi đề xuất: Cảnh báo",
-      "title": "Thực thi bao gồm tùy chọn \"KHÔNG CÓ GIÁ TRỊ\" khi thêm khóa ngoại"
+      "title": "Thực thi bao gồm tùy chọn \"KHÔNG CÓ GIÁ TRỊ\" khi thêm khóa ngoại",
+      "description": "Việc thêm khóa ngoại cần xác minh dữ liệu hiện có và yêu cầu khóa bảng SHARE ROW EXCLUSIVE. \nKhối này ghi, có thể gây gián đoạn kinh doanh. \nBạn nên thêm tùy chọn \"KHÔNG CÓ GIÁ TRỊ\" để xác thực dữ liệu mới và xác thực dữ liệu hiện có sau khi thay đổi hoàn tất. \nMức độ lỗi đề xuất: Cảnh báo"
     },
     "statement-non-transactional": {
-      "description": "",
-      "title": "Phát hiện và báo cáo các tuyên bố phi giao dịch"
+      "title": "Phát hiện và báo cáo các tuyên bố phi giao dịch",
+      "description": ""
     }
   },
   "level": {

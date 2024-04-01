@@ -412,8 +412,8 @@
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
       "dumping-schema-before-executing-sql": "Listo para ejecutar, exportando esquema.",
       "executing-sql": "Ejecutando SQL.",
-      "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora.",
       "executing-sql-detail": "Ejecutando SQL {actual} de {total}, desde ({startLine}, {startColumn}) hasta ({endLine}, {endColumn}).",
+      "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora.",
       "failed-sql-detail": "La ejecución falló desde ({startLine}, {startColumn}) hasta ({endLine}, {endColumn}): {message}."
     }
   },
@@ -623,6 +623,18 @@
           "self": "URL Externa",
           "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://."
         },
+        "gitops-webhook-url": {
+          "self": "URL del webhook GitOps",
+          "description": "La URL utilizada para enviar webhooks de GitOps a la instancia de Bytebase.",
+          "default-to-external-url": "Predeterminado a URL Externa"
+        },
+        "sign-in-frequency": {
+          "self": "Frecuencia de inicio de sesión",
+          "description": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente.",
+          "hours": "Horas",
+          "days": "Días",
+          "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto."
+        },
         "config-updated": "La configuración se ha actualizado.",
         "plugin": {
           "openai": {
@@ -660,18 +672,6 @@
         "extra-link": {
           "self": "Enlace",
           "placeholder": "Enlace de anuncio de entrada"
-        },
-        "gitops-webhook-url": {
-          "self": "URL del webhook GitOps",
-          "description": "La URL utilizada para enviar webhooks de GitOps a la instancia de Bytebase.",
-          "default-to-external-url": "Predeterminado a URL Externa"
-        },
-        "sign-in-frequency": {
-          "self": "Frecuencia de inicio de sesión",
-          "description": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente.",
-          "hours": "Horas",
-          "days": "Días",
-          "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto."
         },
         "confirm-delete-custom-logo": "¿Eliminar el logotipo de marca personalizado?",
         "restrict-issue-creation-for-sql-review": {
@@ -982,13 +982,13 @@
           "title": "Instancia",
           "description": "Filtrar por instancia"
         },
-        "database": {
-          "title": "Base de datos",
-          "description": "Filtrar por base de datos"
-        },
         "environment": {
           "title": "Ambiente",
           "description": "Filtrar por entorno"
+        },
+        "database": {
+          "title": "Base de datos",
+          "description": "Filtrar por base de datos"
         },
         "type": {
           "title": "Tipo de cambio",
@@ -1213,8 +1213,8 @@
     "unassigned-db-hint": "Las bases de datos recién sincronizadas comienzan sin asignar y deben ser asignadas a un proyecto para su uso.",
     "transfer-out-db": "Transferir base de datos",
     "transfer-out-db-title": "Transferir la base de datos",
-    "request-export-permission": "Solicitar exportación",
     "request-query-permission": "Solicitar consulta",
+    "request-export-permission": "Solicitar exportación",
     "request-export-data": "Solicitar exportación"
   },
   "create-db": {
@@ -1238,6 +1238,7 @@
     "collections": "Colecciones",
     "views": "Vistas",
     "extensions": "Extensiones",
+    "external-tables": "tabla externa",
     "functions": "Funciones",
     "streams": "Streams",
     "tasks": "Tareas",
@@ -1250,7 +1251,6 @@
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
-    "external-tables": "tabla externa",
     "create": "Crear base de datos"
   },
   "instance": {
@@ -1418,8 +1418,8 @@
     }
   },
   "environment": {
-    "id": "ID del Entorno",
     "all": "Todo el entorno",
+    "id": "ID del Entorno",
     "id-description": "El ID del entorno es el identificador único para su entorno. No puede cambiarlo después de creado.",
     "select": "Seleccionar entorno",
     "archive": "Archivar este entorno",
@@ -1715,12 +1715,13 @@
     "recent": "Reciente",
     "partitioned": "Particionado",
     "partition-tables": "Tablas de particiones",
-    "external-database-name": "Nombre de la base de datos externa",
     "external-server-name": "Nombre del servidor externo",
+    "external-database-name": "Nombre de la base de datos externa",
     "foreign-table-detail": "Detalle de la tabla externa",
     "view-definition": "Ver definición"
   },
   "repository": {
+    "our-webhook-link": "El webhook creado por Bytebase se puede encontrar en {webhookLink}.",
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
     "base-directory": "Directorio base",
     "base-directory-description": "El directorio raíz donde Bytebase observa el cambio de archivo. Si está vacío, observa todo el repositorio.",
@@ -1765,10 +1766,9 @@
     "select-repository-attention-gitlab": "Bytebase solo enumera los proyectos de GitLab que te otorgan al menos el rol de 'Mantenedor', lo que te permite configurar el webhook del proyecto para observar el evento de empuje de código.",
     "select-repository-attention-github": "Bytebase solo enumera los repositorios de GitHub en los que tienes permisos de administrador, lo que te permite configurar el webhook del repositorio para observar el evento de empuje de código.",
     "select-repository-attention-bitbucket": "Bytebase solo enumera los repositorios de Bitbucket en los que tienes permisos de administrador, lo que te permite configurar el webhook del repositorio para observar el evento de empuje de código.",
-    "select-repository-search": "Buscar repositorio",
-    "linked": "Repositorios vinculados",
     "select-repository-attention-azure-devops": "Bytebase solo enumera los repositorios de Azure DevOps en la organización a la que se otorga acceso a aplicaciones de terceros a través de OAuth. \nSi no ve el repositorio que desea, vaya a Organización -> Configuración de la organización -> Políticas para habilitar el acceso a aplicaciones de terceros.",
-    "our-webhook-link": "El webhook creado por Bytebase se puede encontrar en {webhookLink}."
+    "select-repository-search": "Buscar repositorio",
+    "linked": "Repositorios vinculados"
   },
   "workflow": {
     "current-workflow": "Flujo de trabajo actual",
@@ -2098,6 +2098,7 @@
     "new-data-source": "Nuevo origen de datos",
     "connection-name-string-copied-to-clipboard": "Cadena de nombre de conexión {0} copiada al portapapeles.",
     "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC no puede conectar al socket {0} ",
+    "snowflake-keypair-tip": "Autenticación de par de claves",
     "ssl-type": {
       "ca": "@:{'data-source.ssl.ca-cert'}",
       "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
@@ -2107,6 +2108,11 @@
       "ca-cert": "Certificado de CA",
       "client-key": "Clave del cliente",
       "client-cert": "Certificado del cliente"
+    },
+    "ssh-type": {
+      "tunnel": "@:{'data-source.ssh.tunnel'}",
+      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
+      "none": "Ninguno"
     },
     "ssh": {
       "host": "Anfitrión",
@@ -2123,14 +2129,8 @@
     "read-replica-port": "Puerto de réplica de lectura",
     "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
     "connection-string-schema": "Esquema de cadena de conexión",
-    "ssh-type": {
-      "tunnel": "@:{'data-source.ssh.tunnel'}",
-      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
-      "none": "Ninguno"
-    },
     "admin": "Admin",
-    "read-only": "Solo lectura",
-    "snowflake-keypair-tip": "Autenticación de par de claves"
+    "read-only": "Solo lectura"
   },
   "setting": {
     "project": {
@@ -2545,6 +2545,14 @@
         "title": "Conexión a réplica de lectura",
         "desc": "Conéctate a una réplica de lectura para obtener una fuente de datos de solo lectura."
       },
+      "bb-feature-instance-ssh-connection": {
+        "title": "Instancia de Conexión SSH",
+        "desc": "Conéctese a una instancia a través de SSH."
+      },
+      "bb-feature-custom-instance-scan-interval": {
+        "title": "Intervalo de escaneo de instancia personalizado",
+        "desc": "Personalice el esquema y el intervalo de escaneo de anomalías, por ejemplo"
+      },
       "bb-feature-index-advisor": {
         "title": "Asesor de índice",
         "desc": "El asesor de índices puede ayudarle a encontrar los índices que faltan en las consultas lentas."
@@ -2585,10 +2593,6 @@
         "title": "Deshabilitar el registro de autoservicio",
         "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."
       },
-      "bb-feature-instance-ssh-connection": {
-        "title": "Instancia de Conexión SSH",
-        "desc": "Conéctese a una instancia a través de SSH."
-      },
       "bb-feature-schema-template": {
         "title": "Plantilla de esquema",
         "desc": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
@@ -2600,10 +2604,6 @@
       "bb-feature-issue-advanced-search": {
         "title": "Búsqueda avanzada de problemas",
         "desc": "Acceda a un historial de problemas ilimitado con búsqueda avanzada de problemas."
-      },
-      "bb-feature-custom-instance-scan-interval": {
-        "title": "Intervalo de escaneo de instancia personalizado",
-        "desc": "Personalice el esquema y el intervalo de escaneo de anomalías, por ejemplo"
       }
     }
   },
@@ -2618,6 +2618,9 @@
     "actions": {
       "sync-from-vcs": "Sincronizar scripts SQL desde VCS"
     },
+    "notifications": {
+      "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
+    },
     "hint-tips": {
       "confirm-to-sync-sheet": "¿Confirmar para sincronizar las hojas?",
       "confirm-to-delete-this-sheet": "¿Confirmar para eliminar esta hoja?",
@@ -2626,9 +2629,6 @@
     "linked-issue": "Incidencia vinculada",
     "from-issue-warning": "La hoja proviene de la incidencia {issue} en modo de solo lectura. {oversize}",
     "content-oversize-warning": "SQL está sobredimensionado y no se permite la edición en línea.",
-    "notifications": {
-      "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
-    },
     "sheets": "Hojas",
     "search-sheets": "Hojas de búsqueda",
     "sheet": "Hoja",
@@ -2885,14 +2885,14 @@
         "select-or-create": "Seleccione o {crear} una conversación para comenzar.",
         "exit-conversation-mode": "Salir del modo de chat",
         "history-conversations": "Historial de conversaciones",
+        "view-history-conversations": "Ver historial de conversaciones",
         "new-conversation": "Comenzar nueva conversación",
         "no-message": "No hay mensajes en esta conversación",
         "tips": {
           "suggest-prompt": "Sugiriendo promts...",
           "more": "Más",
           "no-more": "No más"
-        },
-        "view-history-conversations": "Ver historial de conversaciones"
+        }
       },
       "preset-suggestion": {
         "1": "¿Qué departamento tiene más empleados?",
@@ -3271,6 +3271,7 @@
   "cel": {
     "factor": {
       "affected_rows": "Filas afectadas",
+      "table_rows": "Filas de la tabla",
       "environment_id": "ID de entorno",
       "project_id": "ID de proyecto",
       "instance_id": "ID de instancia",
@@ -3284,8 +3285,7 @@
       "classification_level": "Nivel de clasificación",
       "resource_instance_id": "ID de instancia",
       "resource_database_name": "Nombre de la base de datos",
-      "resource_table_name": "Nombre de la tabla",
-      "table_rows": "Filas de la tabla"
+      "resource_table_name": "Nombre de la tabla"
     },
     "condition": {
       "self": "Condición",
