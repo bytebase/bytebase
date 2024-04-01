@@ -3,6 +3,7 @@ package azure
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -10,7 +11,6 @@ import (
 	"net/url"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -43,86 +43,14 @@ func (*Provider) APIURL(instanceURL string) string {
 	return instanceURL
 }
 
-// WebhookCreateConsumerInputs represents the consumer inputs for creating a webhook.
-type WebhookCreateConsumerInputs struct {
-	URL                  string `json:"url"`
-	AcceptUntrustedCerts bool   `json:"acceptUntrustedCerts"`
-}
-
-// WebhookCreatePublisherInputs represents the publisher inputs for creating a webhook.
-type WebhookCreatePublisherInputs struct {
-	Repository string `json:"repository"`
-	Branch     string `json:"branch"`
-	PushedBy   string `json:"pushedBy"`
-	ProjectID  string `json:"projectId"`
-}
-
-// WebhookCreateOrUpdate represents a Bitbucket API request for creating or
-// updating a webhook.
-type WebhookCreateOrUpdate struct {
-	ConsumerActionID string                       `json:"consumerActionId"`
-	ConsumerID       string                       `json:"consumerId"`
-	ConsumerInputs   WebhookCreateConsumerInputs  `json:"consumerInputs"`
-	EventType        string                       `json:"eventType"`
-	PublisherID      string                       `json:"publisherId"`
-	PublisherInputs  WebhookCreatePublisherInputs `json:"publisherInputs"`
-}
-
-// CommitAuthor represents a Azure DevOps commit author.
-type CommitAuthor struct {
-	Name  string    `json:"name"`
-	Email string    `json:"email"`
-	Date  time.Time `json:"date"`
-}
-
-// ServiceHookCodePushEventMessage represents a Azure DevOps service hook code push event message.
-type ServiceHookCodePushEventMessage struct {
-	Text string `json:"text"`
-}
-
-// ServiceHookCodePushEventResourceCommit represents a Azure DevOps service hook code push event resource commit.
-type ServiceHookCodePushEventResourceCommit struct {
-	CommitID string       `json:"commitId"`
-	Author   CommitAuthor `json:"author"`
-	Comment  string       `json:"comment"`
-	URL      string       `json:"url"`
-}
-
-// ServiceHookCodePushEventRefUpdates represents a Azure DevOps service hook code push event ref updates.
-type ServiceHookCodePushEventRefUpdates struct {
-	Name        string `json:"name"`
-	OldObjectID string `json:"oldObjectId"`
-	NewObjectID string `json:"newObjectId"`
-}
-
-// ServiceHookCodePushEventResourcePushedBy represents a Azure DevOps service hook code push event resource pushed by.
-type ServiceHookCodePushEventResourcePushedBy struct {
-	DisplayName string `json:"displayName"`
-	UniqueName  string `json:"uniqueName"`
-}
-
-// ServiceHookCodePushEventResourceRepository represents a Azure DevOps service hook code push event resource repository.
-type ServiceHookCodePushEventResourceRepository struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
-}
-
-// ServiceHookCodePushEventResource represents a Azure DevOps service hook code push event resource.
-type ServiceHookCodePushEventResource struct {
-	Commits    []ServiceHookCodePushEventResourceCommit   `json:"commits"`
-	Repository ServiceHookCodePushEventResourceRepository `json:"repository"`
-	RefUpdates []ServiceHookCodePushEventRefUpdates       `json:"refUpdates"`
-	PushedBy   ServiceHookCodePushEventResourcePushedBy   `json:"pushedBy"`
-	PushID     uint64                                     `json:"pushId"`
-}
-
 type project struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	State string `json:"state"`
 }
 
-type repository struct {
+// Repository is the API message for Azure repository.
+type Repository struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 	// RemoteURL is the repo url in https://{org name}@dev.azure.com/{org name}/{project name}/_git/{repo name}
@@ -131,15 +59,6 @@ type repository struct {
 	// WebURL is the repo url in https://dev.azure.com/{org name}/{project name}/_git/{repo name}
 	WebURL  string  `json:"webUrl"`
 	Project project `json:"project"`
-}
-
-// ServiceHookCodePushEvent represents a Azure DevOps service hook code push event.
-//
-// Docs: https://learn.microsoft.com/en-us/azure/devops/service-hooks/events?view=azure-devops#git.push
-type ServiceHookCodePushEvent struct {
-	EventType string                           `json:"eventType"`
-	Message   ServiceHookCodePushEventMessage  `json:"message"`
-	Resource  ServiceHookCodePushEventResource `json:"resource"`
 }
 
 // ChangesResponseChangeItem represents a Azure DevOps changes response change item.
@@ -223,7 +142,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repositor
 
 	type listRepositoriesResponse struct {
 		Count int          `json:"count"`
-		Value []repository `json:"value"`
+		Value []Repository `json:"value"`
 	}
 
 	urlParams := &url.Values{}
@@ -432,44 +351,9 @@ func (p *Provider) GetBranch(ctx context.Context, repositoryID, branchName strin
 	}, nil
 }
 
-// ListPullRequestFile lists the changed files in the pull request.
-//
-// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get-pull-request?view=azure-devops-rest-7.1
-func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
-	type mergeCommit struct {
-		CommitID string `json:"commitId"`
-	}
-	type azurePullRequest struct {
-		LastMergeCommit *mergeCommit `json:"lastMergeCommit"`
-	}
-
-	apiURL, err := getRepositoryAPIURL(repositoryID)
-	if err != nil {
-		return nil, err
-	}
-
-	urlParams := &url.Values{}
-	urlParams.Set("api-version", "7.0")
-	url := fmt.Sprintf("%s/pullrequests/%s?%s", apiURL, pullRequestID, urlParams.Encode())
-
-	code, resp, err := internal.Get(ctx, url, p.getAuthorization())
-	if err != nil {
-		return nil, errors.Wrapf(err, "GET %s", url)
-	}
-	if code >= 300 {
-		return nil, errors.Errorf("failed to create merge request from URL %s, status code: %d, body: %s",
-			url,
-			code,
-			resp,
-		)
-	}
-
-	var res azurePullRequest
-	if err := json.Unmarshal([]byte(resp), &res); err != nil {
-		return nil, err
-	}
-
-	changeResponse, err := p.getChangesByCommit(ctx, repositoryID, res.LastMergeCommit.CommitID)
+// ListPullRequestFile lists the changed files by last merge commit id.
+func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, lastMergeCommitID string) ([]*vcs.PullRequestFile, error) {
+	changeResponse, err := p.getChangesByCommit(ctx, repositoryID, lastMergeCommitID)
 	if err != nil {
 		return nil, err
 	}
@@ -552,6 +436,9 @@ func getRepositoryAPIURL(repositoryID string) (string, error) {
 	return fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/repositories/%s", url.PathEscape(organizationName), url.PathEscape(projectName), url.PathEscape(repositoryID)), nil
 }
 
+// getAuthorization returns the encoded azure token for authorization.
+// Docs: https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops&tabs=Windows
 func (p *Provider) getAuthorization() string {
-	return fmt.Sprintf("Basic %s", p.authToken)
+	encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(":%s", p.authToken)))
+	return fmt.Sprintf("Basic %s", encoded)
 }

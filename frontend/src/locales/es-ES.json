@@ -2022,7 +2022,7 @@
           "gitlab-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de mantenedor para el grupo o todos los proyectos que se deseen gestionar.",
           "github-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de miembro para la organización o todos los proyectos que se deseen gestionar.",
           "bitbucket-personal-access-token": "Genera un usuario de servicio específico y crea una contraseña de aplicación que otorgue permisos de lectura y escritura para las organizaciones, proyectos o repositorios relevantes que se deseen gestionar. Inserta el código base64 codificado '<nombre de usuario de Bitbucket>:<contraseña de aplicación generada>' a continuación.",
-          "azure-devops-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de miembro para la organización o todos los proyectos que se deseen gestionar."
+          "azure-devops-personal-access-token": "Cree un usuario de servicio dedicado y genere un token de acceso personal con el rol de miembro para todas las organizaciones accesibles con los siguientes alcances"
         },
         "confirm": {
           "confirm-info": "Confirmar la información",

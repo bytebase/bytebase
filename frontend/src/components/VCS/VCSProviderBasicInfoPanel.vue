@@ -30,6 +30,7 @@
     <div>
       <div class="mt-4 textlabel">
         {{ $t("gitops.setting.add-git-provider.basic-info.display-name") }}
+        <span class="text-red-600">*</span>
       </div>
       <p class="mt-1 textinfolabel">
         {{
@@ -40,6 +41,7 @@
         v-model:value="config.name"
         class="mt-2 w-full"
         :placeholder="namePlaceholder"
+        :required="true"
       />
       <ResourceIdField
         v-model:value="config.resourceId"
@@ -52,7 +54,7 @@
       />
     </div>
     <div>
-      <div class="mt-6 pt-6 border-t border-block-border textlabel">
+      <div class="textlabel">
         {{ instanceUrlLabel }} <span class="text-red-600">*</span>
       </div>
       <p class="mt-1 textinfolabel">
@@ -64,6 +66,7 @@
       </p>
       <BBTextField
         class="mt-2 w-full"
+        :required="true"
         :value="config.instanceUrl"
         :placeholder="instanceUrlPlaceholder"
         :disabled="instanceUrlDisabled"
@@ -137,17 +140,21 @@
         </template>
         <template v-if="config.uiType == 'AZURE_DEVOPS'">
           <li>
-            •
             {{
               $t(
                 "gitops.setting.add-git-provider.access-token.azure-devops-personal-access-token"
               )
             }}
           </li>
+          <li>• Code (Read)</li>
+          <li>• User Profile (Read)</li>
+          <li>• Project and Team (Read)</li>
+          <li>• Pull Request Threads (Read & Write)</li>
         </template>
       </ul>
       <BBTextField
         class="mt-2 w-full"
+        :required="true"
         :placeholder="'ex. b9e0efc7a233403799b42620c60ff98c146895a27b6219912a215f4e2251cc3a'"
         :value="config.accessToken"
         @update:value="changeAccessToken($event)"
