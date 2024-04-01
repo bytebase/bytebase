@@ -33,6 +33,11 @@ export interface VCSConnector {
   externalWebhookId: string;
   /** For GitLab, webhook request contains this in the 'X-Gitlab-Token" header and we compare it with the one stored in db to validate it sends to the expected endpoint. */
   webhookSecretToken: string;
+  /**
+   * Apply changes to the database group. Optional, if not set, will apply changes to all databases in the project.
+   * Format: projects/{project}/databaseGroups/{databaseGroup}
+   */
+  databaseGroup: string;
 }
 
 function createBaseVCSConnector(): VCSConnector {
@@ -45,6 +50,7 @@ function createBaseVCSConnector(): VCSConnector {
     externalId: "",
     externalWebhookId: "",
     webhookSecretToken: "",
+    databaseGroup: "",
   };
 }
 
@@ -73,6 +79,9 @@ export const VCSConnector = {
     }
     if (message.webhookSecretToken !== "") {
       writer.uint32(66).string(message.webhookSecretToken);
+    }
+    if (message.databaseGroup !== "") {
+      writer.uint32(74).string(message.databaseGroup);
     }
     return writer;
   },
@@ -140,6 +149,13 @@ export const VCSConnector = {
 
           message.webhookSecretToken = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.databaseGroup = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -159,6 +175,7 @@ export const VCSConnector = {
       externalId: isSet(object.externalId) ? globalThis.String(object.externalId) : "",
       externalWebhookId: isSet(object.externalWebhookId) ? globalThis.String(object.externalWebhookId) : "",
       webhookSecretToken: isSet(object.webhookSecretToken) ? globalThis.String(object.webhookSecretToken) : "",
+      databaseGroup: isSet(object.databaseGroup) ? globalThis.String(object.databaseGroup) : "",
     };
   },
 
@@ -188,6 +205,9 @@ export const VCSConnector = {
     if (message.webhookSecretToken !== "") {
       obj.webhookSecretToken = message.webhookSecretToken;
     }
+    if (message.databaseGroup !== "") {
+      obj.databaseGroup = message.databaseGroup;
+    }
     return obj;
   },
 
@@ -204,6 +224,7 @@ export const VCSConnector = {
     message.externalId = object.externalId ?? "";
     message.externalWebhookId = object.externalWebhookId ?? "";
     message.webhookSecretToken = object.webhookSecretToken ?? "";
+    message.databaseGroup = object.databaseGroup ?? "";
     return message;
   },
 };

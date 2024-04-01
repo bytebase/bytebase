@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/utils"
 
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -169,21 +170,10 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		creatorID = user.ID
 	}
 
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	databases, err := s.listDatabases(ctx, project, vcsConnector)
 	if err != nil {
 		return err
 	}
-	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
-	if err != nil {
-		return err
-	}
-	environmentOrders := make(map[string]int32)
-	for _, environment := range environments {
-		environmentOrders[environment.ResourceID] = environment.Order
-	}
-	sort.Slice(databases, func(i, j int) bool {
-		return environmentOrders[databases[i].EffectiveEnvironmentID] < environmentOrders[databases[j].EffectiveEnvironmentID]
-	})
 
 	var sheets []int
 	for _, change := range prInfo.changes {
@@ -288,4 +278,61 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return errors.Wrapf(err, "failed to activity after creating issue %d from push event", issueUID)
 	}
 	return nil
+}
+
+func (s *Service) listDatabases(ctx context.Context, project *store.ProjectMessage, vcsConnector *store.VCSConnectorMessage) ([]*store.DatabaseMessage, error) {
+	if vcsConnector.Payload.DatabaseGroup != "" {
+		return listMatchedDatabasesInGroup(ctx, s.store, project, vcsConnector.Payload.DatabaseGroup)
+	}
+
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, err
+	}
+	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	if err != nil {
+		return nil, err
+	}
+	environmentOrders := make(map[string]int32)
+	for _, environment := range environments {
+		environmentOrders[environment.ResourceID] = environment.Order
+	}
+	sort.Slice(databases, func(i, j int) bool {
+		return environmentOrders[databases[i].EffectiveEnvironmentID] < environmentOrders[databases[j].EffectiveEnvironmentID]
+	})
+
+	return databases, nil
+}
+
+func listMatchedDatabasesInGroup(ctx context.Context, stores *store.Store, project *store.ProjectMessage, databaseGroupName string) ([]*store.DatabaseMessage, error) {
+	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(databaseGroupName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project id and database group id from target %q", databaseGroupName)
+	}
+	if projectID != project.ResourceID {
+		return nil, errors.Errorf("project id %q in target %q does not match project id %q in plan config", projectID, databaseGroupName, project.ResourceID)
+	}
+
+	databaseGroup, err := stores.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
+	}
+	if databaseGroup == nil {
+		return nil, errors.Errorf("database group %q not found", databaseGroupID)
+	}
+
+	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
+	}
+
+	matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroupID)
+	}
+	if len(matchedDatabases) == 0 {
+		return nil, errors.Errorf("no matched databases found in database group %q", databaseGroupID)
+	}
+
+	return matchedDatabases, nil
 }

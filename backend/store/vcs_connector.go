@@ -47,6 +47,7 @@ type UpdateVCSConnectorMessage struct {
 	// Domain specific fields
 	Branch        *string
 	BaseDirectory *string
+	DatabaseGroup *string
 }
 
 // GetVCSConnector gets a VCS connector.
@@ -200,6 +201,9 @@ func (s *Store) UpdateVCSConnector(ctx context.Context, update *UpdateVCSConnect
 	}
 	if v := update.BaseDirectory; v != nil {
 		payloadSet, args = append(payloadSet, fmt.Sprintf("jsonb_build_object('baseDirectory', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+	}
+	if v := update.DatabaseGroup; v != nil {
+		payloadSet, args = append(payloadSet, fmt.Sprintf("jsonb_build_object('databaseGroup', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
 	}
 	if len(payloadSet) != 0 {
 		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))

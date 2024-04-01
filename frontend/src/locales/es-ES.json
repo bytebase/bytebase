@@ -3204,6 +3204,7 @@
   },
   "database-group": {
     "self": "Grupo de Bases de Datos",
+    "select": "Seleccionar grupo de base de datos",
     "create": "Crear grupo de bases de datos",
     "edit": "Editar grupo de bases de datos",
     "matched-database": "Base de datos coincidente",

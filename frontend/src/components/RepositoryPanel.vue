@@ -100,6 +100,7 @@ const state = reactive<LocalState>({
     resourceId: "",
     baseDirectory: "",
     branch: "",
+    databaseGroup: "",
   },
   processing: false,
 });
@@ -111,6 +112,7 @@ watch(
       resourceId: getVCSConnectorId(props.vcsConnector.name).vcsConnectorId,
       baseDirectory: cur.baseDirectory,
       branch: cur.branch,
+      databaseGroup: cur.databaseGroup,
     };
   },
   { deep: true, immediate: true }
@@ -147,7 +149,9 @@ const allowUpdate = computed(() => {
     !state.processing &&
     !isEmpty(state.repositoryConfig.branch) &&
     (props.vcsConnector.branch !== state.repositoryConfig.branch ||
-      props.vcsConnector.baseDirectory !== state.repositoryConfig.baseDirectory)
+      props.vcsConnector.baseDirectory !==
+        state.repositoryConfig.baseDirectory ||
+      props.vcsConnector.databaseGroup !== state.repositoryConfig.databaseGroup)
   );
 });
 
@@ -177,8 +181,9 @@ const doUpdate = async () => {
         ...props.vcsConnector,
         branch: state.repositoryConfig.branch,
         baseDirectory: state.repositoryConfig.baseDirectory,
+        databaseGroup: state.repositoryConfig.databaseGroup,
       }),
-      ["branch", "base_directory"]
+      ["branch", "base_directory", "database_group"]
     );
     emit("update");
   } finally {
