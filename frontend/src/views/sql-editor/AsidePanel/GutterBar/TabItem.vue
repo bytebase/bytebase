@@ -48,8 +48,6 @@ const classes = computed(() => {
 
 const text = computed(() => {
   switch (props.tab) {
-    case "CONNECTION":
-      return t("common.connection");
     case "WORKSHEET":
       return t("sheet.sheet");
     case "SCHEMA":

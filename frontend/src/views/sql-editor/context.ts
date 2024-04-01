@@ -4,7 +4,7 @@ import { inject, provide, ref } from "vue";
 import { useSQLEditorStore } from "@/store";
 import type { ComposedDatabase, SQLEditorTab } from "@/types";
 
-export type AsidePanelTab = "CONNECTION" | "SCHEMA" | "WORKSHEET" | "HISTORY";
+export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
 
 type SQLEditorEvents = Emittery<{
   "save-sheet": { tab: SQLEditorTab; editTitle?: boolean };
