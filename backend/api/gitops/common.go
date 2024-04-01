@@ -64,7 +64,7 @@ func getFileChange(path string) (*fileChange, error) {
 	}
 	version := matches[0]
 	description := strings.TrimPrefix(filename, version)
-	description = strings.TrimLeft(description, "_-#")
+	description = strings.TrimLeft(description, "_")
 	changeType := v1pb.Plan_ChangeDatabaseConfig_MIGRATE
 	switch {
 	case strings.HasPrefix(description, "ddl"):
@@ -77,7 +77,7 @@ func getFileChange(path string) (*fileChange, error) {
 		description = strings.TrimPrefix(description, "ghost")
 		changeType = v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST
 	}
-	description = strings.TrimLeft(description, "_-#")
+	description = strings.TrimLeft(description, "_")
 	return &fileChange{
 		path:        path,
 		version:     version,
