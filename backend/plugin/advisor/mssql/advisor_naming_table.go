@@ -122,7 +122,7 @@ func (l *namingTableListener) EnterExecute_body(ctx *parser.Execute_bodyContext)
 	}
 
 	v := ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema().Func_proc_name_schema().GetProcedure()
-	normalizedProcedureName := tsqlparser.NormalizeTSQLIdentifier(v)
+	_, normalizedProcedureName := tsqlparser.NormalizeTSQLIdentifier(v)
 	if normalizedProcedureName != "sp_rename" {
 		return
 	}

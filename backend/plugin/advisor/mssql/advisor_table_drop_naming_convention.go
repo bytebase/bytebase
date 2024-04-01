@@ -85,7 +85,7 @@ func (l *tableDropNamingConventionChecker) EnterDrop_table(ctx *parser.Drop_tabl
 		if table == nil {
 			continue
 		}
-		normalizedTableName := tsqlparser.NormalizeTSQLIdentifier(table)
+		_, normalizedTableName := tsqlparser.NormalizeTSQLIdentifier(table)
 		if !l.format.MatchString(normalizedTableName) {
 			l.adviceList = append(l.adviceList, advisor.Advice{
 				Status:  l.level,
