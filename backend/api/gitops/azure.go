@@ -3,6 +3,7 @@ package gitops
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -15,6 +16,13 @@ func getAzurePullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvider
 	var pushEvent azure.PullRequestEvent
 	if err := json.Unmarshal(body, &pushEvent); err != nil {
 		return nil, errors.Errorf("failed to unmarshal push event, error %v", err)
+	}
+
+	if strings.ToLower(pushEvent.Resource.Status) != "completed" {
+		return nil, errors.Errorf("invalid pull request status: %v", pushEvent.Resource.Status)
+	}
+	if strings.ToLower(pushEvent.Resource.MergeStatus) != "succeeded" {
+		return nil, errors.Errorf("invalid pull request merge status: %v", pushEvent.Resource.MergeStatus)
 	}
 
 	targetBranch, err := vcs.Branch(pushEvent.Resource.TargetRefName)

@@ -65,7 +65,7 @@
 <script lang="ts" setup>
 import isEmpty from "lodash-es/isEmpty";
 import { computed, reactive, watch } from "vue";
-import { useVCSV1Store, useVCSConnectorStore } from "@/store";
+import { useVCSProviderStore, useVCSConnectorStore } from "@/store";
 import { getVCSConnectorId } from "@/store/modules/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { VCSConnector } from "@/types/proto/v1/vcs_connector_service";
@@ -92,7 +92,7 @@ const emit = defineEmits<{
   (event: "cancel"): void;
 }>();
 
-const vcsV1Store = useVCSV1Store();
+const vcsV1Store = useVCSProviderStore();
 const vcsConnectorStore = useVCSConnectorStore();
 
 const state = reactive<LocalState>({

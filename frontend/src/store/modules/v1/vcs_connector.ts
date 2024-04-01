@@ -62,6 +62,11 @@ export const useVCSConnectorStore = defineStore("vcs_connector_v1", () => {
     return cached.find((item) => item.name === name);
   };
 
+  const getConnectorByName = (connectorName: string) => {
+    const { projectId, vcsConnectorId } = getVCSConnectorId(connectorName);
+    return getConnector(`${projectNamePrefix}${projectId}`, vcsConnectorId);
+  };
+
   const setCache = (project: string, connector: VCSConnector) => {
     const cached = getConnectorList(project);
     cached.push(connector);
@@ -93,6 +98,14 @@ export const useVCSConnectorStore = defineStore("vcs_connector_v1", () => {
     const connector = await vcsConnectorServiceClient.getVCSConnector({ name });
     setCache(project, connector);
     return connector;
+  };
+
+  const getOrFetchConnectorByName = async (connectorName: string) => {
+    const { projectId, vcsConnectorId } = getVCSConnectorId(connectorName);
+    return getOrFetchConnector(
+      `${projectNamePrefix}${projectId}`,
+      vcsConnectorId
+    );
   };
 
   const createConnector = async (
@@ -137,7 +150,9 @@ export const useVCSConnectorStore = defineStore("vcs_connector_v1", () => {
     getOrFetchConnectors,
     getConnectorList,
     getOrFetchConnector,
+    getOrFetchConnectorByName,
     getConnector,
+    getConnectorByName,
     createConnector,
     deleteConnector,
     updateConnector,
