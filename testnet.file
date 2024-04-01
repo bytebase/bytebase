@@ -1,0 +1,36 @@
+[
+    [eth_ sendRawTransaction]
+
+   ?module=proxy
+   &action=eth_call
+{
+  Token: USDT
+  gasLimit: "21000",
+  maxFeePerGas: "300",
+  maxPriorityFeePerGas: "10",
+  nonce: "0",
+  value: "10000000000"
+}
+   
+    &boolean=true  & Merkle Root Hash: 0cdfd7603c93aa018ddcb893c49d0546076075b0a3c363a689e0ac52466d662a
+   &address=0x1b785b24d7b4b1c0954d5a626c191f074258bc09
+   &tag=latest  
+   &function=true  
+{ 
+  'inputs': [USDT],
+        'name': 'totalSupply',
+        'outputs': [{'internalType': 'uint256', 'name': 'usdt', 'type': 'uint256'}],
+        'stateMutability': 'view', 'type': 'function', 'constant': True
+    }
+]
+
+
+
+
+
+
+
+
+
+
+]
