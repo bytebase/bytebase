@@ -21,8 +21,8 @@ import (
 func TestVCS(t *testing.T) {
 	branchName := "feature/foo"
 	pullRequestFiles := []*vcs.PullRequestFile{
-		{Path: "bbtest/0001##migrate##😊create_table_book1.sql"},
-		{Path: "bbtest/0002##migrate##新建create_table_book2.sql"},
+		{Path: "bbtest/0001_😊create_table_book1.sql"},
+		{Path: "bbtest/0002_新建create_table_book2.sql"},
 	}
 	fileContentMap := map[string]string{
 		pullRequestFiles[0].Path: migrationStatement1,
