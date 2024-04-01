@@ -85,7 +85,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 		checker.text = stmtNode.Text()
 		checker.line = stmtNode.OriginTextPosition()
 		if err := checker.extractNode(stmtNode); err != nil {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			adviceList = append(adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.Internal,
 				Title:   checker.title,
@@ -106,7 +106,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 			}
 			content = strings.TrimSuffix(content, ",")
 			content += fmt.Sprintf(" on table `%s`.`%s`, disallow mixing different types of DML statements", table.database, table.table)
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			adviceList = append(adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.StatementPriorBackupCheck,
 				Title:   checker.title,
@@ -144,11 +144,10 @@ func databaseExists(ctx context.Context, driver *sql.DB, database string) bool {
 }
 
 type statementDisallowMixDMLChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
-	title      string
-	text       string
-	line       int
+	level advisor.Status
+	title string
+	text  string
+	line  int
 
 	dmlStatementCount map[table]map[string]int
 }

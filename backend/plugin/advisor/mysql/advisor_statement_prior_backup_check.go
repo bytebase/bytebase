@@ -96,7 +96,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 			}
 			content = strings.TrimSuffix(content, ",")
 			content += fmt.Sprintf(" on table `%s`.`%s`, disallow mixing different types of DML statements", table.database, table.table)
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
+			adviceList = append(adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.StatementPriorBackupCheck,
 				Title:   checker.title,
