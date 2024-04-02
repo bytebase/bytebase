@@ -25,6 +25,9 @@ type IssueCommentMessage struct {
 
 type FindIssueCommentMessage struct {
 	IssueUID *int
+
+	Limit  *int
+	Offset *int
 }
 
 func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMessage) ([]*IssueCommentMessage, error) {
@@ -33,6 +36,14 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 	if v := find.IssueUID; v != nil {
 		where = append(where, fmt.Sprintf("issue_id = $%d", len(args)+1))
 		args = append(args, *v)
+	}
+
+	limitOffsetClause := ""
+	if v := find.Limit; v != nil {
+		limitOffsetClause = fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		limitOffsetClause += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
 	rows, err := s.db.db.QueryContext(ctx, fmt.Sprintf(`
@@ -48,7 +59,8 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 			issue_comment
 		WHERE %s
 		ORDER BY id ASC
-	`, strings.Join(where, " AND ")), args...)
+		%s
+	`, strings.Join(where, " AND "), limitOffsetClause), args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query context")
 	}
