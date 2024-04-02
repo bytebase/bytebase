@@ -21,6 +21,7 @@ func TestMSSQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnNotNull,
 		advisor.SchemaRuleTableNoFK,
 		advisor.SchemaRuleTableDisallowDDL,
+		advisor.SchemaRuleTableDisallowDML,
 		advisor.SchemaRuleSchemaBackwardCompatibility,
 		advisor.SchemaRuleRequiredColumn,
 		advisor.SchemaRuleColumnTypeDisallowList,

@@ -471,6 +471,16 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 				List: []string{"identifier"},
 			})
 		}
+	case SchemaRuleTableDisallowDML:
+		if dbType == storepb.Engine_MSSQL {
+			payload, err = json.Marshal(StringArrayTypeRulePayload{
+				List: []string{"MySchema.Identifier"},
+			})
+		} else {
+			payload, err = json.Marshal(StringArrayTypeRulePayload{
+				List: []string{"identifier"},
+			})
+		}
 	case SchemaRuleIndexKeyNumberLimit, SchemaRuleIndexTotalNumberLimit:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 5,
