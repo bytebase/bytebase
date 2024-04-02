@@ -12,7 +12,6 @@ export * from "./sqlEditor";
 export * from "./sql";
 export * from "./sheet";
 export * from "./worksheet";
-export * from "./vcs";
 export * from "./issue";
 export * from "./changeHistory";
 export * from "./changelist";

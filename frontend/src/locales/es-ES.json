@@ -2017,12 +2017,12 @@
         },
         "access-token": {
           "self": "Información de aplicación OAuth",
-          "gitlab-project-access-token": "Genera un token de acceso al proyecto para administrar un solo proyecto.",
-          "gitlab-group-access-token": "Genera un token de acceso de grupo para administrar todos los proyectos dentro del grupo.",
-          "gitlab-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de mantenedor para el grupo o todos los proyectos que se deseen gestionar.",
-          "github-personal-access-token": "Crear un usuario de servicio dedicado y generar un token de acceso personal con el rol de miembro para la organización o todos los proyectos que se deseen gestionar.",
-          "bitbucket-personal-access-token": "Genera un usuario de servicio específico y crea una contraseña de aplicación otorgando permisos de lectura y escritura para las organizaciones, proyectos o repositorios relevantes a gestionar. Inserta '<nombre de usuario de Bitbucket>:<contraseña de aplicación generada>' debajo.",
-          "azure-devops-personal-access-token": "Cree un usuario de servicio dedicado y genere un token de acceso personal con el rol de miembro para todas las organizaciones accesibles con los siguientes alcances. El campo 'Organización' debe establecerse en 'Todas las organizaciones accesibles'."
+          "personal-access-token": "ficha de acceso personal",
+          "gitlab-personal-access-token": "Cree un usuario de servicio dedicado y genere un token de acceso personal con el rol de mantenedor y al menos los siguientes permisos para el grupo o proyectos que se administrarán. Puede generar un token de acceso al proyecto para administrar un solo proyecto o generar un token de acceso grupal para administrar todos los proyectos dentro del grupo.",
+          "github-personal-access-token": "Cree un usuario de servicio dedicado y genere un {token} con el rol de miembro de la organización o de todos los proyectos que se administrarán.",
+          "bitbucket-app-access-token": "Genere un usuario de servicio específico y cree una {app_password} con al menos los siguientes permisos para que las organizaciones, proyectos o repositorios relevantes los administren. Inserte '<nombre de usuario de bitbucket>:<contraseña de aplicación generada>' a continuación.",
+          "bitbucket-app-password": "contraseña de la aplicación",
+          "azure-devops-personal-access-token": "Cree un usuario de servicio dedicado y genere un token de acceso personal con el rol de miembro para todas las organizaciones accesibles con los siguientes alcances. El campo \"Organización\" debe estar configurado en \"Todas las organizaciones accesibles\"."
         },
         "confirm": {
           "confirm-info": "Confirmar la información",
