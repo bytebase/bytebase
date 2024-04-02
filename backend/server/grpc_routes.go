@@ -75,7 +75,7 @@ func configureGrpcRouters(
 	v1pb.RegisterSettingServiceServer(grpcServer, apiv1.NewSettingService(stores, profile, licenseService, stateCfg))
 	v1pb.RegisterAnomalyServiceServer(grpcServer, apiv1.NewAnomalyService(stores))
 	v1pb.RegisterSQLServiceServer(grpcServer, apiv1.NewSQLService(stores, schemaSyncer, dbFactory, activityManager, licenseService, profile, iamManager))
-	v1pb.RegisterVCSProviderServiceServer(grpcServer, apiv1.NewVCSProviderService(stores))
+	v1pb.RegisterVCSProviderServiceServer(grpcServer, apiv1.NewVCSProviderService(stores, profile))
 	v1pb.RegisterRiskServiceServer(grpcServer, apiv1.NewRiskService(stores, licenseService))
 	issueService := apiv1.NewIssueService(stores, activityManager, relayRunner, stateCfg, licenseService, profile, iamManager, metricReporter)
 	v1pb.RegisterIssueServiceServer(grpcServer, issueService)

@@ -133,11 +133,11 @@ type RepositoryPermission struct {
 	Repository Repository `json:"repository"`
 }
 
-// FetchAllRepositoryList fetches all repositories where the authenticated user
+// FetchRepositoryList fetches all repositories where the authenticated user
 // has admin permissions, which is required to create webhook in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-user-permissions-repositories-get
-func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repository, error) {
+func (p *Provider) FetchRepositoryList(ctx context.Context, listAll bool) ([]*vcs.Repository, error) {
 	var bbcRepos []*Repository
 	params := url.Values{}
 	params.Add("q", `permission="admin"`)
@@ -151,6 +151,9 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repositor
 			return nil, errors.Wrap(err, "fetch paginated list")
 		}
 		bbcRepos = append(bbcRepos, repos...)
+		if !listAll {
+			break
+		}
 	}
 
 	var repos []*vcs.Repository

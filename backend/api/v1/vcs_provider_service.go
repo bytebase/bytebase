@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -20,12 +21,13 @@ import (
 // VCSProviderService represents a service for managing vcs provider.
 type VCSProviderService struct {
 	v1pb.UnimplementedVCSProviderServiceServer
-	store *store.Store
+	store   *store.Store
+	profile *config.Profile
 }
 
 // NewVCSProviderService returns a new instance of VCSProviderService.
-func NewVCSProviderService(store *store.Store) *VCSProviderService {
-	return &VCSProviderService{store: store}
+func NewVCSProviderService(store *store.Store, profile *config.Profile) *VCSProviderService {
+	return &VCSProviderService{store: store, profile: profile}
 }
 
 // GetVCSProvider get a single vcs provider.
@@ -64,6 +66,16 @@ func (s *VCSProviderService) CreateVCSProvider(ctx context.Context, request *v1p
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	// TODO(ed): add test and remove this
+	if s.profile.Mode != common.ReleaseModeDev {
+		if _, err := vcs.Get(
+			vcsProvider.Type,
+			vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
+		).FetchRepositoryList(ctx, false); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to fetch repositories, please check if the token has right permissions: %v", err)
+		}
+	}
+
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
@@ -98,6 +110,16 @@ func (s *VCSProviderService) UpdateVCSProvider(ctx context.Context, request *v1p
 				return nil, status.Errorf(codes.InvalidArgument, "secret should not be empty")
 			}
 			update.AccessToken = &request.VcsProvider.AccessToken
+			// TODO(ed): add test and remove this
+			if s.profile.Mode != common.ReleaseModeDev {
+				vcsProvider.AccessToken = request.VcsProvider.AccessToken
+				if _, err := vcs.Get(
+					vcsProvider.Type,
+					vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
+				).FetchRepositoryList(ctx, false); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "failed to fetch repositories, please check if the token has right permissions: %v", err)
+				}
+			}
 		}
 	}
 
@@ -135,7 +157,7 @@ func (s *VCSProviderService) SearchVCSProviderRepositories(ctx context.Context, 
 	apiExternalProjectList, err := vcs.Get(
 		vcsProvider.Type,
 		vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
-	).FetchAllRepositoryList(ctx)
+	).FetchRepositoryList(ctx, true)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch external project list: %v", err)
 	}

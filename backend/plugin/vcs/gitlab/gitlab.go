@@ -164,11 +164,11 @@ func (*Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
 }
 
-// FetchAllRepositoryList fetches all repositories where the authenticated user
+// FetchRepositoryList fetches all repositories where the authenticated user
 // has a maintainer role, which is required to create webhook in the project.
 //
 // Docs: https://docs.gitlab.com/ee/api/projects.html#list-all-projects
-func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repository, error) {
+func (p *Provider) FetchRepositoryList(ctx context.Context, listAll bool) ([]*vcs.Repository, error) {
 	var gitlabRepos []gitLabRepository
 	page := 1
 	for {
@@ -178,7 +178,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repositor
 		}
 		gitlabRepos = append(gitlabRepos, repos...)
 
-		if !hasNextPage {
+		if !hasNextPage || !listAll {
 			break
 		}
 		page++

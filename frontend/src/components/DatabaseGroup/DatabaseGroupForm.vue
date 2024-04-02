@@ -84,6 +84,7 @@ import { Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
+import { DatabaseGroupSelect } from "@/components/v2/Select";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { emptySimpleExpr, wrapAsGroup } from "@/plugins/cel";
 import { useDBGroupStore, useSubscriptionV1Store } from "@/store";
@@ -109,7 +110,6 @@ import type {
 import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
 import { getErrorCode } from "@/utils/grpcweb";
 import { EnvironmentSelect, ProjectSelect, ResourceIdField } from "../v2";
-import DatabaseGroupSelect from "./DatabaseGroupSelect.vue";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import MatchedTableView from "./MatchedTableView.vue";
 import type { ResourceType } from "./utils";
