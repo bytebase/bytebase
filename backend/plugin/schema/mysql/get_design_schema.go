@@ -24,7 +24,7 @@ func init() {
 
 func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
-	list, err := mysqlparser.ParseMySQL(baselineSchema, tokenizer.KeepEmptyBlocks())
+	list, err := mysqlparser.ParseMySQL(baselineSchema, tokenizer.KeepEmptyBlocks(), tokenizer.SplitCommentBeforeDelimiter())
 	if err != nil {
 		return "", err
 	}
@@ -47,21 +47,77 @@ func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadat
 	listener.finalViewTail = finalViewTailGetter.finalViewTails
 	listener.finalViewStatementIndex = finalViewTailGetter.finalViewStatementIndex
 
+	groups, err := groupStatement(list)
+	if err != nil {
+		return "", err
+	}
+
+	groupIdx := 0
+	previousDeleteFunctionBlockBuf, previousDeleteProcedureBlockBuf := make([]bool, len(groups)), make([]bool, len(groups))
 	for i, stmt := range list {
+		plainText := stmt.Tree.(*mysql.ScriptContext).GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: 0,
+			Stop:  stmt.Tokens.Size() - 1,
+		})
+		_ = fmt.Sprintf("Statement %d: %s", i, plainText)
+		for groupIdx < len(groups) && groups[groupIdx].endIdx < i {
+			groupIdx++
+		}
+
+		// We write the remaining text of the stmt except the following cases:
+		// 1. The current group is CREATE FUNCTION/CREATE PROCEDURE, and they had been deleted in the desired schema.
+		var inDeleteFunctionBlock, inCreateFunctionBlock bool
+		var inDeleteProcedureBlock, inCreateProcedureBlock bool
+
+		if groupIdx < len(groups) && groups[groupIdx].tp == groupTypeCreateFunction {
+			inDeleteFunctionBlock = true
+			schema := toState.schemas[""]
+			if schema != nil {
+				if _, ok := schema.functions[groups[groupIdx].objectName]; ok {
+					inDeleteFunctionBlock = false
+				}
+			}
+			inCreateFunctionBlock = !inDeleteFunctionBlock
+		}
+		if groupIdx < len(groups) && groups[groupIdx].tp == groupTypeCreateProcedure {
+			inDeleteProcedureBlock = true
+			schema := toState.schemas[""]
+			if schema != nil {
+				if _, ok := schema.procedures[groups[groupIdx].objectName]; ok {
+					inDeleteProcedureBlock = false
+				}
+			}
+			inCreateProcedureBlock = !inDeleteProcedureBlock
+		}
+
 		listener.lastTokenIndex = 0
 		listener.currentStatementIndex = i
+		listener.inCreateFunctionBlock = inCreateFunctionBlock
+		listener.inDeleteFunctionBlock = inDeleteFunctionBlock
+		listener.inCreateProcedureBlock = inCreateProcedureBlock
+		listener.inDeleteProcedureBlock = inDeleteProcedureBlock
+		previousDeleteFunctionBlockBuf[groupIdx] = inDeleteFunctionBlock
+		previousDeleteProcedureBlockBuf[groupIdx] = inDeleteProcedureBlock
+		listener.firstStatementInBlock = i == groups[groupIdx].beginIdx
+		if groupIdx > 0 {
+			listener.previousDeleteFunctionBlock = previousDeleteFunctionBlockBuf[groupIdx-1]
+			listener.previousDeleteProcedureBlock = previousDeleteProcedureBlockBuf[groupIdx-1]
+		}
+
 		antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
 		if listener.err != nil {
 			break
 		}
 
-		if _, err := listener.result.WriteString(
-			stmt.Tokens.GetTextFromInterval(antlr.Interval{
-				Start: listener.lastTokenIndex,
-				Stop:  stmt.Tokens.Size() - 1,
-			}),
-		); err != nil {
-			return "", err
+		if !inDeleteProcedureBlock && !inDeleteFunctionBlock {
+			if _, err := listener.result.WriteString(
+				stmt.Tokens.GetTextFromInterval(antlr.Interval{
+					Start: listener.lastTokenIndex,
+					Stop:  stmt.Tokens.Size() - 1,
+				}),
+			); err != nil {
+				return "", err
+			}
 		}
 	}
 	if listener.err != nil {
@@ -76,6 +132,14 @@ func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadat
 	}
 
 	if err := writeRemainingViews(&listener.result, to, toState); err != nil {
+		return "", err
+	}
+
+	if err := writeRemainingFunctions(&listener.result, to, toState); err != nil {
+		return "", err
+	}
+
+	if err := writeRemainingProcedures(&listener.result, to, toState); err != nil {
 		return "", err
 	}
 
@@ -133,6 +197,15 @@ type mysqlDesignSchemaGenerator struct {
 	finalViewTail           map[string]mysql.IViewTailContext
 	finalViewStatementIndex map[string]int
 	hasTemporaryView        bool
+
+	inCreateFunctionBlock  bool
+	inDeleteFunctionBlock  bool
+	inCreateProcedureBlock bool
+	inDeleteProcedureBlock bool
+
+	previousDeleteFunctionBlock  bool
+	previousDeleteProcedureBlock bool
+	firstStatementInBlock        bool
 
 	to                  *databaseState
 	result              strings.Builder
@@ -192,7 +265,7 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateView(ctx *mysql.CreateViewContex
 				g.err = err
 				return
 			}
-			equal, err := mysqlparser.IsViewTailEqualViewStmt(viewTail, buf.String())
+			equal, err := mysqlparser.IsViewTailEqualCreateViewStmt(viewTail, buf.String())
 			if err != nil {
 				g.err = err
 				return
@@ -1115,9 +1188,95 @@ func (g *mysqlDesignSchemaGenerator) EnterDropView(ctx *mysql.DropViewContext) {
 	}
 }
 
-func (g *mysqlDesignSchemaGenerator) EnterCreateProcedure(*mysql.CreateProcedureContext) {
+func (g *mysqlDesignSchemaGenerator) EnterCreateFunction(ctx *mysql.CreateFunctionContext) {
 	if g.err != nil {
 		return
+	}
+
+	p := ctx.GetParent()
+	pCtx, ok := p.(*mysql.CreateStatementContext)
+	if !ok {
+		return
+	}
+	pp := p.GetParent()
+	if _, ok := pp.(*mysql.SimpleStatementContext); !ok {
+		return
+	}
+	ppp := pp.GetParent()
+	if _, ok := ppp.(*mysql.QueryContext); !ok {
+		return
+	}
+
+	// The create function we wrote does not contain the set statement, so the delimiter may appear before the create function statement.
+	// But be carefully, the set statement in this block may had been keep/drop delemeter, so we dont't need to keep/drop it again.
+	// Before the create function statement, there may be heading delimiter comment, it belongs to the previous block. We follow the table below to handle it:
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | Current Delete | Previous Delete | Operation                                                      |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | True           | False           | Keep the heading delimiter, and skip the current statement     |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | True           | True            | Just skip the current statement                                |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | False          | False           | Nothing todo                                                   |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | False          | True            | Delete the heading delimiter, and remaining others.            |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	var remainningText string
+	deleteRoutine := g.inDeleteFunctionBlock || g.inDeleteProcedureBlock
+	previousDeleteRoutine := g.previousDeleteFunctionBlock || g.previousDeleteProcedureBlock
+	if deleteRoutine {
+		if !previousDeleteRoutine && g.firstStatementInBlock {
+			headingTokens := pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: g.lastTokenIndex,
+				Stop:  pCtx.GetStart().GetTokenIndex() - 1,
+			})
+			delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+			headingNewLine := strings.HasPrefix(headingTokens, "\n")
+			if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+				s := v[0]
+				if headingNewLine {
+					s = "\n" + s
+				}
+				if _, err := g.result.WriteString(s); err != nil {
+					g.err = err
+					return
+				}
+			}
+			g.lastTokenIndex = pCtx.GetParser().GetTokenStream().Size() - 1
+		}
+		g.lastTokenIndex = pCtx.GetParser().GetTokenStream().Size() - 1
+	} else if previousDeleteRoutine && g.firstStatementInBlock {
+		headingTokens := pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  pCtx.GetStart().GetTokenIndex() - 1,
+		})
+		delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+		headingNewLineNumber := len(headingTokens) - len(strings.TrimLeft(headingTokens, "\n"))
+		trailingNewLine := len(headingTokens) - len(strings.TrimRight(headingTokens, "\n"))
+		if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+			remainningText = strings.Repeat("\n", headingNewLineNumber)
+			remainningText += strings.Join(v[1:], "\n")
+			remainningText += strings.Repeat("\n", trailingNewLine)
+			g.lastTokenIndex = pCtx.GetStart().GetTokenIndex()
+		}
+	} else if !previousDeleteRoutine && g.firstStatementInBlock {
+		headingTokens := pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  pCtx.GetStart().GetTokenIndex() - 1,
+		})
+		delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+		headingNewLineNumber := len(headingTokens) - len(strings.TrimLeft(headingTokens, "\n"))
+		trailingNewLine := len(headingTokens) - len(strings.TrimRight(headingTokens, "\n"))
+		if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+			if _, err := g.result.WriteString(fmt.Sprintf("%s%s", strings.Repeat("\n", headingNewLineNumber), v[0])); err != nil {
+				g.err = err
+				return
+			}
+			remainningText = "\n" // The \n between v[0] and v[1]
+			remainningText += strings.Join(v[1:], "\n")
+			remainningText += strings.Repeat("\n", trailingNewLine)
+			g.lastTokenIndex = pCtx.GetStart().GetTokenIndex()
+		}
 	}
 
 	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
@@ -1129,11 +1288,150 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateProcedure(*mysql.CreateProcedure
 		g.err = err
 		return
 	}
+
+	if _, err := g.result.WriteString(remainningText); err != nil {
+		g.err = err
+		return
+	}
+
+	_, funcName := mysqlparser.NormalizeMySQLFunctionName(pCtx.CreateFunction().FunctionName())
+	schema, ok := g.to.schemas[""]
+	if !ok || schema == nil {
+		g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
+		return
+	}
+	// We follow the strategies below to handle the function definition:
+	// 1. If the function do not appear in the desired schema, we drop the function definition.
+	// TODO(zp): We should also remove the heading set statement.
+	// 2. If the function can be found in the desired schema, we compare the final function definition with the desired function definition.
+	//   i. If they are the same, we keep the function definition.
+	//   ii. Otherwise, we should drop the function definition and write the desired function definition.
+	funcDef, ok := schema.functions[funcName]
+	if ok {
+		// Compare the function definition.
+		defInParser := pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: pCtx.GetStart().GetTokenIndex(),
+			Stop:  pCtx.GetStop().GetTokenIndex(),
+		})
+		if funcDef.definition == defInParser {
+			// Function do not change, keep the function definition.
+			if _, err := g.result.WriteString(pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: g.lastTokenIndex,
+				Stop:  pCtx.GetStop().GetTokenIndex(),
+			})); err != nil {
+				g.err = err
+				return
+			}
+			g.lastTokenIndex = pCtx.GetStop().GetTokenIndex() + 1
+			delete(schema.functions, funcName)
+			return
+		}
+		if _, err := g.result.WriteString(pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  pCtx.GetStart().GetTokenIndex() - 1,
+		})); err != nil {
+			g.err = err
+			return
+		}
+		g.lastTokenIndex = pCtx.GetStop().GetTokenIndex() + 1
+		if _, err := g.result.WriteString(funcDef.definition); err != nil {
+			g.err = err
+			return
+		}
+		delete(schema.functions, funcName)
+		return
+	}
+	g.lastTokenIndex = pCtx.GetParser().GetTokenStream().Size() - 1
 }
 
-func (g *mysqlDesignSchemaGenerator) EnterCreateFunction(*mysql.CreateFunctionContext) {
+func (g *mysqlDesignSchemaGenerator) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
 	if g.err != nil {
 		return
+	}
+
+	p := ctx.GetParent()
+	pCtx, ok := p.(*mysql.CreateStatementContext)
+	if !ok {
+		return
+	}
+	pp := p.GetParent()
+	if _, ok := pp.(*mysql.SimpleStatementContext); !ok {
+		return
+	}
+	ppp := pp.GetParent()
+	if _, ok := ppp.(*mysql.QueryContext); !ok {
+		return
+	}
+
+	// The create procedure we wrote does not contain the set statement, so the delimiter may appear before the create procedure statement.
+	// Before the create procedure statement, there may be heading delimiter comment, it belongs to the previous block. We follow the table below to handle it:
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | Current Delete | Previous Delete | Operation                                                      |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | True           | False           | Keep the heading delimiter, and skip the current statement     |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | True           | True            | Just skip the current statement                                |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | False          | False           | Write the possible delimiter before writing other objects      |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | False          | True            | Delete the heading delimiter, and remaining others.            |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	var remainningText string
+	deleteRoutine := g.inDeleteFunctionBlock || g.inDeleteProcedureBlock
+	previousDeleteRoutine := g.previousDeleteFunctionBlock || g.previousDeleteProcedureBlock
+	if deleteRoutine {
+		if !previousDeleteRoutine && g.firstStatementInBlock {
+			headingTokens := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: g.lastTokenIndex,
+				Stop:  ctx.GetStart().GetTokenIndex() - 1,
+			})
+			delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+			headingNewLine := strings.HasPrefix(headingTokens, "\n")
+			if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+				s := v[0]
+				if headingNewLine {
+					s = "\n" + s
+				}
+				if _, err := g.result.WriteString(s); err != nil {
+					g.err = err
+					return
+				}
+			}
+			g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
+		}
+		g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
+	} else if previousDeleteRoutine && g.firstStatementInBlock {
+		headingTokens := pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  pCtx.GetStart().GetTokenIndex() - 1,
+		})
+		delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+		headingNewLineNumber := len(headingTokens) - len(strings.TrimLeft(headingTokens, "\n"))
+		trailingNewLine := len(headingTokens) - len(strings.TrimRight(headingTokens, "\n"))
+		if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+			remainningText = strings.Repeat("\n", headingNewLineNumber)
+			remainningText += strings.Join(v[1:], "\n")
+			remainningText += strings.Repeat("\n", trailingNewLine)
+			g.lastTokenIndex = pCtx.GetStart().GetTokenIndex()
+		}
+	} else if !previousDeleteRoutine && g.firstStatementInBlock {
+		headingTokens := pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  pCtx.GetStart().GetTokenIndex() - 1,
+		})
+		delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+		headingNewLineNumber := len(headingTokens) - len(strings.TrimLeft(headingTokens, "\n"))
+		trailingNewLine := len(headingTokens) - len(strings.TrimRight(headingTokens, "\n"))
+		if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+			if _, err := g.result.WriteString(fmt.Sprintf("%s%s", strings.Repeat("\n", headingNewLineNumber), v[0])); err != nil {
+				g.err = err
+				return
+			}
+			remainningText = "\n" // The \n between v[0] and v[1]
+			remainningText += strings.Join(v[1:], "\n")
+			remainningText += strings.Repeat("\n", trailingNewLine)
+			g.lastTokenIndex = pCtx.GetStart().GetTokenIndex()
+		}
 	}
 
 	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
@@ -1145,6 +1443,65 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateFunction(*mysql.CreateFunctionCo
 		g.err = err
 		return
 	}
+
+	if err := writeRemainingFunctions(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
+
+	if _, err := g.result.WriteString(remainningText); err != nil {
+		g.err = err
+		return
+	}
+
+	_, procedureName := mysqlparser.NormalizeMySQLProcedureName(pCtx.CreateProcedure().ProcedureName())
+	schema, ok := g.to.schemas[""]
+	if !ok || schema == nil {
+		return
+	}
+
+	// We follow the strategies below to handle the procedure definition:
+	// 1. If the procedure do not appear in the desired schema, we drop the procedure definition.
+	// TODO(zp): We should also remove the heading set statement.
+	// 2. If the procedure can be found in the desired schema, we compare the procedure definition with the desired procedure definition.
+	//   i. If they are the same, we keep the procedure definition.
+	//   ii. Otherwise, we should drop the procedure definition and write the desired procedure definition.
+	procedureDef, ok := schema.procedures[procedureName]
+	if ok {
+		// Compare the procedure definition.
+		defInParser := pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: pCtx.GetStart().GetTokenIndex(),
+			Stop:  pCtx.GetStop().GetTokenIndex(),
+		})
+		if procedureDef.definition == defInParser {
+			// procedure do not change, keep the procedure definition.
+			if _, err := g.result.WriteString(pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: g.lastTokenIndex,
+				Stop:  pCtx.GetStop().GetTokenIndex(),
+			})); err != nil {
+				g.err = err
+				return
+			}
+			g.lastTokenIndex = pCtx.GetStop().GetTokenIndex() + 1
+			delete(schema.procedures, procedureName)
+			return
+		}
+		if _, err := g.result.WriteString(pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  pCtx.GetStart().GetTokenIndex() - 1,
+		})); err != nil {
+			g.err = err
+			return
+		}
+		g.lastTokenIndex = pCtx.GetStop().GetTokenIndex() + 1
+		if _, err := g.result.WriteString(procedureDef.definition); err != nil {
+			g.err = err
+			return
+		}
+		delete(schema.procedures, procedureName)
+		return
+	}
+	g.lastTokenIndex = pCtx.GetParser().GetTokenStream().Size() - 1
 }
 
 func (g *mysqlDesignSchemaGenerator) EnterCreateEvent(*mysql.CreateEventContext) {
@@ -1158,6 +1515,16 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateEvent(*mysql.CreateEventContext)
 	}
 
 	if err := writeRemainingViews(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
+
+	if err := writeRemainingFunctions(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
+
+	if err := writeRemainingProcedures(&g.result, g.desired, g.to); err != nil {
 		g.err = err
 		return
 	}
@@ -1177,6 +1544,15 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTriggers(*mysql.CreateTriggerCon
 		g.err = err
 		return
 	}
+
+	if err := writeRemainingFunctions(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+	}
+
+	if err := writeRemainingProcedures(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
 }
 
 // EnterSetStatement is called when production setStatement is entered.
@@ -1187,6 +1563,68 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTriggers(*mysql.CreateTriggerCon
 func (g *mysqlDesignSchemaGenerator) EnterSetStatement(ctx *mysql.SetStatementContext) {
 	if g.err != nil {
 		return
+	}
+	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
+		return
+	}
+	if _, ok := ctx.GetParent().GetParent().(*mysql.QueryContext); !ok {
+		return
+	}
+	// Before the set statement, there may be heading delimiter comment, it belongs to the previous block. We follow the table below to handle it:
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | Current Delete | Previous Delete | Operation                                                      |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | True           | False           | Keep the heading delimiter, and skip the current set statement |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | True           | True            | Just skip the current set statement                            |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | False          | False           | Nothing todo                                                   |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	// | False          | True            | Delete the heading delimiter, and remaining others.            |
+	// +----------------+-----------------+----------------------------------------------------------------+
+	deleteRoutine := g.inDeleteFunctionBlock || g.inDeleteProcedureBlock
+	previousDeleteRoutine := g.previousDeleteFunctionBlock || g.previousDeleteProcedureBlock
+	if deleteRoutine {
+		if !previousDeleteRoutine && g.firstStatementInBlock {
+			headingTokens := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: g.lastTokenIndex,
+				Stop:  ctx.GetStart().GetTokenIndex() - 1,
+			})
+			delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+			headingNewLineNumber := len(headingTokens) - len(strings.TrimLeft(headingTokens, "\n"))
+			if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+				s := v[0]
+				s = strings.Repeat("\n", headingNewLineNumber) + s
+				if _, err := g.result.WriteString(s); err != nil {
+					g.err = err
+					return
+				}
+			}
+		}
+		g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
+	} else if previousDeleteRoutine && g.firstStatementInBlock {
+		headingTokens := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  ctx.GetStart().GetTokenIndex() - 1,
+		})
+		delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+		headingNewLine := len(headingTokens) - len(strings.TrimRight(headingTokens, "\n"))
+		trailingNewLine := len(headingTokens) - len(strings.TrimRight(headingTokens, "\n"))
+		if v := strings.Split(strings.TrimSpace(headingTokens), "\n"); len(v) > 0 && delimiterRegexp.MatchString(v[0]) {
+			if _, err := g.result.WriteString(strings.Repeat("\n", headingNewLine)); err != nil {
+				g.err = err
+				return
+			}
+			remainning := strings.Join(v[1:], "\n")
+			if _, err := g.result.WriteString(remainning); err != nil {
+				g.err = err
+				return
+			}
+			if _, err := g.result.WriteString(strings.Repeat("\n", trailingNewLine)); err != nil {
+				g.err = err
+			}
+			g.lastTokenIndex = ctx.GetStart().GetTokenIndex()
+		}
 	}
 
 	curSet := strings.TrimSpace(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx))
@@ -1202,6 +1640,19 @@ func (g *mysqlDesignSchemaGenerator) EnterSetStatement(ctx *mysql.SetStatementCo
 	if err := writeRemainingViews(&g.result, g.desired, g.to); err != nil {
 		g.err = err
 		return
+	}
+
+	if (curSet == `SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS`) || (strings.HasPrefix(curSet, "SET character_set_client") && (g.inDeleteProcedureBlock || g.inCreateProcedureBlock)) {
+		if err := writeRemainingFunctions(&g.result, g.desired, g.to); err != nil {
+			g.err = err
+			return
+		}
+	}
+	if curSet == `SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS` {
+		if err := writeRemainingProcedures(&g.result, g.desired, g.to); err != nil {
+			g.err = err
+			return
+		}
 	}
 }
 
@@ -1297,12 +1748,108 @@ func writeRemainingViews(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, 
 	return nil
 }
 
+func writeRemainingProcedures(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *databaseState) error {
+	firstProcedure := true
+	// Follow the order of the input schemas.
+	for _, schema := range to.Schemas {
+		schemaState, ok := state.schemas[schema.Name]
+		if !ok {
+			continue
+		}
+		// Follow the order of the input procedures.
+		for idx, procedure := range schema.Procedures {
+			procedure, ok := schemaState.procedures[procedure.Name]
+			if !ok {
+				continue
+			}
+			if firstProcedure {
+				firstProcedure = false
+				if _, err := w.WriteString("\n"); err != nil {
+					return err
+				}
+			}
+			if _, err := w.WriteString(getProcedureAnnouncement(procedure.name)); err != nil {
+				return err
+			}
+
+			// Avoid new line.
+			buf := &strings.Builder{}
+			if err := procedure.toString(buf); err != nil {
+				return err
+			}
+			if idx == len(schema.Procedures)-1 && buf.String()[len(buf.String())-1] == '\n' {
+				if _, err := w.WriteString(buf.String()[:len(buf.String())-1]); err != nil {
+					return err
+				}
+			} else {
+				if _, err := w.WriteString(buf.String()); err != nil {
+					return err
+				}
+			}
+			delete(schemaState.procedures, procedure.name)
+		}
+	}
+	return nil
+}
+
+func writeRemainingFunctions(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *databaseState) error {
+	firstFunction := true
+	// Follow the order of the input schemas.
+	for _, schema := range to.Schemas {
+		schemaState, ok := state.schemas[schema.Name]
+		if !ok {
+			continue
+		}
+		// Follow the order of the input functions.
+		for idx, function := range schema.Functions {
+			function, ok := schemaState.functions[function.Name]
+			if !ok {
+				continue
+			}
+			if firstFunction {
+				firstFunction = false
+				if _, err := w.WriteString("\n"); err != nil {
+					return err
+				}
+			}
+			if _, err := w.WriteString(getFunctionAnnouncement(function.name)); err != nil {
+				return err
+			}
+
+			// Avoid new line.
+			buf := &strings.Builder{}
+			if err := function.toString(buf); err != nil {
+				return err
+			}
+			if idx == len(schema.Functions)-1 && buf.String()[len(buf.String())-1] == '\n' {
+				if _, err := w.WriteString(buf.String()[:len(buf.String())-1]); err != nil {
+					return err
+				}
+			} else {
+				if _, err := w.WriteString(buf.String()); err != nil {
+					return err
+				}
+			}
+			delete(schemaState.functions, function.name)
+		}
+	}
+	return nil
+}
+
 func getViewAnnouncement(name string) string {
 	return fmt.Sprintf("\nDROP VIEW IF EXISTS `%s`;\n--\n-- View structure for `%s`\n--\n", name, name)
 }
 
 func getTableAnnouncement(name string) string {
 	return fmt.Sprintf("\n--\n-- Table structure for `%s`\n--\n", name)
+}
+
+func getFunctionAnnouncement(name string) string {
+	return fmt.Sprintf("\n--\n-- Function structure for `%s`\n--\n", name)
+}
+
+func getProcedureAnnouncement(name string) string {
+	return fmt.Sprintf("\n--\n-- Procedure structure for `%s`\n--\n", name)
 }
 
 // getDataTypePlainText returns the plain text of the data type,

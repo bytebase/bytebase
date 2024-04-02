@@ -1,0 +1,252 @@
+- description: Create new procedure in schema without procedure
+  baseline: |-
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Temporary view structure for `v1`
+    --
+    CREATE VIEW `v1` AS SELECT
+      1 AS `id`;
+
+
+    --
+    -- Table structure for `t`
+    --
+    CREATE TABLE `t` (
+      `id` int DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    DROP VIEW IF EXISTS `v1`;
+    --
+    -- View structure for `v1`
+    --
+    CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `v1` AS select `t`.`id` AS `id` from `t`;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+  target: |-
+    {
+      "name": "test_function",
+      "schemas": [
+        {
+          "views": [
+            {
+              "name": "v1",
+              "comment": "VIEW",
+              "definition": "select `t`.`id` AS `id` from `t`"
+            }
+          ],
+          "tables": [
+            {
+              "name": "t",
+              "engine": "InnoDB",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "int",
+                  "nullable": true,
+                  "position": 1,
+                  "defaultNull": true
+                }
+              ],
+              "dataSize": "16384",
+              "collation": "utf8mb4_0900_ai_ci"
+            }
+          ],
+          "procedures": [
+            {
+              "name": "citycount",
+              "definition": "CREATE DEFINER=`root`@`%` PROCEDURE `citycount`(IN country CHAR(3), OUT cities INT)\nBEGIN\n         SELECT           1000 INTO cities;\n       END"
+            }
+          ]
+        }
+      ],
+      "collation": "utf8mb4_0900_ai_ci",
+      "characterSet": "utf8mb4"
+    }
+  result: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Temporary view structure for `v1`
+    --
+    CREATE VIEW `v1` AS SELECT
+      1 AS `id`;
+
+
+    --
+    -- Table structure for `t`
+    --
+    CREATE TABLE `t` (
+      `id` int DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    DROP VIEW IF EXISTS `v1`;
+    --
+    -- View structure for `v1`
+    --
+    CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `v1` AS select `t`.`id` AS `id` from `t`;
+
+    --
+    -- Procedure structure for `citycount`
+    --
+    DELIMITER ;;
+    CREATE DEFINER=`root`@`%` PROCEDURE `citycount`(IN country CHAR(3), OUT cities INT)
+    BEGIN
+             SELECT           1000 INTO cities;
+           END ;;
+    DELIMITER ;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Create procedure in schema with function
+  baseline: |-
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Temporary view structure for `v1`
+    --
+    CREATE VIEW `v1` AS SELECT
+      1 AS `id`;
+
+
+    --
+    -- Table structure for `t`
+    --
+    CREATE TABLE `t` (
+      `id` int DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    DROP VIEW IF EXISTS `v1`;
+    --
+    -- View structure for `v1`
+    --
+    CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `v1` AS select `t`.`id` AS `id` from `t`;
+
+    --
+    -- Procedure structure for `citycount`
+    --
+    SET character_set_client  = latin1;
+    SET character_set_results = latin1;
+    SET collation_connection  = latin1_swedish_ci;
+    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
+    DELIMITER ;;
+    CREATE DEFINER=`root`@`%` PROCEDURE `citycount`(IN country CHAR(3), OUT cities INT)
+    BEGIN
+            SELECT           1000 INTO cities;
+          END ;;
+    DELIMITER ;
+
+    --
+    -- Procedure structure for `citycount2`
+    --
+    SET character_set_client  = latin1;
+    SET character_set_results = latin1;
+    SET collation_connection  = latin1_swedish_ci;
+    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
+    DELIMITER ;;
+    CREATE DEFINER=`root`@`%` PROCEDURE `citycount2`(IN country CHAR(3), OUT cities INT)
+    BEGIN
+            SELECT           1000 INTO cities;
+          END ;;
+    DELIMITER ;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+  target: |-
+    {
+      "name": "test_function",
+      "schemas": [
+        {
+          "views": [
+            {
+              "name": "v1",
+              "comment": "VIEW",
+              "definition": "select `t`.`id` AS `id` from `t`"
+            }
+          ],
+          "tables": [
+            {
+              "name": "t",
+              "engine": "InnoDB",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "int",
+                  "nullable": true,
+                  "position": 1,
+                  "defaultNull": true
+                }
+              ],
+              "dataSize": "16384",
+              "collation": "utf8mb4_0900_ai_ci"
+            }
+          ],
+          "procedures": [
+            {
+              "name": "citycount",
+              "definition": "CREATE DEFINER=`root`@`%` PROCEDURE `citycount`(IN country CHAR(3), OUT cities INT)\nBEGIN\n         SELECT           1000 INTO cities;\n       END"
+            },
+            {
+              "name": "citycount2",
+              "definition": "CREATE DEFINER=`root`@`%` PROCEDURE `citycount2`(IN country CHAR(3), OUT cities INT)\nBEGIN\n         SELECT           1000 INTO cities;\n       END"
+            }
+          ]
+        }
+      ],
+      "collation": "utf8mb4_0900_ai_ci",
+      "characterSet": "utf8mb4"
+    }
+  result: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Temporary view structure for `v1`
+    --
+    CREATE VIEW `v1` AS SELECT
+      1 AS `id`;
+
+
+    --
+    -- Table structure for `t`
+    --
+    CREATE TABLE `t` (
+      `id` int DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    DROP VIEW IF EXISTS `v1`;
+    --
+    -- View structure for `v1`
+    --
+    CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `v1` AS select `t`.`id` AS `id` from `t`;
+
+    --
+    -- Procedure structure for `citycount`
+    --
+    SET character_set_client  = latin1;
+    SET character_set_results = latin1;
+    SET collation_connection  = latin1_swedish_ci;
+    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
+    DELIMITER ;;
+    CREATE DEFINER=`root`@`%` PROCEDURE `citycount`(IN country CHAR(3), OUT cities INT)
+    BEGIN
+             SELECT           1000 INTO cities;
+           END ;;
+    DELIMITER ;
+
+    --
+    -- Procedure structure for `citycount2`
+    --
+    SET character_set_client  = latin1;
+    SET character_set_results = latin1;
+    SET collation_connection  = latin1_swedish_ci;
+    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
+    DELIMITER ;;
+    CREATE DEFINER=`root`@`%` PROCEDURE `citycount2`(IN country CHAR(3), OUT cities INT)
+    BEGIN
+             SELECT           1000 INTO cities;
+           END ;;
+    DELIMITER ;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

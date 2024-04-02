@@ -91,6 +91,12 @@
                 }
               ]
             }
+          ],
+          "functions": [
+            {
+              "name": "hello",
+              "definition": "CREATE DEFINER=`root`@`localhost` FUNCTION `hello`(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4\n    DETERMINISTIC\nRETURN CONCAT ('Hello, ', s, '!')"
+            }
           ]
         }
       ]
@@ -203,6 +209,12 @@
                 }
               ],
               "collation": "utf8mb4_0900_ai_ci"
+            }
+          ],
+          "functions": [
+            {
+              "name": "hello",
+              "definition": "CREATE DEFINER=`root`@`localhost` FUNCTION `hello`(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4\n    DETERMINISTIC\nRETURN CONCAT ('Hello, ', s, '!')"
             }
           ]
         }
