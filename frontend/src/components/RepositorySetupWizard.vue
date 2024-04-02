@@ -45,7 +45,11 @@ import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { StepTab } from "@/components/v2";
-import { useVCSConnectorStore, useCurrentUserV1 } from "@/store";
+import {
+  pushNotification,
+  useVCSConnectorStore,
+  useCurrentUserV1,
+} from "@/store";
 import type { ComposedProject } from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
 import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
@@ -161,6 +165,13 @@ const tryFinishSetup = async () => {
 
   try {
     await createFunc();
+  } catch (error: any) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: `Create connector error occurred`,
+      description: error.details,
+    });
   } finally {
     state.processing = false;
   }
