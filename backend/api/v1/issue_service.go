@@ -1335,6 +1335,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 
 	patch := &store.UpdateIssueMessage{}
 	var activityCreates []*store.ActivityMessage
+	var issueCommentCreates []*store.IssueCommentMessage
 	for _, path := range request.UpdateMask.Paths {
 		updateMasks[path] = true
 		switch path {
@@ -1378,6 +1379,18 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		case "title":
 			patch.Title = &request.Issue.Title
 
+			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+				IssueUID: issue.UID,
+				Payload: &storepb.IssueCommentPayload{
+					Event: &storepb.IssueCommentPayload_IssueUpdate_{
+						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+							FromTitle: &issue.Title,
+							ToTitle:   &request.Issue.Title,
+						},
+					},
+				},
+			})
+
 			payload := &api.ActivityIssueFieldUpdatePayload{
 				FieldID:   api.IssueFieldName,
 				OldValue:  issue.Title,
@@ -1399,6 +1412,18 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 
 		case "description":
 			patch.Description = &request.Issue.Description
+
+			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+				IssueUID: issue.UID,
+				Payload: &storepb.IssueCommentPayload{
+					Event: &storepb.IssueCommentPayload_IssueUpdate_{
+						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+							FromDescription: &issue.Description,
+							ToDescription:   &request.Issue.Description,
+						},
+					},
+				},
+			})
 
 			payload := &api.ActivityIssueFieldUpdatePayload{
 				FieldID:   api.IssueFieldDescription,
@@ -1438,9 +1463,10 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			patch.Subscribers = &subscribers
 
 		case "assignee":
-			oldAssigneeID := ""
+			var oldAssigneeID, oldAssigneeName string
 			if issue.Assignee != nil {
 				oldAssigneeID = strconv.Itoa(issue.Assignee.ID)
+				oldAssigneeName = common.FormatUserEmail(issue.Assignee.Email)
 			}
 			if request.Issue.Assignee == "" {
 				patch.UpdateAssignee = true
@@ -1497,6 +1523,18 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 					Payload:           string(activityPayload),
 				})
 			}
+
+			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+				IssueUID: issue.UID,
+				Payload: &storepb.IssueCommentPayload{
+					Event: &storepb.IssueCommentPayload_IssueUpdate_{
+						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+							FromAssignee: &oldAssigneeName,
+							ToAssignee:   &request.Issue.Assignee,
+						},
+					},
+				},
+			})
 		}
 	}
 
@@ -1548,6 +1586,11 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 	for _, create := range activityCreates {
 		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
 			slog.Warn("failed to create issue field update activity", "issue_id", issue.UID, log.BBError(err))
+		}
+	}
+	for _, create := range issueCommentCreates {
+		if err := s.store.CreateIssueComment(ctx, create, user.ID); err != nil {
+			slog.Warn("failed to create issue comment", "issue id", issue.UID, log.BBError(err))
 		}
 	}
 

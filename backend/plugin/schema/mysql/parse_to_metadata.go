@@ -544,6 +544,82 @@ func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContex
 	}
 }
 
+func (t *mysqlTransformer) EnterCreateFunction(ctx *mysql.CreateFunctionContext) {
+	p := ctx.GetParent()
+	pCtx, ok := p.(*mysql.CreateStatementContext)
+	if !ok {
+		return
+	}
+	pp := p.GetParent()
+	if _, ok := pp.(*mysql.SimpleStatementContext); !ok {
+		return
+	}
+	ppp := pp.GetParent()
+	if _, ok := ppp.(*mysql.QueryContext); !ok {
+		return
+	}
+
+	databaseName, functionName := mysqlparser.NormalizeMySQLFunctionName(ctx.FunctionName())
+	if databaseName != "" && t.state.name != "" && databaseName != t.state.name {
+		t.err = errors.New("multiple database names found: " + t.state.name + ", " + databaseName)
+		return
+	}
+
+	schema, ok := t.state.schemas[""]
+	if !ok || schema == nil {
+		t.state.schemas[""] = newSchemaState()
+		schema = t.state.schemas[""]
+	}
+
+	definition := pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: pCtx.GetStart().GetTokenIndex(),
+		Stop:  pCtx.GetStop().GetTokenIndex(),
+	})
+	schema.functions[functionName] = &functionState{
+		id:         len(schema.functions),
+		name:       functionName,
+		definition: definition,
+	}
+}
+
+func (t *mysqlTransformer) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
+	p := ctx.GetParent()
+	pCtx, ok := p.(*mysql.CreateStatementContext)
+	if !ok {
+		return
+	}
+	pp := p.GetParent()
+	if _, ok := pp.(*mysql.SimpleStatementContext); !ok {
+		return
+	}
+	ppp := pp.GetParent()
+	if _, ok := ppp.(*mysql.QueryContext); !ok {
+		return
+	}
+
+	databaseName, procedureName := mysqlparser.NormalizeMySQLProcedureName(ctx.ProcedureName())
+	if databaseName != "" && t.state.name != "" && databaseName != t.state.name {
+		t.err = errors.New("multiple database names found: " + t.state.name + ", " + databaseName)
+		return
+	}
+
+	schema, ok := t.state.schemas[""]
+	if !ok || schema == nil {
+		t.state.schemas[""] = newSchemaState()
+		schema = t.state.schemas[""]
+	}
+
+	definition := pCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: pCtx.GetStart().GetTokenIndex(),
+		Stop:  pCtx.GetStop().GetTokenIndex(),
+	})
+	schema.procedures[procedureName] = &procedureState{
+		id:         len(schema.procedures),
+		name:       procedureName,
+		definition: definition,
+	}
+}
+
 func (t *mysqlTransformer) EnterCreateView(ctx *mysql.CreateViewContext) {
 	if t.err != nil {
 		return
@@ -558,6 +634,7 @@ func (t *mysqlTransformer) EnterCreateView(ctx *mysql.CreateViewContext) {
 	schema, ok := t.state.schemas[""]
 	if !ok || schema == nil {
 		t.state.schemas[""] = newSchemaState()
+		schema = t.state.schemas[""]
 	}
 
 	definition := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{

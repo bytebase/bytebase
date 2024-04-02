@@ -790,7 +790,7 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 		advisorType, err := getAdvisorTypeByRule(SQLReviewRuleType(rule.Type), checkContext.DbType)
 		if err != nil {
 			if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED {
-				slog.Warn("not supported rule", slog.String("rule type", string(rule.Type)), slog.String("engine", string(rule.Engine)), log.BBError(err))
+				slog.Warn("not supported rule", "rule type", rule.Type, "engine", rule.Engine.String(), log.BBError(err))
 			}
 			continue
 		}
