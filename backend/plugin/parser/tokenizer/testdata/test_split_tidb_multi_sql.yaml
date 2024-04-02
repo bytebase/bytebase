@@ -18,7 +18,7 @@
       lastcolumn: 0
       empty: false
 - description: empty statement
-  statement: '        '
+  statement: "        "
   expected: []
 - description: multi-newline
   statement: |-
@@ -55,6 +55,7 @@
       empty: false
     - text: |4+
 
+        
       baseline: 3
       firststatementline: 0
       firststatementcolumn: 0
