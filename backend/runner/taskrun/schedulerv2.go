@@ -656,6 +656,22 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 							return errors.Wrapf(err, "failed to update issue status")
 						}
 
+						fromStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[issue.Status.String()])
+						toStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[updatedIssue.Status.String()])
+						if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+							IssueUID: issue.UID,
+							Payload: &storepb.IssueCommentPayload{
+								Event: &storepb.IssueCommentPayload_IssueUpdate_{
+									IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+										FromStatus: &fromStatus,
+										ToStatus:   &toStatus,
+									},
+								},
+							},
+						}, api.SystemBotID); err != nil {
+							return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
+						}
+
 						payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
 							OldStatus: issue.Status,
 							NewStatus: updatedIssue.Status,
@@ -678,6 +694,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						}); err != nil {
 							return errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title)
 						}
+
 						return nil
 					}(); err != nil {
 						slog.Error("failed to update issue status", log.BBError(err))
