@@ -73,8 +73,8 @@ type Provider interface {
 	// Returns the API URL for a given VCS instance URL
 	APIURL(instanceURL string) string
 
-	// Fetch all repository within a given user's scope
-	FetchAllRepositoryList(ctx context.Context) ([]*Repository, error)
+	// Fetch repositories within a given user's scope
+	FetchRepositoryList(ctx context.Context, listAll bool) ([]*Repository, error)
 
 	// Reads the file content
 	ReadFileContent(ctx context.Context, repositoryID, filePath string, refInfo RefInfo) (string, error)

@@ -119,7 +119,7 @@ func (p *Provider) getChangesByCommit(ctx context.Context, externalRepositoryID,
 	return &result, nil
 }
 
-// FetchAllRepositoryList fetches all projects where the authenticated use has permissions, which is required
+// FetchRepositoryList fetches all projects where the authenticated use has permissions, which is required
 // to create webhook in the repository.
 //
 // NOTE: Azure DevOps does not support listing all projects cross all organizations API yet, thus we need
@@ -128,7 +128,7 @@ func (p *Provider) getChangesByCommit(ctx context.Context, externalRepositoryID,
 // The request included in this function requires the following scopes:
 // vso.profile, vso.project.
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/repositories/list?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repository, error) {
+func (p *Provider) FetchRepositoryList(ctx context.Context, listAll bool) ([]*vcs.Repository, error) {
 	publicAlias, err := p.getAuthenticatedProfilePublicAlias(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get authenticated profile public alias")
@@ -186,6 +186,9 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repositor
 			return nil
 		}(); err != nil {
 			return nil, errors.Wrapf(err, "failed to list repositories under the organization %s", organization)
+		}
+		if !listAll {
+			break
 		}
 	}
 
@@ -369,8 +372,51 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, repositoryID, lastMe
 	return files, nil
 }
 
+type Comment struct {
+	Content     string `json:"content"`
+	CommentType string `json:"commentType"`
+}
+
+type PullRequestThread struct {
+	Comments []*Comment `json:"comments"`
+	Status   string     `json:"status"`
+}
+
 // CreatePullRequestComment creates a pull request comment.
-func (*Provider) CreatePullRequestComment(_ context.Context, _, _, _ string) error {
+// We will create a thread in Azure pull request instead of a comment.
+//
+// Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-request-threads/create?view=azure-devops-rest-7.1&tabs=HTTP
+func (p *Provider) CreatePullRequestComment(ctx context.Context, repositoryID, pullRequestID, comment string) error {
+	thread := &PullRequestThread{
+		Status: "active",
+		Comments: []*Comment{
+			{
+				Content:     comment,
+				CommentType: "text",
+			},
+		},
+	}
+	commentCreatePayload, err := json.Marshal(thread)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal request body for creating pull request comment")
+	}
+
+	apiURL, err := getRepositoryAPIURL(repositoryID)
+	if err != nil {
+		return err
+	}
+
+	values := &url.Values{}
+	values.Set("api-version", "7.0")
+	url := fmt.Sprintf("%s/pullRequests/%s/threads?%s", apiURL, pullRequestID, values.Encode())
+	code, body, err := internal.Post(ctx, url, p.getAuthorization(), commentCreatePayload)
+	if err != nil {
+		return errors.Wrapf(err, "POST %s", url)
+	}
+	if code != http.StatusOK {
+		return errors.Errorf("failed to create thread, code: %v, body: %s", code, string(body))
+	}
+
 	return nil
 }
 
