@@ -101,7 +101,10 @@ type metadataDiffSchemaNode struct {
 	base *storepb.SchemaMetadata
 	head *storepb.SchemaMetadata
 
-	tables map[string]*metadataDiffTableNode
+	tables     map[string]*metadataDiffTableNode
+	views      map[string]*metadataDiffViewNode
+	functions  map[string]*metadataDiffFunctioNnode
+	procedures map[string]*metadataDiffProcedureNode
 
 	// SchemaMetadata contains other object types, likes function, view etc. But we do not support them yet.
 }
@@ -148,6 +151,50 @@ func (n *metadataDiffSchemaNode) tryMerge(other *metadataDiffSchemaNode) (bool, 
 		n.tables[remainingTable.name] = remainingTable
 	}
 
+	for viewName, viewNode := range n.views {
+		otherViewNode, in := other.views[viewName]
+		if !in {
+			continue
+		}
+		conflict, msg := viewNode.tryMerge(otherViewNode)
+		if conflict {
+			return true, msg
+		}
+		delete(other.views, viewName)
+	}
+
+	for _, remainingView := range other.views {
+		n.views[remainingView.name] = remainingView
+	}
+
+	for functionName, functionNode := range n.functions {
+		otherFunctionNode, in := other.functions[functionName]
+		if !in {
+			continue
+		}
+		conflict, msg := functionNode.tryMerge(otherFunctionNode)
+		if conflict {
+			return true, msg
+		}
+		delete(other.functions, functionName)
+	}
+
+	for _, remainingFunction := range other.functions {
+		n.functions[remainingFunction.name] = remainingFunction
+	}
+
+	for procedureName, procedureNode := range n.procedures {
+		otherProcedureNode, in := other.procedures[procedureName]
+		if !in {
+			continue
+		}
+		conflict, msg := procedureNode.tryMerge(otherProcedureNode)
+		if conflict {
+			return true, msg
+		}
+		delete(other.procedures, procedureName)
+	}
+
 	return false, ""
 }
 
@@ -162,6 +209,21 @@ func (n *metadataDiffSchemaNode) applyDiffTo(target *storepb.DatabaseSchemaMetad
 	}
 	slices.Sort(sortedTableNames)
 
+	sortedViewNames := make([]string, 0, len(n.views))
+	for viewName := range n.views {
+		sortedViewNames = append(sortedViewNames, viewName)
+	}
+
+	sortedFunctionNames := make([]string, 0, len(n.functions))
+	for functionName := range n.functions {
+		sortedFunctionNames = append(sortedFunctionNames, functionName)
+	}
+
+	sortedProcedureNames := make([]string, 0, len(n.procedures))
+	for procedureName := range n.procedures {
+		sortedProcedureNames = append(sortedProcedureNames, procedureName)
+	}
+
 	switch n.action {
 	case diffActionCreate:
 		newSchema := &storepb.SchemaMetadata{
@@ -171,6 +233,24 @@ func (n *metadataDiffSchemaNode) applyDiffTo(target *storepb.DatabaseSchemaMetad
 			table := n.tables[tableName]
 			if err := table.applyDiffTo(newSchema); err != nil {
 				return errors.Wrapf(err, "failed to apply diff to table %q", table.name)
+			}
+		}
+		for _, viewName := range sortedViewNames {
+			view := n.views[viewName]
+			if err := view.applyDiffTo(newSchema); err != nil {
+				return errors.Wrapf(err, "failed to apply diff to view %q", view.name)
+			}
+		}
+		for _, functionName := range sortedFunctionNames {
+			function := n.functions[functionName]
+			if err := function.applyDiffTo(newSchema); err != nil {
+				return errors.Wrapf(err, "failed to apply diff to function %q", function.name)
+			}
+		}
+		for _, procedureName := range sortedProcedureNames {
+			procedure := n.procedures[procedureName]
+			if err := procedure.applyDiffTo(newSchema); err != nil {
+				return errors.Wrapf(err, "failed to apply diff to procedure %q", procedure.name)
 			}
 		}
 		target.Schemas = append(target.Schemas, newSchema)
@@ -185,14 +265,34 @@ func (n *metadataDiffSchemaNode) applyDiffTo(target *storepb.DatabaseSchemaMetad
 		for idx, schema := range target.Schemas {
 			if schema.Name == n.name {
 				newSchema := &storepb.SchemaMetadata{
-					Name:   n.name,
-					Tables: schema.Tables,
+					Name:       n.name,
+					Tables:     schema.Tables,
+					Views:      schema.Views,
+					Functions:  schema.Functions,
+					Procedures: schema.Procedures,
 				}
-				// Update schema currently is only contains diff of tables. So we do apply table diff to target schema.
 				for _, tableName := range sortedTableNames {
 					table := n.tables[tableName]
 					if err := table.applyDiffTo(newSchema); err != nil {
 						return errors.Wrapf(err, "failed to apply diff to table %q", table.name)
+					}
+				}
+				for _, viewName := range sortedViewNames {
+					view := n.views[viewName]
+					if err := view.applyDiffTo(newSchema); err != nil {
+						return errors.Wrapf(err, "failed to apply diff to view %q", view.name)
+					}
+				}
+				for _, functionName := range sortedFunctionNames {
+					function := n.functions[functionName]
+					if err := function.applyDiffTo(newSchema); err != nil {
+						return errors.Wrapf(err, "failed to apply diff to function %q", function.name)
+					}
+				}
+				for _, procedureName := range sortedProcedureNames {
+					procedure := n.procedures[procedureName]
+					if err := procedure.applyDiffTo(newSchema); err != nil {
+						return errors.Wrapf(err, "failed to apply diff to procedure %q", procedure.name)
 					}
 				}
 				target.Schemas[idx] = newSchema
@@ -845,6 +945,207 @@ func (n *metadataDiffPartitionNode) applyDiffTo(target *storepb.TableMetadata) e
 	return nil
 }
 
+type metadataDiffFunctioNnode struct {
+	metadataDiffBaseNode
+	name string
+	//nolint
+	base *storepb.FunctionMetadata
+	head *storepb.FunctionMetadata
+}
+
+func (n *metadataDiffFunctioNnode) tryMerge(other *metadataDiffFunctioNnode) (bool, string) {
+	if other == nil {
+		return true, "other node check conflict with function node must not be nil"
+	}
+
+	if n.name != other.name {
+		return true, fmt.Sprintf("non-expected function node pair, one is %s, the other is %s", n.name, other.name)
+	}
+	if n.action != other.action {
+		return true, fmt.Sprintf("conflict function action, one is %s, the other is %s", n.action, other.action)
+	}
+	if n.action == diffActionDrop {
+		return false, ""
+	}
+	if n.action == diffActionCreate {
+		if n.head.Definition != other.head.Definition {
+			return true, fmt.Sprintf("conflict function definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
+		}
+	}
+
+	if n.action == diffActionUpdate {
+		if other.base.Definition != other.head.Definition {
+			if n.base.Definition != n.head.Definition {
+				if n.head.Definition != other.head.Definition {
+					return true, fmt.Sprintf("conflict function definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
+				}
+			} else {
+				n.head.Definition = other.head.Definition
+			}
+		}
+	}
+
+	return false, ""
+}
+
+func (n *metadataDiffFunctioNnode) applyDiffTo(target *storepb.SchemaMetadata) error {
+	if target == nil {
+		return errors.New("target must not be nil")
+	}
+
+	switch n.action {
+	case diffActionCreate:
+		newFunction := &storepb.FunctionMetadata{
+			Name:       n.name,
+			Definition: n.head.Definition,
+		}
+		target.Functions = append(target.Functions, newFunction)
+	case diffActionDrop:
+		for i, view := range target.Functions {
+			if view.Name == n.name {
+				target.Functions = append(target.Functions[:i], target.Functions[i+1:]...)
+				break
+			}
+		}
+		return nil
+	}
+	return nil
+}
+
+type metadataDiffProcedureNode struct {
+	metadataDiffBaseNode
+	name string
+	//nolint
+	base *storepb.ProcedureMetadata
+	head *storepb.ProcedureMetadata
+}
+
+func (n *metadataDiffProcedureNode) tryMerge(other *metadataDiffProcedureNode) (bool, string) {
+	if other == nil {
+		return true, "other node check conflict with procedure node must not be nil"
+	}
+
+	if n.name != other.name {
+		return true, fmt.Sprintf("non-expected procedure node pair, one is %s, the other is %s", n.name, other.name)
+	}
+	if n.action != other.action {
+		return true, fmt.Sprintf("conflict procedure action, one is %s, the other is %s", n.action, other.action)
+	}
+	if n.action == diffActionDrop {
+		return false, ""
+	}
+	if n.action == diffActionCreate {
+		if n.head.Definition != other.head.Definition {
+			return true, fmt.Sprintf("conflict procedure definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
+		}
+	}
+
+	if n.action == diffActionUpdate {
+		if other.base.Definition != other.head.Definition {
+			if n.base.Definition != n.head.Definition {
+				if n.head.Definition != other.head.Definition {
+					return true, fmt.Sprintf("conflict procedure definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
+				}
+			} else {
+				n.head.Definition = other.head.Definition
+			}
+		}
+	}
+
+	return false, ""
+}
+
+func (n *metadataDiffProcedureNode) applyDiffTo(target *storepb.SchemaMetadata) error {
+	if target == nil {
+		return errors.New("target must not be nil")
+	}
+
+	switch n.action {
+	case diffActionCreate:
+		newProcedure := &storepb.ProcedureMetadata{
+			Name:       n.name,
+			Definition: n.head.Definition,
+		}
+		target.Procedures = append(target.Procedures, newProcedure)
+	case diffActionDrop:
+		for i, view := range target.Procedures {
+			if view.Name == n.name {
+				target.Procedures = append(target.Procedures[:i], target.Procedures[i+1:]...)
+				break
+			}
+		}
+		return nil
+	}
+	return nil
+}
+
+type metadataDiffViewNode struct {
+	metadataDiffBaseNode
+	name string
+	//nolint
+	base *storepb.ViewMetadata
+	head *storepb.ViewMetadata
+}
+
+func (n *metadataDiffViewNode) tryMerge(other *metadataDiffViewNode) (bool, string) {
+	if other == nil {
+		return true, "other node check conflict with view node must not be nil"
+	}
+
+	if n.name != other.name {
+		return true, fmt.Sprintf("non-expected view node pair, one is %s, the other is %s", n.name, other.name)
+	}
+	if n.action != other.action {
+		return true, fmt.Sprintf("conflict view action, one is %s, the other is %s", n.action, other.action)
+	}
+	if n.action == diffActionDrop {
+		return false, ""
+	}
+	if n.action == diffActionCreate {
+		if n.head.Definition != other.head.Definition {
+			return true, fmt.Sprintf("conflict view definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
+		}
+	}
+
+	if n.action == diffActionUpdate {
+		if other.base.Definition != other.head.Definition {
+			if n.base.Definition != n.head.Definition {
+				if n.head.Definition != other.head.Definition {
+					return true, fmt.Sprintf("conflict view definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
+				}
+			} else {
+				n.head.Definition = other.head.Definition
+			}
+		}
+	}
+
+	return false, ""
+}
+
+func (n *metadataDiffViewNode) applyDiffTo(target *storepb.SchemaMetadata) error {
+	if target == nil {
+		return errors.New("target must not be nil")
+	}
+
+	switch n.action {
+	case diffActionCreate:
+		newView := &storepb.ViewMetadata{
+			Name:       n.name,
+			Definition: n.head.Definition,
+		}
+		target.Views = append(target.Views, newView)
+	case diffActionDrop:
+		for i, view := range target.Views {
+			if view.Name == n.name {
+				target.Views = append(target.Views[:i], target.Views[i+1:]...)
+				break
+			}
+		}
+		return nil
+	}
+	return nil
+}
+
 // Foreign Key related.
 type metadataDiffForeignKeyNode struct {
 	metadataDiffBaseNode
@@ -1026,10 +1327,13 @@ func diffSchemaMetadata(base, head *storepb.SchemaMetadata) (*metadataDiffSchema
 		metadataDiffBaseNode: metadataDiffBaseNode{
 			action: action,
 		},
-		name:   name,
-		base:   base,
-		head:   head,
-		tables: make(map[string]*metadataDiffTableNode),
+		name:       name,
+		base:       base,
+		head:       head,
+		tables:     make(map[string]*metadataDiffTableNode),
+		views:      make(map[string]*metadataDiffViewNode),
+		functions:  make(map[string]*metadataDiffFunctioNnode),
+		procedures: make(map[string]*metadataDiffProcedureNode),
 	}
 
 	tableNamesMap := make(map[string]bool)
@@ -1061,13 +1365,202 @@ func diffSchemaMetadata(base, head *storepb.SchemaMetadata) (*metadataDiffSchema
 		}
 	}
 
+	viewNamesMap := make(map[string]bool)
+	baseViewMap := make(map[string]*storepb.ViewMetadata)
+	if base != nil {
+		for _, view := range base.Views {
+			baseViewMap[view.Name] = view
+			viewNamesMap[view.Name] = true
+		}
+	}
+
+	headViewMap := make(map[string]*storepb.ViewMetadata)
+	if head != nil {
+		for _, view := range head.Views {
+			headViewMap[view.Name] = view
+			viewNamesMap[view.Name] = true
+		}
+	}
+
+	for viewName := range viewNamesMap {
+		baseView, headView := baseViewMap[viewName], headViewMap[viewName]
+		diffNode, err := diffViewMetadata(baseView, headView)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to diff view %q", viewName)
+		}
+		if diffNode != nil {
+			schemaNode.views[viewName] = diffNode
+		}
+	}
+
+	functionNamesMap := make(map[string]bool)
+	baseFunctionMap := make(map[string]*storepb.FunctionMetadata)
+	if base != nil {
+		for _, function := range base.Functions {
+			baseFunctionMap[function.Name] = function
+			functionNamesMap[function.Name] = true
+		}
+	}
+
+	headFunctionMap := make(map[string]*storepb.FunctionMetadata)
+	if head != nil {
+		for _, function := range head.Functions {
+			headFunctionMap[function.Name] = function
+			functionNamesMap[function.Name] = true
+		}
+	}
+
+	for functionName := range functionNamesMap {
+		baseFunction, headFunction := baseFunctionMap[functionName], headFunctionMap[functionName]
+		diffNode, err := diffFunctionMetadata(baseFunction, headFunction)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to diff function %q", functionName)
+		}
+		if diffNode != nil {
+			schemaNode.functions[functionName] = diffNode
+		}
+	}
+
+	procedureNamesMap := make(map[string]bool)
+	baseProcedureMap := make(map[string]*storepb.ProcedureMetadata)
+	if base != nil {
+		for _, procedure := range base.Procedures {
+			baseProcedureMap[procedure.Name] = procedure
+			procedureNamesMap[procedure.Name] = true
+		}
+	}
+
+	headProcedureMap := make(map[string]*storepb.ProcedureMetadata)
+	if head != nil {
+		for _, procedure := range head.Procedures {
+			headProcedureMap[procedure.Name] = procedure
+			procedureNamesMap[procedure.Name] = true
+		}
+	}
+
+	for procedureName := range procedureNamesMap {
+		baseProcedure, headProcedure := baseProcedureMap[procedureName], headProcedureMap[procedureName]
+		diffNode, err := diffProcedureMetadata(baseProcedure, headProcedure)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to diff procedure %q", procedureName)
+		}
+		if diffNode != nil {
+			schemaNode.procedures[procedureName] = diffNode
+		}
+	}
+
 	if action == diffActionUpdate {
-		if len(schemaNode.tables) == 0 {
+		if len(schemaNode.tables) == 0 && len(schemaNode.views) == 0 && len(schemaNode.functions) == 0 && len(schemaNode.procedures) == 0 {
 			return nil, nil
 		}
 	}
 
 	return schemaNode, nil
+}
+
+func diffViewMetadata(base, head *storepb.ViewMetadata) (*metadataDiffViewNode, error) {
+	if base == nil && head == nil {
+		return nil, errors.New("from and to view metadata must not be nil")
+	}
+
+	var name string
+	action := diffActionUpdate
+	if base == nil {
+		action = diffActionCreate
+		name = head.Name
+	} else if head == nil {
+		action = diffActionDrop
+		name = base.Name
+	} else {
+		name = base.Name
+	}
+
+	viewNode := &metadataDiffViewNode{
+		metadataDiffBaseNode: metadataDiffBaseNode{
+			action: action,
+		},
+		name: name,
+		base: base,
+		head: head,
+	}
+
+	if action == diffActionUpdate {
+		if base.Definition == head.Definition {
+			return nil, nil
+		}
+	}
+
+	return viewNode, nil
+}
+
+func diffProcedureMetadata(base, head *storepb.ProcedureMetadata) (*metadataDiffProcedureNode, error) {
+	if base == nil && head == nil {
+		return nil, errors.New("from and to view metadata must not be nil")
+	}
+
+	var name string
+	action := diffActionUpdate
+	if base == nil {
+		action = diffActionCreate
+		name = head.Name
+	} else if head == nil {
+		action = diffActionDrop
+		name = base.Name
+	} else {
+		name = base.Name
+	}
+
+	procedureNode := &metadataDiffProcedureNode{
+		metadataDiffBaseNode: metadataDiffBaseNode{
+			action: action,
+		},
+		name: name,
+		base: base,
+		head: head,
+	}
+
+	if action == diffActionUpdate {
+		if base.Definition == head.Definition {
+			return nil, nil
+		}
+	}
+
+	return procedureNode, nil
+}
+
+func diffFunctionMetadata(base, head *storepb.FunctionMetadata) (*metadataDiffFunctioNnode, error) {
+	if base == nil && head == nil {
+		return nil, errors.New("from and to view metadata must not be nil")
+	}
+
+	var name string
+	action := diffActionUpdate
+	if base == nil {
+		action = diffActionCreate
+		name = head.Name
+	} else if head == nil {
+		action = diffActionDrop
+		name = base.Name
+	} else {
+		name = base.Name
+	}
+
+	functionNode := &metadataDiffFunctioNnode{
+		metadataDiffBaseNode: metadataDiffBaseNode{
+			action: action,
+		},
+		name: name,
+		base: base,
+		head: head,
+	}
+
+	if action == diffActionUpdate {
+		if base.Definition == head.Definition {
+			return nil, nil
+		}
+	}
+
+	return functionNode, nil
 }
 
 func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNode, error) {
