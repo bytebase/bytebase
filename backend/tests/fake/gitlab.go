@@ -31,7 +31,8 @@ type GitLab struct {
 }
 
 type projectData struct {
-	webhooks []*gitlab.WebhookCreate
+	repository *gitlab.Repository
+	webhooks   []*gitlab.WebhookCreate
 	// files is a map that the full file path is the key and the file content is the
 	// value.
 	files map[string]string
@@ -62,6 +63,7 @@ func NewGitLab(port int) VCSProvider {
 
 	// Routes
 	projectGroup := e.Group("/api/v4")
+	projectGroup.GET("/projects", gl.listRepositories)
 	projectGroup.POST("/projects/:id/hooks", gl.createProjectHook)
 	projectGroup.GET("/projects/:id/repository/commits/:commitID", gl.getFakeCommit)
 	projectGroup.GET("/projects/:id/repository/files/:filePath/raw", gl.readProjectFile)
@@ -98,8 +100,18 @@ func (*GitLab) APIURL(instanceURL string) string {
 }
 
 // CreateRepository creates a GitLab project with given ID.
-func (gl *GitLab) CreateRepository(id string) {
-	gl.projects[id] = &projectData{
+func (gl *GitLab) CreateRepository(repository *vcs.Repository) error {
+	// GitLab repo id should be int64.
+	id, err := strconv.ParseInt(repository.ID, 10, 64)
+	if err != nil {
+		return err
+	}
+	gl.projects[repository.ID] = &projectData{
+		repository: &gitlab.Repository{
+			ID:                id,
+			Name:              repository.Name,
+			PathWithNamespace: repository.FullPath,
+		},
 		files:    map[string]string{},
 		branches: map[string]*gitlab.Branch{},
 		mergeRequests: map[int]struct {
@@ -108,6 +120,7 @@ func (gl *GitLab) CreateRepository(id string) {
 		}{},
 		commitsDiff: map[string]*gitlab.CommitsDiff{},
 	}
+	return nil
 }
 
 // CreateBranch creates a new branch with the given name.
@@ -130,6 +143,18 @@ func (gl *GitLab) CreateBranch(id, branchName string) error {
 		},
 	}
 	return nil
+}
+
+func (gl *GitLab) listRepositories(c echo.Context) error {
+	repoList := []*gitlab.Repository{}
+	for _, repoData := range gl.projects {
+		repoList = append(repoList, repoData.repository)
+	}
+	buf, err := json.Marshal(repoList)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for list repository: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
 }
 
 // createProjectHook creates a project webhook.
