@@ -123,6 +123,7 @@ func isSkippedMethod(fullMethod string) bool {
 	// additional bb.plans.action and bb.rollouts.action permissions are required if the issue type is change database.
 	case
 		v1pb.IssueService_GetIssue_FullMethodName,
+		v1pb.IssueService_ListIssueComments_FullMethodName,
 		v1pb.IssueService_CreateIssue_FullMethodName,
 		v1pb.IssueService_CreateIssueComment_FullMethodName,
 		v1pb.IssueService_UpdateIssue_FullMethodName,

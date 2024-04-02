@@ -1,0 +1,15 @@
+- statement: |-
+    CREATE TABLE MySchema.MyTable (
+      Id INT NOT NULL,
+      Name VARCHAR(50) NOT NULL
+    );
+    CREATE TABLE MySchema.Identifier (
+      Id INT NOT NULL,
+      Name VARCHAR(50) NOT NULL
+    );
+  want:
+    - status: WARN
+      code: 613
+      title: table.disallow-ddl
+      content: DDL is disallowed on table MySchema.Identifier.
+      line: 5

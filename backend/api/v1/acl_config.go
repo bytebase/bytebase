@@ -52,6 +52,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.IssueService_GetIssue_FullMethodName:                iam.PermissionIssuesGet,
 	v1pb.IssueService_UpdateIssue_FullMethodName:             iam.PermissionIssuesUpdate,
 	v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName: iam.PermissionIssuesUpdate,
+	v1pb.IssueService_ListIssueComments_FullMethodName:       iam.PermissionIssuesGet,
 	v1pb.IssueService_CreateIssueComment_FullMethodName:      iam.PermissionIssueCommentsCreate,
 	v1pb.IssueService_UpdateIssueComment_FullMethodName:      iam.PermissionIssueCommentsUpdate,
 	v1pb.IssueService_ApproveIssue_FullMethodName:            "", // controlled by org policy.
