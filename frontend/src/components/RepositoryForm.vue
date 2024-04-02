@@ -56,10 +56,12 @@
       </div>
       <!-- TODO(ed): i18n -->
       <DatabaseGroupSelect
-        v-model:value="repositoryConfig.databaseGroup"
+        v-model:selected="repositoryConfig.databaseGroup"
         class="mt-2"
         style="width: 100%"
         :project="project.name"
+        :clearable="true"
+        :select-first-as-default="false"
       />
     </div>
     <div>

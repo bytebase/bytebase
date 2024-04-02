@@ -1,99 +1,88 @@
 <template>
   <NSelect
-    :value="value ?? null"
-    :options="options"
-    :placeholder="placeholder ?? $t('database-group.select')"
-    :virtual-scroll="true"
-    :filter="filterByName"
-    :filterable="true"
-    class="bb-databaseGroup-select"
-    style="width: 12rem"
-    v-bind="$attrs"
-    :render-label="renderLabel"
-    @update:value="$emit('update:value', $event)"
+    :value="state.selectedDatabaseGroup"
+    :options="dbGroupOptions"
+    :disabled="disabled"
+    :clearable="clearable"
+    :placeholder="'Select Database Group'"
+    @update:value="$emit('update:selected', $event)"
   />
 </template>
 
 <script lang="ts" setup>
-import type { SelectOption, SelectRenderLabel } from "naive-ui";
-import { NSelect } from "naive-ui";
-import { computed, h, watch } from "vue";
-import { useSlots } from "vue";
+import { head } from "lodash-es";
+import type { SelectOption } from "naive-ui";
+import { computed, reactive, watch } from "vue";
 import { useDBGroupStore } from "@/store";
-import type { ComposedDatabaseGroup } from "@/types";
+import type { DatabaseGroup } from "@/types/proto/v1/project_service";
 
-interface DatabaseGroupSelectOption extends SelectOption {
-  value: string;
-  databaseGroup: ComposedDatabaseGroup;
+interface LocalState {
+  selectedDatabaseGroup?: string;
 }
 
-const slots = useSlots();
 const props = withDefaults(
   defineProps<{
-    value?: string;
     project: string;
-    placeholder?: string;
+    selected?: string;
+    environment?: string;
+    disabled?: boolean;
+    clearable?: boolean;
+    selectFirstAsDefault?: boolean;
   }>(),
   {
-    value: undefined,
-    project: undefined,
-    placeholder: undefined,
+    clearable: false,
+    selectFirstAsDefault: true,
   }
 );
 
-defineEmits<{
-  (event: "update:value", value: string | undefined): void;
+const emit = defineEmits<{
+  (event: "update:selected", name: string | undefined): void;
 }>();
+
+const state = reactive<LocalState>({
+  selectedDatabaseGroup: undefined,
+});
 
 const dbGroupStore = useDBGroupStore();
 
-const databaseGroupList = computed(() => {
-  return dbGroupStore.getDBGroupListByProjectName(props.project);
+const dbGroupList = computed(() => {
+  return dbGroupStore
+    .getDBGroupListByProjectName(props.project)
+    .filter((dbGroup) =>
+      props.environment ? dbGroup.environment.uid === props.environment : true
+    );
 });
+const dbGroupOptions = computed(() => {
+  return dbGroupList.value.map<SelectOption>((dbGroup) => ({
+    value: dbGroup.name,
+    label: dbGroup.databaseGroupName,
+  }));
+});
+
+const invalidateSelectionIfNeeded = () => {
+  if (
+    state.selectedDatabaseGroup &&
+    !dbGroupList.value.find(
+      (item: DatabaseGroup) => item.name == state.selectedDatabaseGroup
+    )
+  ) {
+    state.selectedDatabaseGroup = undefined;
+    emit("update:selected", undefined);
+  }
+};
 
 watch(
-  () => props.project,
-  async (project) =>
-    await dbGroupStore.getOrFetchDBGroupListByProjectName(project),
-  { immediate: true }
-);
-
-const filterByName = (pattern: string, option: SelectOption) => {
-  const { databaseGroup } = option as DatabaseGroupSelectOption;
-  return databaseGroup.databaseGroupName
-    .toLowerCase()
-    .includes(pattern.toLowerCase());
-};
-
-const options = computed(() => {
-  return databaseGroupList.value.map<DatabaseGroupSelectOption>(
-    (databaseGroup) => {
-      return {
-        databaseGroup,
-        value: databaseGroup.name,
-        label: databaseGroup.databaseGroupName,
-      };
+  [() => props.project, () => props.selected, () => props.environment],
+  () => {
+    invalidateSelectionIfNeeded();
+    state.selectedDatabaseGroup = dbGroupList.value.find(
+      (item) => item.name === props.selected
+    )?.name;
+    if (!state.selectedDatabaseGroup && props.selectFirstAsDefault) {
+      state.selectedDatabaseGroup = head(dbGroupList.value)?.name;
     }
-  );
-});
-
-const renderLabel: SelectRenderLabel = (option) => {
-  const { databaseGroup } = option as DatabaseGroupSelectOption;
-  if (!databaseGroup) {
-    return;
-  }
-
-  if (slots.default) {
-    return slots.default({ databaseGroup });
-  }
-
-  const children = [h("div", {}, [databaseGroup.databaseGroupName])];
-  return h(
-    "div",
-    {
-      class: "w-full flex flex-row justify-start items-center truncate",
-    },
-    children
-  );
-};
+    emit("update:selected", state.selectedDatabaseGroup);
+  },
+  { immediate: true, deep: true }
+);
 </script>

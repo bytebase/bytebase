@@ -164,7 +164,7 @@
       </ul>
       <BBTextField
         class="mt-2 w-full"
-        :required="true"
+        :required="create"
         :placeholder="accessTokenPlaceholder"
         :value="config.accessToken"
         @update:value="changeAccessToken($event)"

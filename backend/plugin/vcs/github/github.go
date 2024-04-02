@@ -143,7 +143,7 @@ type CommitsDiff struct {
 	Files []PullRequestFile `json:"files"`
 }
 
-// FetchAllRepositoryList fetches all repositories where the authenticated user
+// FetchRepositoryList fetches all repositories where the authenticated user
 // has admin permissions, which is required to create webhook in the repository.
 //
 // NOTE: GitHub API does not provide a native filter for admin permissions, thus
@@ -151,7 +151,7 @@ type CommitsDiff struct {
 // the `permissions.admin` field.
 //
 // Docs: https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user
-func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repository, error) {
+func (p *Provider) FetchRepositoryList(ctx context.Context, listAll bool) ([]*vcs.Repository, error) {
 	var githubRepos []Repository
 	page := 1
 	for {
@@ -161,7 +161,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context) ([]*vcs.Repositor
 		}
 		githubRepos = append(githubRepos, repos...)
 
-		if !hasNextPage {
+		if !hasNextPage || !listAll {
 			break
 		}
 		page++
