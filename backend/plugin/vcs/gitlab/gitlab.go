@@ -136,8 +136,8 @@ type CommitsDiff struct {
 	FileDiffList []MergeRequestFile `json:"diffs"`
 }
 
-// gitLabRepository represents a GitLab API response for a repository.
-type gitLabRepository struct {
+// Repository represents a GitLab API response for a repository.
+type Repository struct {
 	ID                int64  `json:"id"`
 	Name              string `json:"name"`
 	PathWithNamespace string `json:"path_with_namespace"`
@@ -169,7 +169,7 @@ func (*Provider) APIURL(instanceURL string) string {
 //
 // Docs: https://docs.gitlab.com/ee/api/projects.html#list-all-projects
 func (p *Provider) FetchRepositoryList(ctx context.Context, listAll bool) ([]*vcs.Repository, error) {
-	var gitlabRepos []gitLabRepository
+	var gitlabRepos []Repository
 	page := 1
 	for {
 		repos, hasNextPage, err := p.fetchPaginatedRepositoryList(ctx, page)
@@ -201,7 +201,7 @@ func (p *Provider) FetchRepositoryList(ctx context.Context, listAll bool) ([]*vc
 // fetchPaginatedRepositoryList fetches repositories where the authenticated
 // user has a maintainer role in given page. It return the paginated results
 // along with a boolean indicating whether the next page exists.
-func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, page int) (repos []gitLabRepository, hasNextPage bool, err error) {
+func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, page int) (repos []Repository, hasNextPage bool, err error) {
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
 	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40&page=%d&per_page=%d", p.APIURL(p.instanceURL), page, apiPageSize)

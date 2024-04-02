@@ -36,16 +36,18 @@ func TestVCS(t *testing.T) {
 		name               string
 		vcsProviderCreator fake.VCSProviderCreator
 		vcsType            v1pb.VCSType
-		externalID         string
-		repositoryFullPath string
+		repository         *vcs.Repository
 		webhookPushEvent   any
 	}{
 		{
 			name:               "GitLab",
 			vcsProviderCreator: fake.NewGitLab,
 			vcsType:            v1pb.VCSType_GITLAB,
-			externalID:         "121",
-			repositoryFullPath: "test/vcs",
+			repository: &vcs.Repository{
+				ID:       "121",
+				Name:     "test/vcs",
+				FullPath: "test/vcs",
+			},
 			webhookPushEvent: gitlab.MergeRequestPushEvent{
 				ObjectKind: "merge_request",
 				ObjectAttributes: gitlab.EventObjectAttributes{
@@ -65,8 +67,11 @@ func TestVCS(t *testing.T) {
 			name:               "GitHub",
 			vcsProviderCreator: fake.NewGitHub,
 			vcsType:            v1pb.VCSType_GITHUB,
-			externalID:         "octocat/Hello-World",
-			repositoryFullPath: "octocat/Hello-World",
+			repository: &vcs.Repository{
+				ID:       "octocat/Hello-World",
+				Name:     "octocat/Hello-World",
+				FullPath: "octocat/Hello-World",
+			},
 			webhookPushEvent: github.PullRequestPushEvent{
 				Action: "closed",
 				Number: pullRequestID,
@@ -89,8 +94,11 @@ func TestVCS(t *testing.T) {
 			name:               "Bitbucket",
 			vcsProviderCreator: fake.NewBitbucket,
 			vcsType:            v1pb.VCSType_BITBUCKET,
-			externalID:         "octocat/Hello-World",
-			repositoryFullPath: "octocat/Hello-World",
+			repository: &vcs.Repository{
+				ID:       "octocat/Hello-World",
+				Name:     "octocat/Hello-World",
+				FullPath: "octocat/Hello-World",
+			},
 			webhookPushEvent: bitbucket.PullRequestPushEvent{
 				PullRequest: bitbucket.EventPullRequest{
 					ID:          pullRequestID,
@@ -125,6 +133,9 @@ func TestVCS(t *testing.T) {
 				_ = ctl.Close(ctx)
 			}()
 
+			err = ctl.vcsProvider.CreateRepository(test.repository)
+			a.NoError(err)
+
 			evcs, err := ctl.evcsClient.CreateVCSProvider(ctx, &v1pb.CreateVCSProviderRequest{
 				VcsProvider: &v1pb.VCSProvider{
 					Title:       t.Name(),
@@ -135,8 +146,7 @@ func TestVCS(t *testing.T) {
 				VcsProviderId: strings.ToLower(test.vcsType.String()),
 			})
 			a.NoError(err)
-			ctl.vcsProvider.CreateRepository(test.externalID)
-			err = ctl.vcsProvider.CreateBranch(test.externalID, branchName)
+			err = ctl.vcsProvider.CreateBranch(test.repository.ID, branchName)
 			a.NoError(err)
 
 			oldVcsConnector, err := ctl.vcsConnectorServiceClient.CreateVCSConnector(ctx, &v1pb.CreateVCSConnectorRequest{
@@ -144,11 +154,11 @@ func TestVCS(t *testing.T) {
 				VcsConnector: &v1pb.VCSConnector{
 					VcsProvider:   evcs.Name,
 					Title:         "Test VCS Connector",
-					FullPath:      test.repositoryFullPath,
-					WebUrl:        fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					FullPath:      test.repository.FullPath,
+					WebUrl:        fmt.Sprintf("%s/%s", ctl.vcsURL, test.repository.FullPath),
 					Branch:        branchName,
 					BaseDirectory: baseDirectory + "+invalid",
-					ExternalId:    test.externalID,
+					ExternalId:    test.repository.ID,
 				},
 				VcsConnectorId: "default",
 			})
@@ -187,14 +197,14 @@ func TestVCS(t *testing.T) {
 			})
 			a.NoError(err)
 
-			err = ctl.vcsProvider.AddPullRequest(test.externalID, pullRequestID, pullRequestFiles)
+			err = ctl.vcsProvider.AddPullRequest(test.repository.ID, pullRequestID, pullRequestFiles)
 			a.NoError(err)
-			err = ctl.vcsProvider.AddFiles(test.externalID, fileContentMap)
+			err = ctl.vcsProvider.AddFiles(test.repository.ID, fileContentMap)
 			a.NoError(err)
 
 			payload, err := json.Marshal(test.webhookPushEvent)
 			a.NoError(err)
-			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			err = ctl.vcsProvider.SendWebhookPush(test.repository.ID, payload)
 			a.NoError(err)
 
 			// Get schema update issue.

@@ -130,7 +130,7 @@ type Repository struct {
 // RepositoryPermission represents a Bitbucket Cloud API response for a
 // repository permission.
 type RepositoryPermission struct {
-	Repository Repository `json:"repository"`
+	Repository *Repository `json:"repository"`
 }
 
 // FetchRepositoryList fetches all repositories where the authenticated user
