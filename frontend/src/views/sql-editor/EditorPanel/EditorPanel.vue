@@ -4,10 +4,7 @@
 
     <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
       <EditorAction @execute="handleExecute" />
-
-      <ConnectionHolder v-if="!tab" />
-
-      <template v-else>
+      <template v-if="tab">
         <Suspense>
           <SQLEditor @execute="handleExecute" />
           <template #fallback>
@@ -47,7 +44,6 @@ import {
   ConnectionPathBar,
   ExecutingHintModal,
   SaveSheetModal,
-  ConnectionHolder,
 } from "../EditorCommon";
 import { useSQLEditorContext } from "../context";
 
