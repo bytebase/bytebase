@@ -52,6 +52,7 @@
 import { useElementSize, useMounted } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NTree, NDropdown, type TreeOption } from "naive-ui";
+import { storeToRefs } from "pinia";
 import { ref, computed, nextTick, watch, h } from "vue";
 import { onMounted } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
@@ -137,7 +138,7 @@ const selectedKeys = computed(() => {
   }
   return [];
 });
-const expandedKeys = ref<string[]>([]);
+const { expandedKeys } = storeToRefs(treeStore);
 const upsertExpandedKeys = (key: string) => {
   if (expandedKeys.value.includes(key)) {
     return;
@@ -305,8 +306,12 @@ watch(
   { immediate: true }
 );
 
-const calcDefaultExpandKeys = async () => {
+const calcDefaultExpandKeys = async (override = false) => {
   await nextTick();
+  if (expandedKeys.value.length > 0 && !override) {
+    // keep as-is
+    return;
+  }
   const openingDatabaseList = resolveOpeningDatabaseListFromSQLEditorTabList();
   const keys = new Set<string>();
   // Recursively expand opening databases' parent nodes
@@ -338,15 +343,14 @@ const calcDefaultExpandKeys = async () => {
       }
     }
   }
-  console.log("defaultExpandKeys", Array.from(keys).join(","));
   expandedKeys.value = Array.from(keys);
 };
 
 useEmitteryEventListener(editorEvents, "tree-ready", () => {
-  calcDefaultExpandKeys();
+  calcDefaultExpandKeys(true);
 });
 
-onMounted(calcDefaultExpandKeys);
+onMounted(() => calcDefaultExpandKeys(false));
 </script>
 
 <style lang="postcss" scoped>
