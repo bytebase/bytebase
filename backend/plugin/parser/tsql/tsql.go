@@ -1,7 +1,6 @@
 package tsql
 
 import (
-	"fmt"
 	"strings"
 	"unicode"
 
@@ -74,7 +73,17 @@ func NormalizeTSQLTableName(ctx parser.ITable_nameContext, fallbackDatabaseName,
 			table = id
 		}
 	}
-	return fmt.Sprintf("%s.%s.%s", database, schema, table)
+	tableNameParts := []string{}
+	if database != "" {
+		tableNameParts = append(tableNameParts, database)
+	}
+	if schema != "" {
+		tableNameParts = append(tableNameParts, schema)
+	}
+	if table != "" {
+		tableNameParts = append(tableNameParts, table)
+	}
+	return strings.Join(tableNameParts, ".")
 }
 
 // NormalizeTSQLIdentifier returns the normalized identifier.

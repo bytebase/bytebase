@@ -35,7 +35,7 @@ func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	if err != nil {
 		return nil, err
 	}
-	paylaod, err := advisor.UnmarshalStringArrayTypeRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 		title:         string(ctx.Rule.Type),
 		disallowTypes: []string{},
 	}
-	for _, tp := range paylaod.List {
+	for _, tp := range payload.List {
 		checker.disallowTypes = append(checker.disallowTypes, strings.ToUpper(tp))
 	}
 
