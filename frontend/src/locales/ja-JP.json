@@ -1181,7 +1181,7 @@
       "options": "エクスポートオプション",
       "format": "フォーマット",
       "encrypt": "暗号化",
-      "exported-file-downloaded": "エクスポートされたファイルがダウンロードされました"
+      "exported-file-downloaded": "ファイルがダウンロードされました"
     }
   },
   "alter-schema": {

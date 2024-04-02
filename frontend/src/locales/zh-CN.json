@@ -1181,7 +1181,7 @@
       "options": "配置项",
       "format": "导出格式",
       "encrypt": "加密",
-      "exported-file-downloaded": "导出结果已下载"
+      "exported-file-downloaded": "文件已下载"
     }
   },
   "alter-schema": {
