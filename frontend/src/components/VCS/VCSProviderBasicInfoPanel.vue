@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-mutating-props -->
 <template>
   <div class="space-y-6">
-    <div>
+    <div v-if="create">
       <div class="textlabel">
         {{ $t("gitops.setting.add-git-provider.choose") }}
         <span class="text-red-600">*</span>
@@ -28,7 +28,7 @@
       </div>
     </div>
     <div>
-      <div class="mt-4 textlabel">
+      <div class="textlabel">
         {{ $t("gitops.setting.add-git-provider.basic-info.display-name") }}
         <span class="text-red-600">*</span>
       </div>
@@ -51,10 +51,12 @@
         :suffix="true"
         :resource-title="config.name"
         :validate="validateResourceId"
+        :readonly="!create"
       />
     </div>
     <div>
-      <div class="textlabel">
+      <div class="textlabel flex items-center">
+        <VCSIcon custom-class="h-4 mr-1" :type="config.type" />
         {{ instanceUrlLabel }} <span class="text-red-600">*</span>
       </div>
       <p class="mt-1 textinfolabel">
@@ -83,62 +85,70 @@
         Access Token <span class="text-red-600">*</span>
       </div>
       <ul class="textinfolabel space-y-2 mt-2">
-        <template
-          v-if="
-            config.uiType == 'GITLAB_SELF_HOST' || config.uiType == 'GITLAB_COM'
-          "
-        >
+        <template v-if="config.type == VCSType.GITLAB">
           <li>
-            •
-            {{
-              $t(
-                "gitops.setting.add-git-provider.access-token.gitlab-project-access-token"
-              )
-            }}
-          </li>
-          <li>
-            •
-            {{
-              $t(
-                "gitops.setting.add-git-provider.access-token.gitlab-group-access-token"
-              )
-            }}
-          </li>
-          <li>
-            •
             {{
               $t(
                 "gitops.setting.add-git-provider.access-token.gitlab-personal-access-token"
               )
             }}
           </li>
+          <li>• api</li>
+          <li>• read repository</li>
         </template>
-        <template
-          v-if="
-            config.uiType == 'GITHUB_COM' ||
-            config.uiType == 'GITHUB_ENTERPRISE'
-          "
-        >
+        <template v-if="config.type === VCSType.GITHUB">
           <li>
-            •
-            {{
-              $t(
-                "gitops.setting.add-git-provider.access-token.github-personal-access-token"
-              )
-            }}
+            <i18n-t
+              keypath="gitops.setting.add-git-provider.access-token.github-personal-access-token"
+            >
+              <template #token>
+                <a
+                  href="https://github.com/settings/tokens?type=beta"
+                  target="_blank"
+                  class="normal-link"
+                >
+                  {{
+                    $t(
+                      "gitops.setting.add-git-provider.access-token.personal-access-token"
+                    )
+                  }}
+                </a>
+              </template>
+            </i18n-t>
           </li>
+          <li>• Metadata (Read-only)</li>
+          <li>• Contents (Read-only)</li>
+          <li>• Pull requests (Read and write)</li>
+          <li>• Webhooks (Read and write)</li>
         </template>
-        <template v-if="config.uiType == 'BITBUCKET_ORG'">
+        <template v-if="config.type == VCSType.BITBUCKET">
           <li>
-            •
-            {{
-              $t(
-                "gitops.setting.add-git-provider.access-token.bitbucket-personal-access-token"
-              )
-            }}
+            <i18n-t
+              keypath="gitops.setting.add-git-provider.access-token.bitbucket-app-access-token"
+            >
+              <template #app_password>
+                <a
+                  href="https://bitbucket.org/account/settings/app-passwords"
+                  target="_blank"
+                  class="normal-link"
+                >
+                  {{
+                    $t(
+                      "gitops.setting.add-git-provider.access-token.bitbucket-app-password"
+                    )
+                  }}
+                </a>
+              </template>
+            </i18n-t>
           </li>
+          <li>• Account (Read)</li>
+          <li>• Workspace membership Profile (Read)</li>
+          <li>• Projects (Read)</li>
+          <li>• Webhooks (Read & Write)</li>
+          <li>• Repositories (Read & Write)</li>
+          <li>• Pull requests (Read & Write)</li>
         </template>
-        <template v-if="config.uiType == 'AZURE_DEVOPS'">
+        <template v-if="config.type == VCSType.AZURE_DEVOPS">
           <li>
             {{
               $t(
@@ -155,7 +165,7 @@
       <BBTextField
         class="mt-2 w-full"
         :required="true"
-        :placeholder="'ex. b9e0efc7a233403799b42620c60ff98c146895a27b6219912a215f4e2251cc3a'"
+        :placeholder="accessTokenPlaceholder"
         :value="config.accessToken"
         @update:value="changeAccessToken($event)"
       />
@@ -186,6 +196,7 @@ interface LocalState {
 
 const props = defineProps<{
   config: VCSConfig;
+  create: boolean;
 }>();
 
 const { t } = useI18n();
@@ -270,7 +281,8 @@ const instanceUrlDisabled = computed((): boolean => {
     props.config.type === VCSType.BITBUCKET ||
     props.config.type === VCSType.AZURE_DEVOPS ||
     (props.config.type === VCSType.GITLAB &&
-      props.config.uiType == "GITLAB_COM")
+      props.config.uiType == "GITLAB_COM") ||
+    !props.create
   );
 });
 
@@ -338,6 +350,18 @@ const changeUIType = () => {
       break;
   }
 };
+
+const accessTokenPlaceholder = computed(() => {
+  switch (props.config.type) {
+    case VCSType.BITBUCKET:
+      return "<bitbucket username>:<generated app password>";
+    case VCSType.GITHUB:
+      return "github_11AYD374I0mlFAa4HbedewxR_sdFZEbbismN5rNQtqKoiPckxHryntBmQLJCJBEYfsCTA5j0";
+    case VCSType.GITLAB:
+      return "glpat-dFZEbbismN5rNQtqKoiPckxHryntBmQLJCJBEYfs";
+  }
+  return "b9e0efc7a233403799b42620c60ff98c146895a27b6219912a215f4e2251cc3a";
+});
 
 const changeAccessToken = (value: string) => {
   // eslint-disable-next-line vue/no-mutating-props
