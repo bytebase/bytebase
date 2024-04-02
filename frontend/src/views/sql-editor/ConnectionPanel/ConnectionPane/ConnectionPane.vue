@@ -343,7 +343,6 @@ const calcDefaultExpandKeys = async (override = false) => {
       }
     }
   }
-  console.log("defaultExpandKeys", override, Array.from(keys).join(","));
   expandedKeys.value = Array.from(keys);
 };
 
