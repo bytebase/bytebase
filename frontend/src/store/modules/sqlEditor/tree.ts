@@ -114,6 +114,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   });
   const state = ref<TreeState>("UNSET");
   const tree = ref<TreeNode[]>([]);
+  const expandedKeys = ref<string[]>([]);
 
   const collectNode = <T extends NodeType>(node: TreeNode<T>) => {
     const { type, target } = node.meta;
@@ -132,15 +133,18 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
 
   const buildTree = () => {
     nodeListMapById.clear();
+    expandedKeys.value = [];
     tree.value = buildTreeImpl(
       filteredDatabaseList.value,
       filteredFactorList.value
     );
   };
+
   const cleanup = () => {
     tree.value = [];
     factorList.value = defaultFactorList();
     nodeListMapById.clear();
+    expandedKeys.value = [];
     state.value = "UNSET";
   };
 
@@ -181,6 +185,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     collectNode,
     nodesByTarget,
     buildTree,
+    expandedKeys,
     cleanup,
   };
 });
