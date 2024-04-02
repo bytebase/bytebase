@@ -44,7 +44,6 @@ import {
   ConnectionPathBar,
   ExecutingHintModal,
   SaveSheetModal,
-  ConnectionHolder,
 } from "../EditorCommon";
 import { useSQLEditorContext } from "../context";
 
