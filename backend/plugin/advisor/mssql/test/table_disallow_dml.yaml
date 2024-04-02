@@ -1,0 +1,43 @@
+- statement: |-
+    MERGE INTO MySchema.Identifier USING MySchema.MyTable ON Identifier.Id = MyTable.Id
+    WHEN MATCHED THEN UPDATE SET Identifier.Name = MyTable.Name
+    WHEN NOT MATCHED THEN INSERT (Id, Name) VALUES (MyTable.Id, MyTable.Name);
+  want:
+    - status: WARN
+      code: 614
+      title: table.disallow-dml
+      content: DML is disallowed on table MySchema.Identifier.
+      line: 1
+- statement: |-
+    INSERT INTO MySchema.MyTable (Id, Name) VALUES (1, 'Alice');
+    INSERT INTO MySchema.Identifier (Id, Name) VALUES (1, 'Alice');
+  want:
+    - status: WARN
+      code: 614
+      title: table.disallow-dml
+      content: DML is disallowed on table MySchema.Identifier.
+      line: 2
+- statement: |-
+    DELETE FROM MySchema.Identifier WHERE Id = 1;
+  want:
+    - status: WARN
+      code: 614
+      title: table.disallow-dml
+      content: DML is disallowed on table MySchema.Identifier.
+      line: 1
+- statement: |-
+    UPDATE MySchema.Identifier SET Name = 'Bob' WHERE Id = 1;
+  want:
+    - status: WARN
+      code: 614
+      title: table.disallow-dml
+      content: DML is disallowed on table MySchema.Identifier.
+      line: 1
+- statement: |-
+    SELECT * INTO MySchema.Identifier FROM MySchema.MyTable;
+  want:
+    - status: WARN
+      code: 614
+      title: table.disallow-dml
+      content: DML is disallowed on table MySchema.Identifier.
+      line: 1

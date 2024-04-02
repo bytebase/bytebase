@@ -97,6 +97,15 @@ ruleList:
         payload:
           type: STRING_ARRAY
           default: []
+  - type: table.disallow-dml
+    category: TABLE
+    engineList:
+      - MSSQL
+    componentList:
+      - key: list
+        payload:
+          type: STRING_ARRAY
+          default: []
   - type: statement.select.no-select-all
     category: STATEMENT
     engineList:
