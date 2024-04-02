@@ -90,6 +90,15 @@
         }
       }
     },
+    "table-disallow-ddl": {
+      "title": "DDL を禁止する",
+      "description": "DDL の実行を禁止するテーブルを設定します。提案エラー レベル: 警告",
+      "component": {
+        "list": {
+          "title": "テーブル名"
+        }
+      }
+    },
     "naming-table": {
       "title": "テーブルの命名形式の強制",
       "description": "デフォルトの形式はすべて小文字で、単語間にアンダースコアで区切られ、最大63文字までです。例えば「abc」や「abc_def」です。提案エラーレベル：警告",
