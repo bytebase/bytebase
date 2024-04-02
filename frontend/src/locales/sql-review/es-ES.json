@@ -90,6 +90,15 @@
         }
       }
     },
+    "table-disallow-ddl": {
+      "title": "No permitir DDL",
+      "description": "Configure qué tablas tienen prohibido ejecutar DDL. Nivel de error de sugerencia: Advertencia",
+      "component": {
+        "list": {
+          "title": "Nombres de tablas"
+        }
+      }
+    },
     "naming-table": {
       "title": "Imponer formato de nomenclatura de tabla",
       "description": "El formato predeterminado es todo en minúsculas, separado por guiones bajos entre palabras, y no más de 63 caracteres de largo, como \"abc\" y \"abc_def\". Nivel de sugerencia de error: Advertencia",

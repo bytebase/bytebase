@@ -27,6 +27,8 @@ ruleList:
       number: 1000
   - type: table.disallow-set-charset
     level: WARNING
+  - type: table.disallow-ddl
+    level: WARNING
   - type: statement.select.no-select-all
     level: ERROR
   - type: statement.where.require
