@@ -582,6 +582,9 @@ const (
 
 	// MSSQLColumnTypeDisallowList is an advisor type for MSSQL column type disallow list.
 	MSSQLColumnTypeDisallowList Type = "bb.plugin.advisor.mssql.column.type-disallow-list"
+
+	// MSSQLTableDisallowDDL is an advisor type for MSSQL disallow DDL for specific tables.
+	MSSQLTableDisallowDDL = "bb.plugin.advisor.mssql.table.disallow-ddl"
 )
 
 // Advice is the result of an advisor.

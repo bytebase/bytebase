@@ -118,6 +118,7 @@ const (
 	CreateTableTrigger                Code = 610
 	TotalTextLengthExceedsLimit       Code = 611
 	DisallowSetCharset                Code = 612
+	TableDisallowDDL                  Code = 613
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701

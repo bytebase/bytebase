@@ -90,6 +90,15 @@
         }
       }
     },
+    "table-disallow-ddl": {
+      "title": "Không cho phép DDL",
+      "description": "Định cấu hình bảng nào bị cấm thực thi DDL. Mức độ lỗi đề xuất: Cảnh báo",
+      "component": {
+        "list": {
+          "title": "Tên bảng"
+        }
+      }
+    },
     "naming-table": {
       "title": "Thực thi định dạng đặt tên bảng",
       "description": "Định dạng mặc định là tất cả các chữ cái viết thường, phân tách bằng dấu gạch dưới giữa các từ và không dài quá 63 ký tự, chẳng hạn như \"abc\" và \"abc_def\". Mức độ lỗi đề xuất: Cảnh báo",
