@@ -24,13 +24,18 @@
         </div>
       </template>
       <div class="space-x-3">
-        <NButton v-if="allowUpdate" @click.prevent="cancel">
-          {{ $t("common.cancel") }}
+        <NButton
+          v-if="allowUpdate"
+          @click.prevent="cancel"
+          :disabled="state.loading"
+        >
+          {{ $t("common.discard-changes") }}
         </NButton>
         <NButton
           type="primary"
           :disabled="!allowUpdate"
           @click.prevent="doUpdate"
+          :loading="state.loading"
         >
           {{ $t("common.update") }}
         </NButton>
@@ -67,6 +72,7 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   config: VCSConfig;
+  loading: boolean;
 }
 
 const props = defineProps<{
@@ -99,6 +105,7 @@ const resetState = () => {
 
 const state = reactive<LocalState>({
   config: initState.value,
+  loading: false,
 });
 
 const hasUpdateVCSPermission = computed(() => {
@@ -142,10 +149,12 @@ const allowUpdate = computed(() => {
   );
 });
 
-const doUpdate = () => {
+const doUpdate = async () => {
   if (!vcs.value) {
     return;
   }
+  state.loading = true;
+
   const vcsPatch: Partial<VCSProvider> = {
     name: vcs.value.name,
   };
@@ -156,7 +165,8 @@ const doUpdate = () => {
     vcsPatch.accessToken = state.config.accessToken;
   }
 
-  vcsV1Store.updateVCS(vcsPatch).then((updatedVCS: VCSProvider | undefined) => {
+  try {
+    const updatedVCS = await vcsV1Store.updateVCS(vcsPatch);
     if (!updatedVCS) {
       return;
     }
@@ -166,19 +176,24 @@ const doUpdate = () => {
       style: "SUCCESS",
       title: `Successfully updated '${updatedVCS.title}'`,
     });
-  });
+  } finally {
+    state.loading = false;
+  }
 };
 
 const cancel = () => {
   resetState();
 };
 
-const deleteVCS = () => {
+const deleteVCS = async () => {
   if (!vcs.value) {
     return;
   }
-  const title = vcs.value.title;
-  vcsV1Store.deleteVCS(vcs.value.name).then(() => {
+  state.loading = true;
+
+  try {
+    const title = vcs.value.title;
+    await vcsV1Store.deleteVCS(vcs.value.name);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -187,6 +202,8 @@ const deleteVCS = () => {
     router.push({
       name: WORKSPACE_ROUTE_GITOPS,
     });
-  });
+  } finally {
+    state.loading = false;
+  }
 };
 </script>

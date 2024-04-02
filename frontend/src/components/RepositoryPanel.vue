@@ -48,13 +48,18 @@
       @confirm="deleteConnector"
     />
     <div v-if="allowEdit" class="ml-3 flex items-center space-x-3">
-      <NButton @click.prevent="$emit('cancel')">
-        {{ $t("common.cancel") }}
+      <NButton
+        v-if="allowUpdate"
+        @click.prevent="discardChanges"
+        :disabled="state.processing"
+      >
+        {{ $t("common.discard-changes") }}
       </NButton>
       <NButton
         type="primary"
         :disabled="!allowUpdate"
         @click.prevent="doUpdate"
+        :loading="state.processing"
       >
         {{ $t("common.update") }}
       </NButton>
@@ -95,25 +100,25 @@ const emit = defineEmits<{
 const vcsV1Store = useVCSProviderStore();
 const vcsConnectorStore = useVCSConnectorStore();
 
+const initConfig = computed(
+  (): RepositoryConfig => ({
+    resourceId: getVCSConnectorId(props.vcsConnector.name).vcsConnectorId,
+    baseDirectory: props.vcsConnector.baseDirectory,
+    branch: props.vcsConnector.branch,
+    databaseGroup: props.vcsConnector.databaseGroup,
+  })
+);
+
 const state = reactive<LocalState>({
-  repositoryConfig: {
-    resourceId: "",
-    baseDirectory: "",
-    branch: "",
-    databaseGroup: "",
-  },
+  repositoryConfig: initConfig.value,
   processing: false,
 });
 
 watch(
   () => props.vcsConnector,
-  (cur) => {
-    state.repositoryConfig = {
-      resourceId: getVCSConnectorId(props.vcsConnector.name).vcsConnectorId,
-      baseDirectory: cur.baseDirectory,
-      branch: cur.branch,
-      databaseGroup: cur.databaseGroup,
-    };
+  () => {
+    state.repositoryConfig = initConfig.value;
+    state.processing = false;
   },
   { deep: true, immediate: true }
 );
@@ -146,7 +151,6 @@ const repositoryInfo = computed((): VCSRepository => {
 
 const allowUpdate = computed(() => {
   return (
-    !state.processing &&
     !isEmpty(state.repositoryConfig.branch) &&
     (props.vcsConnector.branch !== state.repositoryConfig.branch ||
       props.vcsConnector.baseDirectory !==
@@ -167,6 +171,11 @@ const deleteConnector = async () => {
   } finally {
     state.processing = false;
   }
+};
+
+const discardChanges = () => {
+  state.repositoryConfig = initConfig.value;
+  state.processing = false;
 };
 
 const doUpdate = async () => {
