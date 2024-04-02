@@ -150,8 +150,10 @@ const (
 	SchemaRuleTableTextFieldsTotalLength SQLReviewRuleType = "table.text-fields-total-length"
 	// SchemaRuleTableDisallowSetCharset disallow set table charset.
 	SchemaRuleTableDisallowSetCharset SQLReviewRuleType = "table.disallow-set-charset"
-	// SchemaRuleTableDisallowDDL disallow the DDL for specific tables.
+	// SchemaRuleTableDisallowDDL disallow executing DDL for specific tables.
 	SchemaRuleTableDisallowDDL SQLReviewRuleType = "table.disallow-ddl"
+	// SchemaRuleTableDisallowDML disallow executing DML on specific tables.
+	SchemaRuleTableDisallowDML SQLReviewRuleType = "table.disallow-dml"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -1410,6 +1412,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleTableDisallowDDL:
 		if engine == storepb.Engine_MSSQL {
 			return MSSQLTableDisallowDDL, nil
+		}
+	case SchemaRuleTableDisallowDML:
+		if engine == storepb.Engine_MSSQL {
+			return MSSQLTableDisallowDML, nil
 		}
 	case SchemaRuleMySQLEngine:
 		switch engine {

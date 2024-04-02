@@ -99,6 +99,15 @@
         }
       }
     },
+    "table-disallow-dml": {
+      "title": "Disallow DML",
+      "description": "Configure which tables are prohibited from executing DML. Suggestion error level: Warning",
+      "component": {
+        "list": {
+          "title": "Table names"
+        }
+      }
+    },
     "naming-table": {
       "title": "Enforce table naming format",
       "description": "The default format is all lowercase letters, separated by underscores between words, and no more than 63 characters long, such as \"abc\" and \"abc_def\". Suggestion error level: Warning",
