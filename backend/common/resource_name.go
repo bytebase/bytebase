@@ -40,6 +40,7 @@ const (
 	TableNamePrefix            = "tables/"
 	ChangeHistoryPrefix        = "changeHistories/"
 	IssueNamePrefix            = "issues/"
+	IssueCommentNamePrefix     = "issueComments/"
 	PipelineNamePrefix         = "pipelines/"
 	LogNamePrefix              = "logs/"
 	BranchPrefix               = "branches/"
@@ -261,13 +262,17 @@ func GetRiskID(name string) (int64, error) {
 	return riskID, nil
 }
 
-// GetProjectIDIssueID returns the project ID and issue ID from the issue name.
-func GetProjectIDIssueID(name string) (string, string, error) {
+// GetProjectIDIssueUID returns the project ID and issue ID from the issue name.
+func GetProjectIDIssueUID(name string) (string, int, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix)
 	if err != nil {
-		return "", "", err
+		return "", 0, err
 	}
-	return tokens[0], tokens[1], nil
+	issueUID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return "", 0, errors.Errorf("invalid issue ID %q", tokens[1])
+	}
+	return tokens[0], issueUID, nil
 }
 
 // GetIssueID returns the issue ID from a resource name.

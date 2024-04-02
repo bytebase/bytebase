@@ -114,21 +114,8 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 		}
 	}
 
-	// allow creator to get issue.
-	if issue.Creator.ID != user.ID {
-		needPermissions := []iam.Permission{iam.PermissionIssuesGet}
-		if issue.Type == api.IssueDatabaseGeneral || issue.Type == api.IssueDatabaseDataExport {
-			needPermissions = append(needPermissions, iam.PermissionPlansGet)
-		}
-		for _, p := range needPermissions {
-			ok, err := s.iamManager.CheckPermission(ctx, p, user, issue.Project.ResourceID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
-			}
-			if !ok {
-				return nil, status.Errorf(codes.PermissionDenied, "permission denied to get issue, user does not have permission %q", p)
-			}
-		}
+	if err := s.canUserGetIssue(ctx, issue, user); err != nil {
+		return nil, err
 	}
 
 	issueV1, err := convertToIssue(ctx, s.store, issue)
@@ -136,6 +123,27 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
 	return issueV1, nil
+}
+
+func (s *IssueService) canUserGetIssue(ctx context.Context, issue *store.IssueMessage, user *store.UserMessage) error {
+	// allow creator to get issue.
+	if issue.Creator.ID == user.ID {
+		return nil
+	}
+	needPermissions := []iam.Permission{iam.PermissionIssuesGet}
+	if issue.Type == api.IssueDatabaseGeneral || issue.Type == api.IssueDatabaseDataExport {
+		needPermissions = append(needPermissions, iam.PermissionPlansGet)
+	}
+	for _, p := range needPermissions {
+		ok, err := s.iamManager.CheckPermission(ctx, p, user, issue.Project.ResourceID)
+		if err != nil {
+			return status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+		}
+		if !ok {
+			return status.Errorf(codes.PermissionDenied, "permission denied to get issue, user does not have permission %q", p)
+		}
+	}
+	return nil
 }
 
 func (s *IssueService) getIssueFind(ctx context.Context, permissionFilter *store.FindIssueMessagePermissionFilter, projectID string, filter string, query string, limit, offset *int) (*store.FindIssueMessage, error) {
@@ -1645,6 +1653,38 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 	return &v1pb.BatchUpdateIssuesStatusResponse{}, nil
 }
 
+func (s *IssueService) ListIssueComments(ctx context.Context, request *v1pb.ListIssueCommentsRequest) (*v1pb.ListIssueCommentsResponse, error) {
+	if request.PageSize < 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
+	}
+	// TODO(p0ny): respect page size and page token.
+	_, issueUID, err := common.GetProjectIDIssueUID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueUID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get issue, err: %v", err)
+	}
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	if err := s.canUserGetIssue(ctx, issue, user); err != nil {
+		return nil, err
+	}
+	issueComments, err := s.store.ListIssueComment(ctx, &store.FindIssueCommentMessage{IssueUID: &issue.UID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list issue comments, err: %v", err)
+	}
+	ics := convertToIssueComments(request.Parent, issueComments)
+
+	return &v1pb.ListIssueCommentsResponse{
+		IssueComments: ics,
+		NextPageToken: "",
+	}, nil
+}
+
 // CreateIssueComment creates the issue comment.
 func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.CreateIssueCommentRequest) (*v1pb.IssueComment, error) {
 	if request.IssueComment.Comment == "" {
@@ -1704,6 +1744,17 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue comment: %v", err.Error())
 	}
+
+	// TODO(p0ny): dual-write issue_comment and activity for now. Remove activity in the future.
+	if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+		IssueUID: issue.UID,
+		Payload: &storepb.IssueCommentPayload{
+			Comment: request.IssueComment.Comment,
+		},
+	}, principalID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create issue comment: %v", err)
+	}
+
 	return &v1pb.IssueComment{
 		Uid:        fmt.Sprintf("%d", activity.UID),
 		Comment:    activity.Comment,
@@ -1873,311 +1924,6 @@ func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy 
 	default:
 		return false, errors.Errorf("invalid node payload type")
 	}
-}
-
-func convertToIssues(ctx context.Context, s *store.Store, issues []*store.IssueMessage) ([]*v1pb.Issue, error) {
-	var converted []*v1pb.Issue
-	for _, issue := range issues {
-		v1Issue, err := convertToIssue(ctx, s, issue)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert to issue")
-		}
-		converted = append(converted, v1Issue)
-	}
-	return converted, nil
-}
-
-func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessage) (*v1pb.Issue, error) {
-	issuePayload := issue.Payload
-
-	convertedGrantRequest, err := convertToGrantRequest(ctx, s, issuePayload.GrantRequest)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert GrantRequest")
-	}
-
-	releasers, err := convertToIssueReleasers(ctx, s, issue)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get issue releasers")
-	}
-
-	issueV1 := &v1pb.Issue{
-		Name:                 fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssueNamePrefix, issue.UID),
-		Uid:                  fmt.Sprintf("%d", issue.UID),
-		Title:                issue.Title,
-		Description:          issue.Description,
-		Type:                 convertToIssueType(issue.Type),
-		Status:               convertToIssueStatus(issue.Status),
-		Assignee:             "",
-		Approvers:            nil,
-		ApprovalTemplates:    nil,
-		ApprovalFindingDone:  false,
-		ApprovalFindingError: "",
-		Subscribers:          nil,
-		Creator:              fmt.Sprintf("%s%s", common.UserNamePrefix, issue.Creator.Email),
-		CreateTime:           timestamppb.New(issue.CreatedTime),
-		UpdateTime:           timestamppb.New(issue.UpdatedTime),
-		Plan:                 "",
-		Rollout:              "",
-		GrantRequest:         convertedGrantRequest,
-		Releasers:            releasers,
-		RiskLevel:            v1pb.Issue_RISK_LEVEL_UNSPECIFIED,
-		TaskStatusCount:      issue.TaskStatusCount,
-	}
-
-	if issue.PlanUID != nil {
-		issueV1.Plan = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.PlanPrefix, *issue.PlanUID)
-	}
-	if issue.PipelineUID != nil {
-		issueV1.Rollout = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.RolloutPrefix, *issue.PipelineUID)
-	}
-	if issue.Assignee != nil {
-		issueV1.Assignee = fmt.Sprintf("%s%s", common.UserNamePrefix, issue.Assignee.Email)
-	}
-
-	for _, subscriber := range issue.Subscribers {
-		issueV1.Subscribers = append(issueV1.Subscribers, fmt.Sprintf("%s%s", common.UserNamePrefix, subscriber.Email))
-	}
-
-	if issuePayload.Approval != nil {
-		issueV1.ApprovalFindingDone = issuePayload.Approval.ApprovalFindingDone
-		issueV1.ApprovalFindingError = issuePayload.Approval.ApprovalFindingError
-		issueV1.RiskLevel = convertToIssueRiskLevel(issuePayload.Approval.RiskLevel)
-		for _, template := range issuePayload.Approval.ApprovalTemplates {
-			issueV1.ApprovalTemplates = append(issueV1.ApprovalTemplates, convertToApprovalTemplate(template))
-		}
-		for _, approver := range issuePayload.Approval.Approvers {
-			convertedApprover := &v1pb.Issue_Approver{Status: v1pb.Issue_Approver_Status(approver.Status)}
-			user, err := s.GetUserByID(ctx, int(approver.PrincipalId))
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find user by id %v", approver.PrincipalId)
-			}
-			convertedApprover.Principal = fmt.Sprintf("users/%s", user.Email)
-			issueV1.Approvers = append(issueV1.Approvers, convertedApprover)
-		}
-	}
-
-	return issueV1, nil
-}
-
-func convertToIssueReleasers(ctx context.Context, s *store.Store, issue *store.IssueMessage) ([]string, error) {
-	if issue.Type != api.IssueDatabaseGeneral {
-		return nil, nil
-	}
-	if issue.Status != api.IssueOpen {
-		return nil, nil
-	}
-	if issue.PipelineUID == nil {
-		return nil, nil
-	}
-	stages, err := s.ListStageV2(ctx, *issue.PipelineUID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list issue stages")
-	}
-	var activeStage *store.StageMessage
-	for _, stage := range stages {
-		if stage.Active {
-			activeStage = stage
-			break
-		}
-	}
-	if activeStage == nil {
-		return nil, nil
-	}
-	policy, err := s.GetRolloutPolicy(ctx, activeStage.EnvironmentID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get rollout policy")
-	}
-
-	var releasers []string
-	if policy.Automatic {
-		releasers = append(releasers, common.FormatRole(api.ProjectOwner.String()), common.FormatUserEmail(issue.Creator.Email))
-		return releasers, nil
-	}
-
-	releasers = append(releasers, policy.WorkspaceRoles...)
-	releasers = append(releasers, policy.ProjectRoles...)
-
-	for _, role := range policy.IssueRoles {
-		switch role {
-		case "roles/CREATOR":
-			releasers = append(releasers, common.FormatUserEmail(issue.Creator.Email))
-		case "roles/LAST_APPROVER":
-			approvers := issue.Payload.GetApproval().GetApprovers()
-			if len(approvers) > 0 {
-				lastApproverUID := approvers[len(approvers)-1].GetPrincipalId()
-				user, err := s.GetUserByID(ctx, int(lastApproverUID))
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get last approver uid %d", lastApproverUID)
-				}
-				releasers = append(releasers, common.FormatUserEmail(user.Email))
-			}
-		}
-	}
-
-	return releasers, nil
-}
-
-func convertToIssueType(t api.IssueType) v1pb.Issue_Type {
-	switch t {
-	case api.IssueDatabaseGeneral:
-		return v1pb.Issue_DATABASE_CHANGE
-	case api.IssueGrantRequest:
-		return v1pb.Issue_GRANT_REQUEST
-	case api.IssueDatabaseDataExport:
-		return v1pb.Issue_DATABASE_DATA_EXPORT
-	default:
-		return v1pb.Issue_TYPE_UNSPECIFIED
-	}
-}
-
-func convertToAPIIssueStatus(status v1pb.IssueStatus) (api.IssueStatus, error) {
-	switch status {
-	case v1pb.IssueStatus_OPEN:
-		return api.IssueOpen, nil
-	case v1pb.IssueStatus_DONE:
-		return api.IssueDone, nil
-	case v1pb.IssueStatus_CANCELED:
-		return api.IssueCanceled, nil
-	default:
-		return api.IssueStatus(""), errors.Errorf("invalid issue status %v", status)
-	}
-}
-
-func convertToIssueStatus(status api.IssueStatus) v1pb.IssueStatus {
-	switch status {
-	case api.IssueOpen:
-		return v1pb.IssueStatus_OPEN
-	case api.IssueDone:
-		return v1pb.IssueStatus_DONE
-	case api.IssueCanceled:
-		return v1pb.IssueStatus_CANCELED
-	default:
-		return v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED
-	}
-}
-
-func convertToIssueRiskLevel(riskLevel storepb.IssuePayloadApproval_RiskLevel) v1pb.Issue_RiskLevel {
-	switch riskLevel {
-	case storepb.IssuePayloadApproval_RISK_LEVEL_UNSPECIFIED:
-		return v1pb.Issue_RISK_LEVEL_UNSPECIFIED
-	case storepb.IssuePayloadApproval_LOW:
-		return v1pb.Issue_LOW
-	case storepb.IssuePayloadApproval_MODERATE:
-		return v1pb.Issue_MODERATE
-	case storepb.IssuePayloadApproval_HIGH:
-		return v1pb.Issue_HIGH
-	default:
-		return v1pb.Issue_RISK_LEVEL_UNSPECIFIED
-	}
-}
-
-func convertToApprovalTemplate(template *storepb.ApprovalTemplate) *v1pb.ApprovalTemplate {
-	return &v1pb.ApprovalTemplate{
-		Flow:        convertToApprovalFlow(template.Flow),
-		Title:       template.Title,
-		Description: template.Description,
-	}
-}
-
-func convertToApprovalFlow(flow *storepb.ApprovalFlow) *v1pb.ApprovalFlow {
-	convertedFlow := &v1pb.ApprovalFlow{}
-	for _, step := range flow.Steps {
-		convertedFlow.Steps = append(convertedFlow.Steps, convertToApprovalStep(step))
-	}
-	return convertedFlow
-}
-
-func convertToApprovalStep(step *storepb.ApprovalStep) *v1pb.ApprovalStep {
-	convertedStep := &v1pb.ApprovalStep{
-		Type: v1pb.ApprovalStep_Type(step.Type),
-	}
-	for _, node := range step.Nodes {
-		convertedStep.Nodes = append(convertedStep.Nodes, convertToApprovalNode(node))
-	}
-	return convertedStep
-}
-
-func convertToApprovalNode(node *storepb.ApprovalNode) *v1pb.ApprovalNode {
-	v1node := &v1pb.ApprovalNode{}
-	v1node.Type = v1pb.ApprovalNode_Type(node.Type)
-	switch payload := node.Payload.(type) {
-	case *storepb.ApprovalNode_GroupValue_:
-		v1node.Payload = &v1pb.ApprovalNode_GroupValue_{
-			GroupValue: convertToApprovalNodeGroupValue(payload.GroupValue),
-		}
-	case *storepb.ApprovalNode_Role:
-		v1node.Payload = &v1pb.ApprovalNode_Role{
-			Role: payload.Role,
-		}
-	case *storepb.ApprovalNode_ExternalNodeId:
-		v1node.Payload = &v1pb.ApprovalNode_ExternalNodeId{
-			ExternalNodeId: payload.ExternalNodeId,
-		}
-	}
-	return v1node
-}
-
-func convertToApprovalNodeGroupValue(v storepb.ApprovalNode_GroupValue) v1pb.ApprovalNode_GroupValue {
-	switch v {
-	case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
-		return v1pb.ApprovalNode_GROUP_VALUE_UNSPECIFILED
-	case storepb.ApprovalNode_WORKSPACE_OWNER:
-		return v1pb.ApprovalNode_WORKSPACE_OWNER
-	case storepb.ApprovalNode_WORKSPACE_DBA:
-		return v1pb.ApprovalNode_WORKSPACE_DBA
-	case storepb.ApprovalNode_PROJECT_OWNER:
-		return v1pb.ApprovalNode_PROJECT_OWNER
-	case storepb.ApprovalNode_PROJECT_MEMBER:
-		return v1pb.ApprovalNode_PROJECT_MEMBER
-	default:
-		return v1pb.ApprovalNode_GROUP_VALUE_UNSPECIFILED
-	}
-}
-
-func convertToGrantRequest(ctx context.Context, s *store.Store, v *storepb.GrantRequest) (*v1pb.GrantRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	uid, err := common.GetUserID(v.User)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get user uid from %q", v.User)
-	}
-	user, err := s.GetUserByID(ctx, uid)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get user by uid %q", uid)
-	}
-	if user == nil {
-		return nil, errors.Errorf("user %q not found", v.User)
-	}
-	return &v1pb.GrantRequest{
-		Role:       v.Role,
-		User:       common.FormatUserEmail(user.Email),
-		Condition:  v.Condition,
-		Expiration: v.Expiration,
-	}, nil
-}
-
-func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantRequest) (*storepb.GrantRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	email, err := common.GetUserEmail(v.User)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get user email from %q", v.User)
-	}
-	user, err := s.GetUser(ctx, &store.FindUserMessage{Email: &email})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get user by email %q", email)
-	}
-	if user == nil {
-		return nil, errors.Errorf("user %q not found", v.User)
-	}
-	return &storepb.GrantRequest{
-		Role:       v.Role,
-		User:       common.FormatUserUID(user.ID),
-		Condition:  v.Condition,
-		Expiration: v.Expiration,
-	}, nil
 }
 
 // 1. if the user is the issue creator
