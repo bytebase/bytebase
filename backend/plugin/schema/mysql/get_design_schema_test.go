@@ -21,6 +21,8 @@ func TestGetDesignSchema_Debug(t *testing.T) {
 	TestGetDesignSchema_Basic(t)
 	TestGetDesignSchema_Partition(t)
 	TestGetDesignSchema_View(t)
+	TestGetDesignSchema_Function(t)
+	TestGetDesignSchema_Procedure(t)
 }
 
 func TestGetDesignSchema_Basic(t *testing.T) {
@@ -46,6 +48,24 @@ func TestGetDesignSchema_View(t *testing.T) {
 		"testdata/get-design-schema/view/add-new-view.yaml",
 		"testdata/get-design-schema/view/drop-view.yaml",
 		"testdata/get-design-schema/view/modify-view.yaml",
+	}, false)
+}
+
+func TestGetDesignSchema_Function(t *testing.T) {
+	testGetDesignSchema(t, []string{
+		"testdata/get-design-schema/function/create-new-function.yaml",
+		"testdata/get-design-schema/function/delete-function.yaml",
+		"testdata/get-design-schema/function/delete-function-without-set.yaml",
+		"testdata/get-design-schema/function/modify-function.yaml",
+	}, false)
+}
+
+func TestGetDesignSchema_Procedure(t *testing.T) {
+	testGetDesignSchema(t, []string{
+		"testdata/get-design-schema/procedure/create-new-procedure.yaml",
+		"testdata/get-design-schema/procedure/delete-procedure.yaml",
+		"testdata/get-design-schema/procedure/delete-procedure-without-set.yaml",
+		"testdata/get-design-schema/procedure/modify-procedure.yaml",
 	}, false)
 }
 

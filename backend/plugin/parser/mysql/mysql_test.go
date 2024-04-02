@@ -144,6 +144,51 @@ func TestMySQLParser(t *testing.T) {
 	}
 }
 
+// func TestDealWithDelimiter_SplitCommentBeforeDelimiter(t *testing.T) {
+// 	tests := []struct {
+// 		input string
+// 		want  string
+// 	}{
+// 		{
+// 			input: `
+// DELIMITER ;;
+// CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+// 	DETERMINISTIC
+// RETURN CONCAT('Hello, ',s,'!') ;;
+// DELIMITER ;
+// --
+// -- Function structure for hello2
+// --
+// DELIMITER ;;
+// CREATE FUNCTION hello2(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+// 	DETERMINISTIC
+// RETURN CONCAT('Hello, ',s,'!') ;;
+// DELIMITER ;
+// `,
+// 			want: `-- DELIMITER ;;
+// CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+// 	DETERMINISTIC
+// RETURN CONCAT('Hello, ',s,'!') ;
+// -- DELIMITER ;
+// --
+// -- Function structure for hello2
+// --
+// -- DELIMITER ;;
+// CREATE FUNCTION hello2(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+// 	DETERMINISTIC
+// RETURN CONCAT('Hello, ',s,'!') ;
+// -- DELIMITER ;`,
+// 		},
+// 	}
+
+// 	a := require.New(t)
+// 	for i, test := range tests {
+// 		got, err := DealWithDelimiter(test.input, tokenizer.SplitCommentBeforeDelimiter())
+// 		a.NoError(err, i)
+// 		a.Equal(test.want, got, i)
+// 	}
+// }
+
 func TestRestoreDelimiter(t *testing.T) {
 	testCases := []struct {
 		input string
@@ -363,6 +408,25 @@ CREATE FUNCTION hello3(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
 RETURN CONCAT('Hello, ',s,'!') ??
 DELIMITER ;
 DROP FUNCTION hello3;
+`,
+		},
+
+		// Ignore redundant DELIMITER statements.
+		{
+			input: `
+-- DELIMITER ;;
+CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+	DETERMINISTIC
+RETURN CONCAT('Hello, ',s,'!') ;
+-- DELIMITER ;
+-- DELIMITER ;
+`,
+			want: `
+DELIMITER ;;
+CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+	DETERMINISTIC
+RETURN CONCAT('Hello, ',s,'!') ;;
+DELIMITER ;
 `,
 		},
 	}
