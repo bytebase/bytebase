@@ -19,6 +19,14 @@ type transformTest struct {
 	Metadata string
 }
 
+func TestParseToMetadata_Routine(t *testing.T) {
+	filepaths := []string{
+		"testdata/parse-to-metadata/routine.yaml",
+	}
+
+	runParseToMetadataTest(t, filepaths, false)
+}
+
 func TestParseToMetadata_View(t *testing.T) {
 	filepaths := []string{
 		"testdata/parse-to-metadata/view.yaml",
