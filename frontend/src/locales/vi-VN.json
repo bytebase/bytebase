@@ -1724,7 +1724,7 @@
     "our-webhook-link": "Bạn có thể tìm thấy webhook do Bytebase tạo tại {webhookLink}.",
     "branch-observe-file-change": "Nhánh nơi Bytebase quan sát sự thay đổi tập tin.",
     "base-directory": "Thư mục cơ sở",
-    "base-directory-description": "Thư mục gốc nơi Bytebase quan sát sự thay đổi của tập tin. Nếu trống thì nó sẽ quan sát toàn bộ kho lưu trữ.",
+    "base-directory-description": "Thư mục gốc nơi Bytebase quan sát sự thay đổi của tập tin.",
     "file-path-template": "Mẫu đường dẫn tệp",
     "file-path-template-description": "Bytebase chỉ quan sát tên đường dẫn tệp khớp với mẫu mẫu liên quan đến thư mục cơ sở.",
     "file-path-example-schema-migration": "Ví dụ về đường dẫn tệp cho kiểu di chuyển lược đồ",
