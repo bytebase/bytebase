@@ -388,6 +388,26 @@ func convertToIssueCommentEventStageEnd(e *storepb.IssueCommentPayload_StageEnd_
 	}
 }
 
+func convertToIssueCommentPayloadIssueUpdateIssueStatus(s *v1pb.IssueStatus) *storepb.IssueCommentPayload_IssueUpdate_IssueStatus {
+	if s == nil {
+		return nil
+	}
+	var is storepb.IssueCommentPayload_IssueUpdate_IssueStatus
+	switch *s {
+	case v1pb.IssueStatus_CANCELED:
+		is = storepb.IssueCommentPayload_IssueUpdate_CANCELED
+	case v1pb.IssueStatus_DONE:
+		is = storepb.IssueCommentPayload_IssueUpdate_DONE
+	case v1pb.IssueStatus_OPEN:
+		is = storepb.IssueCommentPayload_IssueUpdate_OPEN
+	case v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED:
+		is = storepb.IssueCommentPayload_IssueUpdate_ISSUE_STATUS_UNSPECIFIED
+	default:
+		is = storepb.IssueCommentPayload_IssueUpdate_ISSUE_STATUS_UNSPECIFIED
+	}
+	return &is
+}
+
 func convertToIssueCommentEventIssueUpdateStatus(s *storepb.IssueCommentPayload_IssueUpdate_IssueStatus) *v1pb.IssueStatus {
 	if s == nil {
 		return nil

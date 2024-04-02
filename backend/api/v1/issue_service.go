@@ -1657,30 +1657,50 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 				continue
 			}
 
-			payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
-				OldStatus: issue.Status,
-				NewStatus: updatedIssue.Status,
-				IssueName: updatedIssue.Title,
-			})
-			if err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title))
-				continue
-			}
-			activityCreate := &store.ActivityMessage{
-				CreatorUID:        user.ID,
-				ResourceContainer: updatedIssue.Project.GetName(),
-				ContainerUID:      updatedIssue.UID,
-				Type:              api.ActivityIssueStatusUpdate,
-				Level:             api.ActivityInfo,
-				Comment:           request.Reason,
-				Payload:           string(payload),
-			}
-			if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
-				Issue: updatedIssue,
-			}); err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title))
-				continue
-			}
+			func() {
+				payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{
+					OldStatus: issue.Status,
+					NewStatus: updatedIssue.Status,
+					IssueName: updatedIssue.Title,
+				})
+				if err != nil {
+					errs = multierr.Append(errs, errors.Wrapf(err, "failed to marshal activity after changing the issue status: %v", updatedIssue.Title))
+					return
+				}
+				activityCreate := &store.ActivityMessage{
+					CreatorUID:        user.ID,
+					ResourceContainer: updatedIssue.Project.GetName(),
+					ContainerUID:      updatedIssue.UID,
+					Type:              api.ActivityIssueStatusUpdate,
+					Level:             api.ActivityInfo,
+					Comment:           request.Reason,
+					Payload:           string(payload),
+				}
+				if _, err := s.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{
+					Issue: updatedIssue,
+				}); err != nil {
+					errs = multierr.Append(errs, errors.Wrapf(err, "failed to create activity after changing the issue status: %v", updatedIssue.Title))
+					return
+				}
+			}()
+
+			func() {
+				fromStatus := convertToIssueStatus(issue.Status)
+				if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+					IssueUID: issue.UID,
+					Payload: &storepb.IssueCommentPayload{
+						Event: &storepb.IssueCommentPayload_IssueUpdate_{
+							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+								FromStatus: convertToIssueCommentPayloadIssueUpdateIssueStatus(&fromStatus),
+								ToStatus:   convertToIssueCommentPayloadIssueUpdateIssueStatus(&request.Status),
+							},
+						},
+					},
+				}, user.ID); err != nil {
+					errs = multierr.Append(errs, errors.Wrapf(err, "failed to create issue comment after change the issue status"))
+					return
+				}
+			}()
 		}
 		return errs
 	}(); err != nil {

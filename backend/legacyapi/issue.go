@@ -12,6 +12,10 @@ const (
 	IssueCanceled IssueStatus = "CANCELED"
 )
 
+func (t IssueStatus) String() string {
+	return string(t)
+}
+
 // IssueType is the type of an issue.
 type IssueType string
 
