@@ -29,6 +29,8 @@ ruleList:
     level: WARNING
   - type: table.disallow-ddl
     level: WARNING
+  - type: table.disallow-dml
+    level: WARNING
   - type: statement.select.no-select-all
     level: ERROR
   - type: statement.where.require

@@ -99,6 +99,15 @@
         }
       }
     },
+    "table-disallow-dml": {
+      "title": "禁止 DML",
+      "description": "配置哪些表禁止执行 DML。建议错误级别：警告",
+      "component": {
+        "list": {
+          "title": "表名"
+        }
+      }
+    },
     "naming-table": {
       "title": "强制表命名格式",
       "description": "默认格式为全小写字母，单词之间以下划线分割，长度不超过 63 个字符，例如 \"abc\"，\"abc_def\"。建议错误等级：警告",
