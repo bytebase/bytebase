@@ -34,7 +34,8 @@ type GitHub struct {
 }
 
 type githubRepositoryData struct {
-	webhooks []*github.WebhookCreateOrUpdate
+	repository *github.Repository
+	webhooks   []*github.WebhookCreateOrUpdate
 	// files is a map that the full file path is the key and the file content is the
 	// value.
 	files map[string]string
@@ -64,6 +65,7 @@ func NewGitHub(port int) VCSProvider {
 	}
 
 	g := e.Group("/api/v3")
+	g.GET("/user/repos", gh.listRepositories)
 	g.POST("/repos/:owner/:repo/hooks", gh.createRepositoryWebhook)
 	g.GET("/repos/:owner/:repo/git/commits/:commitID", gh.getRepositoryCommit)
 	g.GET("/repos/:owner/:repo/contents/:filePath", gh.readRepositoryFile)
@@ -73,6 +75,18 @@ func NewGitHub(port int) VCSProvider {
 	g.POST("/repos/:owner/:repo/issues/:prID/comments", gh.createIssueComment)
 	g.GET("/repos/:owner/:repo/compare/:baseHead", gh.compareCommits)
 	return gh
+}
+
+func (gh *GitHub) listRepositories(c echo.Context) error {
+	repoList := []*github.Repository{}
+	for _, repoData := range gh.repositories {
+		repoList = append(repoList, repoData.repository)
+	}
+	buf, err := json.Marshal(repoList)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for list repository: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
 }
 
 func (gh *GitHub) createRepositoryWebhook(c echo.Context) error {
@@ -280,8 +294,13 @@ func (*GitHub) APIURL(instanceURL string) string {
 }
 
 // CreateRepository creates a GitHub repository with given ID.
-func (gh *GitHub) CreateRepository(id string) {
-	gh.repositories[id] = &githubRepositoryData{
+func (gh *GitHub) CreateRepository(repository *vcs.Repository) error {
+	gh.repositories[repository.FullPath] = &githubRepositoryData{
+		repository: &github.Repository{
+			ID:       int64(len(gh.repositories) + 1),
+			Name:     repository.Name,
+			FullName: repository.FullPath,
+		},
 		files: make(map[string]string),
 		refs:  map[string]*github.Branch{},
 		pullRequests: map[int]struct {
@@ -290,6 +309,7 @@ func (gh *GitHub) CreateRepository(id string) {
 		}{},
 		commitsDiff: map[string]*github.CommitsDiff{},
 	}
+	return nil
 }
 
 // CreateBranch creates a new branch with the given name.

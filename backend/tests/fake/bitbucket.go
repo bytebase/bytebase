@@ -30,7 +30,8 @@ type Bitbucket struct {
 }
 
 type bitbucketRepositoryData struct {
-	webhooks []*bitbucket.WebhookCreateOrUpdate
+	repository *bitbucket.Repository
+	webhooks   []*bitbucket.WebhookCreateOrUpdate
 	// files is a map that the full file path is the key and the file content is the
 	// value.
 	files map[string]string
@@ -59,6 +60,7 @@ func NewBitbucket(port int) VCSProvider {
 	}
 
 	g := e.Group("/2.0")
+	g.GET("/user/permissions/repositories", bb.listRepositories)
 	g.POST("/repositories/:owner/:repo/hooks", bb.createRepositoryWebhook)
 	g.GET("/repositories/:owner/:repo/commit/:commitID", bb.getRepositoryCommit)
 	g.GET("/repositories/:owner/:repo/src/:ref/:filepath", bb.getRepositoryContent)
@@ -68,6 +70,24 @@ func NewBitbucket(port int) VCSProvider {
 	g.GET("/repositories/:owner/:repo/pullrequests/:prID/diffstat", bb.listPullRequestFile)
 	g.GET("/repositories/:owner/:repo/pullrequests/:prID/comments", bb.createPullRequestComment)
 	return bb
+}
+
+func (bb *Bitbucket) listRepositories(c echo.Context) error {
+	var resp struct {
+		Values []*bitbucket.RepositoryPermission `json:"values"`
+		Next   string                            `json:"next"`
+	}
+
+	for _, repoData := range bb.repositories {
+		resp.Values = append(resp.Values, &bitbucket.RepositoryPermission{
+			Repository: repoData.repository,
+		})
+	}
+	buf, err := json.Marshal(resp)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for list repository: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
 }
 
 func (bb *Bitbucket) createRepositoryWebhook(c echo.Context) error {
@@ -223,8 +243,13 @@ func (*Bitbucket) APIURL(string) string {
 }
 
 // CreateRepository creates a Bitbucket repository with given ID.
-func (bb *Bitbucket) CreateRepository(id string) {
-	bb.repositories[id] = &bitbucketRepositoryData{
+func (bb *Bitbucket) CreateRepository(repository *vcs.Repository) error {
+	bb.repositories[repository.ID] = &bitbucketRepositoryData{
+		repository: &bitbucket.Repository{
+			UUID:     repository.ID,
+			Name:     repository.Name,
+			FullName: repository.FullPath,
+		},
 		files:     make(map[string]string),
 		refs:      map[string]*bitbucket.Branch{},
 		diffStats: map[string][]*bitbucket.CommitDiffStat{},
@@ -232,6 +257,7 @@ func (bb *Bitbucket) CreateRepository(id string) {
 			Files []*bitbucket.CommitDiffStat
 		}{},
 	}
+	return nil
 }
 
 // CreateBranch creates a new branch with the given name.
