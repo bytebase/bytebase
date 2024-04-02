@@ -3,6 +3,7 @@ package bitbucket
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -462,5 +463,6 @@ func (p *Provider) DeleteWebhook(ctx context.Context, repositoryID, webhookID st
 }
 
 func (p *Provider) getAuthorization() string {
-	return fmt.Sprintf("Basic %s", p.authToken)
+	encoded := base64.StdEncoding.EncodeToString([]byte(p.authToken))
+	return fmt.Sprintf("Basic %s", encoded)
 }
