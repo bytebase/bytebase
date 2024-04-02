@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -36,13 +37,7 @@ func init() {
 }
 
 func BBError(err error) slog.Attr {
-	var value string
-	if err == nil {
-		value = ""
-	} else {
-		value = err.Error()
-	}
-	return slog.String("error", value)
+	return slog.String("error", fmt.Sprintf("%+v", err))
 }
 
 func BBStack(key string) slog.Attr {
