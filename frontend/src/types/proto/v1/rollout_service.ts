@@ -301,12 +301,12 @@ export interface Plan_ExportDataConfig {
 }
 
 export interface Plan_VCSSource {
+  vcsType: VCSType;
   /**
    * Optional.
    * If present, we will update the pull request for rollout status.
    * Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
    */
-  vcsType: VCSType;
   vcsConnector: string;
   pullRequestUrl: string;
 }
