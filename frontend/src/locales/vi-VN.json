@@ -2021,8 +2021,8 @@
           "gitlab-group-access-token": "Tạo một mã truy cập nhóm để quản lý tất cả các dự án trong nhóm.",
           "gitlab-personal-access-token": "Tạo một người dùng dịch vụ riêng và tạo một mã thông bảo cá nhân với vai trò người quản lý cho nhóm hoặc tất cả các dự án cần quản lý.",
           "github-personal-access-token": "Tạo một người dùng dịch vụ riêng và tạo một mã thông báo truy cập cá nhân với vai trò thành viên cho tổ chức hoặc tất cả các dự án cần quản lý.",
-          "bitbucket-personal-access-token": "Tạo một người dùng dịch vụ cụ thể và tạo một mật khẩu ứng dụng cấp quyền đọc và ghi cho các tổ chức, dự án hoặc kho lưu trữ liên quan để quản lý. Chèn chuỗi base64 mã hóa '<tên người dùng Bitbucket>:<mật khẩu ứng dụng được tạo>' bên dưới.",
-          "azure-devops-personal-access-token": "Tạo người dùng dịch vụ chuyên dụng và tạo mã thông báo truy cập cá nhân với vai trò thành viên cho tất cả các tổ chức có thể truy cập với phạm vi sau"
+          "bitbucket-personal-access-token": "Tạo một người dùng dịch vụ cụ thể và tạo một mật khẩu ứng dụng cấp quyền đọc và ghi cho các tổ chức, dự án hoặc kho chứa liên quan để quản lý. Chèn '<tên người dùng Bitbucket>:<mật khẩu ứng dụng đã tạo>' bên dưới.",
+          "azure-devops-personal-access-token": "Tạo người dùng dịch vụ chuyên dụng và tạo mã thông báo truy cập cá nhân với vai trò thành viên cho tất cả các tổ chức có thể truy cập với phạm vi sau. Trường 'Tổ chức' phải được đặt là 'Tất cả các tổ chức có thể truy cập'."
         },
         "confirm": {
           "confirm-info": "Xác nhận thông tin",
