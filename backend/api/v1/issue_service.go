@@ -1657,7 +1657,6 @@ func (s *IssueService) ListIssueComments(ctx context.Context, request *v1pb.List
 	if request.PageSize < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
 	}
-	// TODO(p0ny): respect page size and page token.
 	_, issueUID, err := common.GetProjectIDIssueUID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1673,15 +1672,45 @@ func (s *IssueService) ListIssueComments(ctx context.Context, request *v1pb.List
 	if err := s.canUserGetIssue(ctx, issue, user); err != nil {
 		return nil, err
 	}
-	issueComments, err := s.store.ListIssueComment(ctx, &store.FindIssueCommentMessage{IssueUID: &issue.UID})
+
+	limit := int(request.PageSize)
+	offset := 0
+	if request.PageToken != "" {
+		var pageToken storepb.PageToken
+		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
+		}
+		offset = int(pageToken.Offset)
+	}
+	if limit == 0 {
+		limit = 10
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	limitPlusOne := limit + 1
+
+	issueComments, err := s.store.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		IssueUID: &issue.UID,
+		Limit:    &limitPlusOne,
+		Offset:   &offset,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list issue comments, err: %v", err)
 	}
-	ics := convertToIssueComments(request.Parent, issueComments)
+	var nextPageToken string
+	if len(issueComments) == limitPlusOne {
+		pageToken, err := getPageToken(limit, offset+limit)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+		}
+		nextPageToken = pageToken
+		issueComments = issueComments[:limit]
+	}
 
 	return &v1pb.ListIssueCommentsResponse{
-		IssueComments: ics,
-		NextPageToken: "",
+		IssueComments: convertToIssueComments(request.Parent, issueComments),
+		NextPageToken: nextPageToken,
 	}, nil
 }
 
