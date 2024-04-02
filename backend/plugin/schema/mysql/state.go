@@ -65,6 +65,8 @@ type schemaState struct {
 	tables       map[string]*tableState
 	views        map[string]*viewState
 	handledViews map[string]bool
+	functions    map[string]*functionState
+	procedures   map[string]*procedureState
 }
 
 func newSchemaState() *schemaState {
@@ -72,6 +74,8 @@ func newSchemaState() *schemaState {
 		tables:       make(map[string]*tableState),
 		views:        make(map[string]*viewState),
 		handledViews: make(map[string]bool),
+		functions:    make(map[string]*functionState),
+		procedures:   make(map[string]*procedureState),
 	}
 }
 
@@ -83,6 +87,12 @@ func convertToSchemaState(schema *storepb.SchemaMetadata) *schemaState {
 	}
 	for i, view := range schema.Views {
 		state.views[view.Name] = convertToViewState(i, view)
+	}
+	for i, function := range schema.Functions {
+		state.functions[function.Name] = convertToFunctionState(i, function)
+	}
+	for i, procedure := range schema.Procedures {
+		state.procedures[procedure.Name] = convertToProcedureState(i, procedure)
 	}
 	return state
 }
@@ -103,13 +113,22 @@ func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
 	for _, view := range s.views {
 		views = append(views, view.convertToViewMetadata())
 	}
+	var functions []*storepb.FunctionMetadata
+	for _, function := range s.functions {
+		functions = append(functions, function.convertToFunctionMetadata())
+	}
+	var procedures []*storepb.ProcedureMetadata
+	for _, procedure := range s.procedures {
+		procedures = append(procedures, procedure.convertToProcedureMetadata())
+	}
 
 	return &storepb.SchemaMetadata{
-		Name:   s.name,
-		Tables: tables,
-		Views:  views,
+		Name:       s.name,
+		Tables:     tables,
+		Views:      views,
+		Functions:  functions,
+		Procedures: procedures,
 		// Unsupported, for tests only.
-		Functions:         []*storepb.FunctionMetadata{},
 		Streams:           []*storepb.StreamMetadata{},
 		Tasks:             []*storepb.TaskMetadata{},
 		MaterializedViews: []*storepb.MaterializedViewMetadata{},
@@ -419,6 +438,74 @@ func (v *viewState) toString(buf io.StringWriter) error {
 	if !strings.HasSuffix(stmt, ";") {
 		stmt += ";"
 	}
+	if _, err := buf.WriteString(stmt); err != nil {
+		return err
+	}
+	return nil
+}
+
+type procedureState struct {
+	id         int
+	name       string
+	definition string
+}
+
+func (f *procedureState) convertToProcedureMetadata() *storepb.ProcedureMetadata {
+	return &storepb.ProcedureMetadata{
+		Name:       f.name,
+		Definition: f.definition,
+	}
+}
+
+func convertToProcedureState(id int, procedure *storepb.ProcedureMetadata) *procedureState {
+	return &procedureState{
+		id:         id,
+		name:       procedure.Name,
+		definition: procedure.Definition,
+	}
+}
+
+func (f *procedureState) toString(buf io.StringWriter) error {
+	def := f.definition
+	if !strings.HasSuffix(def, " ;;") {
+		def += " ;;"
+	}
+
+	stmt := fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;", def)
+	if _, err := buf.WriteString(stmt); err != nil {
+		return err
+	}
+	return nil
+}
+
+type functionState struct {
+	id         int
+	name       string
+	definition string
+}
+
+func (f *functionState) convertToFunctionMetadata() *storepb.FunctionMetadata {
+	return &storepb.FunctionMetadata{
+		Name:       f.name,
+		Definition: f.definition,
+	}
+}
+
+func convertToFunctionState(id int, function *storepb.FunctionMetadata) *functionState {
+	return &functionState{
+		id:         id,
+		name:       function.Name,
+		definition: function.Definition,
+	}
+}
+
+func (f *functionState) toString(buf io.StringWriter) error {
+	def := f.definition
+	if !strings.HasSuffix(def, " ;;") {
+		def += " ;;"
+	}
+
+	stmt := fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;", def)
 	if _, err := buf.WriteString(stmt); err != nil {
 		return err
 	}

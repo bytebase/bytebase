@@ -1,5 +1,24 @@
+- description: Split comment and delimiter
+  statement: |-
+    -- comment
+    DELIMITER ;
+  expected:
+    - text: -- comment
+      baseline: 0
+      firststatementline: 0
+      firststatementcolumn: 0
+      lastline: 1
+      lastcolumn: 0
+      empty: true
+    - text: DELIMITER ;
+      baseline: 0
+      firststatementline: 0
+      firststatementcolumn: 0
+      lastline: 2
+      lastcolumn: 0
+      empty: false
 - description: empty statement
-  statement: "  "
+  statement: "        "
   expected: []
 - description: multi-newline
   statement: |-
@@ -36,7 +55,7 @@
       empty: false
     - text: |4+
 
-
+        
       baseline: 3
       firststatementline: 0
       firststatementcolumn: 0

@@ -119,6 +119,7 @@ const (
 	TotalTextLengthExceedsLimit       Code = 611
 	DisallowSetCharset                Code = 612
 	TableDisallowDDL                  Code = 613
+	TableDisallowDML                  Code = 614
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701

@@ -19,6 +19,7 @@ import {
   Settings,
   RefreshCcw,
   PencilRuler,
+  DownloadIcon,
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
@@ -41,6 +42,7 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_CHANGELISTS,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
+  PROJECT_V1_ROUTE_EXPORT_CENTER,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -196,6 +198,13 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       title: t("common.issues"),
       path: PROJECT_V1_ROUTE_ISSUES,
       icon: h(CircleDot),
+      type: "div",
+      hide: isDefaultProject.value,
+    },
+    {
+      title: t("export-center.self"),
+      icon: h(DownloadIcon),
+      path: PROJECT_V1_ROUTE_EXPORT_CENTER,
       type: "div",
       hide: isDefaultProject.value,
     },

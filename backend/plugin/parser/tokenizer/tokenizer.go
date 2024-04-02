@@ -59,6 +59,12 @@ func KeepEmptyBlocks() Option {
 	}
 }
 
+func SplitCommentBeforeDelimiter() Option {
+	return func(t *Tokenizer) {
+		t.splitCommentBeforeDelimiter = true
+	}
+}
+
 type Tokenizer struct {
 	buffer         []rune
 	cursor         uint
@@ -74,6 +80,8 @@ type Tokenizer struct {
 	// Options.
 	// keepEmptyBlocks is used to keep empty lines between the blocks.
 	keepEmptyBlocks bool
+	// splitCommentBeforeDelimiter is used to split comment before delimiter.
+	splitCommentBeforeDelimiter bool
 }
 
 // NewTokenizer creates a new tokenizer.
@@ -483,6 +491,23 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			t.emptyStatement = true
 		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
 		case t.equalWordCaseInsensitive(delimiterRuneList):
+			if t.splitCommentBeforeDelimiter {
+				if v := t.getString(startPos, t.pos()-startPos); v != "" {
+					line := t.line
+					// Any better way to handle comment before delimiter, and we want to get two
+					// blocks of SQL, one is the comment, the other is the delimiter.
+					if strings.HasSuffix(v, "\n") {
+						v = v[:len(v)-1]
+						line--
+					}
+					res = append(res, base.SingleSQL{
+						Text:     v,
+						LastLine: line,
+						Empty:    true,
+					})
+				}
+				startPos = t.pos()
+			}
 			t.skip(uint(len(delimiterRuneList)))
 			t.skipBlank()
 			delimiterStart := t.pos()

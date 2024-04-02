@@ -585,6 +585,9 @@ const (
 
 	// MSSQLTableDisallowDDL is an advisor type for MSSQL disallow DDL for specific tables.
 	MSSQLTableDisallowDDL = "bb.plugin.advisor.mssql.table.disallow-ddl"
+
+	// MSSQLTableDisallowDML is an advisor type for MSSQL disallow DML for specific tables.
+	MSSQLTableDisallowDML = "bb.plugin.advisor.mssql.table.disallow-dml"
 )
 
 // Advice is the result of an advisor.
