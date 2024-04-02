@@ -2017,11 +2017,11 @@
         },
         "access-token": {
           "self": "OAuth application info",
-          "gitlab-project-access-token": "Generate a project access token for managing a single project.",
-          "gitlab-group-access-token": "Generate a group access token to manage all projects within the group.",
-          "gitlab-personal-access-token": "Create a dedicated service user and generate a personal access token with the maintainer role for the group or all projects to be managed.",
-          "github-personal-access-token": "Create a dedicated service user and generate a personal access token with the member role for the organization or all projects to be managed.",
-          "bitbucket-personal-access-token": "Generate a specific service user and create an app password granting both read and write permissions for the relevant organizations, projects, or repositories to manage. Insert '<bitbucket username>:<generated app password>' below.",
+          "personal-access-token": "personal access token",
+          "gitlab-personal-access-token": "Create a dedicated service user and generate a personal access token with the maintainer role and at least following permissions for the group or projects to be managed. You can generate a project access token for managing a single project, or generate a group access token to manage all projects within the group.",
+          "github-personal-access-token": "Create a dedicated service user and generate a {token} with the member role for the organization or all projects to be managed.",
+          "bitbucket-app-access-token": "Generate a specific service user and create an {app_password} with at least following permissions for the relevant organizations, projects, or repositories to manage. Insert '<bitbucket username>:<generated app password>' below.",
+          "bitbucket-app-password": "app password",
           "azure-devops-personal-access-token": "Create a dedicated service user and generate a personal access token with the member role for all accessible organizations with the following scopes. The 'Organization' field should be set to 'All accessible organizations'."
         },
         "confirm": {

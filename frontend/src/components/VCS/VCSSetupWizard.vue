@@ -1,5 +1,5 @@
 <template>
-  <VCSProviderBasicInfoPanel :config="state.config" />
+  <VCSProviderBasicInfoPanel :create="true" :config="state.config" />
   <div class="pt-4 mt-6 flex border-t justify-end">
     <div class="space-x-3">
       <NButton @click.prevent="cancelSetup">

@@ -2017,12 +2017,12 @@
         },
         "access-token": {
           "self": "OAuth 应用信息",
-          "gitlab-project-access-token": "为管理单个项目生成一个项目访问令牌。",
-          "gitlab-group-access-token": "生成一个群组访问令牌来管理群组内的所有项目。",
-          "gitlab-personal-access-token": "创建一个专用服务用户，并生成一个具有组或所有待管理项目的维护者角色的个人访问令牌。",
-          "github-personal-access-token": "创建一个专用的服务用户，并为组织或所有需要管理的项目生成一个成员角色的个人访问令牌。",
-          "bitbucket-personal-access-token": "生成一个特定的服务用户，并创建一个应用程序密码，为相关的组织、项目或仓库授予读写权限以进行管理。在下方插入 '<bitbucket用户名>:<生成的应用程序密码>'。",
-          "azure-devops-personal-access-token": "创建一个专用的服务用户，并为所有组织生成一个有下列权限的个人访问令牌。“组织” 字段应设置为 “所有可访问的组织”。"
+          "personal-access-token": "个人访问令牌",
+          "gitlab-personal-access-token": "创建专用服务用户并生成具有维护者角色的个人访问令牌，并且至少具有要管理的组或项目的以下权限。您可以生成项目访问令牌来管理单个项目，或生成组访问令牌来管理组内的所有项目。",
+          "github-personal-access-token": "创建一个专用服务用户，并为组织或所有需要管理的项目生成一个具有成员角色的{token}。",
+          "bitbucket-app-access-token": "生成特定服务用户并创建一个至少具有以下权限的 {app_password}，以便管理相关组织、项目或存储库。在下面插入“<bitbucket 用户名>:<生成的应用程序密码>”。",
+          "bitbucket-app-password": "应用程序密码",
+          "azure-devops-personal-access-token": "创建专用服务用户并为具有以下范围的所有可访问组织生成具有成员角色的个人访问令牌。 “组织”字段应设置为“所有可访问的组织”。"
         },
         "confirm": {
           "confirm-info": "确认信息",
