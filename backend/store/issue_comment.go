@@ -12,13 +12,15 @@ import (
 )
 
 type IssueCommentMessage struct {
-	UID        int
-	CreatorUID int
-	CreatedTs  int64
-	UpdaterUID int
-	UpdatedTs  int64
-	IssueUID   int
-	Payload    *storepb.IssueCommentPayload
+	UID       int
+	CreatedTs int64
+	UpdatedTs int64
+	IssueUID  int
+	Payload   *storepb.IssueCommentPayload
+	Creator   *UserMessage
+
+	creatorUID int
+	updaterUID int
 }
 
 type FindIssueCommentMessage struct {
@@ -60,9 +62,9 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		var p []byte
 		if err := rows.Scan(
 			&ic.UID,
-			&ic.CreatorUID,
+			&ic.creatorUID,
 			&ic.CreatedTs,
-			&ic.UpdaterUID,
+			&ic.updaterUID,
 			&ic.UpdatedTs,
 			&ic.IssueUID,
 			&p,
@@ -77,6 +79,14 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "rows err")
+	}
+
+	for _, ic := range issueComments {
+		creator, err := s.GetUserByID(ctx, ic.creatorUID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get creator")
+		}
+		ic.Creator = creator
 	}
 
 	return issueComments, nil
