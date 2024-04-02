@@ -54,7 +54,9 @@
       <div class="textlabel">
         {{ $t("database-group.self") }}
       </div>
-      <!-- TODO(ed): i18n -->
+      <div class="mt-1 textinfolabel">
+        {{ $t("repository.database-group-description") }}
+      </div>
       <DatabaseGroupSelect
         v-model:selected="repositoryConfig.databaseGroup"
         class="mt-2"
@@ -66,7 +68,7 @@
     </div>
     <div>
       <div class="textlabel">
-        {{ $t("common.branch") }} <span class="text-red-600">*</span>
+        {{ $t("common.branch") }}
       </div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.branch-observe-file-change") }}
