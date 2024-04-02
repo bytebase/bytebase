@@ -266,12 +266,6 @@
               "name": "CalcIncome",
               "definition": "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int(11)\n    DETERMINISTIC\nBEGIN\n\n   DECLARE          income INT;\n\n   SET           income = 0;\n\n   label1: WHILE            income <= 3000 DO\n     SET income = income + starting_value;\n   END WHILE    label1;\n\n   RETURN income;\n\nEND"
             }
-          ],
-          "procedures": [
-            {
-              "name": "citycount2",
-              "definition": "CREATE DEFINER=`root`@`%` PROCEDURE `citycount2`(IN country CHAR(3), OUT cities INT)\nBEGIN\n         SELECT           1000 INTO cities;\n       END"
-            }
           ]
         }
       ],
@@ -324,20 +318,6 @@
        RETURN income;
 
     END ;;
-    DELIMITER ;
-
-    --
-    -- Procedure structure for `citycount2`
-    --
-    SET character_set_client  = latin1;
-    SET character_set_results = latin1;
-    SET collation_connection  = latin1_swedish_ci;
-    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
-    DELIMITER ;;
-    CREATE DEFINER=`root`@`%` PROCEDURE `citycount2`(IN country CHAR(3), OUT cities INT)
-    BEGIN
-             SELECT           1000 INTO cities;
-           END ;;
     DELIMITER ;
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
