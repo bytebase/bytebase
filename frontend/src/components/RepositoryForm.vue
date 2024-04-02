@@ -139,6 +139,10 @@ const getWebhookLink = computed(() => {
     }
     case VCSType.GITHUB:
       return `${props.repositoryInfo.webUrl}/settings/hooks`;
+    case VCSType.BITBUCKET:
+      return `${props.repositoryInfo.webUrl}/admin/webhooks`;
+    case VCSType.GITLAB:
+      return `${props.repositoryInfo.webUrl}/-/hooks`;
   }
   return "";
 });

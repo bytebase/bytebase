@@ -72,13 +72,10 @@ const allowDelete = computed(() => {
 });
 
 watchEffect(async () => {
-  const connector = await vcsConnectorStore.getOrFetchConnector(
-    project.value.name,
-    props.vcsConnectorId
-  );
-  if (connector) {
-    await vcsProviderStore.getOrFetchVCSByName(connector.vcsProvider);
-  }
+  await Promise.all([
+    vcsProviderStore.getOrFetchVCSList(),
+    vcsConnectorStore.getOrFetchConnectors(project.value.name),
+  ]);
 });
 
 const onCancel = () => {

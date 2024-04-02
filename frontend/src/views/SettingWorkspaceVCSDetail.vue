@@ -1,74 +1,6 @@
 <template>
   <div class="flex flex-col gap-y-4">
-    <div>
-      <div class="flex items-center space-x-2">
-        <label for="instanceurl" class="textlabel">
-          {{ $t("common.instance") }} URL
-        </label>
-        <div class="flex items-center">
-          <div
-            v-if="vcsWithUIType"
-            class="flex flex-row items-center space-x-1"
-          >
-            (
-            <div class="textlabel whitespace-nowrap">
-              {{ vcsWithUIType.title }}
-            </div>
-            <VCSIcon custom-class="h-4" :type="vcsWithUIType.type" />
-            )
-          </div>
-        </div>
-      </div>
-      <BBTextField
-        id="instanceurl"
-        name="instanceurl"
-        class="mt-1 w-full"
-        :disabled="true"
-        :value="vcs?.url"
-      />
-    </div>
-
-    <div>
-      <label for="name" class="textlabel">
-        {{ $t("gitops.setting.add-git-provider.basic-info.display-name") }}
-        <span class="text-red-600">*</span>
-      </label>
-      <p class="mt-1 textinfolabel">
-        {{
-          $t("gitops.setting.add-git-provider.basic-info.display-name-label")
-        }}
-      </p>
-      <BBTextField
-        id="name"
-        v-model:value="state.title"
-        :disabled="!hasUpdateVCSPermission"
-        :required="true"
-        name="name"
-        class="mt-1 w-full"
-      />
-      <ResourceIdField
-        :value="props.vcsResourceId"
-        class="max-w-full flex-nowrap mt-1.5"
-        resource-type="vcs-provider"
-        :readonly="true"
-      />
-    </div>
-
-    <div>
-      <label for="secret" class="textlabel">
-        Access Token
-        <span class="text-red-600">*</span>
-      </label>
-      <BBTextField
-        id="secret"
-        v-model:value="state.accessToken"
-        :disabled="!hasUpdateVCSPermission"
-        :required="true"
-        name="secret"
-        class="mt-1 w-full"
-        :placeholder="$t('common.sensitive-placeholder')"
-      />
-    </div>
+    <VCSProviderBasicInfoPanel :create="false" :config="state.config" />
 
     <div class="pt-4 mt-2 flex border-t justify-between">
       <template v-if="connectorList.length == 0">
@@ -120,7 +52,6 @@
 import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
-import { vcsListByUIType } from "@/components/VCS/utils";
 import VCSConnectorTable from "@/components/VCSConnectorTable.vue";
 import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
 import {
@@ -129,14 +60,13 @@ import {
   useVCSConnectorStore,
   useVCSProviderStore,
 } from "@/store";
-import { vcsProviderPrefix } from "@/store/modules/v1/common";
-import type { VCSUIType } from "@/types";
+import type { VCSConfig } from "@/types";
+import { VCSType } from "@/types/proto/v1/common";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
-import { getVCSUIType, hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
-  title: string;
-  accessToken: string;
+  config: VCSConfig;
 }
 
 const props = defineProps<{
@@ -152,25 +82,23 @@ const vcs = computed((): VCSProvider | undefined => {
   return vcsV1Store.getVCSById(props.vcsResourceId);
 });
 
-const vcsUIType = computed((): VCSUIType => {
-  if (vcs.value) {
-    return getVCSUIType(vcs.value);
-  }
-  return "GITLAB_SELF_HOST";
-});
-
-const vcsWithUIType = computed(() => {
-  return vcsListByUIType.value.find((data) => data.uiType === vcsUIType.value);
-});
+const initState = computed(
+  (): VCSConfig => ({
+    type: vcs.value?.type ?? VCSType.GITLAB,
+    uiType: "GITLAB_SELF_HOST",
+    resourceId: props.vcsResourceId,
+    name: vcs.value?.title ?? "",
+    instanceUrl: vcs.value?.url ?? "",
+    accessToken: "",
+  })
+);
 
 const resetState = () => {
-  state.title = vcs.value?.title ?? "";
-  state.accessToken = "";
+  state.config = initState.value;
 };
 
 const state = reactive<LocalState>({
-  title: "",
-  accessToken: "",
+  config: initState.value,
 });
 
 const hasUpdateVCSPermission = computed(() => {
@@ -182,11 +110,9 @@ const hasDeleteVCSPermission = computed(() => {
 });
 
 watchEffect(async () => {
-  const vcs = await vcsV1Store.getOrFetchVCSByName(
-    `${vcsProviderPrefix}${props.vcsResourceId}`
-  );
+  await vcsV1Store.getOrFetchVCSList();
   resetState();
-  if (vcs) {
+  if (vcs.value) {
     if (
       !hasWorkspacePermissionV2(
         currentUser.value,
@@ -196,11 +122,11 @@ watchEffect(async () => {
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title: `You don't have permission to list projects in '${vcs.title}'`,
+        title: `You don't have permission to list projects in '${vcs.value.title}'`,
       });
       return;
     }
-    await vcsConnectorStore.fetchConnectorsInProvider(vcs.name);
+    await vcsConnectorStore.fetchConnectorsInProvider(vcs.value.name);
   }
 });
 
@@ -210,7 +136,8 @@ const connectorList = computed(() => {
 
 const allowUpdate = computed(() => {
   return (
-    (state.title != vcs.value?.title || !isEmpty(state.accessToken)) &&
+    (state.config.name != vcs.value?.title ||
+      !isEmpty(state.config.accessToken)) &&
     hasUpdateVCSPermission.value
   );
 });
@@ -222,11 +149,11 @@ const doUpdate = () => {
   const vcsPatch: Partial<VCSProvider> = {
     name: vcs.value.name,
   };
-  if (state.title != vcs.value.title) {
-    vcsPatch.title = state.title;
+  if (state.config.name != vcs.value.title) {
+    vcsPatch.title = state.config.name;
   }
-  if (!isEmpty(state.accessToken)) {
-    vcsPatch.accessToken = state.accessToken;
+  if (!isEmpty(state.config.accessToken)) {
+    vcsPatch.accessToken = state.config.accessToken;
   }
 
   vcsV1Store.updateVCS(vcsPatch).then((updatedVCS: VCSProvider | undefined) => {
