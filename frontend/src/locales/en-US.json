@@ -1724,7 +1724,7 @@
     "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
     "base-directory": "Base directory",
-    "base-directory-description": "The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.",
+    "base-directory-description": "The root directory where Bytebase observes the file change.",
     "file-path-template": "File path template",
     "file-path-template-description": "Bytebase only observes the file path name matching the template pattern relative to the base directory.",
     "file-path-example-schema-migration": "File path example for schema migration type",
