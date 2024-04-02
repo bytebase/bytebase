@@ -42,7 +42,10 @@
     :show="state.showRequestExportPanel"
     @close="state.showRequestExportPanel = false"
   >
-    <DataExportPrepForm @dismiss="state.showRequestExportPanel = false" />
+    <DataExportPrepForm
+      :project-id="specificProject?.uid"
+      @dismiss="state.showRequestExportPanel = false"
+    />
   </Drawer>
 </template>
 
@@ -52,15 +55,21 @@ import { computed, reactive } from "vue";
 import DataExportPrepForm from "@/components/DataExportPrepForm";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { Drawer } from "@/components/v2";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   buildIssueFilterBySearchParams,
   buildUIIssueFilterBySearchParams,
+  extractProjectResourceName,
   type SearchParams,
   type SearchScopeId,
 } from "@/utils";
 import DataExportIssueDataTable from "./DataExportIssueDataTable";
 import type { ExportRecord } from "./types";
+
+const props = defineProps<{
+  projectId?: string;
+}>();
 
 interface LocalState {
   exportRecords: ExportRecord[];
@@ -71,6 +80,7 @@ interface LocalState {
 }
 
 const currentUser = useCurrentUserV1();
+const projectV1Store = useProjectV1Store();
 const state = reactive<LocalState>({
   exportRecords: [],
   showRequestExportPanel: false,
@@ -87,21 +97,34 @@ const state = reactive<LocalState>({
   loadingMore: false,
 });
 
+const specificProject = computed(() => {
+  return props.projectId
+    ? projectV1Store.getProjectByName(`${projectNamePrefix}${props.projectId}`)
+    : undefined;
+});
+
 const dataExportIssueSearchParams = computed(() => {
+  // Default scopes with type and creator.
+  const defaultScopes = [
+    {
+      id: "type",
+      value: "DATA_EXPORT",
+    },
+    {
+      id: "creator",
+      value: currentUser.value.email,
+    },
+  ];
+  // If specific project is provided, add project scope.
+  if (specificProject.value) {
+    defaultScopes.push({
+      id: "project",
+      value: extractProjectResourceName(specificProject.value.name),
+    });
+  }
   return {
     query: state.params.query,
-    scopes: [
-      ...state.params.scopes,
-      // Default scopes with type and creator.
-      {
-        id: "type",
-        value: "DATA_EXPORT",
-      },
-      {
-        id: "creator",
-        value: currentUser.value.email,
-      },
-    ],
+    scopes: [...state.params.scopes, ...defaultScopes],
   } as SearchParams;
 });
 
@@ -113,10 +136,11 @@ const mergedUIIssueFilter = computed(() => {
   return buildUIIssueFilterBySearchParams(dataExportIssueSearchParams.value);
 });
 
-const supportOptionIdList = computed((): SearchScopeId[] => [
-  "project",
-  "instance",
-  "database",
-  "status",
-]);
+const supportOptionIdList = computed((): SearchScopeId[] => {
+  const scopes: SearchScopeId[] = ["instance", "database", "status"];
+  if (!specificProject.value) {
+    scopes.unshift("project");
+  }
+  return scopes;
+});
 </script>
