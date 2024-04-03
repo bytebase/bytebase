@@ -391,7 +391,7 @@ CREATE TABLE db (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    environment_id INTEGER REFERENCES environment (id),
+    environment TEXT REFERENCES environment (resource_id),
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     last_successful_sync_ts BIGINT NOT NULL,
     schema_version TEXT NOT NULL,
