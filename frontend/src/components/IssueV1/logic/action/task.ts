@@ -1,3 +1,4 @@
+import { head } from "lodash-es";
 import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import { userNamePrefix } from "@/store/modules/v1/common";
@@ -77,10 +78,15 @@ export const getApplicableTaskRolloutActionList = (
   });
 };
 
-export const taskRolloutActionDisplayName = (action: TaskRolloutAction) => {
+export const taskRolloutActionDisplayName = (
+  action: TaskRolloutAction,
+  task?: Task
+) => {
   switch (action) {
     case "ROLLOUT":
-      return t("common.rollout");
+      return task?.type === Task_Type.DATABASE_DATA_EXPORT
+        ? t("common.export")
+        : t("common.rollout");
     case "CANCEL":
       return t("common.cancel");
     case "RETRY":
@@ -100,7 +106,7 @@ export const taskRolloutActionDialogButtonName = (
     // Avoiding [Cancel] [Cancel] button group scene
     return t("task.cancel-task", tasks.length);
   }
-  return taskRolloutActionDisplayName(action);
+  return taskRolloutActionDisplayName(action, head(tasks));
 };
 
 export const taskRolloutActionButtonProps = (
