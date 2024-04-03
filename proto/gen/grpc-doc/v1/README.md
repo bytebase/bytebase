@@ -7336,6 +7336,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | description | [string](#string) |  |  |
 | steps | [Plan.Step](#bytebase-v1-Plan-Step) | repeated |  |
 | vcs_source | [Plan.VCSSource](#bytebase-v1-Plan-VCSSource) |  |  |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 

@@ -34,7 +34,7 @@
 import { computed } from "vue";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { useSQLEditorTreeStore } from "@/store";
+import { useSQLEditorStore } from "@/store";
 import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
@@ -47,7 +47,7 @@ const props = defineProps<{
   keyword: string;
 }>();
 
-const treeStore = useSQLEditorTreeStore();
+const editorStore = useSQLEditorStore();
 
 const database = computed(
   () => (props.node as TreeNode<"database">).meta.target
@@ -62,6 +62,6 @@ const hasEnvironmentContext = computed(() => {
 });
 
 const hasProjectContext = computed(() => {
-  return props.factors.includes("project") || !!treeStore.currentProject;
+  return props.factors.includes("project") || !!editorStore.currentProject;
 });
 </script>

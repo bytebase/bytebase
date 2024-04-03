@@ -100,6 +100,7 @@ const initializeProjects = async () => {
   if (typeof projectInQuery === "string" && projectInQuery) {
     // Legacy "?project={project}"
     const project = `projects/${projectInQuery}`;
+    editorStore.strictProject = true;
     await initProject(project);
   } else if (typeof projectInParams === "string" && projectInParams) {
     // "/sql-editor/projects/{project}"

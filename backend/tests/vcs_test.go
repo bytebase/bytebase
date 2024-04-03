@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/azure"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
@@ -114,6 +115,38 @@ func TestVCS(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:               "Azure",
+			vcsProviderCreator: fake.NewAzure,
+			vcsType:            v1pb.VCSType_AZURE_DEVOPS,
+			repository: &vcs.Repository{
+				ID:       "bytebase/project/bb",
+				Name:     "bytebase/project/bb",
+				FullPath: "bytebase/project/bb",
+			},
+			webhookPushEvent: azure.PullRequestEvent{
+				ID:        "mock_event_id",
+				EventType: "git.pullrequest.merged",
+				Resource: &azure.PullRequestResource{
+					Repository: &azure.Repository{},
+					Links: &azure.PullRequestLinks{
+						Web: &azure.PullRequestWeb{
+							Href: fmt.Sprintf("https://dev.azure.com/test/vcs/pull-requests/%d", pullRequestID),
+						},
+					},
+					PullRequestID: pullRequestID,
+					Status:        "completed",
+					Title:         pullRequestTitle,
+					Description:   pullRequestDescription,
+					SourceRefName: "mock-source-branch",
+					TargetRefName: fmt.Sprintf("refs/heads/%s", branchName),
+					MergeStatus:   "succeeded",
+					LastMergeCommit: &azure.PullRequestEventLastMergeCommit{
+						CommitID: fmt.Sprintf("%d", pullRequestID),
+					},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		// Fix the problem that closure in a for loop will always use the last element.
@@ -143,7 +176,7 @@ func TestVCS(t *testing.T) {
 					Url:         ctl.vcsURL,
 					AccessToken: "testApplicationSecret",
 				},
-				VcsProviderId: strings.ToLower(test.vcsType.String()),
+				VcsProviderId: strings.ToLower(test.name),
 			})
 			a.NoError(err)
 			err = ctl.vcsProvider.CreateBranch(test.repository.ID, branchName)
@@ -171,7 +204,12 @@ func TestVCS(t *testing.T) {
 				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"base_directory"}},
 			})
 			a.NoError(err)
-			a.Equal(baseDirectory, vcsConnector.BaseDirectory)
+
+			if evcs.Type == v1pb.VCSType_AZURE_DEVOPS {
+				a.Equal(fmt.Sprintf("/%s", baseDirectory), vcsConnector.BaseDirectory)
+			} else {
+				a.Equal(baseDirectory, vcsConnector.BaseDirectory)
+			}
 
 			instanceName := "testInstance"
 			instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), instanceName)
