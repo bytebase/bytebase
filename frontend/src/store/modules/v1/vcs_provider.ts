@@ -62,9 +62,7 @@ export const useVCSProviderStore = defineStore("vcs_provider", () => {
       return entity;
     }
 
-    const vcs = await vcsProviderServiceClient.getVCSProvider({
-      name,
-    });
+    const vcs = await fetchVCSByName(name);
     cacheByName.setEntity([vcs.name], vcs);
     return vcs;
   };

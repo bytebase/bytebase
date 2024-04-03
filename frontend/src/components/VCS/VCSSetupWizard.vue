@@ -30,7 +30,6 @@ import type { VCSConfig } from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
 
 withDefaults(
   defineProps<{

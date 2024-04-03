@@ -196,7 +196,7 @@ func (s *VCSProviderService) getVCS(ctx context.Context, name string) (*store.VC
 		return nil, status.Errorf(codes.Internal, "Failed to retrieve vcs provider: %v", err)
 	}
 	if vcsProvider == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs provider not found: %v", err)
+		return nil, status.Errorf(codes.NotFound, "vcs provider %s not found", name)
 	}
 	return vcsProvider, nil
 }

@@ -160,7 +160,16 @@
           </div>
         </div>
       </div>
-      <div class="flex border-t pt-4 flex-row w-full justify-end">
+      <div class="flex border-t pt-4 flex-row w-full justify-end space-x-3">
+        <NButton
+          v-if="
+            !isCreating &&
+            !isEqual(state.mailDeliverySetting, state.originMailDeliverySetting)
+          "
+          @click="discardChanges"
+        >
+          {{ $t("common.discard-changes") }}
+        </NButton>
         <NButton
           type="primary"
           :disabled="!allowMailDeliveryActionButton || state.isSendLoading"
@@ -175,7 +184,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import { NCheckbox } from "naive-ui";
 import type { ClientError } from "nice-grpc-web";
@@ -232,6 +241,14 @@ const isCreating = computed(
   () => state.originMailDeliverySetting === undefined
 );
 
+const discardChanges = () => {
+  const setting = store.mailDeliverySetting;
+  state.originMailDeliverySetting = cloneDeep(setting);
+  if (state.originMailDeliverySetting) {
+    state.mailDeliverySetting = cloneDeep(state.originMailDeliverySetting!);
+  }
+};
+
 const mailDeliverySettingButtonText = computed(() => {
   return isCreating.value ? t("common.create") : t("common.update");
 });
@@ -265,11 +282,7 @@ const allowMailDeliveryActionButton = computed(() => {
 
 onMounted(async () => {
   await store.fetchMailDeliverySetting();
-  const setting = store.mailDeliverySetting;
-  state.originMailDeliverySetting = cloneDeep(setting);
-  if (state.originMailDeliverySetting) {
-    state.mailDeliverySetting = cloneDeep(state.originMailDeliverySetting!);
-  }
+  discardChanges();
 });
 
 const updateMailDeliverySetting = async () => {
