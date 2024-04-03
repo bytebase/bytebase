@@ -482,7 +482,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.EffectiveEnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("COALESCE(COALESCE((SELECT environment.resource_id FROM environment where environment.id = db.environment_id), (SELECT environment.resource_id FROM environment JOIN instance ON environment.id = instance.environment_id WHERE instance.id = db.instance_id)), '') = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("COALESCE(COALESCE((SELECT environment.resource_id FROM environment where environment.id = db.environment_id), (SELECT environment.resource_id FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.id = db.instance_id)), '') = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
@@ -501,7 +501,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		where, args = append(where, fmt.Sprintf("instance.engine = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("COALESCE((SELECT environment.row_status AS instance_environment_status FROM environment JOIN instance ON environment.id = instance.environment_id WHERE instance.id = db.instance_id), $%d) = $%d", len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
+		where, args = append(where, fmt.Sprintf("COALESCE((SELECT environment.row_status AS instance_environment_status FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.id = db.instance_id), $%d) = $%d", len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
 		where, args = append(where, fmt.Sprintf("COALESCE((SELECT environment.row_status AS db_environment_status FROM environment WHERE environment.id = db.environment_id), $%d) = $%d", len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
 
 		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
@@ -514,7 +514,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		SELECT
 			db.id,
 			project.resource_id AS project_id,
-			COALESCE(COALESCE((SELECT environment.resource_id FROM environment WHERE environment.id = db.environment_id), (SELECT environment.resource_id FROM environment JOIN instance ON environment.id = instance.environment_id WHERE instance.id = db.instance_id)), ''),
+			COALESCE(COALESCE((SELECT environment.resource_id FROM environment WHERE environment.id = db.environment_id), (SELECT environment.resource_id FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.id = db.instance_id)), ''),
 			COALESCE((SELECT environment.resource_id FROM environment WHERE environment.id = db.environment_id), ''),
 			instance.resource_id AS instance_id,
 			db.name,
