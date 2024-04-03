@@ -543,10 +543,9 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 			return nil, errors.Errorf("environment %d not found", stage.EnvironmentID)
 		}
 		rolloutStage := &v1pb.Stage{
-			Name:        fmt.Sprintf("%s%s/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, rollout.ID, common.StagePrefix, stage.ID),
-			Uid:         fmt.Sprintf("%d", stage.ID),
-			Environment: fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, environment.ResourceID),
-			Title:       stage.Name,
+			Name:  fmt.Sprintf("%s%s/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, rollout.ID, common.StagePrefix, stage.ID),
+			Uid:   fmt.Sprintf("%d", stage.ID),
+			Title: stage.Name,
 		}
 		for _, task := range stage.TaskList {
 			rolloutTask, err := convertToTask(ctx, s, project, task)
