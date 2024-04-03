@@ -37,6 +37,12 @@ type DropdownOptionWithTreeNode = DropdownOption & {
   onSelect: () => void;
 };
 const SELECT_ALL_LIMIT = 50; // default pagesize of SQL Editor
+const VIEW_SCHEMA_ACTION_ENABLED_ENGINES = [
+  Engine.MYSQL,
+  Engine.OCEANBASE,
+  Engine.POSTGRES,
+  Engine.TIDB,
+];
 
 export const useDropdown = () => {
   const router = useRouter();
@@ -77,27 +83,6 @@ export const useDropdown = () => {
       });
       if (type === "table") {
         const { db, schema, table } = target as NodeTarget<"table">;
-        items.push({
-          key: "copy-url",
-          label: t("sql-editor.copy-url"),
-          icon: () => <LinkIcon class="w-4 h-4" />,
-          onSelect: () => {
-            const route = router.resolve({
-              name: SQL_EDITOR_DATABASE_MODULE,
-              params: {
-                project: extractProjectResourceName(db.project),
-                instance: extractInstanceResourceName(db.instance),
-                database: db.databaseName,
-              },
-              query: {
-                table: table.name,
-                schema: schema.name,
-              },
-            });
-            const url = new URL(route.href, window.location.origin).href;
-            copyToClipboard(url);
-          },
-        });
 
         items.push({
           key: "copy-all-column-names",
@@ -109,18 +94,83 @@ export const useDropdown = () => {
           },
         });
 
-        items.push({
-          key: "view-schema-text",
-          label: t("sql-editor.view-schema-text"),
-          icon: () => <CodeIcon class="w-4 h-4" />,
-          onSelect: () => {
-            schemaViewer.value = {
-              database: db,
-              schema: schema.name,
-              table: table.name,
-            };
-          },
-        });
+        if (
+          VIEW_SCHEMA_ACTION_ENABLED_ENGINES.includes(db.instanceEntity.engine)
+        ) {
+          items.push({
+            key: "view-schema-text",
+            label: t("sql-editor.view-schema-text"),
+            icon: () => <CodeIcon class="w-4 h-4" />,
+            onSelect: () => {
+              schemaViewer.value = {
+                database: db,
+                schema: schema.name,
+                table: table.name,
+              };
+            },
+          });
+        }
+
+        if (pageMode.value === "BUNDLED") {
+          items.push({
+            key: "view-table-detail",
+            label: t("sql-editor.view-table-detail"),
+            icon: () => <ExternalLinkIcon class="w-4 h-4" />,
+            onSelect: () => {
+              const route = router.resolve({
+                name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+                params: {
+                  projectId: extractProjectResourceName(db.project),
+                  instanceId: extractInstanceResourceName(db.instance),
+                  databaseName: db.databaseName,
+                },
+                query: {
+                  schema: schema.name ? schema.name : undefined,
+                  table: table.name,
+                },
+              });
+              const url = route.href;
+              window.open(url, "_blank");
+            },
+          });
+
+          if (instanceV1HasAlterSchema(db.instanceEntity)) {
+            items.push({
+              key: "edit-schema",
+              label: t("database.edit-schema"),
+              icon: () => <SquarePenIcon class="w-4 h-4" />,
+              onSelect: () => {
+                editorEvents.emit("alter-schema", {
+                  databaseUID: db.uid,
+                  schema: schema.name,
+                  table: table.name,
+                });
+              },
+            });
+          }
+
+          items.push({
+            key: "copy-url",
+            label: t("sql-editor.copy-url"),
+            icon: () => <LinkIcon class="w-4 h-4" />,
+            onSelect: () => {
+              const route = router.resolve({
+                name: SQL_EDITOR_DATABASE_MODULE,
+                params: {
+                  project: extractProjectResourceName(db.project),
+                  instance: extractInstanceResourceName(db.instance),
+                  database: db.databaseName,
+                },
+                query: {
+                  table: table.name,
+                  schema: schema.name,
+                },
+              });
+              const url = new URL(route.href, window.location.origin).href;
+              copyToClipboard(url);
+            },
+          });
+        }
       }
       if (targetSupportsSelectAll(target)) {
         items.push({
@@ -156,45 +206,6 @@ export const useDropdown = () => {
             );
           },
         });
-      }
-      if (type === "table" && pageMode.value === "BUNDLED") {
-        const { db, schema, table } = target as NodeTarget<"table">;
-        items.push({
-          key: "view-table-detail",
-          label: t("sql-editor.view-table-detail"),
-          icon: () => <ExternalLinkIcon class="w-4 h-4" />,
-          onSelect: () => {
-            const route = router.resolve({
-              name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-              params: {
-                projectId: extractProjectResourceName(db.project),
-                instanceId: extractInstanceResourceName(db.instance),
-                databaseName: db.databaseName,
-              },
-              query: {
-                schema: schema.name ? schema.name : undefined,
-                table: table.name,
-              },
-            });
-            const url = route.href;
-            window.open(url, "_blank");
-          },
-        });
-
-        if (instanceV1HasAlterSchema(db.instanceEntity)) {
-          items.push({
-            key: "edit-schema",
-            label: t("database.edit-schema"),
-            icon: () => <SquarePenIcon class="w-4 h-4" />,
-            onSelect: () => {
-              editorEvents.emit("alter-schema", {
-                databaseUID: db.uid,
-                schema: schema.name,
-                table: table.name,
-              });
-            },
-          });
-        }
       }
     }
     const ORDERS = [
