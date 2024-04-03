@@ -90,7 +90,7 @@ const columnList = computed((): DataTableColumn<VCSConnector>[] => {
         return h("div", { class: "flex items-center gap-x-2" }, [
           h(VCSIcon, {
             type: vcs?.type ?? VCSType.VCS_TYPE_UNSPECIFIED,
-            customClass: "h-4",
+            customClass: "h-5",
           }),
           vcs?.title ?? "",
         ]);
