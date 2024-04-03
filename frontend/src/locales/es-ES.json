@@ -2585,7 +2585,7 @@
     "star": "Marcar Favorito",
     "unstar": "Quitar Favorito",
     "starred": "Favorito",
-    "shared-with-me": "Compartido conmigo",
+    "shared": "Compartido",
     "actions": {
       "sync-from-vcs": "Sincronizar scripts SQL desde VCS"
     },
