@@ -36,10 +36,6 @@ type PullRequestResource struct {
 	CreatedBy       *PullRequestCreatedBy            `json:"createdBy"`
 }
 
-type PullRequestMessage struct {
-	Text string `json:"text"`
-}
-
 // PullRequestEvent is the API message for pull request webhook event.
 //
 // Docs: https://learn.microsoft.com/en-us/azure/devops/service-hooks/events?view=azure-devops#pull-request-merge-commit-created
@@ -47,10 +43,8 @@ type PullRequestEvent struct {
 	// ID is the webhook message id.
 	ID string `json:"id"`
 	// EventType should be "git.pullrequest.merged".
-	EventType       string               `json:"eventType"`
-	Message         *PullRequestMessage  `json:"message"`
-	DetailedMessage *PullRequestMessage  `json:"detailedMessage"`
-	Resource        *PullRequestResource `json:"resource"`
+	EventType string               `json:"eventType"`
+	Resource  *PullRequestResource `json:"resource"`
 }
 
 // WebhookCreateConsumerInputs represents the consumer inputs for creating a webhook.
