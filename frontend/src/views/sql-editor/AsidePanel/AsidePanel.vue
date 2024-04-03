@@ -1,5 +1,9 @@
 <template>
-  <div class="h-full flex flex-col overflow-hidden">
+  <div
+    ref="containerRef"
+    class="h-full flex flex-col overflow-hidden"
+    :data-width="containerWidth"
+  >
     <div
       v-if="!strictProject"
       class="flex flex-row items-center gap-x-1 px-1 py-1 border-b"
@@ -17,7 +21,15 @@
 
     <div class="flex-1 flex flex-row overflow-hidden">
       <div class="h-full border-r shrink-0">
-        <GutterBar />
+        <GutterBar
+          :size="
+            containerWidth >= 320
+              ? 'large'
+              : containerWidth < 240
+                ? 'small'
+                : 'medium'
+          "
+        />
       </div>
       <div class="h-full flex-1 flex flex-col pt-1 overflow-hidden">
         <WorksheetPane v-if="asidePanelTab === 'WORKSHEET'" />
@@ -29,8 +41,9 @@
 </template>
 
 <script lang="ts" setup>
+import { useElementSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { ProjectSelect } from "@/components/v2";
 import {
   useProjectV1Store,
@@ -49,6 +62,8 @@ const treeStore = useSQLEditorTreeStore();
 const { events, asidePanelTab } = useSQLEditorContext();
 const { project, projectContextReady, strictProject } =
   storeToRefs(editorStore);
+const containerRef = ref<HTMLDivElement>();
+const { width: containerWidth } = useElementSize(containerRef);
 
 const projectUID = computed(() => {
   return treeStore.currentProject?.uid ?? null;
