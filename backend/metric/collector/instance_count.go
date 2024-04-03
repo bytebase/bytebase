@@ -2,7 +2,6 @@ package collector
 
 import (
 	"context"
-	"log/slog"
 
 	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
@@ -33,20 +32,12 @@ func (c *instanceCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 	}
 
 	for _, instanceCountMetric := range instanceCountMetricList {
-		env, err := c.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-			UID: &instanceCountMetric.EnvironmentID,
-		})
-		if err != nil {
-			slog.Debug("failed to get environment by id", slog.Int("id", instanceCountMetric.EnvironmentID))
-			continue
-		}
-
 		res = append(res, &metric.Metric{
 			Name:  metricapi.InstanceCountMetricName,
 			Value: instanceCountMetric.Count,
 			Labels: map[string]any{
 				"engine":      instanceCountMetric.Engine.String(),
-				"environment": env.Title,
+				"environment": instanceCountMetric.EnvironmentID,
 				"status":      string(instanceCountMetric.RowStatus),
 			},
 		})

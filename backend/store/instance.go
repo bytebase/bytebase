@@ -138,17 +138,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	}
 	defer tx.Rollback()
 
-	// TODO(d): use the same query for environment.
-	environment, err := s.getEnvironmentImplV2(ctx, tx, &FindEnvironmentMessage{
-		ResourceID: &instanceCreate.EnvironmentID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if environment == nil {
-		return nil, common.Errorf(common.NotFound, "environment %s not found", instanceCreate.EnvironmentID)
-	}
-
 	where := ""
 	if instanceCreate.Activation {
 		where = fmt.Sprintf("WHERE (%s) < %d", countActivateInstanceQuery, maximumActivation)
@@ -170,7 +159,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 				resource_id,
 				creator_id,
 				updater_id,
-				environment_id,
+				environment,
 				name,
 				engine,
 				external_link,
@@ -185,7 +174,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		instanceCreate.ResourceID,
 		creatorID,
 		creatorID,
-		environment.UID,
+		instanceCreate.EnvironmentID,
 		instanceCreate.Title,
 		instanceCreate.Engine.String(),
 		instanceCreate.ExternalLink,
@@ -241,16 +230,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.EnvironmentID; v != nil {
-		environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{
-			ResourceID: v,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if environment == nil {
-			return nil, common.Errorf(common.NotFound, "environment %s not found", *v)
-		}
-		set, args = append(set, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, environment.UID)
+		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.ExternalLink; v != nil {
 		set, args = append(set, fmt.Sprintf("external_link = $%d", len(args)+1)), append(args, *v)
@@ -300,7 +280,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 
 	instance := &InstanceMessage{}
 	var engine string
-	var environmentUID int
 	query := fmt.Sprintf(`
 			UPDATE instance
 			SET `+strings.Join(set, ", ")+`
@@ -308,7 +287,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			RETURNING
 				id,
 				resource_id,
-				environment_id,
+				environment,
 				name,
 				engine,
 				engine_version,
@@ -323,7 +302,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&instance.UID,
 		&instance.ResourceID,
-		&environmentUID,
+		&instance.EnvironmentID,
 		&instance.Title,
 		&engine,
 		&instance.EngineVersion,
@@ -374,17 +353,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		return nil, err
 	}
 
-	environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{
-		UID: &environmentUID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if environment == nil {
-		return nil, common.Errorf(common.NotFound, "environment %d not found", environmentUID)
-	}
-	instance.EnvironmentID = environment.ResourceID
-
 	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
 	s.instanceIDCache.Add(instance.UID, instance)
 	return instance, nil
@@ -414,19 +382,18 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	var instanceMessages []*InstanceMessage
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			environment.resource_id as environment_id,
-			instance.id AS instance_uid,
-			instance.resource_id AS resource_id,
-			instance.name AS name,
+			id,
+			resource_id,
+			name,
+			environment,
 			engine,
 			engine_version,
 			external_link,
 			activation,
-			instance.row_status AS row_status,
-			instance.options AS options,
-			instance.metadata AS metadata
+			row_status,
+			options,
+			metadata
 		FROM instance
-		LEFT JOIN environment ON environment.id = instance.environment_id
 		WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
@@ -439,10 +406,10 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		var engine, rowStatus string
 		var options, metadata []byte
 		if err := rows.Scan(
-			&instanceMessage.EnvironmentID,
 			&instanceMessage.UID,
 			&instanceMessage.ResourceID,
 			&instanceMessage.Title,
+			&instanceMessage.EnvironmentID,
 			&engine,
 			&instanceMessage.EngineVersion,
 			&instanceMessage.ExternalLink,
