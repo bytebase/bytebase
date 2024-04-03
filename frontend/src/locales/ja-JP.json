@@ -2585,7 +2585,7 @@
     "star": "スター",
     "unstar": "スターを外す",
     "starred": "スター付き",
-    "shared-with-me": "共有されたシート",
+    "shared": "共有",
     "actions": {
       "sync-from-vcs": "VCSからSQLスクリプトを同期する"
     },
