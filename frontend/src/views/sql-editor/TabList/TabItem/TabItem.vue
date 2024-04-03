@@ -80,10 +80,10 @@ const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
 }
 
 .body {
-  @apply flex items-center justify-between gap-x-1 pl-2 pr-1 pb-1 border-t pt-[4px];
+  @apply flex items-center justify-between gap-x-1 pl-2 pr-1 border-t pt-[4px] h-[36px];
 }
 .current .body {
-  @apply relative bg-white text-accent border-t-accent border-t-2 pt-[3px];
+  @apply relative bg-white text-accent border-t-accent border-t-[3px] pt-[2px];
 }
 
 .tab-item.admin .body {

@@ -364,7 +364,10 @@ onMounted(() => calcDefaultExpandKeys(false));
   padding: 0;
 }
 .sql-editor-tree :deep(.n-tree-node-indent) {
-  width: 0.25rem;
+  width: 1rem;
+}
+.sql-editor-tree :deep(.n-tree-node-switcher--hide) {
+  width: 0.5rem !important;
 }
 .sql-editor-tree :deep(.n-tree-node-content__prefix) {
   @apply shrink-0 !mr-1;
