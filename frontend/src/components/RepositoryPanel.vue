@@ -50,16 +50,16 @@
     <div v-if="allowEdit" class="ml-3 flex items-center space-x-3">
       <NButton
         v-if="allowUpdate"
-        @click.prevent="discardChanges"
         :disabled="state.processing"
+        @click.prevent="discardChanges"
       >
         {{ $t("common.discard-changes") }}
       </NButton>
       <NButton
         type="primary"
         :disabled="!allowUpdate"
-        @click.prevent="doUpdate"
         :loading="state.processing"
+        @click.prevent="doUpdate"
       >
         {{ $t("common.update") }}
       </NButton>
