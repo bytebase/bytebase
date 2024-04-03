@@ -413,9 +413,9 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 // HandleIncomingApprovalSteps handles incoming approval steps.
 // - Blocks approval steps if no user can approve the step.
 // - creates external approvals for external approval nodes.
-func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*store.ActivityMessage, error) {
+func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*store.ActivityMessage, []*store.IssueCommentMessage, error) {
 	if len(approval.ApprovalTemplates) == 0 {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	getActivityCreate := func(status storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_Status, comment string) (*store.ActivityMessage, error) {
@@ -443,16 +443,17 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 
 	var approvers []*storepb.IssuePayloadApproval_Approver
 	var activities []*store.ActivityMessage
+	var issueComments []*store.IssueCommentMessage
 
 	step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
 	if step == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 	if len(step.Nodes) != 1 {
-		return nil, nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
+		return nil, nil, nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
 	}
 	if step.Type != storepb.ApprovalStep_ANY {
-		return nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
+		return nil, nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
 	}
 	node := step.Nodes[0]
 	if v, ok := node.GetPayload().(*storepb.ApprovalNode_ExternalNodeId); ok {
@@ -461,14 +462,26 @@ func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClien
 				Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
 				PrincipalId: api.SystemBotID,
 			})
+
 			activity, err := getActivityCreate(storepb.ActivityIssueCommentCreatePayload_ApprovalEvent_REJECTED, fmt.Sprintf("failed to handle external node, err: %v", err))
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			activities = append(activities, activity)
+
+			issueComments = append(issueComments, &store.IssueCommentMessage{
+				IssueUID: issue.UID,
+				Payload: &storepb.IssueCommentPayload{
+					Event: &storepb.IssueCommentPayload_Approval_{
+						Approval: &storepb.IssueCommentPayload_Approval{
+							Status: storepb.IssueCommentPayload_Approval_APPROVED,
+						},
+					},
+				},
+			})
 		}
 	}
-	return approvers, activities, nil
+	return approvers, activities, issueComments, nil
 }
 
 func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, externalNodeID string) error {

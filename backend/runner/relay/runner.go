@@ -260,7 +260,7 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 		return errors.Wrapf(err, "failed to check if the approval is approved")
 	}
 
-	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.Client, issue, payload.Approval)
+	newApprovers, activityCreates, issueComments, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.Client, issue, payload.Approval)
 	if err != nil {
 		return errors.Wrapf(err, "failed to handle incoming approval steps")
 	}
@@ -273,6 +273,30 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 	}, api.SystemBotID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update issue")
+	}
+
+	if err := func() error {
+		p := &storepb.IssueCommentPayload{
+			Event: &storepb.IssueCommentPayload_Approval_{
+				Approval: &storepb.IssueCommentPayload_Approval{
+					Status: storepb.IssueCommentPayload_Approval_APPROVED,
+				},
+			},
+		}
+		if err := r.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+			IssueUID: issue.UID,
+			Payload:  p,
+		}, api.SystemBotID); err != nil {
+			return err
+		}
+		for _, ic := range issueComments {
+			if err := r.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
 	// It's ok to fail to create activity.
@@ -421,6 +445,22 @@ func (r *Runner) RejectExternalApprovalNode(ctx context.Context, issueUID int) e
 	}, api.SystemBotID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update issue")
+	}
+
+	if err := func() error {
+		p := &storepb.IssueCommentPayload{
+			Event: &storepb.IssueCommentPayload_Approval_{
+				Approval: &storepb.IssueCommentPayload_Approval{
+					Status: storepb.IssueCommentPayload_Approval_REJECTED,
+				},
+			},
+		}
+		return r.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+			IssueUID: issue.UID,
+			Payload:  p,
+		}, api.SystemBotID)
+	}(); err != nil {
+		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
 	// It's ok to fail to create activity.
