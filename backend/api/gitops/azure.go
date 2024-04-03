@@ -50,8 +50,8 @@ func getAzurePullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvider
 	prInfo := &pullRequestInfo{
 		// TODO(ed): get the email.
 		url:         pushEvent.Resource.Links.Web.Href,
-		title:       pushEvent.Message.Text,
-		description: pushEvent.DetailedMessage.Text,
+		title:       pushEvent.Resource.Title,
+		description: pushEvent.Resource.Description,
 		changes:     getChangesByFileList(mrFiles, vcsConnector.Payload.BaseDirectory),
 	}
 

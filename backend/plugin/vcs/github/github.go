@@ -138,11 +138,6 @@ type FileCommit struct {
 	Author  *CommitAuthor `json:"author,omitempty"`
 }
 
-// CommitsDiff represents a GitHub API response for comparing two commits.
-type CommitsDiff struct {
-	Files []PullRequestFile `json:"files"`
-}
-
 // FetchRepositoryList fetches all repositories where the authenticated user
 // has admin permissions, which is required to create webhook in the repository.
 //

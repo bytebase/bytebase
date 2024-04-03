@@ -131,11 +131,6 @@ type File struct {
 	Content string
 }
 
-// CommitsDiff represents a GitLab API response for comparing two commits.
-type CommitsDiff struct {
-	FileDiffList []MergeRequestFile `json:"diffs"`
-}
-
 // Repository represents a GitLab API response for a repository.
 type Repository struct {
 	ID                int64  `json:"id"`
