@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -42,9 +43,10 @@ type UpdateInstanceMessage struct {
 	EngineVersion *string
 	Activation    *bool
 	// OptionsUpsert upserts the top-level messages of the instance options.
-	OptionsUpsert *storepb.InstanceOptions
-	Metadata      *storepb.InstanceMetadata
-	EnvironmentID *string
+	OptionsUpsert       *storepb.InstanceOptions
+	Metadata            *storepb.InstanceMetadata
+	UpdateEnvironmentID bool
+	EnvironmentID       string
 
 	// Output only.
 	UpdaterID  int
@@ -53,12 +55,11 @@ type UpdateInstanceMessage struct {
 
 // FindInstanceMessage is the message for finding instances.
 type FindInstanceMessage struct {
-	UID           *int
-	EnvironmentID *string
-	ResourceID    *string
-	ResourceIDs   *[]string
-	ShowDeleted   bool
-	ProjectUID    *int
+	UID         *int
+	ResourceID  *string
+	ResourceIDs *[]string
+	ShowDeleted bool
+	ProjectUID  *int
 }
 
 // GetInstanceV2 gets an instance by the resource_id.
@@ -154,6 +155,10 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	}
 
 	var instanceID int
+	var environment *string
+	if instanceCreate.EnvironmentID != "" {
+		environment = &instanceCreate.EnvironmentID
+	}
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			INSERT INTO instance (
 				resource_id,
@@ -174,7 +179,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		instanceCreate.ResourceID,
 		creatorID,
 		creatorID,
-		instanceCreate.EnvironmentID,
+		environment,
 		instanceCreate.Title,
 		instanceCreate.Engine.String(),
 		instanceCreate.ExternalLink,
@@ -229,8 +234,12 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.EnvironmentID; v != nil {
-		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+	if patch.UpdateEnvironmentID {
+		var environment *string
+		if patch.EnvironmentID != "" {
+			environment = &patch.EnvironmentID
+		}
+		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, environment)
 	}
 	if v := patch.ExternalLink; v != nil {
 		set, args = append(set, fmt.Sprintf("external_link = $%d", len(args)+1)), append(args, *v)
@@ -298,11 +307,12 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 				metadata
 		`, strings.Join(where, " AND "))
 	var rowStatus string
+	var environment sql.NullString
 	var options, metadata []byte
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&instance.UID,
 		&instance.ResourceID,
-		&instance.EnvironmentID,
+		&environment,
 		&instance.Title,
 		&engine,
 		&instance.EngineVersion,
@@ -313,6 +323,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		&metadata,
 	); err != nil {
 		return nil, err
+	}
+	if environment.Valid {
+		instance.EnvironmentID = environment.String
 	}
 	engineTypeValue, ok := storepb.Engine_value[engine]
 	if !ok {
@@ -360,9 +373,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 
 func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
-	if v := find.EnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -403,13 +413,14 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	defer rows.Close()
 	for rows.Next() {
 		var instanceMessage InstanceMessage
+		var environment sql.NullString
 		var engine, rowStatus string
 		var options, metadata []byte
 		if err := rows.Scan(
 			&instanceMessage.UID,
 			&instanceMessage.ResourceID,
 			&instanceMessage.Title,
-			&instanceMessage.EnvironmentID,
+			&environment,
 			&engine,
 			&instanceMessage.EngineVersion,
 			&instanceMessage.ExternalLink,
@@ -419,6 +430,9 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			&metadata,
 		); err != nil {
 			return nil, err
+		}
+		if environment.Valid {
+			instanceMessage.EnvironmentID = environment.String
 		}
 		engineTypeValue, ok := storepb.Engine_value[engine]
 		if !ok {
