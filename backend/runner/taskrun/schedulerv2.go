@@ -578,6 +578,22 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					return nil
 				}
 
+				if err := func() error {
+					p := &storepb.IssueCommentPayload{
+						Event: &storepb.IssueCommentPayload_StageEnd_{
+							StageEnd: &storepb.IssueCommentPayload_StageEnd{
+								Stage: fmt.Sprintf("%s%s/%s%d/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.RolloutPrefix, taskStage.PipelineID, common.StagePrefix, taskStage.ID),
+							},
+						},
+					}
+					return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+						IssueUID: issue.UID,
+						Payload:  p,
+					}, api.SystemBotID)
+				}(); err != nil {
+					slog.Warn("failed to create issue comment", log.BBError(err))
+				}
+
 				// every task in the stage terminated
 				// create "stage ends" activity.
 				if err := func() error {
