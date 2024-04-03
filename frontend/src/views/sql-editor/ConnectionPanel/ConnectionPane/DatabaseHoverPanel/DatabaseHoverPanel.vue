@@ -72,7 +72,7 @@ import {
   InstanceV1Name,
   ProjectV1Name,
 } from "@/components/v2";
-import { useSQLEditorTreeStore } from "@/store";
+import { useSQLEditorStore } from "@/store";
 import type { Position, SQLEditorTreeNodeTarget } from "@/types";
 import { minmax } from "@/utils";
 import { useHoverStateContext } from "./hover-state";
@@ -87,7 +87,7 @@ const emit = defineEmits<{
   (event: "click-outside", e: MouseEvent): void;
 }>();
 
-const treeStore = useSQLEditorTreeStore();
+const editorStore = useSQLEditorStore();
 const { state, position, update } = useHoverStateContext();
 
 const popoverRef = ref<HTMLDivElement>();
@@ -112,7 +112,7 @@ const database = computed(() => {
 });
 
 const hasProjectContext = computed(() => {
-  return !!treeStore.currentProject;
+  return !!editorStore.currentProject;
 });
 
 const displayPosition = computed(() => {
