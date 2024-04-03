@@ -20,6 +20,31 @@ type CountInstanceMessage struct {
 	EnvironmentID *string
 }
 
+// CountUsers counts the principal.
+func (s *Store) CountUsers(ctx context.Context, userType api.PrincipalType) (int, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	count := 0
+
+	if err := tx.QueryRowContext(ctx, `
+	SELECT COUNT(*)
+	FROM principal
+	WHERE principal.type = $1`,
+		userType).Scan(&count); err != nil {
+		return 0, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 // CountInstance counts the number of instances.
 func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (int, error) {
 	where, args := []string{"instance.row_status = $1"}, []any{api.Normal}

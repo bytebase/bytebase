@@ -47,7 +47,8 @@ type UpdateDatabaseMessage struct {
 	Secrets              *storepb.Secrets
 	DataShare            *bool
 	ServiceName          *string
-	EnvironmentID        *string
+	UpdateEnvironmentID  bool
+	EnvironmentID        string
 
 	// MetadataUpsert upserts the top-level messages.
 	MetadataUpsert *storepb.DatabaseMetadata
@@ -243,17 +244,6 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", create.InstanceID)
 	}
-	var environmentUID *int
-	if create.EnvironmentID != "" {
-		environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{ResourceID: &create.EnvironmentID})
-		if err != nil {
-			return nil, err
-		}
-		if environment == nil {
-			return nil, errors.Errorf("environment %q not found", create.EnvironmentID)
-		}
-		environmentUID = &environment.UID
-	}
 	storedVersion, err := create.SchemaVersion.Marshal()
 	if err != nil {
 		return nil, err
@@ -274,6 +264,10 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	}
 	defer tx.Rollback()
 
+	var environment *string
+	if create.EnvironmentID != "" {
+		environment = &create.EnvironmentID
+	}
 	// We will do on conflict update the column updater_id for returning the ID because on conflict do nothing will not return anything.
 	query := `
 		INSERT INTO db (
@@ -281,7 +275,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			updater_id,
 			instance_id,
 			project_id,
-			environment_id,
+			environment,
 			name,
 			sync_status,
 			last_successful_sync_ts,
@@ -294,7 +288,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			project_id = EXCLUDED.project_id,
-			environment_id = EXCLUDED.environment_id,
+			environment = EXCLUDED.environment,
 			name = EXCLUDED.name,
 			schema_version = EXCLUDED.schema_version,
 			metadata = EXCLUDED.metadata
@@ -305,7 +299,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		api.SystemBotID,
 		instance.UID,
 		project.UID,
-		environmentUID,
+		environment,
 		create.DatabaseName,
 		create.SyncState,
 		create.SuccessfulSyncTimeTs,
@@ -344,19 +338,12 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		}
 		set, args = append(set, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, project.UID)
 	}
-	if v := patch.EnvironmentID; v != nil {
-		if *v == "" {
-			set = append(set, "environment_id = NULL")
-		} else {
-			environment, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{ResourceID: patch.EnvironmentID})
-			if err != nil {
-				return nil, err
-			}
-			if environment == nil {
-				return nil, errors.Errorf("environment %v not found", *v)
-			}
-			set, args = append(set, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, environment.UID)
+	if patch.UpdateEnvironmentID {
+		var environment *string
+		if patch.EnvironmentID != "" {
+			environment = &patch.EnvironmentID
 		}
+		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, environment)
 	}
 	if v := patch.SyncState; v != nil {
 		set, args = append(set, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
@@ -482,7 +469,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.EffectiveEnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("COALESCE(COALESCE((SELECT environment.resource_id FROM environment where environment.id = db.environment_id), (SELECT environment.resource_id FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.id = db.instance_id)), '') = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("COALESCE(COALESCE((SELECT environment.resource_id FROM environment where environment.resource_id = db.environment), (SELECT environment.resource_id FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.id = db.instance_id)), '') = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
@@ -502,7 +489,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("COALESCE((SELECT environment.row_status AS instance_environment_status FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.id = db.instance_id), $%d) = $%d", len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
-		where, args = append(where, fmt.Sprintf("COALESCE((SELECT environment.row_status AS db_environment_status FROM environment WHERE environment.id = db.environment_id), $%d) = $%d", len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
+		where, args = append(where, fmt.Sprintf("COALESCE((SELECT environment.row_status AS db_environment_status FROM environment WHERE environment.resource_id = db.environment), $%d) = $%d", len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
 
 		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
 		// We don't show databases that are deleted by users already.
@@ -514,8 +501,8 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		SELECT
 			db.id,
 			project.resource_id AS project_id,
-			COALESCE(COALESCE((SELECT environment.resource_id FROM environment WHERE environment.id = db.environment_id), (SELECT environment.resource_id FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.id = db.instance_id)), ''),
-			COALESCE((SELECT environment.resource_id FROM environment WHERE environment.id = db.environment_id), ''),
+			COALESCE(COALESCE((SELECT environment.resource_id FROM environment WHERE environment.resource_id = db.environment), (SELECT environment.resource_id FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.id = db.instance_id)), ''),
+			COALESCE((SELECT environment.resource_id FROM environment WHERE environment.resource_id = db.environment), ''),
 			instance.resource_id AS instance_id,
 			db.name,
 			db.sync_status,
@@ -539,11 +526,12 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	for rows.Next() {
 		databaseMessage := &DatabaseMessage{}
 		var storedVersion, secretsString, metadataString string
+		var effectiveEnvironment, environment sql.NullString
 		if err := rows.Scan(
 			&databaseMessage.UID,
 			&databaseMessage.ProjectID,
-			&databaseMessage.EffectiveEnvironmentID,
-			&databaseMessage.EnvironmentID,
+			&effectiveEnvironment,
+			&environment,
 			&databaseMessage.InstanceID,
 			&databaseMessage.DatabaseName,
 			&databaseMessage.SyncState,
@@ -555,6 +543,12 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&metadataString,
 		); err != nil {
 			return nil, err
+		}
+		if effectiveEnvironment.Valid {
+			databaseMessage.EffectiveEnvironmentID = effectiveEnvironment.String
+		}
+		if environment.Valid {
+			databaseMessage.EnvironmentID = environment.String
 		}
 		version, err := model.NewVersion(storedVersion)
 		if err != nil {
