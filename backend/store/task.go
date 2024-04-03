@@ -314,6 +314,12 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 	if v := patch.RollbackError; v != nil {
 		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackError', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
 	}
+	if v := patch.ExportFormat; v != nil {
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('format', to_jsonb($%d::INT))`, len(args)+1)), append(args, *v)
+	}
+	if v := patch.ExportPassword; v != nil {
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('password', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
+	}
 	if v := patch.Flags; v != nil {
 		jsonb, err := json.Marshal(v)
 		if err != nil {
