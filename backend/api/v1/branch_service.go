@@ -1063,7 +1063,40 @@ func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, target
 				continue
 			}
 		}
-		if len(trimSchema.Tables) > 0 {
+		for _, view := range schema.GetViews() {
+			tv := ts.GetView(view.GetName())
+			if tv == nil {
+				trimSchema.Views = append(trimSchema.Views, view)
+				continue
+			}
+			if view.GetDefinition() != tv.Definition {
+				trimSchema.Views = append(trimSchema.Views, view)
+				continue
+			}
+		}
+		for _, function := range schema.GetFunctions() {
+			tf := ts.GetFunction(function.GetName())
+			if tf == nil {
+				trimSchema.Functions = append(trimSchema.Functions, function)
+				continue
+			}
+			if function.GetDefinition() != tf.Definition {
+				trimSchema.Functions = append(trimSchema.Functions, function)
+				continue
+			}
+		}
+		for _, procedure := range schema.GetProcedures() {
+			tp := ts.GetProcedure(procedure.GetName())
+			if tp == nil {
+				trimSchema.Procedures = append(trimSchema.Procedures, procedure)
+				continue
+			}
+			if procedure.GetDefinition() != tp.Definition {
+				trimSchema.Procedures = append(trimSchema.Procedures, procedure)
+				continue
+			}
+		}
+		if len(trimSchema.Tables) > 0 || len(trimSchema.Views) > 0 || len(trimSchema.Functions) > 0 || len(trimSchema.Procedures) > 0 {
 			t.Schemas = append(t.Schemas, trimSchema)
 		}
 	}
