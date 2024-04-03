@@ -52,7 +52,7 @@ const (
 // InstanceCountMetric is the API message for bb.instance.count.
 type InstanceCountMetric struct {
 	Engine        storepb.Engine
-	EnvironmentID int
+	EnvironmentID string
 	RowStatus     api.RowStatus
 	Count         int
 }

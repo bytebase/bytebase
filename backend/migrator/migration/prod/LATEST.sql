@@ -335,7 +335,7 @@ CREATE TABLE instance (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    environment_id INTEGER REFERENCES environment (id),
+    environment TEXT REFERENCES environment (resource_id),
     name TEXT NOT NULL,
     engine TEXT NOT NULL,
     engine_version TEXT NOT NULL DEFAULT '',
