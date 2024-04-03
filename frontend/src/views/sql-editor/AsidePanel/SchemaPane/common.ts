@@ -38,8 +38,8 @@ export type RichExternalTableMetadata = RichSchemaMetadata & {
   externalTable: ExternalTableMetadata;
 };
 export type RichColumnMetadata = (
-  | RichSchemaMetadata
-  | RichPartitionTableMetadata
+  | RichTableMetadata
+  | RichExternalTableMetadata
 ) & {
   column: ColumnMetadata;
 };
@@ -230,6 +230,9 @@ export const mapTreeNodeByType = <T extends NodeType>(
     isLeaf: isLeafNodeType(type),
     ...overrides,
   };
+  if (type === "column") {
+    console.log(node.isLeaf);
+  }
 
   return node;
 };

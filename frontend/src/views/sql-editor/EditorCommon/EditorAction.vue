@@ -37,12 +37,6 @@
           ({{ keyboardShortcutStr("cmd_or_ctrl+E") }})
         </span>
       </NButton>
-      <NButton size="small" :disabled="!allowQuery" @click="handleFormatSQL">
-        <span>{{ $t("sql-editor.format") }}</span>
-        <span v-show="showShortcutText" class="ml-1">
-          ({{ keyboardShortcutStr("shift+opt_or_alt+F") }})
-        </span>
-      </NButton>
       <NButton
         v-if="showClearScreen"
         size="small"
@@ -271,10 +265,6 @@ const handleExplainQuery = () => {
     engine: instance.value.engine,
     explain: true,
   });
-};
-
-const handleFormatSQL = () => {
-  events.emit("format-content");
 };
 
 const handleClearScreen = () => {

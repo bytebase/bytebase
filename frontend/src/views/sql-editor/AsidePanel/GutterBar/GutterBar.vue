@@ -1,16 +1,24 @@
 <template>
-  <div class="h-full flex flex-col items-stretch justify-between text-sm pb-1">
-    <div class="divide-y border-b">
-      <TabItem tab="WORKSHEET" @click="handleClickTab('WORKSHEET')" />
+  <div
+    ref="containerRef"
+    class="h-full flex flex-col items-stretch justify-between overflow-hidden text-sm p-1"
+  >
+    <div class="flex flex-col gap-y-1">
+      <TabItem
+        tab="WORKSHEET"
+        :size="size"
+        @click="handleClickTab('WORKSHEET')"
+      />
       <TabItem
         tab="SCHEMA"
+        :size="size"
         :disabled="!showSchemaPane"
         @click="handleClickTab('SCHEMA')"
       />
-      <TabItem tab="HISTORY" @click="handleClickTab('HISTORY')" />
+      <TabItem tab="HISTORY" :size="size" @click="handleClickTab('HISTORY')" />
     </div>
 
-    <OpenAIButton class="self-center" />
+    <OpenAIButton :size="size" />
   </div>
 </template>
 
@@ -25,8 +33,18 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import { hasProjectPermissionV2, instanceV1HasAlterSchema } from "@/utils";
 import { useSQLEditorContext, type AsidePanelTab } from "../../context";
-import OpenAIButton from "../OpenAIButton.vue";
+import OpenAIButton from "./OpenAIButton.vue";
 import TabItem from "./TabItem.vue";
+import type { Size } from "./common";
+
+withDefaults(
+  defineProps<{
+    size?: Size;
+  }>(),
+  {
+    size: "medium",
+  }
+);
 
 const me = useCurrentUserV1();
 const { currentTab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
