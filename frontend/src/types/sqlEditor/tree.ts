@@ -1,6 +1,6 @@
 import type { TreeOption } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { useSQLEditorTreeStore } from "@/store";
+import { useSQLEditorStore } from "@/store";
 import type { Environment } from "../proto/v1/environment_service";
 import type {
   ComposedDatabase,
@@ -94,9 +94,9 @@ export const readableSQLEditorTreeFactor = (
   factor: SQLEditorTreeFactor,
   labelPrefix: string | undefined = ""
 ) => {
-  const treeStore = useSQLEditorTreeStore();
+  const editorStore = useSQLEditorStore();
   if (factor === "project") {
-    if (treeStore.currentProject) {
+    if (editorStore.currentProject) {
       return t("common.database");
     } else {
       return t("common.project");
