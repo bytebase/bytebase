@@ -128,7 +128,6 @@ func TestVCS(t *testing.T) {
 				ID:        "mock_event_id",
 				EventType: "git.pullrequest.merged",
 				Resource: &azure.PullRequestResource{
-					// TODO:
 					Repository: &azure.Repository{},
 					Links: &azure.PullRequestLinks{
 						Web: &azure.PullRequestWeb{
