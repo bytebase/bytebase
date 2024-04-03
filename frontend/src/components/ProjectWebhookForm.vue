@@ -188,6 +188,7 @@
     <div>
       <div class="text-md leading-6 font-medium text-main">
         {{ $t("project.webhook.triggering-activity") }}
+        <span class="text-red-600">*</span>
       </div>
       <div
         v-for="(item, index) in projectWebhookV1ActivityItemList()"
@@ -230,8 +231,11 @@
         @confirm="deleteWebhook"
       />
       <div class="space-x-3">
-        <NButton @click.prevent="cancel">
-          {{ allowEdit ? $t("common.cancel") : $t("common.back") }}
+        <NButton v-if="create" @click.prevent="cancel">
+          {{ $t("common.cancel") }}
+        </NButton>
+        <NButton v-else-if="valueChanged" @click.prevent="discardChanges">
+          {{ $t("common.discard-changes") }}
         </NButton>
         <template v-if="allowEdit">
           <NButton
@@ -375,6 +379,10 @@ const allowCreate = computed(() => {
     !isEmpty(state.webhook.notificationTypes)
   );
 });
+
+const discardChanges = () => {
+  state.webhook = cloneDeep(props.webhook);
+};
 
 const isEventOn = (type: Activity_Type) => {
   return state.webhook.notificationTypes.includes(type);

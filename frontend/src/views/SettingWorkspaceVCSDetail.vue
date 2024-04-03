@@ -26,16 +26,16 @@
       <div class="space-x-3">
         <NButton
           v-if="allowUpdate"
-          @click.prevent="cancel"
           :disabled="state.loading"
+          @click.prevent="cancel"
         >
           {{ $t("common.discard-changes") }}
         </NButton>
         <NButton
           type="primary"
           :disabled="!allowUpdate"
-          @click.prevent="doUpdate"
           :loading="state.loading"
+          @click.prevent="doUpdate"
         >
           {{ $t("common.update") }}
         </NButton>
@@ -100,11 +100,12 @@ const initState = computed(
 );
 
 const resetState = () => {
-  state.config = initState.value;
+  state.config = { ...initState.value };
+  state.loading = false;
 };
 
 const state = reactive<LocalState>({
-  config: initState.value,
+  config: { ...initState.value },
   loading: false,
 });
 

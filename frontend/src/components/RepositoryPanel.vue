@@ -50,16 +50,16 @@
     <div v-if="allowEdit" class="ml-3 flex items-center space-x-3">
       <NButton
         v-if="allowUpdate"
-        @click.prevent="discardChanges"
         :disabled="state.processing"
+        @click.prevent="discardChanges"
       >
         {{ $t("common.discard-changes") }}
       </NButton>
       <NButton
         type="primary"
         :disabled="!allowUpdate"
-        @click.prevent="doUpdate"
         :loading="state.processing"
+        @click.prevent="doUpdate"
       >
         {{ $t("common.update") }}
       </NButton>
@@ -110,15 +110,19 @@ const initConfig = computed(
 );
 
 const state = reactive<LocalState>({
-  repositoryConfig: initConfig.value,
+  repositoryConfig: { ...initConfig.value },
   processing: false,
 });
+
+const discardChanges = () => {
+  state.repositoryConfig = { ...initConfig.value };
+  state.processing = false;
+};
 
 watch(
   () => props.vcsConnector,
   () => {
-    state.repositoryConfig = initConfig.value;
-    state.processing = false;
+    discardChanges();
   },
   { deep: true, immediate: true }
 );
@@ -171,11 +175,6 @@ const deleteConnector = async () => {
   } finally {
     state.processing = false;
   }
-};
-
-const discardChanges = () => {
-  state.repositoryConfig = initConfig.value;
-  state.processing = false;
 };
 
 const doUpdate = async () => {
