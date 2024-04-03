@@ -105,20 +105,42 @@ func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
 	sort.Slice(tableStates, func(i, j int) bool {
 		return tableStates[i].id < tableStates[j].id
 	})
+	var viewStates []*viewState
+	for _, view := range s.views {
+		viewStates = append(viewStates, view)
+	}
+	sort.Slice(viewStates, func(i, j int) bool {
+		return viewStates[i].id < viewStates[j].id
+	})
+	var functionStates []*functionState
+	for _, function := range s.functions {
+		functionStates = append(functionStates, function)
+	}
+	sort.Slice(functionStates, func(i, j int) bool {
+		return functionStates[i].id < functionStates[j].id
+	})
+	var procedureStates []*procedureState
+	for _, procedure := range s.procedures {
+		procedureStates = append(procedureStates, procedure)
+	}
+	sort.Slice(procedureStates, func(i, j int) bool {
+		return procedureStates[i].id < procedureStates[j].id
+	})
+
 	var tables []*storepb.TableMetadata
 	for _, table := range tableStates {
 		tables = append(tables, table.convertToTableMetadata())
 	}
 	var views []*storepb.ViewMetadata
-	for _, view := range s.views {
+	for _, view := range viewStates {
 		views = append(views, view.convertToViewMetadata())
 	}
 	var functions []*storepb.FunctionMetadata
-	for _, function := range s.functions {
+	for _, function := range functionStates {
 		functions = append(functions, function.convertToFunctionMetadata())
 	}
 	var procedures []*storepb.ProcedureMetadata
-	for _, procedure := range s.procedures {
+	for _, procedure := range procedureStates {
 		procedures = append(procedures, procedure.convertToProcedureMetadata())
 	}
 
