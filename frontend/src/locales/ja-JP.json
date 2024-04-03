@@ -2229,7 +2229,8 @@
     "view-table-detail": "テーブルの詳細を表示する",
     "view-database-detail": "データベースの詳細を表示する",
     "copy-all-column-names": "すべての列名をコピーします",
-    "view-schema-text": "スキーマテキストの表示"
+    "view-schema-text": "スキーマテキストの表示",
+    "override-current-statement": "現在のステートメントをオーバーライドする"
   },
   "schema-editor": {
     "self": "スキーマエディター",

@@ -2229,7 +2229,8 @@
     "view-table-detail": "Xem chi tiết bảng",
     "view-database-detail": "Xem chi tiết cơ sở dữ liệu",
     "copy-all-column-names": "Sao chép tất cả tên cột",
-    "view-schema-text": "Xem văn bản lược đồ"
+    "view-schema-text": "Xem văn bản lược đồ",
+    "override-current-statement": "Ghi đè câu lệnh hiện tại"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",

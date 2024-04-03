@@ -18,7 +18,6 @@
       >
         <div class="w-full flex flex-row justify-between items-center">
           <div class="flex items-start gap-x-1">
-            <HistoryConnectionIcon :query-history="history" />
             <span class="text-xs text-gray-500">
               {{ titleOfQueryHistory(history) }}
             </span>
@@ -56,7 +55,8 @@
 <script lang="ts" setup>
 import { useClipboard } from "@vueuse/core";
 import dayjs from "dayjs";
-import { escape } from "lodash-es";
+import { escape, uniqBy } from "lodash-es";
+import { useDialog } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -67,12 +67,9 @@ import {
   useSQLEditorQueryHistoryStore,
   useSQLEditorTabStore,
 } from "@/store";
+import type { SQLEditorTab } from "@/types";
 import type { QueryHistory } from "@/types/proto/v1/sql_service";
-import {
-  getHighlightHTMLByKeyWords,
-  extractDatabaseResourceName,
-} from "@/utils";
-import HistoryConnectionIcon from "./HistoryConnectionIcon.vue";
+import { getHighlightHTMLByKeyWords, defer } from "@/utils";
 
 interface State {
   search: string;
@@ -83,6 +80,7 @@ const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const queryHistoryStore = useSQLEditorQueryHistoryStore();
 const { isFetching, queryHistoryList } = storeToRefs(queryHistoryStore);
+const $d = useDialog();
 
 const state = reactive<State>({
   search: "",
@@ -103,8 +101,9 @@ const data = computed(() => {
 
     return t;
   });
+  const distinctData = uniqBy(tempData, (history) => history.statement);
 
-  return tempData.map((history) => {
+  return distinctData.map((history) => {
     return {
       ...history,
       formattedStatement: state.search
@@ -151,18 +150,53 @@ const handleCopy = (history: QueryHistory) => {
   });
 };
 
+const confirmOverrideCurrentStatement = () => {
+  const d = defer<boolean>();
+  $d.warning({
+    title: t("common.warning"),
+    content: () => t("sql-editor.override-current-statement"),
+    style: "z-index: 100000",
+    negativeText: t("common.cancel"),
+    positiveText: t("common.confirm"),
+    onNegativeClick: () => {
+      d.resolve(false);
+    },
+    onPositiveClick: () => {
+      d.resolve(true);
+    },
+  });
+  return d.promise;
+};
+
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
-  const { database, statement } = queryHistory;
+  const { statement } = queryHistory;
 
   // Open a new tab with the connection and statement.
-  tabStore.addTab({
-    title: `Query history at ${titleOfQueryHistory(queryHistory)}`,
-    connection: {
-      instance: extractDatabaseResourceName(database).instance,
-      database,
-    },
-    statement,
-  });
+  const tab = tabStore.currentTab;
+
+  const openInNewTab = () => {
+    tabStore.addTab(
+      {
+        title: `Query history at ${titleOfQueryHistory(queryHistory)}`,
+        statement,
+      },
+      /* beside */ true
+    );
+  };
+  const openInCurrentTab = async (tab: SQLEditorTab) => {
+    if (tab.statement) {
+      if (!(await confirmOverrideCurrentStatement())) {
+        return;
+      }
+    }
+    tab.statement = statement;
+  };
+
+  if (tab) {
+    openInCurrentTab(tab);
+  } else {
+    openInNewTab();
+  }
 };
 
 onMounted(async () => {
