@@ -20,6 +20,7 @@ import (
 
 func init() {
 	schema.RegisterGetDesignSchema(storepb.Engine_MYSQL, GetDesignSchema)
+	schema.RegisterGetDesignSchema(storepb.Engine_OCEANBASE, GetDesignSchema)
 }
 
 func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
