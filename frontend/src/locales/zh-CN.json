@@ -2585,7 +2585,7 @@
     "star": "添加收藏",
     "unstar": "取消收藏",
     "starred": "收藏的",
-    "shared-with-me": "共享给我的",
+    "shared": "共享的",
     "actions": {
       "sync-from-vcs": "从 VCS 同步 SQL 脚本"
     },
