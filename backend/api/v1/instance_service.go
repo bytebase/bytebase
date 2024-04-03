@@ -313,11 +313,27 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		case "title":
 			patch.Title = &request.Instance.Title
 		case "environment":
-			environmentID, err := common.GetEnvironmentID(request.Instance.Environment)
-			if err != nil {
-				return nil, err
+			patch.UpdateEnvironmentID = true
+			if request.Instance.Environment != "" {
+				environmentID, err := common.GetEnvironmentID(request.Instance.Environment)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				}
+				environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+					ResourceID:  &environmentID,
+					ShowDeleted: true,
+				})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, err.Error())
+				}
+				if environment == nil {
+					return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+				}
+				if environment.Deleted {
+					return nil, status.Errorf(codes.FailedPrecondition, "environment %q is deleted", environmentID)
+				}
+				patch.EnvironmentID = environment.ResourceID
 			}
-			patch.EnvironmentID = &environmentID
 		case "external_link":
 			patch.ExternalLink = &request.Instance.ExternalLink
 		case "data_sources":
