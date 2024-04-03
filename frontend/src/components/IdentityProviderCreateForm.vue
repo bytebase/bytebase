@@ -179,7 +179,7 @@
         </p>
         <BBTextField
           v-model:value="configForOAuth2.clientSecret"
-          required
+          :required="isCreating"
           :disabled="!allowEdit"
           class="mt-1 w-full"
           :placeholder="

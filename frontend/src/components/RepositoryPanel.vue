@@ -110,15 +110,19 @@ const initConfig = computed(
 );
 
 const state = reactive<LocalState>({
-  repositoryConfig: initConfig.value,
+  repositoryConfig: { ...initConfig.value },
   processing: false,
 });
+
+const discardChanges = () => {
+  state.repositoryConfig = { ...initConfig.value };
+  state.processing = false;
+};
 
 watch(
   () => props.vcsConnector,
   () => {
-    state.repositoryConfig = initConfig.value;
-    state.processing = false;
+    discardChanges();
   },
   { deep: true, immediate: true }
 );
@@ -171,11 +175,6 @@ const deleteConnector = async () => {
   } finally {
     state.processing = false;
   }
-};
-
-const discardChanges = () => {
-  state.repositoryConfig = initConfig.value;
-  state.processing = false;
 };
 
 const doUpdate = async () => {

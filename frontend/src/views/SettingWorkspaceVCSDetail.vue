@@ -100,11 +100,12 @@ const initState = computed(
 );
 
 const resetState = () => {
-  state.config = initState.value;
+  state.config = { ...initState.value };
+  state.loading = false;
 };
 
 const state = reactive<LocalState>({
-  config: initState.value,
+  config: { ...initState.value },
   loading: false,
 });
 
