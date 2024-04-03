@@ -2585,7 +2585,7 @@
     "star": "Star",
     "unstar": "Unstar",
     "starred": "Starred",
-    "shared-with-me": "Shared with me",
+    "shared": "Shared",
     "actions": {
       "sync-from-vcs": "Sync SQL scripts from VCS"
     },

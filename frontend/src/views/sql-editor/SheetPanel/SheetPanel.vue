@@ -18,7 +18,7 @@
       <NTabPane
         v-if="!isStandaloneMode"
         name="shared"
-        :tab="$t('sheet.shared-with-me')"
+        :tab="$t('sheet.shared')"
       >
         <SheetTable
           view="shared"
