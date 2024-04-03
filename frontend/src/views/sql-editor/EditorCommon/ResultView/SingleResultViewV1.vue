@@ -86,9 +86,11 @@
           />
           <NButton
             v-else-if="allowToRequestExportData"
-            @click="state.showRequestExportPanel = true"
+            size="small"
+            @click="handleRequestExport"
           >
             {{ $t("quick-action.request-export-data") }}
+            <ExternalLinkIcon class="w-4 h-auto ml-1 opacity-80" />
           </NButton>
         </template>
       </div>
@@ -139,15 +141,6 @@
   <template v-else-if="viewMode === 'ERROR'">
     <ErrorView :error="result.error" />
   </template>
-
-  <RequestExportPanel
-    v-if="database && state.showRequestExportPanel"
-    :database-id="database.uid"
-    :statement="result.statement"
-    :statement-only="true"
-    :redirect-to-issue-page="pageMode === 'BUNDLED'"
-    @close="state.showRequestExportPanel = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -160,19 +153,20 @@ import {
 } from "@tanstack/vue-table";
 import { useDebounceFn } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
-import { NInput, NSwitch, NPagination, NTooltip } from "naive-ui";
+import { ExternalLinkIcon } from "lucide-vue-next";
+import { NButton, NInput, NSwitch, NPagination, NTooltip } from "naive-ui";
 import type { BinaryLike } from "node:crypto";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import type { ExportOption } from "@/components/DataExportButton.vue";
-import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useSQLEditorTabStore,
   RESULT_ROWS_LIMIT,
   featureToRef,
   useCurrentUserV1,
-  usePageMode,
   useActuatorV1Store,
   useConnectionOfCurrentSQLEditorTab,
 } from "@/store";
@@ -193,7 +187,9 @@ import type {
 import {
   compareQueryRowValues,
   createExplainToken,
+  extractProjectResourceName,
   extractSQLRowValue,
+  generateIssueName,
   hasPermissionToCreateRequestGrantIssue,
   hasWorkspacePermissionV2,
   instanceV1HasStructuredQueryResult,
@@ -207,7 +203,6 @@ import { useSQLResultViewContext } from "./context";
 type LocalState = {
   search: string;
   vertical: boolean;
-  showRequestExportPanel: boolean;
 };
 type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
 
@@ -225,18 +220,16 @@ const props = defineProps<{
 const state = reactive<LocalState>({
   search: "",
   vertical: false,
-  showRequestExportPanel: false,
 });
 
-const { dark, keyword } = useSQLResultViewContext();
-
-const actuatorStore = useActuatorV1Store();
 const { t } = useI18n();
+const router = useRouter();
+const { dark, keyword } = useSQLResultViewContext();
+const actuatorStore = useActuatorV1Store();
 const tabStore = useSQLEditorTabStore();
 const currentUserV1 = useCurrentUserV1();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
-const pageMode = usePageMode();
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
 
 const viewMode = computed((): ViewMode => {
@@ -397,6 +390,32 @@ const handleExportBtnClick = async (
   });
 
   callback(content, options);
+};
+
+const handleRequestExport = async () => {
+  if (!props.database) {
+    return;
+  }
+
+  const database = props.database;
+  const project = database.projectEntity;
+  const issueType = "bb.issue.database.data.export";
+  const query: Record<string, any> = {
+    template: issueType,
+    name: generateIssueName(issueType, [database.databaseName]),
+    project: project.uid,
+    databaseList: database.uid,
+    sql: props.result.statement,
+  };
+  const route = router.resolve({
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(project.name),
+      issueSlug: "create",
+    },
+    query,
+  });
+  window.open(route.fullPath, "_blank");
 };
 
 const showVisualizeButton = computed((): boolean => {
