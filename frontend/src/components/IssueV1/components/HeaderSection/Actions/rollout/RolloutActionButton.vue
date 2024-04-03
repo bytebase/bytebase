@@ -88,7 +88,7 @@ const errors = asyncComputed(async () => {
 const actionList = computed(() => {
   const { action } = props;
 
-  const text = taskRolloutActionDisplayName(action);
+  const text = taskRolloutActionDisplayName(action, activeTask.value);
   const actionProps: RolloutButtonAction["props"] = {
     ...taskRolloutActionButtonProps(action),
     tag: "div",
