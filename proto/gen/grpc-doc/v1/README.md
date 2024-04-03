@@ -7672,7 +7672,6 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
 | uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
-| environment | [string](#string) |  | Format: environments/{environment} |
 | title | [string](#string) |  |  |
 | tasks | [Task](#bytebase-v1-Task) | repeated |  |
 
