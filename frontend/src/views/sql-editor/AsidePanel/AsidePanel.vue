@@ -10,7 +10,6 @@
     >
       <ProjectSelect
         style="width: 100%"
-        size="small"
         class="project-select"
         :project="projectUID"
         :include-all="false"
@@ -91,6 +90,6 @@ const handleSwitchProject = (uid: string | undefined) => {
 
 <style lang="postcss" scoped>
 .project-select :deep(.n-base-selection) {
-  --n-height: 25px !important;
+  --n-height: 30px !important;
 }
 </style>
