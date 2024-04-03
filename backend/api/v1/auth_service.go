@@ -72,7 +72,7 @@ func NewAuthService(store *store.Store, secret string, tokenDuration time.Durati
 
 // GetUser gets a user.
 func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest) (*v1pb.User, error) {
-	find := &store.FindUserMessage{}
+	find := &store.FindUserMessage{ShowDeleted: true}
 	userID, err := common.GetUserID(request.Name)
 	if err != nil {
 		email, err := common.GetUserEmail(request.Name)
