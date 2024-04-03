@@ -200,7 +200,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		payload.Approval.ApprovalTemplates = []*storepb.ApprovalTemplate{approvalTemplate}
 	}
 
-	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.relayRunner.Client, issue, payload.Approval)
+	newApprovers, activityCreates, issueComments, err := utils.HandleIncomingApprovalSteps(ctx, r.store, r.relayRunner.Client, issue, payload.Approval)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to handle incoming approval steps")
 		if updateErr := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
@@ -215,6 +215,17 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 	if err := updateIssueApprovalPayload(ctx, r.store, issue, payload.Approval); err != nil {
 		return false, errors.Wrap(err, "failed to update issue payload")
+	}
+
+	if err := func() error {
+		for _, ic := range issueComments {
+			if err := r.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
 	// It's ok to fail to create activity.

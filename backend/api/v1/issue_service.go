@@ -892,7 +892,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		return nil, status.Errorf(codes.Internal, "failed to check if the approval is approved, error: %v", err)
 	}
 
-	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, s.store, s.relayRunner.Client, issue, payload.Approval)
+	newApprovers, activityCreates, issueComments, err := utils.HandleIncomingApprovalSteps(ctx, s.store, s.relayRunner.Client, issue, payload.Approval)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
 	}
@@ -931,6 +931,30 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		}, &activity.Metadata{}); err != nil {
 			slog.Warn("Failed to create project activity", log.BBError(err))
 		}
+	}
+
+	if err := func() error {
+		p := &storepb.IssueCommentPayload{
+			Event: &storepb.IssueCommentPayload_Approval_{
+				Approval: &storepb.IssueCommentPayload_Approval{
+					Status: storepb.IssueCommentPayload_Approval_APPROVED,
+				},
+			},
+		}
+		if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+			IssueUID: issue.UID,
+			Payload:  p,
+		}, user.ID); err != nil {
+			return err
+		}
+		for _, ic := range issueComments {
+			if err := s.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
 	// It's ok to fail to create activity.
@@ -1173,6 +1197,22 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
 	}
 
+	if err := func() error {
+		p := &storepb.IssueCommentPayload{
+			Event: &storepb.IssueCommentPayload_Approval_{
+				Approval: &storepb.IssueCommentPayload_Approval{
+					Status: storepb.IssueCommentPayload_Approval_REJECTED,
+				},
+			},
+		}
+		return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+			IssueUID: issue.UID,
+			Payload:  p,
+		}, user.ID)
+	}(); err != nil {
+		slog.Warn("failed to create issue comment", log.BBError(err))
+	}
+
 	// It's ok to fail to create activity.
 	if err := func() error {
 		activityPayload, err := protojson.Marshal(&storepb.ActivityIssueCommentCreatePayload{
@@ -1258,7 +1298,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 	}
 	payload.Approval.Approvers = newApprovers
 
-	newApprovers, activityCreates, err := utils.HandleIncomingApprovalSteps(ctx, s.store, s.relayRunner.Client, issue, payload.Approval)
+	newApprovers, activityCreates, issueComments, err := utils.HandleIncomingApprovalSteps(ctx, s.store, s.relayRunner.Client, issue, payload.Approval)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
 	}
@@ -1271,6 +1311,30 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
+	}
+
+	if err := func() error {
+		p := &storepb.IssueCommentPayload{
+			Event: &storepb.IssueCommentPayload_Approval_{
+				Approval: &storepb.IssueCommentPayload_Approval{
+					Status: storepb.IssueCommentPayload_Approval_PENDING,
+				},
+			},
+		}
+		if err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+			IssueUID: issue.UID,
+			Payload:  p,
+		}, user.ID); err != nil {
+			return err
+		}
+		for _, ic := range issueComments {
+			if err := s.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
 	// It's ok to fail to create activity.
