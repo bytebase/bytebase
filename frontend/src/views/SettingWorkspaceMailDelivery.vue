@@ -108,10 +108,11 @@
                 @update:checked="handleToggleUseEmptyPassword"
               />
             </div>
-            <NInput
+            <BBTextField
               v-model:value="state.mailDeliverySetting.password"
               class="text-main w-full h-max mt-2"
               :disabled="state.useEmptyPassword"
+              :required="isCreating"
               :placeholder="'PASSWORD - INPUT_ONLY'"
             />
           </div>
@@ -227,10 +228,12 @@ const state = reactive<LocalState>({
 
 const store = useWorkspaceMailDeliverySettingStore();
 
+const isCreating = computed(
+  () => state.originMailDeliverySetting === undefined
+);
+
 const mailDeliverySettingButtonText = computed(() => {
-  return state.originMailDeliverySetting === undefined
-    ? t("common.create")
-    : t("common.update");
+  return isCreating.value ? t("common.create") : t("common.update");
 });
 
 const allowMailDeliveryActionButton = computed(() => {
