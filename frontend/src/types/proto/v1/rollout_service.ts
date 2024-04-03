@@ -704,8 +704,6 @@ export interface Stage {
   name: string;
   /** The system-assigned, unique identifier for a resource. */
   uid: string;
-  /** Format: environments/{environment} */
-  environment: string;
   title: string;
   tasks: Task[];
 }
@@ -4596,7 +4594,7 @@ export const Rollout = {
 };
 
 function createBaseStage(): Stage {
-  return { name: "", uid: "", environment: "", title: "", tasks: [] };
+  return { name: "", uid: "", title: "", tasks: [] };
 }
 
 export const Stage = {
@@ -4606,9 +4604,6 @@ export const Stage = {
     }
     if (message.uid !== "") {
       writer.uint32(18).string(message.uid);
-    }
-    if (message.environment !== "") {
-      writer.uint32(26).string(message.environment);
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
@@ -4640,13 +4635,6 @@ export const Stage = {
 
           message.uid = reader.string();
           continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.environment = reader.string();
-          continue;
         case 4:
           if (tag !== 34) {
             break;
@@ -4674,7 +4662,6 @@ export const Stage = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
-      environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => Task.fromJSON(e)) : [],
     };
@@ -4687,9 +4674,6 @@ export const Stage = {
     }
     if (message.uid !== "") {
       obj.uid = message.uid;
-    }
-    if (message.environment !== "") {
-      obj.environment = message.environment;
     }
     if (message.title !== "") {
       obj.title = message.title;
@@ -4707,7 +4691,6 @@ export const Stage = {
     const message = createBaseStage();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
-    message.environment = object.environment ?? "";
     message.title = object.title ?? "";
     message.tasks = object.tasks?.map((e) => Task.fromPartial(e)) || [];
     return message;

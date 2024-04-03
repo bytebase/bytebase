@@ -532,8 +532,6 @@ message Stage {
   string name = 1;
   // The system-assigned, unique identifier for a resource.
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Format: environments/{environment}
-  string environment = 3;
 
   string title = 4;
   repeated Task tasks = 5;
