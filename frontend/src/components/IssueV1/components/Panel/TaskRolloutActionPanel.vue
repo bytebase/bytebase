@@ -165,14 +165,14 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   loading: false,
 });
-const { issue, events } = useIssueContext();
+const { issue, activeTask, events } = useIssueContext();
 const comment = ref("");
 const performActionAnyway = ref(false);
 
 const title = computed(() => {
   if (!props.action) return "";
 
-  const action = taskRolloutActionDisplayName(props.action);
+  const action = taskRolloutActionDisplayName(props.action, activeTask.value);
   if (props.taskList.length > 1) {
     return t("task.action-all-tasks-in-current-stage", { action });
   }

@@ -1181,7 +1181,7 @@
       "options": "Tùy chọn xuất",
       "format": "Định dạng",
       "encrypt": "Mã hóa",
-      "exported-file-downloaded": "Tệp đã được tải xuống"
+      "file-downloaded": "Tệp đã được tải xuống"
     }
   },
   "alter-schema": {

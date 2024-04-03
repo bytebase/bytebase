@@ -17,7 +17,7 @@
     class="flex flex-row items-center gap-2 text-sm textlabel !leading-8"
   >
     <CircleCheckBigIcon class="w-5 h-auto" />
-    {{ $t("issue.data-export.exported-file-downloaded") }}
+    {{ $t("issue.data-export.file-downloaded") }}
   </div>
 </template>
 
