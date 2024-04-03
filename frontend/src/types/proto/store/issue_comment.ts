@@ -135,7 +135,7 @@ export interface IssueCommentPayload_StageEnd {
 }
 
 export interface IssueCommentPayload_TaskRunUpdate {
-  taskRuns: string[];
+  tasks: string[];
   toStatus?: IssueCommentPayload_TaskRunUpdate_Status | undefined;
 }
 
@@ -681,12 +681,12 @@ export const IssueCommentPayload_StageEnd = {
 };
 
 function createBaseIssueCommentPayload_TaskRunUpdate(): IssueCommentPayload_TaskRunUpdate {
-  return { taskRuns: [], toStatus: undefined };
+  return { tasks: [], toStatus: undefined };
 }
 
 export const IssueCommentPayload_TaskRunUpdate = {
   encode(message: IssueCommentPayload_TaskRunUpdate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.taskRuns) {
+    for (const v of message.tasks) {
       writer.uint32(10).string(v!);
     }
     if (message.toStatus !== undefined) {
@@ -707,7 +707,7 @@ export const IssueCommentPayload_TaskRunUpdate = {
             break;
           }
 
-          message.taskRuns.push(reader.string());
+          message.tasks.push(reader.string());
           continue;
         case 2:
           if (tag !== 16) {
@@ -727,15 +727,15 @@ export const IssueCommentPayload_TaskRunUpdate = {
 
   fromJSON(object: any): IssueCommentPayload_TaskRunUpdate {
     return {
-      taskRuns: globalThis.Array.isArray(object?.taskRuns) ? object.taskRuns.map((e: any) => globalThis.String(e)) : [],
+      tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => globalThis.String(e)) : [],
       toStatus: isSet(object.toStatus) ? issueCommentPayload_TaskRunUpdate_StatusFromJSON(object.toStatus) : undefined,
     };
   },
 
   toJSON(message: IssueCommentPayload_TaskRunUpdate): unknown {
     const obj: any = {};
-    if (message.taskRuns?.length) {
-      obj.taskRuns = message.taskRuns;
+    if (message.tasks?.length) {
+      obj.tasks = message.tasks;
     }
     if (message.toStatus !== undefined) {
       obj.toStatus = issueCommentPayload_TaskRunUpdate_StatusToJSON(message.toStatus);
@@ -748,7 +748,7 @@ export const IssueCommentPayload_TaskRunUpdate = {
   },
   fromPartial(object: DeepPartial<IssueCommentPayload_TaskRunUpdate>): IssueCommentPayload_TaskRunUpdate {
     const message = createBaseIssueCommentPayload_TaskRunUpdate();
-    message.taskRuns = object.taskRuns?.map((e) => e) || [];
+    message.tasks = object.tasks?.map((e) => e) || [];
     message.toStatus = object.toStatus ?? undefined;
     return message;
   },

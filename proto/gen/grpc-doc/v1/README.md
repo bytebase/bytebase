@@ -4784,7 +4784,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| task_runs | [string](#string) | repeated |  |
+| tasks | [string](#string) | repeated |  |
 | to_status | [IssueComment.TaskRunUpdate.Status](#bytebase-v1-IssueComment-TaskRunUpdate-Status) | optional |  |
 
 
