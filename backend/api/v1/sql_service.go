@@ -427,6 +427,9 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	if len(result) > 1 {
 		result = result[len(result)-1:]
 	}
+	if proto.Size(&v1pb.QueryResponse{Results: result}) > maximumSQLResultSize {
+		return nil, durationNs, errors.Errorf("Output of query exceeds max allowed output size of %dMB", maximumSQLResultSize/1024/1024)
+	}
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 		masker := NewQueryResultMasker(storeInstance)
