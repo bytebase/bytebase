@@ -446,7 +446,7 @@ func convertToIssueCommentEventApprovalStatus(s storepb.IssueCommentPayload_Appr
 func convertToIssueCommentEventTaskRunUpdate(u *storepb.IssueCommentPayload_TaskRunUpdate_) *v1pb.IssueComment_TaskRunUpdate_ {
 	return &v1pb.IssueComment_TaskRunUpdate_{
 		TaskRunUpdate: &v1pb.IssueComment_TaskRunUpdate{
-			TaskRuns: u.TaskRunUpdate.TaskRuns,
+			Tasks:    u.TaskRunUpdate.Tasks,
 			ToStatus: convertToIssueCommentEventTaskRunUpdateStatus(u.TaskRunUpdate.ToStatus),
 		},
 	}
