@@ -45,9 +45,6 @@ type projectData struct {
 		*gitlab.MergeRequestChange
 		*gitlab.MergeRequest
 	}
-	// commitsDiff is the map for commits compare.
-	// The map key has the format "from...to" which is SHA or branch name.
-	commitsDiff map[string]*gitlab.CommitsDiff
 }
 
 // NewGitLab creates a new fake implementation of GitLab VCS provider.
@@ -65,16 +62,14 @@ func NewGitLab(port int) VCSProvider {
 	projectGroup := e.Group("/api/v4")
 	projectGroup.GET("/projects", gl.listRepositories)
 	projectGroup.POST("/projects/:id/hooks", gl.createProjectHook)
+	projectGroup.DELETE("/projects/:id/hooks/:hook", gl.deleteRepositoryWebhook)
 	projectGroup.GET("/projects/:id/repository/commits/:commitID", gl.getFakeCommit)
 	projectGroup.GET("/projects/:id/repository/files/:filePath/raw", gl.readProjectFile)
-	projectGroup.POST("/projects/:id/repository/files/:filePath", gl.createProjectFile)
-	projectGroup.PUT("/projects/:id/repository/files/:filePath", gl.createProjectFile)
 	projectGroup.GET("/projects/:id/repository/branches/:branchName", gl.getProjectBranch)
 	projectGroup.POST("/projects/:id/repository/branches", gl.createProjectBranch)
 	projectGroup.POST("/projects/:id/merge_requests", gl.createProjectPullRequest)
 	projectGroup.GET("/projects/:id/merge_requests/:mrID/changes", gl.getMergeRequestChanges)
 	projectGroup.GET("/projects/:id/merge_requests/:mrID/notes", gl.createMergeRequestComment)
-	projectGroup.GET("/projects/:id/repository/compare", gl.compareCommits)
 
 	return gl
 }
@@ -92,11 +87,6 @@ func (gl *GitLab) Close() error {
 // ListenerAddr returns the GitLab VCS provider server listener address.
 func (gl *GitLab) ListenerAddr() net.Addr {
 	return gl.echo.ListenerAddr()
-}
-
-// APIURL returns the GitLab VCS provider API URL.
-func (*GitLab) APIURL(instanceURL string) string {
-	return fmt.Sprintf("%s/api/v4", instanceURL)
 }
 
 // CreateRepository creates a GitLab project with given ID.
@@ -118,7 +108,6 @@ func (gl *GitLab) CreateRepository(repository *vcs.Repository) error {
 			*gitlab.MergeRequestChange
 			*gitlab.MergeRequest
 		}{},
-		commitsDiff: map[string]*gitlab.CommitsDiff{},
 	}
 	return nil
 }
@@ -155,6 +144,10 @@ func (gl *GitLab) listRepositories(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for list repository: %v", err))
 	}
 	return c.String(http.StatusOK, string(buf))
+}
+
+func (*GitLab) deleteRepositoryWebhook(c echo.Context) error {
+	return c.String(http.StatusOK, "")
 }
 
 // createProjectHook creates a project webhook.
@@ -230,33 +223,6 @@ func (gl *GitLab) getFakeCommit(c echo.Context) error {
 	}
 
 	return c.String(http.StatusOK, string(buf))
-}
-
-// createProjectFile creates a project file.
-func (gl *GitLab) createProjectFile(c echo.Context) error {
-	pd, err := gl.validProject(c)
-	if err != nil {
-		return err
-	}
-
-	filePathEscaped := c.Param("filePath")
-	filePath, err := url.QueryUnescape(filePathEscaped)
-	if err != nil {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to query unescape %q, error: %v", filePathEscaped, err))
-	}
-	b, err := io.ReadAll(c.Request().Body)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read create project file request body, error: %v", err))
-	}
-	fileCommit := &gitlab.FileCommit{}
-	if err := json.Unmarshal(b, fileCommit); err != nil {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unmarshal create project file request body, error: %v", err))
-	}
-
-	// Save file.
-	pd.files[filePath] = fileCommit.Content
-
-	return c.String(http.StatusOK, "")
 }
 
 func (gl *GitLab) validProject(c echo.Context) (*projectData, error) {
@@ -387,49 +353,6 @@ func (*GitLab) createMergeRequestComment(echo.Context) error {
 	return nil
 }
 
-func (gl *GitLab) compareCommits(c echo.Context) error {
-	pd, err := gl.validProject(c)
-	if err != nil {
-		return err
-	}
-	key := fmt.Sprintf("%s...%s", c.QueryParam("from"), c.QueryParam("to"))
-	diff, ok := pd.commitsDiff[key]
-	if !ok {
-		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find the diff key %s", key))
-	}
-	buf, err := json.Marshal(diff)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal response body").SetInternal(err)
-	}
-	return c.String(http.StatusOK, string(buf))
-}
-
-// AddCommitsDiff adds a commits diff.
-func (gl *GitLab) AddCommitsDiff(projectID, fromCommit, toCommit string, fileDiffList []vcs.FileDiff) error {
-	pd, ok := gl.projects[projectID]
-	if !ok {
-		return errors.Errorf("GitLab project %s doesn't exist", projectID)
-	}
-	key := fmt.Sprintf("%s...%s", fromCommit, toCommit)
-	commitsDiff := &gitlab.CommitsDiff{
-		FileDiffList: []gitlab.MergeRequestFile{},
-	}
-	for _, fileDiff := range fileDiffList {
-		mrFile := gitlab.MergeRequestFile{
-			NewPath: fileDiff.Path,
-		}
-		switch fileDiff.Type {
-		case vcs.FileDiffTypeAdded:
-			mrFile.NewFile = true
-		case vcs.FileDiffTypeRemoved:
-			mrFile.DeletedFile = true
-		}
-		commitsDiff.FileDiffList = append(commitsDiff.FileDiffList, mrFile)
-	}
-	pd.commitsDiff[key] = commitsDiff
-	return nil
-}
-
 // SendWebhookPush sends out a webhook for a push event for the GitLab project
 // using given payload.
 func (gl *GitLab) SendWebhookPush(projectID string, payload []byte) error {
@@ -482,23 +405,6 @@ func (gl *GitLab) AddFiles(projectID string, files map[string]string) error {
 		pd.files[path] = content
 	}
 	return nil
-}
-
-// GetFiles returns files with given paths from the GitLab project.
-func (gl *GitLab) GetFiles(projectID string, filePaths ...string) (map[string]string, error) {
-	pd, ok := gl.projects[projectID]
-	if !ok {
-		return nil, errors.Errorf("gitlab project %q doesn't exist", projectID)
-	}
-
-	// Get files
-	files := make(map[string]string, len(filePaths))
-	for _, path := range filePaths {
-		if content, ok := pd.files[path]; ok {
-			files[path] = content
-		}
-	}
-	return files, nil
 }
 
 // AddPullRequest creates a new merge request and add changed files to it.

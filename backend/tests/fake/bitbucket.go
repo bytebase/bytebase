@@ -38,9 +38,6 @@ type bitbucketRepositoryData struct {
 	// refs is the map for repository branch. The map key is the branch ref, like
 	// "refs/heads/main".
 	refs map[string]*bitbucket.Branch
-	// diffStats is the map for commits compare. The map key has the format
-	// "to..from" which is SHA or branch name.
-	diffStats map[string][]*bitbucket.CommitDiffStat
 	// pullRequests is the map for repository pull request.
 	// the map key is the pull request id.
 	pullRequests map[int]struct {
@@ -62,11 +59,10 @@ func NewBitbucket(port int) VCSProvider {
 	g := e.Group("/2.0")
 	g.GET("/user/permissions/repositories", bb.listRepositories)
 	g.POST("/repositories/:owner/:repo/hooks", bb.createRepositoryWebhook)
+	g.DELETE("/repositories/:owner/:repo/hooks/:hook", bb.deleteRepositoryWebhook)
 	g.GET("/repositories/:owner/:repo/commit/:commitID", bb.getRepositoryCommit)
 	g.GET("/repositories/:owner/:repo/src/:ref/:filepath", bb.getRepositoryContent)
-	g.POST("/repositories/:owner/:repo/src", bb.createRepositoryFile)
 	g.GET("/repositories/:owner/:repo/refs/branches/:branchName", bb.getRepositoryBranch)
-	g.GET("/repositories/:owner/:repo/diffstat/:baseHead", bb.compareCommits)
 	g.GET("/repositories/:owner/:repo/pullrequests/:prID/diffstat", bb.listPullRequestFile)
 	g.GET("/repositories/:owner/:repo/pullrequests/:prID/comments", bb.createPullRequestComment)
 	return bb
@@ -88,6 +84,10 @@ func (bb *Bitbucket) listRepositories(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for list repository: %v", err))
 	}
 	return c.String(http.StatusOK, string(buf))
+}
+
+func (*Bitbucket) deleteRepositoryWebhook(c echo.Context) error {
+	return c.String(http.StatusOK, "")
 }
 
 func (bb *Bitbucket) createRepositoryWebhook(c echo.Context) error {
@@ -156,25 +156,6 @@ func (bb *Bitbucket) getRepositoryContent(c echo.Context) error {
 	return c.String(http.StatusOK, content)
 }
 
-func (bb *Bitbucket) createRepositoryFile(c echo.Context) error {
-	r, err := bb.validRepository(c)
-	if err != nil {
-		return err
-	}
-
-	params, err := c.FormParams()
-	if err != nil {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to get form params: %v", err))
-	}
-
-	for k, v := range params {
-		if k != "parents" && k != "branch" && k != "message" {
-			r.files[k] = v[0]
-		}
-	}
-	return nil
-}
-
 func (bb *Bitbucket) getRepositoryBranch(c echo.Context) error {
 	r, err := bb.validRepository(c)
 	if err != nil {
@@ -189,25 +170,6 @@ func (bb *Bitbucket) getRepositoryBranch(c echo.Context) error {
 	buf, err := json.Marshal(r.refs[fmt.Sprintf("refs/heads/%s", branchName)])
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for getting repository branch: %v", err))
-	}
-	return c.String(http.StatusOK, string(buf))
-}
-
-func (bb *Bitbucket) compareCommits(c echo.Context) error {
-	r, err := bb.validRepository(c)
-	if err != nil {
-		return err
-	}
-
-	key := c.Param("baseHead")
-	diff, ok := r.diffStats[key]
-	if !ok {
-		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find the diff key %s", key))
-	}
-
-	buf, err := json.Marshal(map[string]any{"values": diff})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal response body").SetInternal(err)
 	}
 	return c.String(http.StatusOK, string(buf))
 }
@@ -237,11 +199,6 @@ func (bb *Bitbucket) ListenerAddr() net.Addr {
 	return bb.echo.ListenerAddr()
 }
 
-// APIURL returns the Bitbucket VCS provider API URL.
-func (*Bitbucket) APIURL(string) string {
-	return "https://api.bitbucket.org/2.0"
-}
-
 // CreateRepository creates a Bitbucket repository with given ID.
 func (bb *Bitbucket) CreateRepository(repository *vcs.Repository) error {
 	bb.repositories[repository.ID] = &bitbucketRepositoryData{
@@ -250,9 +207,8 @@ func (bb *Bitbucket) CreateRepository(repository *vcs.Repository) error {
 			Name:     repository.Name,
 			FullName: repository.FullPath,
 		},
-		files:     make(map[string]string),
-		refs:      map[string]*bitbucket.Branch{},
-		diffStats: map[string][]*bitbucket.CommitDiffStat{},
+		files: make(map[string]string),
+		refs:  map[string]*bitbucket.Branch{},
 		pullRequests: map[int]struct {
 			Files []*bitbucket.CommitDiffStat
 		}{},
@@ -277,34 +233,6 @@ func (bb *Bitbucket) CreateBranch(id, branchName string) error {
 			Hash: "fake_bitbucket_commit_sha",
 		},
 	}
-	return nil
-}
-
-// AddCommitsDiff adds a commits diff.
-func (bb *Bitbucket) AddCommitsDiff(repositoryID, fromCommit, toCommit string, fileDiffList []vcs.FileDiff) error {
-	r, ok := bb.repositories[repositoryID]
-	if !ok {
-		return errors.Errorf("Bitbucket repository %s doesn't exist", repositoryID)
-	}
-	key := fmt.Sprintf("%s..%s", toCommit, fromCommit)
-	var diffStats []*bitbucket.CommitDiffStat
-	for _, fileDiff := range fileDiffList {
-		diffStat := &bitbucket.CommitDiffStat{
-			New: bitbucket.CommitFile{
-				Path: fileDiff.Path,
-			},
-		}
-		switch fileDiff.Type {
-		case vcs.FileDiffTypeAdded:
-			diffStat.Status = "added"
-		case vcs.FileDiffTypeModified:
-			diffStat.Status = "modified"
-		case vcs.FileDiffTypeRemoved:
-			diffStat.Status = "removed"
-		}
-		diffStats = append(diffStats, diffStat)
-	}
-	r.diffStats[key] = diffStats
 	return nil
 }
 
@@ -357,23 +285,6 @@ func (bb *Bitbucket) AddFiles(repositoryID string, files map[string]string) erro
 		r.files[path] = content
 	}
 	return nil
-}
-
-// GetFiles returns files with given paths from the Bitbucket repository.
-func (bb *Bitbucket) GetFiles(repositoryID string, filePaths ...string) (map[string]string, error) {
-	r, ok := bb.repositories[repositoryID]
-	if !ok {
-		return nil, errors.Errorf("Bitbucket repository %q does not exist", repositoryID)
-	}
-
-	// Get files
-	files := make(map[string]string)
-	for _, path := range filePaths {
-		if content, ok := r.files[path]; ok {
-			files[path] = content
-		}
-	}
-	return files, nil
 }
 
 // AddPullRequest creates a new pull request and add changed files to it.
