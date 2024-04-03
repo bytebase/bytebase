@@ -1,5 +1,5 @@
 <template>
-  <NRadioGroup v-if="isCreating" :value="format" @update:value="handleUpdate">
+  <NRadioGroup v-if="editable" :value="format" @update:value="handleUpdate">
     <NRadio
       v-for="formatItem in availableExportFormats"
       :key="formatItem"
@@ -16,18 +16,17 @@
 import { NRadioGroup, NRadio } from "naive-ui";
 import { computed } from "vue";
 import { onMounted } from "vue";
-import { useIssueContext } from "@/components/IssueV1";
 import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
 
 const props = defineProps<{
   format: ExportFormat;
+  editable?: boolean;
 }>();
 
 const emit = defineEmits<{
   (event: "update:format", value: ExportFormat): void;
 }>();
 
-const { isCreating } = useIssueContext();
 const availableExportFormats = computed(() => [
   ExportFormat.JSON,
   ExportFormat.CSV,

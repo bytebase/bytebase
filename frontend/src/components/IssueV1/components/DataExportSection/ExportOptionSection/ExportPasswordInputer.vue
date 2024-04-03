@@ -1,10 +1,10 @@
 <template>
   <NSwitch
     v-model:value="state.encryptEnabled"
-    :disabled="!isCreating"
+    :disabled="!editable"
     size="small"
   />
-  <tempalte v-if="isCreating && state.encryptEnabled">
+  <tempalte v-if="editable && state.encryptEnabled">
     <span class="textinfolabel pl-4 pr-2"
       >{{ $t("common.password") }}
       <RequiredStar />
@@ -22,7 +22,6 @@
 <script setup lang="ts">
 import { NSwitch, NInput } from "naive-ui";
 import { reactive, watch } from "vue";
-import { useIssueContext } from "@/components/IssueV1";
 import RequiredStar from "@/components/RequiredStar.vue";
 
 interface LocalState {
@@ -32,13 +31,13 @@ interface LocalState {
 
 const props = defineProps<{
   password?: string;
+  editable?: boolean;
 }>();
 
 const emit = defineEmits<{
   (event: "update:password", value: string): void;
 }>();
 
-const { isCreating } = useIssueContext();
 const state = reactive<LocalState>({
   encryptEnabled: Boolean(props.password),
   password: props.password || "",

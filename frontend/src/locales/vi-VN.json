@@ -2585,7 +2585,7 @@
     "star": "Ngôi sao",
     "unstar": "Bỏ dấu sao",
     "starred": "Được gắn dấu sao",
-    "shared-with-me": "Chia sẻ với tôi",
+    "shared": "Chia sẻ",
     "actions": {
       "sync-from-vcs": "Đồng bộ hóa tập lệnh SQL từ VCS"
     },

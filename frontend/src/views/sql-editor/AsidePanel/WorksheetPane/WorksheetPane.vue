@@ -13,11 +13,7 @@
     <NTabPane name="starred" :tab="$t('sheet.starred')">
       <SheetList view="starred" />
     </NTabPane>
-    <NTabPane
-      v-if="!isStandaloneMode"
-      name="shared"
-      :tab="$t('sheet.shared-with-me')"
-    >
+    <NTabPane v-if="!isStandaloneMode" name="shared" :tab="$t('sheet.shared')">
       <SheetList view="shared" />
     </NTabPane>
   </NTabs>
