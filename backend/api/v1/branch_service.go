@@ -203,7 +203,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 		if databaseSchema == nil {
 			return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 		}
-		filteredBaseSchemaMetadata := filterDatabaseMetadata(databaseSchema.GetMetadata())
+		filteredBaseSchemaMetadata := filterDatabaseMetadataByEngine(databaseSchema.GetMetadata(), instance.Engine)
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
 			ProjectID:  project.ResourceID,
 			ResourceID: branchID,
@@ -296,7 +296,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
 		metadata, config := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
 		sanitizeCommentForSchemaMetadata(metadata)
-		filteredMetadata := filterDatabaseMetadata(metadata)
+		filteredMetadata := filterDatabaseMetadataByEngine(metadata, branch.Engine)
 
 		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(branch.Engine), metadata)
 		schema, err := schema.GetDesignSchema(branch.Engine, defaultSchema, string(branch.BaseSchema), metadata)
@@ -431,7 +431,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	mergedSchemaBytes := []byte(mergedSchema)
 
-	filteredMergedMetadata := filterDatabaseMetadata(mergedMetadata)
+	filteredMergedMetadata := filterDatabaseMetadataByEngine(mergedMetadata, baseBranch.Engine)
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
 		DatabaseConfig: mergedConfig,
@@ -509,7 +509,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	if err != nil {
 		return nil, err
 	}
-	filteredNewBaseMetadata := filterDatabaseMetadata(newBaseMetadata)
+	filteredNewBaseMetadata := filterDatabaseMetadataByEngine(newBaseMetadata, baseBranch.Engine)
 
 	var newHeadSchema string
 	var newHeadMetadata *storepb.DatabaseSchemaMetadata
@@ -562,7 +562,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 
 	newBaseSchemaBytes := []byte(newBaseSchema)
 	newHeadSchemaBytes := []byte(newHeadSchema)
-	filteredNewHeadMetadata := filterDatabaseMetadata(newHeadMetadata)
+	filteredNewHeadMetadata := filterDatabaseMetadataByEngine(newHeadMetadata, baseBranch.Engine)
 	if request.ValidateOnly {
 		baseBranch.Base = &storepb.BranchSnapshot{
 			Metadata:       filteredNewBaseMetadata,
@@ -894,7 +894,7 @@ func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata) 
 
 // filterDatabaseMetadata filter out the objects/attributes we do not support.
 // TODO: While supporting new objects/attributes, we should update this function.
-func filterDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *storepb.DatabaseSchemaMetadata {
+func filterDatabaseMetadataByEngine(metadata *storepb.DatabaseSchemaMetadata, engine storepb.Engine) *storepb.DatabaseSchemaMetadata {
 	filteredDatabase := &storepb.DatabaseSchemaMetadata{
 		Name: metadata.Name,
 	}
@@ -948,7 +948,34 @@ func filterDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *storepb.D
 				}
 				filteredTable.ForeignKeys = append(filteredTable.ForeignKeys, filteredFK)
 			}
+			if engine == storepb.Engine_MYSQL {
+				filteredTable.Partitions = table.Partitions
+			}
 			filteredSchema.Tables = append(filteredSchema.Tables, filteredTable)
+		}
+
+		if engine == storepb.Engine_MYSQL {
+			for _, function := range schema.Functions {
+				filteredFunction := &storepb.FunctionMetadata{
+					Name:       function.Name,
+					Definition: function.Definition,
+				}
+				filteredSchema.Functions = append(filteredSchema.Functions, filteredFunction)
+			}
+			for _, procedure := range schema.Procedures {
+				filteredProcedure := &storepb.ProcedureMetadata{
+					Name:       procedure.Name,
+					Definition: procedure.Definition,
+				}
+				filteredSchema.Procedures = append(filteredSchema.Procedures, filteredProcedure)
+			}
+			for _, view := range schema.Views {
+				filteredView := &storepb.ViewMetadata{
+					Name:       view.Name,
+					Definition: view.Definition,
+				}
+				filteredSchema.Views = append(filteredSchema.Views, filteredView)
+			}
 		}
 		filteredDatabase.Schemas = append(filteredDatabase.Schemas, filteredSchema)
 	}
@@ -979,7 +1006,40 @@ func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, target
 				continue
 			}
 		}
-		if len(trimSchema.Tables) > 0 {
+		for _, view := range schema.GetViews() {
+			tv := ts.GetView(view.GetName())
+			if tv == nil {
+				trimSchema.Views = append(trimSchema.Views, view)
+				continue
+			}
+			if view.GetDefinition() != tv.Definition {
+				trimSchema.Views = append(trimSchema.Views, view)
+				continue
+			}
+		}
+		for _, function := range schema.GetFunctions() {
+			tf := ts.GetFunction(function.GetName())
+			if tf == nil {
+				trimSchema.Functions = append(trimSchema.Functions, function)
+				continue
+			}
+			if function.GetDefinition() != tf.Definition {
+				trimSchema.Functions = append(trimSchema.Functions, function)
+				continue
+			}
+		}
+		for _, procedure := range schema.GetProcedures() {
+			tp := ts.GetProcedure(procedure.GetName())
+			if tp == nil {
+				trimSchema.Procedures = append(trimSchema.Procedures, procedure)
+				continue
+			}
+			if procedure.GetDefinition() != tp.Definition {
+				trimSchema.Procedures = append(trimSchema.Procedures, procedure)
+				continue
+			}
+		}
+		if len(trimSchema.Tables) > 0 || len(trimSchema.Views) > 0 || len(trimSchema.Functions) > 0 || len(trimSchema.Procedures) > 0 {
 			s.Schemas = append(s.Schemas, trimSchema)
 		}
 	}
@@ -1016,6 +1076,9 @@ func equalTable(s, t *storepb.TableMetadata) bool {
 		return false
 	}
 	if len(s.Indexes) != len(t.Indexes) {
+		return false
+	}
+	if len(s.Partitions) != len(t.Partitions) {
 		return false
 	}
 	if s.GetComment() != t.GetComment() {
@@ -1084,6 +1147,40 @@ func equalTable(s, t *storepb.TableMetadata) bool {
 			return false
 		}
 		if !slices.Equal(si.GetExpressions(), ti.GetExpressions()) {
+			return false
+		}
+	}
+
+	for i := 0; i < len(s.GetPartitions()); i++ {
+		si, ti := s.GetPartitions()[i], t.GetPartitions()[i]
+		if !equalPartitions(si, ti) {
+			return false
+		}
+	}
+	return true
+}
+
+func equalPartitions(s, t *storepb.TablePartitionMetadata) bool {
+	if s.GetName() != t.GetName() {
+		return false
+	}
+	if s.Type != t.Type {
+		return false
+	}
+	if s.Expression != t.Expression {
+		return false
+	}
+	if s.Value != t.Value {
+		return false
+	}
+	if s.UseDefault != t.UseDefault {
+		return false
+	}
+	if len(s.Subpartitions) != len(t.Subpartitions) {
+		return false
+	}
+	for i := 0; i < len(s.Subpartitions); i++ {
+		if !equalPartitions(s.Subpartitions[i], t.Subpartitions[i]) {
 			return false
 		}
 	}
