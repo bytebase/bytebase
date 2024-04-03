@@ -199,6 +199,11 @@ message Plan {
   }
   VCSSource vcs_source = 7;
 
+  // Format: users/hello@world.com
+  string creator = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
     // Format: instances/{instance}

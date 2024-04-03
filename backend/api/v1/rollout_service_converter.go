@@ -44,7 +44,14 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 			VcsConnector:   plan.Config.GetVcsSource().GetVcsConnector(),
 			PullRequestUrl: plan.Config.GetVcsSource().GetPullRequestUrl(),
 		},
+		CreateTime: timestamppb.New(time.Unix(plan.CreatedTs, 0)),
 	}
+
+	creator, err := s.GetUserByID(ctx, plan.CreatorUID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get plan creator")
+	}
+	p.Creator = fmt.Sprintf("users/%s", creator.Email)
 
 	issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &plan.UID})
 	if err != nil {

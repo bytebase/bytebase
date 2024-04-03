@@ -98,7 +98,12 @@ export interface Plan {
   title: string;
   description: string;
   steps: Plan_Step[];
-  vcsSource: Plan_VCSSource | undefined;
+  vcsSource:
+    | Plan_VCSSource
+    | undefined;
+  /** Format: users/hello@world.com */
+  creator: string;
+  createTime: Date | undefined;
 }
 
 export interface Plan_Step {
@@ -1577,7 +1582,17 @@ export const UpdatePlanRequest = {
 };
 
 function createBasePlan(): Plan {
-  return { name: "", uid: "", issue: "", title: "", description: "", steps: [], vcsSource: undefined };
+  return {
+    name: "",
+    uid: "",
+    issue: "",
+    title: "",
+    description: "",
+    steps: [],
+    vcsSource: undefined,
+    creator: "",
+    createTime: undefined,
+  };
 }
 
 export const Plan = {
@@ -1602,6 +1617,12 @@ export const Plan = {
     }
     if (message.vcsSource !== undefined) {
       Plan_VCSSource.encode(message.vcsSource, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.creator !== "") {
+      writer.uint32(66).string(message.creator);
+    }
+    if (message.createTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -1662,6 +1683,20 @@ export const Plan = {
 
           message.vcsSource = Plan_VCSSource.decode(reader, reader.uint32());
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1680,6 +1715,8 @@ export const Plan = {
       description: isSet(object.description) ? globalThis.String(object.description) : "",
       steps: globalThis.Array.isArray(object?.steps) ? object.steps.map((e: any) => Plan_Step.fromJSON(e)) : [],
       vcsSource: isSet(object.vcsSource) ? Plan_VCSSource.fromJSON(object.vcsSource) : undefined,
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
     };
   },
 
@@ -1706,6 +1743,12 @@ export const Plan = {
     if (message.vcsSource !== undefined) {
       obj.vcsSource = Plan_VCSSource.toJSON(message.vcsSource);
     }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
     return obj;
   },
 
@@ -1723,6 +1766,8 @@ export const Plan = {
     message.vcsSource = (object.vcsSource !== undefined && object.vcsSource !== null)
       ? Plan_VCSSource.fromPartial(object.vcsSource)
       : undefined;
+    message.creator = object.creator ?? "";
+    message.createTime = object.createTime ?? undefined;
     return message;
   },
 };
