@@ -419,10 +419,8 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 				Labels: labels,
 			}
 		case "environment":
-			if request.Database.Environment == "" {
-				unsetEnvironment := ""
-				patch.EnvironmentID = &unsetEnvironment
-			} else {
+			patch.UpdateEnvironmentID = true
+			if request.Database.Environment != "" {
 				environmentID, err := common.GetEnvironmentID(request.Database.Environment)
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -440,7 +438,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 				if environment.Deleted {
 					return nil, status.Errorf(codes.FailedPrecondition, "environment %q is deleted", environmentID)
 				}
-				patch.EnvironmentID = &environment.ResourceID
+				patch.EnvironmentID = environment.ResourceID
 			}
 		}
 	}
