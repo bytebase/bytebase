@@ -58,12 +58,13 @@
         {{ $t("repository.database-group-description") }}
       </div>
       <DatabaseGroupSelect
-        v-model:selected="repositoryConfig.databaseGroup"
+        :selected="repositoryConfig.databaseGroup"
         class="mt-2"
         style="width: 100%"
         :project="project.name"
         :clearable="true"
         :select-first-as-default="false"
+        @update:selected="(val) => (repositoryConfig.databaseGroup = val ?? '')"
       />
     </div>
     <div>

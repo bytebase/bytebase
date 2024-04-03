@@ -31,6 +31,8 @@ const props = withDefaults(
   }>(),
   {
     clearable: false,
+    selected: undefined,
+    environment: undefined,
     selectFirstAsDefault: true,
   }
 );
