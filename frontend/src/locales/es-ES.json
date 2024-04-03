@@ -2229,7 +2229,8 @@
     "view-table-detail": "Ver detalle de la tabla",
     "view-database-detail": "Ver detalle de la base de datos",
     "copy-all-column-names": "Copiar todos los nombres de las columnas",
-    "view-schema-text": "Ver texto del esquema"
+    "view-schema-text": "Ver texto del esquema",
+    "override-current-statement": "Anular la declaración actual"
   },
   "schema-editor": {
     "self": "Editor de esquema",
