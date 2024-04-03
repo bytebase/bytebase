@@ -34,7 +34,7 @@
 
 <script lang="ts" setup>
 import { computed, reactive, ref, watchEffect } from "vue";
-import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
+import IdentityProviderCreateForm from "@/components/SSO/IdentityProviderCreateForm.vue";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { ssoNamePrefix } from "@/store/modules/v1/common";
 import { State } from "@/types/proto/v1/common";
