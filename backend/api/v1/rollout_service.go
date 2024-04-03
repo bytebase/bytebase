@@ -1060,6 +1060,33 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				return nil, err
 			}
 
+			// ExportDataConfig
+			if err := func() error {
+				if task.Type != api.TaskDatabaseDataExport {
+					return nil
+				}
+				payload := &api.TaskDatabaseDataExportPayload{}
+				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+					return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
+				}
+				config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
+				if !ok {
+					return nil
+				}
+				if config.ExportDataConfig.Format != convertExportFormat(payload.Format) {
+					format := convertToExportFormat(config.ExportDataConfig.Format)
+					taskPatch.ExportFormat = &format
+					doUpdate = true
+				}
+				if (config.ExportDataConfig.Password == nil && payload.Password != "") || (config.ExportDataConfig.Password != nil && *config.ExportDataConfig.Password != payload.Password) {
+					taskPatch.ExportPassword = config.ExportDataConfig.Password
+					doUpdate = true
+				}
+				return nil
+			}(); err != nil {
+				return nil, err
+			}
+
 			// version
 			if err := func() error {
 				switch task.Type {

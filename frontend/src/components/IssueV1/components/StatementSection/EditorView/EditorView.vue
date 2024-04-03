@@ -16,9 +16,6 @@
           >
             🎈{{ $t("sql-review.unlock-full-feature") }}
           </NButton>
-          <!-- <span v-if="sqlHint && !readonly" class="text-accent">{{
-        `(${sqlHint})`
-      }}</span> -->
         </div>
 
         <NButton
