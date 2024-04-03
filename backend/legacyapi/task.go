@@ -268,6 +268,8 @@ type TaskPatch struct {
 	// When RollbackEnabled is enabled, RollbackSheetID is kept till it's set to the new sheet ID by the runner.
 	RollbackSheetID *int
 	RollbackError   *string
+	ExportFormat    *storepb.ExportFormat
+	ExportPassword  *string
 
 	// Flags for gh-ost.
 	Flags *map[string]string
