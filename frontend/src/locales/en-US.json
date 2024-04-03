@@ -2229,7 +2229,8 @@
     "view-table-detail": "View table detail",
     "view-database-detail": "View database detail",
     "copy-all-column-names": "Copy all column names",
-    "view-schema-text": "View schema text"
+    "view-schema-text": "View schema text",
+    "override-current-statement": "Override current statement"
   },
   "schema-editor": {
     "self": "Schema Editor",
