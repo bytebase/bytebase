@@ -25,15 +25,17 @@
         <div class="flex flex-row gap-x-2 text-main">
           <NPopover :disabled="!isProductionEnvironment">
             <template #trigger>
-              <div
-                class="inline-flex items-center px-2 border text-sm rounded-sm"
-                :class="[
-                  isProductionEnvironment
-                    ? 'border-error text-error'
-                    : 'border-main text-main',
-                ]"
-              >
-                {{ environment.title }}
+              <div class="inline-flex items-center text-sm rounded-sm bg-white">
+                <span
+                  class="px-2 rounded-sm"
+                  :class="[
+                    isProductionEnvironment
+                      ? 'text-error bg-error/15'
+                      : 'text-main bg-control-bg',
+                  ]"
+                >
+                  {{ environment.title }}
+                </span>
               </div>
             </template>
             <template #default>

@@ -79,7 +79,7 @@ export const generateSimpleSelectAllStatement = (
   limit: number
 ) => {
   if (engine === Engine.MONGODB) {
-    return `db["${table}"].find().limit(${limit});`;
+    return `db.${table}.find().limit(${limit});`;
   }
 
   const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
