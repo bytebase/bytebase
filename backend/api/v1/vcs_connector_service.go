@@ -95,17 +95,13 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 	}
 
 	// Check branch existence.
-	notFound, err := isBranchNotFound(
+	if err := checkBranchExistence(
 		ctx,
 		vcsProvider,
 		request.GetVcsConnector().ExternalId,
 		request.GetVcsConnector().Branch,
-	)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check branch %s with error: %v", request.GetVcsConnector().Branch, err.Error())
-	}
-	if notFound {
-		return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", request.GetVcsConnector().Branch, request.GetVcsConnector().FullPath)
+	); err != nil {
+		return nil, err
 	}
 
 	baseDir := request.GetVcsConnector().BaseDirectory
@@ -307,20 +303,13 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 
 	// Check branch existence.
 	if v := update.Branch; v != nil {
-		if *v == "" {
-			return nil, status.Errorf(codes.InvalidArgument, "branch must be specified")
-		}
-		notFound, err := isBranchNotFound(
+		if err := checkBranchExistence(
 			ctx,
 			vcsProvider,
 			vcsConnector.Payload.ExternalId,
 			*v,
-		)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
-		}
-		if notFound {
-			return nil, status.Errorf(codes.NotFound, "branch %s not found in repository %s", *v, vcsConnector.Payload.FullPath)
+		); err != nil {
+			return nil, err
 		}
 	}
 
@@ -424,13 +413,17 @@ func convertStoreVCSConnector(ctx context.Context, stores *store.Store, vcsConne
 	return v1VCSConnector, nil
 }
 
-func isBranchNotFound(ctx context.Context, vcsProvider *store.VCSProviderMessage, externalID, branch string) (bool, error) {
-	_, err := vcs.Get(vcsProvider.Type, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).GetBranch(ctx, externalID, branch)
-
-	if common.ErrorCode(err) == common.NotFound {
-		return true, nil
+func checkBranchExistence(ctx context.Context, vcsProvider *store.VCSProviderMessage, externalID, branch string) error {
+	if branch == "" {
+		return status.Errorf(codes.InvalidArgument, "branch name is required")
 	}
-	return false, err
+	if _, err := vcs.Get(vcsProvider.Type, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).GetBranch(ctx, externalID, branch); err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return status.Errorf(codes.NotFound, "branch %s not found in repository %s", branch, externalID)
+		}
+		return status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
+	}
+	return nil
 }
 
 func createVCSWebhook(ctx context.Context, vcsProvider *store.VCSProviderMessage, webhookEndpointID, webhookSecretToken, externalRepoID, bytebaseEndpointURL string) (string, error) {

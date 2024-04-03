@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -48,9 +47,6 @@ type githubRepositoryData struct {
 		Files []*github.PullRequestFile
 		*github.PullRequest
 	}
-	// commitsDiff is the map for commits compare.
-	// The map key has the format "from...to" which is SHA or branch name.
-	commitsDiff map[string]*github.CommitsDiff
 }
 
 // NewGitHub creates a new fake implementation of GitHub VCS provider.
@@ -67,13 +63,12 @@ func NewGitHub(port int) VCSProvider {
 	g := e.Group("/api/v3")
 	g.GET("/user/repos", gh.listRepositories)
 	g.POST("/repos/:owner/:repo/hooks", gh.createRepositoryWebhook)
+	g.DELETE("/repos/:owner/:repo/hooks/:hook", gh.deleteRepositoryWebhook)
 	g.GET("/repos/:owner/:repo/git/commits/:commitID", gh.getRepositoryCommit)
 	g.GET("/repos/:owner/:repo/contents/:filePath", gh.readRepositoryFile)
-	g.PUT("/repos/:owner/:repo/contents/:filePath", gh.createRepositoryFile)
 	g.GET("/repos/:owner/:repo/git/ref/heads/:branchName", gh.getRepositoryBranch)
 	g.GET("/repos/:owner/:repo/pulls/:prID/files", gh.listPullRequestFile)
 	g.POST("/repos/:owner/:repo/issues/:prID/comments", gh.createIssueComment)
-	g.GET("/repos/:owner/:repo/compare/:baseHead", gh.compareCommits)
 	return gh
 }
 
@@ -87,6 +82,10 @@ func (gh *GitHub) listRepositories(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for list repository: %v", err))
 	}
 	return c.String(http.StatusOK, string(buf))
+}
+
+func (*GitHub) deleteRepositoryWebhook(c echo.Context) error {
+	return c.String(http.StatusOK, "")
 }
 
 func (gh *GitHub) createRepositoryWebhook(c echo.Context) error {
@@ -158,36 +157,6 @@ func (gh *GitHub) readRepositoryFile(c echo.Context) error {
 	return c.String(http.StatusBadRequest, "must accept vnd.github.raw")
 }
 
-func (gh *GitHub) createRepositoryFile(c echo.Context) error {
-	r, err := gh.validRepository(c)
-	if err != nil {
-		return err
-	}
-
-	filePathEscaped := c.Param("filePath")
-	filePath, err := url.QueryUnescape(filePathEscaped)
-	if err != nil {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unescape file path %q: %v", filePathEscaped, err))
-	}
-
-	body, err := io.ReadAll(c.Request().Body)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read request body for creating repository file: %v", err))
-	}
-
-	var fileCommit github.FileCommit
-	if err = json.Unmarshal(body, &fileCommit); err != nil {
-		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal request body for creating repository webhook: %v", err))
-	}
-
-	content, err := base64.StdEncoding.DecodeString(fileCommit.Content)
-	if err != nil {
-		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to decode file content for %q: %v", filePathEscaped, err))
-	}
-	r.files[filePath] = string(content)
-	return nil
-}
-
 func (gh *GitHub) getRepositoryBranch(c echo.Context) error {
 	r, err := gh.validRepository(c)
 	if err != nil {
@@ -239,26 +208,6 @@ func (gh *GitHub) listPullRequestFile(c echo.Context) error {
 	return c.String(http.StatusOK, string(buf))
 }
 
-func (gh *GitHub) compareCommits(c echo.Context) error {
-	r, err := gh.validRepository(c)
-	if err != nil {
-		return err
-	}
-
-	key := c.Param("baseHead")
-	diff, ok := r.commitsDiff[key]
-	if !ok {
-		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find the diff key %s", key))
-	}
-
-	buf, err := json.Marshal(diff)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal response body").SetInternal(err)
-	}
-
-	return c.String(http.StatusOK, string(buf))
-}
-
 func (*GitHub) createIssueComment(echo.Context) error {
 	return nil
 }
@@ -288,11 +237,6 @@ func (gh *GitHub) ListenerAddr() net.Addr {
 	return gh.echo.ListenerAddr()
 }
 
-// APIURL returns the GitHub VCS provider API URL.
-func (*GitHub) APIURL(instanceURL string) string {
-	return fmt.Sprintf("%s/api/v3", instanceURL)
-}
-
 // CreateRepository creates a GitHub repository with given ID.
 func (gh *GitHub) CreateRepository(repository *vcs.Repository) error {
 	gh.repositories[repository.FullPath] = &githubRepositoryData{
@@ -307,7 +251,6 @@ func (gh *GitHub) CreateRepository(repository *vcs.Repository) error {
 			Files []*github.PullRequestFile
 			*github.PullRequest
 		}{},
-		commitsDiff: map[string]*github.CommitsDiff{},
 	}
 	return nil
 }
@@ -330,34 +273,6 @@ func (gh *GitHub) CreateBranch(id, branchName string) error {
 		},
 	}
 
-	return nil
-}
-
-// AddCommitsDiff adds a commits diff.
-func (gh *GitHub) AddCommitsDiff(repositoryID, fromCommit, toCommit string, fileDiffList []vcs.FileDiff) error {
-	r, ok := gh.repositories[repositoryID]
-	if !ok {
-		return errors.Errorf("GitHub repository %s doesn't exist", repositoryID)
-	}
-	key := fmt.Sprintf("%s...%s", fromCommit, toCommit)
-	commitsDiff := &github.CommitsDiff{
-		Files: []github.PullRequestFile{},
-	}
-	for _, fileDiff := range fileDiffList {
-		prFile := github.PullRequestFile{
-			FileName: fileDiff.Path,
-		}
-		switch fileDiff.Type {
-		case vcs.FileDiffTypeAdded:
-			prFile.Status = "added"
-		case vcs.FileDiffTypeModified:
-			prFile.Status = "modified"
-		case vcs.FileDiffTypeRemoved:
-			prFile.Status = "removed"
-		}
-		commitsDiff.Files = append(commitsDiff.Files, prFile)
-	}
-	r.commitsDiff[key] = commitsDiff
 	return nil
 }
 
@@ -418,23 +333,6 @@ func (gh *GitHub) AddFiles(repositoryID string, files map[string]string) error {
 		r.files[path] = content
 	}
 	return nil
-}
-
-// GetFiles returns files with given paths from the GitHub repository.
-func (gh *GitHub) GetFiles(repositoryID string, filePaths ...string) (map[string]string, error) {
-	r, ok := gh.repositories[repositoryID]
-	if !ok {
-		return nil, errors.Errorf("GitHub repository %q does not exist", repositoryID)
-	}
-
-	// Get files
-	files := make(map[string]string)
-	for _, path := range filePaths {
-		if content, ok := r.files[path]; ok {
-			files[path] = content
-		}
-	}
-	return files, nil
 }
 
 // AddPullRequest creates a new pull request and add changed files to it.

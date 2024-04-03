@@ -30,6 +30,7 @@ var _ vcs.Provider = (*Provider)(nil)
 type Provider struct {
 	instanceURL string
 	authToken   string
+	RootAPIURL  string
 }
 
 func newProvider(config vcs.ProviderConfig) vcs.Provider {
@@ -44,7 +45,16 @@ func (*Provider) APIURL(instanceURL string) string {
 	return instanceURL
 }
 
-type project struct {
+func (p *Provider) rootAPIURL() string {
+	if strings.HasPrefix(p.instanceURL, "http://localhost:") {
+		// This is used for mock vcs server in test.
+		// TODO: find better ways without changing the code.
+		return p.instanceURL
+	}
+	return "https://app.vssps.visualstudio.com"
+}
+
+type Project struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	State string `json:"state"`
@@ -58,34 +68,33 @@ type Repository struct {
 	// The pipeline ci will use this url, so we need this url
 	RemoteURL string `json:"remoteUrl"`
 	// WebURL is the repo url in https://dev.azure.com/{org name}/{project name}/_git/{repo name}
-	WebURL  string  `json:"webUrl"`
-	Project project `json:"project"`
+	WebURL  string   `json:"webUrl"`
+	Project *Project `json:"project"`
 }
 
-// ChangesResponseChangeItem represents a Azure DevOps changes response change item.
-type ChangesResponseChangeItem struct {
+// CommitChangeItem represents a Azure DevOps changes response change item.
+type CommitChangeItem struct {
 	GitObjectType string `json:"gitObjectType"`
 	Path          string `json:"path"`
 	CommitID      string `json:"commitId"`
 }
 
-// ChangesResponseChange represents a Azure DevOps changes response change.
-type ChangesResponseChange struct {
-	Item       ChangesResponseChangeItem `json:"item"`
-	ChangeType string                    `json:"changeType"`
+// CommitChange represents a Azure DevOps changes response change.
+type CommitChange struct {
+	Item       *CommitChangeItem `json:"item"`
+	ChangeType string            `json:"changeType"`
 }
 
-// ChangesResponse represents a Azure DevOps changes response.
-type ChangesResponse struct {
-	Changes []ChangesResponseChange `json:"changes"`
+type changesResponse struct {
+	Changes []*CommitChange `json:"changes"`
 }
 
 // getChangesByCommit gets the changes by commit ID, and returns the list of blob files changed in the specify commit.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/commits/get-changes?view=azure-devops-rest-7.0&tabs=HTTP
 // TODO(zp): We should GET the changes pagenated, otherwise it may hit the Azure DevOps API limit.
-func (p *Provider) getChangesByCommit(ctx context.Context, externalRepositoryID, commitID string) (*ChangesResponse, error) {
-	apiURL, err := getRepositoryAPIURL(externalRepositoryID)
+func (p *Provider) getChangesByCommit(ctx context.Context, externalRepositoryID, commitID string) (*changesResponse, error) {
+	apiURL, err := p.getRepositoryAPIURL(externalRepositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -104,12 +113,12 @@ func (p *Provider) getChangesByCommit(ctx context.Context, externalRepositoryID,
 		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
 	}
 
-	changes := new(ChangesResponse)
+	changes := new(changesResponse)
 	if err := json.Unmarshal([]byte(body), changes); err != nil {
 		return nil, errors.Wrapf(err, "unmarshal body")
 	}
 
-	var result ChangesResponse
+	var result changesResponse
 	for _, change := range changes.Changes {
 		if change.Item.GitObjectType == "blob" {
 			result.Changes = append(result.Changes, change)
@@ -150,7 +159,7 @@ func (p *Provider) FetchRepositoryList(ctx context.Context, listAll bool) ([]*vc
 	urlParams.Set("api-version", "7.0")
 	for _, organization := range organizations {
 		if err := func() error {
-			url := fmt.Sprintf("https://dev.azure.com/%s/_apis/git/repositories?%s", url.PathEscape(organization), urlParams.Encode())
+			url := fmt.Sprintf("%s/%s/_apis/git/repositories?%s", p.APIURL(p.instanceURL), url.PathEscape(organization), urlParams.Encode())
 			code, body, err := internal.Get(ctx, url, p.getAuthorization())
 			if err != nil {
 				return errors.Wrapf(err, "GET %s", url)
@@ -180,7 +189,7 @@ func (p *Provider) FetchRepositoryList(ctx context.Context, listAll bool) ([]*vc
 					ID:       fmt.Sprintf("%s/%s/%s", organization, r.Project.ID, r.ID),
 					Name:     r.Name,
 					FullPath: fmt.Sprintf("%s/%s/%s", organization, r.Project.Name, r.Name),
-					WebURL:   r.RemoteURL,
+					WebURL:   r.WebURL,
 				})
 			}
 			return nil
@@ -200,6 +209,10 @@ func (p *Provider) FetchRepositoryList(ctx context.Context, listAll bool) ([]*vc
 	return result, nil
 }
 
+type Profile struct {
+	PublicAlias string `json:"publicAlias"`
+}
+
 // getAuthenticatedProfilePublicAlias gets the authenticated user's profile, and returns the public alias in the
 // profile response.
 //
@@ -207,7 +220,7 @@ func (p *Provider) FetchRepositoryList(ctx context.Context, listAll bool) ([]*vc
 func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context) (string, error) {
 	values := &url.Values{}
 	values.Set("api-version", "7.0")
-	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/profile/profiles/me?%s", values.Encode())
+	url := fmt.Sprintf("%s/_apis/profile/profiles/me?%s", p.rootAPIURL(), values.Encode())
 
 	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
@@ -217,16 +230,16 @@ func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context) (stri
 		return "", errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
 	}
 
-	type profileAlias struct {
-		PublicAlias string `json:"publicAlias"`
-	}
-
-	r := new(profileAlias)
+	r := new(Profile)
 	if err := json.Unmarshal([]byte(body), r); err != nil {
 		return "", errors.Wrapf(err, "failed to unmarshal profile response body, code %v", code)
 	}
 
 	return r.PublicAlias, nil
+}
+
+type Organization struct {
+	AccountName string `json:"accountName"`
 }
 
 // listOrganizationsForMember lists all organization for a given member.
@@ -236,7 +249,7 @@ func (p *Provider) listOrganizationsForMember(ctx context.Context, memberID stri
 	urlParams := &url.Values{}
 	urlParams.Set("memberId", memberID)
 	urlParams.Set("api-version", "7.0")
-	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/accounts?%s", urlParams.Encode())
+	url := fmt.Sprintf("%s/_apis/accounts?%s", p.rootAPIURL(), urlParams.Encode())
 
 	code, body, err := internal.Get(ctx, url, p.getAuthorization())
 	if err != nil {
@@ -246,12 +259,9 @@ func (p *Provider) listOrganizationsForMember(ctx context.Context, memberID stri
 		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
 	}
 
-	type accountsValue struct {
-		AccountName string `json:"accountName"`
-	}
 	type accountsResponse struct {
 		Count int             `json:"count"`
-		Value []accountsValue `json:"value"`
+		Value []*Organization `json:"value"`
 	}
 
 	r := new(accountsResponse)
@@ -271,7 +281,7 @@ func (p *Provider) listOrganizationsForMember(ctx context.Context, memberID stri
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/items/get?view=azure-devops-rest-7.0&tabs=HTTP
 func (p *Provider) ReadFileContent(ctx context.Context, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
-	apiURL, err := getRepositoryAPIURL(repositoryID)
+	apiURL, err := p.getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return "", err
 	}
@@ -307,6 +317,15 @@ func (p *Provider) ReadFileContent(ctx context.Context, repositoryID, filePath s
 	return string(body), nil
 }
 
+type BranchCommit struct {
+	CommitID string `json:"commitId"`
+}
+
+type Branch struct {
+	Name   string        `json:"name"`
+	Commit *BranchCommit `json:"commit"`
+}
+
 // GetBranch try to retrieve the branch from the repository, and returns the last commit ID of the branch, if the branch
 // does not exist, it returns common.NotFound.
 // Args:
@@ -315,11 +334,7 @@ func (p *Provider) ReadFileContent(ctx context.Context, repositoryID, filePath s
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/stats/get?view=azure-devops-rest-7.0&tabs=HTTP
 func (p *Provider) GetBranch(ctx context.Context, repositoryID, branchName string) (*vcs.BranchInfo, error) {
-	if branchName == "" {
-		return nil, errors.New("branch name is required")
-	}
-
-	apiURL, err := getRepositoryAPIURL(repositoryID)
+	apiURL, err := p.getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -337,15 +352,7 @@ func (p *Provider) GetBranch(ctx context.Context, repositoryID, branchName strin
 		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))
 	}
 
-	type branchStatResponseCommit struct {
-		CommitID string `json:"commitId"`
-	}
-	type branchStatResponse struct {
-		Name   string                   `json:"name"`
-		Commit branchStatResponseCommit `json:"commit"`
-	}
-
-	r := new(branchStatResponse)
+	r := new(Branch)
 	if err := json.Unmarshal([]byte(body), r); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal get the static of the branch %s of the repository %s with response body, body: %s", branchName, repositoryID, string(body))
 	}
@@ -401,7 +408,7 @@ func (p *Provider) CreatePullRequestComment(ctx context.Context, repositoryID, p
 		return errors.Wrap(err, "failed to marshal request body for creating pull request comment")
 	}
 
-	apiURL, err := getRepositoryAPIURL(repositoryID)
+	apiURL, err := p.getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return err
 	}
@@ -432,12 +439,12 @@ func (p *Provider) CreateWebhook(ctx context.Context, externalRepositoryID strin
 	organizationName, _, _ := parts[0], parts[1], parts[2]
 	urlParams := &url.Values{}
 	urlParams.Set("api-version", "7.0")
-	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/hooks/subscriptions?%s", url.PathEscape(organizationName), urlParams.Encode())
+	url := fmt.Sprintf("%s/%s/_apis/hooks/subscriptions?%s", p.APIURL(p.instanceURL), url.PathEscape(organizationName), urlParams.Encode())
 	code, body, err := internal.Post(ctx, url, p.getAuthorization(), payload)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create webhook")
 	}
-	if code != http.StatusOK {
+	if code >= 300 {
 		return "", errors.Errorf("failed to create webhook, code: %v, body: %s", code, string(body))
 	}
 
@@ -464,7 +471,7 @@ func (p *Provider) DeleteWebhook(ctx context.Context, _, webhookID string) error
 
 	values := &url.Values{}
 	values.Set("api-version", "7.0")
-	url := fmt.Sprintf("https://dev.azure.com/%s/_apis/hooks/subscriptions/%s?%s", url.PathEscape(organizationName), url.PathEscape(webhookID), values.Encode())
+	url := fmt.Sprintf("%s/%s/_apis/hooks/subscriptions/%s?%s", p.APIURL(p.instanceURL), url.PathEscape(organizationName), url.PathEscape(webhookID), values.Encode())
 
 	code, body, err := internal.Delete(ctx, url, p.getAuthorization())
 	if err != nil {
@@ -477,7 +484,7 @@ func (p *Provider) DeleteWebhook(ctx context.Context, _, webhookID string) error
 	return nil
 }
 
-func getRepositoryAPIURL(repositoryID string) (string, error) {
+func (p *Provider) getRepositoryAPIURL(repositoryID string) (string, error) {
 	// By design, we encode the repository ID as <organization>/<projectID>/<repositoryID> for Azure DevOps.
 	parts := strings.Split(repositoryID, "/")
 	if len(parts) != 3 {
@@ -485,7 +492,7 @@ func getRepositoryAPIURL(repositoryID string) (string, error) {
 	}
 	organizationName, projectName, repositoryID := parts[0], parts[1], parts[2]
 
-	return fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/git/repositories/%s", url.PathEscape(organizationName), url.PathEscape(projectName), url.PathEscape(repositoryID)), nil
+	return fmt.Sprintf("%s/%s/%s/_apis/git/repositories/%s", p.APIURL(p.instanceURL), url.PathEscape(organizationName), url.PathEscape(projectName), url.PathEscape(repositoryID)), nil
 }
 
 // getAuthorization returns the encoded azure token for authorization.
