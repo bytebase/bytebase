@@ -1181,7 +1181,7 @@
       "options": "Opciones de exportación",
       "format": "Formato",
       "encrypt": "Cifrar",
-      "exported-file-downloaded": "Archivo Descargado"
+      "file-downloaded": "Archivo Descargado"
     }
   },
   "alter-schema": {
