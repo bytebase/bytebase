@@ -15,7 +15,7 @@
     </div>
 
     <NDataTable
-      v-if="vcsList.length > 0"
+      v-if="vcsList.length > 0 || loading"
       :data="vcsList"
       :columns="columnList"
       :striped="true"
@@ -28,7 +28,7 @@
 <script lang="ts" setup>
 import { NButton, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
-import { computed, watchEffect, h } from "vue";
+import { computed, watchEffect, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import VCSIcon from "@/components/VCS/VCSIcon.vue";
@@ -46,13 +46,15 @@ const currentUser = useCurrentUserV1();
 const vcsV1Store = useVCSProviderStore();
 const router = useRouter();
 const { t } = useI18n();
+const loading = ref<boolean>(true);
 
 const hasCreateVCSPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUser.value, "bb.vcsProviders.create");
 });
 
-const prepareVCSList = () => {
-  vcsV1Store.getOrFetchVCSList();
+const prepareVCSList = async () => {
+  await vcsV1Store.getOrFetchVCSList();
+  loading.value = false;
 };
 
 watchEffect(prepareVCSList);
@@ -74,7 +76,7 @@ const columnList = computed((): DataTableColumn<VCSProvider>[] => {
       title: t("common.name"),
       render: (vcs) =>
         h("div", { class: "flex items-center gap-x-2" }, [
-          h(VCSIcon, { type: vcs.type, customClass: "h-6" }),
+          h(VCSIcon, { type: vcs.type, customClass: "h-5" }),
           vcs.title,
         ]),
     },
