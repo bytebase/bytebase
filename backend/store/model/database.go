@@ -243,6 +243,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			internalViews:            make(map[string]*ViewMetadata),
 			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
 			internalFunctions:        make(map[string]*FunctionMetadata),
+			internalProcedures:       make(map[string]*ProcedureMetadata),
 		}
 		for _, table := range schema.Tables {
 			tables, names := buildTablesMetadata(table)
@@ -275,6 +276,11 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 				Definition: function.Definition,
 			}
 		}
+		for _, procedure := range schema.Procedures {
+			schemaMetadata.internalProcedures[procedure.Name] = &ProcedureMetadata{
+				Definition: procedure.Definition,
+			}
+		}
 		databaseMetadata.internal[schema.Name] = schemaMetadata
 	}
 	return databaseMetadata
@@ -301,6 +307,7 @@ type SchemaMetadata struct {
 	internalViews            map[string]*ViewMetadata
 	internalMaterializedView map[string]*MaterializedViewMetadata
 	internalFunctions        map[string]*FunctionMetadata
+	internalProcedures       map[string]*ProcedureMetadata
 }
 
 // GetTable gets the schema by name.
@@ -311,6 +318,10 @@ func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 // GetView gets the view by name.
 func (s *SchemaMetadata) GetView(name string) *ViewMetadata {
 	return s.internalViews[name]
+}
+
+func (s *SchemaMetadata) GetProcedure(name string) *ProcedureMetadata {
+	return s.internalProcedures[name]
 }
 
 // GetMaterializedView gets the materialized view by name.
@@ -483,5 +494,9 @@ type MaterializedViewMetadata struct {
 }
 
 type FunctionMetadata struct {
+	Definition string
+}
+
+type ProcedureMetadata struct {
 	Definition string
 }
