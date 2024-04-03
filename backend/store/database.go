@@ -47,7 +47,8 @@ type UpdateDatabaseMessage struct {
 	Secrets              *storepb.Secrets
 	DataShare            *bool
 	ServiceName          *string
-	EnvironmentID        *string
+	UpdateEnvironmentID  bool
+	EnvironmentID        string
 
 	// MetadataUpsert upserts the top-level messages.
 	MetadataUpsert *storepb.DatabaseMetadata
@@ -263,6 +264,10 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	}
 	defer tx.Rollback()
 
+	var environment *string
+	if create.EnvironmentID != "" {
+		environment = &create.EnvironmentID
+	}
 	// We will do on conflict update the column updater_id for returning the ID because on conflict do nothing will not return anything.
 	query := `
 		INSERT INTO db (
@@ -294,7 +299,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		api.SystemBotID,
 		instance.UID,
 		project.UID,
-		create.EnvironmentID,
+		environment,
 		create.DatabaseName,
 		create.SyncState,
 		create.SuccessfulSyncTimeTs,
@@ -333,8 +338,12 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		}
 		set, args = append(set, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, project.UID)
 	}
-	if v := patch.EnvironmentID; v != nil {
-		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+	if patch.UpdateEnvironmentID {
+		var environment *string
+		if patch.EnvironmentID != "" {
+			environment = &patch.EnvironmentID
+		}
+		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, environment)
 	}
 	if v := patch.SyncState; v != nil {
 		set, args = append(set, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
@@ -517,11 +526,12 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	for rows.Next() {
 		databaseMessage := &DatabaseMessage{}
 		var storedVersion, secretsString, metadataString string
+		var effectiveEnvironment, environment sql.NullString
 		if err := rows.Scan(
 			&databaseMessage.UID,
 			&databaseMessage.ProjectID,
-			&databaseMessage.EffectiveEnvironmentID,
-			&databaseMessage.EnvironmentID,
+			&effectiveEnvironment,
+			&environment,
 			&databaseMessage.InstanceID,
 			&databaseMessage.DatabaseName,
 			&databaseMessage.SyncState,
@@ -533,6 +543,12 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&metadataString,
 		); err != nil {
 			return nil, err
+		}
+		if effectiveEnvironment.Valid {
+			databaseMessage.EffectiveEnvironmentID = effectiveEnvironment.String
+		}
+		if environment.Valid {
+			databaseMessage.EnvironmentID = environment.String
 		}
 		version, err := model.NewVersion(storedVersion)
 		if err != nil {
