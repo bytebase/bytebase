@@ -2001,7 +2001,7 @@ InstanceOptions is the option for instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| task_runs | [string](#string) | repeated |  |
+| tasks | [string](#string) | repeated |  |
 | to_status | [IssueCommentPayload.TaskRunUpdate.Status](#bytebase-store-IssueCommentPayload-TaskRunUpdate-Status) | optional |  |
 
 

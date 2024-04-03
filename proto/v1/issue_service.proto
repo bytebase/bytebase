@@ -513,7 +513,7 @@ message IssueComment {
   }
 
   message TaskRunUpdate {
-    repeated string task_runs = 1;
+    repeated string tasks = 1;
     optional Status to_status = 2;
 
     enum Status {

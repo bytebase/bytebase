@@ -763,7 +763,7 @@ export interface IssueComment_StageEnd {
 }
 
 export interface IssueComment_TaskRunUpdate {
-  taskRuns: string[];
+  tasks: string[];
   toStatus?: IssueComment_TaskRunUpdate_Status | undefined;
 }
 
@@ -3734,12 +3734,12 @@ export const IssueComment_StageEnd = {
 };
 
 function createBaseIssueComment_TaskRunUpdate(): IssueComment_TaskRunUpdate {
-  return { taskRuns: [], toStatus: undefined };
+  return { tasks: [], toStatus: undefined };
 }
 
 export const IssueComment_TaskRunUpdate = {
   encode(message: IssueComment_TaskRunUpdate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.taskRuns) {
+    for (const v of message.tasks) {
       writer.uint32(10).string(v!);
     }
     if (message.toStatus !== undefined) {
@@ -3760,7 +3760,7 @@ export const IssueComment_TaskRunUpdate = {
             break;
           }
 
-          message.taskRuns.push(reader.string());
+          message.tasks.push(reader.string());
           continue;
         case 2:
           if (tag !== 16) {
@@ -3780,15 +3780,15 @@ export const IssueComment_TaskRunUpdate = {
 
   fromJSON(object: any): IssueComment_TaskRunUpdate {
     return {
-      taskRuns: globalThis.Array.isArray(object?.taskRuns) ? object.taskRuns.map((e: any) => globalThis.String(e)) : [],
+      tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => globalThis.String(e)) : [],
       toStatus: isSet(object.toStatus) ? issueComment_TaskRunUpdate_StatusFromJSON(object.toStatus) : undefined,
     };
   },
 
   toJSON(message: IssueComment_TaskRunUpdate): unknown {
     const obj: any = {};
-    if (message.taskRuns?.length) {
-      obj.taskRuns = message.taskRuns;
+    if (message.tasks?.length) {
+      obj.tasks = message.tasks;
     }
     if (message.toStatus !== undefined) {
       obj.toStatus = issueComment_TaskRunUpdate_StatusToJSON(message.toStatus);
@@ -3801,7 +3801,7 @@ export const IssueComment_TaskRunUpdate = {
   },
   fromPartial(object: DeepPartial<IssueComment_TaskRunUpdate>): IssueComment_TaskRunUpdate {
     const message = createBaseIssueComment_TaskRunUpdate();
-    message.taskRuns = object.taskRuns?.map((e) => e) || [];
+    message.tasks = object.tasks?.map((e) => e) || [];
     message.toStatus = object.toStatus ?? undefined;
     return message;
   },
