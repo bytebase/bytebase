@@ -1,11 +1,16 @@
 <template>
   <div class="gap-y-1 h-full flex flex-col relative">
-    <div class="px-1">
-      <SearchBox
-        v-model:value="searchPattern"
-        size="small"
-        style="width: 100%; max-width: 100%"
-      />
+    <div class="px-1 flex flex-row gap-1">
+      <div class="flex-1">
+        <SearchBox
+          v-model:value="searchPattern"
+          size="small"
+          style="width: 100%; max-width: 100%"
+        />
+      </div>
+      <div class="shrink-0 flex items-center">
+        <SyncSchemaButton :database="database" :metadata="metadata" />
+      </div>
     </div>
 
     <div
@@ -79,6 +84,7 @@ import { findAncestor, isDescendantOf } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import { provideHoverStateContext } from "./HoverPanel";
 import HoverPanel from "./HoverPanel";
+import SyncSchemaButton from "./SyncSchemaButton.vue";
 import { Label } from "./TreeNode";
 import { selectAllFromTableOrView, useDropdown } from "./actions";
 import {

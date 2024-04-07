@@ -67,10 +67,13 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     const composedDatabaseList = await upsertDatabaseMap(databases);
     return composedDatabaseList;
   };
-  const syncDatabase = async (database: string) => {
+  const syncDatabase = async (database: string, refresh = false) => {
     await databaseServiceClient.syncDatabase({
       name: database,
     });
+    if (refresh) {
+      await fetchDatabaseByName(database);
+    }
   };
   const databaseListByUser = (user: User) => {
     return databaseList.value.filter((db) => {

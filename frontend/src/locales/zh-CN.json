@@ -2230,7 +2230,10 @@
     "view-database-detail": "查看数据库详情",
     "copy-all-column-names": "复制所有列名",
     "view-schema-text": "查看文本 Schema",
-    "override-current-statement": "覆盖当前语句"
+    "override-current-statement": "覆盖当前语句",
+    "last-synced": "上次同步时间：{time}",
+    "click-to-sync-now": "点击立即同步",
+    "sync-in-progress": "正在同步"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
