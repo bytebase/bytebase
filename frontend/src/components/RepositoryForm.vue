@@ -51,11 +51,19 @@
       />
     </div>
     <div>
-      <div class="textlabel">
+      <div class="textlabel flex items-center gap-x-1">
         {{ $t("database-group.self") }}
+        <FeatureBadge :feature="'bb.feature.database-grouping'" />
       </div>
       <div class="mt-1 textinfolabel">
         {{ $t("repository.database-group-description") }}
+        <span
+          v-if="hasDatabaseGroupPermission"
+          class="cursor-pointer normal-link"
+          @click="showDatabaseGroupPanel = true"
+        >
+          {{ $t("database-group.create") }}
+        </span>
       </div>
       <DatabaseGroupSelect
         :selected="repositoryConfig.databaseGroup"
@@ -98,20 +106,33 @@
       />
     </div>
   </div>
+
+  <DatabaseGroupPanel
+    :show="showDatabaseGroupPanel"
+    :project="project"
+    :resource-type="'DATABASE_GROUP'"
+    :redirect-to-detail-page="false"
+    @close="showDatabaseGroupPanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { Status } from "nice-grpc-common";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { DatabaseGroupSelect } from "@/components/v2/Select";
-import { useVCSConnectorStore } from "@/store";
-import type { RepositoryConfig } from "@/types";
-import type { ResourceId, ValidatedMessage } from "@/types";
+import { useVCSConnectorStore, hasFeature, useCurrentUserV1 } from "@/store";
+import type {
+  RepositoryConfig,
+  ComposedProject,
+  ResourceId,
+  ValidatedMessage,
+} from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
-import type { Project } from "@/types/proto/v1/project_service";
 import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
+import { hasProjectPermissionV2 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
+import FeatureBadge from "./FeatureGuard/FeatureBadge.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -121,7 +142,7 @@ const props = withDefaults(
     vcsName: string;
     repositoryInfo: VCSRepository;
     repositoryConfig: RepositoryConfig;
-    project: Project;
+    project: ComposedProject;
   }>(),
   {
     allowEdit: true,
@@ -129,8 +150,19 @@ const props = withDefaults(
   }
 );
 
+const showDatabaseGroupPanel = ref<boolean>(false);
 const { t } = useI18n();
 const vcsConnectorStore = useVCSConnectorStore();
+
+const hasDatabaseGroupPermission = computed(
+  () =>
+    hasFeature("bb.feature.database-grouping") &&
+    hasProjectPermissionV2(
+      props.project,
+      useCurrentUserV1().value,
+      "bb.projects.update"
+    )
+);
 
 const getWebhookLink = computed(() => {
   switch (props.vcsType) {
