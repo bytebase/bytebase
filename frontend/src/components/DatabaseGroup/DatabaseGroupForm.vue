@@ -22,13 +22,6 @@
           />
         </div>
       </div>
-      <div>
-        <p class="text-lg mb-2">{{ $t("common.environment") }}</p>
-        <EnvironmentSelect
-          v-model:environment="state.environmentId"
-          :disabled="!isCreating || disableEditDatabaseGroupFields"
-        />
-      </div>
       <div v-if="resourceType === 'DATABASE_GROUP'">
         <p class="text-lg mb-2">{{ $t("common.project") }}</p>
         <ProjectSelect
@@ -43,7 +36,6 @@
           v-model:selected="state.selectedDatabaseGroupId"
           :disabled="!isCreating || disableEditDatabaseGroupFields"
           :project="project.name"
-          :environment="state.environmentId || ''"
         />
       </div>
     </div>
@@ -56,6 +48,8 @@
           :expr="state.expr"
           :allow-admin="true"
           :factor-list="FactorList.get(resourceType) ?? []"
+          :factor-support-dropdown="factorSupportDropdown"
+          :factor-options-map="getFactorOptionsMap(resourceType)"
         />
       </div>
       <div class="col-span-2">
@@ -78,7 +72,7 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { head } from "lodash-es";
+import { cloneDeep, head } from "lodash-es";
 import { NInput } from "naive-ui";
 import { Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
@@ -109,10 +103,11 @@ import type {
 } from "@/types/proto/v1/project_service";
 import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
 import { getErrorCode } from "@/utils/grpcweb";
-import { EnvironmentSelect, ProjectSelect, ResourceIdField } from "../v2";
+import { ProjectSelect, ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import MatchedTableView from "./MatchedTableView.vue";
 import type { ResourceType } from "./utils";
+import { factorSupportDropdown, getFactorOptionsMap } from "./utils";
 import { FactorList } from "./utils";
 
 const props = defineProps<{
@@ -126,7 +121,6 @@ type LocalState = {
   isRequesting: boolean;
   resourceId: string;
   placeholder: string;
-  environmentId?: string;
   selectedDatabaseGroupId?: string;
   expr: ConditionGroupExpr;
 };
@@ -167,12 +161,10 @@ const resourceIdType = computed(() =>
 onMounted(async () => {
   if (isCreating.value && props.resourceType === "SCHEMA_GROUP") {
     if (props.parentDatabaseGroup) {
-      state.environmentId = props.parentDatabaseGroup.environment.uid;
       state.selectedDatabaseGroupId = props.parentDatabaseGroup.name;
     } else {
       const dbGroup = head(dbGroupStore.getAllDatabaseGroupList());
       if (dbGroup) {
-        state.environmentId = dbGroup.environment.uid;
         state.selectedDatabaseGroupId = dbGroup.name;
       }
     }
@@ -194,11 +186,8 @@ onMounted(async () => {
     const composedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
       databaseGroup.name
     );
-    if (composedDatabaseGroup.environment) {
-      state.environmentId = composedDatabaseGroup.environment.uid;
-    }
     if (composedDatabaseGroup.simpleExpr) {
-      state.expr = composedDatabaseGroup.simpleExpr;
+      state.expr = cloneDeep(composedDatabaseGroup.simpleExpr);
     }
   } else {
     const schemaGroupEntity = databaseGroup as SchemaGroup;
@@ -213,13 +202,10 @@ onMounted(async () => {
     const expr = await convertCELStringToExpr(expression);
     state.expr = expr;
 
-    // Fetch related database group environment.
-    const relatedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
+    // Fetch related database group.
+    await dbGroupStore.getOrFetchDBGroupByName(
       `${projectNamePrefix}${projectName}/${databaseGroupNamePrefix}${databaseGroupName}`
     );
-    if (relatedDatabaseGroup.environment) {
-      state.environmentId = relatedDatabaseGroup.environment.uid;
-    }
   }
 });
 
@@ -276,14 +262,10 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
   if (props.resourceType !== "DATABASE_GROUP") {
     return;
   }
-  if (!state.environmentId) {
-    return;
-  }
 
   state.isRequesting = true;
   const result = await dbGroupStore.fetchDatabaseGroupMatchList({
     projectName: props.project.name,
-    environmentId: state.environmentId,
     expr: state.expr,
   });
 
@@ -293,7 +275,7 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
 }, 500);
 
 watch(
-  [() => props.project.name, () => state.environmentId, () => state.expr],
+  [() => props.project.name, () => state.expr],
   updateDatabaseMatchingState,
   {
     immediate: true,

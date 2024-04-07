@@ -24,7 +24,6 @@ const props = withDefaults(
   defineProps<{
     project: string;
     selected?: string;
-    environment?: string;
     disabled?: boolean;
     clearable?: boolean;
     selectFirstAsDefault?: boolean;
@@ -32,7 +31,6 @@ const props = withDefaults(
   {
     clearable: false,
     selected: undefined,
-    environment: undefined,
     selectFirstAsDefault: true,
   }
 );
@@ -48,11 +46,7 @@ const state = reactive<LocalState>({
 const dbGroupStore = useDBGroupStore();
 
 const dbGroupList = computed(() => {
-  return dbGroupStore
-    .getDBGroupListByProjectName(props.project)
-    .filter((dbGroup) =>
-      props.environment ? dbGroup.environment.uid === props.environment : true
-    );
+  return dbGroupStore.getDBGroupListByProjectName(props.project);
 });
 const dbGroupOptions = computed(() => {
   return dbGroupList.value.map<SelectOption>((dbGroup) => ({
@@ -74,7 +68,7 @@ const invalidateSelectionIfNeeded = () => {
 };
 
 watch(
-  [() => props.project, () => props.selected, () => props.environment],
+  [() => props.project, () => props.selected],
   () => {
     invalidateSelectionIfNeeded();
     state.selectedDatabaseGroup = dbGroupList.value.find(

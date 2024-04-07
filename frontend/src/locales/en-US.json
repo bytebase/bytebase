@@ -3258,6 +3258,7 @@
       "column_name": "Column name",
       "classification_level": "Classification level",
       "resource_instance_id": "Instance ID",
+      "resource_environment_name": "Environment",
       "resource_database_name": "Database name",
       "resource_table_name": "Table name"
     },
