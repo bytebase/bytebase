@@ -65,6 +65,13 @@ func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
 	return errors.New("CheckSlowQueryLogEnabled() is not applicable to Elasticsearch")
 }
 
+// struct for getVersion().
+type VersionResult struct {
+	Version struct {
+		Number string `json:"number"`
+	} `json:"version"`
+}
+
 func (d *Driver) getVerison() (string, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%s", d.config.Host, d.config.Port), nil)
 	if err != nil {
@@ -84,23 +91,19 @@ func (d *Driver) getVerison() (string, error) {
 		return "", errors.Wrapf(err, "failed to close response's body")
 	}
 
-	var results map[string]any
-	err = json.Unmarshal(bytes, &results)
+	var result VersionResult
+	err = json.Unmarshal(bytes, &result)
 	if err != nil {
 		return "", err
 	}
 
-	versionJSON, ok := results["version"].(map[string]any)
-	if !ok {
-		return "", errors.New("type assertion fails: version")
-	}
+	return result.Version.Number, nil
+}
 
-	version, ok := versionJSON["number"].(string)
-	if !ok {
-		return "", errors.New("type assertion fails: number")
-	}
-
-	return version, nil
+type IndicesResult struct {
+	IndexSize string `json:"store.size"`
+	DocsCount string `json:"docs.count"`
+	Index     string `json:"index"`
 }
 
 func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
@@ -119,7 +122,7 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 		return nil, errors.Wrapf(err, "failed to close response's body")
 	}
 
-	var results []map[string]any
+	var results []IndicesResult
 	var indicesMetadata []*storepb.TableMetadata
 	if err := json.Unmarshal(bytes, &results); err != nil {
 		return nil, err
@@ -127,28 +130,19 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 
 	for _, m := range results {
 		// index size.
-		dataSizeStr, ok := m["store.size"].(string)
-		if !ok {
-			return nil, errors.New("type assertion fails: store.size")
-		}
-		datasize, err := unitConversion(dataSizeStr)
+		datasize, err := unitConversion(m.IndexSize)
 		if err != nil {
 			return nil, err
 		}
 
 		// document count.
-		docCountStr, ok := m["docs.count"].(string)
-		if !ok {
-			return nil, errors.New("assertion fails: docs.count")
-		}
-
-		docCount, err := strconv.Atoi(docCountStr)
+		docCount, err := strconv.Atoi(m.DocsCount)
 		if err != nil {
 			return nil, err
 		}
 
 		indicesMetadata = append(indicesMetadata, &storepb.TableMetadata{
-			Name:     m["index"].(string),
+			Name:     m.Index,
 			DataSize: datasize,
 			RowCount: int64(docCount),
 		})
@@ -156,7 +150,6 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 	return indicesMetadata, nil
 }
 
-// TODO(tommy): errors in conversion.
 func unitConversion(sizeWithUnit string) (int64, error) {
 	sizeWithUnit = strings.ToLower(sizeWithUnit)
 	sizeRe := regexp.MustCompile("([0-9.]+)([gmk]?b)")
