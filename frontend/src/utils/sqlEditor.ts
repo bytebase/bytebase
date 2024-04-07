@@ -130,20 +130,17 @@ export const tryConnectToCoreSQLEditorTab = (
       // Don't go further if the connection doesn't change.
       return;
     }
-    if (currentTab.status === "NEW" || !currentTab.sheet) {
-      // If the current tab is "fresh new", update its connection directly.
-      tabStore.updateCurrentTab(tab);
-      if (
-        overrideTitle &&
-        isSimilarToDefaultSQLEditorTabTitle(currentTab.title)
-      ) {
-        const title = suggestedTabTitleForSQLEditorConnection(tab.connection);
-        tabStore.updateCurrentTab({
-          title,
-        });
-      }
-      return;
+    tabStore.updateCurrentTab(tab);
+    if (
+      overrideTitle &&
+      isSimilarToDefaultSQLEditorTabTitle(currentTab.title)
+    ) {
+      const title = suggestedTabTitleForSQLEditorConnection(tab.connection);
+      tabStore.updateCurrentTab({
+        title,
+      });
     }
+    return;
   }
 
   // Otherwise select or add a new tab and set its connection.
