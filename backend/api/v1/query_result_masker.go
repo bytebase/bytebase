@@ -60,7 +60,7 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.Query
 		if err != nil {
 			return errors.Wrapf(err, "failed to get maskers for query span")
 		}
-		mask(maskers, results[i])
+		doMaskResult(maskers, results[i])
 	}
 
 	return nil
@@ -218,6 +218,7 @@ func (s *QueryResultMasker) getMasterForColumnResource(
 	}
 	return getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel), nil
 }
+
 func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *base.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnConfig, error) {
 	if sourceColumn == nil {
 		return nil, nil, nil
@@ -275,4 +276,71 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 
 	columnConfig = tableConfig.GetColumnConfig(sourceColumn.Column)
 	return columnMetadata, columnConfig, nil
+}
+
+func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.MaskingAlgorithmSetting_Algorithm, level storepb.MaskingLevel) masker.Masker {
+	if algorithm == nil {
+		switch level {
+		case storepb.MaskingLevel_FULL:
+			return masker.NewDefaultFullMasker()
+		case storepb.MaskingLevel_PARTIAL:
+			return masker.NewDefaultRangeMasker()
+		default:
+			return masker.NewNoneMasker()
+		}
+	}
+
+	switch m := algorithm.Mask.(type) {
+	case *storepb.MaskingAlgorithmSetting_Algorithm_FullMask_:
+		return masker.NewFullMasker(m.FullMask.Substitution)
+	case *storepb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
+		return masker.NewRangeMasker(convertRangeMaskSlices(m.RangeMask.Slices))
+	case *storepb.MaskingAlgorithmSetting_Algorithm_Md5Mask:
+		return masker.NewMD5Masker(m.Md5Mask.Salt)
+	}
+	return masker.NewNoneMasker()
+}
+
+func convertRangeMaskSlices(slices []*storepb.MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) []*masker.MaskRangeSlice {
+	var result []*masker.MaskRangeSlice
+	for _, slice := range slices {
+		result = append(result, &masker.MaskRangeSlice{
+			Start:        slice.Start,
+			End:          slice.End,
+			Substitution: slice.Substitution,
+		})
+	}
+	return result
+}
+
+func doMaskResult(maskers []masker.Masker, result *v1pb.QueryResult) {
+	sensitive := make([]bool, len(result.ColumnNames))
+	for i := range result.ColumnNames {
+		if i < len(maskers) {
+			switch maskers[i].(type) {
+			case *masker.NoneMasker:
+				sensitive[i] = false
+			default:
+				sensitive[i] = true
+			}
+		}
+	}
+
+	for i, row := range result.Rows {
+		for j, value := range row.Values {
+			if value == nil {
+				continue
+			}
+			maskedValue := row.Values[j]
+			if j < len(maskers) && maskers[j] != nil {
+				maskedValue = maskers[j].Mask(&masker.MaskData{
+					DataV2: row.Values[j],
+				})
+			}
+			result.Rows[i].Values[j] = maskedValue
+		}
+	}
+
+	result.Sensitive = sensitive
+	result.Masked = sensitive
 }
