@@ -3,10 +3,13 @@ package v1
 import (
 	"cmp"
 	"log/slog"
+	"reflect"
 	"time"
 
+	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -72,6 +75,12 @@ func (m *maskingLevelEvaluator) withMaskingAlgorithmSetting(maskingAlgorithmSett
 
 func (m *maskingLevelEvaluator) getDataClassificationConfig(classificationID string) *storepb.DataClassificationSetting_DataClassificationConfig {
 	return m.dataClassificationIDMap[classificationID]
+}
+
+type maskingPolicyKey struct {
+	schema string
+	table  string
+	column string
 }
 
 // nolint
@@ -255,4 +264,101 @@ func getClassificationLevelOfColumn(columnClassificationID string, classificatio
 	}
 
 	return *classification.LevelId
+}
+
+func evaluateMaskingExceptionPolicyCondition(expression string, attributes map[string]any) (bool, error) {
+	if expression == "" {
+		return true, nil
+	}
+	maskingExceptionPolicyEnv, err := cel.NewEnv(
+		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
+		cel.Variable("request", cel.MapType(cel.StringType, cel.AnyType)),
+	)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to create CEL environment for masking exception policy")
+	}
+	ast, issues := maskingExceptionPolicyEnv.Compile(expression)
+	if issues != nil && issues.Err() != nil {
+		return false, errors.Wrapf(issues.Err(), "failed to get the ast of CEL program for masking exception policy")
+	}
+	prg, err := maskingExceptionPolicyEnv.Program(ast)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to create CEL program for masking exception policy")
+	}
+	out, _, err := prg.Eval(attributes)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to eval CEL program for masking exception policy")
+	}
+	val, err := out.ConvertToNative(reflect.TypeOf(false))
+	if err != nil {
+		return false, errors.Wrap(err, "expect bool result for masking exception policy")
+	}
+	boolVar, ok := val.(bool)
+	if !ok {
+		return false, errors.Wrap(err, "expect bool result for masking exception policy")
+	}
+	return boolVar, nil
+}
+
+func evaluateMaskingRulePolicyCondition(expression string, attributes map[string]any) (bool, error) {
+	if expression == "" {
+		return true, nil
+	}
+	maskingRulePolicyEnv, err := cel.NewEnv(common.MaskingRulePolicyCELAttributes...)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to create CEL environment for masking rule policy")
+	}
+	ast, issues := maskingRulePolicyEnv.Compile(expression)
+	if issues != nil && issues.Err() != nil {
+		return false, errors.Wrapf(issues.Err(), "failed to get the ast of CEL program for masking rule")
+	}
+	prg, err := maskingRulePolicyEnv.Program(ast)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to create CEL program for masking rule")
+	}
+	out, _, err := prg.Eval(attributes)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to eval CEL program for masking rule")
+	}
+	val, err := out.ConvertToNative(reflect.TypeOf(false))
+	if err != nil {
+		return false, errors.Wrap(err, "expect bool result for masking rule")
+	}
+	boolVar, ok := val.(bool)
+	if !ok {
+		return false, errors.Wrap(err, "expect bool result for masking rule")
+	}
+	return boolVar, nil
+}
+
+func evaluateQueryExportPolicyCondition(expression string, attributes map[string]any) (bool, error) {
+	if expression == "" {
+		return true, nil
+	}
+	env, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
+	if err != nil {
+		return false, err
+	}
+	ast, issues := env.Compile(expression)
+	if issues != nil && issues.Err() != nil {
+		return false, issues.Err()
+	}
+	prg, err := env.Program(ast)
+	if err != nil {
+		return false, err
+	}
+
+	out, _, err := prg.Eval(attributes)
+	if err != nil {
+		return false, err
+	}
+	val, err := out.ConvertToNative(reflect.TypeOf(false))
+	if err != nil {
+		return false, errors.Wrap(err, "expect bool result")
+	}
+	boolVal, ok := val.(bool)
+	if !ok {
+		return false, errors.Wrap(err, "failed to convert to bool")
+	}
+	return boolVal, nil
 }
