@@ -479,8 +479,8 @@
       "country-code": "国家或地区代码",
       "password": "密码",
       "password-confirm": "确认密码",
-      "password-confirm-placeholder": "再次输入以确认",
-      "password-mismatch": "密码输入不一致",
+      "password-confirm-placeholder": "确认新密码",
+      "password-mismatch": "新密码不匹配",
       "subscription": "（升级到付费方案来解锁角色管理）"
     },
     "members": {
