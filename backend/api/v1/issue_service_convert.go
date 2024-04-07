@@ -346,8 +346,6 @@ func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1p
 		r.Event = convertToIssueCommentEventIssueUpdate(e)
 	case *storepb.IssueCommentPayload_StageEnd_:
 		r.Event = convertToIssueCommentEventStageEnd(e)
-	case *storepb.IssueCommentPayload_TaskRunUpdate_:
-		r.Event = convertToIssueCommentEventTaskRunUpdate(e)
 	case *storepb.IssueCommentPayload_TaskUpdate_:
 		r.Event = convertToIssueCommentEventTaskUpdate(e)
 	case *storepb.IssueCommentPayload_TaskPriorBackup_:
@@ -443,37 +441,6 @@ func convertToIssueCommentEventApprovalStatus(s storepb.IssueCommentPayload_Appr
 	}
 }
 
-func convertToIssueCommentEventTaskRunUpdate(u *storepb.IssueCommentPayload_TaskRunUpdate_) *v1pb.IssueComment_TaskRunUpdate_ {
-	return &v1pb.IssueComment_TaskRunUpdate_{
-		TaskRunUpdate: &v1pb.IssueComment_TaskRunUpdate{
-			Tasks:    u.TaskRunUpdate.Tasks,
-			ToStatus: convertToIssueCommentEventTaskRunUpdateStatus(u.TaskRunUpdate.ToStatus),
-		},
-	}
-}
-
-func convertToIssueCommentEventTaskRunUpdateStatus(s *storepb.IssueCommentPayload_TaskRunUpdate_Status) *v1pb.IssueComment_TaskRunUpdate_Status {
-	if s == nil {
-		return nil
-	}
-	var r v1pb.IssueComment_TaskRunUpdate_Status
-	switch *s {
-	case storepb.IssueCommentPayload_TaskRunUpdate_DONE:
-		r = v1pb.IssueComment_TaskRunUpdate_DONE
-	case storepb.IssueCommentPayload_TaskRunUpdate_FAILED:
-		r = v1pb.IssueComment_TaskRunUpdate_FAILED
-	case storepb.IssueCommentPayload_TaskRunUpdate_PENDING:
-		r = v1pb.IssueComment_TaskRunUpdate_PENDING
-	case storepb.IssueCommentPayload_TaskRunUpdate_RUNNING:
-		r = v1pb.IssueComment_TaskRunUpdate_RUNNING
-	case storepb.IssueCommentPayload_TaskRunUpdate_STATUS_UNSPECIFIED:
-		r = v1pb.IssueComment_TaskRunUpdate_STATUS_UNSPECIFIED
-	default:
-		r = v1pb.IssueComment_TaskRunUpdate_STATUS_UNSPECIFIED
-	}
-	return &r
-}
-
 func convertToIssueCommentEventTaskUpdate(u *storepb.IssueCommentPayload_TaskUpdate_) *v1pb.IssueComment_TaskUpdate_ {
 	return &v1pb.IssueComment_TaskUpdate_{
 		TaskUpdate: &v1pb.IssueComment_TaskUpdate{
@@ -482,8 +449,31 @@ func convertToIssueCommentEventTaskUpdate(u *storepb.IssueCommentPayload_TaskUpd
 			ToSheet:                 u.TaskUpdate.ToSheet,
 			FromEarliestAllowedTime: u.TaskUpdate.FromEarliestAllowedTime,
 			ToEarliestAllowedTime:   u.TaskUpdate.ToEarliestAllowedTime,
+			ToStatus:                convertToIssueCommentEventTaskUpdateStatus(u.TaskUpdate.ToStatus),
 		},
 	}
+}
+
+func convertToIssueCommentEventTaskUpdateStatus(s *storepb.IssueCommentPayload_TaskUpdate_Status) *v1pb.IssueComment_TaskUpdate_Status {
+	if s == nil {
+		return nil
+	}
+	var r v1pb.IssueComment_TaskUpdate_Status
+	switch *s {
+	case storepb.IssueCommentPayload_TaskUpdate_DONE:
+		r = v1pb.IssueComment_TaskUpdate_DONE
+	case storepb.IssueCommentPayload_TaskUpdate_FAILED:
+		r = v1pb.IssueComment_TaskUpdate_FAILED
+	case storepb.IssueCommentPayload_TaskUpdate_PENDING:
+		r = v1pb.IssueComment_TaskUpdate_PENDING
+	case storepb.IssueCommentPayload_TaskUpdate_RUNNING:
+		r = v1pb.IssueComment_TaskUpdate_RUNNING
+	case storepb.IssueCommentPayload_TaskUpdate_STATUS_UNSPECIFIED:
+		r = v1pb.IssueComment_TaskUpdate_STATUS_UNSPECIFIED
+	default:
+		r = v1pb.IssueComment_TaskUpdate_STATUS_UNSPECIFIED
+	}
+	return &r
 }
 
 func convertToIssueCommentEventTaskPriorBackup(b *storepb.IssueCommentPayload_TaskPriorBackup_) *v1pb.IssueComment_TaskPriorBackup_ {
