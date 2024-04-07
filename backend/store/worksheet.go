@@ -81,11 +81,12 @@ type FindWorkSheetMessage struct {
 
 // PatchWorkSheetMessage is the message to patch a sheet.
 type PatchWorkSheetMessage struct {
-	UID        int
-	UpdaterID  int
-	Title      *string
-	Statement  *string
-	Visibility *string
+	UID         int
+	UpdaterID   int
+	Title       *string
+	Statement   *string
+	Visibility  *string
+	DatabaseUID *int
 }
 
 // GetWorkSheet gets a sheet.
@@ -314,6 +315,9 @@ func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessag
 	}
 	if v := patch.Visibility; v != nil {
 		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.DatabaseUID; v != nil {
+		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, patch.UID)
 
