@@ -27,9 +27,6 @@
       <div class="bb-grid-cell">
         <ProjectCol :project="dbGroup.project" :show-tenant-icon="true" />
       </div>
-      <div class="bb-grid-cell">
-        <EnvironmentV1Name :environment="dbGroup.environment" :link="false" />
-      </div>
     </template>
   </BBGrid>
 </template>

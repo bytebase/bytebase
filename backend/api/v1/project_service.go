@@ -738,10 +738,7 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 	if request.DatabaseGroup.DatabasePlaceholder == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "database group database placeholder is required")
 	}
-	if request.DatabaseGroup.DatabaseExpr == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
-	}
-	if request.DatabaseGroup.DatabaseExpr.Expression == "" {
+	if request.DatabaseGroup.DatabaseExpr == nil || request.DatabaseGroup.DatabaseExpr.Expression == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "database group database expression is required")
 	}
 	if _, err := common.ValidateGroupCELExpr(request.DatabaseGroup.DatabaseExpr.Expression); err != nil {

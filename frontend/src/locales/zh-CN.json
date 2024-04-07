@@ -3258,6 +3258,7 @@
       "column_name": "字段名称",
       "classification_level": "数据分级",
       "resource_instance_id": "实例 ID",
+      "resource_environment_name": "环境",
       "resource_database_name": "数据库名",
       "resource_table_name": "表名"
     },

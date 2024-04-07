@@ -580,12 +580,6 @@ const databaseGroupList = computed(() => {
 
 const filteredDatabaseGroupList = computed(() => {
   return databaseGroupList.value.filter((dbGroup) => {
-    if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
-      return (
-        extractEnvironmentResourceName(dbGroup.environment.name) ===
-        selectedEnvironment.value
-      );
-    }
     const keyword = state.params.query.trim().toLowerCase();
     if (!keyword) {
       return true;

@@ -75,6 +75,8 @@
             :expr="state.expr!"
             :allow-admin="false"
             :factor-list="FactorList.get('SCHEMA_GROUP') ?? []"
+            :factor-support-dropdown="factorSupportDropdown"
+            :factor-options-map="getFactorOptionsMap('DATABASE_GROUP')"
           />
         </div>
         <div class="col-span-2">
@@ -103,6 +105,10 @@ import { reactive, computed, watch, ref } from "vue";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedTableView from "@/components/DatabaseGroup/MatchedTableView.vue";
 import { FactorList } from "@/components/DatabaseGroup/utils";
+import {
+  factorSupportDropdown,
+  getFactorOptionsMap,
+} from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
 import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";

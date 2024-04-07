@@ -18,10 +18,8 @@ import type {
   ComposedDatabase,
   ComposedProject,
 } from "@/types";
-import { unknownEnvironment } from "@/types";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
-import type { Environment } from "@/types/proto/v1/environment_service";
 import type {
   DatabaseGroup,
   SchemaGroup,
@@ -34,13 +32,7 @@ import {
   batchConvertParsedExprToCELString,
   batchConvertCELStringToParsedExpr,
 } from "@/utils";
-import { getEnvironmentIdAndConditionExpr } from "@/utils/databaseGroup/cel";
-import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
-import {
-  useEnvironmentV1Store,
-  useProjectV1Store,
-  useDatabaseV1Store,
-} from "./v1";
+import { useProjectV1Store, useDatabaseV1Store } from "./v1";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
@@ -70,8 +62,6 @@ const batchComposeDatabaseGroup = async (
       databaseGroupName,
       projectName,
       project,
-      environmentName: "",
-      environment: unknownEnvironment(),
       simpleExpr: emptySimpleExpr(),
     });
 
@@ -88,20 +78,8 @@ const batchComposeDatabaseGroup = async (
     const celExpr = exprList[i];
     if (celExpr.expr) {
       const simpleExpr = resolveCELExpr(celExpr.expr);
-      const [environmentId, ...conditionGroupExpr] =
-        getEnvironmentIdAndConditionExpr(simpleExpr);
-
-      const environment = useEnvironmentV1Store().getEnvironmentByName(
-        environmentId
-      ) as Environment;
-
-      composedDatabaseGroupMap.get(databaseGroupName)!.environmentName =
-        environmentId;
-      composedDatabaseGroupMap.get(databaseGroupName)!.environment =
-        environment;
-      composedDatabaseGroupMap.get(databaseGroupName)!.simpleExpr = wrapAsGroup(
-        ...conditionGroupExpr
-      );
+      composedDatabaseGroupMap.get(databaseGroupName)!.simpleExpr =
+        wrapAsGroup(simpleExpr);
     }
   }
 
@@ -230,24 +208,14 @@ export const useDBGroupStore = defineStore("db-group", () => {
 
   const fetchDatabaseGroupMatchList = async ({
     projectName,
-    environmentId,
     expr,
   }: {
     projectName: string;
-    environmentId: string;
     expr: ConditionGroupExpr;
   }) => {
-    const environment =
-      useEnvironmentV1Store().getEnvironmentByUID(environmentId);
-
     const celStrings = await batchConvertParsedExprToCELString([
       ParsedExpr.fromJSON({
-        expr: buildCELExpr(
-          buildDatabaseGroupExpr({
-            environmentId: environment.name,
-            conditionGroupExpr: expr,
-          })
-        ),
+        expr: buildCELExpr(expr),
       }),
     ]);
 
@@ -280,10 +248,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
     }
     for (const item of result.unmatchedDatabases) {
       const database = await databaseStore.getOrFetchDatabaseByName(item.name);
-      if (
-        database &&
-        database.effectiveEnvironmentEntity.uid === environmentId
-      ) {
+      if (database) {
         unmatchedDatabaseList.push(database);
       }
     }

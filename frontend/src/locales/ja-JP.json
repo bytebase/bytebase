@@ -3258,6 +3258,7 @@
       "column_name": "カラム名",
       "classification_level": "分類レベル",
       "resource_instance_id": "インスタンスID",
+      "resource_environment_name": "環境",
       "resource_database_name": "データベース名",
       "resource_table_name": "テーブル名"
     },

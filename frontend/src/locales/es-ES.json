@@ -3258,6 +3258,7 @@
       "column_name": "Nombre de columna",
       "classification_level": "Nivel de clasificación",
       "resource_instance_id": "ID de instancia",
+      "resource_environment_name": "Ambiente",
       "resource_database_name": "Nombre de la base de datos",
       "resource_table_name": "Nombre de la tabla"
     },
