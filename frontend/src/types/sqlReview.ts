@@ -792,7 +792,7 @@ const mergeIndividualConfigAsRule = (
       };
   }
 
-  console.log(`AAA Invalid rule ${template.type}`);
+  console.log(`Invalid rule ${template.type}`);
 
   throw new Error(`Invalid rule ${template.type}`);
 };
