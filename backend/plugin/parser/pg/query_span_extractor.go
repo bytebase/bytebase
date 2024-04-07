@@ -186,14 +186,14 @@ func (q *querySpanExtractor) extractTableSourceFromRangeFunction(node *pgquery.N
 				Err:  errors.Errorf("node: %+v", node),
 			}
 		}
-		return q.extractTableSourceFromSystemFunction(node, funcName)
+		return q.extractTableSourceFromSystemFunction(node, funcName, args)
 	}
 
-	return q.extractTableSourceFromUDF(node, schemaName, funcName, args)
+	return q.extractTableSourceFromUDF(node, schemaName, funcName)
 }
 
-func (q *querySpanExtractor) extractTableSourceFromUDF(node *pgquery.Node_RangeFunction, schemaName string, funcName string, args []*pgquery.Node) (base.TableSource, error) {
-	tableSource, err := q.findFunctionDefine(schemaName, funcName, args)
+func (q *querySpanExtractor) extractTableSourceFromUDF(node *pgquery.Node_RangeFunction, schemaName string, funcName string) (base.TableSource, error) {
+	tableSource, err := q.findFunctionDefine(schemaName, funcName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find function: %s.%s", schemaName, funcName)
 	}
@@ -221,7 +221,42 @@ func (q *querySpanExtractor) extractTableSourceFromUDF(node *pgquery.Node_RangeF
 	return base.NewPseudoTable(node.RangeFunction.Alias.Aliasname, columns), nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.Node_RangeFunction, funcName string) (*base.PseudoTable, error) {
+func (*querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.Node_RangeFunction, funcName string, args []*pgquery.Node) (*base.PseudoTable, error) {
+	// TODO(parser): We may need to consider the masking here, for example: SELECT * FROM issue LEFT JOIN LATERAL jsonb_to_recordset(issue.payload->'approval'->'approvers') as x(status text, "principalId" int) ON TRUE.
+
+	// The function we can handle easily do not need the explicit alias clause.
+	// find system function.
+	// https://www.postgresql.org/docs/current/functions-srf.html.
+	switch strings.ToLower(funcName) {
+	case generateSeries:
+		return &base.PseudoTable{
+			Columns: []base.QuerySpanResult{
+				{
+					Name:          generateSeries,
+					SourceColumns: make(base.SourceColumnSet),
+				},
+			},
+		}, nil
+	case generateSubscripts:
+		return &base.PseudoTable{
+			Columns: []base.QuerySpanResult{
+				{
+					Name:          generateSubscripts,
+					SourceColumns: make(base.SourceColumnSet),
+				},
+			},
+		}, nil
+	case unnest:
+		table := &base.PseudoTable{Columns: []base.QuerySpanResult{}}
+		for range args {
+			table.Columns = append(table.Columns, base.QuerySpanResult{
+				Name:          unnest,
+				SourceColumns: make(base.SourceColumnSet),
+			})
+		}
+		return table, nil
+	}
+
 	if node.RangeFunction.Alias == nil {
 		return nil, &parsererror.TypeNotSupportedError{
 			Extra: "Use system function result as the table source must have the alias clause to specify table and columns name",
@@ -231,18 +266,31 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.
 	}
 
 	var columns []base.QuerySpanResult
-	for i, columnName := range node.RangeFunction.Alias.Colnames {
-		name := columnName.GetString_().Sval
-		columns = append(columns, base.QuerySpanResult{
-			Name:          name,
-			SourceColumns: querySpanResult[i].SourceColumns,
-		})
+	if len(node.RangeFunction.Alias.Colnames) > 0 {
+		for _, columnName := range node.RangeFunction.Alias.Colnames {
+			name := columnName.GetString_().Sval
+			columns = append(columns, base.QuerySpanResult{
+				Name:          name,
+				SourceColumns: make(base.SourceColumnSet),
+			})
+		}
+	} else {
+		for _, columnName := range node.RangeFunction.Coldeflist {
+			name := columnName.GetColumnDef().Colname
+			columns = append(columns, base.QuerySpanResult{
+				Name:          name,
+				SourceColumns: make(base.SourceColumnSet),
+			})
+		}
 	}
 
-	return nil, nil
+	return &base.PseudoTable{
+		Name:    node.RangeFunction.Alias.Aliasname,
+		Columns: columns,
+	}, nil
 }
 
-func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, args []*pgquery.Node) (base.TableSource, error) {
+func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string) (base.TableSource, error) {
 	dbSchema, err := q.getDatabaseMetadata(q.connectedDB)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.connectedDB)
@@ -272,37 +320,6 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, arg
 		return &base.PseudoTable{
 			Columns: columns,
 		}, nil
-	}
-	// find system function.
-	// https://www.postgresql.org/docs/current/functions-srf.html.
-	switch funcName {
-	case generateSeries:
-		return &base.PseudoTable{
-			Columns: []base.QuerySpanResult{
-				{
-					Name:          generateSeries,
-					SourceColumns: make(base.SourceColumnSet),
-				},
-			},
-		}, nil
-	case generateSubscripts:
-		return &base.PseudoTable{
-			Columns: []base.QuerySpanResult{
-				{
-					Name:          generateSubscripts,
-					SourceColumns: make(base.SourceColumnSet),
-				},
-			},
-		}, nil
-	case unnest:
-		table := &base.PseudoTable{Columns: []base.QuerySpanResult{}}
-		for range args {
-			table.Columns = append(table.Columns, base.QuerySpanResult{
-				Name:          unnest,
-				SourceColumns: make(base.SourceColumnSet),
-			})
-		}
-		return table, nil
 	}
 
 	return nil, &parsererror.ResourceNotFoundError{
@@ -1711,7 +1728,7 @@ func extractFunctionNameAndArgsInRangeFunction(node *pgquery.RangeFunction) (str
 					case 2:
 						return names[0], names[1], args
 					case 1:
-						return "public", names[0], args
+						return "", names[0], args
 					case 0:
 						return "", "", args
 					default:
