@@ -122,7 +122,7 @@ const filterSidebarByPermissions = (
   return sidebarList
     .filter((item) => {
       const routeConfig = flattenRoutes.value.find(
-        (workspaceRoute) => workspaceRoute.name === item.path
+        (workspaceRoute) => workspaceRoute.name === item.name
       );
       return (routeConfig?.permissions ?? []).every((permission) =>
         hasWorkspacePermissionV2(currentUserV1.value, permission)
