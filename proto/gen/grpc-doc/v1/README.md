@@ -565,6 +565,8 @@
     - [CheckResponse](#bytebase-v1-CheckResponse)
     - [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest)
     - [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse)
+    - [ExecuteRequest](#bytebase-v1-ExecuteRequest)
+    - [ExecuteResponse](#bytebase-v1-ExecuteResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
     - [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest)
@@ -9185,6 +9187,40 @@ Type of the SheetPayload.
 
 
 
+<a name="bytebase-v1-ExecuteRequest"></a>
+
+### ExecuteRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
+| statement | [string](#string) |  | The SQL statement to execute. |
+| limit | [int32](#int32) |  | The maximum number of rows to return. |
+| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The timeout for the request. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExecuteResponse"></a>
+
+### ExecuteResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The execute results. |
+| advices | [Advice](#bytebase-v1-Advice) | repeated | The execute advices. |
+
+
+
+
+
+
 <a name="bytebase-v1-ExportRequest"></a>
 
 ### ExportRequest
@@ -9524,9 +9560,10 @@ Type of the SheetPayload.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
+| Execute | [ExecuteRequest](#bytebase-v1-ExecuteRequest) | [ExecuteResponse](#bytebase-v1-ExecuteResponse) |  |
+| AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
 | SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) |  |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
-| AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
 | DifferPreview | [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest) | [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse) |  |
 | Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) |  |
 | ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |

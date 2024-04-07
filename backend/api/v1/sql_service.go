@@ -242,9 +242,9 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
-	// Prehandle the issue export.
+	// Prehandle export from issue.
 	if strings.Contains(request.Name, common.IssueNamePrefix) {
-		return s.DataExportIssueExport(ctx, request.Name)
+		return s.doExportFromIssue(ctx, request.Name)
 	}
 	// Prepare related message.
 	user, environment, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
@@ -338,7 +338,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}, nil
 }
 
-func (s *SQLService) DataExportIssueExport(ctx context.Context, issueName string) (*v1pb.ExportResponse, error) {
+func (s *SQLService) doExportFromIssue(ctx context.Context, issueName string) (*v1pb.ExportResponse, error) {
 	issueUID, err := common.GetIssueID(issueName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get issue ID: %v", err)
