@@ -2230,7 +2230,10 @@
     "view-database-detail": "Xem chi tiết cơ sở dữ liệu",
     "copy-all-column-names": "Sao chép tất cả tên cột",
     "view-schema-text": "Xem văn bản lược đồ",
-    "override-current-statement": "Ghi đè câu lệnh hiện tại"
+    "override-current-statement": "Ghi đè câu lệnh hiện tại",
+    "last-synced": "Đồng bộ hóa lần cuối: {time}",
+    "click-to-sync-now": "Bấm để đồng bộ ngay",
+    "sync-in-progress": "Đang đồng bộ hóa"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",

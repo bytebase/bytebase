@@ -2230,7 +2230,10 @@
     "view-database-detail": "データベースの詳細を表示する",
     "copy-all-column-names": "すべての列名をコピーします",
     "view-schema-text": "スキーマテキストの表示",
-    "override-current-statement": "現在のステートメントをオーバーライドする"
+    "override-current-statement": "現在のステートメントをオーバーライドする",
+    "last-synced": "最終同期: {time}",
+    "click-to-sync-now": "今すぐ同期するにはクリックしてください",
+    "sync-in-progress": "同期中"
   },
   "schema-editor": {
     "self": "スキーマエディター",

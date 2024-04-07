@@ -2230,7 +2230,10 @@
     "view-database-detail": "Ver detalle de la base de datos",
     "copy-all-column-names": "Copiar todos los nombres de las columnas",
     "view-schema-text": "Ver texto del esquema",
-    "override-current-statement": "Anular la declaración actual"
+    "override-current-statement": "Anular la declaración actual",
+    "last-synced": "Última sincronización: {hora}",
+    "click-to-sync-now": "Haga clic para sincronizar ahora",
+    "sync-in-progress": "Sincronización en progreso"
   },
   "schema-editor": {
     "self": "Editor de esquema",
