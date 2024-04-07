@@ -10,7 +10,6 @@ export interface IssueCommentPayload {
   approval?: IssueCommentPayload_Approval | undefined;
   issueUpdate?: IssueCommentPayload_IssueUpdate | undefined;
   stageEnd?: IssueCommentPayload_StageEnd | undefined;
-  taskRunUpdate?: IssueCommentPayload_TaskRunUpdate | undefined;
   taskUpdate?: IssueCommentPayload_TaskUpdate | undefined;
   taskPriorBackup?: IssueCommentPayload_TaskPriorBackup | undefined;
 }
@@ -134,66 +133,6 @@ export interface IssueCommentPayload_StageEnd {
   stage: string;
 }
 
-export interface IssueCommentPayload_TaskRunUpdate {
-  tasks: string[];
-  toStatus?: IssueCommentPayload_TaskRunUpdate_Status | undefined;
-}
-
-export enum IssueCommentPayload_TaskRunUpdate_Status {
-  STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  RUNNING = 2,
-  DONE = 3,
-  FAILED = 4,
-  UNRECOGNIZED = -1,
-}
-
-export function issueCommentPayload_TaskRunUpdate_StatusFromJSON(
-  object: any,
-): IssueCommentPayload_TaskRunUpdate_Status {
-  switch (object) {
-    case 0:
-    case "STATUS_UNSPECIFIED":
-      return IssueCommentPayload_TaskRunUpdate_Status.STATUS_UNSPECIFIED;
-    case 1:
-    case "PENDING":
-      return IssueCommentPayload_TaskRunUpdate_Status.PENDING;
-    case 2:
-    case "RUNNING":
-      return IssueCommentPayload_TaskRunUpdate_Status.RUNNING;
-    case 3:
-    case "DONE":
-      return IssueCommentPayload_TaskRunUpdate_Status.DONE;
-    case 4:
-    case "FAILED":
-      return IssueCommentPayload_TaskRunUpdate_Status.FAILED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return IssueCommentPayload_TaskRunUpdate_Status.UNRECOGNIZED;
-  }
-}
-
-export function issueCommentPayload_TaskRunUpdate_StatusToJSON(
-  object: IssueCommentPayload_TaskRunUpdate_Status,
-): string {
-  switch (object) {
-    case IssueCommentPayload_TaskRunUpdate_Status.STATUS_UNSPECIFIED:
-      return "STATUS_UNSPECIFIED";
-    case IssueCommentPayload_TaskRunUpdate_Status.PENDING:
-      return "PENDING";
-    case IssueCommentPayload_TaskRunUpdate_Status.RUNNING:
-      return "RUNNING";
-    case IssueCommentPayload_TaskRunUpdate_Status.DONE:
-      return "DONE";
-    case IssueCommentPayload_TaskRunUpdate_Status.FAILED:
-      return "FAILED";
-    case IssueCommentPayload_TaskRunUpdate_Status.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export interface IssueCommentPayload_TaskUpdate {
   tasks: string[];
   /** Format: projects/{project}/sheets/{sheet} */
@@ -204,6 +143,70 @@ export interface IssueCommentPayload_TaskUpdate {
   toSheet?: string | undefined;
   fromEarliestAllowedTime?: Date | undefined;
   toEarliestAllowedTime?: Date | undefined;
+  toStatus?: IssueCommentPayload_TaskUpdate_Status | undefined;
+}
+
+export enum IssueCommentPayload_TaskUpdate_Status {
+  STATUS_UNSPECIFIED = 0,
+  PENDING = 1,
+  RUNNING = 2,
+  DONE = 3,
+  FAILED = 4,
+  SKIPPED = 5,
+  CANCELED = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function issueCommentPayload_TaskUpdate_StatusFromJSON(object: any): IssueCommentPayload_TaskUpdate_Status {
+  switch (object) {
+    case 0:
+    case "STATUS_UNSPECIFIED":
+      return IssueCommentPayload_TaskUpdate_Status.STATUS_UNSPECIFIED;
+    case 1:
+    case "PENDING":
+      return IssueCommentPayload_TaskUpdate_Status.PENDING;
+    case 2:
+    case "RUNNING":
+      return IssueCommentPayload_TaskUpdate_Status.RUNNING;
+    case 3:
+    case "DONE":
+      return IssueCommentPayload_TaskUpdate_Status.DONE;
+    case 4:
+    case "FAILED":
+      return IssueCommentPayload_TaskUpdate_Status.FAILED;
+    case 5:
+    case "SKIPPED":
+      return IssueCommentPayload_TaskUpdate_Status.SKIPPED;
+    case 6:
+    case "CANCELED":
+      return IssueCommentPayload_TaskUpdate_Status.CANCELED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return IssueCommentPayload_TaskUpdate_Status.UNRECOGNIZED;
+  }
+}
+
+export function issueCommentPayload_TaskUpdate_StatusToJSON(object: IssueCommentPayload_TaskUpdate_Status): string {
+  switch (object) {
+    case IssueCommentPayload_TaskUpdate_Status.STATUS_UNSPECIFIED:
+      return "STATUS_UNSPECIFIED";
+    case IssueCommentPayload_TaskUpdate_Status.PENDING:
+      return "PENDING";
+    case IssueCommentPayload_TaskUpdate_Status.RUNNING:
+      return "RUNNING";
+    case IssueCommentPayload_TaskUpdate_Status.DONE:
+      return "DONE";
+    case IssueCommentPayload_TaskUpdate_Status.FAILED:
+      return "FAILED";
+    case IssueCommentPayload_TaskUpdate_Status.SKIPPED:
+      return "SKIPPED";
+    case IssueCommentPayload_TaskUpdate_Status.CANCELED:
+      return "CANCELED";
+    case IssueCommentPayload_TaskUpdate_Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface IssueCommentPayload_TaskPriorBackup {
@@ -222,7 +225,6 @@ function createBaseIssueCommentPayload(): IssueCommentPayload {
     approval: undefined,
     issueUpdate: undefined,
     stageEnd: undefined,
-    taskRunUpdate: undefined,
     taskUpdate: undefined,
     taskPriorBackup: undefined,
   };
@@ -234,22 +236,19 @@ export const IssueCommentPayload = {
       writer.uint32(10).string(message.comment);
     }
     if (message.approval !== undefined) {
-      IssueCommentPayload_Approval.encode(message.approval, writer.uint32(66).fork()).ldelim();
+      IssueCommentPayload_Approval.encode(message.approval, writer.uint32(18).fork()).ldelim();
     }
     if (message.issueUpdate !== undefined) {
-      IssueCommentPayload_IssueUpdate.encode(message.issueUpdate, writer.uint32(74).fork()).ldelim();
+      IssueCommentPayload_IssueUpdate.encode(message.issueUpdate, writer.uint32(26).fork()).ldelim();
     }
     if (message.stageEnd !== undefined) {
-      IssueCommentPayload_StageEnd.encode(message.stageEnd, writer.uint32(82).fork()).ldelim();
-    }
-    if (message.taskRunUpdate !== undefined) {
-      IssueCommentPayload_TaskRunUpdate.encode(message.taskRunUpdate, writer.uint32(90).fork()).ldelim();
+      IssueCommentPayload_StageEnd.encode(message.stageEnd, writer.uint32(34).fork()).ldelim();
     }
     if (message.taskUpdate !== undefined) {
-      IssueCommentPayload_TaskUpdate.encode(message.taskUpdate, writer.uint32(98).fork()).ldelim();
+      IssueCommentPayload_TaskUpdate.encode(message.taskUpdate, writer.uint32(42).fork()).ldelim();
     }
     if (message.taskPriorBackup !== undefined) {
-      IssueCommentPayload_TaskPriorBackup.encode(message.taskPriorBackup, writer.uint32(106).fork()).ldelim();
+      IssueCommentPayload_TaskPriorBackup.encode(message.taskPriorBackup, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -268,43 +267,36 @@ export const IssueCommentPayload = {
 
           message.comment = reader.string();
           continue;
-        case 8:
-          if (tag !== 66) {
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
           message.approval = IssueCommentPayload_Approval.decode(reader, reader.uint32());
           continue;
-        case 9:
-          if (tag !== 74) {
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
           message.issueUpdate = IssueCommentPayload_IssueUpdate.decode(reader, reader.uint32());
           continue;
-        case 10:
-          if (tag !== 82) {
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
           message.stageEnd = IssueCommentPayload_StageEnd.decode(reader, reader.uint32());
           continue;
-        case 11:
-          if (tag !== 90) {
-            break;
-          }
-
-          message.taskRunUpdate = IssueCommentPayload_TaskRunUpdate.decode(reader, reader.uint32());
-          continue;
-        case 12:
-          if (tag !== 98) {
+        case 5:
+          if (tag !== 42) {
             break;
           }
 
           message.taskUpdate = IssueCommentPayload_TaskUpdate.decode(reader, reader.uint32());
           continue;
-        case 13:
-          if (tag !== 106) {
+        case 6:
+          if (tag !== 50) {
             break;
           }
 
@@ -325,9 +317,6 @@ export const IssueCommentPayload = {
       approval: isSet(object.approval) ? IssueCommentPayload_Approval.fromJSON(object.approval) : undefined,
       issueUpdate: isSet(object.issueUpdate) ? IssueCommentPayload_IssueUpdate.fromJSON(object.issueUpdate) : undefined,
       stageEnd: isSet(object.stageEnd) ? IssueCommentPayload_StageEnd.fromJSON(object.stageEnd) : undefined,
-      taskRunUpdate: isSet(object.taskRunUpdate)
-        ? IssueCommentPayload_TaskRunUpdate.fromJSON(object.taskRunUpdate)
-        : undefined,
       taskUpdate: isSet(object.taskUpdate) ? IssueCommentPayload_TaskUpdate.fromJSON(object.taskUpdate) : undefined,
       taskPriorBackup: isSet(object.taskPriorBackup)
         ? IssueCommentPayload_TaskPriorBackup.fromJSON(object.taskPriorBackup)
@@ -348,9 +337,6 @@ export const IssueCommentPayload = {
     }
     if (message.stageEnd !== undefined) {
       obj.stageEnd = IssueCommentPayload_StageEnd.toJSON(message.stageEnd);
-    }
-    if (message.taskRunUpdate !== undefined) {
-      obj.taskRunUpdate = IssueCommentPayload_TaskRunUpdate.toJSON(message.taskRunUpdate);
     }
     if (message.taskUpdate !== undefined) {
       obj.taskUpdate = IssueCommentPayload_TaskUpdate.toJSON(message.taskUpdate);
@@ -375,9 +361,6 @@ export const IssueCommentPayload = {
       : undefined;
     message.stageEnd = (object.stageEnd !== undefined && object.stageEnd !== null)
       ? IssueCommentPayload_StageEnd.fromPartial(object.stageEnd)
-      : undefined;
-    message.taskRunUpdate = (object.taskRunUpdate !== undefined && object.taskRunUpdate !== null)
-      ? IssueCommentPayload_TaskRunUpdate.fromPartial(object.taskRunUpdate)
       : undefined;
     message.taskUpdate = (object.taskUpdate !== undefined && object.taskUpdate !== null)
       ? IssueCommentPayload_TaskUpdate.fromPartial(object.taskUpdate)
@@ -680,80 +663,6 @@ export const IssueCommentPayload_StageEnd = {
   },
 };
 
-function createBaseIssueCommentPayload_TaskRunUpdate(): IssueCommentPayload_TaskRunUpdate {
-  return { tasks: [], toStatus: undefined };
-}
-
-export const IssueCommentPayload_TaskRunUpdate = {
-  encode(message: IssueCommentPayload_TaskRunUpdate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.tasks) {
-      writer.uint32(10).string(v!);
-    }
-    if (message.toStatus !== undefined) {
-      writer.uint32(16).int32(message.toStatus);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): IssueCommentPayload_TaskRunUpdate {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseIssueCommentPayload_TaskRunUpdate();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.tasks.push(reader.string());
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.toStatus = reader.int32() as any;
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): IssueCommentPayload_TaskRunUpdate {
-    return {
-      tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => globalThis.String(e)) : [],
-      toStatus: isSet(object.toStatus) ? issueCommentPayload_TaskRunUpdate_StatusFromJSON(object.toStatus) : undefined,
-    };
-  },
-
-  toJSON(message: IssueCommentPayload_TaskRunUpdate): unknown {
-    const obj: any = {};
-    if (message.tasks?.length) {
-      obj.tasks = message.tasks;
-    }
-    if (message.toStatus !== undefined) {
-      obj.toStatus = issueCommentPayload_TaskRunUpdate_StatusToJSON(message.toStatus);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<IssueCommentPayload_TaskRunUpdate>): IssueCommentPayload_TaskRunUpdate {
-    return IssueCommentPayload_TaskRunUpdate.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<IssueCommentPayload_TaskRunUpdate>): IssueCommentPayload_TaskRunUpdate {
-    const message = createBaseIssueCommentPayload_TaskRunUpdate();
-    message.tasks = object.tasks?.map((e) => e) || [];
-    message.toStatus = object.toStatus ?? undefined;
-    return message;
-  },
-};
-
 function createBaseIssueCommentPayload_TaskUpdate(): IssueCommentPayload_TaskUpdate {
   return {
     tasks: [],
@@ -761,6 +670,7 @@ function createBaseIssueCommentPayload_TaskUpdate(): IssueCommentPayload_TaskUpd
     toSheet: undefined,
     fromEarliestAllowedTime: undefined,
     toEarliestAllowedTime: undefined,
+    toStatus: undefined,
   };
 }
 
@@ -780,6 +690,9 @@ export const IssueCommentPayload_TaskUpdate = {
     }
     if (message.toEarliestAllowedTime !== undefined) {
       Timestamp.encode(toTimestamp(message.toEarliestAllowedTime), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.toStatus !== undefined) {
+      writer.uint32(48).int32(message.toStatus);
     }
     return writer;
   },
@@ -826,6 +739,13 @@ export const IssueCommentPayload_TaskUpdate = {
 
           message.toEarliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.toStatus = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -846,6 +766,7 @@ export const IssueCommentPayload_TaskUpdate = {
       toEarliestAllowedTime: isSet(object.toEarliestAllowedTime)
         ? fromJsonTimestamp(object.toEarliestAllowedTime)
         : undefined,
+      toStatus: isSet(object.toStatus) ? issueCommentPayload_TaskUpdate_StatusFromJSON(object.toStatus) : undefined,
     };
   },
 
@@ -866,6 +787,9 @@ export const IssueCommentPayload_TaskUpdate = {
     if (message.toEarliestAllowedTime !== undefined) {
       obj.toEarliestAllowedTime = message.toEarliestAllowedTime.toISOString();
     }
+    if (message.toStatus !== undefined) {
+      obj.toStatus = issueCommentPayload_TaskUpdate_StatusToJSON(message.toStatus);
+    }
     return obj;
   },
 
@@ -879,6 +803,7 @@ export const IssueCommentPayload_TaskUpdate = {
     message.toSheet = object.toSheet ?? undefined;
     message.fromEarliestAllowedTime = object.fromEarliestAllowedTime ?? undefined;
     message.toEarliestAllowedTime = object.toEarliestAllowedTime ?? undefined;
+    message.toStatus = object.toStatus ?? undefined;
     return message;
   },
 };
