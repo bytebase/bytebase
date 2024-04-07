@@ -142,11 +142,11 @@
             </i18n-t>
           </li>
           <li>• Account (Read)</li>
-          <li>• Workspace membership Profile (Read)</li>
+          <li>• Workspace membership (Read)</li>
           <li>• Projects (Read)</li>
-          <li>• Webhooks (Read & Write)</li>
-          <li>• Repositories (Read & Write)</li>
-          <li>• Pull requests (Read & Write)</li>
+          <li>• Webhooks (Read and Write)</li>
+          <li>• Repositories (Read)</li>
+          <li>• Pull requests (Read and Write)</li>
         </template>
         <template v-if="config.type == VCSType.AZURE_DEVOPS">
           <li>
@@ -159,7 +159,7 @@
           <li>• Code (Read)</li>
           <li>• User Profile (Read)</li>
           <li>• Project and Team (Read)</li>
-          <li>• Pull Request Threads (Read & Write)</li>
+          <li>• Pull Request Threads (Read and Write)</li>
         </template>
       </ul>
       <BBTextField
