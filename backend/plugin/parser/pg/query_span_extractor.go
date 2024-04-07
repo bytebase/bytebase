@@ -176,13 +176,23 @@ func (q *querySpanExtractor) extractTableSourceFromNode(node *pgquery.Node) (bas
 
 func (q *querySpanExtractor) extractTableSourceFromRangeFunction(node *pgquery.Node_RangeFunction) (base.TableSource, error) {
 	schemaName, funcName, args := extractFunctionNameAndArgsInRangeFunction(node.RangeFunction)
-	if schemaName == "" || funcName == "" {
-		return nil, &parsererror.TypeNotSupportedError{
-			Type: "function",
-			Err:  errors.Errorf("node: %+v", node),
+	if funcName == "" {
+		return nil, errors.Errorf("empty function name for range function node: %v", node)
+	}
+	if schemaName == "" {
+		if !IsSystemFunction(funcName, "") {
+			return nil, &parsererror.TypeNotSupportedError{
+				Type: "function",
+				Err:  errors.Errorf("node: %+v", node),
+			}
 		}
+		return q.extractTableSourceFromSystemFunction(node, funcName)
 	}
 
+	return q.extractTableSourceFromUDF(node, schemaName, funcName, args)
+}
+
+func (q *querySpanExtractor) extractTableSourceFromUDF(node *pgquery.Node_RangeFunction, schemaName string, funcName string, args []*pgquery.Node) (base.TableSource, error) {
 	tableSource, err := q.findFunctionDefine(schemaName, funcName, args)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find function: %s.%s", schemaName, funcName)
@@ -209,6 +219,27 @@ func (q *querySpanExtractor) extractTableSourceFromRangeFunction(node *pgquery.N
 	}
 
 	return base.NewPseudoTable(node.RangeFunction.Alias.Aliasname, columns), nil
+}
+
+func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.Node_RangeFunction, funcName string) (*base.PseudoTable, error) {
+	if node.RangeFunction.Alias == nil {
+		return nil, &parsererror.TypeNotSupportedError{
+			Extra: "Use system function result as the table source must have the alias clause to specify table and columns name",
+			Type:  "function",
+			Name:  funcName,
+		}
+	}
+
+	var columns []base.QuerySpanResult
+	for i, columnName := range node.RangeFunction.Alias.Colnames {
+		name := columnName.GetString_().Sval
+		columns = append(columns, base.QuerySpanResult{
+			Name:          name,
+			SourceColumns: querySpanResult[i].SourceColumns,
+		})
+	}
+
+	return nil, nil
 }
 
 func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, args []*pgquery.Node) (base.TableSource, error) {
