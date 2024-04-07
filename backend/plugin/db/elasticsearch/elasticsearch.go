@@ -107,12 +107,13 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to send HTTP request, status code message: %s", resp.Status)
 		}
+
 		respBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to read from HTTP response")
+			return nil, err
 		}
-		if err = resp.Body.Close(); err != nil {
-			return nil, errors.Wrapf(err, "failed to close response body")
+		if err := resp.Body.Close(); err != nil {
+			return nil, err
 		}
 
 		// structure results.
