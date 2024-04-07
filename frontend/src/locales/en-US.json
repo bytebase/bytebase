@@ -2230,7 +2230,10 @@
     "view-database-detail": "View database detail",
     "copy-all-column-names": "Copy all column names",
     "view-schema-text": "View schema text",
-    "override-current-statement": "Override current statement"
+    "override-current-statement": "Override current statement",
+    "last-synced": "Last synced: {time}",
+    "click-to-sync-now": "Click to sync now",
+    "sync-in-progress": "Sync in progress"
   },
   "schema-editor": {
     "self": "Schema Editor",

@@ -230,9 +230,6 @@ export const mapTreeNodeByType = <T extends NodeType>(
     isLeaf: isLeafNodeType(type),
     ...overrides,
   };
-  if (type === "column") {
-    console.log(node.isLeaf);
-  }
 
   return node;
 };
