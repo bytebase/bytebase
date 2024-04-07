@@ -151,6 +151,9 @@ export const getUpdateMaskFromUsers = (
   if (!isUndefined(update.roles) && !isEqual(origin.roles, update.roles)) {
     updateMask.push("roles");
   }
+  if (!isUndefined(update.phone) && !isEqual(origin.phone, update.phone)) {
+    updateMask.push("phone");
+  }
   return updateMask;
 };
 

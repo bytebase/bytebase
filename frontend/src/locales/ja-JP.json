@@ -478,9 +478,9 @@
       "phone": "電話",
       "country-code": "国コード",
       "password": "パスワード",
-      "password-confirm": "確認",
+      "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認",
-      "password-mismatch": "不一致",
+      "password-mismatch": "新しいパスワードが一致しません",
       "subscription": "（役割管理を有効にするにはアップグレードしてください）"
     },
     "members": {

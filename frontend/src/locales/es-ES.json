@@ -478,9 +478,9 @@
       "phone": "Número de móvil",
       "country-code": "Códigos de país y de área",
       "password": "Contraseña",
-      "password-confirm": "Confirmar",
+      "password-confirm": "Confirmar contraseña",
       "password-confirm-placeholder": "Confirmar nueva contraseña",
-      "password-mismatch": "no coincide",
+      "password-mismatch": "Nueva contraseña no coincide",
       "subscription": "(Actualice para habilitar la gestión de roles)"
     },
     "members": {

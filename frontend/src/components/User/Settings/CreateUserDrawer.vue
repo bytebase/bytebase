@@ -82,6 +82,39 @@
               </p>
             </div>
           </NFormItem>
+          <template v-if="!isCreating && state.user.userType === UserType.USER">
+            <NFormItem :label="$t('settings.profile.phone')">
+              <NInput
+                v-model:value="state.user.phone"
+                :input-props="{ type: 'tel', autocomplete: 'off' }"
+              />
+            </NFormItem>
+            <NFormItem :label="$t('settings.profile.password')">
+              <NInput
+                v-model:value="state.user.password"
+                type="password"
+                :input-props="{ autocomplete: 'off' }"
+                :placeholder="$t('common.sensitive-placeholder')"
+              />
+            </NFormItem>
+            <NFormItem :label="$t('settings.profile.password-confirm')">
+              <div class="w-full flex flex-col justify-start items-start">
+                <NInput
+                  v-model:value="state.passwordConfirm"
+                  type="password"
+                  :input-props="{ autocomplete: 'off' }"
+                  :placeholder="
+                    $t('settings.profile.password-confirm-placeholder')
+                  "
+                />
+                <span
+                  v-if="passwordMismatch"
+                  class="text-error text-sm mt-1 pl-1"
+                  >{{ $t("settings.profile.password-mismatch") }}</span
+                >
+              </div>
+            </NFormItem>
+          </template>
         </NForm>
       </template>
       <template #footer>
@@ -136,7 +169,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isEmpty } from "lodash-es";
 import { ArchiveIcon } from "lucide-vue-next";
 import type { SelectGroupOption, SelectOption } from "naive-ui";
 import {
@@ -172,6 +205,7 @@ import { displayRoleTitle, randomString } from "@/utils";
 interface LocalState {
   isRequesting: boolean;
   user: User;
+  passwordConfirm: string;
 }
 
 const serviceAccountEmailSuffix = "@service.bytebase.com";
@@ -189,6 +223,7 @@ const userStore = useUserStore();
 const state = reactive<LocalState>({
   isRequesting: false,
   user: cloneDeep(props.user) || emptyUser(),
+  passwordConfirm: "",
 });
 
 const availableRoleOptions = computed(
@@ -241,6 +276,17 @@ const hasWorkspaceRole = computed(() => {
 
 const isCreating = computed(() => !props.user);
 
+const passwordMismatch = computed(() => {
+  if (isCreating.value) {
+    return false;
+  }
+
+  return (
+    !isEmpty(state.user?.password) &&
+    state.user?.password !== state.passwordConfirm
+  );
+});
+
 const allowConfirm = computed(() => {
   if (
     !state.user.email ||
@@ -251,7 +297,8 @@ const allowConfirm = computed(() => {
   }
   if (
     !isCreating.value &&
-    getUpdateMaskFromUsers(props.user!, state.user).length == 0
+    (passwordMismatch.value ||
+      getUpdateMaskFromUsers(props.user!, state.user).length == 0)
   ) {
     return false;
   }
