@@ -1248,6 +1248,25 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 
 	for _, statementUpdate := range statementUpdates {
 		task := tasksMap[statementUpdate.TaskID]
+
+		if err := func() error {
+			oldSheet := common.FormatSheet(issue.Project.ResourceID, statementUpdate.OldSheetID)
+			newSheet := common.FormatSheet(issue.Project.ResourceID, statementUpdate.NewSheetID)
+			return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+				Payload: &storepb.IssueCommentPayload{
+					Event: &storepb.IssueCommentPayload_TaskUpdate_{
+						TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
+							Tasks:     []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
+							FromSheet: &oldSheet,
+							ToSheet:   &newSheet,
+						},
+					},
+				},
+			}, user.ID)
+		}(); err != nil {
+			slog.Warn("failed to create issue comments for statement update", "issueUID", issue.UID, log.BBError(err))
+		}
+
 		if err := func() error {
 			payload, err := json.Marshal(statementUpdate)
 			if err != nil {
