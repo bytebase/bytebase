@@ -40,6 +40,9 @@ const route = computed(() => {
 });
 
 const showBrandingImage = computed(() => {
-  return subscriptionStore.subscription?.plan !== PlanType.ENTERPRISE;
+  return (
+    subscriptionStore.currentPlan !== PlanType.ENTERPRISE ||
+    subscriptionStore.isTrialing
+  );
 });
 </script>
