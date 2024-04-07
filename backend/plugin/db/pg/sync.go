@@ -871,7 +871,7 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 			return nil, err
 		}
 		// Skip internal functions.
-		if pgparser.IsSystemFunctions(function.Name, function.Definition) {
+		if pgparser.IsSystemFunction(function.Name, function.Definition) {
 			continue
 		}
 

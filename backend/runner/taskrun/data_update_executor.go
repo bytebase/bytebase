@@ -99,6 +99,9 @@ func (exec *DataUpdateExecutor) backupData(
 	if err != nil {
 		return errors.Wrapf(err, "failed to find issue for pipeline %v", task.PipelineID)
 	}
+	if issue == nil {
+		return errors.Errorf("issue not found for pipeline %v", task.PipelineID)
+	}
 
 	backupInstanceID, backupDatabaseName, err := common.GetInstanceDatabaseID(payload.PreUpdateBackupDetail.Database)
 	if err != nil {
@@ -158,6 +161,25 @@ func (exec *DataUpdateExecutor) backupData(
 				slog.Int("task", task.ID),
 				log.BBError(err),
 			)
+		}
+
+		if err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+			IssueUID: issue.UID,
+			Payload: &storepb.IssueCommentPayload{
+				Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
+					TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
+						Task: common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+						Tables: []*storepb.IssueCommentPayload_TaskPriorBackup_Table{
+							{
+								Schema: "",
+								Table:  statement.TableName,
+							},
+						},
+					},
+				},
+			},
+		}, api.SystemBotID); err != nil {
+			slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err))
 		}
 	}
 
