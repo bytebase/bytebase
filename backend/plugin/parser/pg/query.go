@@ -208,8 +208,9 @@ func convertToSyntaxError(statement string, err error) *base.SyntaxError {
 
 func getLineAndColumn(statement string, pos int) (int, int) {
 	var line, column int
-	for i := 0; i < pos; i++ {
-		if statement[i] == '\n' {
+	runes := []rune(statement)
+	for i := 0; i < pos && i < len(runes); i++ {
+		if runes[i] == '\n' {
 			line++
 			column = 0
 		} else {
