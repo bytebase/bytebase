@@ -160,10 +160,24 @@ const mergedItemList = computed(() => {
       // Untitled sheets go behind
       // They are probably dirty data
       (item) => (item.type === "SHEET" && !item.target.title ? 1 : 0),
+      // Unconnected sheets go behind then
+      (item) => {
+        if (item.type === "TAB") {
+          return 0;
+        }
+        if (!item.target.database) {
+          return Number.MAX_VALUE;
+        }
+        const db = useDatabaseV1Store().getDatabaseByName(item.target.database);
+        if (db.uid === String(UNKNOWN_ID)) {
+          return Number.MAX_VALUE;
+        }
+        return 1;
+      },
       // Alphabetically otherwise
       (item) => item.target.title,
     ],
-    ["asc", "asc"]
+    ["asc", "asc", "asc"]
   );
   return sortedList;
 });
@@ -218,6 +232,10 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
     }
     return <ProjectV1Name project={treeNode.project} link={true} />;
   } else if (treeNode.database) {
+    const db = treeNode.database;
+    if (db.uid === String(UNKNOWN_ID)) {
+      return null;
+    }
     return (
       <span class="flex items-center gap-x-1">
         <InstanceV1EngineIcon instance={treeNode.database.instanceEntity} />
@@ -269,7 +287,13 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     return null;
   }
   if (treeNode.database) {
-    return <DatabaseV1Name database={treeNode.database} link={false} />;
+    const db = treeNode.database;
+    if (db.uid === String(UNKNOWN_ID)) {
+      return (
+        <span class="text-control-placeholder">{t("sheet.unconnected")}</span>
+      );
+    }
+    return <DatabaseV1Name database={db} link={false} />;
   }
 
   return (

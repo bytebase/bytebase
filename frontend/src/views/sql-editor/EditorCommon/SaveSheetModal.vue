@@ -57,9 +57,10 @@ const doSaveSheet = async (tab: SQLEditorTab) => {
       {
         name: sheet,
         title: title,
+        database: tab.connection.database,
         content: new TextEncoder().encode(statement),
       },
-      ["title", "content"]
+      ["title", "content", "database"]
     );
     if (updatedSheet) {
       const tab = tabStore.tabList.find((t) => t.sheet === updatedSheet.name);
