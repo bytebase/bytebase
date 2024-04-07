@@ -30,16 +30,6 @@
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
           >
-            <dt class="sr-only">{{ $t("common.environment") }}</dt>
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
-              >
-              <EnvironmentV1Name
-                :environment="environment"
-                icon-class="textinfolabel"
-              />
-            </dd>
             <dd class="flex items-center text-sm md:mr-4">
               <span class="textlabel"
                 >{{ $t("common.project") }}&nbsp;-&nbsp;</span
@@ -87,6 +77,8 @@
             :expr="state.expr!"
             :allow-admin="false"
             :factor-list="FactorList.get('DATABASE_GROUP') ?? []"
+            :factor-support-dropdown="factorSupportDropdown"
+            :factor-options-map="getFactorOptionsMap('DATABASE_GROUP')"
           />
         </div>
         <div class="col-span-2">
@@ -141,6 +133,10 @@ import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.
 import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
 import type { ResourceType } from "@/components/DatabaseGroup/utils";
 import { FactorList } from "@/components/DatabaseGroup/utils";
+import {
+  factorSupportDropdown,
+  getFactorOptionsMap,
+} from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
@@ -211,7 +207,6 @@ const schemaGroupList = computed(() => {
     databaseGroupResourceName.value
   );
 });
-const environment = computed(() => databaseGroup.value?.environment);
 const hasPermissionToCreateIssue = computed(() => {
   return hasPermissionToCreateChangeDatabaseIssueInProject(
     project.value,
@@ -274,9 +269,6 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
   if (!state.isLoaded) {
     return;
   }
-  if (!environment.value) {
-    return;
-  }
   if (!project.value) {
     return;
   }
@@ -286,7 +278,6 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
 
   const result = await dbGroupStore.fetchDatabaseGroupMatchList({
     projectName: project.value.name,
-    environmentId: environment.value.uid,
     expr: state.expr,
   });
 
@@ -295,12 +286,7 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
 }, 500);
 
 watch(
-  [
-    () => state.isLoaded,
-    () => project.value,
-    () => environment.value,
-    () => state.expr,
-  ],
+  [() => state.isLoaded, () => project.value, () => state.expr],
   updateDatabaseMatchingState,
   {
     immediate: true,

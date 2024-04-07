@@ -272,13 +272,6 @@ const filteredDatabaseList = computed(() => {
 
 const filteredDatabaseGroupList = computed(() => {
   let list = [...state.databaseGroupList];
-  if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
-    list = list.filter(
-      (dbGroup) =>
-        extractEnvironmentResourceName(dbGroup.environmentName) ===
-        selectedEnvironment.value
-    );
-  }
   const keyword = state.params.query.trim().toLowerCase();
   if (keyword) {
     list = list.filter(

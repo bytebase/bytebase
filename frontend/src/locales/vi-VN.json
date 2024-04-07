@@ -3258,6 +3258,7 @@
       "column_name": "Tên cột dọc",
       "classification_level": "Cấp độ phân loại",
       "resource_instance_id": "ID phiên bản",
+      "resource_environment_name": "Môi trường",
       "resource_database_name": "Tên cơ sở dữ liệu",
       "resource_table_name": "Tên bảng"
     },

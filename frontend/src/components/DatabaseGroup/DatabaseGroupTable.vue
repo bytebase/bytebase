@@ -12,7 +12,6 @@
       <div class="bb-grid-cell">
         {{ item.databasePlaceholder }}
       </div>
-      <div class="bb-grid-cell">{{ item.environment.title }}</div>
       <div v-if="props.showEdit" class="bb-grid-cell gap-x-2 justify-end">
         <NButton size="small" @click.stop="$emit('edit', item)">
           {{ $t("common.configure") }}
@@ -45,21 +44,13 @@ const { t } = useI18n();
 const router = useRouter();
 
 const COLUMN_LIST = computed(() => {
-  const columns: BBGridColumn[] = [
-    { title: t("common.name"), width: "1fr" },
-    {
-      title: t("common.environment"),
-      width: "1fr",
-    },
-  ];
-
+  const columns: BBGridColumn[] = [{ title: t("common.name"), width: "1fr" }];
   if (props.showEdit) {
     columns.push({
       title: "",
       width: "10rem",
     });
   }
-
   return columns;
 });
 
