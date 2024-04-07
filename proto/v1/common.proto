@@ -32,6 +32,7 @@ enum Engine {
   STARROCKS = 18;
   DORIS = 19;
   HIVE = 20;
+  ELASTICSEARCH = 21;
 }
 
 enum VCSType {

@@ -63,6 +63,7 @@ export enum Engine {
   STARROCKS = 18,
   DORIS = 19,
   HIVE = 20,
+  ELASTICSEARCH = 21,
   UNRECOGNIZED = -1,
 }
 
@@ -131,6 +132,9 @@ export function engineFromJSON(object: any): Engine {
     case 20:
     case "HIVE":
       return Engine.HIVE;
+    case 21:
+    case "ELASTICSEARCH":
+      return Engine.ELASTICSEARCH;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -182,6 +186,8 @@ export function engineToJSON(object: Engine): string {
       return "DORIS";
     case Engine.HIVE:
       return "HIVE";
+    case Engine.ELASTICSEARCH:
+      return "ELASTICSEARCH";
     case Engine.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
