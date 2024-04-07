@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/esapi"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -34,9 +34,26 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, errors.Wrapf(err, "failed to fetch indices from Elasticsearch server")
 	}
 
+	// roles.
+	var instanceRoles []*storepb.InstanceRoleMetadata
+	usersWithRoles, err := d.getUsersWithRoles()
+	if err != nil {
+		return nil, err
+	}
+	for userName, roles := range usersWithRoles {
+		privileges, err := d.getUserPrivileges(userName)
+		if err != nil {
+			return nil, err
+		}
+		instanceRoles = append(instanceRoles, &storepb.InstanceRoleMetadata{
+			Name:  userName,
+			Grant: fmt.Sprintf("[%s]: %s", strings.Join(roles.Roles, ", "), privileges),
+		})
+	}
+
+	instanceMetadata.InstanceRoles = instanceRoles
 	instanceMetadata.Databases = append(instanceMetadata.Databases, dbSchemaMetadata)
 	instanceMetadata.Version = version
-
 	return &instanceMetadata, nil
 }
 
@@ -85,10 +102,10 @@ func (d *Driver) getVerison() (string, error) {
 
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to read data from response")
+		return "", err
 	}
-	if err = resp.Body.Close(); err != nil {
-		return "", errors.Wrapf(err, "failed to close response's body")
+	if err := resp.Body.Close(); err != nil {
+		return "", err
 	}
 
 	var result VersionResult
@@ -114,12 +131,9 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 		return nil, errors.Wrapf(err, "failed to list indices")
 	}
 
-	bytes, err := io.ReadAll(res.Body)
+	bytes, err := readBytesAndClose(res)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read data from response")
-	}
-	if err = res.Body.Close(); err != nil {
-		return nil, errors.Wrapf(err, "failed to close response's body")
+		return nil, err
 	}
 
 	var results []IndicesResult
@@ -172,4 +186,30 @@ func unitConversion(sizeWithUnit string) (int64, error) {
 	}
 
 	return int64(size), nil
+}
+
+func readBytesAndClose(anyResp any) ([]byte, error) {
+	var body io.ReadCloser
+	// get body closer.
+	switch resp := anyResp.(type) {
+	case *http.Response:
+		body = resp.Body
+
+	case *esapi.Response:
+		body = resp.Body
+
+	default:
+		return nil, errors.New("not supported response type")
+	}
+
+	// read bytes.
+	bytes, err := io.ReadAll(body)
+	if err != nil {
+		return nil, err
+	}
+	if err := body.Close(); err != nil {
+		return nil, err
+	}
+
+	return bytes, nil
 }
