@@ -116,6 +116,7 @@ import {
   useActuatorV1Store,
   useSQLEditorTabStore,
   useConnectionOfCurrentSQLEditorTab,
+  useWorkSheetStore,
 } from "@/store";
 import type { FeatureType, SQLEditorQueryParams } from "@/types";
 import { keyboardShortcutStr } from "@/utils";
@@ -192,6 +193,13 @@ const allowSave = computed(() => {
   const tab = currentTab.value;
   if (!tab) {
     return false;
+  }
+
+  if (tab.sheet) {
+    const sheet = useWorkSheetStore().getSheetByName(tab.sheet);
+    if (sheet && sheet.database !== tab.connection.database) {
+      return true;
+    }
   }
   if (tab.status === "NEW" || tab.status === "CLEAN") {
     return false;

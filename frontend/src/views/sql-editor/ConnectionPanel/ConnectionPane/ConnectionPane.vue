@@ -73,7 +73,11 @@ import type {
   SQLEditorTreeNodeTarget,
   SQLEditorTreeNodeType,
 } from "@/types";
-import { ExpandableTreeNodeTypes, UNKNOWN_ID } from "@/types";
+import {
+  DEFAULT_SQL_EDITOR_TAB_MODE,
+  ExpandableTreeNodeTypes,
+  UNKNOWN_ID,
+} from "@/types";
 import { findAncestor, isDescendantOf } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import {
@@ -207,7 +211,10 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         // Check if clicked on the content part.
         // And ignore the fold/unfold arrow.
         if (type === "database") {
-          setConnection(node);
+          setConnection(node, {
+            sheet: tabStore.currentTab?.sheet ?? "",
+            mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+          });
           showConnectionPanel.value = false;
         }
 
