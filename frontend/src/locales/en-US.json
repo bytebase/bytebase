@@ -478,7 +478,7 @@
       "phone": "Phone",
       "country-code": "Country Code",
       "password": "Password",
-      "password-confirm": "Passwor Confirm",
+      "password-confirm": "Password Confirm",
       "password-confirm-placeholder": "Confirm new password",
       "password-mismatch": "New password mismatch",
       "subscription": "(Upgrade to enable role management)"
