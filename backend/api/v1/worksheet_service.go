@@ -304,6 +304,22 @@ func (s *WorksheetService) UpdateWorksheet(ctx context.Context, request *v1pb.Up
 			}
 			stringVisibility := string(visibility)
 			worksheetPatch.Visibility = &stringVisibility
+		case "database":
+			instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Worksheet.Database)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &instanceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if database == nil {
+				return nil, status.Errorf(codes.InvalidArgument, `database "%q" not found`, request.Worksheet.Database)
+			}
+			worksheetPatch.DatabaseUID = &database.UID
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid update mask path %q", path))
 		}
