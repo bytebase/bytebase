@@ -21,3 +21,7 @@ const (
 	// TaskRunSkipped is the task run status for SKIPPED.
 	TaskRunSkipped TaskRunStatus = "SKIPPED"
 )
+
+func (s TaskRunStatus) String() string {
+	return string(s)
+}

@@ -574,3 +574,7 @@ func FormatDatabase(instance string, database string) string {
 func FormatRole(role string) string {
 	return fmt.Sprintf("%s%s", RolePrefix, role)
 }
+
+func FormatTask(projectID string, pipelineUID, stageUID, taskUID int) string {
+	return fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", ProjectNamePrefix, projectID, RolloutPrefix, pipelineUID, StagePrefix, stageUID, TaskPrefix, taskUID)
+}
