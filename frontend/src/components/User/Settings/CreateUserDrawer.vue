@@ -82,7 +82,7 @@
               </p>
             </div>
           </NFormItem>
-          <template v-if="!isCreating">
+          <template v-if="!isCreating && state.user.userType === UserType.USER">
             <NFormItem :label="$t('settings.profile.phone')">
               <NInput
                 v-model:value="state.user.phone"
