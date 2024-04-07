@@ -80,6 +80,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "close"): void;
+  (event: "created", databaseGroupName: string): void;
 }>();
 
 const { t } = useI18n();
@@ -222,12 +223,7 @@ const doConfirm = async () => {
           },
           databaseGroupId: resourceId,
         });
-        router.push({
-          name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
-          params: {
-            databaseGroupName: resourceId,
-          },
-        });
+        emit("created", resourceId);
       } else {
         const celStrings = await batchConvertParsedExprToCELString([
           ParsedExpr.fromJSON({
