@@ -687,7 +687,6 @@ export interface IssueComment {
   approval?: IssueComment_Approval | undefined;
   issueUpdate?: IssueComment_IssueUpdate | undefined;
   stageEnd?: IssueComment_StageEnd | undefined;
-  taskRunUpdate?: IssueComment_TaskRunUpdate | undefined;
   taskUpdate?: IssueComment_TaskUpdate | undefined;
   taskPriorBackup?: IssueComment_TaskPriorBackup | undefined;
 }
@@ -762,62 +761,6 @@ export interface IssueComment_StageEnd {
   stage: string;
 }
 
-export interface IssueComment_TaskRunUpdate {
-  tasks: string[];
-  toStatus?: IssueComment_TaskRunUpdate_Status | undefined;
-}
-
-export enum IssueComment_TaskRunUpdate_Status {
-  STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  RUNNING = 2,
-  DONE = 3,
-  FAILED = 4,
-  UNRECOGNIZED = -1,
-}
-
-export function issueComment_TaskRunUpdate_StatusFromJSON(object: any): IssueComment_TaskRunUpdate_Status {
-  switch (object) {
-    case 0:
-    case "STATUS_UNSPECIFIED":
-      return IssueComment_TaskRunUpdate_Status.STATUS_UNSPECIFIED;
-    case 1:
-    case "PENDING":
-      return IssueComment_TaskRunUpdate_Status.PENDING;
-    case 2:
-    case "RUNNING":
-      return IssueComment_TaskRunUpdate_Status.RUNNING;
-    case 3:
-    case "DONE":
-      return IssueComment_TaskRunUpdate_Status.DONE;
-    case 4:
-    case "FAILED":
-      return IssueComment_TaskRunUpdate_Status.FAILED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return IssueComment_TaskRunUpdate_Status.UNRECOGNIZED;
-  }
-}
-
-export function issueComment_TaskRunUpdate_StatusToJSON(object: IssueComment_TaskRunUpdate_Status): string {
-  switch (object) {
-    case IssueComment_TaskRunUpdate_Status.STATUS_UNSPECIFIED:
-      return "STATUS_UNSPECIFIED";
-    case IssueComment_TaskRunUpdate_Status.PENDING:
-      return "PENDING";
-    case IssueComment_TaskRunUpdate_Status.RUNNING:
-      return "RUNNING";
-    case IssueComment_TaskRunUpdate_Status.DONE:
-      return "DONE";
-    case IssueComment_TaskRunUpdate_Status.FAILED:
-      return "FAILED";
-    case IssueComment_TaskRunUpdate_Status.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export interface IssueComment_TaskUpdate {
   tasks: string[];
   /** Format: projects/{project}/sheets/{sheet} */
@@ -828,6 +771,70 @@ export interface IssueComment_TaskUpdate {
   toSheet?: string | undefined;
   fromEarliestAllowedTime?: Date | undefined;
   toEarliestAllowedTime?: Date | undefined;
+  toStatus?: IssueComment_TaskUpdate_Status | undefined;
+}
+
+export enum IssueComment_TaskUpdate_Status {
+  STATUS_UNSPECIFIED = 0,
+  PENDING = 1,
+  RUNNING = 2,
+  DONE = 3,
+  FAILED = 4,
+  SKIPPED = 5,
+  CANCELED = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function issueComment_TaskUpdate_StatusFromJSON(object: any): IssueComment_TaskUpdate_Status {
+  switch (object) {
+    case 0:
+    case "STATUS_UNSPECIFIED":
+      return IssueComment_TaskUpdate_Status.STATUS_UNSPECIFIED;
+    case 1:
+    case "PENDING":
+      return IssueComment_TaskUpdate_Status.PENDING;
+    case 2:
+    case "RUNNING":
+      return IssueComment_TaskUpdate_Status.RUNNING;
+    case 3:
+    case "DONE":
+      return IssueComment_TaskUpdate_Status.DONE;
+    case 4:
+    case "FAILED":
+      return IssueComment_TaskUpdate_Status.FAILED;
+    case 5:
+    case "SKIPPED":
+      return IssueComment_TaskUpdate_Status.SKIPPED;
+    case 6:
+    case "CANCELED":
+      return IssueComment_TaskUpdate_Status.CANCELED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return IssueComment_TaskUpdate_Status.UNRECOGNIZED;
+  }
+}
+
+export function issueComment_TaskUpdate_StatusToJSON(object: IssueComment_TaskUpdate_Status): string {
+  switch (object) {
+    case IssueComment_TaskUpdate_Status.STATUS_UNSPECIFIED:
+      return "STATUS_UNSPECIFIED";
+    case IssueComment_TaskUpdate_Status.PENDING:
+      return "PENDING";
+    case IssueComment_TaskUpdate_Status.RUNNING:
+      return "RUNNING";
+    case IssueComment_TaskUpdate_Status.DONE:
+      return "DONE";
+    case IssueComment_TaskUpdate_Status.FAILED:
+      return "FAILED";
+    case IssueComment_TaskUpdate_Status.SKIPPED:
+      return "SKIPPED";
+    case IssueComment_TaskUpdate_Status.CANCELED:
+      return "CANCELED";
+    case IssueComment_TaskUpdate_Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface IssueComment_TaskPriorBackup {
@@ -3189,7 +3196,6 @@ function createBaseIssueComment(): IssueComment {
     approval: undefined,
     issueUpdate: undefined,
     stageEnd: undefined,
-    taskRunUpdate: undefined,
     taskUpdate: undefined,
     taskPriorBackup: undefined,
   };
@@ -3227,14 +3233,11 @@ export const IssueComment = {
     if (message.stageEnd !== undefined) {
       IssueComment_StageEnd.encode(message.stageEnd, writer.uint32(82).fork()).ldelim();
     }
-    if (message.taskRunUpdate !== undefined) {
-      IssueComment_TaskRunUpdate.encode(message.taskRunUpdate, writer.uint32(90).fork()).ldelim();
-    }
     if (message.taskUpdate !== undefined) {
-      IssueComment_TaskUpdate.encode(message.taskUpdate, writer.uint32(98).fork()).ldelim();
+      IssueComment_TaskUpdate.encode(message.taskUpdate, writer.uint32(90).fork()).ldelim();
     }
     if (message.taskPriorBackup !== undefined) {
-      IssueComment_TaskPriorBackup.encode(message.taskPriorBackup, writer.uint32(106).fork()).ldelim();
+      IssueComment_TaskPriorBackup.encode(message.taskPriorBackup, writer.uint32(98).fork()).ldelim();
     }
     return writer;
   },
@@ -3321,17 +3324,10 @@ export const IssueComment = {
             break;
           }
 
-          message.taskRunUpdate = IssueComment_TaskRunUpdate.decode(reader, reader.uint32());
+          message.taskUpdate = IssueComment_TaskUpdate.decode(reader, reader.uint32());
           continue;
         case 12:
           if (tag !== 98) {
-            break;
-          }
-
-          message.taskUpdate = IssueComment_TaskUpdate.decode(reader, reader.uint32());
-          continue;
-        case 13:
-          if (tag !== 106) {
             break;
           }
 
@@ -3358,9 +3354,6 @@ export const IssueComment = {
       approval: isSet(object.approval) ? IssueComment_Approval.fromJSON(object.approval) : undefined,
       issueUpdate: isSet(object.issueUpdate) ? IssueComment_IssueUpdate.fromJSON(object.issueUpdate) : undefined,
       stageEnd: isSet(object.stageEnd) ? IssueComment_StageEnd.fromJSON(object.stageEnd) : undefined,
-      taskRunUpdate: isSet(object.taskRunUpdate)
-        ? IssueComment_TaskRunUpdate.fromJSON(object.taskRunUpdate)
-        : undefined,
       taskUpdate: isSet(object.taskUpdate) ? IssueComment_TaskUpdate.fromJSON(object.taskUpdate) : undefined,
       taskPriorBackup: isSet(object.taskPriorBackup)
         ? IssueComment_TaskPriorBackup.fromJSON(object.taskPriorBackup)
@@ -3400,9 +3393,6 @@ export const IssueComment = {
     if (message.stageEnd !== undefined) {
       obj.stageEnd = IssueComment_StageEnd.toJSON(message.stageEnd);
     }
-    if (message.taskRunUpdate !== undefined) {
-      obj.taskRunUpdate = IssueComment_TaskRunUpdate.toJSON(message.taskRunUpdate);
-    }
     if (message.taskUpdate !== undefined) {
       obj.taskUpdate = IssueComment_TaskUpdate.toJSON(message.taskUpdate);
     }
@@ -3432,9 +3422,6 @@ export const IssueComment = {
       : undefined;
     message.stageEnd = (object.stageEnd !== undefined && object.stageEnd !== null)
       ? IssueComment_StageEnd.fromPartial(object.stageEnd)
-      : undefined;
-    message.taskRunUpdate = (object.taskRunUpdate !== undefined && object.taskRunUpdate !== null)
-      ? IssueComment_TaskRunUpdate.fromPartial(object.taskRunUpdate)
       : undefined;
     message.taskUpdate = (object.taskUpdate !== undefined && object.taskUpdate !== null)
       ? IssueComment_TaskUpdate.fromPartial(object.taskUpdate)
@@ -3733,80 +3720,6 @@ export const IssueComment_StageEnd = {
   },
 };
 
-function createBaseIssueComment_TaskRunUpdate(): IssueComment_TaskRunUpdate {
-  return { tasks: [], toStatus: undefined };
-}
-
-export const IssueComment_TaskRunUpdate = {
-  encode(message: IssueComment_TaskRunUpdate, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.tasks) {
-      writer.uint32(10).string(v!);
-    }
-    if (message.toStatus !== undefined) {
-      writer.uint32(16).int32(message.toStatus);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): IssueComment_TaskRunUpdate {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseIssueComment_TaskRunUpdate();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.tasks.push(reader.string());
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.toStatus = reader.int32() as any;
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): IssueComment_TaskRunUpdate {
-    return {
-      tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => globalThis.String(e)) : [],
-      toStatus: isSet(object.toStatus) ? issueComment_TaskRunUpdate_StatusFromJSON(object.toStatus) : undefined,
-    };
-  },
-
-  toJSON(message: IssueComment_TaskRunUpdate): unknown {
-    const obj: any = {};
-    if (message.tasks?.length) {
-      obj.tasks = message.tasks;
-    }
-    if (message.toStatus !== undefined) {
-      obj.toStatus = issueComment_TaskRunUpdate_StatusToJSON(message.toStatus);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<IssueComment_TaskRunUpdate>): IssueComment_TaskRunUpdate {
-    return IssueComment_TaskRunUpdate.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<IssueComment_TaskRunUpdate>): IssueComment_TaskRunUpdate {
-    const message = createBaseIssueComment_TaskRunUpdate();
-    message.tasks = object.tasks?.map((e) => e) || [];
-    message.toStatus = object.toStatus ?? undefined;
-    return message;
-  },
-};
-
 function createBaseIssueComment_TaskUpdate(): IssueComment_TaskUpdate {
   return {
     tasks: [],
@@ -3814,6 +3727,7 @@ function createBaseIssueComment_TaskUpdate(): IssueComment_TaskUpdate {
     toSheet: undefined,
     fromEarliestAllowedTime: undefined,
     toEarliestAllowedTime: undefined,
+    toStatus: undefined,
   };
 }
 
@@ -3833,6 +3747,9 @@ export const IssueComment_TaskUpdate = {
     }
     if (message.toEarliestAllowedTime !== undefined) {
       Timestamp.encode(toTimestamp(message.toEarliestAllowedTime), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.toStatus !== undefined) {
+      writer.uint32(48).int32(message.toStatus);
     }
     return writer;
   },
@@ -3879,6 +3796,13 @@ export const IssueComment_TaskUpdate = {
 
           message.toEarliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.toStatus = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3899,6 +3823,7 @@ export const IssueComment_TaskUpdate = {
       toEarliestAllowedTime: isSet(object.toEarliestAllowedTime)
         ? fromJsonTimestamp(object.toEarliestAllowedTime)
         : undefined,
+      toStatus: isSet(object.toStatus) ? issueComment_TaskUpdate_StatusFromJSON(object.toStatus) : undefined,
     };
   },
 
@@ -3919,6 +3844,9 @@ export const IssueComment_TaskUpdate = {
     if (message.toEarliestAllowedTime !== undefined) {
       obj.toEarliestAllowedTime = message.toEarliestAllowedTime.toISOString();
     }
+    if (message.toStatus !== undefined) {
+      obj.toStatus = issueComment_TaskUpdate_StatusToJSON(message.toStatus);
+    }
     return obj;
   },
 
@@ -3932,6 +3860,7 @@ export const IssueComment_TaskUpdate = {
     message.toSheet = object.toSheet ?? undefined;
     message.fromEarliestAllowedTime = object.fromEarliestAllowedTime ?? undefined;
     message.toEarliestAllowedTime = object.toEarliestAllowedTime ?? undefined;
+    message.toStatus = object.toStatus ?? undefined;
     return message;
   },
 };

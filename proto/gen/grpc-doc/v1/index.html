@@ -1230,10 +1230,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.IssueComment.TaskRunUpdate"><span class="badge">M</span>IssueComment.TaskRunUpdate</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.IssueComment.TaskUpdate"><span class="badge">M</span>IssueComment.TaskUpdate</a>
                 </li>
               
@@ -1307,7 +1303,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.IssueComment.TaskRunUpdate.Status"><span class="badge">E</span>IssueComment.TaskRunUpdate.Status</a>
+                  <a href="#bytebase.v1.IssueComment.TaskUpdate.Status"><span class="badge">E</span>IssueComment.TaskUpdate.Status</a>
                 </li>
               
                 <li>
@@ -13509,13 +13505,6 @@ Keys are the following:
                 </tr>
               
                 <tr>
-                  <td>task_run_update</td>
-                  <td><a href="#bytebase.v1.IssueComment.TaskRunUpdate">IssueComment.TaskRunUpdate</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>task_update</td>
                   <td><a href="#bytebase.v1.IssueComment.TaskUpdate">IssueComment.TaskUpdate</a></td>
                   <td></td>
@@ -13719,37 +13708,6 @@ Keys are the following:
 
         
       
-        <h3 id="bytebase.v1.IssueComment.TaskRunUpdate">IssueComment.TaskRunUpdate</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>tasks</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>to_status</td>
-                  <td><a href="#bytebase.v1.IssueComment.TaskRunUpdate.Status">IssueComment.TaskRunUpdate.Status</a></td>
-                  <td>optional</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.IssueComment.TaskUpdate">IssueComment.TaskUpdate</h3>
         <p></p>
 
@@ -13791,6 +13749,13 @@ Keys are the following:
                 <tr>
                   <td>to_earliest_allowed_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_status</td>
+                  <td><a href="#bytebase.v1.IssueComment.TaskUpdate.Status">IssueComment.TaskUpdate.Status</a></td>
                   <td>optional</td>
                   <td><p> </p></td>
                 </tr>
@@ -14437,7 +14402,7 @@ Format: projects/{project}/issues/{issue} </p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.IssueComment.TaskRunUpdate.Status">IssueComment.TaskRunUpdate.Status</h3>
+        <h3 id="bytebase.v1.IssueComment.TaskUpdate.Status">IssueComment.TaskUpdate.Status</h3>
         <p></p>
         <table class="enum-table">
           <thead>
@@ -14472,6 +14437,18 @@ Format: projects/{project}/issues/{issue} </p></td>
               <tr>
                 <td>FAILED</td>
                 <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SKIPPED</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CANCELED</td>
+                <td>6</td>
                 <td><p></p></td>
               </tr>
             
