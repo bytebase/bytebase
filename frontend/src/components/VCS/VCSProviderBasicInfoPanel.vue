@@ -356,11 +356,11 @@ const accessTokenPlaceholder = computed(() => {
     case VCSType.BITBUCKET:
       return "<bitbucket username>:<generated app password>";
     case VCSType.GITHUB:
-      return "github_11AYD374I0mlFAa4HbedewxR_sdFZEbbismN5rNQtqKoiPckxHryntBmQLJCJBEYfsCTA5j0";
+      return "github_xxxxxxxxxxxxxxxxxxx";
     case VCSType.GITLAB:
-      return "glpat-dFZEbbismN5rNQtqKoiPckxHryntBmQLJCJBEYfs";
+      return "glpat-xxxxxxxxxxxxxxxxxxx";
   }
-  return "b9e0efc7a233403799b42620c60ff98c146895a27b6219912a215f4e2251cc3a";
+  return "xxxxxxxxxxxxxxxxxxx";
 });
 
 const changeAccessToken = (value: string) => {

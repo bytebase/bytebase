@@ -218,7 +218,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
         expr: buildCELExpr(expr),
       }),
     ]);
-
+    const expression = celStrings[0] || "true";
     const validateOnlyResourceId = `creating-database-group-${Date.now()}`;
 
     const result = await createDatabaseGroup({
@@ -227,7 +227,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
         name: `${projectName}/${databaseGroupNamePrefix}${validateOnlyResourceId}`,
         databasePlaceholder: validateOnlyResourceId,
         databaseExpr: Expr.fromJSON({
-          expression: celStrings[0],
+          expression,
         }),
       },
       databaseGroupId: validateOnlyResourceId,
