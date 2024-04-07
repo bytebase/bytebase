@@ -24,6 +24,7 @@ service SQLService {
   rpc Execute(ExecuteRequest) returns (ExecuteResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:execute"
+      additional_bindings {post: "/v1/{name=instances/*}:execute"}
       body: "*"
     };
   }
