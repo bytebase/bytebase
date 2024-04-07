@@ -104,6 +104,22 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 	return issueComments, nil
 }
 
+func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID int, tasks []string, status storepb.IssueCommentPayload_TaskUpdate_Status, creatorUID int) error {
+	create := &IssueCommentMessage{
+		IssueUID: issueUID,
+		Payload: &storepb.IssueCommentPayload{
+			Event: &storepb.IssueCommentPayload_TaskUpdate_{
+				TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
+					Tasks:    tasks,
+					ToStatus: &status,
+				},
+			},
+		},
+	}
+
+	return s.CreateIssueComment(ctx, create, creatorUID)
+}
+
 func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMessage, creatorUID int) error {
 	query := `
 		INSERT INTO issue_comment (
