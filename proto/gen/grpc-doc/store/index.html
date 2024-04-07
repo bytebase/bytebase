@@ -667,10 +667,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.IssueCommentPayload.TaskRunUpdate"><span class="badge">M</span>IssueCommentPayload.TaskRunUpdate</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.IssueCommentPayload.TaskUpdate"><span class="badge">M</span>IssueCommentPayload.TaskUpdate</a>
                 </li>
               
@@ -684,7 +680,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.IssueCommentPayload.TaskRunUpdate.Status"><span class="badge">E</span>IssueCommentPayload.TaskRunUpdate.Status</a>
+                  <a href="#bytebase.store.IssueCommentPayload.TaskUpdate.Status"><span class="badge">E</span>IssueCommentPayload.TaskUpdate.Status</a>
                 </li>
               
               
@@ -4999,13 +4995,6 @@ Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
-                  <td>task_run_update</td>
-                  <td><a href="#bytebase.store.IssueCommentPayload.TaskRunUpdate">IssueCommentPayload.TaskRunUpdate</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>task_update</td>
                   <td><a href="#bytebase.store.IssueCommentPayload.TaskUpdate">IssueCommentPayload.TaskUpdate</a></td>
                   <td></td>
@@ -5209,37 +5198,6 @@ Format: users/{userUID}. </p></td>
 
         
       
-        <h3 id="bytebase.store.IssueCommentPayload.TaskRunUpdate">IssueCommentPayload.TaskRunUpdate</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>tasks</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>to_status</td>
-                  <td><a href="#bytebase.store.IssueCommentPayload.TaskRunUpdate.Status">IssueCommentPayload.TaskRunUpdate.Status</a></td>
-                  <td>optional</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.IssueCommentPayload.TaskUpdate">IssueCommentPayload.TaskUpdate</h3>
         <p></p>
 
@@ -5281,6 +5239,13 @@ Format: users/{userUID}. </p></td>
                 <tr>
                   <td>to_earliest_allowed_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to_status</td>
+                  <td><a href="#bytebase.store.IssueCommentPayload.TaskUpdate.Status">IssueCommentPayload.TaskUpdate.Status</a></td>
                   <td>optional</td>
                   <td><p> </p></td>
                 </tr>
@@ -5364,7 +5329,7 @@ Format: users/{userUID}. </p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.store.IssueCommentPayload.TaskRunUpdate.Status">IssueCommentPayload.TaskRunUpdate.Status</h3>
+        <h3 id="bytebase.store.IssueCommentPayload.TaskUpdate.Status">IssueCommentPayload.TaskUpdate.Status</h3>
         <p></p>
         <table class="enum-table">
           <thead>
@@ -5399,6 +5364,18 @@ Format: users/{userUID}. </p></td>
               <tr>
                 <td>FAILED</td>
                 <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SKIPPED</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CANCELED</td>
+                <td>6</td>
                 <td><p></p></td>
               </tr>
             

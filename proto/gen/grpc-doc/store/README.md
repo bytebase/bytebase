@@ -123,12 +123,11 @@
     - [IssueCommentPayload.StageEnd](#bytebase-store-IssueCommentPayload-StageEnd)
     - [IssueCommentPayload.TaskPriorBackup](#bytebase-store-IssueCommentPayload-TaskPriorBackup)
     - [IssueCommentPayload.TaskPriorBackup.Table](#bytebase-store-IssueCommentPayload-TaskPriorBackup-Table)
-    - [IssueCommentPayload.TaskRunUpdate](#bytebase-store-IssueCommentPayload-TaskRunUpdate)
     - [IssueCommentPayload.TaskUpdate](#bytebase-store-IssueCommentPayload-TaskUpdate)
   
     - [IssueCommentPayload.Approval.Status](#bytebase-store-IssueCommentPayload-Approval-Status)
     - [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus)
-    - [IssueCommentPayload.TaskRunUpdate.Status](#bytebase-store-IssueCommentPayload-TaskRunUpdate-Status)
+    - [IssueCommentPayload.TaskUpdate.Status](#bytebase-store-IssueCommentPayload-TaskUpdate-Status)
   
 - [store/plan.proto](#store_plan-proto)
     - [PlanConfig](#bytebase-store-PlanConfig)
@@ -1900,7 +1899,6 @@ InstanceOptions is the option for instances.
 | approval | [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval) |  |  |
 | issue_update | [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate) |  |  |
 | stage_end | [IssueCommentPayload.StageEnd](#bytebase-store-IssueCommentPayload-StageEnd) |  |  |
-| task_run_update | [IssueCommentPayload.TaskRunUpdate](#bytebase-store-IssueCommentPayload-TaskRunUpdate) |  |  |
 | task_update | [IssueCommentPayload.TaskUpdate](#bytebase-store-IssueCommentPayload-TaskUpdate) |  |  |
 | task_prior_backup | [IssueCommentPayload.TaskPriorBackup](#bytebase-store-IssueCommentPayload-TaskPriorBackup) |  |  |
 
@@ -1993,22 +1991,6 @@ InstanceOptions is the option for instances.
 
 
 
-<a name="bytebase-store-IssueCommentPayload-TaskRunUpdate"></a>
-
-### IssueCommentPayload.TaskRunUpdate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| tasks | [string](#string) | repeated |  |
-| to_status | [IssueCommentPayload.TaskRunUpdate.Status](#bytebase-store-IssueCommentPayload-TaskRunUpdate-Status) | optional |  |
-
-
-
-
-
-
 <a name="bytebase-store-IssueCommentPayload-TaskUpdate"></a>
 
 ### IssueCommentPayload.TaskUpdate
@@ -2022,6 +2004,7 @@ InstanceOptions is the option for instances.
 | to_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
 | from_earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 | to_earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| to_status | [IssueCommentPayload.TaskUpdate.Status](#bytebase-store-IssueCommentPayload-TaskUpdate-Status) | optional |  |
 
 
 
@@ -2058,9 +2041,9 @@ InstanceOptions is the option for instances.
 
 
 
-<a name="bytebase-store-IssueCommentPayload-TaskRunUpdate-Status"></a>
+<a name="bytebase-store-IssueCommentPayload-TaskUpdate-Status"></a>
 
-### IssueCommentPayload.TaskRunUpdate.Status
+### IssueCommentPayload.TaskUpdate.Status
 
 
 | Name | Number | Description |
@@ -2070,6 +2053,8 @@ InstanceOptions is the option for instances.
 | RUNNING | 2 |  |
 | DONE | 3 |  |
 | FAILED | 4 |  |
+| SKIPPED | 5 |  |
+| CANCELED | 6 |  |
 
 
  
