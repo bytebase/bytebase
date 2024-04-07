@@ -1254,6 +1254,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 			oldSheet := common.FormatSheet(issue.Project.ResourceID, statementUpdate.OldSheetID)
 			newSheet := common.FormatSheet(issue.Project.ResourceID, statementUpdate.NewSheetID)
 			return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+				IssueUID: issue.UID,
 				Payload: &storepb.IssueCommentPayload{
 					Event: &storepb.IssueCommentPayload_TaskUpdate_{
 						TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
@@ -1293,6 +1294,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 
 		if err := func() error {
 			return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+				IssueUID: issue.UID,
 				Payload: &storepb.IssueCommentPayload{
 					Event: &storepb.IssueCommentPayload_TaskUpdate_{
 						TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
