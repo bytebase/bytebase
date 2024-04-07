@@ -93,6 +93,7 @@ export const supportedEngineV1List = () => {
     Engine.STARROCKS,
     Engine.RISINGWAVE,
     Engine.HIVE,
+    Engine.ELASTICSEARCH,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
@@ -275,6 +276,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "Doris";
     case Engine.HIVE:
       return "Hive";
+    case Engine.ELASTICSEARCH:
+      return "Elasticsearch";
   }
   return "";
 };
