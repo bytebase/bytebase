@@ -179,13 +179,8 @@ func (q *querySpanExtractor) extractTableSourceFromRangeFunction(node *pgquery.N
 	if funcName == "" {
 		return nil, errors.Errorf("empty function name for range function node: %v", node)
 	}
-	if schemaName == "" {
-		if !IsSystemFunction(funcName, "") {
-			return nil, &parsererror.TypeNotSupportedError{
-				Type: "function",
-				Err:  errors.Errorf("node: %+v", node),
-			}
-		}
+	if schemaName == "" && IsSystemFunction(funcName, "") {
+		// If the schemaName is empty, we try to match the system function first.
 		return q.extractTableSourceFromSystemFunction(node, funcName, args)
 	}
 
