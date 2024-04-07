@@ -220,13 +220,6 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     ): SQLReviewPolicy | undefined {
       return this.reviewPolicyList.find((g) => g.environment.name === name);
     },
-    getReviewPolicyByEnvironmentUID(
-      environmentId: string
-    ): SQLReviewPolicy | undefined {
-      return this.getReviewPolicyByEnvironmentName(
-        `${environmentNamePrefix}${environmentId}`
-      );
-    },
 
     async fetchReviewPolicyList(): Promise<SQLReviewPolicy[]> {
       const policyStore = usePolicyV1Store();
@@ -267,13 +260,6 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         this.setReviewPolicy(reviewPolicy);
       }
       return reviewPolicy;
-    },
-    async getOrFetchReviewPolicyByEnvironmentUID(
-      uid: string
-    ): Promise<SQLReviewPolicy | undefined> {
-      return this.getOrFetchReviewPolicyByEnvironmentName(
-        `${environmentNamePrefix}${uid}`
-      );
     },
   },
 });

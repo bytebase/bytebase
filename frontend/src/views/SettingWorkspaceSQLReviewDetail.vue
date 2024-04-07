@@ -133,9 +133,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync, useTitle } from "@vueuse/core";
+import { useTitle } from "@vueuse/core";
 import { cloneDeep, groupBy } from "lodash-es";
-import { computed, reactive, toRef, watch } from "vue";
+import { computed, reactive, toRef, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
@@ -152,6 +152,7 @@ import {
   pushNotification,
   useCurrentUserV1,
   useSQLReviewStore,
+  useEnvironmentV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import type { RuleTemplate, SchemaPolicyRule } from "@/types";
@@ -187,6 +188,7 @@ const { t } = useI18n();
 const store = useSQLReviewStore();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
+const environmentV1Store = useEnvironmentV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
@@ -205,12 +207,21 @@ const hasPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
-const reviewPolicy = computedAsync(async () => {
+const environment = computed(() => {
   const environmentUID = idFromSlug(props.sqlReviewPolicySlug);
-  const policy =
-    await store.getOrFetchReviewPolicyByEnvironmentUID(environmentUID);
-  return policy ?? unknown("SQL_REVIEW");
-}, unknown("SQL_REVIEW"));
+  return environmentV1Store.getEnvironmentByUID(environmentUID);
+});
+
+watchEffect(async () => {
+  await store.getOrFetchReviewPolicyByEnvironmentName(environment.value.name);
+});
+
+const reviewPolicy = computed(() => {
+  return (
+    store.getReviewPolicyByEnvironmentName(environment.value.name) ??
+    unknown("SQL_REVIEW")
+  );
+});
 
 const ruleListOfPolicy = computed((): RuleTemplate[] => {
   if (!reviewPolicy.value) {
@@ -267,6 +278,14 @@ const {
   filteredRuleList,
 } = useSQLRuleFilter(toRef(state, "ruleList"));
 
+const pushUpdatedNotify = () => {
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("sql-review.policy-updated"),
+  });
+};
+
 const changeName = async (name: string) => {
   state.editingTitle = false;
   const policy = reviewPolicy.value;
@@ -282,11 +301,7 @@ const changeName = async (name: string) => {
     id: policy.id,
     ...upsert,
   });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("sql-review.policy-updated"),
-  });
+  pushUpdatedNotify();
 };
 
 const markChange = (rule: RuleTemplate, overrides: Partial<RuleTemplate>) => {
@@ -341,11 +356,7 @@ const onApplyChanges = async () => {
       ruleList,
     });
     state.rulesUpdated = false;
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("sql-review.policy-updated"),
-    });
+    pushUpdatedNotify();
   } finally {
     state.updating = false;
   }
@@ -357,18 +368,20 @@ const onEdit = () => {
   filterParams.selectedCategory = undefined;
 };
 
-const onArchive = () => {
-  store.updateReviewPolicy({
+const onArchive = async () => {
+  await store.updateReviewPolicy({
     id: reviewPolicy.value.id,
     enforce: false,
   });
+  pushUpdatedNotify();
 };
 
-const onRestore = () => {
-  store.updateReviewPolicy({
+const onRestore = async () => {
+  await store.updateReviewPolicy({
     id: reviewPolicy.value.id,
     enforce: true,
   });
+  pushUpdatedNotify();
 };
 
 const onRemove = () => {

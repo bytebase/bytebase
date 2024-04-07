@@ -394,6 +394,9 @@ export const convertPolicyRuleToRuleTemplate = (
   const templateComponent = componentList.find(
     (c) => c.payload.type === "TEMPLATE"
   );
+  const stringArrayComponent = componentList.find(
+    (c) => c.payload.type === "STRING_ARRAY"
+  );
 
   switch (ruleTemplate.type) {
     case "statement.query.minimum-plan-level":
@@ -552,8 +555,12 @@ export const convertPolicyRuleToRuleTemplate = (
     case "index.type-allow-list":
     case "system.charset.allowlist":
     case "system.collation.allowlist":
-    case "system.function.disallowed-list": {
-      const stringArrayComponent = componentList[0];
+    case "system.function.disallowed-list":
+    case "table.disallow-dml":
+    case "table.disallow-ddl": {
+      if (!stringArrayComponent) {
+        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+      }
       const stringArrayPayload = {
         ...stringArrayComponent.payload,
         value: (payload as StringArrayLimitPayload).list,
@@ -733,7 +740,9 @@ const mergeIndividualConfigAsRule = (
     case "index.type-allow-list":
     case "system.charset.allowlist":
     case "system.collation.allowlist":
-    case "system.function.disallowed-list": {
+    case "system.function.disallowed-list":
+    case "table.disallow-dml":
+    case "table.disallow-ddl": {
       if (!stringArrayPayload) {
         throw new Error(`Invalid rule ${template.type}`);
       }
