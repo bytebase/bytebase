@@ -777,13 +777,15 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 
 	var taskRunIDs []int
 	var taskIDs []int
+	var taskNames []string
 	for _, taskRun := range request.TaskRuns {
-		_, _, _, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
+		projectID, rolloutID, stageID, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		taskIDs = append(taskIDs, taskID)
 		taskRunIDs = append(taskRunIDs, taskRunID)
+		taskNames = append(taskNames, common.FormatTask(projectID, rolloutID, stageID, taskID))
 	}
 
 	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{IDs: &taskIDs})
@@ -817,6 +819,10 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 
 	if err := s.store.BatchCancelTaskRuns(ctx, taskRunIDs, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
+	}
+
+	if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, taskNames, storepb.IssueCommentPayload_TaskUpdate_CANCELED, user.ID); err != nil {
+		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 
 	if err := s.activityManager.BatchCreateActivitiesForCancelTaskRuns(ctx, tasks, issue, request.Reason, principalID); err != nil {
