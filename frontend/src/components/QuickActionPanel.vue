@@ -73,6 +73,7 @@
         : 'SCHEMA_GROUP'
     "
     @close="state.quickActionType = undefined"
+    @created="onDatabaseGroupCreated"
   />
 
   <RequestQueryPanel
@@ -112,7 +113,7 @@ import { NButton, NEllipsis } from "naive-ui";
 import type { PropType, VNode } from "vue";
 import { reactive, computed, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import InstanceForm from "@/components/InstanceForm/";
@@ -121,6 +122,7 @@ import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
 import { Drawer } from "@/components/v2";
+import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
   useInstanceV1Store,
@@ -165,6 +167,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
 const commandStore = useCommandStore();
 const subscriptionStore = useSubscriptionV1Store();
 const projectStore = useProjectV1Store();
@@ -253,6 +256,15 @@ const openDatabaseGroupDrawer = (quickAction: DatabaseGroupQuickActionType) => {
     return;
   }
   state.quickActionType = quickAction;
+};
+
+const onDatabaseGroupCreated = (databaseGroupName: string) => {
+  router.push({
+    name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+    params: {
+      databaseGroupName,
+    },
+  });
 };
 
 const availableQuickActionList = computed((): QuickAction[] => {
