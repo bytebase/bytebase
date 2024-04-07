@@ -61,13 +61,21 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { orderBy, escape } from "lodash-es";
+import { FileCodeIcon } from "lucide-vue-next";
 import type { TreeOption } from "naive-ui";
-import { NButton, NTree, NEllipsis } from "naive-ui";
+import { NButton, NTree, NPerformantEllipsis } from "naive-ui";
 import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { computed, nextTick, onMounted, ref, watch, h } from "vue";
+import {
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+  watch,
+  type VNodeChild,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import {
@@ -206,25 +214,20 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
   const treeNode = option as TreeNode;
   if (treeNode.project) {
     if (treeNode.project.uid === `${UNKNOWN_ID}`) {
-      return h("div", {}, t("sheet.unconnected"));
+      return <div>{t("sheet.unconnected")}</div>;
     }
-    return h(ProjectV1Name, {
-      project: treeNode.project,
-      link: false,
-    });
+    return <ProjectV1Name project={treeNode.project} link={true} />;
   } else if (treeNode.database) {
-    return h("span", { class: "flex items-center gap-x-1" }, [
-      h(InstanceV1EngineIcon, {
-        instance: treeNode.database.instanceEntity,
-      }),
-      h(
-        "span",
-        {
-          class: "text-gray-500 text-sm",
-        },
-        `(${treeNode.database.effectiveEnvironmentEntity.title})`
-      ),
-    ]);
+    return (
+      <span class="flex items-center gap-x-1">
+        <InstanceV1EngineIcon instance={treeNode.database.instanceEntity} />
+        <span class="text-gray-500 text-sm">
+          {`(${treeNode.database.effectiveEnvironmentEntity.title})`}
+        </span>
+      </span>
+    );
+  } else {
+    return <FileCodeIcon class="w-4 h-4" />;
   }
 };
 
@@ -233,34 +236,30 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
   if (!treeNode.item) {
     return null;
   }
-  const child = [];
+  const child: VNodeChild = [];
   const { item } = treeNode;
   if (isTabItem(item)) {
-    child.push(h(UnsavedPrefix));
+    child.push(<UnsavedPrefix />);
   } else {
     const tab = tabStore.tabList.find((tab) => tab.sheet === item.target.name);
     if (!tab || tab.status === "CLEAN") {
       child.push(
-        h(Dropdown, {
-          sheet: item.target,
-          view: props.view,
-          secondary: true,
-        })
+        <Dropdown sheet={item.target} view={props.view} secondary={true} />
       );
     } else {
-      child.push(h(UnsavedPrefix));
+      child.push(<UnsavedPrefix />);
     }
   }
-  return h(
-    "div",
-    {
-      class: "mr-2",
-      onClick(e: MouseEvent) {
+  return (
+    <div
+      class="mr-2"
+      onClick={(e: MouseEvent) => {
         e.stopImmediatePropagation();
         e.preventDefault();
-      },
-    },
-    child
+      }}
+    >
+      {child}
+    </div>
   );
 };
 
@@ -270,23 +269,16 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     return null;
   }
   if (treeNode.database) {
-    return h(DatabaseV1Name, {
-      database: treeNode.database,
-      link: false,
-    });
+    return <DatabaseV1Name database={treeNode.database} link={false} />;
   }
 
-  return h(
-    NEllipsis,
-    {
-      class: "",
-    },
-    () => [
-      h("span", {
-        id: treeNode.item ? domIDForItem(treeNode.item) : null,
-        innerHTML: escape(treeNode.label),
-      }),
-    ]
+  return (
+    <NPerformantEllipsis>
+      <span
+        id={treeNode.item ? domIDForItem(treeNode.item) : undefined}
+        innerHTML={escape(treeNode.label)}
+      />
+    </NPerformantEllipsis>
   );
 };
 
@@ -399,7 +391,10 @@ onMounted(() => {
   padding: 0;
 }
 .sheet-tree :deep(.n-tree-node-indent) {
-  width: 0.25rem;
+  width: 1rem;
+}
+.sheet-tree :deep(.n-tree-node-switcher--hide) {
+  width: 0.5rem !important;
 }
 .sheet-tree :deep(.n-tree-node-content__prefix) {
   @apply shrink-0 !mr-1;
