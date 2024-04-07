@@ -66,11 +66,6 @@ const batchComposeDatabaseGroup = async (
     });
 
     if (databaseGroup.databaseExpr?.expression) {
-      console.log(
-        "databaseGroup.databaseExpr",
-        databaseGroup.databaseExpr,
-        databaseGroup.databaseExpr.expression
-      );
       expressions.push(databaseGroup.databaseExpr.expression);
       composedDatabaseGroupNameList.push(databaseGroup.name);
     }
