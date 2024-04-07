@@ -275,7 +275,6 @@
     - [IssueComment.StageEnd](#bytebase-v1-IssueComment-StageEnd)
     - [IssueComment.TaskPriorBackup](#bytebase-v1-IssueComment-TaskPriorBackup)
     - [IssueComment.TaskPriorBackup.Table](#bytebase-v1-IssueComment-TaskPriorBackup-Table)
-    - [IssueComment.TaskRunUpdate](#bytebase-v1-IssueComment-TaskRunUpdate)
     - [IssueComment.TaskUpdate](#bytebase-v1-IssueComment-TaskUpdate)
     - [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest)
     - [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse)
@@ -295,7 +294,7 @@
     - [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
-    - [IssueComment.TaskRunUpdate.Status](#bytebase-v1-IssueComment-TaskRunUpdate-Status)
+    - [IssueComment.TaskUpdate.Status](#bytebase-v1-IssueComment-TaskUpdate-Status)
     - [IssueStatus](#bytebase-v1-IssueStatus)
   
     - [IssueService](#bytebase-v1-IssueService)
@@ -4683,7 +4682,6 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  |  |
 | issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  |  |
 | stage_end | [IssueComment.StageEnd](#bytebase-v1-IssueComment-StageEnd) |  |  |
-| task_run_update | [IssueComment.TaskRunUpdate](#bytebase-v1-IssueComment-TaskRunUpdate) |  |  |
 | task_update | [IssueComment.TaskUpdate](#bytebase-v1-IssueComment-TaskUpdate) |  |  |
 | task_prior_backup | [IssueComment.TaskPriorBackup](#bytebase-v1-IssueComment-TaskPriorBackup) |  |  |
 
@@ -4776,22 +4774,6 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 
 
 
-<a name="bytebase-v1-IssueComment-TaskRunUpdate"></a>
-
-### IssueComment.TaskRunUpdate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| tasks | [string](#string) | repeated |  |
-| to_status | [IssueComment.TaskRunUpdate.Status](#bytebase-v1-IssueComment-TaskRunUpdate-Status) | optional |  |
-
-
-
-
-
-
 <a name="bytebase-v1-IssueComment-TaskUpdate"></a>
 
 ### IssueComment.TaskUpdate
@@ -4805,6 +4787,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | to_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
 | from_earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 | to_earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| to_status | [IssueComment.TaskUpdate.Status](#bytebase-v1-IssueComment-TaskUpdate-Status) | optional |  |
 
 
 
@@ -5094,9 +5077,9 @@ ANY means approving any node will proceed.
 
 
 
-<a name="bytebase-v1-IssueComment-TaskRunUpdate-Status"></a>
+<a name="bytebase-v1-IssueComment-TaskUpdate-Status"></a>
 
-### IssueComment.TaskRunUpdate.Status
+### IssueComment.TaskUpdate.Status
 
 
 | Name | Number | Description |
@@ -5106,6 +5089,8 @@ ANY means approving any node will proceed.
 | RUNNING | 2 |  |
 | DONE | 3 |  |
 | FAILED | 4 |  |
+| SKIPPED | 5 |  |
+| CANCELED | 6 |  |
 
 
 

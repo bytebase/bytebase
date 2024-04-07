@@ -479,9 +479,8 @@ message IssueComment {
     Approval approval = 8;
     IssueUpdate issue_update = 9;
     StageEnd stage_end = 10;
-    TaskRunUpdate task_run_update = 11;
-    TaskUpdate task_update = 12;
-    TaskPriorBackup task_prior_backup = 13;
+    TaskUpdate task_update = 11;
+    TaskPriorBackup task_prior_backup = 12;
   }
 
   message Approval {
@@ -512,19 +511,6 @@ message IssueComment {
     string stage = 1;
   }
 
-  message TaskRunUpdate {
-    repeated string tasks = 1;
-    optional Status to_status = 2;
-
-    enum Status {
-      STATUS_UNSPECIFIED = 0;
-      PENDING = 1;
-      RUNNING = 2;
-      DONE = 3;
-      FAILED = 4;
-    }
-  }
-
   message TaskUpdate {
     repeated string tasks = 1;
     // Format: projects/{project}/sheets/{sheet}
@@ -533,6 +519,17 @@ message IssueComment {
     optional string to_sheet = 3;
     optional google.protobuf.Timestamp from_earliest_allowed_time = 4;
     optional google.protobuf.Timestamp to_earliest_allowed_time = 5;
+    optional Status to_status = 6;
+
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      PENDING = 1;
+      RUNNING = 2;
+      DONE = 3;
+      FAILED = 4;
+      SKIPPED = 5;
+      CANCELED = 6;
+    }
   }
 
   message TaskPriorBackup {
