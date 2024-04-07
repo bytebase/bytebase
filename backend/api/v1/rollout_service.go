@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -1248,6 +1249,25 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 
 	for _, statementUpdate := range statementUpdates {
 		task := tasksMap[statementUpdate.TaskID]
+
+		if err := func() error {
+			oldSheet := common.FormatSheet(issue.Project.ResourceID, statementUpdate.OldSheetID)
+			newSheet := common.FormatSheet(issue.Project.ResourceID, statementUpdate.NewSheetID)
+			return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+				Payload: &storepb.IssueCommentPayload{
+					Event: &storepb.IssueCommentPayload_TaskUpdate_{
+						TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
+							Tasks:     []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
+							FromSheet: &oldSheet,
+							ToSheet:   &newSheet,
+						},
+					},
+				},
+			}, user.ID)
+		}(); err != nil {
+			slog.Warn("failed to create issue comments for statement update", "issueUID", issue.UID, log.BBError(err))
+		}
+
 		if err := func() error {
 			payload, err := json.Marshal(statementUpdate)
 			if err != nil {
@@ -1270,6 +1290,23 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	}
 	for _, earliestUpdate := range earliestUpdates {
 		task := tasksMap[earliestUpdate.TaskID]
+
+		if err := func() error {
+			return s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+				Payload: &storepb.IssueCommentPayload{
+					Event: &storepb.IssueCommentPayload_TaskUpdate_{
+						TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
+							Tasks:                   []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
+							FromEarliestAllowedTime: timestamppb.New(time.Unix(earliestUpdate.OldEarliestAllowedTs, 0)),
+							ToEarliestAllowedTime:   timestamppb.New(time.Unix(earliestUpdate.NewEarliestAllowedTs, 0)),
+						},
+					},
+				},
+			}, user.ID)
+		}(); err != nil {
+			slog.Warn("failed to create issue comments for earliest allowed time update", "issueUID", issue.UID, log.BBError(err))
+		}
+
 		if err := func() error {
 			payload, err := json.Marshal(earliestUpdate)
 			if err != nil {
