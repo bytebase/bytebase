@@ -93,7 +93,7 @@ export const supportedEngineV1List = () => {
     Engine.STARROCKS,
     Engine.RISINGWAVE,
     Engine.HIVE,
-    Engine.ELASTICSEARCH
+    Engine.ELASTICSEARCH,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
