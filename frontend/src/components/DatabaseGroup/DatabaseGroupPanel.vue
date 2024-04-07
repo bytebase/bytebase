@@ -50,11 +50,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
 } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useDBGroupStore,
-  useEnvironmentV1Store,
-} from "@/store";
+import { pushNotification, useDBGroupStore } from "@/store";
 import {
   getProjectNameAndDatabaseGroupName,
   getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
@@ -71,7 +67,6 @@ import type {
   SchemaGroup,
 } from "@/types/proto/v1/project_service";
 import { batchConvertParsedExprToCELString } from "@/utils";
-import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 import DatabaseGroupForm from "./DatabaseGroupForm.vue";
 import type { ResourceType } from "./utils";
 
@@ -90,7 +85,6 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
-const environmentStore = useEnvironmentV1Store();
 const dbGroupStore = useDBGroupStore();
 const formRef = ref<InstanceType<typeof DatabaseGroupForm>>();
 
@@ -124,14 +118,11 @@ const allowConfirm = computed(() => {
     return false;
   }
   if (props.resourceType === "DATABASE_GROUP") {
-    return (
-      formState.resourceId && formState.placeholder && formState.environmentId
-    );
+    return formState.resourceId && formState.placeholder;
   } else if (props.resourceType === "SCHEMA_GROUP") {
     return (
       formState.resourceId &&
       formState.placeholder &&
-      formState.environmentId &&
       formState.selectedDatabaseGroupId
     );
   }
@@ -214,17 +205,9 @@ const doConfirm = async () => {
   try {
     if (props.resourceType === "DATABASE_GROUP") {
       if (isCreating.value) {
-        const environment = environmentStore.getEnvironmentByUID(
-          formState.environmentId || ""
-        );
         const celStrings = await batchConvertParsedExprToCELString([
           ParsedExpr.fromJSON({
-            expr: buildCELExpr(
-              buildDatabaseGroupExpr({
-                environmentId: environment.name,
-                conditionGroupExpr: formState.expr,
-              })
-            ),
+            expr: buildCELExpr(formState.expr),
           }),
         ]);
         const resourceId = formState.resourceId;
@@ -246,17 +229,9 @@ const doConfirm = async () => {
           },
         });
       } else {
-        const environment = environmentStore.getEnvironmentByUID(
-          formState.environmentId || ""
-        );
         const celStrings = await batchConvertParsedExprToCELString([
           ParsedExpr.fromJSON({
-            expr: buildCELExpr(
-              buildDatabaseGroupExpr({
-                environmentId: environment.name,
-                conditionGroupExpr: formState.expr,
-              })
-            ),
+            expr: buildCELExpr(formState.expr),
           }),
         ]);
         await dbGroupStore.updateDatabaseGroup({

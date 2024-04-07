@@ -9,14 +9,7 @@
       <BBBadge text="GROUP" :can-remove="false" class="text-xs" />
     </div>
   </div>
-  <div class="bb-grid-cell">
-    <!-- environment -->
-    <EnvironmentV1Name
-      :environment="databaseGroup.environment"
-      :link="false"
-      tag="div"
-    />
-  </div>
+  <div class="bb-grid-cell">-</div>
   <div class="bb-grid-cell">
     <!-- schema version -->
     <span>-</span>
@@ -42,7 +35,6 @@
 <script lang="ts" setup>
 import BBBadge from "@/bbkit/BBBadge.vue";
 import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
-import { EnvironmentV1Name } from "@/components/v2";
 import type { ComposedDatabaseGroup } from "@/types";
 import ProjectCol from "./ProjectCol.vue";
 import type { Mode } from "./utils";

@@ -239,7 +239,7 @@ const mixedDataList = computed(() => {
     if (isDatabase(d)) {
       return (d as ComposedDatabase).effectiveEnvironment;
     } else {
-      return (d as ComposedDatabaseGroup).environment.name;
+      return (d as ComposedDatabaseGroup).name;
     }
   });
 });

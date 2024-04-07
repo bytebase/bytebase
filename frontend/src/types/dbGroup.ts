@@ -1,6 +1,5 @@
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import type { ComposedDatabase } from "@/types";
-import type { Environment } from "./proto/v1/environment_service";
 import type {
   DatabaseGroup,
   Project,
@@ -12,8 +11,6 @@ export interface ComposedDatabaseGroup extends DatabaseGroup {
   databaseGroupName: string;
   projectName: string;
   project: Project;
-  environmentName: string;
-  environment: Environment;
   simpleExpr: ConditionGroupExpr;
 }
 
