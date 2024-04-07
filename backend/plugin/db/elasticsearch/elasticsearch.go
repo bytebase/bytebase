@@ -41,7 +41,7 @@ type Driver struct {
 func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	cfg := elasticsearch.Config{
 		Addresses: []string{
-			// TODO(tommy): support multiple connections.
+			// TODO(tommy): support multiple connections and HTTPS.
 			fmt.Sprintf("http://%s:%s", config.Host, config.Port),
 		},
 		Username: config.Username,
@@ -104,8 +104,8 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := http.DefaultClient.Do(req)
-		if err != nil || resp.StatusCode != 200 {
-			return nil, errors.Wrapf(err, "failed to send HTTP request")
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to send HTTP request, status code message: %s", resp.Status)
 		}
 		respBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
