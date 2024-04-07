@@ -133,7 +133,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync, useTitle } from "@vueuse/core";
+import { useTitle } from "@vueuse/core";
 import { cloneDeep, groupBy } from "lodash-es";
 import { computed, reactive, toRef, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
@@ -212,12 +212,16 @@ const environment = computed(() => {
   return environmentV1Store.getEnvironmentByUID(environmentUID);
 });
 
-const reviewPolicy = computedAsync(async () => {
-  const policy = await store.getOrFetchReviewPolicyByEnvironmentName(
-    environment.value.name
+watchEffect(async () => {
+  await store.getOrFetchReviewPolicyByEnvironmentName(environment.value.name);
+});
+
+const reviewPolicy = computed(() => {
+  return (
+    store.getReviewPolicyByEnvironmentName(environment.value.name) ??
+    unknown("SQL_REVIEW")
   );
-  return policy ?? unknown("SQL_REVIEW");
-}, unknown("SQL_REVIEW"));
+});
 
 const ruleListOfPolicy = computed((): RuleTemplate[] => {
   if (!reviewPolicy.value) {
@@ -274,12 +278,13 @@ const {
   filteredRuleList,
 } = useSQLRuleFilter(toRef(state, "ruleList"));
 
-const pushUpdatedNotify = () =>
+const pushUpdatedNotify = () => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
     title: t("sql-review.policy-updated"),
   });
+};
 
 const changeName = async (name: string) => {
   state.editingTitle = false;
@@ -351,11 +356,7 @@ const onApplyChanges = async () => {
       ruleList,
     });
     state.rulesUpdated = false;
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("sql-review.policy-updated"),
-    });
+    pushUpdatedNotify();
   } finally {
     state.updating = false;
   }
