@@ -96,13 +96,15 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *
 		// send HTTP request.
 		req, err := http.NewRequest(s.method, fmt.Sprintf("http://%s:%s/%s",
 			d.config.Host, d.config.Port, strings.TrimLeft(string(s.route), "/")), bytes.NewReader(s.queryString))
-		req.Header.Add("Authorization", d.config.AuthenticationPrivateKey)
-		req.Header.Set("Content-Type", "application/json")
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to init a HTTP request")
 		}
+
+		req.Header.Add("Authorization", d.config.AuthenticationPrivateKey)
+		req.Header.Set("Content-Type", "application/json")
+
 		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
+		if err != nil || resp.StatusCode != 200 {
 			return nil, errors.Wrapf(err, "failed to send HTTP request")
 		}
 		respBytes, err := io.ReadAll(resp.Body)
