@@ -687,6 +687,10 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 	}
 
+	if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, request.Tasks, storepb.IssueCommentPayload_TaskUpdate_SKIPPED, user.ID); err != nil {
+		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
+	}
+
 	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Reason, user.ID); err != nil {
 		slog.Error("failed to batch create activities for skipping tasks", log.BBError(err))
 	}
