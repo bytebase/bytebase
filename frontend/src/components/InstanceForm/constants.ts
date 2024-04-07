@@ -74,7 +74,7 @@ export const EngineIconPath: Record<number, string> = {
   [Engine.DORIS]: new URL("@/assets/db-doris.png", import.meta.url).href,
   [Engine.HIVE]: new URL("@/assets/db-hive.svg", import.meta.url).href,
   [Engine.ELASTICSEARCH]: new URL(
-    "@/assets/db-elasticsearch.svg", 
+    "@/assets/db-elasticsearch.svg",
     import.meta.url
   ).href,
 };
