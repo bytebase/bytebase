@@ -110,10 +110,12 @@
             {{ $t("settings.profile.phone") }}
           </dt>
           <dd class="mt-1 text-sm text-main">
-            <PhoneNumberInput
+            <NInput
               v-if="state.editing"
-              :value="state.editingUser?.phone || ''"
-              @update="(value: string) => updateUser('phone', value)"
+              size="large"
+              :value="state.editingUser?.phone"
+              :input-props="{ autocomplete: 'off', type: 'tel' }"
+              @update:value="updateUser('phone', $event)"
             />
             <template v-else>
               {{ user.phone }}
@@ -248,7 +250,6 @@ import { useRouter } from "vue-router";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
-import PhoneNumberInput from "@/components/v2/Form/PhoneNumberInput.vue";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_PROFILE_TWO_FACTOR } from "@/router/dashboard/workspaceSetting";
 import {

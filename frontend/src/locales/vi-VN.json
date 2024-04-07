@@ -478,9 +478,9 @@
       "phone": "Điện thoại",
       "country-code": "Mã quốc gia",
       "password": "Mật khẩu",
-      "password-confirm": "Xác nhận",
+      "password-confirm": "Xác nhận mật khẩu",
       "password-confirm-placeholder": "Xác nhận mật khẩu mới",
-      "password-mismatch": "không khớp",
+      "password-mismatch": "Mật khẩu mới không khớp",
       "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)"
     },
     "members": {
