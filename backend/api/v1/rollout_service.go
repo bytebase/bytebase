@@ -580,6 +580,10 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "failed to create pending task runs, error %v", err)
 	}
 
+	if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, request.Tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, user.ID); err != nil {
+		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
+	}
+
 	if err := s.activityManager.BatchCreateActivitiesForRunTasks(ctx, tasksToRun, issue, request.Reason, user.ID); err != nil {
 		slog.Error("failed to batch create activities for running tasks", log.BBError(err))
 	}
