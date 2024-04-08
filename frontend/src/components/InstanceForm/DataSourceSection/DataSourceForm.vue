@@ -25,7 +25,6 @@
     </div>
     <div class="mt-4 sm:col-span-2 sm:col-start-1">
       <NRadioGroup
-        v-if="isDev()"
         class="textlabel mb-2"
         :value="state.passwordType"
         @update:value="changeSecretType"
@@ -625,7 +624,7 @@ import {
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
   DataSourceExternalSecret_AWSEnvironmentConfig,
 } from "@/types/proto/v1/instance_service";
-import { onlyAllowNumber, isDev } from "@/utils";
+import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import { useInstanceSpecs } from "../specs";
