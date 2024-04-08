@@ -1363,14 +1363,14 @@
     "external-secret-vault": {
       "vault-url": "Vault URL",
       "vault-auth-type": {
-        "self": "Vault auth type",
+        "self": "Auth type",
         "token": {
           "self": "Token",
-          "api-token": "Vault API token",
+          "token": "Token",
           "tips": "Mã thông báo gốc không có TTL."
         },
-        "app-role": {
-          "self": "App role",
+        "approle": {
+          "self": "AppRole",
           "role-id": "Auth role id",
           "secret-id": "Auth secret id",
           "secret-id-plain-text": "Văn bản thuần túy cho id bí mật của vai trò",
@@ -1380,7 +1380,9 @@
           "secret-tips": "Một id bí mật chưa được gói mà không có TTL. Bạn có thể sử dụng văn bản thuần túy hoặc đặt nó vào môi trường hoặc tệp cục bộ. {learn_more}"
         }
       },
-      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-name": "Secret engine name",
+      "vault-secret-path": "Secret path",
+      "vault-secret-key": "Secret key",
       "vault-secret-engine-tips": "Chỉ hỗ trợ động cơ KV v2."
     },
     "external-secret": {
