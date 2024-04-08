@@ -1399,9 +1399,15 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 }
 
 func validateSteps(steps []*v1pb.Plan_Step) error {
+	if len(steps) == 0 {
+		return errors.Errorf("the plan has zero step")
+	}
 	var databaseTarget, databaseGroupTarget, deploymentConfigTarget int
 	seenID := map[string]bool{}
 	for _, step := range steps {
+		if len(step.Specs) == 0 {
+			return errors.Errorf("the plan step has zero spec")
+		}
 		seenIDInStep := map[string]bool{}
 		for _, spec := range step.Specs {
 			id := spec.GetId()
