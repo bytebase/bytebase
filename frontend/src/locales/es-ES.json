@@ -1213,8 +1213,6 @@
     "unassigned-db-hint": "Las bases de datos recién sincronizadas comienzan sin asignar y deben ser asignadas a un proyecto para su uso.",
     "transfer-out-db": "Transferir base de datos",
     "transfer-out-db-title": "Transferir la base de datos",
-    "request-query-permission": "Solicitar consulta",
-    "request-export-permission": "Solicitar exportación",
     "request-export-data": "Solicitar exportación"
   },
   "create-db": {
@@ -2191,7 +2189,6 @@
     "run-selected": "Ejecutar selección",
     "clear-screen": "Limpiar pantalla",
     "query-time": "Tiempo de consulta",
-    "request-query-permission": "Solicitar consulta",
     "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
     "sheet": {
       "choose-sheet": "Elegir hoja",

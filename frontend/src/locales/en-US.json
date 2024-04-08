@@ -1213,8 +1213,6 @@
     "unassigned-db-hint": "Newly synced databases start unassigned and must be moved to a project for use.",
     "transfer-out-db": "Transfer out DB",
     "transfer-out-db-title": "Transfer out database",
-    "request-query-permission": "Request Query",
-    "request-export-permission": "Request Export",
     "request-export-data": "Request Export"
   },
   "create-db": {
@@ -2191,7 +2189,6 @@
     "run-selected": "Run selected",
     "clear-screen": "Clear screen",
     "query-time": "Query time",
-    "request-query-permission": "Request Query",
     "connection-lost": "Connection lost. Will try to reconnect when executing next query.",
     "sheet": {
       "choose-sheet": "Choose Sheet",

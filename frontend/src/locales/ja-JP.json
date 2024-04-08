@@ -1213,8 +1213,6 @@
     "unassigned-db-hint": "新しく同期されたデータベースは未割り当てであり、使用するためにプロジェクトに移動する必要があります。",
     "transfer-out-db": "DBを転送する",
     "transfer-out-db-title": "データベースを転送する",
-    "request-query-permission": "クエリをリクエストする",
-    "request-export-permission": "エクスポートをリクエストする",
     "request-export-data": "エクスポートをリクエストする"
   },
   "create-db": {
@@ -2191,7 +2189,6 @@
     "run-selected": "選択したクエリを実行",
     "clear-screen": "画面をクリア",
     "query-time": "クエリ時間",
-    "request-query-permission": "クエリをリクエスト",
     "connection-lost": "接続が切断されました。次のクエリの実行時に再接続を試みます",
     "sheet": {
       "choose-sheet": "シートを選択",
