@@ -36,7 +36,7 @@ import {
   IssueStatus,
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName } from "@/utils";
+import { extractUserResourceName, isDatabaseChangeRelatedIssue } from "@/utils";
 import type { ExtraActionOption } from "../common";
 import { IssueStatusActionButtonGroup } from "../common";
 import ReviewActionButton from "./ReviewActionButton.vue";
@@ -100,6 +100,11 @@ const issueStatusActionList = computed(() => {
   return getApplicableIssueStatusActionList(issue.value);
 });
 const forceRolloutActionList = computed((): ExtraActionOption[] => {
+  // If it's not a database change related issue, no force rollout actions.
+  if (!isDatabaseChangeRelatedIssue(issue.value)) {
+    return [];
+  }
+
   // Still using role based permission checks
   if (
     !currentUser.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN) &&

@@ -1,7 +1,7 @@
 <template>
   <div v-if="available">
     <NButton text type="primary" @click="showPanel = true">
-      {{ $t("sql-editor.request-query-permission") }}
+      {{ $t("custom-approval.risk-rule.risk.namespace.request_query") }}
     </NButton>
 
     <RequestQueryPanel

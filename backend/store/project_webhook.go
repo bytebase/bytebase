@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
@@ -154,8 +155,7 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, principalUID int, pr
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []any{principalUID}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{principalUID, time.Now().Unix()}
 	if v := update.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}

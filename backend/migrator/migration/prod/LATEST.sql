@@ -1,15 +1,6 @@
 -- Type
 CREATE TYPE row_status AS ENUM ('NORMAL', 'ARCHIVED');
 
--- updated_ts trigger.
-CREATE OR REPLACE FUNCTION trigger_update_updated_ts()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_ts = extract(epoch from now());
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 -- idp stores generic identity provider.
 CREATE TABLE idp (
   id SERIAL PRIMARY KEY,
@@ -28,12 +19,6 @@ CREATE UNIQUE INDEX idx_idp_unique_resource_id ON idp(resource_id);
 
 ALTER SEQUENCE idp_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_idp_updated_ts
-BEFORE
-UPDATE
-    ON idp FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- principal
 CREATE TABLE principal (
     id SERIAL PRIMARY KEY,
@@ -49,12 +34,6 @@ CREATE TABLE principal (
     phone TEXT NOT NULL DEFAULT '',
     mfa_config JSONB NOT NULL DEFAULT '{}'
 );
-
-CREATE TRIGGER update_principal_updated_ts
-BEFORE
-UPDATE
-    ON principal FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Default bytebase system account id is 1
 INSERT INTO
@@ -119,12 +98,6 @@ CREATE UNIQUE INDEX idx_setting_unique_name ON setting(name);
 
 ALTER SEQUENCE setting_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_setting_updated_ts
-BEFORE
-UPDATE
-    ON setting FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- Role
 CREATE TABLE role (
     id BIGSERIAL PRIMARY KEY,
@@ -144,12 +117,6 @@ CREATE UNIQUE INDEX idx_role_unique_resource_id on role (resource_id);
 
 ALTER SEQUENCE role_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_role_updated_ts
-BEFORE
-UPDATE
-    ON role FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- Member
 -- We separate the concept from Principal because if we support multiple workspace in the future, each workspace can have different member for the same principal
 CREATE TABLE member (
@@ -166,12 +133,6 @@ CREATE TABLE member (
 CREATE INDEX idx_member_principal_id ON member (principal_id);
 
 ALTER SEQUENCE member_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_member_updated_ts
-BEFORE
-UPDATE
-    ON member FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Environment
 CREATE TABLE environment (
@@ -191,12 +152,6 @@ CREATE UNIQUE INDEX idx_environment_unique_name ON environment(name);
 CREATE UNIQUE INDEX idx_environment_unique_resource_id ON environment(resource_id);
 
 ALTER SEQUENCE environment_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_environment_updated_ts
-BEFORE
-UPDATE
-    ON environment FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Policy
 -- policy stores the policies for each environment.
@@ -220,12 +175,6 @@ CREATE TABLE policy (
 CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON policy(resource_type, resource_id, type);
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_policy_updated_ts
-BEFORE
-UPDATE
-    ON policy FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Project
 CREATE TABLE project (
@@ -270,12 +219,6 @@ VALUES
 
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_project_updated_ts
-BEFORE
-UPDATE
-    ON project FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- Project member
 CREATE TABLE project_member (
     id SERIAL PRIMARY KEY,
@@ -293,12 +236,6 @@ CREATE TABLE project_member (
 CREATE INDEX idx_project_member_project_id ON project_member(project_id);
 
 ALTER SEQUENCE project_member_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_project_member_updated_ts
-BEFORE
-UPDATE
-    ON project_member FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Project Hook
 CREATE TABLE project_webhook (
@@ -320,12 +257,6 @@ CREATE INDEX idx_project_webhook_project_id ON project_webhook(project_id);
 CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON project_webhook(project_id, url);
 
 ALTER SEQUENCE project_webhook_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_project_webhook_updated_ts
-BEFORE
-UPDATE
-    ON project_webhook FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Instance
 CREATE TABLE instance (
@@ -351,12 +282,6 @@ CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_instance_updated_ts
-BEFORE
-UPDATE
-    ON instance FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- Instance user stores the users for a particular instance
 CREATE TABLE instance_user (
     id SERIAL PRIMARY KEY,
@@ -373,12 +298,6 @@ CREATE TABLE instance_user (
 ALTER SEQUENCE instance_user_id_seq RESTART WITH 101;
 
 CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON instance_user(instance_id, name);
-
-CREATE TRIGGER update_instance_user_updated_ts
-BEFORE
-UPDATE
-    ON instance_user FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- db stores the databases for a particular instance
 -- data is synced periodically from the instance
@@ -411,12 +330,6 @@ CREATE INDEX idx_db_project_id ON db(project_id);
 
 ALTER SEQUENCE db_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_db_updated_ts
-BEFORE
-UPDATE
-    ON db FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- db_schema stores the database schema metadata for a particular database.
 CREATE TABLE db_schema (
     id SERIAL PRIMARY KEY,
@@ -434,12 +347,6 @@ CREATE TABLE db_schema (
 CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON db_schema(database_id);
 
 ALTER SEQUENCE db_schema_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_db_schema_updated_ts
-BEFORE
-UPDATE
-    ON db_schema FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- data_source table stores the data source for a particular database
 CREATE TABLE data_source (
@@ -467,12 +374,6 @@ CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON data_source(insta
 
 ALTER SEQUENCE data_source_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_data_source_updated_ts
-BEFORE
-UPDATE
-    ON data_source FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -----------------------
 -- Pipeline related BEGIN
 -- pipeline table
@@ -488,12 +389,6 @@ CREATE TABLE pipeline (
 );
 
 ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_pipeline_updated_ts
-BEFORE
-UPDATE
-    ON pipeline FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- stage table stores the stage for the pipeline
 CREATE TABLE stage (
@@ -511,12 +406,6 @@ CREATE TABLE stage (
 CREATE INDEX idx_stage_pipeline_id ON stage(pipeline_id);
 
 ALTER SEQUENCE stage_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_stage_updated_ts
-BEFORE
-UPDATE
-    ON stage FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- task table stores the task for the stage
 CREATE TABLE task (
@@ -546,12 +435,6 @@ CREATE INDEX idx_task_earliest_allowed_ts ON task(earliest_allowed_ts);
 
 ALTER SEQUENCE task_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_task_updated_ts
-BEFORE
-UPDATE
-    ON task FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- task_dag describes task dependency relationship
 -- from_task_id blocks to_task_id
 CREATE TABLE task_dag (
@@ -568,12 +451,6 @@ CREATE INDEX idx_task_dag_from_task_id ON task_dag(from_task_id);
 CREATE INDEX idx_task_dag_to_task_id ON task_dag(to_task_id);
 
 ALTER SEQUENCE task_dag_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_task_dag_updated_ts
-BEFORE
-UPDATE
-    ON task_dag FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- task run table stores the task run
 CREATE TABLE task_run (
@@ -598,12 +475,6 @@ CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run (task_id, attempt);
 
 ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_task_run_updated_ts
-BEFORE
-UPDATE
-    ON task_run FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- Pipeline related END
 -----------------------
 -- Plan related BEGIN
@@ -627,12 +498,6 @@ CREATE INDEX idx_plan_pipeline_id ON plan(pipeline_id);
 
 ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_plan_updated_ts
-BEFORE
-UPDATE
-    ON plan FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 CREATE TABLE plan_check_run (
     id SERIAL PRIMARY KEY,
     creator_id INTEGER NOT NULL REFERENCES principal (id),
@@ -650,12 +515,6 @@ CREATE TABLE plan_check_run (
 CREATE INDEX idx_plan_check_run_plan_id ON plan_check_run (plan_id);
 
 ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_plan_check_run_updated_ts
-BEFORE
-UPDATE
-    ON plan_check_run FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Plan related END
 -----------------------
@@ -695,12 +554,6 @@ CREATE INDEX idx_issue_created_ts ON issue(created_ts);
 CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 
 ALTER SEQUENCE issue_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_issue_updated_ts
-BEFORE
-UPDATE
-    ON issue FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- stores the issue subscribers. Unlike other tables, it doesn't have row_status/creator_id/created_ts/updater_id/updated_ts.
 -- We use a separate table mainly because we can't leverage indexed query if the subscriber id is stored
@@ -763,12 +616,6 @@ CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_v
 
 ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_instance_change_history_updated_ts
-BEFORE
-UPDATE
-    ON instance_change_history FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- activity table stores the activity for the container such as issue
 CREATE TABLE activity (
     id SERIAL PRIMARY KEY,
@@ -793,12 +640,6 @@ CREATE INDEX idx_activity_created_ts ON activity(created_ts);
 
 ALTER SEQUENCE activity_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_activity_updated_ts
-BEFORE
-UPDATE
-    ON activity FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 CREATE TABLE issue_comment (
     id BIGSERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
@@ -813,12 +654,6 @@ CREATE TABLE issue_comment (
 CREATE INDEX idx_issue_comment_issue_id ON issue_comment(issue_id);
 
 ALTER SEQUENCE issue_comment_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_issue_comment_updated_ts
-BEFORE
-UPDATE
-    ON issue_comment FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 CREATE TABLE query_history (
     id BIGSERIAL PRIMARY KEY,
@@ -855,12 +690,6 @@ CREATE UNIQUE INDEX idx_vcs_unique_resource_id ON vcs(resource_id);
 
 ALTER SEQUENCE vcs_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_vcs_updated_ts
-BEFORE
-UPDATE
-    ON vcs FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- vcs_connector table stores vcs connectors for a project
 CREATE TABLE vcs_connector (
     id SERIAL PRIMARY KEY,
@@ -878,12 +707,6 @@ CREATE TABLE vcs_connector (
 CREATE UNIQUE INDEX idx_vcs_connector_unique_project_id_resource_id ON vcs_connector(project_id, resource_id);
 
 ALTER SEQUENCE vcs_connector_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_vcs_connector_updated_ts
-BEFORE
-UPDATE
-    ON vcs_connector FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- Anomaly
 -- anomaly stores various anomalies found by the scanner.
@@ -907,12 +730,6 @@ CREATE INDEX idx_anomaly_database_id_row_status_type ON anomaly(database_id, row
 
 ALTER SEQUENCE anomaly_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_anomaly_updated_ts
-BEFORE
-UPDATE
-    ON anomaly FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- Deployment Configuration.
 -- deployment_config stores deployment configurations at project level.
 CREATE TABLE deployment_config (
@@ -930,12 +747,6 @@ CREATE TABLE deployment_config (
 CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON deployment_config(project_id);
 
 ALTER SEQUENCE deployment_config_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_deployment_config_updated_ts
-BEFORE
-UPDATE
-    ON deployment_config FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- sheet table stores general statements.
 CREATE TABLE sheet (
@@ -964,12 +775,6 @@ CREATE INDEX idx_sheet_database_id_row_status ON sheet(database_id, row_status);
 
 ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_sheet_updated_ts
-BEFORE
-UPDATE
-    ON sheet FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 CREATE TABLE worksheet (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
@@ -988,12 +793,6 @@ CREATE TABLE worksheet (
 CREATE INDEX idx_worksheet_creator_id_project_id ON worksheet(creator_id, project_id);
 
 ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_worksheet_updated_ts
-BEFORE
-UPDATE
-    ON worksheet FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- worksheet_organizer table stores the sheet status for a principal.
 CREATE TABLE worksheet_organizer (
@@ -1024,13 +823,6 @@ CREATE INDEX idx_external_approval_row_status_issue_id ON external_approval(row_
 
 ALTER SEQUENCE external_approval_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_external_approval_updated_ts
-BEFORE
-UPDATE
-    ON external_approval FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
-
 -- risk stores the definition of a risk.
 CREATE TABLE risk (
     id BIGSERIAL PRIMARY KEY,
@@ -1048,12 +840,6 @@ CREATE TABLE risk (
 );
 
 ALTER SEQUENCE risk_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_risk_updated_ts
-BEFORE
-UPDATE
-    ON risk FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- slow_query stores slow query statistics for each database.
 CREATE TABLE slow_query (
@@ -1081,12 +867,6 @@ CREATE INDEX idx_slow_query_instance_id_log_date_ts ON slow_query (instance_id, 
 
 ALTER SEQUENCE slow_query_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_slow_query_updated_ts
-BEFORE
-UPDATE
-    ON slow_query FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 CREATE TABLE db_group (
     id BIGSERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
@@ -1105,12 +885,6 @@ CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON db_group(proje
 CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON db_group(project_id, placeholder);
 
 ALTER SEQUENCE db_group_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_db_group_updated_ts
-BEFORE
-UPDATE
-    ON db_group FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 CREATE TABLE schema_group (
     id BIGSERIAL PRIMARY KEY,
@@ -1131,12 +905,6 @@ CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON schema_gr
 
 ALTER SEQUENCE schema_group_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_schema_group_updated_ts
-BEFORE
-UPDATE
-    ON schema_group FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
-
 -- changelist table stores project changelists.
 CREATE TABLE changelist (
     id SERIAL PRIMARY KEY,
@@ -1153,12 +921,6 @@ CREATE TABLE changelist (
 CREATE UNIQUE INDEX idx_changelist_project_id_name ON changelist(project_id, name);
 
 ALTER SEQUENCE changelist_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_changelist_updated_ts
-BEFORE
-UPDATE
-    ON changelist FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 CREATE TABLE branch (
   id SERIAL PRIMARY KEY,
@@ -1183,12 +945,6 @@ CREATE UNIQUE INDEX idx_branch_unique_project_id_name ON branch(project_id, name
 CREATE INDEX idx_branch_reconcile_state ON branch(reconcile_state);
 
 ALTER SEQUENCE branch_id_seq RESTART WITH 101;
-
-CREATE TRIGGER update_branch_updated_ts
-BEFORE
-UPDATE
-    ON branch FOR EACH ROW
-EXECUTE FUNCTION trigger_update_updated_ts();
 
 CREATE TABLE export_archive (
   id SERIAL PRIMARY KEY,

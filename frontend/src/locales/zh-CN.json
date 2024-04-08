@@ -411,6 +411,8 @@
       "enqueued": "等待执行。",
       "enqueued-with-rollout-time": "等待执行，{time}后执行。",
       "dumping-schema-before-executing-sql": "准备执行，正在导出 schema。",
+      "preparing-to-export-data": "准备导出数据。",
+      "exporting-data": "正在导出数据。",
       "executing-sql": "正在执行 SQL。",
       "executing-sql-detail": "正在执行 SQL {current} of {total}，从 ({startLine}, {startColumn}) 到 ({endLine}, {endColumn})。",
       "dumping-schema-after-executing-sql": "SQL 执行完毕，正在导出 schema。",
@@ -1177,7 +1179,6 @@
     "missing-sql-statement": "SQL 语句缺失。要将此更改应用于所有任务，请单击 “@:{'issue.apply-to-other-tasks'}” 按钮。",
     "task-summary-tooltip": "{failed} 个任务失败",
     "data-export": {
-      "title": "数据导出",
       "options": "配置项",
       "format": "导出格式",
       "encrypt": "加密",
@@ -1213,8 +1214,6 @@
     "unassigned-db-hint": "新同步的数据库起先是未分配的状态，必须移至一个项目以供使用。",
     "transfer-out-db": "转出数据库",
     "transfer-out-db-title": "转出数据库",
-    "request-query-permission": "申请查询权限",
-    "request-export-permission": "申请导出权限",
     "request-export-data": "申请导出数据"
   },
   "create-db": {
@@ -2003,11 +2002,11 @@
         "access-token": {
           "self": "OAuth 应用信息",
           "personal-access-token": "个人访问令牌",
-          "gitlab-personal-access-token": "创建专用服务用户并生成具有维护者角色的个人访问令牌，并且至少具有要管理的组或项目的以下权限。您可以生成项目访问令牌来管理单个项目，或生成组访问令牌来管理组内的所有项目。",
+          "gitlab-personal-access-token": "创建专用服务用户并生成具有维护者角色的{token}，并且至少具有要管理的组或项目的以下权限。您可以生成项目访问令牌来管理单个项目，或生成组访问令牌来管理组内的所有项目。",
           "github-personal-access-token": "创建一个专用服务用户，并为组织或所有需要管理的项目生成一个具有成员角色的{token}。",
           "bitbucket-app-access-token": "生成特定服务用户并创建一个至少具有以下权限的 {app_password}，以便管理相关组织、项目或存储库。在下面插入“<bitbucket 用户名>:<生成的应用程序密码>”。",
           "bitbucket-app-password": "应用程序密码",
-          "azure-devops-personal-access-token": "创建专用服务用户并为具有以下范围的所有可访问组织生成具有成员角色的个人访问令牌。 “组织”字段应设置为“所有可访问的组织”。"
+          "azure-devops-personal-access-token": "创建专用服务用户并为具有以下范围的所有可访问组织生成具有成员角色的{token}。 “组织”字段应设置为“所有可访问的组织”。"
         },
         "confirm": {
           "confirm-info": "确认信息",
@@ -2206,7 +2205,6 @@
     "run-selected": "运行选中的语句",
     "clear-screen": "清屏",
     "query-time": "查询时间",
-    "request-query-permission": "申请查询权限",
     "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。",
     "sheet": {
       "choose-sheet": "选择工作表",
@@ -2925,7 +2923,7 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "创建数据库",
-          "data_export": "数据导出",
+          "data_export": "导出数据",
           "request_query": "申请查询权限",
           "request_export": "申请导出权限"
         }
@@ -3340,7 +3338,6 @@
     "confirm-delete-changelist": "删除变更列表？"
   },
   "export-data": {
-    "self": "导出数据",
     "export-rows": "导出行数",
     "error": {
       "export-rows-required": "需要指定导出行数",

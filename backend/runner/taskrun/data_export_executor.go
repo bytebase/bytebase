@@ -115,6 +115,11 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Wrap(err, "failed to get query span")
 	}
 
+	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
+		state.TaskRunExecutionStatus{
+			ExecutionStatus: v1pb.TaskRun_EXECUTING,
+			UpdateTime:      time.Now(),
+		})
 	exportRequest := &v1pb.ExportRequest{
 		Name:               fmt.Sprintf("instances/%s", instance.ResourceID),
 		ConnectionDatabase: database.DatabaseName,
