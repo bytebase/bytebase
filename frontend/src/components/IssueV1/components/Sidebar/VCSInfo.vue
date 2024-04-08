@@ -1,32 +1,23 @@
 <template>
   <div
-    v-if="issue.planEntity?.vcsSource && vcsConnector"
+    v-if="issue.planEntity?.vcsSource?.pullRequestUrl"
     class="text-sm text-control-light flex space-x-1 items-center"
   >
     <VCSIcon :type="issue.planEntity?.vcsSource.vcsType" />
-    <a
-      :href="issue.planEntity?.vcsSource.pullRequestUrl"
-      target="_blank"
-      class="normal-link"
-    >
-      {{ `${vcsConnector.branch}@${vcsConnector.fullPath}` }}
-    </a>
-  </div>
-  <div
-    v-if="
-      issue.planEntity?.vcsSource?.pullRequestUrl !== undefined &&
-      vcsProvider === undefined
-    "
-    class="text-sm text-control-light flex space-x-1 items-center"
-  >
-    <VCSIcon :type="issue.planEntity?.vcsSource.vcsType" />
-    <a
-      :href="issue.planEntity?.vcsSource.pullRequestUrl"
-      target="_blank"
-      class="normal-link"
-    >
-      {{ issue.planEntity?.vcsSource.pullRequestUrl }}
-    </a>
+    <EllipsisText>
+      <a
+        :href="issue.planEntity?.vcsSource.pullRequestUrl"
+        target="_blank"
+        class="normal-link"
+      >
+        <span v-if="vcsConnector">
+          {{ `${vcsConnector.branch}@${vcsConnector.fullPath}` }}
+        </span>
+        <span v-else>
+          {{ issue.planEntity?.vcsSource?.pullRequestUrl }}
+        </span>
+      </a>
+    </EllipsisText>
   </div>
 </template>
 
