@@ -44,7 +44,7 @@ func NewManager(store *store.Store) *Manager {
 	}
 }
 
-// BatchCreateActivitiesForCreateIssue creates activities for running tasks.
+// BatchCreateActivitiesForRunTasks creates activities for running tasks.
 func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, tasks []*store.TaskMessage, issue *store.IssueMessage, comment string, updaterUID int) error {
 	var creates []*store.ActivityMessage
 	for _, task := range tasks {

@@ -77,7 +77,7 @@ type columnRequirementChecker struct {
 	line            map[string]int
 }
 
-// EnterCreateDatabase is called when production createDatabase is entered.
+// EnterCreateTable is called when production createDatabase is entered.
 func (checker *columnRequirementChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
