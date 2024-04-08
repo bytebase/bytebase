@@ -145,6 +145,9 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		default:
 			return nil
 		}
+		if len(prInfo.changes) == 0 {
+			return c.String(http.StatusOK, fmt.Sprintf("no relevant file change directly under the base directory %q for pull request %q", vcsConnector.Payload.BaseDirectory, prInfo.url))
+		}
 		issue, err := s.createIssueFromPRInfo(ctx, project, vcsProvider, vcsConnector, prInfo)
 		if err != nil {
 			return c.String(http.StatusOK, fmt.Sprintf("failed to create issue from pull request %s, error %v", prInfo.url, err))

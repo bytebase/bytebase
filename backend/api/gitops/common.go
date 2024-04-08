@@ -32,13 +32,13 @@ type fileChange struct {
 	content     string
 }
 
-func getChangesByFileList(files []*vcs.PullRequestFile, branch string) []*fileChange {
+func getChangesByFileList(files []*vcs.PullRequestFile, rootDir string) []*fileChange {
 	changes := []*fileChange{}
 	for _, v := range files {
 		if v.IsDeleted {
 			continue
 		}
-		if filepath.Dir(v.Path) != branch {
+		if filepath.Dir(v.Path) != rootDir {
 			continue
 		}
 		change, err := getFileChange(v.Path)
