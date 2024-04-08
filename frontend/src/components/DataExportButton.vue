@@ -23,7 +23,7 @@
 
   <Drawer v-if="viewMode === 'DRAWER'" v-model:show="state.showDrawer">
     <DrawerContent
-      :title="$t('export-data.self')"
+      :title="$t('custom-approval.risk-rule.risk.namespace.data_export')"
       class="w-[30rem] max-w-[100vw] relative"
     >
       <template #default>

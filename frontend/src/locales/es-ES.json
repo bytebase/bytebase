@@ -1177,7 +1177,6 @@
     "missing-sql-statement": "Sentencia SQL faltante. Para aplicar este cambio a todas las tareas, haz clic en el botón '@:{'issue.apply-to-other-tasks'}'.",
     "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas",
     "data-export": {
-      "title": "Exportación de Datos",
       "options": "Opciones de exportación",
       "format": "Formato",
       "encrypt": "Cifrar",
@@ -2907,7 +2906,7 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Crear base de datos",
-          "data_export": "Exportación de Datos",
+          "data_export": "Exportar datos",
           "request_query": "Solicitar Rol de Consultor",
           "request_export": "Solicitar Rol de Exportador"
         }
@@ -3322,7 +3321,6 @@
     "confirm-delete-changelist": "¿Eliminar esta lista de cambios?"
   },
   "export-data": {
-    "self": "Exportar datos",
     "export-rows": "Exportar filas",
     "error": {
       "export-rows-required": "Se requieren filas de exportación",

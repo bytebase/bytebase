@@ -397,7 +397,7 @@ const actions = computed((): DatabaseAction[] => {
     resp.push(
       {
         icon: h(DownloadIcon),
-        text: t("issue.data-export.title"),
+        text: t("custom-approval.risk-rule.risk.namespace.data_export"),
         disabled: !allowDataExport.value,
         click: () => generateMultiDb("bb.issue.database.data.export"),
         tooltip: () => {
