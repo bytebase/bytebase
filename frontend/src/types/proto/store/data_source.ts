@@ -9,8 +9,9 @@ export interface DataSourceExternalSecret {
   url: string;
   authType: DataSourceExternalSecret_AuthType;
   appRole?: DataSourceExternalSecret_AppRoleAuthOption | undefined;
-  token?:
-    | string
+  token?: string | undefined;
+  awsEnvironmentConfig?:
+    | DataSourceExternalSecret_AWSEnvironmentConfig
     | undefined;
   /** engine name is the name for secret engine. */
   engineName: string;
@@ -24,6 +25,8 @@ export enum DataSourceExternalSecret_SecretType {
   SAECRET_TYPE_UNSPECIFIED = 0,
   /** VAULT_KV_V2 - ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 */
   VAULT_KV_V2 = 1,
+  /** AWS_SECRETS_MANAGER - ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html */
+  AWS_SECRETS_MANAGER = 2,
   UNRECOGNIZED = -1,
 }
 
@@ -35,6 +38,9 @@ export function dataSourceExternalSecret_SecretTypeFromJSON(object: any): DataSo
     case 1:
     case "VAULT_KV_V2":
       return DataSourceExternalSecret_SecretType.VAULT_KV_V2;
+    case 2:
+    case "AWS_SECRETS_MANAGER":
+      return DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -48,6 +54,8 @@ export function dataSourceExternalSecret_SecretTypeToJSON(object: DataSourceExte
       return "SAECRET_TYPE_UNSPECIFIED";
     case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
       return "VAULT_KV_V2";
+    case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
+      return "AWS_SECRETS_MANAGER";
     case DataSourceExternalSecret_SecretType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -60,6 +68,8 @@ export enum DataSourceExternalSecret_AuthType {
   TOKEN = 1,
   /** APP_ROLE - ref: https://developer.hashicorp.com/vault/docs/auth/approle */
   APP_ROLE = 2,
+  /** AWS_ENVIRONMENT - ref: https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials */
+  AWS_ENVIRONMENT = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -74,6 +84,9 @@ export function dataSourceExternalSecret_AuthTypeFromJSON(object: any): DataSour
     case 2:
     case "APP_ROLE":
       return DataSourceExternalSecret_AuthType.APP_ROLE;
+    case 3:
+    case "AWS_ENVIRONMENT":
+      return DataSourceExternalSecret_AuthType.AWS_ENVIRONMENT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -89,6 +102,8 @@ export function dataSourceExternalSecret_AuthTypeToJSON(object: DataSourceExtern
       return "TOKEN";
     case DataSourceExternalSecret_AuthType.APP_ROLE:
       return "APP_ROLE";
+    case DataSourceExternalSecret_AuthType.AWS_ENVIRONMENT:
+      return "AWS_ENVIRONMENT";
     case DataSourceExternalSecret_AuthType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -147,6 +162,18 @@ export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToJSON(
   }
 }
 
+/** store the environment name for AWS credentials. */
+export interface DataSourceExternalSecret_AWSEnvironmentConfig {
+  /** environment name for AWS access key id, default AWS_ACCESS_KEY_ID. */
+  accessKeyId: string;
+  /** environment name for AWS secret access key, default AWS_SECRET_ACCESS_KEY. */
+  secretAccessKey: string;
+  /** environment name for AWS session token, default AWS_SESSION_TOKEN. */
+  sessionToken: string;
+  /** environment name for AWS region, default AWS_REGION. */
+  region: string;
+}
+
 export interface DataSourceOptions {
   /** srv is a boolean flag that indicates whether the host is a DNS SRV record. */
   srv: boolean;
@@ -183,6 +210,7 @@ function createBaseDataSourceExternalSecret(): DataSourceExternalSecret {
     authType: 0,
     appRole: undefined,
     token: undefined,
+    awsEnvironmentConfig: undefined,
     engineName: "",
     secretName: "",
     passwordKeyName: "",
@@ -205,6 +233,10 @@ export const DataSourceExternalSecret = {
     }
     if (message.token !== undefined) {
       writer.uint32(42).string(message.token);
+    }
+    if (message.awsEnvironmentConfig !== undefined) {
+      DataSourceExternalSecret_AWSEnvironmentConfig.encode(message.awsEnvironmentConfig, writer.uint32(74).fork())
+        .ldelim();
     }
     if (message.engineName !== "") {
       writer.uint32(50).string(message.engineName);
@@ -260,6 +292,13 @@ export const DataSourceExternalSecret = {
 
           message.token = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.awsEnvironmentConfig = DataSourceExternalSecret_AWSEnvironmentConfig.decode(reader, reader.uint32());
+          continue;
         case 6:
           if (tag !== 50) {
             break;
@@ -297,6 +336,9 @@ export const DataSourceExternalSecret = {
       authType: isSet(object.authType) ? dataSourceExternalSecret_AuthTypeFromJSON(object.authType) : 0,
       appRole: isSet(object.appRole) ? DataSourceExternalSecret_AppRoleAuthOption.fromJSON(object.appRole) : undefined,
       token: isSet(object.token) ? globalThis.String(object.token) : undefined,
+      awsEnvironmentConfig: isSet(object.awsEnvironmentConfig)
+        ? DataSourceExternalSecret_AWSEnvironmentConfig.fromJSON(object.awsEnvironmentConfig)
+        : undefined,
       engineName: isSet(object.engineName) ? globalThis.String(object.engineName) : "",
       secretName: isSet(object.secretName) ? globalThis.String(object.secretName) : "",
       passwordKeyName: isSet(object.passwordKeyName) ? globalThis.String(object.passwordKeyName) : "",
@@ -319,6 +361,9 @@ export const DataSourceExternalSecret = {
     }
     if (message.token !== undefined) {
       obj.token = message.token;
+    }
+    if (message.awsEnvironmentConfig !== undefined) {
+      obj.awsEnvironmentConfig = DataSourceExternalSecret_AWSEnvironmentConfig.toJSON(message.awsEnvironmentConfig);
     }
     if (message.engineName !== "") {
       obj.engineName = message.engineName;
@@ -344,6 +389,9 @@ export const DataSourceExternalSecret = {
       ? DataSourceExternalSecret_AppRoleAuthOption.fromPartial(object.appRole)
       : undefined;
     message.token = object.token ?? undefined;
+    message.awsEnvironmentConfig = (object.awsEnvironmentConfig !== undefined && object.awsEnvironmentConfig !== null)
+      ? DataSourceExternalSecret_AWSEnvironmentConfig.fromPartial(object.awsEnvironmentConfig)
+      : undefined;
     message.engineName = object.engineName ?? "";
     message.secretName = object.secretName ?? "";
     message.passwordKeyName = object.passwordKeyName ?? "";
@@ -453,6 +501,114 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
     message.secretId = object.secretId ?? "";
     message.type = object.type ?? 0;
     message.mountPath = object.mountPath ?? "";
+    return message;
+  },
+};
+
+function createBaseDataSourceExternalSecret_AWSEnvironmentConfig(): DataSourceExternalSecret_AWSEnvironmentConfig {
+  return { accessKeyId: "", secretAccessKey: "", sessionToken: "", region: "" };
+}
+
+export const DataSourceExternalSecret_AWSEnvironmentConfig = {
+  encode(message: DataSourceExternalSecret_AWSEnvironmentConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.accessKeyId !== "") {
+      writer.uint32(10).string(message.accessKeyId);
+    }
+    if (message.secretAccessKey !== "") {
+      writer.uint32(18).string(message.secretAccessKey);
+    }
+    if (message.sessionToken !== "") {
+      writer.uint32(26).string(message.sessionToken);
+    }
+    if (message.region !== "") {
+      writer.uint32(34).string(message.region);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DataSourceExternalSecret_AWSEnvironmentConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSourceExternalSecret_AWSEnvironmentConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.accessKeyId = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.secretAccessKey = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.sessionToken = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.region = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSourceExternalSecret_AWSEnvironmentConfig {
+    return {
+      accessKeyId: isSet(object.accessKeyId) ? globalThis.String(object.accessKeyId) : "",
+      secretAccessKey: isSet(object.secretAccessKey) ? globalThis.String(object.secretAccessKey) : "",
+      sessionToken: isSet(object.sessionToken) ? globalThis.String(object.sessionToken) : "",
+      region: isSet(object.region) ? globalThis.String(object.region) : "",
+    };
+  },
+
+  toJSON(message: DataSourceExternalSecret_AWSEnvironmentConfig): unknown {
+    const obj: any = {};
+    if (message.accessKeyId !== "") {
+      obj.accessKeyId = message.accessKeyId;
+    }
+    if (message.secretAccessKey !== "") {
+      obj.secretAccessKey = message.secretAccessKey;
+    }
+    if (message.sessionToken !== "") {
+      obj.sessionToken = message.sessionToken;
+    }
+    if (message.region !== "") {
+      obj.region = message.region;
+    }
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<DataSourceExternalSecret_AWSEnvironmentConfig>,
+  ): DataSourceExternalSecret_AWSEnvironmentConfig {
+    return DataSourceExternalSecret_AWSEnvironmentConfig.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<DataSourceExternalSecret_AWSEnvironmentConfig>,
+  ): DataSourceExternalSecret_AWSEnvironmentConfig {
+    const message = createBaseDataSourceExternalSecret_AWSEnvironmentConfig();
+    message.accessKeyId = object.accessKeyId ?? "";
+    message.secretAccessKey = object.secretAccessKey ?? "";
+    message.sessionToken = object.sessionToken ?? "";
+    message.region = object.region ?? "";
     return message;
   },
 };

@@ -20,7 +20,12 @@ var secretCache = make(map[string]string)
 func ReplaceExternalSecret(ctx context.Context, secret string, externalSecret *storepb.DataSourceExternalSecret) (string, error) {
 	if externalSecret != nil {
 		// TODO: consider cache?
-		return getSecretFromVault(ctx, externalSecret)
+		switch externalSecret.SecretType {
+		case storepb.DataSourceExternalSecret_AWS_SECRETS_MANAGER:
+			return getSecretFromAWS(ctx, externalSecret)
+		case storepb.DataSourceExternalSecret_VAULT_KV_V2:
+			return getSecretFromVault(ctx, externalSecret)
+		}
 	}
 
 	return getSecretFromText(secret)
