@@ -24,14 +24,14 @@ func getGitLabPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 		return nil, errors.Errorf("failed to unmarshal push event, error %v", err)
 	}
 	if pushEvent.ObjectKind != mergeRequestObjectKind {
-		return nil, errors.Errorf("invalid webhook event type, got %s, want push", pushEvent.ObjectKind)
+		return nil, errors.Errorf("skip webhook event type, got %s, want push", pushEvent.ObjectKind)
 	}
 	if pushEvent.ObjectAttributes.Action != mergeAction {
-		return nil, errors.Errorf("invalid webhook event action, got %s, want merge", pushEvent.ObjectAttributes.Action)
+		return nil, errors.Errorf("skip webhook event action, got %s, want merge", pushEvent.ObjectAttributes.Action)
 	}
 
 	if pushEvent.ObjectAttributes.TargetBranch != vcsConnector.Payload.Branch {
-		return nil, errors.Errorf("committed to branch %q, want branch %q", pushEvent.ObjectAttributes.TargetBranch, vcsConnector.Payload.Branch)
+		return nil, errors.Errorf("skip branch got %q, want %q", pushEvent.ObjectAttributes.TargetBranch, vcsConnector.Payload.Branch)
 	}
 
 	mrFiles, err := vcs.Get(storepb.VCSType_GITLAB, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ListPullRequestFile(ctx, vcsConnector.Payload.ExternalId, fmt.Sprintf("%d", pushEvent.ObjectAttributes.IID))
