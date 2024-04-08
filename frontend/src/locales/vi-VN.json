@@ -1213,8 +1213,6 @@
     "unassigned-db-hint": "Cơ sở dữ liệu mới được đồng bộ hóa bắt đầu không được chỉ định và phải được chuyển sang dự án để sử dụng.",
     "transfer-out-db": "Chuyển DB ra",
     "transfer-out-db-title": "Chuyển cơ sở dữ liệu ra ngoài",
-    "request-query-permission": "Yêu cầu truy vấn",
-    "request-export-permission": "Yêu cầu xuất",
     "request-export-data": "Yêu cầu xuất"
   },
   "create-db": {
@@ -2191,7 +2189,6 @@
     "run-selected": "Chạy đã chọn",
     "clear-screen": "Xóa màn hình",
     "query-time": "thời gian truy vấn",
-    "request-query-permission": "Yêu cầu truy vấn",
     "connection-lost": "Kết nối bị mất. Sẽ cố gắng kết nối lại khi thực hiện truy vấn tiếp theo.",
     "sheet": {
       "choose-sheet": "Chọn trang tính",

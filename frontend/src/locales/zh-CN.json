@@ -1213,8 +1213,6 @@
     "unassigned-db-hint": "新同步的数据库起先是未分配的状态，必须移至一个项目以供使用。",
     "transfer-out-db": "转出数据库",
     "transfer-out-db-title": "转出数据库",
-    "request-query-permission": "申请查询权限",
-    "request-export-permission": "申请导出权限",
     "request-export-data": "申请导出数据"
   },
   "create-db": {
@@ -2191,7 +2189,6 @@
     "run-selected": "运行选中的语句",
     "clear-screen": "清屏",
     "query-time": "查询时间",
-    "request-query-permission": "申请查询权限",
     "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。",
     "sheet": {
       "choose-sheet": "选择工作表",
