@@ -28,7 +28,7 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 	case storepb.DataSourceExternalSecret_APP_ROLE:
 		role := externalSecret.GetAppRole()
 		if role == nil {
-			return nil, errors.Errorf("app role is invalid")
+			return nil, errors.Errorf("approle is invalid")
 		}
 		appRoleSecret := &approle.SecretID{}
 		switch role.Type {
@@ -55,7 +55,7 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 			appRoleAuth,
 		)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to login with app role: %v", err.Error())
+			return nil, errors.Wrapf(err, "failed to login with approle: %v", err.Error())
 		}
 		token = resp.Auth.ClientToken
 	}
@@ -78,7 +78,7 @@ func getSecretFromVault(ctx context.Context, externalSecret *storepb.DataSourceE
 
 	value, ok := secret.Data[externalSecret.PasswordKeyName].(string)
 	if !ok {
-		return "", errors.Errorf(`failed to get secret value for "%s/%s"`, externalSecret.SecretName, externalSecret.PasswordKeyName)
+		return "", errors.Errorf(`failed to get vault secret value for "%s/%s"`, externalSecret.SecretName, externalSecret.PasswordKeyName)
 	}
 
 	return value, nil

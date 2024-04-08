@@ -1363,14 +1363,14 @@
     "external-secret-vault": {
       "vault-url": "Vault URL",
       "vault-auth-type": {
-        "self": "Vault auth type",
+        "self": "Auth type",
         "token": {
           "self": "Simbólico",
-          "api-token": "Vault API token",
+          "token": "Token",
           "tips": "Un token raíz sin TTL."
         },
-        "app-role": {
-          "self": "App role",
+        "approle": {
+          "self": "AppRole",
           "role-id": "Auth role id",
           "secret-id": "Auth secret id",
           "secret-id-plain-text": "Texto sin formato para identificación secreta de rol",
@@ -1380,7 +1380,9 @@
           "secret-tips": "Una identificación secreta desenvuelta sin TTL. Puede utilizar texto sin formato o colocarlo en el entorno o en el archivo local. {learn_more}"
         }
       },
-      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-name": "Secret engine name",
+      "vault-secret-path": "Secret path",
+      "vault-secret-key": "Secret key",
       "vault-secret-engine-tips": "Solo admite motor KV v2."
     },
     "external-secret": {

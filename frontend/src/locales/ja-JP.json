@@ -1363,14 +1363,14 @@
     "external-secret-vault": {
       "vault-url": "Vault URL",
       "vault-auth-type": {
-        "self": "Vault auth type",
+        "self": "Auth type",
         "token": {
           "self": "Token",
-          "api-token": "Vault API token",
+          "token": "Token",
           "tips": "TTL のないルート トークン。"
         },
-        "app-role": {
-          "self": "App role",
+        "approle": {
+          "self": "AppRole",
           "role-id": "Auth role id",
           "secret-id": "Auth secret id",
           "secret-id-plain-text": "ロールシークレットIDのプレーンテキスト",
@@ -1380,7 +1380,9 @@
           "secret-tips": "TTL なしのラップされていないシークレット ID。 プレーン テキストを使用することも、環境ファイルまたはローカル ファイルに置くこともできます。{learn_more}"
         }
       },
-      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-name": "Secret engine name",
+      "vault-secret-path": "Secret path",
+      "vault-secret-key": "Secret key",
       "vault-secret-engine-tips": "KV v2 エンジンのみをサポートします。"
     },
     "external-secret": {
