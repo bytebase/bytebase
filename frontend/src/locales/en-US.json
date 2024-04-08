@@ -1345,9 +1345,22 @@
     "password-type": {
       "password": "Password",
       "password-tip": "You can also specify external secret manage endpoint",
-      "external-secret": "External secret (Vault)"
+      "external-secret-vault": "Vault (KV v2)",
+      "external-secret-aws": "AWS Secrets Manager"
     },
-    "external-secret": {
+    "external-secret-aws": {
+      "environment": {
+        "access-key-id": "AWS access key id",
+        "access-key-id-tips": "Environment name for AWS access key id",
+        "secret-access-key": "AWS secret access key",
+        "secret-access-key-tips": "Environment name for AWS secret access key",
+        "session-token": "AWS session token",
+        "session-token-tips": "Environment name for AWS session token",
+        "region": "AWS region",
+        "region-tips": "Environment name for AWS region"
+      }
+    },
+    "external-secret-vault": {
       "vault-url": "Vault URL",
       "vault-auth-type": {
         "self": "Vault auth type",
@@ -1368,9 +1381,11 @@
         }
       },
       "vault-secret-engine-name": "Vault secret engine name",
-      "vault-secret-engine-tips": "Only support KV v2 engine.",
-      "vault-secret-name": "Vault secret name",
-      "vault-key-name": "Vault key name for password"
+      "vault-secret-engine-tips": "Only support KV v2 engine."
+    },
+    "external-secret": {
+      "secret-name": "Secret name",
+      "key-name": "Key name for password"
     },
     "test-connection": "Test Connection",
     "ignore-and-create": "Ignore and create",
