@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -317,8 +318,7 @@ func updateAnomalyV2(ctx context.Context, tx *Tx, principalUID int, update *upda
 	if update.Payload == "" {
 		update.Payload = "{}"
 	}
-	set, args := []string{"updater_id = $1"}, []any{principalUID}
-	set, args = append(set, "payload = $2"), append(args, update.Payload)
+	set, args := []string{"updater_id = $1", "updated_ts = $2", "payload = $3"}, []any{principalUID, time.Now().Unix(), update.Payload}
 	args = append(args, update.UID)
 
 	// Execute update query with RETURNING.

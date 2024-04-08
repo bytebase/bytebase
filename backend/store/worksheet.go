@@ -306,7 +306,7 @@ func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
 
 // patchWorkSheetImpl updates a sheet's name/statement/visibility/database_id/project_id.
 func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessage) error {
-	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
