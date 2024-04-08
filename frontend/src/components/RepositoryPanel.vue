@@ -9,7 +9,7 @@
       <template #naming>
         <a
           class="normal-link"
-          href="https://www.bytebase.com/docs/vcs-integration/create-migration-files/"
+          href="https://www.bytebase.com/docs/vcs-integration/create-migration-files/?source=console"
           target="_blank"
         >
           {{ $t("repository.gitops-naming-format") }}
