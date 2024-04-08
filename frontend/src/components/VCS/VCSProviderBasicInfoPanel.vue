@@ -87,11 +87,23 @@
       <ul class="textinfolabel space-y-2 mt-2">
         <template v-if="config.type == VCSType.GITLAB">
           <li>
-            {{
-              $t(
-                "gitops.setting.add-git-provider.access-token.gitlab-personal-access-token"
-              )
-            }}
+            <i18n-t
+              keypath="gitops.setting.add-git-provider.access-token.gitlab-personal-access-token"
+            >
+              <template #token>
+                <a
+                  :href="`${config.instanceUrl}/-/user_settings/personal_access_tokens`"
+                  target="_blank"
+                  class="normal-link"
+                >
+                  {{
+                    $t(
+                      "gitops.setting.add-git-provider.access-token.personal-access-token"
+                    )
+                  }}
+                </a>
+              </template>
+            </i18n-t>
           </li>
           <li>• api</li>
           <li>• read repository</li>
@@ -103,7 +115,7 @@
             >
               <template #token>
                 <a
-                  href="https://github.com/settings/tokens?type=beta"
+                  :href="`${config.instanceUrl}/settings/tokens`"
                   target="_blank"
                   class="normal-link"
                 >
@@ -150,11 +162,24 @@
         </template>
         <template v-if="config.type == VCSType.AZURE_DEVOPS">
           <li>
-            {{
-              $t(
-                "gitops.setting.add-git-provider.access-token.azure-devops-personal-access-token"
-              )
-            }}
+            <i18n-t
+              keypath="gitops.setting.add-git-provider.access-token.azure-devops-personal-access-token"
+            >
+              <template #token>
+                <!-- Azure DevOps link PAT link is dynamic: https://dev.azure.com/<<account>>/_usersSettings/tokens so we can only use prefix -->
+                <a
+                  href="https://dev.azure.com/"
+                  target="_blank"
+                  class="normal-link"
+                >
+                  {{
+                    $t(
+                      "gitops.setting.add-git-provider.access-token.personal-access-token"
+                    )
+                  }}
+                </a>
+              </template>
+            </i18n-t>
           </li>
           <li>• Code (Read)</li>
           <li>• User Profile (Read)</li>
@@ -257,7 +282,7 @@ const instanceUrlLabel = computed((): string => {
 const instanceUrlPlaceholder = computed((): string => {
   if (props.config.type === VCSType.GITLAB) {
     if (props.config.uiType == "GITLAB_SELF_HOST") {
-      return "https://gitlab.example.com";
+      return "https://gitlab.company-name.com";
     } else if (props.config.uiType == "GITLAB_COM") {
       return "https://gitlab.com";
     }
@@ -265,7 +290,7 @@ const instanceUrlPlaceholder = computed((): string => {
     if (props.config.uiType == "GITHUB_COM") {
       return "https://github.com";
     } else if (props.config.uiType == "GITHUB_ENTERPRISE") {
-      return "https://github.companyname.com";
+      return "https://github.company-name.com";
     }
   } else if (props.config.type === VCSType.BITBUCKET) {
     return "https://bitbucket.org";
