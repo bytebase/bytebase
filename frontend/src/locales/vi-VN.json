@@ -411,6 +411,8 @@
       "enqueued": "Đang chờ thi hành án.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {time}.",
       "dumping-schema-before-executing-sql": "Đang chuẩn bị thực thi, kết xuất lược đồ.",
+      "preparing-to-export-data": "Đang chuẩn bị xuất dữ liệu.",
+      "exporting-data": "Xuất dữ liệu.",
       "executing-sql": "Thực thi SQL.",
       "executing-sql-detail": "Thực thi SQL {current} của {total}, từ ({startLine}, {startColumn}) đến ({endLine}, {endColumn}).",
       "dumping-schema-after-executing-sql": "Thực thi SQL đã hoàn thành, lược đồ kết xuất.",

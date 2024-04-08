@@ -411,6 +411,8 @@
       "enqueued": "実行待ちです。",
       "enqueued-with-rollout-time": "{time} 後に実行するために待機中です。",
       "dumping-schema-before-executing-sql": "実行の準備中、スキーマをダンプしています。",
+      "preparing-to-export-data": "データをエクスポートする準備をしています。",
+      "exporting-data": "データをエクスポートしています。",
       "executing-sql": "SQL を実行中です。",
       "executing-sql-detail": "SQL を実行中です ({current}/{total})、({startLine}, {startColumn}) から ({endLine}, {endColumn}) まで。",
       "dumping-schema-after-executing-sql": "SQL の実行が完了し、スキーマをダンプしています。",
