@@ -146,7 +146,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			return nil
 		}
 		if len(prInfo.changes) == 0 {
-			return c.String(http.StatusOK, fmt.Sprintf("no relevant file change in the base directory %q for pull request %q", vcsConnector.Payload.BaseDirectory, prInfo.url))
+			return c.String(http.StatusOK, fmt.Sprintf("no relevant file change directly under the base directory %q for pull request %q", vcsConnector.Payload.BaseDirectory, prInfo.url))
 		}
 		issue, err := s.createIssueFromPRInfo(ctx, project, vcsProvider, vcsConnector, prInfo)
 		if err != nil {
@@ -331,9 +331,7 @@ func (s *Service) getChangeSteps(
 				},
 			})
 		}
-		fmt.Printf("Barny3: %+v\n", step)
 	}
-	fmt.Printf("Barny2: %+v\n", steps)
 
 	return steps, nil
 }
