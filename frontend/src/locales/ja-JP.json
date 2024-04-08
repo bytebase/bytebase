@@ -1743,8 +1743,9 @@
     "merge-request": "マージリクエスト",
     "pull-request": "プルリクエスト",
     "git-provider": "Gitプロバイダ",
-    "gitops-description-file-path": "データベースのマイグレーションスクリプトは{fullPath}に保存されます。スキーマの変更を行うには、開発者が{fullPathTemplate}と一致するファイルパスパターンのマイグレーションスクリプトを作成します。",
-    "gitops-description-branch": "スクリプトがレビュー承認され、{branch} ブランチにマージされた後、Bytebase は自動的にパイプラインを開始して新しいスキーマ変更を適用します。",
+    "gitops-naming-format": "命名形式",
+    "gitops-description-file-path": "データベース移行スクリプトは {fullPath} に保存されます。 データベースを変更するには、開発者は {naming} に準拠した移行スクリプトを作成します。",
+    "gitops-description-branch": "スクリプトが承認され、{branch} ブランチにマージされると、Bytebase はデータベースの変更を適用するための課題を自動的に作成します。",
     "setup-wizard-guide": "プロセス中にエラーが発生した場合は、{guide}を参照してください。",
     "add-git-provider": "Gitプロバイダーを追加する",
     "choose-git-provider": "Gitプロバイダーを選択する",
@@ -1762,7 +1763,7 @@
   },
   "workflow": {
     "gitops-workflow": "GitOpsワークフロー",
-    "gitops-workflow-description": "データベースのマイグレーションスクリプトはgitリポジトリに保存されます。スキーマの変更を行うには、開発者がマイグレーションスクリプトを作成し、GitLabなどの対応するVCSでレビューに提出します。スクリプトが承認され、設定されたブランチにマージされると、Bytebaseは自動的に新しいスキーマ変更のタスクを開始します。"
+    "gitops-workflow-description": "データベース移行スクリプトは git リポジトリに保存されます。 データベースを変更するには、開発者は移行スクリプトを作成し、GitLab などの対応する VCS でレビューのために送信します。 スクリプトが承認され、構成されたブランチにマージされると、Bytebase はデータベースの変更を適用するタスクを自動的に開始します。"
   },
   "anomaly": {
     "attention-title": "異常検出",

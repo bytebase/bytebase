@@ -6,6 +6,15 @@
           {{ repositoryFormattedFullPath }}
         </a>
       </template>
+      <template #naming>
+        <a
+          class="normal-link"
+          href="https://www.bytebase.com/docs/vcs-integration/create-migration-files/?source=console"
+          target="_blank"
+        >
+          {{ $t("repository.gitops-naming-format") }}
+        </a>
+      </template>
     </i18n-t>
     <span>&nbsp;</span>
     <i18n-t keypath="repository.gitops-description-branch">

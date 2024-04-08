@@ -2,6 +2,9 @@
   <div class="space-y-4">
     <div class="textinfolabel">
       {{ $t("workflow.gitops-workflow-description") }}
+      <LearnMoreLink
+        url="https://www.bytebase.com/docs/vcs-integration/add-gitops-connector/?source=console"
+      />
     </div>
     <div class="flex flex-row items-center justify-end gap-x-2">
       <NButton v-if="allowCreate" type="primary" @click="createConnector">
