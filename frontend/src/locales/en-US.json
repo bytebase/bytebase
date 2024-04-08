@@ -1177,7 +1177,6 @@
     "missing-sql-statement": "SQL statement missing. To apply this change to all tasks, click the @:{'issue.apply-to-other-tasks'} button.",
     "task-summary-tooltip": "{failed} task failed | {failed} tasks failed",
     "data-export": {
-      "title": "Data Export",
       "options": "Options",
       "format": "Format",
       "encrypt": "Encrypt",
@@ -2907,7 +2906,7 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "Create Database",
-          "data_export": "Data Export",
+          "data_export": "Export Data",
           "request_query": "Request Querier Role",
           "request_export": "Request Exporter Role"
         }
@@ -3322,7 +3321,6 @@
     "confirm-delete-changelist": "Delete this changelist?"
   },
   "export-data": {
-    "self": "Export Data",
     "export-rows": "Export rows",
     "error": {
       "export-rows-required": "Export rows required",
