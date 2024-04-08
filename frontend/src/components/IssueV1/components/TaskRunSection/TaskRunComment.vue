@@ -38,6 +38,7 @@ import {
   extractChangeHistoryUID,
   extractTaskUID,
   flattenTaskV1List,
+  isDatabaseDataExportIssue,
 } from "@/utils";
 import { databaseForTask, specForTask, useIssueContext } from "../../logic";
 
@@ -78,7 +79,11 @@ const comment = computed(() => {
     return t("task-run.status.enqueued");
   } else if (taskRun.status === TaskRun_Status.RUNNING) {
     if (taskRun.executionStatus === TaskRun_ExecutionStatus.PRE_EXECUTING) {
-      return t("task-run.status.dumping-schema-before-executing-sql");
+      if (isDatabaseDataExportIssue(issue.value)) {
+        return t("task-run.status.exporting-data");
+      } else {
+        return t("task-run.status.dumping-schema-before-executing-sql");
+      }
     } else if (taskRun.executionStatus === TaskRun_ExecutionStatus.EXECUTING) {
       if (taskRun.executionDetail) {
         return t("task-run.status.executing-sql-detail", {
