@@ -1743,8 +1743,9 @@
     "merge-request": "yêu cầu hợp nhất",
     "pull-request": "yêu cầu kéo",
     "git-provider": "Nhà cung cấp Git",
-    "gitops-description-file-path": "Tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong {fullPath}. Để thực hiện thay đổi lược đồ, nhà phát triển sẽ tạo tập lệnh di chuyển khớp với mẫu đường dẫn tệp {fullPathTemplate}.",
-    "gitops-description-branch": "Sau khi tập lệnh được phê duyệt xem xét và hợp nhất vào nhánh {branch}, Bytebase sẽ tự động khởi động quy trình để áp dụng thay đổi lược đồ mới.",
+    "gitops-naming-format": "định dạng đặt tên",
+    "gitops-description-file-path": "Tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong {fullPath}. Để thực hiện các thay đổi về cơ sở dữ liệu, nhà phát triển sẽ tạo tập lệnh di chuyển tuân theo {naming}.",
+    "gitops-description-branch": "Sau khi tập lệnh được phê duyệt và hợp nhất vào nhánh {branch}, Bytebase sẽ tự động tạo vấn đề để áp dụng thay đổi cơ sở dữ liệu.",
     "setup-wizard-guide": "Nếu bạn gặp lỗi trong quá trình này, vui lòng tham khảo {guide} của chúng tôi",
     "add-git-provider": "Thêm nhà cung cấp Git",
     "choose-git-provider": "Chọn nhà cung cấp Git",
@@ -1762,7 +1763,7 @@
   },
   "workflow": {
     "gitops-workflow": "Quy trình làm việc GitOps",
-    "gitops-workflow-description": "Các tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong kho git. Để thực hiện thay đổi lược đồ, nhà phát triển sẽ tạo tập lệnh di chuyển và gửi để xem xét trong VCS tương ứng, chẳng hạn như GitLab. Sau khi tập lệnh được phê duyệt và hợp nhất vào nhánh đã định cấu hình, Bytebase sẽ tự động bắt đầu nhiệm vụ áp dụng thay đổi lược đồ mới."
+    "gitops-workflow-description": "Các tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong kho git. Để thực hiện thay đổi cơ sở dữ liệu, nhà phát triển sẽ tạo tập lệnh di chuyển và gửi để xem xét trong VCS tương ứng, chẳng hạn như GitLab. Sau khi tập lệnh được phê duyệt và hợp nhất vào nhánh được định cấu hình, Bytebase sẽ tự động khởi động tác vụ để áp dụng thay đổi cơ sở dữ liệu."
   },
   "anomaly": {
     "attention-title": "Phát hiện bất thường",

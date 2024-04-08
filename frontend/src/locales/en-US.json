@@ -1743,8 +1743,9 @@
     "merge-request": "merge request",
     "pull-request": "pull request",
     "git-provider": "Git provider",
-    "gitops-description-file-path": "Database migration scripts are stored in {fullPath}. To make schema changes, a developer would create a migration script matching file path pattern {fullPathTemplate}.",
-    "gitops-description-branch": "After the script is review approved and merged into the {branch} branch, Bytebase will automatically kicks off the pipeline to apply the new schema change.",
+    "gitops-naming-format": "naming format",
+    "gitops-description-file-path": "Database migration scripts are stored in {fullPath}. To make database changes, a developer would create a migration script conforming to the {naming}.",
+    "gitops-description-branch": "After the script is approved and merged into the {branch} branch, Bytebase will automatically create the issue to apply the database change.",
     "setup-wizard-guide": "If you encounter errors during the process, please refer to our {guide}",
     "add-git-provider": "Add Git provider",
     "choose-git-provider": "Choose Git provider",
@@ -1762,7 +1763,7 @@
   },
   "workflow": {
     "gitops-workflow": "GitOps workflow",
-    "gitops-workflow-description": "Database migration scripts are stored in a git repository. To make schema changes, a developer would create a migration script and submit for review in the corresponding VCS such as GitLab. After the script is approved and merged into the configured branch, Bytebase will automatically kicks off the task to apply the new schema change."
+    "gitops-workflow-description": "Database migration scripts are stored in a git repository. To make database changes, a developer would create a migration script and submit for review in the corresponding VCS such as GitLab. After the script is approved and merged into the configured branch, Bytebase will automatically kick off the task to apply the database change."
   },
   "anomaly": {
     "attention-title": "Anomaly detection",

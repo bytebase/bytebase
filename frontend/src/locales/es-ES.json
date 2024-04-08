@@ -1743,8 +1743,9 @@
     "merge-request": "solicitud de extracción",
     "pull-request": "solicitud de extracción",
     "git-provider": "Proveedor de Git",
-    "gitops-description-file-path": "Los scripts de migración de la base de datos se almacenan en {fullPath}. Para realizar cambios en el esquema, un desarrollador crearía un script de migración que coincida con el patrón de la ruta de acceso del archivo {fullPathTemplate}.",
-    "gitops-description-branch": "Después de que el script sea aprobado y fusionado en la rama {branch}, Bytebase iniciará automáticamente el proceso para aplicar el nuevo cambio de esquema.",
+    "gitops-naming-format": "formato de nombre",
+    "gitops-description-file-path": "Los scripts de migración de bases de datos se almacenan en {fullPath}. Para realizar cambios en la base de datos, un desarrollador crearía un script de migración que se ajuste a {naming}.",
+    "gitops-description-branch": "Una vez que el script se aprueba y se fusiona en la rama {branch}, Bytebase creará automáticamente el problema para aplicar el cambio en la base de datos.",
     "setup-wizard-guide": "Si encuentras errores durante el proceso, consulta nuestra {guide}",
     "add-git-provider": "Agregar proveedor de Git",
     "choose-git-provider": "Elegir proveedor de Git",
@@ -1762,7 +1763,7 @@
   },
   "workflow": {
     "gitops-workflow": "Flujo de trabajo de GitOps",
-    "gitops-workflow-description": "Los scripts de migración de la base de datos se almacenan en un repositorio de git. Para realizar cambios en el esquema, un desarrollador crearía un script de migración y lo enviaría para su revisión en el VCS correspondiente, como GitLab. Después de que se aprueba el script y se fusiona en la rama configurada, Bytebase iniciará automáticamente la tarea para aplicar el nuevo cambio de esquema."
+    "gitops-workflow-description": "Los scripts de migración de bases de datos se almacenan en un repositorio git. Para realizar cambios en la base de datos, un desarrollador crearía un script de migración y lo enviaría para su revisión en el VCS correspondiente, como GitLab. Una vez que el script se aprueba y se fusiona en la rama configurada, Bytebase iniciará automáticamente la tarea para aplicar el cambio en la base de datos."
   },
   "anomaly": {
     "attention-title": "Detección de anomalías",
