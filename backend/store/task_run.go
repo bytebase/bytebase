@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -332,8 +333,7 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 
 // patchTaskRunStatusImpl updates a taskRun status. Returns the new state of the taskRun after update.
 func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRunStatusPatch) (*TaskRunMessage, error) {
-	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
-	set, args = append(set, "status = $2"), append(args, patch.Status)
+	set, args := []string{"updater_id = $1", "updated_ts = $2", "status = $3"}, []any{patch.UpdaterID, time.Now().Unix(), patch.Status}
 	if v := patch.Code; v != nil {
 		set, args = append(set, fmt.Sprintf("code = $%d", len(args)+1)), append(args, *v)
 	}

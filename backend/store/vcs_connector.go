@@ -193,7 +193,7 @@ func (s *Store) CreateVCSConnector(ctx context.Context, create *VCSConnectorMess
 
 // UpdateVCSConnector updates a VCS connector.
 func (s *Store) UpdateVCSConnector(ctx context.Context, update *UpdateVCSConnectorMessage) error {
-	set, args := []string{"updater_id = $1"}, []any{update.UpdaterID}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{update.UpdaterID, time.Now().Unix()}
 
 	var payloadSet []string
 	if v := update.Branch; v != nil {

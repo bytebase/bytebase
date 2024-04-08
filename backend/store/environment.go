@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -173,7 +174,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 
 // UpdateEnvironmentV2 updates an environment.
 func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, patch *UpdateEnvironmentMessage, updaterID int) (*EnvironmentMessage, error) {
-	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterID)}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}

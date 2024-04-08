@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -152,10 +153,11 @@ func (s *Store) UpdateIssueComment(ctx context.Context, comment string, uid int,
 		UPDATE issue_comment
 		SET 
 			updater_id = $1,
-			payload = payload || jsonb_build_object('comment', $2)
-		WHERE id = $3
+			updated_ts = $2
+			payload = payload || jsonb_build_object('comment', $3)
+		WHERE id = $4
 	`
-	if _, err := s.db.db.ExecContext(ctx, query, updaterUID, comment, uid); err != nil {
+	if _, err := s.db.db.ExecContext(ctx, query, updaterUID, time.Now().Unix(), comment, uid); err != nil {
 		return errors.Wrapf(err, "failed to update issue comment")
 	}
 	return nil

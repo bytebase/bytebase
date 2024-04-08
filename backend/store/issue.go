@@ -234,8 +234,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		return nil, err
 	}
 
-	set, args := []string{"updater_id = $1"}, []any{updaterID}
-
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
 	if v := patch.PipelineUID; v != nil {
 		set, args = append(set, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -710,18 +709,12 @@ func (s *Store) BackfillIssueTsVector(ctx context.Context) error {
 		SET ts_vector = $1
 		WHERE id = $2
 	`
-	disableTriggerStatement := "ALTER TABLE issue DISABLE TRIGGER update_issue_updated_ts"
-	enableTriggerStatement := "ALTER TABLE issue ENABLE TRIGGER update_issue_updated_ts"
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, disableTriggerStatement); err != nil {
-		return errors.Wrapf(err, "failed to disable trigger")
-	}
 
 	for {
 		var issues []*IssueMessage
@@ -757,10 +750,6 @@ func (s *Store) BackfillIssueTsVector(ctx context.Context) error {
 				return errors.Wrapf(err, "failed to update")
 			}
 		}
-	}
-
-	if _, err := tx.ExecContext(ctx, enableTriggerStatement); err != nil {
-		return errors.Wrapf(err, "failed to enable trigger")
 	}
 
 	if err := tx.Commit(); err != nil {

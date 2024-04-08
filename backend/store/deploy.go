@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -184,13 +185,15 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID, princi
 		INSERT INTO deployment_config (
 			creator_id,
 			updater_id,
+			updated_ts,
 			project_id,
 			name,
 			config
 		)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT(project_id) DO UPDATE SET
 			updater_id = excluded.updater_id,
+			updated_ts = excluded.updated_ts,
 			name = excluded.name,
 			config = excluded.config
 		RETURNING id, name, config
@@ -206,6 +209,7 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID, princi
 	if err := tx.QueryRowContext(ctx, query,
 		principalUID,
 		principalUID,
+		time.Now().Unix(),
 		projectUID,
 		upsert.Name,
 		payload,

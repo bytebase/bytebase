@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -121,7 +122,7 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *mo
 
 // UpdateDBSchema updates a database schema.
 func (s *Store) UpdateDBSchema(ctx context.Context, databaseID int, patch *UpdateDBSchemaMessage, updaterID int) error {
-	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterID)}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
 	if v := patch.Config; v != nil {
 		bytes, err := protojson.Marshal(v)
 		if err != nil {

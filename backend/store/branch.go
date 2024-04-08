@@ -295,7 +295,7 @@ func (s *Store) UpdateBranch(ctx context.Context, update *UpdateBranchMessage) e
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	set, args := []string{"updater_id = $1"}, []any{update.UpdaterID}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{update.UpdaterID, time.Now().Unix()}
 	if v := update.Base; v != nil {
 		base, err := protojson.Marshal(v)
 		if err != nil {
