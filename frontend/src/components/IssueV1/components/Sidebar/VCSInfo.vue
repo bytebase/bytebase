@@ -77,16 +77,6 @@ const vcsConnector = computed(() => {
   );
 });
 
-const vcsProvider = computed(() => {
-  if (!vcsConnector.value) {
-    return;
-  }
-  if (!hasGetVCSProviderPermission.value) {
-    return;
-  }
-  return vcsProviderStore.getVCSByName(vcsConnector.value.vcsProvider);
-});
-
 defineExpose({
   shown: computed(() => {
     return false;
