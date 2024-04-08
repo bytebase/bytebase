@@ -1167,7 +1167,7 @@ func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExter
 	case storepb.DataSourceExternalSecret_TOKEN:
 	case storepb.DataSourceExternalSecret_APP_ROLE:
 		if secret.GetAppRole() == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "missing Vault app role")
+			return nil, status.Errorf(codes.InvalidArgument, "missing Vault approle")
 		}
 	case storepb.DataSourceExternalSecret_AWS_ENVIRONMENT:
 		config := secret.GetAwsEnvironmentConfig()

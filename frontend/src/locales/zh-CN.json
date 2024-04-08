@@ -1366,11 +1366,11 @@
         "self": "Vault 验证方式",
         "token": {
           "self": "Token",
-          "api-token": "Vault API token",
+          "token": "Token",
           "tips": "没有过期时限的根 token"
         },
-        "app-role": {
-          "self": "App role",
+        "approle": {
+          "self": "AppRole",
           "role-id": "Auth role id",
           "secret-id": "Auth secret id",
           "secret-id-plain-text": "Secret id 明文",
@@ -1380,7 +1380,9 @@
           "secret-tips": "未封装、无有效期限的 secret id，您可以使用明文、环境变量名或文件路径。{learn_more}"
         }
       },
-      "vault-secret-engine-name": "Vault secret engine name",
+      "vault-secret-engine-name": "Secret engine name",
+      "vault-secret-path": "Secret path",
+      "vault-secret-key": "Secret key",
       "vault-secret-engine-tips": "仅支持 KV v2 储存"
     },
     "external-secret": {
