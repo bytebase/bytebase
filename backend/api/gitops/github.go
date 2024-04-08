@@ -23,11 +23,11 @@ func getGitHubPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 		return nil, errors.Errorf("failed to unmarshal push event, error %v", err)
 	}
 	if pushEvent.Action != closeAction {
-		return nil, errors.Errorf("invalid webhook event action, got %s, want closed", pushEvent.Action)
+		return nil, errors.Errorf("skip webhook event action, got %s, want closed", pushEvent.Action)
 	}
 
 	if pushEvent.PullRequest.Base.Ref != vcsConnector.Payload.Branch {
-		return nil, errors.Errorf("committed to branch %q, want branch %q", pushEvent.PullRequest.Base.Ref, vcsConnector.Payload.Branch)
+		return nil, errors.Errorf("skip branch, got %q, want %q", pushEvent.PullRequest.Base.Ref, vcsConnector.Payload.Branch)
 	}
 
 	mrFiles, err := vcs.Get(storepb.VCSType_GITHUB, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).ListPullRequestFile(ctx, vcsConnector.Payload.ExternalId, fmt.Sprintf("%d", pushEvent.Number))
