@@ -28,19 +28,34 @@
         v-if="isDev()"
         class="textlabel mb-2"
         :value="state.passwordType"
-        @update:value="changePasswordType"
+        @update:value="changeSecretType"
       >
-        <NRadio value="PLAIN">
+        <NRadio
+          :value="DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED"
+        >
           {{ $t("instance.password-type.password") }}
         </NRadio>
-        <NRadio value="EXTERNAL_SECRET">
+        <NRadio :value="DataSourceExternalSecret_SecretType.VAULT_KV_V2">
           <div class="flex items-center gap-x-1">
+            {{ $t("instance.password-type.external-secret-vault") }}
             <FeatureBadge feature="bb.feature.external-secret-manager" />
-            {{ $t("instance.password-type.external-secret") }}
+          </div>
+        </NRadio>
+        <NRadio
+          :value="DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER"
+        >
+          <div class="flex items-center gap-x-1">
+            {{ $t("instance.password-type.external-secret-aws") }}
+            <FeatureBadge feature="bb.feature.external-secret-manager" />
           </div>
         </NRadio>
       </NRadioGroup>
-      <div v-if="state.passwordType === 'PLAIN'">
+      <div
+        v-if="
+          state.passwordType ===
+          DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED
+        "
+      >
         <label class="textlabel block">
           {{ $t("common.password") }}
         </label>
@@ -77,22 +92,30 @@
         />
       </div>
       <div v-else-if="dataSource.externalSecret" class="space-y-4">
-        <div class="sm:col-span-2 sm:col-start-1">
+        <div
+          v-if="
+            state.passwordType ===
+            DataSourceExternalSecret_SecretType.VAULT_KV_V2
+          "
+          class="space-y-4"
+        >
+          <div class="sm:col-span-2 sm:col-start-1">
+            <label class="textlabel block">
+              {{ $t("instance.external-secret-vault.vault-url") }}
+              <span class="text-red-600">*</span>
+            </label>
+            <BBTextField
+              v-model:value="dataSource.externalSecret.url"
+              :required="true"
+              class="mt-1 w-full"
+              :disabled="!allowEdit"
+              :placeholder="$t('instance.external-secret-vault.vault-url')"
+            />
+          </div>
+          <!-- App role is not enabled -->
+          <!-- <div class="sm:col-span-2 sm:col-start-1 space-y-2">
           <label class="textlabel block">
-            {{ $t("instance.external-secret.vault-url") }}
-          </label>
-          <BBTextField
-            v-model:value="dataSource.externalSecret.url"
-            :required="true"
-            class="mt-1 w-full"
-            :disabled="!allowEdit"
-            :placeholder="$t('instance.external-secret.vault-url')"
-          />
-        </div>
-        <!-- App role is not enabled -->
-        <!-- <div class="sm:col-span-2 sm:col-start-1 space-y-2">
-          <label class="textlabel block">
-            {{ $t("instance.external-secret.vault-auth-type.self") }}
+            {{ $t("instance.external-secret-vault.vault-auth-type.self") }}
           </label>
           <NRadioGroup
             class="textlabel mb-2"
@@ -100,168 +123,302 @@
             @update:value="changeExternalSecretAuthType"
           >
             <NRadio :value="DataSourceExternalSecret_AuthType.TOKEN">
-              {{ $t("instance.external-secret.vault-auth-type.token.self") }}
+              {{ $t("instance.external-secret-vault.vault-auth-type.token.self") }}
             </NRadio>
             <NRadio :value="DataSourceExternalSecret_AuthType.APP_ROLE">
-              {{ $t("instance.external-secret.vault-auth-type.app-role.self") }}
+              {{ $t("instance.external-secret-vault.vault-auth-type.app-role.self") }}
             </NRadio>
           </NRadioGroup>
         </div> -->
-        <div
-          v-if="
-            dataSource.externalSecret.authType ===
-            DataSourceExternalSecret_AuthType.TOKEN
-          "
-          class="sm:col-span-2 sm:col-start-1"
-        >
-          <label class="textlabel block">
-            {{ $t("instance.external-secret.vault-auth-type.token.api-token") }}
-          </label>
-          <div class="flex space-x-2 text-sm mb-1">
-            <div class="text-gray-400">
-              {{ $t("instance.external-secret.vault-auth-type.token.tips") }}
-            </div>
-            <LearnMoreLink
-              url="https://developer.hashicorp.com/vault/tutorials/operations/generate-root"
-              class="ml-1 text-sm"
-            />
-          </div>
-          <BBTextField
-            :value="dataSource.externalSecret.token ?? ''"
-            class="mt-1 w-full"
-            :disabled="!allowEdit"
-            :placeholder="secretInputPlaceholder"
-            @update:value="
-              (val: string) => {
-                const ds = dataSource;
-                ds.externalSecret!.token = val;
-              }
+          <div
+            v-if="
+              dataSource.externalSecret.authType ===
+              DataSourceExternalSecret_AuthType.TOKEN
             "
-          />
-        </div>
-        <div v-else-if="dataSource.externalSecret.appRole" class="space-y-4">
-          <div class="sm:col-span-2 sm:col-start-1">
-            <label class="textlabel block">
-              {{
-                $t("instance.external-secret.vault-auth-type.app-role.role-id")
-              }}
-            </label>
-            <BBTextField
-              :value="dataSource.externalSecret.appRole.roleId"
-              :required="true"
-              class="mt-1 w-full"
-              :disabled="!allowEdit"
-              :placeholder="`${$t(
-                'instance.external-secret.vault-auth-type.app-role.role-id'
-              )} - ${$t('common.write-only')}`"
-              @update:value="
-                (val: string) => {
-                  const ds = dataSource;
-                  ds.externalSecret!.appRole!.roleId = val;
-                }
-              "
-            />
-          </div>
-          <div class="sm:col-span-2 sm:col-start-1">
+            class="sm:col-span-2 sm:col-start-1"
+          >
             <label class="textlabel block">
               {{
                 $t(
-                  "instance.external-secret.vault-auth-type.app-role.secret-id"
+                  "instance.external-secret-vault.vault-auth-type.token.api-token"
                 )
               }}
+              <span class="text-red-600">*</span>
             </label>
-            <i18n-t
-              tag="div"
-              keypath="instance.external-secret.vault-auth-type.app-role.secret-tips"
-              class="text-gray-400 text-sm mb-1"
-            >
-              <template #learn_more>
-                <LearnMoreLink
-                  url="https://developer.hashicorp.com/vault/tutorials/auth-methods/approle"
-                  class="ml-1 text-sm"
-                />
-              </template>
-            </i18n-t>
-            <NRadioGroup
-              v-model:value="dataSource.externalSecret.appRole.type"
-              class="textlabel my-1"
-            >
-              <NRadio
-                :value="
-                  DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN
-                "
-              >
+            <div class="flex space-x-2 text-sm mb-1">
+              <div class="text-gray-400">
                 {{
                   $t(
-                    "instance.external-secret.vault-auth-type.app-role.secret-plain-text"
+                    "instance.external-secret-vault.vault-auth-type.token.tips"
                   )
                 }}
-              </NRadio>
-              <NRadio
-                :value="
-                  DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT
-                "
-              >
-                {{
-                  $t(
-                    "instance.external-secret.vault-auth-type.app-role.secret-env-name"
-                  )
-                }}
-              </NRadio>
-            </NRadioGroup>
+              </div>
+              <LearnMoreLink
+                url="https://developer.hashicorp.com/vault/tutorials/operations/generate-root"
+                class="ml-1 text-sm"
+              />
+            </div>
             <BBTextField
-              :value="dataSource.externalSecret.appRole.secretId"
+              :value="dataSource.externalSecret.token ?? ''"
               class="mt-1 w-full"
               :disabled="!allowEdit"
               :placeholder="secretInputPlaceholder"
               @update:value="
                 (val: string) => {
                   const ds = dataSource;
-                  ds.externalSecret!.appRole!.secretId = val;
+                  ds.externalSecret!.token = val;
                 }
               "
             />
           </div>
-        </div>
-        <div class="sm:col-span-2 sm:col-start-1">
-          <label class="textlabel block">
-            {{ $t("instance.external-secret.vault-secret-engine-name") }}
-          </label>
-          <div class="flex space-x-2 text-sm mb-1 text-gray-400">
-            {{ $t("instance.external-secret.vault-secret-engine-tips") }}
+          <div v-else-if="dataSource.externalSecret.appRole" class="space-y-4">
+            <div class="sm:col-span-2 sm:col-start-1">
+              <label class="textlabel block">
+                {{
+                  $t(
+                    "instance.external-secret-vault.vault-auth-type.app-role.role-id"
+                  )
+                }}
+                <span class="text-red-600">*</span>
+              </label>
+              <BBTextField
+                :value="dataSource.externalSecret.appRole.roleId"
+                :required="true"
+                class="mt-1 w-full"
+                :disabled="!allowEdit"
+                :placeholder="`${$t(
+                  'instance.external-secret-vault.vault-auth-type.app-role.role-id'
+                )} - ${$t('common.write-only')}`"
+                @update:value="
+                  (val: string) => {
+                    const ds = dataSource;
+                    ds.externalSecret!.appRole!.roleId = val;
+                  }
+                "
+              />
+            </div>
+            <div class="sm:col-span-2 sm:col-start-1">
+              <label class="textlabel block">
+                {{
+                  $t(
+                    "instance.external-secret-vault.vault-auth-type.app-role.secret-id"
+                  )
+                }}
+                <span class="text-red-600">*</span>
+              </label>
+              <i18n-t
+                tag="div"
+                keypath="instance.external-secret-vault.vault-auth-type.app-role.secret-tips"
+                class="text-gray-400 text-sm mb-1"
+              >
+                <template #learn_more>
+                  <LearnMoreLink
+                    url="https://developer.hashicorp.com/vault/tutorials/auth-methods/approle"
+                    class="ml-1 text-sm"
+                  />
+                </template>
+              </i18n-t>
+              <NRadioGroup
+                v-model:value="dataSource.externalSecret.appRole.type"
+                class="textlabel my-1"
+              >
+                <NRadio
+                  :value="
+                    DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN
+                  "
+                >
+                  {{
+                    $t(
+                      "instance.external-secret-vault.vault-auth-type.app-role.secret-plain-text"
+                    )
+                  }}
+                </NRadio>
+                <NRadio
+                  :value="
+                    DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT
+                  "
+                >
+                  {{
+                    $t(
+                      "instance.external-secret-vault.vault-auth-type.app-role.secret-env-name"
+                    )
+                  }}
+                </NRadio>
+              </NRadioGroup>
+              <BBTextField
+                :value="dataSource.externalSecret.appRole.secretId"
+                class="mt-1 w-full"
+                :disabled="!allowEdit"
+                :placeholder="secretInputPlaceholder"
+                @update:value="
+                  (val: string) => {
+                    const ds = dataSource;
+                    ds.externalSecret!.appRole!.secretId = val;
+                  }
+                "
+              />
+            </div>
           </div>
-          <BBTextField
-            v-model:value="dataSource.externalSecret.engineName"
-            :required="true"
-            class="mt-1 w-full"
-            :disabled="!allowEdit"
-            :placeholder="
-              $t('instance.external-secret.vault-secret-engine-name')
-            "
-          />
+          <div class="sm:col-span-2 sm:col-start-1">
+            <label class="textlabel block">
+              {{
+                $t("instance.external-secret-vault.vault-secret-engine-name")
+              }}
+              <span class="text-red-600">*</span>
+            </label>
+            <div class="flex space-x-2 text-sm mb-1 text-gray-400">
+              {{
+                $t("instance.external-secret-vault.vault-secret-engine-tips")
+              }}
+            </div>
+            <BBTextField
+              v-model:value="dataSource.externalSecret.engineName"
+              :required="true"
+              class="mt-1 w-full"
+              :disabled="!allowEdit"
+              :placeholder="
+                $t('instance.external-secret-vault.vault-secret-engine-name')
+              "
+            />
+          </div>
+        </div>
+        <div
+          v-else-if="
+            state.passwordType ===
+            DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER
+          "
+        >
+          <div
+            v-if="dataSource.externalSecret.awsEnvironmentConfig"
+            class="space-y-4"
+          >
+            <div class="sm:col-span-2 sm:col-start-1">
+              <label class="textlabel block">
+                {{
+                  $t("instance.external-secret-aws.environment.access-key-id")
+                }}
+                <span class="text-red-600">*</span>
+              </label>
+              <div class="flex space-x-2 text-sm mb-1 text-gray-400">
+                {{
+                  $t(
+                    "instance.external-secret-aws.environment.access-key-id-tips"
+                  )
+                }}
+              </div>
+              <BBTextField
+                v-model:value="
+                  dataSource.externalSecret.awsEnvironmentConfig.accessKeyId
+                "
+                :required="true"
+                class="mt-1 w-full"
+                :disabled="!allowEdit"
+                :placeholder="
+                  $t('instance.external-secret-aws.environment.access-key-id')
+                "
+              />
+            </div>
+            <div class="sm:col-span-2 sm:col-start-1">
+              <label class="textlabel block">
+                {{
+                  $t(
+                    "instance.external-secret-aws.environment.secret-access-key"
+                  )
+                }}
+                <span class="text-red-600">*</span>
+              </label>
+              <div class="flex space-x-2 text-sm mb-1 text-gray-400">
+                {{
+                  $t(
+                    "instance.external-secret-aws.environment.secret-access-key-tips"
+                  )
+                }}
+              </div>
+              <BBTextField
+                v-model:value="
+                  dataSource.externalSecret.awsEnvironmentConfig.secretAccessKey
+                "
+                :required="true"
+                class="mt-1 w-full"
+                :disabled="!allowEdit"
+                :placeholder="
+                  $t(
+                    'instance.external-secret-aws.environment.secret-access-key'
+                  )
+                "
+              />
+            </div>
+            <div class="sm:col-span-2 sm:col-start-1">
+              <label class="textlabel block">
+                {{
+                  $t("instance.external-secret-aws.environment.session-token")
+                }}
+              </label>
+              <div class="flex space-x-2 text-sm mb-1 text-gray-400">
+                {{
+                  $t(
+                    "instance.external-secret-aws.environment.session-token-tips"
+                  )
+                }}
+              </div>
+              <BBTextField
+                v-model:value="
+                  dataSource.externalSecret.awsEnvironmentConfig.sessionToken
+                "
+                :required="true"
+                class="mt-1 w-full"
+                :disabled="!allowEdit"
+                :placeholder="
+                  $t('instance.external-secret-aws.environment.session-token')
+                "
+              />
+            </div>
+            <div class="sm:col-span-2 sm:col-start-1">
+              <label class="textlabel block">
+                {{ $t("instance.external-secret-aws.environment.region") }}
+                <span class="text-red-600">*</span>
+              </label>
+              <div class="flex space-x-2 text-sm mb-1 text-gray-400">
+                {{ $t("instance.external-secret-aws.environment.region-tips") }}
+              </div>
+              <BBTextField
+                v-model:value="
+                  dataSource.externalSecret.awsEnvironmentConfig.region
+                "
+                :required="true"
+                class="mt-1 w-full"
+                :disabled="!allowEdit"
+                :placeholder="
+                  $t('instance.external-secret-aws.environment.region')
+                "
+              />
+            </div>
+          </div>
         </div>
         <div class="sm:col-span-2 sm:col-start-1">
           <label class="textlabel block">
-            {{ $t("instance.external-secret.vault-secret-name") }}
+            {{ $t("instance.external-secret.secret-name") }}
+            <span class="text-red-600">*</span>
           </label>
           <BBTextField
             v-model:value="dataSource.externalSecret.secretName"
             :required="true"
             class="mt-1 w-full"
             :disabled="!allowEdit"
-            :placeholder="$t('instance.external-secret.vault-secret-name')"
+            :placeholder="$t('instance.external-secret.secret-name')"
           />
         </div>
         <div class="sm:col-span-2 sm:col-start-1">
           <label class="textlabel block">
-            {{ $t("instance.external-secret.vault-key-name") }}
+            {{ $t("instance.external-secret.key-name") }}
+            <span class="text-red-600">*</span>
           </label>
           <BBTextField
             v-model:value="dataSource.externalSecret.passwordKeyName"
             :required="true"
             class="mt-1 w-full"
             :disabled="!allowEdit"
-            :placeholder="$t('instance.external-secret.vault-key-name')"
+            :placeholder="$t('instance.external-secret.key-name')"
           />
         </div>
       </div>
@@ -466,6 +623,7 @@ import {
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
+  DataSourceExternalSecret_AWSEnvironmentConfig,
 } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber, isDev } from "@/utils";
 import type { EditDataSource } from "../common";
@@ -476,7 +634,7 @@ import SshConnectionForm from "./SshConnectionForm.vue";
 import SslCertificateForm from "./SslCertificateForm.vue";
 
 interface LocalState {
-  passwordType: "PLAIN" | "EXTERNAL_SECRET";
+  passwordType: DataSourceExternalSecret_SecretType;
 }
 
 const props = defineProps<{
@@ -504,7 +662,7 @@ const {
 } = useInstanceSpecs();
 
 const state = reactive<LocalState>({
-  passwordType: "PLAIN",
+  passwordType: DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
 });
 const { t } = useI18n();
 
@@ -512,9 +670,10 @@ watch(
   () => props.dataSource.externalSecret,
   (externalSecret) => {
     if (externalSecret) {
-      state.passwordType = "EXTERNAL_SECRET";
+      state.passwordType = externalSecret.secretType;
     } else {
-      state.passwordType = "PLAIN";
+      state.passwordType =
+        DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED;
     }
   },
   { immediate: true, deep: true }
@@ -522,23 +681,23 @@ watch(
 
 const secretInputPlaceholder = computed(() => {
   switch (state.passwordType) {
-    case "PLAIN":
+    case DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED:
       return `${t("common.password")} - ${t("common.write-only")}`;
-    case "EXTERNAL_SECRET":
+    case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
       switch (props.dataSource.externalSecret?.authType) {
         case DataSourceExternalSecret_AuthType.TOKEN:
           return `${t(
-            "instance.external-secret.vault-auth-type.token.api-token"
+            "instance.external-secret-vault.vault-auth-type.token.api-token"
           )} - ${t("common.write-only")}`;
         case DataSourceExternalSecret_AuthType.APP_ROLE:
           switch (props.dataSource.externalSecret.appRole?.type) {
             case DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN:
               return `${t(
-                "instance.external-secret.vault-auth-type.app-role.secret-id-plain-text"
+                "instance.external-secret-vault.vault-auth-type.app-role.secret-id-plain-text"
               )} - ${t("common.write-only")}`;
             case DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT:
               return `${t(
-                "instance.external-secret.vault-auth-type.app-role.secret-id-environment"
+                "instance.external-secret-vault.vault-auth-type.app-role.secret-id-environment"
               )} - ${t("common.write-only")}`;
           }
       }
@@ -547,20 +706,35 @@ const secretInputPlaceholder = computed(() => {
   return "";
 });
 
-const changePasswordType = (passwordType: "PLAIN" | "EXTERNAL_SECRET") => {
+const changeSecretType = (secretType: DataSourceExternalSecret_SecretType) => {
   const ds = props.dataSource;
-  if (passwordType === "EXTERNAL_SECRET") {
-    ds.externalSecret = DataSourceExternalSecret.fromPartial(
-      ds.externalSecret ?? {
+  switch (secretType) {
+    case DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED:
+      ds.externalSecret = undefined;
+      break;
+    case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
+      ds.externalSecret = DataSourceExternalSecret.fromPartial({
         authType: DataSourceExternalSecret_AuthType.TOKEN,
-        secretType: DataSourceExternalSecret_SecretType.VAULT_KV_V2,
+        secretType: secretType,
         token: "",
-      }
-    );
-  } else {
-    ds.externalSecret = undefined;
+      });
+      break;
+    case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
+      ds.externalSecret = DataSourceExternalSecret.fromPartial({
+        authType: DataSourceExternalSecret_AuthType.AWS_ENVIRONMENT,
+        secretType: secretType,
+        awsEnvironmentConfig:
+          DataSourceExternalSecret_AWSEnvironmentConfig.fromPartial({
+            accessKeyId: "AWS_ACCESS_KEY_ID",
+            secretAccessKey: "AWS_SECRET_ACCESS_KEY",
+            sessionToken: "AWS_SESSION_TOKEN",
+            region: "AWS_REGION",
+          }),
+      });
+      break;
   }
-  state.passwordType = passwordType;
+
+  state.passwordType = secretType;
 };
 
 // TODO: support change auth type.

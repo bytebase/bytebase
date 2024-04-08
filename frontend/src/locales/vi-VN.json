@@ -1345,9 +1345,22 @@
     "password-type": {
       "password": "Mật khẩu",
       "password-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
-      "external-secret": "Bí mật bên ngoài (Vault)"
+      "external-secret-vault": "Vault (KV v2)",
+      "external-secret-aws": "AWS Secrets Manager"
     },
-    "external-secret": {
+    "external-secret-aws": {
+      "environment": {
+        "access-key-id": "AWS access key id",
+        "access-key-id-tips": "Tên môi trường cho id khóa truy cập AWS",
+        "secret-access-key": "AWS secret access key",
+        "secret-access-key-tips": "Tên môi trường cho khóa truy cập bí mật AWS",
+        "session-token": "AWS session token",
+        "session-token-tips": "Tên môi trường cho mã thông báo phiên AWS",
+        "region": "AWS region",
+        "region-tips": "Tên môi trường cho khu vực AWS"
+      }
+    },
+    "external-secret-vault": {
       "vault-url": "Vault URL",
       "vault-auth-type": {
         "self": "Vault auth type",
@@ -1368,9 +1381,11 @@
         }
       },
       "vault-secret-engine-name": "Vault secret engine name",
-      "vault-secret-engine-tips": "Chỉ hỗ trợ động cơ KV v2.",
-      "vault-secret-name": "Vault secret name",
-      "vault-key-name": "Vault key name for password"
+      "vault-secret-engine-tips": "Chỉ hỗ trợ động cơ KV v2."
+    },
+    "external-secret": {
+      "secret-name": "Tên bí mật",
+      "key-name": "Tên khóa cho mật khẩu"
     },
     "test-connection": "Kiểm tra kết nối",
     "ignore-and-create": "Bỏ qua và tạo",

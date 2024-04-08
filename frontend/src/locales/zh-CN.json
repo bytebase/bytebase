@@ -1345,9 +1345,22 @@
     "password-type": {
       "password": "密码",
       "password-tip": "您也可以指定外部的密码管理服务 endpoint",
-      "external-secret": "外部密码管理 (Vault)"
+      "external-secret-vault": "Vault (KV v2)",
+      "external-secret-aws": "AWS Secrets Manager"
     },
-    "external-secret": {
+    "external-secret-aws": {
+      "environment": {
+        "access-key-id": "AWS access key id",
+        "access-key-id-tips": "AWS 访问密钥 ID 的环境变量名",
+        "secret-access-key": "AWS secret access key",
+        "secret-access-key-tips": "AWS 秘密访问密钥的环境变量名",
+        "session-token": "AWS session token",
+        "session-token-tips": "AWS 会话令牌的环境变量名",
+        "region": "AWS region",
+        "region-tips": "AWS 区域的环境变量名"
+      }
+    },
+    "external-secret-vault": {
       "vault-url": "Vault URL",
       "vault-auth-type": {
         "self": "Vault 验证方式",
@@ -1368,9 +1381,11 @@
         }
       },
       "vault-secret-engine-name": "Vault secret engine name",
-      "vault-secret-engine-tips": "仅支持 KV v2 储存",
-      "vault-secret-name": "Vault secret name",
-      "vault-key-name": "Vault key name for password"
+      "vault-secret-engine-tips": "仅支持 KV v2 储存"
+    },
+    "external-secret": {
+      "secret-name": "Secret name",
+      "key-name": "Key name"
     },
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",

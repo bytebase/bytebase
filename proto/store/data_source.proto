@@ -9,6 +9,8 @@ message DataSourceExternalSecret {
     SAECRET_TYPE_UNSPECIFIED = 0;
     // ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2
     VAULT_KV_V2 = 1;
+    // ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html
+    AWS_SECRETS_MANAGER = 2;
   }
   SecretType secret_type = 1;
   string url = 2;
@@ -19,6 +21,8 @@ message DataSourceExternalSecret {
     TOKEN = 1;
     // ref: https://developer.hashicorp.com/vault/docs/auth/approle
     APP_ROLE = 2;
+    // ref: https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials
+    AWS_ENVIRONMENT = 3;
   }
   AuthType auth_type = 3;
 
@@ -39,9 +43,22 @@ message DataSourceExternalSecret {
     string mount_path = 4;
   }
 
+  // store the environment name for AWS credentials.
+  message AWSEnvironmentConfig {
+    // environment name for AWS access key id, default AWS_ACCESS_KEY_ID.
+    string access_key_id = 1;
+    // environment name for AWS secret access key, default AWS_SECRET_ACCESS_KEY.
+    string secret_access_key = 2;
+    // environment name for AWS session token, default AWS_SESSION_TOKEN.
+    string session_token = 3;
+    // environment name for AWS region, default AWS_REGION.
+    string region = 4;
+  }
+
   oneof auth_option {
     AppRoleAuthOption app_role = 4;
     string token = 5;
+    AWSEnvironmentConfig aws_environment_config = 9;
   }
 
   // engine name is the name for secret engine.
