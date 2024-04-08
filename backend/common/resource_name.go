@@ -508,7 +508,7 @@ func GetProjectAndBranchID(name string) (string, string, error) {
 	return matches[1], matches[2], nil
 }
 
-// GetWorkspaceProjectVCSConnectorID returns the workspace, project, and VCS connector ID from a resource name.
+// GetProjectVCSConnectorID returns the workspace, project, and VCS connector ID from a resource name.
 func GetProjectVCSConnectorID(name string) (string, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, VCSConnectorPrefix)
 	if err != nil {
