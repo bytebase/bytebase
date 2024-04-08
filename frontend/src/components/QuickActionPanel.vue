@@ -336,14 +336,14 @@ const availableQuickActionList = computed((): QuickAction[] => {
     },
     {
       type: "quickaction.bb.issue.grant.request.querier",
-      title: t("quick-action.request-query-permission"),
+      title: t("custom-approval.risk-rule.risk.namespace.request_query"),
       hide: !hasDBAWorkflowFeature.value,
       action: () => (state.showRequestQueryPanel = true),
       icon: h(FileSearchIcon),
     },
     {
       type: "quickaction.bb.issue.grant.request.exporter",
-      title: t("quick-action.request-export-permission"),
+      title: t("custom-approval.risk-rule.risk.namespace.request_export"),
       hide: !hasDBAWorkflowFeature.value,
       action: () => (state.showRequestExportPanel = true),
       icon: h(FileDownIcon),

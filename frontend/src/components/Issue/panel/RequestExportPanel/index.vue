@@ -5,7 +5,7 @@
     @update:show="(show: boolean) => !show && $emit('close')"
   >
     <DrawerContent
-      :title="$t('quick-action.request-export-permission')"
+      :title="$t('custom-approval.risk-rule.risk.namespace.request_export')"
       :closable="true"
       class="w-[50rem] max-w-[100vw] relative"
     >
