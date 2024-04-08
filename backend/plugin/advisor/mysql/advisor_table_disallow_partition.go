@@ -73,7 +73,7 @@ func (checker *tableDisallowPartitionChecker) EnterQuery(ctx *mysql.QueryContext
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
-// EnterCreateDatabase is called when production createDatabase is entered.
+// EnterCreateTable is called when production createDatabase is entered.
 func (checker *tableDisallowPartitionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return

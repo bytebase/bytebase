@@ -220,7 +220,7 @@ func (v *indexTypeNoBlobChecker) addConstraint(tableName string, line int, const
 	return pkDataList
 }
 
-// getPKColumnType gets the column type string from v.tablesNewColumns or catalog, returns empty string and non-nil error if cannot find the column in given table.
+// getColumnType gets the column type string from v.tablesNewColumns or catalog, returns empty string and non-nil error if cannot find the column in given table.
 func (v *indexTypeNoBlobChecker) getColumnType(tableName string, columnName string) (string, error) {
 	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
 		return v.getBlobStr(colDef.Tp), nil
@@ -235,7 +235,7 @@ func (v *indexTypeNoBlobChecker) getColumnType(tableName string, columnName stri
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }
 
-// getIntOrBigIntStr returns the type string of tp.
+// getBlobStr returns the type string of tp.
 func (*indexTypeNoBlobChecker) getBlobStr(tp *types.FieldType) string {
 	switch tp.GetType() {
 	case mysql.TypeTinyBlob:
