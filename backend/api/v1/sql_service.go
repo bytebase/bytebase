@@ -492,9 +492,13 @@ func DoEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
 	zipw := zip.NewWriter(fzip)
 	defer zipw.Close()
 
-	filename := fmt.Sprintf("export.%s", strings.ToLower(request.Format.String()))
-
-	writer, err := zipw.Encrypt(filename, request.Password)
+	fh := &zip.FileHeader{
+		Name:   fmt.Sprintf("export.%s", strings.ToLower(request.Format.String())),
+		Method: zip.Deflate,
+	}
+	fh.ModifiedDate, fh.ModifiedTime = timeToMsDosTime(time.Now())
+	fh.SetPassword(request.Password)
+	writer, err := zipw.CreateHeader(fh)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create encrypt export file")
 	}
@@ -507,6 +511,14 @@ func DoEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
 	}
 
 	return b.Bytes(), nil
+}
+
+// timeToMsDosTime converts a time.Time to an MS-DOS date and time.
+// this is a modified copy for gihub.com/alexmullins/zip/struct.go cause the package has a bug, it will convert the time to UTC time and drop the timezone.
+func timeToMsDosTime(t time.Time) (uint16, uint16) {
+	fDate := uint16(t.Day() + int(t.Month())<<5 + (t.Year()-1980)<<9)
+	fTime := uint16(t.Second()/2 + t.Minute()<<5 + t.Hour()<<11)
+	return fDate, fTime
 }
 
 func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserMessage, level api.ActivityLevel, instanceUID int, database *store.DatabaseMessage, payload api.ActivitySQLExportPayload) (*store.ActivityMessage, error) {
