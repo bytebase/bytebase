@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -197,7 +198,7 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 
 // UpdateDatabaseGroup updates a database group.
 func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int, databaseGroupUID int64, patch *UpdateDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
-	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterPrincipalID)}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterPrincipalID, time.Now().Unix()}
 	if v := patch.Placeholder; v != nil {
 		set, args = append(set, fmt.Sprintf("placeholder = $%d", len(args)+1)), append(args, *v)
 	}
@@ -486,7 +487,7 @@ func (*Store) listSchemaGroupsImpl(ctx context.Context, tx *Tx, find *FindSchema
 
 // UpdateSchemaGroup updates a schema group.
 func (s *Store) UpdateSchemaGroup(ctx context.Context, updaterPrincipalID int, schemaGroupUID int64, patch *UpdateSchemaGroupMessage) (*SchemaGroupMessage, error) {
-	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterPrincipalID)}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterPrincipalID, time.Now().Unix()}
 	if v := patch.Placeholder; v != nil {
 		set, args = append(set, fmt.Sprintf("placeholder = $%d", len(args)+1)), append(args, *v)
 	}

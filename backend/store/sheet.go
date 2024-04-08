@@ -274,7 +274,7 @@ func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*Shee
 
 // patchSheetImpl updates a sheet's name/statement/payload/database_id/project_id.
 func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*SheetMessage, error) {
-	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
 	if v := patch.Statement; v != nil {
 		set, args = append(set, fmt.Sprintf("statement = $%d", len(args)+1)), append(args, *v)
 	}

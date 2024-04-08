@@ -202,7 +202,7 @@ func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMe
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	set, args := []string{"updater_id = $1"}, []any{update.UpdaterID}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{update.UpdaterID, time.Now().Unix()}
 	if v := update.Payload; v != nil {
 		payload, err := protojson.Marshal(update.Payload)
 		if err != nil {

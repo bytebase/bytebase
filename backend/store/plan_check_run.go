@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -206,10 +207,11 @@ func (s *Store) UpdatePlanCheckRun(ctx context.Context, updaterUID int, status P
     UPDATE plan_check_run
     SET
 		updater_id = $1,
-		status = $2,
-		result = $3
-	WHERE id = $4`
-	if _, err := s.db.db.ExecContext(ctx, query, updaterUID, status, resultBytes, uid); err != nil {
+		updated_ts = $2,
+		status = $3,
+		result = $4
+	WHERE id = $5`
+	if _, err := s.db.db.ExecContext(ctx, query, updaterUID, time.Now().Unix(), status, resultBytes, uid); err != nil {
 		return errors.Wrapf(err, "failed to update plan check run")
 	}
 	return nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -228,7 +229,7 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, instanc
 
 // UpdateDataSourceV2 updates a data source and returns the instance.
 func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceMessage) error {
-	set, args := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", patch.UpdaterID)}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
 
 	if v := patch.Username; v != nil {
 		set, args = append(set, fmt.Sprintf("username = $%d", len(args)+1)), append(args, *v)
