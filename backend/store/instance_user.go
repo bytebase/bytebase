@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -94,13 +95,14 @@ func (s *Store) UpsertInstanceUsers(ctx context.Context, instanceUID int, instan
 		args := []any{}
 		var placeholders []string
 		for i, instanceUser := range upserts {
-			args = append(args, api.SystemBotID, api.SystemBotID, instanceUID, instanceUser.Name, instanceUser.Grant)
-			placeholders = append(placeholders, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", 5*i+1, 5*i+2, 5*i+3, 5*i+4, 5*i+5))
+			args = append(args, api.SystemBotID, api.SystemBotID, time.Now().Unix(), instanceUID, instanceUser.Name, instanceUser.Grant)
+			placeholders = append(placeholders, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", 6*i+1, 6*i+2, 6*i+3, 6*i+4, 6*i+5, 6*i+6))
 		}
 		query := fmt.Sprintf(`
 			INSERT INTO instance_user (
 				creator_id,
 				updater_id,
+				updated_ts,
 				instance_id,
 				name,
 				"grant"

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -324,7 +325,7 @@ func (s *Store) UpdateActivityV2(ctx context.Context, update *UpdateActivityMess
 	}
 	defer tx.Rollback()
 
-	set, args := []string{}, []any{}
+	set, args := []string{"updated_ts = $1"}, []any{time.Now().Unix()}
 	if v := update.Comment; v != nil {
 		set, args = append(set, fmt.Sprintf("comment = $%d", len(args)+1)), append(args, *v)
 	}

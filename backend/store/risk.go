@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -222,7 +223,7 @@ func (s *Store) CreateRisk(ctx context.Context, risk *RiskMessage, creatorID int
 
 // UpdateRisk updates a risk.
 func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int64, updaterID int) (*RiskMessage, error) {
-	set, args := []string{"updater_id = $1"}, []any{updaterID}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}

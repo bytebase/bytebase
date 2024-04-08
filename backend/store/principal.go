@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
@@ -326,7 +327,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		return nil, errors.Errorf("cannot update system bot")
 	}
 
-	principalSet, principalArgs := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterID)}
+	principalSet, principalArgs := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
 	if v := patch.Delete; v != nil {
 		rowStatus := api.Normal
 		if *patch.Delete {

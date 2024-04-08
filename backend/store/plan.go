@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -207,7 +208,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 
 // UpdatePlan updates an existing plan.
 func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error {
-	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
 	if v := patch.Config; v != nil {
 		config, err := protojson.Marshal(v)
 		if err != nil {

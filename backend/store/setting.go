@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -251,9 +252,9 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 
 // UpsertSettingV2 upserts the setting by name.
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, principalUID int) (*SettingMessage, error) {
-	fields := []string{"creator_id", "updater_id", "name", "value"}
-	updateFields := []string{"value = EXCLUDED.value", "updater_id = EXCLUDED.updater_id"}
-	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []any{principalUID, principalUID, update.Name, update.Value}
+	fields := []string{"creator_id", "updater_id", "updated_ts", "name", "value"}
+	updateFields := []string{"value = EXCLUDED.value", "updater_id = EXCLUDED.updater_id", "updated_ts = EXCLUDED.updated_ts"}
+	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4", "$5"}, []any{principalUID, principalUID, time.Now().Unix(), update.Name, update.Value}
 
 	if v := update.Description; v != nil {
 		fields = append(fields, "description")
