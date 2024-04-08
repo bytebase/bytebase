@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -106,6 +107,9 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 }
 
 func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID int, tasks []string, status storepb.IssueCommentPayload_TaskUpdate_Status, creatorUID int) error {
+	if s.db.mode == common.ReleaseModeProd {
+		return nil
+	}
 	create := &IssueCommentMessage{
 		IssueUID: issueUID,
 		Payload: &storepb.IssueCommentPayload{
@@ -122,6 +126,9 @@ func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID
 }
 
 func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMessage, creatorUID int) error {
+	if s.db.mode == common.ReleaseModeProd {
+		return nil
+	}
 	query := `
 		INSERT INTO issue_comment (
 			creator_id,
@@ -149,6 +156,9 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 }
 
 func (s *Store) UpdateIssueComment(ctx context.Context, comment string, uid int, updaterUID int) error {
+	if s.db.mode == common.ReleaseModeProd {
+		return nil
+	}
 	query := `
 		UPDATE issue_comment
 		SET 
