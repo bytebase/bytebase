@@ -49,6 +49,10 @@
           </div>
         </NRadio>
       </NRadioGroup>
+      <LearnMoreLink
+        url="http://www.bytebase.com/docs/get-started/instance/#use-external-secret-manager"
+        class="text-sm"
+      />
       <div
         v-if="
           state.passwordType ===
@@ -111,7 +115,7 @@
               :placeholder="$t('instance.external-secret-vault.vault-url')"
             />
           </div>
-          <!-- App role is not enabled -->
+          <!-- AppRole is not enabled -->
           <!-- <div class="sm:col-span-2 sm:col-start-1 space-y-2">
           <label class="textlabel block">
             {{ $t("instance.external-secret-vault.vault-auth-type.self") }}
@@ -125,7 +129,7 @@
               {{ $t("instance.external-secret-vault.vault-auth-type.token.self") }}
             </NRadio>
             <NRadio :value="DataSourceExternalSecret_AuthType.APP_ROLE">
-              {{ $t("instance.external-secret-vault.vault-auth-type.app-role.self") }}
+              {{ $t("instance.external-secret-vault.vault-auth-type.approle.self") }}
             </NRadio>
           </NRadioGroup>
         </div> -->
@@ -138,9 +142,7 @@
           >
             <label class="textlabel block">
               {{
-                $t(
-                  "instance.external-secret-vault.vault-auth-type.token.api-token"
-                )
+                $t("instance.external-secret-vault.vault-auth-type.token.token")
               }}
               <span class="text-red-600">*</span>
             </label>
@@ -175,7 +177,7 @@
               <label class="textlabel block">
                 {{
                   $t(
-                    "instance.external-secret-vault.vault-auth-type.app-role.role-id"
+                    "instance.external-secret-vault.vault-auth-type.approle.role-id"
                   )
                 }}
                 <span class="text-red-600">*</span>
@@ -186,7 +188,7 @@
                 class="mt-1 w-full"
                 :disabled="!allowEdit"
                 :placeholder="`${$t(
-                  'instance.external-secret-vault.vault-auth-type.app-role.role-id'
+                  'instance.external-secret-vault.vault-auth-type.approle.role-id'
                 )} - ${$t('common.write-only')}`"
                 @update:value="
                   (val: string) => {
@@ -200,14 +202,14 @@
               <label class="textlabel block">
                 {{
                   $t(
-                    "instance.external-secret-vault.vault-auth-type.app-role.secret-id"
+                    "instance.external-secret-vault.vault-auth-type.approle.secret-id"
                   )
                 }}
                 <span class="text-red-600">*</span>
               </label>
               <i18n-t
                 tag="div"
-                keypath="instance.external-secret-vault.vault-auth-type.app-role.secret-tips"
+                keypath="instance.external-secret-vault.vault-auth-type.approle.secret-tips"
                 class="text-gray-400 text-sm mb-1"
               >
                 <template #learn_more>
@@ -228,7 +230,7 @@
                 >
                   {{
                     $t(
-                      "instance.external-secret-vault.vault-auth-type.app-role.secret-plain-text"
+                      "instance.external-secret-vault.vault-auth-type.approle.secret-plain-text"
                     )
                   }}
                 </NRadio>
@@ -239,7 +241,7 @@
                 >
                   {{
                     $t(
-                      "instance.external-secret-vault.vault-auth-type.app-role.secret-env-name"
+                      "instance.external-secret-vault.vault-auth-type.approle.secret-env-name"
                     )
                   }}
                 </NRadio>
@@ -396,7 +398,7 @@
         </div>
         <div class="sm:col-span-2 sm:col-start-1">
           <label class="textlabel block">
-            {{ $t("instance.external-secret.secret-name") }}
+            {{ secretNameLabel }}
             <span class="text-red-600">*</span>
           </label>
           <BBTextField
@@ -404,12 +406,12 @@
             :required="true"
             class="mt-1 w-full"
             :disabled="!allowEdit"
-            :placeholder="$t('instance.external-secret.secret-name')"
+            :placeholder="secretNameLabel"
           />
         </div>
         <div class="sm:col-span-2 sm:col-start-1">
           <label class="textlabel block">
-            {{ $t("instance.external-secret.key-name") }}
+            {{ secretKeyLabel }}
             <span class="text-red-600">*</span>
           </label>
           <BBTextField
@@ -417,7 +419,7 @@
             :required="true"
             class="mt-1 w-full"
             :disabled="!allowEdit"
-            :placeholder="$t('instance.external-secret.key-name')"
+            :placeholder="secretKeyLabel"
           />
         </div>
       </div>
@@ -686,23 +688,37 @@ const secretInputPlaceholder = computed(() => {
       switch (props.dataSource.externalSecret?.authType) {
         case DataSourceExternalSecret_AuthType.TOKEN:
           return `${t(
-            "instance.external-secret-vault.vault-auth-type.token.api-token"
+            "instance.external-secret-vault.vault-auth-type.token.token"
           )} - ${t("common.write-only")}`;
         case DataSourceExternalSecret_AuthType.APP_ROLE:
           switch (props.dataSource.externalSecret.appRole?.type) {
             case DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN:
               return `${t(
-                "instance.external-secret-vault.vault-auth-type.app-role.secret-id-plain-text"
+                "instance.external-secret-vault.vault-auth-type.approle.secret-id-plain-text"
               )} - ${t("common.write-only")}`;
             case DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT:
               return `${t(
-                "instance.external-secret-vault.vault-auth-type.app-role.secret-id-environment"
+                "instance.external-secret-vault.vault-auth-type.approle.secret-id-environment"
               )} - ${t("common.write-only")}`;
           }
       }
   }
 
   return "";
+});
+
+const secretNameLabel = computed(() => {
+  if (state.passwordType == DataSourceExternalSecret_SecretType.VAULT_KV_V2) {
+    return t("instance.external-secret-vault.vault-secret-path");
+  }
+  return t("instance.external-secret.secret-name");
+});
+
+const secretKeyLabel = computed(() => {
+  if (state.passwordType == DataSourceExternalSecret_SecretType.VAULT_KV_V2) {
+    return t("instance.external-secret-vault.vault-secret-key");
+  }
+  return t("instance.external-secret.key-name");
 });
 
 const changeSecretType = (secretType: DataSourceExternalSecret_SecretType) => {
