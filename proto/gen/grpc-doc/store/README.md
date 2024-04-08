@@ -80,6 +80,7 @@
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
+    - [DataSourceExternalSecret.AWSEnvironmentConfig](#bytebase-store-DataSourceExternalSecret-AWSEnvironmentConfig)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
   
@@ -1389,9 +1390,28 @@ Used internally for obfuscating the page token.
 | auth_type | [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType) |  |  |
 | app_role | [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption) |  |  |
 | token | [string](#string) |  |  |
+| aws_environment_config | [DataSourceExternalSecret.AWSEnvironmentConfig](#bytebase-store-DataSourceExternalSecret-AWSEnvironmentConfig) |  |  |
 | engine_name | [string](#string) |  | engine name is the name for secret engine. |
 | secret_name | [string](#string) |  | the secret name in the engine to store the password. |
 | password_key_name | [string](#string) |  | the key name for the password. |
+
+
+
+
+
+
+<a name="bytebase-store-DataSourceExternalSecret-AWSEnvironmentConfig"></a>
+
+### DataSourceExternalSecret.AWSEnvironmentConfig
+store the environment name for AWS credentials.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| access_key_id | [string](#string) |  | environment name for AWS access key id, default AWS_ACCESS_KEY_ID. |
+| secret_access_key | [string](#string) |  | environment name for AWS secret access key, default AWS_SECRET_ACCESS_KEY. |
+| session_token | [string](#string) |  | environment name for AWS session token, default AWS_SESSION_TOKEN. |
+| region | [string](#string) |  | environment name for AWS region, default AWS_REGION. |
 
 
 
@@ -1466,6 +1486,7 @@ Used internally for obfuscating the page token.
 | AUTH_TYPE_UNSPECIFIED | 0 |  |
 | TOKEN | 1 | ref: https://developer.hashicorp.com/vault/docs/auth/token |
 | APP_ROLE | 2 | ref: https://developer.hashicorp.com/vault/docs/auth/approle |
+| AWS_ENVIRONMENT | 3 | ref: https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials |
 
 
 
@@ -1478,6 +1499,7 @@ Used internally for obfuscating the page token.
 | ---- | ------ | ----------- |
 | SAECRET_TYPE_UNSPECIFIED | 0 |  |
 | VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
+| AWS_SECRETS_MANAGER | 2 | ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html |
 
 
  
