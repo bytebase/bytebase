@@ -411,6 +411,8 @@
       "enqueued": "等待执行。",
       "enqueued-with-rollout-time": "等待执行，{time}后执行。",
       "dumping-schema-before-executing-sql": "准备执行，正在导出 schema。",
+      "preparing-to-export-data": "准备导出数据。",
+      "exporting-data": "正在导出数据。",
       "executing-sql": "正在执行 SQL。",
       "executing-sql-detail": "正在执行 SQL {current} of {total}，从 ({startLine}, {startColumn}) 到 ({endLine}, {endColumn})。",
       "dumping-schema-after-executing-sql": "SQL 执行完毕，正在导出 schema。",

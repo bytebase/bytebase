@@ -411,6 +411,8 @@
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
       "dumping-schema-before-executing-sql": "Listo para ejecutar, exportando esquema.",
+      "preparing-to-export-data": "Preparándose para exportar datos.",
+      "exporting-data": "Exportación de datos.",
       "executing-sql": "Ejecutando SQL.",
       "executing-sql-detail": "Ejecutando SQL {actual} de {total}, desde ({startLine}, {startColumn}) hasta ({endLine}, {endColumn}).",
       "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora.",
