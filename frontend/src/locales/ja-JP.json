@@ -1177,7 +1177,6 @@
     "missing-sql-statement": "SQLステートメントが見つかりません。この変更をすべてのタスクに適用するには、「@:{'issue.apply-to-other-tasks'}」ボタンをクリックしてください。",
     "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました",
     "data-export": {
-      "title": "データエクスポート",
       "options": "エクスポートオプション",
       "format": "フォーマット",
       "encrypt": "暗号化",
@@ -2907,7 +2906,7 @@
           "dml": "DML",
           "ddl": "DDL",
           "create_database": "データベースの作成",
-          "data_export": "データエクスポート",
+          "data_export": "データのエクスポート",
           "request_query": "クエリ役割をリクエスト",
           "request_export": "エクスポーター役割をリクエスト"
         }
@@ -3322,7 +3321,6 @@
     "confirm-delete-changelist": "データをエクスポートする"
   },
   "export-data": {
-    "self": "エクスポートする行数",
     "export-rows": "エクスポートする行数が必要です",
     "error": {
       "export-rows-required": "エクスポートする行数は0より大きくなければなりません",

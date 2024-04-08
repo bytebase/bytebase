@@ -3,7 +3,7 @@
     <template #header>
       <div class="flex flex-col gap-y-1">
         <span>
-          {{ $t("issue.data-export.title") }}
+          {{ $t("custom-approval.risk-rule.risk.namespace.data_export") }}
         </span>
       </div>
     </template>
