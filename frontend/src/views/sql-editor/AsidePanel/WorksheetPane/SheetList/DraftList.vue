@@ -33,9 +33,9 @@ const tabStore = useSQLEditorTabStore();
 
 const draftList = computed(() => {
   const tabList = tabStore.tabList.filter((tab) => !tab.sheet);
-  const keyword = (props.keyword ?? "").trim();
+  const keyword = (props.keyword ?? "").trim().toLowerCase();
   const filteredList = keyword
-    ? tabList.filter((tab) => tab.title.includes(keyword))
+    ? tabList.filter((tab) => tab.title.toLowerCase().includes(keyword))
     : tabList;
   return filteredList;
 });

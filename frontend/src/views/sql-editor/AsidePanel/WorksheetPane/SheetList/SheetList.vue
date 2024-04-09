@@ -46,9 +46,11 @@ const { isInitialized, isLoading, sheetList, fetchSheetList } =
   useSheetContextByView(props.view);
 
 const sortedWorksheetList = computed(() => {
-  const keyword = (props.keyword ?? "").trim();
+  const keyword = (props.keyword ?? "").trim().toLowerCase();
   const filteredList = keyword
-    ? sheetList.value.filter((worksheet) => worksheet.title.includes(keyword))
+    ? sheetList.value.filter((worksheet) =>
+        worksheet.title.toLowerCase().includes(keyword)
+      )
     : sheetList.value;
 
   return orderBy(
