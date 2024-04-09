@@ -1348,18 +1348,6 @@
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager"
     },
-    "external-secret-aws": {
-      "environment": {
-        "access-key-id": "AWS access key id",
-        "access-key-id-tips": "AWS アクセスキー ID の環境名",
-        "secret-access-key": "AWS secret access key",
-        "secret-access-key-tips": "AWS シークレットアクセスキーの環境名",
-        "session-token": "AWS session token",
-        "session-token-tips": "AWS セッショントークンの環境名",
-        "region": "AWS region",
-        "region-tips": "AWS リージョンの環境名"
-      }
-    },
     "external-secret-vault": {
       "vault-url": "Vault URL",
       "vault-auth-type": {
@@ -1387,7 +1375,7 @@
     },
     "external-secret": {
       "secret-name": "秘密の名前",
-      "key-name": "パスワードのキー名"
+      "key-name": "パスワードの秘密鍵"
     },
     "test-connection": "無視して作成する",
     "ignore-and-create": "代わりに PostgreSQL のサンプルインスタンスを追加する",

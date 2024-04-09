@@ -1348,18 +1348,6 @@
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager"
     },
-    "external-secret-aws": {
-      "environment": {
-        "access-key-id": "AWS access key id",
-        "access-key-id-tips": "Nombre del entorno para la identificación de la clave de acceso de AWS",
-        "secret-access-key": "AWS secret access key",
-        "secret-access-key-tips": "Nombre del entorno para la clave de acceso secreta de AWS",
-        "session-token": "AWS session token",
-        "session-token-tips": "Nombre del entorno para el token de sesión de AWS",
-        "region": "AWS region",
-        "region-tips": "Nombre del entorno para la región de AWS"
-      }
-    },
     "external-secret-vault": {
       "vault-url": "Vault URL",
       "vault-auth-type": {
@@ -1387,7 +1375,7 @@
     },
     "external-secret": {
       "secret-name": "Nombre secreto",
-      "key-name": "Nombre clave para contraseña"
+      "key-name": "Clave secreta para contraseña"
     },
     "test-connection": "Probar conexión",
     "ignore-and-create": "Ignorar y crear",
