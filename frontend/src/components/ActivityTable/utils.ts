@@ -34,17 +34,13 @@ export const getLinkFromActivity = (activity: LogEntity): Link | undefined => {
         activity.payload
       ) as ActivityIssueCreatePayload;
 
-      // TODO:
-      // activity.resource is now like "issues/1234"
-      // We need to DML them to "projects/xxxxx/issues/1234"
-      // to migrate to the new issue detail routes
       const issueId = getIssueId(activity.resource);
       if (issueId === UNKNOWN_ID || issueId === EMPTY_ID) {
         return undefined;
       }
       return {
         title: payload.issueName,
-        path: `/issue/${issueId}`,
+        path: `/${activity.resource}/issues/${issueId}`,
         external: false,
       };
     }
