@@ -11,9 +11,18 @@
           :support-option-id-list="supportOptionIdList"
         />
       </div>
-      <NButton type="primary" @click="state.showRequestExportPanel = true">
-        {{ $t("quick-action.request-export-data") }}
-      </NButton>
+      <NTooltip :disabled="allowDataExport">
+        <template #trigger>
+          <NButton
+            type="primary"
+            :disabled="!allowDataExport"
+            @click="state.showRequestExportPanel = true"
+          >
+            {{ $t("quick-action.request-export-data") }}
+          </NButton>
+        </template>
+        {{ $t("export-center.permission-denied") }}
+      </NTooltip>
     </div>
 
     <div class="relative w-full mt-4 min-h-[20rem]">
@@ -50,7 +59,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import DataExportPrepForm from "@/components/DataExportPrepForm";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
@@ -61,6 +70,7 @@ import {
   buildIssueFilterBySearchParams,
   buildUIIssueFilterBySearchParams,
   extractProjectResourceName,
+  hasProjectPermissionV2,
   type SearchParams,
   type SearchScopeId,
 } from "@/utils";
@@ -142,5 +152,19 @@ const supportOptionIdList = computed((): SearchScopeId[] => {
     scopes.unshift("project");
   }
   return scopes;
+});
+
+const allowDataExport = computed(() => {
+  if (specificProject.value) {
+    return hasProjectPermissionV2(
+      specificProject.value,
+      currentUser.value,
+      "bb.issues.create"
+    );
+  }
+
+  return projectV1Store.projectList.some((project) =>
+    hasProjectPermissionV2(project, currentUser.value, "bb.issues.create")
+  );
 });
 </script>

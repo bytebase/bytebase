@@ -3214,7 +3214,8 @@
     }
   },
   "export-center": {
-    "self": "エクスポートセンター"
+    "self": "エクスポートセンター",
+    "permission-denied": "許可が拒否されました"
   },
   "schema-designer": {
     "self": "スキーマデザイナー",
