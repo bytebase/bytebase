@@ -51,7 +51,6 @@ export const useScrollLogic = () => {
     ([tab, ready]) => {
       if (!tab) return;
       if (!ready) return;
-      console.log("doScroll", tab);
       if (tab.sheet) {
         const worksheet = useWorkSheetStore().getSheetByName(tab.sheet);
         if (!worksheet) return cleanup();
