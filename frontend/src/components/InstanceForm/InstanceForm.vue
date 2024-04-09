@@ -372,6 +372,8 @@ import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import {
   DataSourceType,
   InstanceOptions,
+  DataSourceExternalSecret_SecretType,
+  DataSourceExternalSecret_AuthType,
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
@@ -569,7 +571,8 @@ const allowCreate = computed(() => {
     basicInfo.value.title.trim() &&
     resourceIdField.value?.resourceId &&
     resourceIdField.value?.isValidated &&
-    adminDataSource.value.host
+    adminDataSource.value.host &&
+    checkDataSource([adminDataSource.value])
   );
 });
 
@@ -604,7 +607,10 @@ const allowUpdate = computed((): boolean => {
       }
     }
   }
-  return true;
+  return checkDataSource([
+    adminDataSource.value,
+    ...readonlyDataSourceList.value,
+  ]);
 });
 
 const handleSelectEnvironmentUID = (uid: string | undefined) => {
@@ -1128,6 +1134,37 @@ const checkExternalSecretFeature = (instance: Instance) => {
 
   return instance.dataSources.every((ds) => {
     return !ds.externalSecret && !/^{{.+}}$/.test(ds.password);
+  });
+};
+
+const checkDataSource = (dataSources: DataSource[]) => {
+  return dataSources.every((ds) => {
+    if (!ds.externalSecret) {
+      return true;
+    }
+    if (!ds.externalSecret.secretName || !ds.externalSecret.passwordKeyName) {
+      return false;
+    }
+
+    if (
+      ds.externalSecret.secretType ===
+      DataSourceExternalSecret_SecretType.VAULT_KV_V2
+    ) {
+      if (!ds.externalSecret.url || !ds.externalSecret.engineName) {
+        return false;
+      }
+      switch (ds.externalSecret.authType) {
+        case DataSourceExternalSecret_AuthType.TOKEN:
+          return !!ds.externalSecret.token;
+        case DataSourceExternalSecret_AuthType.APP_ROLE:
+          return (
+            !!ds.externalSecret.appRole?.roleId &&
+            !!ds.externalSecret.appRole.secretId
+          );
+      }
+    }
+
+    return true;
   });
 };
 

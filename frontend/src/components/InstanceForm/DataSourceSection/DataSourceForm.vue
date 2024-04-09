@@ -164,6 +164,7 @@
               class="mt-1 w-full"
               :disabled="!allowEdit"
               :placeholder="secretInputPlaceholder"
+              :required="isCreating"
               @update:value="
                 (val: string) => {
                   const ds = dataSource;
@@ -184,7 +185,7 @@
               </label>
               <BBTextField
                 :value="dataSource.externalSecret.appRole.roleId"
-                :required="true"
+                :required="isCreating"
                 class="mt-1 w-full"
                 :disabled="!allowEdit"
                 :placeholder="`${$t(
@@ -281,119 +282,6 @@
                 $t('instance.external-secret-vault.vault-secret-engine-name')
               "
             />
-          </div>
-        </div>
-        <div
-          v-else-if="
-            state.passwordType ===
-            DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER
-          "
-        >
-          <div
-            v-if="dataSource.externalSecret.awsEnvironmentConfig"
-            class="space-y-4"
-          >
-            <div class="sm:col-span-2 sm:col-start-1">
-              <label class="textlabel block">
-                {{
-                  $t("instance.external-secret-aws.environment.access-key-id")
-                }}
-                <span class="text-red-600">*</span>
-              </label>
-              <div class="flex space-x-2 text-sm mb-1 text-gray-400">
-                {{
-                  $t(
-                    "instance.external-secret-aws.environment.access-key-id-tips"
-                  )
-                }}
-              </div>
-              <BBTextField
-                v-model:value="
-                  dataSource.externalSecret.awsEnvironmentConfig.accessKeyId
-                "
-                :required="true"
-                class="mt-1 w-full"
-                :disabled="!allowEdit"
-                :placeholder="
-                  $t('instance.external-secret-aws.environment.access-key-id')
-                "
-              />
-            </div>
-            <div class="sm:col-span-2 sm:col-start-1">
-              <label class="textlabel block">
-                {{
-                  $t(
-                    "instance.external-secret-aws.environment.secret-access-key"
-                  )
-                }}
-                <span class="text-red-600">*</span>
-              </label>
-              <div class="flex space-x-2 text-sm mb-1 text-gray-400">
-                {{
-                  $t(
-                    "instance.external-secret-aws.environment.secret-access-key-tips"
-                  )
-                }}
-              </div>
-              <BBTextField
-                v-model:value="
-                  dataSource.externalSecret.awsEnvironmentConfig.secretAccessKey
-                "
-                :required="true"
-                class="mt-1 w-full"
-                :disabled="!allowEdit"
-                :placeholder="
-                  $t(
-                    'instance.external-secret-aws.environment.secret-access-key'
-                  )
-                "
-              />
-            </div>
-            <div class="sm:col-span-2 sm:col-start-1">
-              <label class="textlabel block">
-                {{
-                  $t("instance.external-secret-aws.environment.session-token")
-                }}
-              </label>
-              <div class="flex space-x-2 text-sm mb-1 text-gray-400">
-                {{
-                  $t(
-                    "instance.external-secret-aws.environment.session-token-tips"
-                  )
-                }}
-              </div>
-              <BBTextField
-                v-model:value="
-                  dataSource.externalSecret.awsEnvironmentConfig.sessionToken
-                "
-                :required="true"
-                class="mt-1 w-full"
-                :disabled="!allowEdit"
-                :placeholder="
-                  $t('instance.external-secret-aws.environment.session-token')
-                "
-              />
-            </div>
-            <div class="sm:col-span-2 sm:col-start-1">
-              <label class="textlabel block">
-                {{ $t("instance.external-secret-aws.environment.region") }}
-                <span class="text-red-600">*</span>
-              </label>
-              <div class="flex space-x-2 text-sm mb-1 text-gray-400">
-                {{ $t("instance.external-secret-aws.environment.region-tips") }}
-              </div>
-              <BBTextField
-                v-model:value="
-                  dataSource.externalSecret.awsEnvironmentConfig.region
-                "
-                :required="true"
-                class="mt-1 w-full"
-                :disabled="!allowEdit"
-                :placeholder="
-                  $t('instance.external-secret-aws.environment.region')
-                "
-              />
-            </div>
           </div>
         </div>
         <div class="sm:col-span-2 sm:col-start-1">
@@ -624,7 +512,6 @@ import {
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
-  DataSourceExternalSecret_AWSEnvironmentConfig,
 } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
@@ -732,19 +619,16 @@ const changeSecretType = (secretType: DataSourceExternalSecret_SecretType) => {
         authType: DataSourceExternalSecret_AuthType.TOKEN,
         secretType: secretType,
         token: "",
+        secretName: ds.externalSecret?.secretName ?? "",
+        passwordKeyName: ds.externalSecret?.passwordKeyName ?? "",
       });
       break;
     case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
       ds.externalSecret = DataSourceExternalSecret.fromPartial({
         authType: DataSourceExternalSecret_AuthType.AWS_ENVIRONMENT,
         secretType: secretType,
-        awsEnvironmentConfig:
-          DataSourceExternalSecret_AWSEnvironmentConfig.fromPartial({
-            accessKeyId: "AWS_ACCESS_KEY_ID",
-            secretAccessKey: "AWS_SECRET_ACCESS_KEY",
-            sessionToken: "AWS_SESSION_TOKEN",
-            region: "AWS_REGION",
-          }),
+        secretName: ds.externalSecret?.secretName ?? "",
+        passwordKeyName: ds.externalSecret?.passwordKeyName ?? "",
       });
       break;
   }
