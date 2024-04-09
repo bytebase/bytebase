@@ -21,7 +21,7 @@ import { computed, onMounted } from "vue";
 import { useSQLEditorTabStore } from "@/store";
 import DraftListItem from "./DraftListItem.vue";
 
-defineProps<{
+const props = defineProps<{
   keyword?: string;
 }>();
 
@@ -32,7 +32,12 @@ const emit = defineEmits<{
 const tabStore = useSQLEditorTabStore();
 
 const draftList = computed(() => {
-  return tabStore.tabList.filter((tab) => !tab.sheet);
+  const tabList = tabStore.tabList.filter((tab) => !tab.sheet);
+  const keyword = (props.keyword ?? "").trim();
+  const filteredList = keyword
+    ? tabList.filter((tab) => tab.title.includes(keyword))
+    : tabList;
+  return filteredList;
 });
 
 onMounted(() => {

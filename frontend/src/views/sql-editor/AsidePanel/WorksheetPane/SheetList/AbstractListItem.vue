@@ -20,6 +20,7 @@
 import { FileCodeIcon } from "lucide-vue-next";
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
+import { titleHTML } from "./common";
 
 const props = defineProps<{
   title: string;
@@ -28,6 +29,6 @@ const props = defineProps<{
 }>();
 
 const renderedTitle = computed(() => {
-  return props.title;
+  return titleHTML(props.title, props.keyword ?? "");
 });
 </script>

@@ -21,20 +21,28 @@
     <NScrollbar class="flex-1 overflow-hidden">
       <NCollapse v-model:expanded-names="expandedGroups" class="worksheet-pane">
         <NCollapseItem name="my" :title="$t('sheet.mine')">
-          <SheetList view="my" @ready="setReady('my')" />
+          <SheetList view="my" :keyword="keyword" @ready="setReady('my')" />
         </NCollapseItem>
         <NCollapseItem name="starred" :title="$t('sheet.starred')">
-          <SheetList view="starred" @ready="setReady('starred')" />
+          <SheetList
+            view="starred"
+            :keyword="keyword"
+            @ready="setReady('starred')"
+          />
         </NCollapseItem>
         <NCollapseItem
           v-if="!isStandaloneMode"
           name="shared"
           :title="$t('sheet.shared')"
         >
-          <SheetList view="shared" @ready="setReady('shared')" />
+          <SheetList
+            view="shared"
+            :keyword="keyword"
+            @ready="setReady('shared')"
+          />
         </NCollapseItem>
         <NCollapseItem name="draft" :title="$t('sheet.draft')">
-          <DraftList @ready="setReady('draft')" />
+          <DraftList :keyword="keyword" @ready="setReady('draft')" />
         </NCollapseItem>
       </NCollapse>
     </NScrollbar>
