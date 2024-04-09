@@ -2940,12 +2940,15 @@ export const SQLServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              77,
+              80,
               58,
               1,
               42,
               90,
-              30,
+              33,
+              58,
+              1,
+              42,
               34,
               28,
               47,
@@ -3033,12 +3036,15 @@ export const SQLServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              81,
+              84,
               58,
               1,
               42,
               90,
-              32,
+              35,
+              58,
+              1,
+              42,
               34,
               30,
               47,
@@ -3187,12 +3193,15 @@ export const SQLServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              120,
+              126,
               58,
               1,
               42,
               90,
-              31,
+              34,
+              58,
+              1,
+              42,
               34,
               29,
               47,
@@ -3225,7 +3234,10 @@ export const SQLServiceDefinition = {
               114,
               116,
               90,
-              39,
+              42,
+              58,
+              1,
+              42,
               34,
               37,
               47,
