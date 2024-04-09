@@ -56,16 +56,12 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	// In order to be compatible with db servers that only support old versions of tls.
 	// See: https://github.com/microsoft/go-mssqldb/issues/33
 	query.Add("tlsmin", "1.0")
-	query.Add("log", "255")
 	u := &url.URL{
 		Scheme:   "sqlserver",
 		User:     url.UserPassword(config.Username, config.Password),
 		Host:     fmt.Sprintf("%s:%s", config.Host, config.Port),
 		RawQuery: query.Encode(),
 	}
-
-	slog.Info("SQL SERVER dsn", "dsn", u.String())
-
 	db, err := sql.Open("sqlserver", u.String())
 	if err != nil {
 		return nil, err
