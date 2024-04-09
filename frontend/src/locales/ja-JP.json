@@ -2622,7 +2622,8 @@
     "sheets": "シート",
     "search-sheets": "シートを検索",
     "sheet": "シート",
-    "unconnected": "接続されていません"
+    "unconnected": "接続されていません",
+    "draft": "下書き"
   },
   "engine": {
     "mysql": "MySQL",

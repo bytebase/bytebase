@@ -2622,7 +2622,8 @@
     "sheets": "Sheets",
     "search-sheets": "Search Sheets",
     "sheet": "Sheet",
-    "unconnected": "Unconnected"
+    "unconnected": "Unconnected",
+    "draft": "Draft"
   },
   "engine": {
     "mysql": "MySQL",

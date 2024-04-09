@@ -1,18 +1,6 @@
 <template>
   <div class="flex flex-col items-stretch gap-y-1">
-    <div
-      class="text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400 z-[999999]"
-    >
-      <div>view: {{ view }}</div>
-      <div>isInitialized: {{ isInitialized }}</div>
-      <div>isLoading: {{ isLoading }}</div>
-      <div>sheetList.length: {{ sheetList.length }}</div>
-      <div v-for="sheet in sheetList" :key="sheet.name">
-        {{ sheet.name }}
-      </div>
-    </div>
-
-    <div v-if="isLoading" class="py-2">
+    <div v-if="isLoading" class="p-2 pl-7">
       <BBSpin :size="16" />
     </div>
 
@@ -21,11 +9,12 @@
       :key="worksheet.name"
       :view="view"
       :worksheet="worksheet"
+      :keyword="keyword"
     />
 
     <div
       v-if="!isLoading && sortedWorksheetList.length === 0"
-      class="py-2 text-control-placeholder"
+      class="p-2 pl-7 text-control-placeholder"
     >
       {{ $t("common.no-data") }}
     </div>
@@ -47,6 +36,10 @@ import SheetListItem from "./SheetListItem.vue";
 const props = defineProps<{
   view: SheetViewMode;
   keyword?: string;
+}>();
+
+const emit = defineEmits<{
+  (event: "ready"): void;
 }>();
 
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
@@ -80,7 +73,7 @@ watch(
     if (!isInitialized.value) {
       await fetchSheetList();
       await nextTick();
-      // scrollToCurrentTabOrSheet();
+      emit("ready");
     }
   },
   { immediate: true }

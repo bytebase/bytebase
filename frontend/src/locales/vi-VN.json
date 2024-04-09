@@ -2622,7 +2622,8 @@
     "sheets": "Trang tính",
     "search-sheets": "Trang tính tìm kiếm",
     "sheet": "Tờ giấy",
-    "unconnected": "Chưa kết nối"
+    "unconnected": "Chưa kết nối",
+    "draft": "Bản nháp"
   },
   "engine": {
     "mysql": "MySQL",

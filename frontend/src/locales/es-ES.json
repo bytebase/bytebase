@@ -2622,7 +2622,8 @@
     "sheets": "Hojas",
     "search-sheets": "Hojas de búsqueda",
     "sheet": "Hoja",
-    "unconnected": "Desconectado"
+    "unconnected": "Desconectado",
+    "draft": "Borrador"
   },
   "engine": {
     "mysql": "MySQL",

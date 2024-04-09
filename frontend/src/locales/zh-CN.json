@@ -2622,7 +2622,8 @@
     "sheets": "工作表",
     "search-sheets": "搜索工作表",
     "sheet": "工作表",
-    "unconnected": "未连接"
+    "unconnected": "未连接",
+    "draft": "草稿"
   },
   "engine": {
     "mysql": "MySQL",

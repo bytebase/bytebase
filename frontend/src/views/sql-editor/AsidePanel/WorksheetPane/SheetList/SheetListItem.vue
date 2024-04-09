@@ -1,30 +1,35 @@
 <template>
-  <div
-    class="flex flex-row items-center overflow-hidden gap-x-1 p-1 mx-1 rounded hover:bg-accent/10 cursor-pointer"
+  <AbstractListItem
+    :title="worksheet.title"
+    :selected="selected"
+    :keyword="keyword"
+    :data-item-key="keyForWorksheet(worksheet)"
+    @click="handleClick"
   >
-    <FileCodeIcon class="w-4 h-4" />
-    <div class="flex-1 flex flex-row-items-center truncate">
-      <NPerformantEllipsis>
-        {{ worksheet.title }}
-      </NPerformantEllipsis>
-    </div>
-    <Dropdown
-      :sheet="worksheet"
-      :view="props.view"
-      :secondary="true"
-      :unsaved="unsaved"
-    />
-  </div>
+    <template #suffix>
+      <Dropdown
+        :sheet="worksheet"
+        :view="props.view"
+        :secondary="true"
+        :unsaved="unsaved"
+      />
+    </template>
+  </AbstractListItem>
 </template>
 
 <script setup lang="ts">
-import { FileCodeIcon } from "lucide-vue-next";
-import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useSQLEditorTabStore } from "@/store";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 import type { SheetViewMode } from "@/views/sql-editor/Sheet";
-import { Dropdown } from "@/views/sql-editor/Sheet";
+import {
+  Dropdown,
+  openWorksheetByName,
+  useSheetContext,
+} from "@/views/sql-editor/Sheet";
+import { useSQLEditorContext } from "@/views/sql-editor/context";
+import { keyForWorksheet } from "../common";
+import AbstractListItem from "./AbstractListItem.vue";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -33,6 +38,9 @@ const props = defineProps<{
 }>();
 
 const tabStore = useSQLEditorTabStore();
+const editorContext = useSQLEditorContext();
+const worksheetContext = useSheetContext();
+
 const unsaved = computed(() => {
   const tab = tabStore.tabList.find(
     (tab) => tab.sheet === props.worksheet.name
@@ -40,4 +48,19 @@ const unsaved = computed(() => {
 
   return tab && (tab.status === "DIRTY" || tab.status === "NEW");
 });
+
+const selected = computed(() => {
+  const tab = tabStore.currentTab;
+
+  return tab?.sheet === props.worksheet.name;
+});
+
+const handleClick = (e: MouseEvent) => {
+  openWorksheetByName(
+    props.worksheet.name,
+    editorContext,
+    worksheetContext,
+    e.metaKey || e.ctrlKey
+  );
+};
 </script>
