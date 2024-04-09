@@ -300,7 +300,7 @@ func IsMySQLAffectedRowsStatement(statement string) bool {
 	for _, token := range tokens {
 		if token.GetChannel() == antlr.TokenDefaultChannel {
 			switch token.GetTokenType() {
-			case parser.MySQLParserDELETE_SYMBOL, parser.MySQLParserINSERT_SYMBOL, parser.MySQLParserREPLACE_SYMBOL, parser.MySQLParserUPDATE_SYMBOL:
+			case parser.MySQLParserDELETE_SYMBOL, parser.MySQLParserINSERT_SYMBOL, parser.MySQLParserREPLACE_SYMBOL, parser.MySQLParserUPDATE_SYMBOL, parser.MySQLParserCREATE_SYMBOL, parser.MySQLParserDROP_SYMBOL:
 				return true
 			default:
 				return false
