@@ -191,6 +191,7 @@ const handleAction = async (key: string) => {
         statement: getSheetStatement(sheet),
       },
       editTitle: true,
+      mask: ["title"],
     });
   }
 
