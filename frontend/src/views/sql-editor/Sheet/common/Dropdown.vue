@@ -6,17 +6,23 @@
     v-bind="dropdownProps"
     @select="handleAction"
   >
-    <heroicons-outline:dots-horizontal
-      v-show="!transparent"
-      class="bb-overlay-stack-ignore-esc w-6 h-6 p-1 rounded outline-none hover:bg-link-hover"
-      :class="[secondary ? '' : 'border border-gray-300 bg-white shadow']"
-    />
+    <NButton size="tiny" style="--n-padding: 0 4px" quaternary>
+      <template #icon>
+        <EllipsisIcon
+          v-if="!unsaved"
+          v-show="!transparent"
+          class="bb-overlay-stack-ignore-esc"
+        />
+        <DotIcon v-if="unsaved" :stroke-width="4" class="text-accent" w-4 h-4 />
+      </template>
+    </NButton>
   </NDropdown>
 </template>
 
 <script lang="ts" setup>
+import { DotIcon, EllipsisIcon } from "lucide-vue-next";
 import type { DropdownProps } from "naive-ui";
-import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
+import { type DropdownOption, NDropdown, useDialog, NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -42,6 +48,7 @@ const props = defineProps<{
   dropdownProps?: DropdownProps;
   secondary?: boolean;
   transparent?: boolean;
+  unsaved?: boolean;
 }>();
 
 const emit = defineEmits<{

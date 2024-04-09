@@ -1,34 +1,33 @@
 <template>
-  <NTabs
-    v-model:value="sheetTab"
-    size="small"
-    class="bb-sql-editor--sheet-tab-pane--tabs h-full pt-0"
-    pane-style="height: calc(100% - 29px); padding: 0;"
-    tab-style="padding-top: 0;"
-    justify-content="start"
-  >
-    <NTabPane name="my" :tab="$t('sheet.mine')">
-      <SheetList view="my" />
-    </NTabPane>
-    <NTabPane name="starred" :tab="$t('sheet.starred')">
-      <SheetList view="starred" />
-    </NTabPane>
-    <NTabPane v-if="!isStandaloneMode" name="shared" :tab="$t('sheet.shared')">
-      <SheetList view="shared" />
-    </NTabPane>
-  </NTabs>
+  <div class="h-full overflow-hidden pb-1">
+    <NScrollbar class="h-full overflow-hidden">
+      <NCollapse
+        class="worksheet-pane"
+        :default-expanded-names="['my', 'starred', 'shared']"
+      >
+        <NCollapseItem name="my" :title="$t('sheet.mine')">
+          <SheetList view="my" />
+        </NCollapseItem>
+        <NCollapseItem name="starred" :title="$t('sheet.starred')">
+          <SheetList view="starred" />
+        </NCollapseItem>
+        <NCollapseItem
+          v-if="!isStandaloneMode"
+          name="shared"
+          :title="$t('sheet.shared')"
+        >
+          <SheetList view="shared" />
+        </NCollapseItem>
+      </NCollapse>
+    </NScrollbar>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { NTabs, NTabPane } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { NCollapse, NCollapseItem, NScrollbar } from "naive-ui";
+import { computed, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import {
-  usePageMode,
-  useSQLEditorTabStore,
-  useWorkSheetStore,
-  useCurrentUserV1,
-} from "@/store";
+import { usePageMode, useSQLEditorTabStore, useWorkSheetStore } from "@/store";
 import { useSheetContext } from "../../Sheet";
 import SheetList from "./SheetList";
 
@@ -36,14 +35,11 @@ const { events: sheetEvents } = useSheetContext();
 const pageMode = usePageMode();
 const tabStore = useSQLEditorTabStore();
 const sheetStore = useWorkSheetStore();
-const me = useCurrentUserV1();
 
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
-const sheetTab = ref<"my" | "shared" | "starred">("my");
-
 useEmitteryEventListener(sheetEvents, "add-sheet", () => {
-  sheetTab.value = "my";
+  // TODO: expand "my" group
 });
 
 watch(
@@ -59,25 +55,26 @@ watch(
     if (!sheet) {
       return;
     }
-    if (sheet.starred) {
-      sheetTab.value = "starred";
-    } else if (sheet.creator != `users/${me.value.email}`) {
-      sheetTab.value = "shared";
-    }
+    // TODO: expand starred or shared group if needed
+    // if (sheet.starred) {
+    //   sheetTab.value = "starred";
+    // } else if (sheet.creator != `users/${me.value.email}`) {
+    //   sheetTab.value = "shared";
+    // }
   },
   { immediate: true }
 );
 </script>
 
 <style lang="postcss">
-.bb-sql-editor--sheet-tab-pane--tabs
-  .n-tabs-nav-scroll-wrapper--shadow-start::before,
-.bb-sql-editor--sheet-tab-pane--tabs
-  .n-tabs-nav-scroll-wrapper--shadow-end::after {
-  @apply hidden;
+.worksheet-pane {
+  --n-title-padding: 0.5rem 0 0 2px !important;
+  --n-item-margin: 0.5rem 0 !important;
 }
-
-.bb-sql-editor--sheet-tab-pane--tabs .n-tabs-wrapper {
-  @apply px-1;
+.worksheet-pane
+  .n-collapse-item
+  .n-collapse-item__content-wrapper
+  .n-collapse-item__content-inner {
+  padding-top: 0 !important;
 }
 </style>
