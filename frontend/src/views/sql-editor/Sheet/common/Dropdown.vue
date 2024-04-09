@@ -13,7 +13,17 @@
           v-show="!transparent"
           class="bb-overlay-stack-ignore-esc"
         />
-        <DotIcon v-if="unsaved" :stroke-width="4" class="text-accent" w-4 h-4 />
+        <NTooltip v-if="unsaved" placement="right">
+          <template #trigger>
+            <DotIcon
+              :stroke-width="12"
+              class="text-accent w-4 h-4 focus:outline-0"
+            />
+          </template>
+          <template #default>
+            <span>{{ $t("sql-editor.tab.unsaved") }}</span>
+          </template>
+        </NTooltip>
       </template>
     </NButton>
   </NDropdown>
@@ -22,7 +32,13 @@
 <script lang="ts" setup>
 import { DotIcon, EllipsisIcon } from "lucide-vue-next";
 import type { DropdownProps } from "naive-ui";
-import { type DropdownOption, NDropdown, useDialog, NButton } from "naive-ui";
+import {
+  type DropdownOption,
+  NDropdown,
+  useDialog,
+  NButton,
+  NTooltip,
+} from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
