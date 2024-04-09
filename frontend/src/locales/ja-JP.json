@@ -1375,7 +1375,7 @@
     },
     "external-secret": {
       "secret-name": "秘密の名前",
-      "key-name": "パスワードの秘密鍵"
+      "key-name": "秘密鍵"
     },
     "test-connection": "無視して作成する",
     "ignore-and-create": "代わりに PostgreSQL のサンプルインスタンスを追加する",

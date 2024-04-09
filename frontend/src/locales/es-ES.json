@@ -1375,7 +1375,7 @@
     },
     "external-secret": {
       "secret-name": "Nombre secreto",
-      "key-name": "Clave secreta para contraseña"
+      "key-name": "Clave secreta"
     },
     "test-connection": "Probar conexión",
     "ignore-and-create": "Ignorar y crear",
