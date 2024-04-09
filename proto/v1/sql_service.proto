@@ -16,16 +16,24 @@ service SQLService {
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:query"
-      additional_bindings {post: "/v1/{name=instances/*}:query"}
       body: "*"
+
+      additional_bindings {
+        post: "/v1/{name=instances/*}:query"
+        body: "*"
+      }
     };
   }
 
   rpc Execute(ExecuteRequest) returns (ExecuteResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:execute"
-      additional_bindings {post: "/v1/{name=instances/*}:execute"}
       body: "*"
+
+      additional_bindings {
+        post: "/v1/{name=instances/*}:execute"
+        body: "*"
+      }
     };
   }
 
@@ -40,9 +48,16 @@ service SQLService {
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:export"
-      additional_bindings {post: "/v1/{name=instances/*}:export"}
-      additional_bindings {post: "/v1/{name=projects/*/issues/*}:export"}
       body: "*"
+
+      additional_bindings {
+        post: "/v1/{name=instances/*}:export"
+        body: "*"
+      }
+      additional_bindings {
+        post: "/v1/{name=projects/*/issues/*}:export"
+        body: "*"
+      }
     };
   }
 

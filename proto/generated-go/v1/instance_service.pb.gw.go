@@ -899,6 +899,10 @@ func request_InstanceService_SyncSlowQueries_1(ctx context.Context, marshaler ru
 	var protoReq SyncSlowQueriesRequest
 	var metadata runtime.ServerMetadata
 
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	var (
 		val string
 		ok  bool
@@ -924,6 +928,10 @@ func request_InstanceService_SyncSlowQueries_1(ctx context.Context, marshaler ru
 func local_request_InstanceService_SyncSlowQueries_1(ctx context.Context, marshaler runtime.Marshaler, server InstanceServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq SyncSlowQueriesRequest
 	var metadata runtime.ServerMetadata
+
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 
 	var (
 		val string
