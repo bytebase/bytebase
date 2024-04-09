@@ -40,8 +40,8 @@ const link = computed((): Link | undefined => {
       ) as ActivityProjectRepositoryPushPayload;
       if (payload.issueId && payload.issueName) {
         return {
-          title: `issue/${payload.issueId}`,
-          path: `/issue/${issueSlug(payload.issueName!, payload.issueId!)}`,
+          title: `${activity.resource}/issues/${payload.issueId}`,
+          path: `/${activity.resource}/issues/${issueSlug(payload.issueName!, payload.issueId!)}`,
           external: false,
         };
       }
