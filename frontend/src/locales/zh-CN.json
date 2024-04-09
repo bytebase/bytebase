@@ -3214,7 +3214,8 @@
     }
   },
   "export-center": {
-    "self": "导出中心"
+    "self": "导出中心",
+    "permission-denied": "您没有权限执行此操作"
   },
   "schema-designer": {
     "self": "Schema 设计器",

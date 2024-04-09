@@ -3214,7 +3214,8 @@
     }
   },
   "export-center": {
-    "self": "Export Center"
+    "self": "Export Center",
+    "permission-denied": "Permission denied"
   },
   "schema-designer": {
     "self": "Schema Designer",

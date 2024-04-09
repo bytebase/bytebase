@@ -3214,7 +3214,8 @@
     }
   },
   "export-center": {
-    "self": "Trung tâm xuất khẩu"
+    "self": "Trung tâm xuất khẩu",
+    "permission-denied": "Quyền bị từ chối"
   },
   "schema-designer": {
     "self": "Nhà thiết kế lược đồ",
