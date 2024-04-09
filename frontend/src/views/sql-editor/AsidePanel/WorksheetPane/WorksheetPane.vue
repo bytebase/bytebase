@@ -73,7 +73,7 @@ const maybeExpandGroup = (group: GroupType) => {
 };
 
 useEmitteryEventListener(sheetEvents, "add-sheet", () => {
-  maybeExpandGroup("my");
+  maybeExpandGroup("draft");
 });
 
 const { setReady, scrollCurrentItemIntoView } = useScrollLogic();
