@@ -2163,7 +2163,7 @@
     },
     "view-all-tabs": "Ver todas las pestañas",
     "sheets": "Hojas",
-    "connection-holder": "Seleccione una base de datos para comenzar",
+    "connect-to-a-database": "Conectarse a una base de datos",
     "link-access": "Acceso al enlace",
     "private": "Privado",
     "private-desc": "Solo tú puedes acceder a esta hoja",
@@ -2237,7 +2237,9 @@
     "override-current-statement": "Anular la declaración actual",
     "last-synced": "Última sincronización: {hora}",
     "click-to-sync-now": "Haga clic para sincronizar ahora",
-    "sync-in-progress": "Sincronización en progreso"
+    "sync-in-progress": "Sincronización en progreso",
+    "create-a-worksheet": "Crear una hoja de trabajo",
+    "select-a-database-to-start": "Seleccione una base de datos para comenzar"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2610,7 +2612,8 @@
     "sheets": "Hojas",
     "search-sheets": "Hojas de búsqueda",
     "sheet": "Hoja",
-    "unconnected": "Desconectado"
+    "unconnected": "Desconectado",
+    "draft": "Borrador"
   },
   "engine": {
     "mysql": "MySQL",

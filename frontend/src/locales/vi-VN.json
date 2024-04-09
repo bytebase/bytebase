@@ -2163,7 +2163,7 @@
     },
     "view-all-tabs": "Xem tất cả các Tab",
     "sheets": "Trang tính",
-    "connection-holder": "Chọn cơ sở dữ liệu để bắt đầu",
+    "connect-to-a-database": "Kết nối với cơ sở dữ liệu",
     "link-access": "Truy cập liên kết",
     "private": "Riêng tư",
     "private-desc": "Chỉ bạn mới có thể truy cập trang tính này",
@@ -2237,7 +2237,9 @@
     "override-current-statement": "Ghi đè câu lệnh hiện tại",
     "last-synced": "Đồng bộ hóa lần cuối: {time}",
     "click-to-sync-now": "Bấm để đồng bộ ngay",
-    "sync-in-progress": "Đang đồng bộ hóa"
+    "sync-in-progress": "Đang đồng bộ hóa",
+    "create-a-worksheet": "Tạo một bảng tính",
+    "select-a-database-to-start": "Chọn cơ sở dữ liệu để bắt đầu"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",
@@ -2610,7 +2612,8 @@
     "sheets": "Trang tính",
     "search-sheets": "Trang tính tìm kiếm",
     "sheet": "Tờ giấy",
-    "unconnected": "Chưa kết nối"
+    "unconnected": "Chưa kết nối",
+    "draft": "Bản nháp"
   },
   "engine": {
     "mysql": "MySQL",
