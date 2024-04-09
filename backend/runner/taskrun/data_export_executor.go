@@ -121,11 +121,10 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 			UpdateTime:      time.Now(),
 		})
 	exportRequest := &v1pb.ExportRequest{
-		Name:               fmt.Sprintf("instances/%s", instance.ResourceID),
-		ConnectionDatabase: database.DatabaseName,
-		Statement:          statement,
-		Format:             v1pb.ExportFormat(payload.Format),
-		Password:           payload.Password,
+		Name:      fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
+		Statement: statement,
+		Format:    v1pb.ExportFormat(payload.Format),
+		Password:  payload.Password,
 	}
 	bytes, durationNs, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, instance, database, spans)
 	if exportErr != nil {
