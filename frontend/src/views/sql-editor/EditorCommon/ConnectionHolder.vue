@@ -14,7 +14,7 @@
         <template #icon>
           <heroicons-outline:lightning-bolt class="w-5 h-5" />
         </template>
-        {{ $t("sql-editor.connection-holder") }}
+        {{ $t("sql-editor.connect-to-a-database") }}
       </NButton>
     </div>
   </div>

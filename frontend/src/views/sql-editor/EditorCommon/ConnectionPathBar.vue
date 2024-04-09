@@ -86,7 +86,7 @@
         "
         @click="changeConnection"
       >
-        {{ $t("sql-editor.connection-holder") }}
+        {{ $t("sql-editor.select-a-database-to-start") }}
       </NButton>
     </div>
   </div>

@@ -199,6 +199,138 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 	return instance, database, activity, nil
 }
 
+// Execute executes the SQL statement.
+func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) (*v1pb.ExecuteResponse, error) {
+	environment, instance, database, err := s.preExecute(ctx, request)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to prepare execute: %v", err)
+	}
+
+	statement := request.Statement
+	// Run SQL review.
+	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, database, nil /* Override Metadata */)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*v1pb.QueryResult
+	if adviceStatus != advisor.Error {
+		var queryErr error
+		results, _, queryErr = s.doExecute(ctx, instance, database, request)
+		if queryErr != nil {
+			return nil, status.Errorf(codes.Internal, queryErr.Error())
+		}
+		sanitizeResults(results)
+	}
+
+	response := &v1pb.ExecuteResponse{
+		Results: results,
+		Advices: advices,
+	}
+	if proto.Size(response) > maximumSQLResultSize {
+		response.Results = []*v1pb.QueryResult{
+			{
+				Error: fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", maximumSQLResultSize/1024/1024),
+			},
+		}
+	}
+	return response, nil
+}
+
+func (s *SQLService) preExecute(ctx context.Context, request *v1pb.ExecuteRequest) (*store.EnvironmentMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
+	hasDatabase := strings.Contains(request.Name, "/databases/")
+	var err error
+	var instanceID, databaseName string
+	if hasDatabase {
+		instanceID, databaseName, err = common.GetInstanceDatabaseID(request.Name)
+		if err != nil {
+			return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	} else {
+		instanceID, err = common.GetInstanceID(request.Name)
+		if err != nil {
+			return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+
+	find := &store.FindInstanceMessage{}
+	instanceUID, isNumber := isNumber(instanceID)
+	if isNumber {
+		find.UID = &instanceUID
+	} else {
+		find.ResourceID = &instanceID
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, find)
+	if err != nil {
+		return nil, nil, nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+
+	var database *store.DatabaseMessage
+	if hasDatabase {
+		database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instance.ResourceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
+		if err != nil {
+			return nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
+		}
+		if database == nil {
+			return nil, nil, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+		}
+	}
+
+	environmentID := instance.EnvironmentID
+	if database != nil {
+		environmentID = database.EffectiveEnvironmentID
+	}
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
+	if err != nil {
+		return nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch environment: %v", err)
+	}
+	if environment == nil {
+		return nil, nil, nil, status.Errorf(codes.NotFound, "environment ID not found: %s", environmentID)
+	}
+	return environment, instance, database, nil
+}
+
+func (s *SQLService) doExecute(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, request *v1pb.ExecuteRequest) ([]*v1pb.QueryResult, int64, error) {
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "failed to get database driver")
+	}
+
+	var conn *sql.Conn
+	sqlDB := driver.GetDB()
+	if sqlDB != nil {
+		conn, err = sqlDB.Conn(ctx)
+		if err != nil {
+			return nil, 0, errors.Wrap(err, "failed to get database connection")
+		}
+	}
+
+	start := time.Now().UnixNano()
+	timeout := defaultTimeout
+	if request.Timeout != nil {
+		timeout = request.Timeout.AsDuration()
+	}
+	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
+	defer cancelCtx()
+	result, err := driver.RunStatement(ctx, conn, request.Statement)
+	select {
+	case <-ctx.Done():
+		// canceled or timed out
+		return nil, time.Now().UnixNano() - start, errors.Errorf("timeout reached: %v", timeout)
+	default:
+		// So the select will not block
+	}
+	return result, time.Now().UnixNano() - start, err
+}
+
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
 	// Prehandle export from issue.

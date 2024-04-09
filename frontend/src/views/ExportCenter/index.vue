@@ -11,11 +11,11 @@
           :support-option-id-list="supportOptionIdList"
         />
       </div>
-      <NTooltip :disabled="allowDataExport">
+      <NTooltip :disabled="allowExportData">
         <template #trigger>
           <NButton
             type="primary"
-            :disabled="!allowDataExport"
+            :disabled="!allowExportData"
             @click="state.showRequestExportPanel = true"
           >
             {{ $t("quick-action.request-export-data") }}
@@ -70,7 +70,7 @@ import {
   buildIssueFilterBySearchParams,
   buildUIIssueFilterBySearchParams,
   extractProjectResourceName,
-  hasProjectPermissionV2,
+  hasPermissionToCreateDataExportIssueInProject,
   type SearchParams,
   type SearchScopeId,
 } from "@/utils";
@@ -154,17 +154,16 @@ const supportOptionIdList = computed((): SearchScopeId[] => {
   return scopes;
 });
 
-const allowDataExport = computed(() => {
+const allowExportData = computed(() => {
   if (specificProject.value) {
-    return hasProjectPermissionV2(
+    return hasPermissionToCreateDataExportIssueInProject(
       specificProject.value,
-      currentUser.value,
-      "bb.issues.create"
+      currentUser.value
     );
   }
 
   return projectV1Store.projectList.some((project) =>
-    hasProjectPermissionV2(project, currentUser.value, "bb.issues.create")
+    hasPermissionToCreateDataExportIssueInProject(project, currentUser.value)
   );
 });
 </script>
