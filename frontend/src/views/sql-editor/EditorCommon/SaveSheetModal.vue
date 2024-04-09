@@ -1,11 +1,12 @@
 <template>
   <BBModal
-    v-if="state.pendingEditTab"
+    v-if="state.pendingEdit"
     :title="$t('sql-editor.save-sheet')"
     @close="close"
   >
     <SaveSheetForm
-      :tab="state.pendingEditTab"
+      :tab="state.pendingEdit.tab"
+      :mask="state.pendingEdit.mask"
       @close="close"
       @confirm="doSaveSheet"
     />
@@ -32,7 +33,10 @@ import { useSQLEditorContext } from "../context";
 import SaveSheetForm from "./SaveSheetForm.vue";
 
 type LocalState = {
-  pendingEditTab?: SQLEditorTab;
+  pendingEdit?: {
+    tab: SQLEditorTab;
+    mask?: Array<keyof Worksheet>;
+  };
 };
 
 const tabStore = useSQLEditorTabStore();
@@ -43,7 +47,10 @@ const { events: editorEvents } = useSQLEditorContext();
 
 const state = reactive<LocalState>({});
 
-const doSaveSheet = async (tab: SQLEditorTab) => {
+const doSaveSheet = async (
+  tab: SQLEditorTab,
+  mask?: Array<keyof Worksheet>
+) => {
   const { title, statement, sheet } = tab;
 
   if (title === "" || statement === "") {
@@ -60,7 +67,7 @@ const doSaveSheet = async (tab: SQLEditorTab) => {
         database: tab.connection.database,
         content: new TextEncoder().encode(statement),
       },
-      ["title", "content", "database"]
+      mask ?? ["title", "content", "database"]
     );
     if (updatedSheet) {
       const tab = tabStore.tabList.find((t) => t.sheet === updatedSheet.name);
@@ -99,7 +106,7 @@ const doSaveSheet = async (tab: SQLEditorTab) => {
 
   // Refresh "my" sheet list.
   sheetEvents.emit("refresh", { views: ["my"] });
-  state.pendingEditTab = undefined;
+  state.pendingEdit = undefined;
 };
 
 const needSheetTitle = (tab: SQLEditorTab) => {
@@ -110,21 +117,32 @@ const needSheetTitle = (tab: SQLEditorTab) => {
   return true;
 };
 
-const trySaveSheet = (tab: SQLEditorTab, editTitle?: boolean) => {
+const trySaveSheet = (
+  tab: SQLEditorTab,
+  editTitle?: boolean,
+  mask?: Array<keyof Worksheet>
+) => {
   if (needSheetTitle(tab) || editTitle) {
-    state.pendingEditTab = tab;
+    state.pendingEdit = {
+      tab,
+      mask,
+    };
     return;
   }
-  state.pendingEditTab = undefined;
+  state.pendingEdit = undefined;
 
-  doSaveSheet(tab);
+  doSaveSheet(tab, mask);
 };
 
 const close = () => {
-  state.pendingEditTab = undefined;
+  state.pendingEdit = undefined;
 };
 
-useEmitteryEventListener(editorEvents, "save-sheet", ({ tab, editTitle }) => {
-  trySaveSheet(tab, editTitle);
-});
+useEmitteryEventListener(
+  editorEvents,
+  "save-sheet",
+  ({ tab, editTitle, mask }) => {
+    trySaveSheet(tab, editTitle, mask);
+  }
+);
 </script>

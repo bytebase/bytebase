@@ -1,383 +1,78 @@
 <template>
-  <div class="flex flex-col h-full py-1 gap-y-2 relative">
-    <div class="flex items-center gap-x-1 px-1 pt-1">
-      <SearchBox
-        v-model:value="keyword"
-        size="small"
-        :disabled="isLoading"
-        :placeholder="$t('sheet.search-sheets')"
-        :clearable="true"
-        style="max-width: 100%"
-      />
-      <NButton
-        quaternary
-        style="--n-padding: 0 5px; --n-height: 28px"
-        @click="showPanel = true"
-      >
-        <template #icon>
-          <heroicons:arrow-left-on-rectangle />
-        </template>
-      </NButton>
+  <div class="flex flex-col items-stretch gap-y-1">
+    <div v-if="isLoading" class="p-2 pl-7">
+      <BBSpin :size="16" />
     </div>
+
+    <SheetListItem
+      v-for="worksheet in sortedWorksheetList"
+      :key="worksheet.name"
+      :view="view"
+      :worksheet="worksheet"
+      :keyword="keyword"
+    />
+
     <div
-      class="flex-1 flex flex-col h-full overflow-y-auto sheet-tree px-1"
-      @scroll="dropdown = undefined"
+      v-if="!isLoading && sortedWorksheetList.length === 0"
+      class="p-2 pl-7 text-control-placeholder"
     >
-      <NTree
-        ref="treeRef"
-        block-line
-        style="height: 100%; user-select: none"
-        :data="treeData"
-        :pattern="keyword.toLowerCase().trim()"
-        :default-expand-all="true"
-        :selected-keys="selectedKeys"
-        :show-irrelevant-nodes="false"
-        :expand-on-click="true"
-        :render-label="renderLabel"
-        :render-prefix="renderPrefix"
-        :render-suffix="renderSuffix"
-        :node-props="nodeProps"
-        :virtual-scroll="false"
-      />
-
-      <Dropdown
-        v-if="dropdown && isSheetItem(dropdown.item)"
-        :sheet="dropdown.item.target"
-        :view="view"
-        :transparent="true"
-        :dropdown-props="{
-          trigger: 'manual',
-          placement: 'bottom-start',
-          show: true,
-          x: dropdown.x,
-          y: dropdown.y,
-          onClickoutside: () => (dropdown = undefined),
-        }"
-        @dismiss="dropdown = undefined"
-      />
-
-      <MaskSpinner v-if="isLoading" class="!bg-white/75" />
+      {{ $t("common.no-data") }}
     </div>
   </div>
 </template>
 
-<script lang="tsx" setup>
-import { orderBy, escape } from "lodash-es";
-import { FileCodeIcon } from "lucide-vue-next";
-import type { TreeOption } from "naive-ui";
-import { NButton, NTree, NPerformantEllipsis } from "naive-ui";
-import { storeToRefs } from "pinia";
-import scrollIntoView from "scroll-into-view-if-needed";
-import {
-  computed,
-  nextTick,
-  onMounted,
-  ref,
-  watch,
-  type VNodeChild,
-} from "vue";
-import { useI18n } from "vue-i18n";
-import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import {
-  InstanceV1EngineIcon,
-  ProjectV1Name,
-  DatabaseV1Name,
-  SearchBox,
-} from "@/components/v2";
-import {
-  useWorkSheetAndTabStore,
-  useDatabaseV1Store,
-  useSQLEditorTabStore,
-} from "@/store";
-import type { ComposedProject, ComposedDatabase } from "@/types";
+<script setup lang="ts">
+import { orderBy } from "lodash-es";
+import { computed, nextTick, watch } from "vue";
+import { BBSpin } from "@/bbkit";
+import { useDatabaseV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { connectionForSQLEditorTab } from "@/utils";
-import type { SheetViewMode } from "@/views/sql-editor/Sheet";
 import {
-  openWorksheetByName,
   useSheetContextByView,
-  Dropdown,
-  useSheetContext,
+  type SheetViewMode,
 } from "@/views/sql-editor/Sheet";
-import { useSQLEditorContext } from "@/views/sql-editor/context";
-import UnsavedPrefix from "./UnsavedPrefix.vue";
-import type { DropdownState, MergedItem } from "./common";
-import { domIDForItem, isSheetItem, isTabItem, keyOfItem } from "./common";
-
-interface TreeNode extends TreeOption {
-  key: string;
-  label: string;
-  project?: ComposedProject;
-  database?: ComposedDatabase;
-  item?: MergedItem;
-  children?: TreeNode[];
-}
-
-interface TreeNodeMap {
-  [key: string]: {
-    key: string;
-    label: string;
-    project?: ComposedProject;
-    database?: ComposedDatabase;
-    item?: MergedItem;
-    children: TreeNodeMap;
-  };
-}
+import SheetListItem from "./SheetListItem.vue";
 
 const props = defineProps<{
   view: SheetViewMode;
+  keyword?: string;
 }>();
 
-const { t } = useI18n();
-const databaseStore = useDatabaseV1Store();
-const tabStore = useSQLEditorTabStore();
-const editorContext = useSQLEditorContext();
-const worksheetContext = useSheetContext();
-const { showPanel } = worksheetContext;
+const emit = defineEmits<{
+  (event: "ready"): void;
+}>();
+
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
   useSheetContextByView(props.view);
-const keyword = ref("");
-const { currentSheet } = storeToRefs(useWorkSheetAndTabStore());
-const dropdown = ref<DropdownState>();
 
-const mergedItemList = computed(() => {
-  if (isLoading.value) {
-    return [];
-  }
+const sortedWorksheetList = computed(() => {
+  const keyword = (props.keyword ?? "").trim().toLowerCase();
+  const filteredList = keyword
+    ? sheetList.value.filter((worksheet) =>
+        worksheet.title.toLowerCase().includes(keyword)
+      )
+    : sheetList.value;
 
-  const mergedList: MergedItem[] = [];
-
-  sheetList.value.forEach((sheet) => {
-    mergedList.push({
-      type: "SHEET",
-      target: sheet,
-    });
-  });
-
-  const sortedList = orderBy(
-    mergedList,
+  return orderBy(
+    filteredList,
     [
-      // Untitled sheets go behind
-      // They are probably dirty data
-      (item) => (item.type === "SHEET" && !item.target.title ? 1 : 0),
-      // Unconnected sheets go behind then
-      (item) => {
-        if (item.type === "TAB") {
-          return 0;
-        }
-        if (!item.target.database) {
+      // Unconnected sheets go behind
+      (worksheet) => {
+        if (!worksheet.database) {
           return Number.MAX_VALUE;
         }
-        const db = useDatabaseV1Store().getDatabaseByName(item.target.database);
+        const db = useDatabaseV1Store().getDatabaseByName(worksheet.database);
         if (db.uid === String(UNKNOWN_ID)) {
           return Number.MAX_VALUE;
         }
         return 1;
       },
-      // Alphabetically otherwise
-      (item) => item.target.title,
+      // Alphabetically by default
+      (item) => item.title,
     ],
-    ["asc", "asc", "asc"]
-  );
-  return sortedList;
-});
-
-const treeData = computed((): TreeNode[] => {
-  const map: TreeNodeMap = {};
-  for (const item of mergedItemList.value) {
-    let database: ComposedDatabase | undefined;
-    if (isTabItem(item)) {
-      database = connectionForSQLEditorTab(item.target).database;
-    } else {
-      database = databaseStore.getDatabaseByName(item.target.database);
-    }
-
-    database = database ?? databaseStore.getDatabaseByUID(String(UNKNOWN_ID));
-    if (!map[database.name]) {
-      map[database.name] = {
-        key: database.name,
-        label: database.databaseName,
-        database,
-        children: {},
-      };
-    }
-
-    const key = keyOfItem(item);
-    map[database.name].children[key] = {
-      key,
-      label: item.target.title,
-      item,
-      children: {},
-    };
-  }
-  return getTreeNodeList(map);
-});
-
-const getTreeNodeList = (treeNodeMap: TreeNodeMap): TreeNode[] => {
-  return Object.values(treeNodeMap).map((item) => {
-    const children = getTreeNodeList(item.children);
-    return {
-      ...item,
-      isLeaf: children.length === 0,
-      children,
-    };
-  });
-};
-
-const renderPrefix = ({ option }: { option: TreeOption }) => {
-  const treeNode = option as TreeNode;
-  if (treeNode.project) {
-    if (treeNode.project.uid === `${UNKNOWN_ID}`) {
-      return <div>{t("sheet.unconnected")}</div>;
-    }
-    return <ProjectV1Name project={treeNode.project} link={true} />;
-  } else if (treeNode.database) {
-    const db = treeNode.database;
-    if (db.uid === String(UNKNOWN_ID)) {
-      return null;
-    }
-    return (
-      <span class="flex items-center gap-x-1">
-        <InstanceV1EngineIcon instance={treeNode.database.instanceEntity} />
-        <span class="text-gray-500 text-sm">
-          {`(${treeNode.database.effectiveEnvironmentEntity.title})`}
-        </span>
-      </span>
-    );
-  } else {
-    return <FileCodeIcon class="w-4 h-4" />;
-  }
-};
-
-const renderSuffix = ({ option }: { option: TreeOption }) => {
-  const treeNode = option as TreeNode;
-  if (!treeNode.item) {
-    return null;
-  }
-  const child: VNodeChild = [];
-  const { item } = treeNode;
-  if (isTabItem(item)) {
-    child.push(<UnsavedPrefix />);
-  } else {
-    const tab = tabStore.tabList.find((tab) => tab.sheet === item.target.name);
-    if (!tab || tab.status === "CLEAN") {
-      child.push(
-        <Dropdown sheet={item.target} view={props.view} secondary={true} />
-      );
-    } else {
-      child.push(<UnsavedPrefix />);
-    }
-  }
-  return (
-    <div
-      class="mr-2"
-      onClick={(e: MouseEvent) => {
-        e.stopImmediatePropagation();
-        e.preventDefault();
-      }}
-    >
-      {child}
-    </div>
-  );
-};
-
-const renderLabel = ({ option }: { option: TreeOption }) => {
-  const treeNode = option as TreeNode;
-  if (treeNode.project) {
-    return null;
-  }
-  if (treeNode.database) {
-    const db = treeNode.database;
-    if (db.uid === String(UNKNOWN_ID)) {
-      return (
-        <span class="text-control-placeholder">{t("sheet.unconnected")}</span>
-      );
-    }
-    return <DatabaseV1Name database={db} link={false} />;
-  }
-
-  return (
-    <NPerformantEllipsis>
-      <span
-        id={treeNode.item ? domIDForItem(treeNode.item) : undefined}
-        innerHTML={escape(treeNode.label)}
-      />
-    </NPerformantEllipsis>
-  );
-};
-
-const selectedKeys = computed(() => {
-  return [currentSheet.value?.name, tabStore.currentTab?.id].filter(
-    (item): item is string => !!item
+    ["asc", "asc"]
   );
 });
-
-const nodeProps = ({ option }: { option: TreeOption }) => {
-  const treeNode = option as TreeNode;
-  return {
-    onClick(e: MouseEvent) {
-      if (!treeNode.item) {
-        return;
-      }
-      handleItemClick(treeNode.item, e);
-    },
-    onContextmenu(e: MouseEvent) {
-      if (!treeNode.item) {
-        return;
-      }
-      handleRightClick(treeNode.item, e);
-    },
-  };
-};
-
-const handleItemClick = (item: MergedItem, e: MouseEvent) => {
-  if (isTabItem(item)) {
-    tabStore.setCurrentTabId(item.target.id);
-  } else {
-    openWorksheetByName(
-      item.target.name,
-      editorContext,
-      worksheetContext,
-      e.metaKey || e.ctrlKey
-    );
-  }
-};
-
-const handleRightClick = (item: MergedItem, e: MouseEvent) => {
-  if (!isSheetItem(item)) return;
-  e.preventDefault();
-  dropdown.value = undefined;
-  nextTick().then(() => {
-    dropdown.value = {
-      item,
-      x: e.clientX,
-      y: e.clientY,
-    };
-  });
-};
-
-const scrollToItem = (item: MergedItem | undefined) => {
-  if (!item) return;
-  const id = domIDForItem(item);
-  const elem = document.getElementById(id);
-  if (elem) {
-    scrollIntoView(elem, {
-      scrollMode: "if-needed",
-    });
-  }
-};
-
-const scrollToCurrentTabOrSheet = () => {
-  if (currentSheet.value) {
-    scrollToItem({ type: "SHEET", target: currentSheet.value });
-  } else {
-    const tab = tabStore.currentTab;
-    if (!tab) {
-      return;
-    }
-    scrollToItem({ type: "TAB", target: tab });
-  }
-};
 
 watch(
   isInitialized,
@@ -385,60 +80,9 @@ watch(
     if (!isInitialized.value) {
       await fetchSheetList();
       await nextTick();
-      scrollToCurrentTabOrSheet();
+      emit("ready");
     }
   },
   { immediate: true }
 );
-
-watch(
-  [() => currentSheet.value?.name, () => tabStore.currentTab?.id],
-  () => {
-    scrollToCurrentTabOrSheet();
-  },
-  { immediate: true }
-);
-
-onMounted(() => {
-  scrollToCurrentTabOrSheet();
-});
 </script>
-
-<style lang="postcss" scoped>
-.sheet-tree :deep(.n-tree .v-vl) {
-  --n-node-content-height: 21px !important;
-}
-.sheet-tree :deep(.n-tree-node-content) {
-  @apply !pl-0 text-sm;
-}
-.sheet-tree :deep(.n-tree-node-wrapper) {
-  padding: 0;
-}
-.sheet-tree :deep(.n-tree-node-indent) {
-  width: 1rem;
-}
-.sheet-tree :deep(.n-tree-node-switcher--hide) {
-  width: 0.5rem !important;
-}
-.sheet-tree :deep(.n-tree-node-content__prefix) {
-  @apply shrink-0 !mr-1;
-}
-.sheet-tree.project
-  :deep(.n-tree-node[data-node-type="project"] .n-tree-node-content__prefix) {
-  @apply hidden;
-}
-.sheet-tree :deep(.n-tree-node-content__text) {
-  @apply truncate mr-1;
-}
-.sheet-tree :deep(.n-tree-node--pending) {
-  background-color: transparent !important;
-}
-.sheet-tree :deep(.n-tree-node--pending:hover) {
-  background-color: var(--n-node-color-hover) !important;
-}
-.sheet-tree :deep(.n-tree-node--selected),
-.sheet-tree :deep(.n-tree-node--selected:hover) {
-  background-color: var(--n-node-color-active) !important;
-  font-weight: 500;
-}
-</style>

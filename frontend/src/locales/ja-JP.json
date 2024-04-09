@@ -2163,7 +2163,7 @@
     },
     "view-all-tabs": "すべてのタブを表示",
     "sheets": "シート",
-    "connection-holder": "開始するデータベースを選択してください",
+    "connect-to-a-database": "データベースに接続する",
     "link-access": "リンクアクセス",
     "private": "プライベート",
     "private-desc": "このシートにはあなたのみがアクセスできます",
@@ -2237,7 +2237,9 @@
     "override-current-statement": "現在のステートメントをオーバーライドする",
     "last-synced": "最終同期: {time}",
     "click-to-sync-now": "今すぐ同期するにはクリックしてください",
-    "sync-in-progress": "同期中"
+    "sync-in-progress": "同期中",
+    "create-a-worksheet": "ワークシートを作成する",
+    "select-a-database-to-start": "開始するデータベースを選択してください"
   },
   "schema-editor": {
     "self": "スキーマエディター",
@@ -2610,7 +2612,8 @@
     "sheets": "シート",
     "search-sheets": "シートを検索",
     "sheet": "シート",
-    "unconnected": "接続されていません"
+    "unconnected": "接続されていません",
+    "draft": "下書き"
   },
   "engine": {
     "mysql": "MySQL",
