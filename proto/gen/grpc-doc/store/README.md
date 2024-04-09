@@ -80,7 +80,6 @@
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
-    - [DataSourceExternalSecret.AWSEnvironmentConfig](#bytebase-store-DataSourceExternalSecret-AWSEnvironmentConfig)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
   
@@ -1390,28 +1389,9 @@ Used internally for obfuscating the page token.
 | auth_type | [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType) |  |  |
 | app_role | [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption) |  |  |
 | token | [string](#string) |  |  |
-| aws_environment_config | [DataSourceExternalSecret.AWSEnvironmentConfig](#bytebase-store-DataSourceExternalSecret-AWSEnvironmentConfig) |  |  |
 | engine_name | [string](#string) |  | engine name is the name for secret engine. |
 | secret_name | [string](#string) |  | the secret name in the engine to store the password. |
 | password_key_name | [string](#string) |  | the key name for the password. |
-
-
-
-
-
-
-<a name="bytebase-store-DataSourceExternalSecret-AWSEnvironmentConfig"></a>
-
-### DataSourceExternalSecret.AWSEnvironmentConfig
-store the environment name for AWS credentials.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| access_key_id | [string](#string) |  | environment name for AWS access key id, default AWS_ACCESS_KEY_ID. |
-| secret_access_key | [string](#string) |  | environment name for AWS secret access key, default AWS_SECRET_ACCESS_KEY. |
-| session_token | [string](#string) |  | environment name for AWS session token, default AWS_SESSION_TOKEN. |
-| region | [string](#string) |  | environment name for AWS region, default AWS_REGION. |
 
 
 

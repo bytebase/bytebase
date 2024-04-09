@@ -3,62 +3,27 @@ package secret
 import (
 	"context"
 	"encoding/json"
-	"os"
 
 	"github.com/pkg/errors"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// getAWSClient returns the AWS secret manager client.
-//
-// https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/
-func getAWSClient(ctx context.Context, externalSecret *storepb.DataSourceExternalSecret) (*secretsmanager.Client, error) {
-	environmentConfig := externalSecret.GetAwsEnvironmentConfig()
-	if environmentConfig == nil {
-		return nil, errors.Errorf("empty aws environment config")
-	}
-
-	region := os.Getenv(environmentConfig.Region)
-	if region == "" {
-		return nil, errors.Errorf("AWS region not found in environment %s", environmentConfig.Region)
-	}
-	accessKeyID := os.Getenv(environmentConfig.AccessKeyId)
-	if accessKeyID == "" {
-		return nil, errors.Errorf("AWS access key id not found in environment %s", environmentConfig.AccessKeyId)
-	}
-	secretAccessKey := os.Getenv(environmentConfig.SecretAccessKey)
-	if secretAccessKey == "" {
-		return nil, errors.Errorf("AWS secret access key not found in environment %s", environmentConfig.SecretAccessKey)
-	}
-
-	cfg, err := config.LoadDefaultConfig(ctx,
-		config.WithRegion(region),
-		config.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(
-				accessKeyID,
-				secretAccessKey,
-				os.Getenv(environmentConfig.SessionToken),
-			),
-		),
-	)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to init aws config: %v", err.Error())
-	}
-
-	return secretsmanager.NewFromConfig(cfg), nil
-}
-
 func getSecretFromAWS(ctx context.Context, externalSecret *storepb.DataSourceExternalSecret) (string, error) {
-	client, err := getAWSClient(ctx, externalSecret)
+	// for AWS auth we will use the default credentials (environment)
+	// ref:
+	// https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/
+	// https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "failed to init aws config: %v", err.Error())
 	}
+
+	client := secretsmanager.NewFromConfig(cfg)
 
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId:     aws.String(externalSecret.SecretName),

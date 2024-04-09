@@ -253,7 +253,13 @@ const allowTransferProject = computed(() => {
 });
 
 const allowDataExport = computed(() => {
-  return props.databases.length === 1;
+  return props.databases.every((db) => {
+    return hasProjectPermissionV2(
+      db.projectEntity,
+      currentUserV1.value,
+      "bb.issues.create"
+    );
+  });
 });
 
 const allowEditLabels = computed(() => {
@@ -398,13 +404,18 @@ const actions = computed((): DatabaseAction[] => {
       {
         icon: h(DownloadIcon),
         text: t("custom-approval.risk-rule.risk.namespace.data_export"),
-        disabled: !allowDataExport.value,
+        disabled: !allowDataExport.value || props.databases.length !== 1,
         click: () => generateMultiDb("bb.issue.database.data.export"),
-        tooltip: () => {
-          if (props.databases.length === 0 || allowDataExport.value) {
-            return "";
+        tooltip: (action) => {
+          if (!allowDataExport.value) {
+            return t("database.batch-action-permission-denied", {
+              action,
+            });
           }
-          return t("database.data-export-action-disabled");
+          if (props.databases.length > 1) {
+            return t("database.data-export-action-disabled");
+          }
+          return "";
         },
       },
       {

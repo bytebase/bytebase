@@ -63,7 +63,6 @@
     - [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest)
     - [DataSource](#bytebase-v1-DataSource)
     - [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret)
-    - [DataSourceExternalSecret.AWSEnvironmentConfig](#bytebase-v1-DataSourceExternalSecret-AWSEnvironmentConfig)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption)
     - [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest)
     - [GetInstanceRequest](#bytebase-v1-GetInstanceRequest)
@@ -1481,28 +1480,9 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | auth_type | [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType) |  |  |
 | app_role | [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption) |  |  |
 | token | [string](#string) |  |  |
-| aws_environment_config | [DataSourceExternalSecret.AWSEnvironmentConfig](#bytebase-v1-DataSourceExternalSecret-AWSEnvironmentConfig) |  |  |
 | engine_name | [string](#string) |  | engine name is the name for secret engine. |
 | secret_name | [string](#string) |  | the secret name in the engine to store the password. |
 | password_key_name | [string](#string) |  | the key name for the password. |
-
-
-
-
-
-
-<a name="bytebase-v1-DataSourceExternalSecret-AWSEnvironmentConfig"></a>
-
-### DataSourceExternalSecret.AWSEnvironmentConfig
-store the environment name for AWS credentials.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| access_key_id | [string](#string) |  | environment name for AWS access key id, default AWS_ACCESS_KEY_ID. |
-| secret_access_key | [string](#string) |  | environment name for AWS secret access key, default AWS_SECRET_ACCESS_KEY. |
-| session_token | [string](#string) |  | environment name for AWS session token, default AWS_SESSION_TOKEN. |
-| region | [string](#string) |  | environment name for AWS region, default AWS_REGION. |
 
 
 
