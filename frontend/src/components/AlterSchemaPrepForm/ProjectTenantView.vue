@@ -77,20 +77,20 @@ const { deploymentConfig, ready } = useDeploymentConfigV1ByProject(
 </script>
 
 <style scoped lang="postcss">
-.project-tenant-view :global(.n-collapse-item) {
+.project-tenant-view :deep(.n-collapse-item) {
   @apply mt-0 !important;
 }
 
 .project-tenant-view
-  :global(.n-collapse-item.n-collapse-item--active + .n-collapse-item) {
+  :deep(.n-collapse-item.n-collapse-item--active + .n-collapse-item) {
   @apply border-0 !important;
 }
 
-.project-tenant-view :global(.n-collapse-item__header) {
+.project-tenant-view :deep(.n-collapse-item__header) {
   @apply pt-4 pb-4 border-control-light !important;
 }
 
-.project-tenant-view :global(.n-collapse-item__content-inner) {
+.project-tenant-view :deep(.n-collapse-item__content-inner) {
   @apply pt-0 !important;
 }
 </style>

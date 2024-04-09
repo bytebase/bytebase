@@ -16,6 +16,7 @@
           </template>
         </Suspense>
       </template>
+      <Welcome v-else />
     </template>
 
     <Suspense>
@@ -46,6 +47,7 @@ import {
   SaveSheetModal,
 } from "../EditorCommon";
 import { useSQLEditorContext } from "../context";
+import Welcome from "./Welcome.vue";
 
 const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 

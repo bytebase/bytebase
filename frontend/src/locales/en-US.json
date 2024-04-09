@@ -2163,7 +2163,7 @@
     },
     "view-all-tabs": "View all Tabs",
     "sheets": "Sheets",
-    "connection-holder": "Select a database to start",
+    "connect-to-a-database": "Connect to a database",
     "link-access": "Link access",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
@@ -2237,7 +2237,9 @@
     "override-current-statement": "Override current statement",
     "last-synced": "Last synced: {time}",
     "click-to-sync-now": "Click to sync now",
-    "sync-in-progress": "Sync in progress"
+    "sync-in-progress": "Sync in progress",
+    "create-a-worksheet": "Create a new worksheet",
+    "select-a-database-to-start": "Select a database to start"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2610,7 +2612,8 @@
     "sheets": "Sheets",
     "search-sheets": "Search Sheets",
     "sheet": "Sheet",
-    "unconnected": "Unconnected"
+    "unconnected": "Unconnected",
+    "draft": "Draft"
   },
   "engine": {
     "mysql": "MySQL",
