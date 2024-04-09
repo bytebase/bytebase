@@ -344,22 +344,9 @@ message DataSourceExternalSecret {
     string mount_path = 4;
   }
 
-  // store the environment name for AWS credentials.
-  message AWSEnvironmentConfig {
-    // environment name for AWS access key id, default AWS_ACCESS_KEY_ID.
-    string access_key_id = 1;
-    // environment name for AWS secret access key, default AWS_SECRET_ACCESS_KEY.
-    string secret_access_key = 2;
-    // environment name for AWS session token, default AWS_SESSION_TOKEN.
-    string session_token = 3;
-    // environment name for AWS region, default AWS_REGION.
-    string region = 4;
-  }
-
   oneof auth_option {
     AppRoleAuthOption app_role = 4;
     string token = 5 [(google.api.field_behavior) = INPUT_ONLY];
-    AWSEnvironmentConfig aws_environment_config = 9;
   }
 
   // engine name is the name for secret engine.

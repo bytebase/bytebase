@@ -140,7 +140,7 @@
             >
               <template #app_password>
                 <a
-                  href="https://bitbucket.org/account/settings/app-passwords"
+                  href="https://bitbucket.org/account/settings/app-passwords/"
                   target="_blank"
                   class="normal-link"
                 >
@@ -157,7 +157,7 @@
           <li>• Workspace membership (Read)</li>
           <li>• Projects (Read)</li>
           <li>• Webhooks (Read and Write)</li>
-          <li>• Repositories (Read)</li>
+          <li>• Repositories (Read and Write)</li>
           <li>• Pull requests (Read and Write)</li>
         </template>
         <template v-if="config.type == VCSType.AZURE_DEVOPS">

@@ -850,6 +850,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			if err != nil {
 				return nil, err
 			}
+			dataSource.ExternalSecret = externalSecret
 			patch.ExternalSecret = externalSecret
 			patch.RemoveExternalSecret = externalSecret == nil
 		default:
@@ -1106,8 +1107,6 @@ func convertToV1DataSourceExternalSecret(externalSecret *storepb.DataSourceExter
 		resp.AuthOption = &v1pb.DataSourceExternalSecret_Token{
 			Token: "",
 		}
-	case v1pb.DataSourceExternalSecret_AWS_ENVIRONMENT:
-		resp.AuthOption = secret.AuthOption
 	}
 
 	return resp, nil
@@ -1159,20 +1158,24 @@ func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExter
 	if secret.SecretName == "" || secret.PasswordKeyName == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "missing secret name or key name")
 	}
-	if secret.Url == "" && secret.SecretType == storepb.DataSourceExternalSecret_VAULT_KV_V2 {
-		return nil, status.Errorf(codes.InvalidArgument, "missing Vault URL")
+	if secret.SecretType == storepb.DataSourceExternalSecret_VAULT_KV_V2 {
+		if secret.Url == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "missing Vault URL")
+		}
+		if secret.EngineName == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "missing Vault engine name")
+		}
 	}
 
 	switch secret.AuthType {
+	case storepb.DataSourceExternalSecret_AWS_ENVIRONMENT:
 	case storepb.DataSourceExternalSecret_TOKEN:
+		if secret.GetToken() == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "missing token")
+		}
 	case storepb.DataSourceExternalSecret_APP_ROLE:
 		if secret.GetAppRole() == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing Vault approle")
-		}
-	case storepb.DataSourceExternalSecret_AWS_ENVIRONMENT:
-		config := secret.GetAwsEnvironmentConfig()
-		if config == nil {
-			return nil, status.Errorf(codes.InvalidArgument, "missing AWS environment config")
 		}
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "unsupport auth type: %v", secret.AuthType)
