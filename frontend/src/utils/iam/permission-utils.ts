@@ -37,3 +37,23 @@ export const hasPermissionToCreateChangeDatabaseIssue = (
     user
   );
 };
+
+export const hasPermissionToCreateDataExportIssueInProject = (
+  project: ComposedProject,
+  user: User
+) => {
+  return (
+    hasProjectPermissionV2(project, user, "bb.issues.create") &&
+    hasProjectPermissionV2(project, user, "bb.plans.create") &&
+    hasProjectPermissionV2(project, user, "bb.rollouts.create")
+  );
+};
+export const hasPermissionToCreateDataExportIssue = (
+  database: ComposedDatabase,
+  user: User
+) => {
+  return hasPermissionToCreateDataExportIssueInProject(
+    database.projectEntity,
+    user
+  );
+};
