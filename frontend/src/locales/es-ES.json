@@ -3214,7 +3214,8 @@
     }
   },
   "export-center": {
-    "self": "centro de exportacion"
+    "self": "centro de exportacion",
+    "permission-denied": "Permiso denegado"
   },
   "schema-designer": {
     "self": "Diseñador de esquemas",
