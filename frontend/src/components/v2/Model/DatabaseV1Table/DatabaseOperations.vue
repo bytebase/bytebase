@@ -121,6 +121,7 @@ import {
   hasProjectPermissionV2,
   extractProjectResourceName,
   hasPermissionToCreateChangeDatabaseIssue,
+  hasPermissionToCreateDataExportIssue,
 } from "@/utils";
 
 interface DatabaseAction {
@@ -252,13 +253,9 @@ const allowTransferProject = computed(() => {
   );
 });
 
-const allowDataExport = computed(() => {
+const allowExportData = computed(() => {
   return props.databases.every((db) => {
-    return hasProjectPermissionV2(
-      db.projectEntity,
-      currentUserV1.value,
-      "bb.issues.create"
-    );
+    return hasPermissionToCreateDataExportIssue(db, currentUserV1.value);
   });
 });
 
@@ -404,10 +401,10 @@ const actions = computed((): DatabaseAction[] => {
       {
         icon: h(DownloadIcon),
         text: t("custom-approval.risk-rule.risk.namespace.data_export"),
-        disabled: !allowDataExport.value || props.databases.length !== 1,
+        disabled: !allowExportData.value || props.databases.length !== 1,
         click: () => generateMultiDb("bb.issue.database.data.export"),
         tooltip: (action) => {
-          if (!allowDataExport.value) {
+          if (!allowExportData.value) {
             return t("database.batch-action-permission-denied", {
               action,
             });
