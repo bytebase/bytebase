@@ -1375,7 +1375,7 @@
     },
     "external-secret": {
       "secret-name": "Secret name",
-      "key-name": "Secret key for password"
+      "key-name": "Secret key"
     },
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",

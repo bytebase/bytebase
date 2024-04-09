@@ -1375,7 +1375,7 @@
     },
     "external-secret": {
       "secret-name": "Tên bí mật",
-      "key-name": "Khóa bí mật cho mật khẩu"
+      "key-name": "Khóa bí mật"
     },
     "test-connection": "Kiểm tra kết nối",
     "ignore-and-create": "Bỏ qua và tạo",
