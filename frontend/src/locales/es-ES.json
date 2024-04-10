@@ -1351,7 +1351,7 @@
     },
     "external-secret-gcp": {
       "secret-name": "nombre completo secreto",
-      "secret-name-tips": "El nombre secreto debería ser similar a \"projects/identificación del proyecto/secrets/nombre secreto\"."
+      "secret-name-tips": "El nombre secreto debería ser similar a \"projects/project-id/secrets/secret-id\"."
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",

@@ -1351,7 +1351,7 @@
     },
     "external-secret-gcp": {
       "secret-name": "密钥完整路径",
-      "secret-name-tips": "密钥完整路径应类似于 “projects/项目 id/secrets/密钥名称”"
+      "secret-name-tips": "密钥完整路径应类似于 “projects/project-id/secrets/secret-id”。"
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",

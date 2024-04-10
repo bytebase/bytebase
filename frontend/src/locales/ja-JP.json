@@ -1351,7 +1351,7 @@
     },
     "external-secret-gcp": {
       "secret-name": "秘密のフルネーム",
-      "secret-name-tips": "シークレット名は「projects/プロジェクトID/secrets/シークレット名」のようになります。"
+      "secret-name-tips": "シークレット名は\"projects/project-id/secrets/secret-id\" のようになります。"
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",
