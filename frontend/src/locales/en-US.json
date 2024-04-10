@@ -1351,7 +1351,7 @@
     },
     "external-secret-gcp": {
       "secret-name": "Secret full name",
-      "secret-name-tips": "The secret name should like \"projects/project id/secrets/secret name\""
+      "secret-name-tips": "The secret name should be like \"projects/project id/secrets/secret name\"."
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",
