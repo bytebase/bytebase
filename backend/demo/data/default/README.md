@@ -25,13 +25,14 @@ supply the --port with `8080` to make sample instances run on those 2 desired po
 ```bash
 docker run --init \
   --name bytebase \
+  --pull always \
   --restart always \
   --publish 8080:8080 \
   --health-cmd "curl --fail http://localhost:9015/healthz || exit 1" \
   --health-interval 5m \
   --health-timeout 60s \
   --volume ~/.bytebase/data:/var/opt/bytebase \
-  bytebase/bytebase:2.12.0 \
+  bytebase/bytebase:2.15.0 \
   --data /var/opt/bytebase \
   --port 8080 \
   --demo default
@@ -52,7 +53,7 @@ docker run --init \
 1. Dump with the following command.
 
 ```bash
-pg_dump --username ${user} --host ${host} --port ${port} --password ${secret} --disable-triggers --column-inserts --on-conflict-do-nothing ${dbname} > /tmp/dump.sql
+pg_dump --username bbdev --host /tmp --port 8082 --disable-triggers --column-inserts --on-conflict-do-nothing bbdev > /tmp/dump.sql
 ```
 
 3. Copy and replace `dump.sql`.
