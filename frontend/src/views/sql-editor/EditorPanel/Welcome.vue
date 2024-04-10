@@ -2,31 +2,17 @@
   <div
     class="w-full h-auto flex-grow flex flex-col items-center justify-center"
   >
-    <BytebaseLogo component="span" class="mb-4 -mt-[20%]" />
+    <HideInStandaloneMode>
+      <BytebaseLogo component="span" class="mb-4 -mt-[20%]" />
+    </HideInStandaloneMode>
     <div class="flex flex-col items-start gap-y-1 w-auto">
-      <NButton
-        quaternary
-        style="
-          --n-color-hover: rgb(var(--color-accent) / 0.05);
-          --n-color-pressed: rgb(var(--color-accent) / 0.05);
-          --n-color-focus: rgb(var(--color-accent) / 0.05);
-        "
-        @click="changeConnection"
-      >
+      <NButton type="primary" @click="changeConnection">
         <template #icon>
           <LinkIcon class="w-4 h-4" />
         </template>
         {{ $t("sql-editor.connect-to-a-database") }}
       </NButton>
-      <NButton
-        quaternary
-        style="
-          --n-color-hover: rgb(var(--color-accent) / 0.05);
-          --n-color-pressed: rgb(var(--color-accent) / 0.05);
-          --n-color-focus: rgb(var(--color-accent) / 0.05);
-        "
-        @click="createNewWorksheet"
-      >
+      <NButton quaternary @click="createNewWorksheet">
         <template #icon>
           <SquarePenIcon class="w-4 h-4" />
         </template>
