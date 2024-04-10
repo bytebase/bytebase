@@ -1465,8 +1465,7 @@ Used internally for obfuscating the page token.
 | ---- | ------ | ----------- |
 | AUTH_TYPE_UNSPECIFIED | 0 |  |
 | TOKEN | 1 | ref: https://developer.hashicorp.com/vault/docs/auth/token |
-| APP_ROLE | 2 | ref: https://developer.hashicorp.com/vault/docs/auth/approle |
-| AWS_ENVIRONMENT | 3 | ref: https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials |
+| VAULT_APP_ROLE | 2 | ref: https://developer.hashicorp.com/vault/docs/auth/approle |
 
 
 
@@ -1480,6 +1479,7 @@ Used internally for obfuscating the page token.
 | SAECRET_TYPE_UNSPECIFIED | 0 |  |
 | VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
 | AWS_SECRETS_MANAGER | 2 | ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html |
+| GCP_SECRET_MANAGER | 3 | ref: https://cloud.google.com/secret-manager/docs |
 
 
  

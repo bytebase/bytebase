@@ -25,7 +25,7 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 	switch externalSecret.AuthType {
 	case storepb.DataSourceExternalSecret_TOKEN:
 		token = externalSecret.GetToken()
-	case storepb.DataSourceExternalSecret_APP_ROLE:
+	case storepb.DataSourceExternalSecret_VAULT_APP_ROLE:
 		role := externalSecret.GetAppRole()
 		if role == nil {
 			return nil, errors.Errorf("approle is invalid")

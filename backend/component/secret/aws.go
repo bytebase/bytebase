@@ -17,7 +17,6 @@ func getSecretFromAWS(ctx context.Context, externalSecret *storepb.DataSourceExt
 	// for AWS auth we will use the default credentials (environment)
 	// ref:
 	// https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/
-	// https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to init aws config: %v", err.Error())

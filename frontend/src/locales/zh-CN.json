@@ -1346,7 +1346,12 @@
       "password": "密码",
       "password-tip": "您也可以指定外部的密码管理服务 endpoint",
       "external-secret-vault": "Vault (KV v2)",
-      "external-secret-aws": "AWS Secrets Manager"
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-gcp": "GCP Secret Manager"
+    },
+    "external-secret-gcp": {
+      "secret-name": "密钥完整路径",
+      "secret-name-tips": "密钥完整路径应类似于 “projects/project-id/secrets/secret-id”。"
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",
@@ -1354,7 +1359,6 @@
         "self": "Vault 验证方式",
         "token": {
           "self": "Token",
-          "token": "Token",
           "tips": "没有过期时限的根 token"
         },
         "approle": {
@@ -2163,7 +2167,7 @@
     },
     "view-all-tabs": "查看所有标签页",
     "sheets": "工作表",
-    "connection-holder": "选择数据库以开始",
+    "connect-to-a-database": "连接到数据库",
     "link-access": "链接访问权限",
     "private": "私有",
     "private-desc": "只有您自己可以访问此工作表",
@@ -2237,7 +2241,9 @@
     "override-current-statement": "覆盖当前语句",
     "last-synced": "上次同步时间：{time}",
     "click-to-sync-now": "点击立即同步",
-    "sync-in-progress": "正在同步"
+    "sync-in-progress": "正在同步",
+    "create-a-worksheet": "新建工作表",
+    "select-a-database-to-start": "选择数据库以开始"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2610,7 +2616,8 @@
     "sheets": "工作表",
     "search-sheets": "搜索工作表",
     "sheet": "工作表",
-    "unconnected": "未连接"
+    "unconnected": "未连接",
+    "draft": "草稿"
   },
   "engine": {
     "mysql": "MySQL",

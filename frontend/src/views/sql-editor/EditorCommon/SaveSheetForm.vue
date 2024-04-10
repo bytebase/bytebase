@@ -19,24 +19,30 @@
 import { NButton, NInput } from "naive-ui";
 import { ref, nextTick } from "vue";
 import type { SQLEditorTab } from "@/types";
+import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 
 const props = defineProps<{
   tab: SQLEditorTab;
+  mask?: Array<keyof Worksheet>;
 }>();
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "confirm", tab: SQLEditorTab): void;
+  (e: "confirm", tab: SQLEditorTab, mask?: Array<keyof Worksheet>): void;
 }>();
 
 const sheetTitle = ref(props.tab.title);
 const sheetTitleInputRef = ref();
 
 const handleSaveSheet = () => {
-  emit("confirm", {
-    ...props.tab,
-    title: sheetTitle.value,
-  });
+  emit(
+    "confirm",
+    {
+      ...props.tab,
+      title: sheetTitle.value,
+    },
+    props.mask
+  );
 };
 
 nextTick(() => {

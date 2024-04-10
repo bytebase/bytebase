@@ -88,6 +88,7 @@ func TestVCS(t *testing.T) {
 						Ref: "test-branch",
 						SHA: "cc63b0592388a7ab1b05b005ad8c8dc14ce432b1",
 					},
+					Merged: true,
 				},
 			},
 		},

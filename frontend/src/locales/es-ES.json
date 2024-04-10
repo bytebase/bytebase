@@ -1346,7 +1346,12 @@
       "password": "Contraseña",
       "password-tip": "También puede especificar un punto final de gestión de secreto externo",
       "external-secret-vault": "Vault (KV v2)",
-      "external-secret-aws": "AWS Secrets Manager"
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-gcp": "GCP Secret Manager"
+    },
+    "external-secret-gcp": {
+      "secret-name": "nombre completo secreto",
+      "secret-name-tips": "El nombre secreto debería ser similar a \"projects/project-id/secrets/secret-id\"."
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",
@@ -1354,7 +1359,6 @@
         "self": "Auth type",
         "token": {
           "self": "Simbólico",
-          "token": "Token",
           "tips": "Un token raíz sin TTL."
         },
         "approle": {
@@ -2163,7 +2167,7 @@
     },
     "view-all-tabs": "Ver todas las pestañas",
     "sheets": "Hojas",
-    "connection-holder": "Seleccione una base de datos para comenzar",
+    "connect-to-a-database": "Conectarse a una base de datos",
     "link-access": "Acceso al enlace",
     "private": "Privado",
     "private-desc": "Solo tú puedes acceder a esta hoja",
@@ -2237,7 +2241,9 @@
     "override-current-statement": "Anular la declaración actual",
     "last-synced": "Última sincronización: {hora}",
     "click-to-sync-now": "Haga clic para sincronizar ahora",
-    "sync-in-progress": "Sincronización en progreso"
+    "sync-in-progress": "Sincronización en progreso",
+    "create-a-worksheet": "Crear una hoja de trabajo",
+    "select-a-database-to-start": "Seleccione una base de datos para comenzar"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2610,7 +2616,8 @@
     "sheets": "Hojas",
     "search-sheets": "Hojas de búsqueda",
     "sheet": "Hoja",
-    "unconnected": "Desconectado"
+    "unconnected": "Desconectado",
+    "draft": "Borrador"
   },
   "engine": {
     "mysql": "MySQL",

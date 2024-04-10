@@ -1346,7 +1346,12 @@
       "password": "パスワード",
       "password-tip": "外部シークレット管理エンドポイントを指定することもできます",
       "external-secret-vault": "Vault (KV v2)",
-      "external-secret-aws": "AWS Secrets Manager"
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-gcp": "GCP Secret Manager"
+    },
+    "external-secret-gcp": {
+      "secret-name": "秘密のフルネーム",
+      "secret-name-tips": "シークレット名は\"projects/project-id/secrets/secret-id\" のようになります。"
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",
@@ -1354,7 +1359,6 @@
         "self": "Auth type",
         "token": {
           "self": "Token",
-          "token": "Token",
           "tips": "TTL のないルート トークン。"
         },
         "approle": {
@@ -2163,7 +2167,7 @@
     },
     "view-all-tabs": "すべてのタブを表示",
     "sheets": "シート",
-    "connection-holder": "開始するデータベースを選択してください",
+    "connect-to-a-database": "データベースに接続する",
     "link-access": "リンクアクセス",
     "private": "プライベート",
     "private-desc": "このシートにはあなたのみがアクセスできます",
@@ -2237,7 +2241,9 @@
     "override-current-statement": "現在のステートメントをオーバーライドする",
     "last-synced": "最終同期: {time}",
     "click-to-sync-now": "今すぐ同期するにはクリックしてください",
-    "sync-in-progress": "同期中"
+    "sync-in-progress": "同期中",
+    "create-a-worksheet": "ワークシートを作成する",
+    "select-a-database-to-start": "開始するデータベースを選択してください"
   },
   "schema-editor": {
     "self": "スキーマエディター",
@@ -2610,7 +2616,8 @@
     "sheets": "シート",
     "search-sheets": "シートを検索",
     "sheet": "シート",
-    "unconnected": "接続されていません"
+    "unconnected": "接続されていません",
+    "draft": "下書き"
   },
   "engine": {
     "mysql": "MySQL",

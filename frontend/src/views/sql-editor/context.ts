@@ -3,11 +3,16 @@ import type { InjectionKey, Ref } from "vue";
 import { inject, provide, ref } from "vue";
 import { useSQLEditorStore } from "@/store";
 import type { ComposedDatabase, SQLEditorTab } from "@/types";
+import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
 
 type SQLEditorEvents = Emittery<{
-  "save-sheet": { tab: SQLEditorTab; editTitle?: boolean };
+  "save-sheet": {
+    tab: SQLEditorTab;
+    editTitle?: boolean;
+    mask?: Array<keyof Worksheet>;
+  };
   "alter-schema": {
     databaseUID: string;
     schema: string;

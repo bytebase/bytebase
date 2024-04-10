@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -49,9 +50,9 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		return config.Username[:i]
 	}()
 
-	// usename format: {user}@{tenant}#{cluster}
-	// user is required, others are optional.
-	dsn := fmt.Sprintf("%s/%s@%s:%s/%s", config.Username, config.Password, config.Host, config.Port, databaseName)
+	// Usename format: {user}@{tenant}#{cluster}
+	// User is required, others are optional.
+	dsn := fmt.Sprintf("%s/%s@%s:%s/%s", url.PathEscape(config.Username), url.PathEscape(config.Password), config.Host, config.Port, url.PathEscape(databaseName))
 
 	db, err := sql.Open("oci8", dsn)
 	if err != nil {
