@@ -1972,7 +1972,7 @@
       "description": "在 Bytebase GitOps 工作流程中，开发人员将迁移脚本存储在 VCS 中。拉取请求触发 SQL 审查，合并后启动迁移计划。管理员配置 VCS 提供商，而项目所有者在项目内建立 VCS 连接。",
       "add-git-provider": {
         "self": "添加 Git 提供方",
-        "description": "在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS 进行集成。以下是配置该集成的步骤，您也可以按照我们的{guide}。",
+        "description": "在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS 进行集成。",
         "gitlab-self-host": "自托管 GitLab",
         "gitlab-self-host-admin-requirement": "您必须是 GitLab 实例的管理员。",
         "gitlab-com-admin-requirement": "您必须是项目或组的管理员。",

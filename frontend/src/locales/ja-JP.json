@@ -1972,7 +1972,7 @@
       "description": "BytebaseのGitOpsワークフローでは、開発者はマイグレーションスクリプトをVCSに保存します。プルリクエストはSQLレビューを促し、マージされたものはマイグレーション計画を開始します。管理者はVCSプロバイダを設定し、プロジェクトオーナーはプロジェクト内でVCS接続を確立します。",
       "add-git-provider": {
         "self": "Gitプロバイダを追加する",
-        "description": "プロジェクトがGitOpsワークフローを有効にする前に、Bytebaseはまず対応するバージョン管理システム（VCS）と統合する必要があります。そのためには、VCSでOAuthアプリケーションとして登録する必要があります。以下にその手順を示します。また、{guide}に従っても設定できます。",
+        "description": "プロジェクトがGitOpsワークフローを有効にする前に、Bytebaseはまず対応するバージョン管理システム（VCS）と統合する必要があります。",
         "gitlab-self-host": "GitLab Self-Hosted",
         "gitlab-self-host-admin-requirement": "GitLabインスタンスの管理者である必要があります。",
         "gitlab-com-admin-requirement": "プロジェクトまたはグループの管理者である必要があります。",
