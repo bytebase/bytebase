@@ -3,6 +3,7 @@ package github
 // PullRequestPushEvent is the json message for pull request push event.
 type PullRequestPushEvent struct {
 	// opened, edited, closed.
+	// PR close will also send webhook event with "closed" action, so we need to check the "merged" field.
 	Action      string           `json:"action"`
 	Number      int              `json:"number"`
 	PullRequest EventPullRequest `json:"pull_request"`
@@ -14,6 +15,7 @@ type EventPullRequest struct {
 	Body    string      `json:"body"`
 	Base    EventBranch `json:"base"`
 	Head    EventBranch `json:"head"`
+	Merged  bool        `json:"merged"`
 }
 
 type EventBranch struct {
