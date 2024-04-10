@@ -1798,8 +1798,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | AUTH_TYPE_UNSPECIFIED | 0 |  |
 | TOKEN | 1 | ref: https://developer.hashicorp.com/vault/docs/auth/token |
 | VAULT_APP_ROLE | 2 | ref: https://developer.hashicorp.com/vault/docs/auth/approle |
-| AWS_ENVIRONMENT | 3 | ref: https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials |
-| GCP_SERVICE_ACCOUNT | 4 | ref: https://pkg.go.dev/cloud.google.com/go |
 
 
 

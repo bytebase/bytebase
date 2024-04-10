@@ -1148,7 +1148,6 @@ const checkDataSource = (dataSources: DataSource[]) => {
         if (!ds.externalSecret.url || !ds.externalSecret.engineName) {
           return false;
         }
-      // fallthrough
       case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
         if (
           !ds.externalSecret.secretName ||

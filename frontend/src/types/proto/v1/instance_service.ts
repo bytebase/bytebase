@@ -346,10 +346,6 @@ export enum DataSourceExternalSecret_AuthType {
   TOKEN = 1,
   /** VAULT_APP_ROLE - ref: https://developer.hashicorp.com/vault/docs/auth/approle */
   VAULT_APP_ROLE = 2,
-  /** AWS_ENVIRONMENT - ref: https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials */
-  AWS_ENVIRONMENT = 3,
-  /** GCP_SERVICE_ACCOUNT - ref: https://pkg.go.dev/cloud.google.com/go */
-  GCP_SERVICE_ACCOUNT = 4,
   UNRECOGNIZED = -1,
 }
 
@@ -364,12 +360,6 @@ export function dataSourceExternalSecret_AuthTypeFromJSON(object: any): DataSour
     case 2:
     case "VAULT_APP_ROLE":
       return DataSourceExternalSecret_AuthType.VAULT_APP_ROLE;
-    case 3:
-    case "AWS_ENVIRONMENT":
-      return DataSourceExternalSecret_AuthType.AWS_ENVIRONMENT;
-    case 4:
-    case "GCP_SERVICE_ACCOUNT":
-      return DataSourceExternalSecret_AuthType.GCP_SERVICE_ACCOUNT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -385,10 +375,6 @@ export function dataSourceExternalSecret_AuthTypeToJSON(object: DataSourceExtern
       return "TOKEN";
     case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
       return "VAULT_APP_ROLE";
-    case DataSourceExternalSecret_AuthType.AWS_ENVIRONMENT:
-      return "AWS_ENVIRONMENT";
-    case DataSourceExternalSecret_AuthType.GCP_SERVICE_ACCOUNT:
-      return "GCP_SERVICE_ACCOUNT";
     case DataSourceExternalSecret_AuthType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

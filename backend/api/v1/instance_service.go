@@ -1163,7 +1163,9 @@ func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExter
 		if secret.EngineName == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "missing Vault engine name")
 		}
-		fallthrough
+		if secret.SecretName == "" || secret.PasswordKeyName == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "missing secret name or key name")
+		}
 	case storepb.DataSourceExternalSecret_AWS_SECRETS_MANAGER:
 		if secret.SecretName == "" || secret.PasswordKeyName == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "missing secret name or key name")
@@ -1175,10 +1177,6 @@ func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExter
 	}
 
 	switch secret.AuthType {
-	case storepb.DataSourceExternalSecret_GCP_SERVICE_ACCOUNT:
-		// Do nothing. We expect users start the Bytebase in GKE and get the credentials with default configuration.
-	case storepb.DataSourceExternalSecret_AWS_ENVIRONMENT:
-		// Do nothing. We expect users start the Bytebase with AWS authentication environment.
 	case storepb.DataSourceExternalSecret_TOKEN:
 		if secret.GetToken() == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "missing token")
@@ -1187,8 +1185,6 @@ func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExter
 		if secret.GetAppRole() == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing Vault approle")
 		}
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unsupport auth type: %v", secret.AuthType)
 	}
 
 	return secret, nil

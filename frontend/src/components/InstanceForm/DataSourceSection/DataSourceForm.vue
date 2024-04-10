@@ -650,7 +650,7 @@ const changeSecretType = (secretType: DataSourceExternalSecret_SecretType) => {
       break;
     case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
       ds.externalSecret = DataSourceExternalSecret.fromPartial({
-        authType: DataSourceExternalSecret_AuthType.AWS_ENVIRONMENT,
+        authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
         secretType: secretType,
         secretName: ds.externalSecret?.secretName ?? "",
         passwordKeyName: ds.externalSecret?.passwordKeyName ?? "",
@@ -658,7 +658,7 @@ const changeSecretType = (secretType: DataSourceExternalSecret_SecretType) => {
       break;
     case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
       ds.externalSecret = DataSourceExternalSecret.fromPartial({
-        authType: DataSourceExternalSecret_AuthType.GCP_SERVICE_ACCOUNT,
+        authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
         secretType: secretType,
         token: "",
         secretName: ds.externalSecret?.secretName ?? "",
