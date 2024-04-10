@@ -1924,13 +1924,11 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	if err != nil {
 		return nil, err
 	}
-
-	activityUID, err := strconv.Atoi(request.IssueComment.Uid)
+	issueCommentUID, err := strconv.Atoi(request.IssueComment.Uid)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid comment id %q: %v", request.IssueComment.Uid, err)
 	}
-
-	issueComment, err := s.store.GetActivityV2(ctx, activityUID)
+	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get issue comment: %v", err)
 	}
@@ -1944,7 +1942,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	}
 
 	ok, err = func() (bool, error) {
-		if issueComment.CreatorUID == user.ID {
+		if issueComment.Creator.ID == user.ID {
 			return true, nil
 		}
 		return s.iamManager.CheckPermission(ctx, iam.PermissionIssueCommentsUpdate, user, issue.Project.ResourceID)
@@ -1956,10 +1954,10 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied, user does not have permission %q", iam.PermissionIssueCommentsUpdate)
 	}
 
-	update := &store.UpdateActivityMessage{
-		UID: activityUID,
+	update := &store.UpdateIssueCommentMessage{
+		UID:       issueCommentUID,
+		UpdaterID: user.ID,
 	}
-
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "comment":
@@ -1969,21 +1967,18 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 		}
 	}
 
-	activity, err := s.store.UpdateActivityV2(ctx, update)
-	if err != nil {
+	if err := s.store.UpdateIssueComment(ctx, update); err != nil {
 		if common.ErrorCode(err) == common.NotFound {
 			return nil, status.Errorf(codes.NotFound, "cannot found the issue comment %s", request.IssueComment.Uid)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to update the issue comment with error: %v", err.Error())
 	}
+	issueComment, err = s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get issue comment: %v", err)
+	}
 
-	return &v1pb.IssueComment{
-		Uid:        fmt.Sprintf("%d", activity.UID),
-		Comment:    activity.Comment,
-		Payload:    activity.Payload,
-		CreateTime: timestamppb.New(time.Unix(activity.CreatedTs, 0)),
-		UpdateTime: timestamppb.New(time.Unix(activity.UpdatedTs, 0)),
-	}, nil
+	return convertToIssueComment(request.Parent, issueComment), nil
 }
 
 func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store.IssueMessage, error) {

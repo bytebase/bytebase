@@ -4,11 +4,7 @@ import { defineStore } from "pinia";
 import type { WatchCallback } from "vue";
 import { ref, watch } from "vue";
 import { issueServiceClient } from "@/grpcweb";
-import type {
-  ActivityIssueCommentCreatePayload,
-  ComposedIssue,
-  IssueFilter,
-} from "@/types";
+import type { ComposedIssue, IssueFilter } from "@/types";
 import { PresetRoleType, UNKNOWN_PROJECT_NAME } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
@@ -19,9 +15,7 @@ import {
 } from "@/types/proto/v1/issue_service";
 import { extractProjectResourceName, memberListInProjectV1 } from "@/utils";
 import { useUserStore } from "../user";
-import { useActivityV1Store } from "./activity";
 import {
-  experimentalFetchIssueByName,
   shallowComposeIssue,
   type ComposeIssueConfig,
 } from "./experimental-issue";
@@ -87,47 +81,6 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     });
   };
 
-  const createIssueComment = async ({
-    issueName,
-    comment,
-    payload,
-  }: {
-    issueName: string;
-    comment: string;
-    payload?: ActivityIssueCommentCreatePayload;
-  }) => {
-    await issueServiceClient.createIssueComment({
-      parent: issueName,
-      issueComment: {
-        comment,
-        payload: JSON.stringify(payload ?? {}),
-      },
-    });
-    const issue = await experimentalFetchIssueByName(issueName);
-    await useActivityV1Store().fetchActivityListForIssueV1(issue);
-  };
-
-  const updateIssueComment = async ({
-    issueName,
-    commentId,
-    comment,
-  }: {
-    issueName: string;
-    commentId: string;
-    comment: string;
-  }) => {
-    await issueServiceClient.updateIssueComment({
-      parent: issueName,
-      issueComment: {
-        uid: commentId,
-        comment,
-      },
-      updateMask: ["comment"],
-    });
-    const issue = await experimentalFetchIssueByName(issueName);
-    await useActivityV1Store().fetchActivityListForIssueV1(issue);
-  };
-
   const listIssues = async (
     { find, pageSize, pageToken }: ListIssueParams,
     composeIssueConfig?: ComposeIssueConfig
@@ -161,8 +114,6 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
   return {
     listIssues,
     regenerateReviewV1,
-    createIssueComment,
-    updateIssueComment,
   };
 });
 

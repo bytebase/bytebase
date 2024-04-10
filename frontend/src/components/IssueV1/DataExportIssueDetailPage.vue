@@ -16,7 +16,7 @@
         <PlanCheckSection v-if="!isCreating" />
         <StatementSection />
         <DescriptionSection />
-        <ActivitySection v-if="!isCreating" />
+        <IssueCommentSection v-if="!isCreating" />
       </div>
 
       <div
@@ -77,7 +77,7 @@ import {
   PlanCheckSection,
   StatementSection,
   DescriptionSection,
-  ActivitySection,
+  IssueCommentSection,
   Sidebar,
   IssueReviewActionPanel,
   IssueStatusActionPanel,

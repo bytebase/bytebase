@@ -4,28 +4,30 @@
       <div class="text-sm text-control-light space-x-1">
         <ActionCreator
           v-if="
-            extractUserResourceName(activity.creator) !== SYSTEM_BOT_EMAIL ||
-            activity.action === LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE
+            extractUserResourceName(issueComment.creator) !==
+              SYSTEM_BOT_EMAIL ||
+            issueComment.type === IssueCommentType.USER_COMMENT
           "
-          :activity="activity"
+          :creator="issueComment.creator"
         />
 
-        <ActionSentence :issue="issue" :activity="activity" />
+        <ActionSentence :issue="issue" :issue-comment="issueComment" />
 
         <HumanizeTs
-          :ts="(activity.createTime?.getTime() ?? 0) / 1000"
+          :ts="(issueComment.createTime?.getTime() ?? 0) / 1000"
           class="ml-1"
         />
 
         <span
           v-if="
-            activity.createTime?.getTime() !== activity.updateTime?.getTime() &&
-            activity.action == LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE
+            issueComment.createTime?.getTime() !==
+              issueComment.updateTime?.getTime() &&
+            issueComment.type === IssueCommentType.USER_COMMENT
           "
         >
           <span>({{ $t("common.edited") }}</span>
           <HumanizeTs
-            :ts="(activity.updateTime?.getTime() ?? 0) / 1000"
+            :ts="(issueComment.updateTime?.getTime() ?? 0) / 1000"
             class="ml-1"
           />)
         </span>
@@ -51,10 +53,9 @@
 </template>
 
 <script lang="ts" setup>
+import { IssueCommentType, type ComposedIssueComment } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { SYSTEM_BOT_EMAIL } from "@/types";
-import type { LogEntity } from "@/types/proto/v1/logging_service";
-import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
 import ActionCreator from "./ActionCreator.vue";
 import ActionSentence from "./ActionSentence.vue";
@@ -62,7 +63,7 @@ import ActionSentence from "./ActionSentence.vue";
 defineProps<{
   issue: ComposedIssue;
   index: number;
-  activity: LogEntity;
-  similar: LogEntity[];
+  issueComment: ComposedIssueComment;
+  similar: ComposedIssueComment[];
 }>();
 </script>
