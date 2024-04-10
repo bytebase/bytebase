@@ -4,7 +4,8 @@
 
 <script lang="tsx" setup>
 import dayjs from "dayjs";
-import { defineComponent, h } from "vue";
+import type { h } from "vue";
+import { defineComponent } from "vue";
 import { Translation, useI18n } from "vue-i18n";
 import {
   IssueCommentType,
@@ -61,7 +62,7 @@ const renderActionSentence = () => {
       verb = t("custom-approval.issue-review.re-requested-review");
     }
     if (verb) {
-      return <span>{maybeAutomaticallyVerb(issueComment, verb)}</span>;
+      return maybeAutomaticallyVerb(issueComment, verb);
     }
   } else if (issueComment.type === IssueCommentType.ISSUE_UPDATE) {
     const {
@@ -75,25 +76,21 @@ const renderActionSentence = () => {
       toAssignee,
     } = IssueComment_IssueUpdate.fromPartial(issueComment.issueUpdate || {});
     if (fromTitle !== undefined && toTitle !== undefined) {
-      return (
-        <span>
-          {t("activity.sentence.changed-from-to", {
-            name: t("issue.issue-name").toLowerCase(),
-            oldValue: fromTitle,
-            newValue: toTitle,
-          })}
-        </span>
-      );
+      return t("activity.sentence.changed-from-to", {
+        name: t("issue.issue-name").toLowerCase(),
+        oldValue: fromTitle,
+        newValue: toTitle,
+      });
     } else if (fromDescription !== undefined && toDescription !== undefined) {
       // Description could be very long, so we don't display it.
-      return <span>{t("activity.sentence.changed-description")}</span>;
+      return t("activity.sentence.changed-description");
     } else if (fromStatus !== undefined && toStatus !== undefined) {
       if (toStatus === IssueStatus.DONE) {
-        return <span>{t("activity.sentence.resolved-issue")}</span>;
+        return t("activity.sentence.resolved-issue");
       } else if (toStatus === IssueStatus.CANCELED) {
-        return <span>{t("activity.sentence.canceled-issue")}</span>;
+        return t("activity.sentence.canceled-issue");
       } else if (toStatus === IssueStatus.OPEN) {
-        return <span>{t("activity.sentence.reopened-issue")}</span>;
+        return t("activity.sentence.reopened-issue");
       }
     } else if (fromAssignee !== undefined || toAssignee !== undefined) {
       if (fromAssignee && toAssignee) {
@@ -103,34 +100,24 @@ const renderActionSentence = () => {
         const newName = (
           userStore.getUserByIdentifier(toAssignee) ?? unknownUser()
         ).title;
-        return (
-          <span>
-            {t("activity.sentence.reassigned-issue", {
-              oldName,
-              newName,
-            })}
-          </span>
-        );
+        return t("activity.sentence.reassigned-issue", {
+          oldName,
+          newName,
+        });
       } else if (!fromAssignee && toAssignee) {
         const newName = (
           userStore.getUserByIdentifier(toAssignee) ?? unknownUser()
         ).title;
-        return (
-          <span>{t("activity.sentence.assigned-issue", { newName })}</span>
-        );
+        return t("activity.sentence.assigned-issue", { newName });
       } else if (fromAssignee && !toAssignee) {
         const oldName = (
           userStore.getUserByIdentifier(fromAssignee) ?? unknownUser()
         ).title;
-        return (
-          <span>
-            {t("activity.sentence.unassigned-issue", {
-              oldName,
-            })}
-          </span>
-        );
+        return t("activity.sentence.unassigned-issue", {
+          oldName,
+        });
       } else {
-        return <span>{t("activity.sentence.invalid-assignee-update")}</span>;
+        return t("activity.sentence.invalid-assignee-update");
       }
     }
   } else if (issueComment.type === IssueCommentType.STAGE_END) {
@@ -144,12 +131,10 @@ const renderActionSentence = () => {
     const params: VerbTypeTarget = {
       issueComment,
       type: t("common.stage"),
-      target: h(StageName, { stage: stageEntity, issue }),
+      target: <StageName stage={stageEntity} issue={issue} />,
       verb: t("activity.sentence.completed"),
     };
-    return renderVerbTypeTarget(params, {
-      tag: "span",
-    });
+    return renderVerbTypeTarget(params);
   } else if (issueComment.type === IssueCommentType.TASK_UPDATE) {
     const {
       tasks,
@@ -202,29 +187,22 @@ const renderActionSentence = () => {
         findTaskByUID(issue.rolloutEntity, extractTaskUID(task))
       );
       if (taskEntities.length > 0) {
-        params.target = h(TaskName, { issue, task: taskEntities[0] });
+        params.target = <TaskName issue={issue} task={taskEntities[0]} />;
       }
-      return renderVerbTypeTarget(params, {
-        tag: "span",
-      });
+      return renderVerbTypeTarget(params);
     } else if (fromSheet !== undefined && toSheet !== undefined) {
-      return h(
-        "span",
-        {},
-        h(
-          Translation,
-          {
-            keypath: "activity.sentence.changed-x-link",
-          },
-          {
+      return (
+        <Translation keypath="activity.sentence.changed-x-link">
+          {{
             name: () => "SQL",
-            link: () =>
-              h(StatementUpdate, {
-                oldSheetId: extractSheetUID(fromSheet),
-                newSheetId: extractSheetUID(toSheet),
-              }),
-          }
-        )
+            link: () => (
+              <StatementUpdate
+                oldSheetId={extractSheetUID(fromSheet)}
+                newSheetId={extractSheetUID(toSheet)}
+              />
+            ),
+          }}
+        </Translation>
       );
     } else if (
       fromEarliestAllowedTime !== undefined ||
@@ -233,15 +211,11 @@ const renderActionSentence = () => {
       const oldVal = fromEarliestAllowedTime;
       const newVal = toEarliestAllowedTime;
       const timeFormat = "YYYY-MM-DD HH:mm:ss UTCZZ";
-      return h(
-        "span",
-        {},
-        t("activity.sentence.changed-from-to", {
-          name: t("task.rollout-time"),
-          oldValue: oldVal ? dayjs(oldVal).format(timeFormat) : "Unset",
-          newValue: newVal ? dayjs(newVal).format(timeFormat) : "Unset",
-        })
-      );
+      return t("activity.sentence.changed-from-to", {
+        name: t("task.rollout-time"),
+        oldValue: oldVal ? dayjs(oldVal).format(timeFormat) : "Unset",
+        newValue: newVal ? dayjs(newVal).format(timeFormat) : "Unset",
+      });
     }
   } else if (issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP) {
     const { task, tables } = IssueComment_TaskPriorBackup.fromPartial(
@@ -262,13 +236,11 @@ const renderActionSentence = () => {
       target: "",
     };
     if (task) {
-      params.target = h(TaskName, { issue, task: taskEntity });
+      params.target = <TaskName issue={issue} task={taskEntity} />;
     }
-    return renderVerbTypeTarget(params, {
-      tag: "span",
-    });
+    return renderVerbTypeTarget(params);
   }
-  return <span>{t("activity.sentence.empty")}</span>;
+  return t("activity.sentence.empty");
 };
 
 const maybeAutomaticallyVerb = (
@@ -309,6 +281,6 @@ const renderVerbTypeTarget = (params: VerbTypeTarget, props: object = {}) => {
 
 const Renderer = defineComponent({
   name: "ActionSentenceRenderer",
-  render: renderActionSentence,
+  render: () => <span>{renderActionSentence()}</span>,
 });
 </script>
