@@ -1972,7 +1972,7 @@
       "description": "In Bytebase's GitOps workflow, developers store migration scripts in VCS. Pull requests prompt SQL reviews, and merged ones initiate migration plans. Administrators configure VCS providers, while project owners establish VCS connections within projects.",
       "add-git-provider": {
         "self": "Add a Git provider",
-        "description": "Before any project can enable GitOps workflow, Bytebase first needs to integrate with the corresponding version control system (VCS) by registering as an OAuth application in that VCS. Below are the steps to configure this, you can also follow our {guide}.",
+        "description": "Before any project can enable GitOps workflow, Bytebase first needs to integrate with the corresponding version control system (VCS) by registering as an OAuth application in that VCS.",
         "gitlab-self-host": "GitLab Self-Hosted",
         "gitlab-self-host-admin-requirement": "You must be the administrator of the GitLab instance.",
         "gitlab-com-admin-requirement": "You must be the administrator of the projects or groups.",
