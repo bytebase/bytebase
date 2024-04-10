@@ -1972,7 +1972,7 @@
       "description": "En el flujo de trabajo GitOps de Bytebase, los desarrolladores almacenan scripts de migración en VCS. Las solicitudes de extracción provocan revisiones SQL, y las fusionadas inician planes de migración. Los administradores configuran proveedores de VCS, mientras que los propietarios del proyecto establecen conexiones de VCS dentro de los proyectos.",
       "add-git-provider": {
         "self": "Agregar un proveedor de Git",
-        "description": "Antes de que cualquier proyecto pueda habilitar el flujo de trabajo de GitOps, Bytebase primero debe integrarse con el sistema de control de versiones (VCS) correspondiente registrándose como una aplicación OAuth en ese VCS. A continuación se muestran los pasos para configurar esto, también puede seguir nuestra {guide}.",
+        "description": "Antes de que cualquier proyecto pueda habilitar el flujo de trabajo de GitOps, Bytebase primero debe integrarse con el sistema de control de versiones (VCS) correspondiente registrándose como una aplicación OAuth en ese VCS.",
         "gitlab-self-host": "GitLab autohospedado",
         "gitlab-self-host-admin-requirement": "Debes ser administrador de la instancia de GitLab.",
         "gitlab-com-admin-requirement": "Debes ser administrador de los proyectos o grupos.",
