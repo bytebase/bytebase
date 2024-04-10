@@ -181,7 +181,6 @@ watchEffect(prepareIssueComments);
 
 const issueComments = computed((): DistinctIssueComment[] => {
   const list = issueCommentStore.getIssueComments(issue.value.name);
-  console.log("list", list);
   const distinctIssueComments: DistinctIssueComment[] = [];
   for (let i = 0; i < list.length; i++) {
     const comment = list[i];
@@ -258,7 +257,6 @@ const doUpdateComment = async () => {
     return;
   }
 
-  console.log("state.activeComment.name", state.activeComment.name);
   const commentId = getIssueCommentId(state.activeComment.name);
   await issueCommentStore.updateIssueComment({
     issueName: issue.value.name,
