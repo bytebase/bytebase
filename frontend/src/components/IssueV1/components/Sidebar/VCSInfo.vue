@@ -14,7 +14,7 @@
           {{ `${vcsConnector.branch}@${vcsConnector.fullPath}` }}
         </span>
         <span v-else>
-          {{ issue.planEntity?.vcsSource?.pullRequestUrl }}
+          {{ beautifyPullRequestUrl(issue.planEntity?.vcsSource) }}
         </span>
       </a>
     </EllipsisText>
@@ -30,6 +30,7 @@ import {
   useVCSConnectorStore,
   useVCSProviderStore,
 } from "@/store";
+import type { Plan_VCSSource } from "@/types/proto/v1/rollout_service";
 import { hasWorkspacePermissionV2, hasProjectPermissionV2 } from "@/utils";
 
 const { issue } = useIssueContext();
@@ -76,6 +77,17 @@ const vcsConnector = computed(() => {
     issue.value.planEntity?.vcsSource?.vcsConnector
   );
 });
+
+// Strip the host to reduce length
+const beautifyPullRequestUrl = (vcs: Plan_VCSSource | undefined) => {
+  if (vcs) {
+    const parsedUrl = new URL(vcs.pullRequestUrl);
+    return parsedUrl.pathname.length > 0
+      ? parsedUrl.pathname.substring(1)
+      : parsedUrl.pathname;
+  }
+  return "";
+};
 
 defineExpose({
   shown: computed(() => {
