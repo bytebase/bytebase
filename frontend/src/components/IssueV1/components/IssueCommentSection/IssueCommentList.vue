@@ -112,7 +112,6 @@ import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import {
-  IssueCommentType,
   useCurrentUserV1,
   useIssueCommentStore,
   useIssueV1Store,
@@ -127,6 +126,7 @@ import { doSubscribeIssue, useIssueContext } from "../../logic";
 import {
   IssueCommentView,
   isSimilarIssueComment,
+  isUserEditableComment,
   type DistinctIssueComment,
 } from "./IssueCommentView";
 import IssueCreatedComment from "./IssueCommentView/IssueCreatedComment.vue";
@@ -230,7 +230,7 @@ const doCreateComment = async (comment: string) => {
 };
 
 const allowEditIssueComment = (comment: ComposedIssueComment) => {
-  if (comment.type !== IssueCommentType.USER_COMMENT) {
+  if (!isUserEditableComment(comment)) {
     return false;
   }
   if (currentUser.value.email === extractUserResourceName(comment.creator)) {

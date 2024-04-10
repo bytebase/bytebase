@@ -38,8 +38,13 @@ export const isSimilarIssueComment = (
 };
 
 export const isUserEditableComment = (comment: ComposedIssueComment) => {
-  if (comment.type !== IssueCommentType.USER_COMMENT) {
-    return false;
+  if (comment.type === IssueCommentType.USER_COMMENT) {
+    return true;
   }
-  return true;
+  if (comment.type === IssueCommentType.APPROVAL) {
+    if (comment.comment !== "") {
+      return true;
+    }
+  }
+  return false;
 };
