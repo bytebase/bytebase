@@ -424,7 +424,7 @@ func getTempView(view *viewDef) (*viewDef, error) {
 	}
 	definer := "CURRENT_USER"
 	if view.ctx.DefinerClause() != nil {
-		definer = view.ctx.DefinerClause().GetText()
+		definer = view.ctx.DefinerClause().User().GetText()
 	}
 	sqlSecurity := "DEFINER"
 	if view.ctx.ViewSuid() != nil {
@@ -1239,7 +1239,10 @@ func sortAndWriteCreateTableList(buf *strings.Builder, ns []*tableDef) error {
 }
 
 func writeCreateTableStatement(buf *strings.Builder, table *tableDef) error {
-	stmt := fmt.Sprintf("CREATE %s;\n\n", table.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(table.ctx.GetRuleContext()))
+	stmt := fmt.Sprintf("CREATE %s;\n\n", table.ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: table.ctx.GetStart().GetTokenIndex(),
+		Stop:  table.ctx.GetParser().GetTokenStream().Size() - 1,
+	}))
 	if stmt[0:12] == "CREATE TABLE" {
 		stmt = stmt[0:12] + " IF NOT EXISTS" + stmt[12:]
 	}
@@ -1410,7 +1413,7 @@ func writeCreateViewStatement(buf *strings.Builder, view *viewDef) error {
 
 	definer := "CURRENT_USER"
 	if view.ctx.DefinerClause() != nil {
-		definer = view.ctx.DefinerClause().GetText()
+		definer = view.ctx.DefinerClause().User().GetText()
 	}
 	sqlSecurity := "DEFINER"
 	if view.ctx.ViewSuid() != nil {
