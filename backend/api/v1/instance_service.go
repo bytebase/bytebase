@@ -1095,7 +1095,7 @@ func convertToV1DataSourceExternalSecret(externalSecret *storepb.DataSourceExter
 
 	// clear sensitive data.
 	switch resp.AuthType {
-	case v1pb.DataSourceExternalSecret_APP_ROLE:
+	case v1pb.DataSourceExternalSecret_VAULT_APP_ROLE:
 		appRole := secret.GetAppRole()
 		resp.AuthOption = &v1pb.DataSourceExternalSecret_AppRole{
 			AppRole: &v1pb.DataSourceExternalSecret_AppRoleAuthOption{
@@ -1155,30 +1155,36 @@ func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExter
 	if err := convertV1PbToStorePb(externalSecret, secret); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert external secret with error: %v", err.Error())
 	}
-	if secret.SecretName == "" || secret.PasswordKeyName == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing secret name or key name")
-	}
-	if secret.SecretType == storepb.DataSourceExternalSecret_VAULT_KV_V2 {
+	switch secret.SecretType {
+	case storepb.DataSourceExternalSecret_VAULT_KV_V2:
 		if secret.Url == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "missing Vault URL")
 		}
 		if secret.EngineName == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "missing Vault engine name")
 		}
+		if secret.SecretName == "" || secret.PasswordKeyName == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "missing secret name or key name")
+		}
+	case storepb.DataSourceExternalSecret_AWS_SECRETS_MANAGER:
+		if secret.SecretName == "" || secret.PasswordKeyName == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "missing secret name or key name")
+		}
+	case storepb.DataSourceExternalSecret_GCP_SECRET_MANAGER:
+		if secret.SecretName == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "missing GCP secret name")
+		}
 	}
 
 	switch secret.AuthType {
-	case storepb.DataSourceExternalSecret_AWS_ENVIRONMENT:
 	case storepb.DataSourceExternalSecret_TOKEN:
 		if secret.GetToken() == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "missing token")
 		}
-	case storepb.DataSourceExternalSecret_APP_ROLE:
+	case storepb.DataSourceExternalSecret_VAULT_APP_ROLE:
 		if secret.GetAppRole() == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "missing Vault approle")
 		}
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unsupport auth type: %v", secret.AuthType)
 	}
 
 	return secret, nil
