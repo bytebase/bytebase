@@ -1,17 +1,11 @@
 <template>
   <div class="space-y-4 divide-y divide-block-border">
     <div class="textinfolabel">
-      <i18n-t keypath="gitops.setting.add-git-provider.description">
-        <template #guide>
-          <a
-            href="https://bytebase.com/docs/vcs-integration/overview?source=console"
-            target="_blank"
-            class="normal-link"
-          >
-            {{ $t("common.detailed-guide") }}</a
-          >
-        </template>
-      </i18n-t>
+      {{ $t("gitops.setting.add-git-provider.description") }}
+      <LearnMoreLink
+        url="https://www.bytebase.com/docs/vcs-integration/add-git-provider?source=console"
+        class="text-sm"
+      />
     </div>
     <div class="pt-4">
       <VCSSetupWizard />
