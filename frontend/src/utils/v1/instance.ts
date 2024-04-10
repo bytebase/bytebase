@@ -138,6 +138,7 @@ export const instanceV1HasCreateDatabase = (
   if (engine === Engine.REDIS) return false;
   if (engine === Engine.ORACLE) return false;
   if (engine === Engine.DM) return false;
+  if (engine === Engine.ELASTICSEARCH) return false;
   return true;
 };
 
