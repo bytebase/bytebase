@@ -1239,15 +1239,21 @@ func sortAndWriteCreateTableList(buf *strings.Builder, ns []*tableDef) error {
 }
 
 func writeCreateTableStatement(buf *strings.Builder, table *tableDef) error {
-	stmt := fmt.Sprintf("CREATE %s;\n\n", table.ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+	stmt := fmt.Sprintf("CREATE %s", table.ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: table.ctx.GetStart().GetTokenIndex(),
 		Stop:  table.ctx.GetParser().GetTokenStream().Size() - 1,
 	}))
 	if stmt[0:12] == "CREATE TABLE" {
 		stmt = stmt[0:12] + " IF NOT EXISTS" + stmt[12:]
 	}
-
+	suffix := "\n\n"
+	if strings.HasSuffix(stmt, ";") {
+		suffix = ";" + suffix
+	}
 	if _, err := buf.WriteString(stmt); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(suffix); err != nil {
 		return err
 	}
 	return nil
