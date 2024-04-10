@@ -196,19 +196,13 @@ const icon = computed((): ActionIconType => {
     }
     return action;
   } else if (issueComment.type === IssueCommentType.ISSUE_UPDATE) {
-    const {
-      fromTitle,
-      toTitle,
-      fromDescription,
-      toDescription,
-      fromAssignee,
-      toAssignee,
-    } = IssueComment_IssueUpdate.fromPartial(issueComment.issueUpdate || {});
-    if (fromAssignee !== undefined || toAssignee !== undefined) {
-      return "update";
-    } else if (fromTitle !== undefined && toTitle !== undefined) {
-      return "update";
-    } else if (fromDescription !== undefined && toDescription !== undefined) {
+    const { toTitle, toDescription, toAssignee } =
+      IssueComment_IssueUpdate.fromPartial(issueComment.issueUpdate || {});
+    if (
+      toAssignee !== undefined ||
+      toTitle !== undefined ||
+      toDescription !== undefined
+    ) {
       return "update";
     }
     // Otherwise, show avatar icon based on the creator.
