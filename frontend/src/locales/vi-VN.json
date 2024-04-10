@@ -1346,7 +1346,12 @@
       "password": "Mật khẩu",
       "password-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
       "external-secret-vault": "Vault (KV v2)",
-      "external-secret-aws": "AWS Secrets Manager"
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-gcp": "GCP Secret Manager"
+    },
+    "external-secret-gcp": {
+      "secret-name": "Tên đầy đủ bí mật",
+      "secret-name-tips": "Tên bí mật phải như \"projects/project-id/secrets/secret-id\"."
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",
@@ -1354,7 +1359,6 @@
         "self": "Auth type",
         "token": {
           "self": "Token",
-          "token": "Token",
           "tips": "Mã thông báo gốc không có TTL."
         },
         "approle": {

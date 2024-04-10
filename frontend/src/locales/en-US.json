@@ -1346,7 +1346,12 @@
       "password": "Password",
       "password-tip": "You can also specify external secret manage endpoint",
       "external-secret-vault": "Vault (KV v2)",
-      "external-secret-aws": "AWS Secrets Manager"
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-gcp": "GCP Secret Manager"
+    },
+    "external-secret-gcp": {
+      "secret-name": "Secret full name",
+      "secret-name-tips": "The secret name should be like \"projects/project-id/secrets/secret-id\"."
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",
@@ -1354,7 +1359,6 @@
         "self": "Auth type",
         "token": {
           "self": "Token",
-          "token": "Token",
           "tips": "A root token without TTL."
         },
         "approle": {

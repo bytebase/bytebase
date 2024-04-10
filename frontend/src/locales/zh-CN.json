@@ -1346,7 +1346,12 @@
       "password": "密码",
       "password-tip": "您也可以指定外部的密码管理服务 endpoint",
       "external-secret-vault": "Vault (KV v2)",
-      "external-secret-aws": "AWS Secrets Manager"
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-gcp": "GCP Secret Manager"
+    },
+    "external-secret-gcp": {
+      "secret-name": "密钥完整路径",
+      "secret-name-tips": "密钥完整路径应类似于 “projects/project-id/secrets/secret-id”。"
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",
@@ -1354,7 +1359,6 @@
         "self": "Vault 验证方式",
         "token": {
           "self": "Token",
-          "token": "Token",
           "tips": "没有过期时限的根 token"
         },
         "approle": {
