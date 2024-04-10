@@ -45,7 +45,8 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		// Nothing.
 	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
 		// Nothing.
-	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL:
+	case storepb.Engine_MSSQL:
+	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_SNOWFLAKE:
 	default:
 		slog.Debug("Engine is not supported", slog.String("engine", engine.String()))
 		return newEmptyCompletionList(), nil
@@ -72,6 +73,8 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		}
 		items = append(items, completionItem)
 	}
+
+	slog.Debug("Barny1", slog.Any("Completion candidates", items))
 
 	return &lsp.CompletionList{
 		IsIncomplete: false,
