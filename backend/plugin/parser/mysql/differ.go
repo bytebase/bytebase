@@ -1247,7 +1247,7 @@ func writeCreateTableStatement(buf *strings.Builder, table *tableDef) error {
 		stmt = stmt[0:12] + " IF NOT EXISTS" + stmt[12:]
 	}
 	suffix := "\n\n"
-	if strings.HasSuffix(stmt, ";") {
+	if !strings.HasSuffix(stmt, ";") {
 		suffix = ";" + suffix
 	}
 	if _, err := buf.WriteString(stmt); err != nil {
