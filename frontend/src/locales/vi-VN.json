@@ -1351,7 +1351,7 @@
     },
     "external-secret-gcp": {
       "secret-name": "Tên đầy đủ bí mật",
-      "secret-name-tips": "Tên bí mật phải như \"projects/id dự án/secrets/tên bí mật\""
+      "secret-name-tips": "Tên bí mật phải như \"projects/project-id/secrets/secret-id\"."
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",
