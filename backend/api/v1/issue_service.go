@@ -935,6 +935,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 
 	if err := func() error {
 		p := &storepb.IssueCommentPayload{
+			Comment: request.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
 				Approval: &storepb.IssueCommentPayload_Approval{
 					Status: storepb.IssueCommentPayload_Approval_APPROVED,
@@ -1199,6 +1200,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 
 	if err := func() error {
 		p := &storepb.IssueCommentPayload{
+			Comment: request.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
 				Approval: &storepb.IssueCommentPayload_Approval{
 					Status: storepb.IssueCommentPayload_Approval_REJECTED,
@@ -1315,6 +1317,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 
 	if err := func() error {
 		p := &storepb.IssueCommentPayload{
+			Comment: request.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
 				Approval: &storepb.IssueCommentPayload_Approval{
 					Status: storepb.IssueCommentPayload_Approval_PENDING,
