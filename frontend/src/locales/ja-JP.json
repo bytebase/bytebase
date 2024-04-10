@@ -1346,7 +1346,12 @@
       "password": "パスワード",
       "password-tip": "外部シークレット管理エンドポイントを指定することもできます",
       "external-secret-vault": "Vault (KV v2)",
-      "external-secret-aws": "AWS Secrets Manager"
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-gcp": "GCP Secret Manager"
+    },
+    "external-secret-gcp": {
+      "secret-name": "秘密のフルネーム",
+      "secret-name-tips": "シークレット名は\"projects/project-id/secrets/secret-id\" のようになります。"
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",
@@ -1354,7 +1359,6 @@
         "self": "Auth type",
         "token": {
           "self": "Token",
-          "token": "Token",
           "tips": "TTL のないルート トークン。"
         },
         "approle": {

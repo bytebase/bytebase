@@ -1346,7 +1346,12 @@
       "password": "Contraseña",
       "password-tip": "También puede especificar un punto final de gestión de secreto externo",
       "external-secret-vault": "Vault (KV v2)",
-      "external-secret-aws": "AWS Secrets Manager"
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-gcp": "GCP Secret Manager"
+    },
+    "external-secret-gcp": {
+      "secret-name": "nombre completo secreto",
+      "secret-name-tips": "El nombre secreto debería ser similar a \"projects/project-id/secrets/secret-id\"."
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",
@@ -1354,7 +1359,6 @@
         "self": "Auth type",
         "token": {
           "self": "Simbólico",
-          "token": "Token",
           "tips": "Un token raíz sin TTL."
         },
         "approle": {

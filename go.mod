@@ -3,6 +3,7 @@ module github.com/bytebase/bytebase
 go 1.21.6
 
 require (
+	cloud.google.com/go/secretmanager v1.12.0
 	cloud.google.com/go/spanner v1.60.0
 	gitee.com/chunanyong/dm v1.8.14
 	github.com/ClickHouse/clickhouse-go/v2 v2.23.0

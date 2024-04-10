@@ -7,7 +7,7 @@
       :engine="basicInfo.engine"
       :data-source-type="dataSource.type"
     />
-    <div class="mt-4 sm:col-span-2 sm:col-start-1">
+    <div class="mt-4 sm:col-span-3 sm:col-start-1">
       <label for="username" class="textlabel block">
         {{ $t("common.username") }}
       </label>
@@ -23,7 +23,7 @@
         "
       />
     </div>
-    <div class="mt-4 sm:col-span-2 sm:col-start-1">
+    <div class="mt-4 sm:col-span-3 sm:col-start-1">
       <NRadioGroup
         class="textlabel mb-2"
         :value="state.passwordType"
@@ -45,6 +45,12 @@
         >
           <div class="flex items-center gap-x-1">
             {{ $t("instance.password-type.external-secret-aws") }}
+            <FeatureBadge feature="bb.feature.external-secret-manager" />
+          </div>
+        </NRadio>
+        <NRadio :value="DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER">
+          <div class="flex items-center gap-x-1">
+            {{ $t("instance.password-type.external-secret-gcp") }}
             <FeatureBadge feature="bb.feature.external-secret-manager" />
           </div>
         </NRadio>
@@ -128,7 +134,7 @@
             <NRadio :value="DataSourceExternalSecret_AuthType.TOKEN">
               {{ $t("instance.external-secret-vault.vault-auth-type.token.self") }}
             </NRadio>
-            <NRadio :value="DataSourceExternalSecret_AuthType.APP_ROLE">
+            <NRadio :value="DataSourceExternalSecret_AuthType.VAULT_APP_ROLE">
               {{ $t("instance.external-secret-vault.vault-auth-type.approle.self") }}
             </NRadio>
           </NRadioGroup>
@@ -142,7 +148,7 @@
           >
             <label class="textlabel block">
               {{
-                $t("instance.external-secret-vault.vault-auth-type.token.token")
+                $t("instance.external-secret-vault.vault-auth-type.token.self")
               }}
               <span class="text-red-600">*</span>
             </label>
@@ -289,6 +295,15 @@
             {{ secretNameLabel }}
             <span class="text-red-600">*</span>
           </label>
+          <div
+            v-if="
+              state.passwordType ===
+              DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER
+            "
+            class="flex space-x-2 text-sm mb-1 text-gray-400"
+          >
+            {{ $t("instance.external-secret-gcp.secret-name-tips") }}
+          </div>
           <BBTextField
             v-model:value="dataSource.externalSecret.secretName"
             :required="true"
@@ -297,7 +312,13 @@
             :placeholder="secretNameLabel"
           />
         </div>
-        <div class="sm:col-span-2 sm:col-start-1">
+        <div
+          v-if="
+            state.passwordType !==
+            DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER
+          "
+          class="sm:col-span-2 sm:col-start-1"
+        >
           <label class="textlabel block">
             {{ secretKeyLabel }}
             <span class="text-red-600">*</span>
@@ -577,7 +598,7 @@ const secretInputPlaceholder = computed(() => {
           return `${t(
             "instance.external-secret-vault.vault-auth-type.token.token"
           )} - ${t("common.write-only")}`;
-        case DataSourceExternalSecret_AuthType.APP_ROLE:
+        case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
           switch (props.dataSource.externalSecret.appRole?.type) {
             case DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN:
               return `${t(
@@ -595,10 +616,14 @@ const secretInputPlaceholder = computed(() => {
 });
 
 const secretNameLabel = computed(() => {
-  if (state.passwordType == DataSourceExternalSecret_SecretType.VAULT_KV_V2) {
-    return t("instance.external-secret-vault.vault-secret-path");
+  switch (state.passwordType) {
+    case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
+      return t("instance.external-secret-vault.vault-secret-path");
+    case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+      return t("instance.external-secret-gcp.secret-name");
+    default:
+      return t("instance.external-secret.secret-name");
   }
-  return t("instance.external-secret.secret-name");
 });
 
 const secretKeyLabel = computed(() => {
@@ -625,10 +650,19 @@ const changeSecretType = (secretType: DataSourceExternalSecret_SecretType) => {
       break;
     case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
       ds.externalSecret = DataSourceExternalSecret.fromPartial({
-        authType: DataSourceExternalSecret_AuthType.AWS_ENVIRONMENT,
+        authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
         secretType: secretType,
         secretName: ds.externalSecret?.secretName ?? "",
         passwordKeyName: ds.externalSecret?.passwordKeyName ?? "",
+      });
+      break;
+    case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+      ds.externalSecret = DataSourceExternalSecret.fromPartial({
+        authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
+        secretType: secretType,
+        token: "",
+        secretName: ds.externalSecret?.secretName ?? "",
+        passwordKeyName: "",
       });
       break;
   }
@@ -644,7 +678,7 @@ const changeSecretType = (secretType: DataSourceExternalSecret_SecretType) => {
 //   if (!ds.externalSecret) {
 //     return;
 //   }
-//   if (authType === DataSourceExternalSecret_AuthType.APP_ROLE) {
+//   if (authType === DataSourceExternalSecret_AuthType.VAULT_APP_ROLE) {
 //     ds.externalSecret.appRole =
 //       DataSourceExternalSecret_AppRoleAuthOption.fromPartial({
 //         type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN,

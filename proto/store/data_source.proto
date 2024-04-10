@@ -11,6 +11,8 @@ message DataSourceExternalSecret {
     VAULT_KV_V2 = 1;
     // ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html
     AWS_SECRETS_MANAGER = 2;
+    // ref: https://cloud.google.com/secret-manager/docs
+    GCP_SECRET_MANAGER = 3;
   }
   SecretType secret_type = 1;
   string url = 2;
@@ -20,9 +22,7 @@ message DataSourceExternalSecret {
     // ref: https://developer.hashicorp.com/vault/docs/auth/token
     TOKEN = 1;
     // ref: https://developer.hashicorp.com/vault/docs/auth/approle
-    APP_ROLE = 2;
-    // ref: https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials
-    AWS_ENVIRONMENT = 3;
+    VAULT_APP_ROLE = 2;
   }
   AuthType auth_type = 3;
 

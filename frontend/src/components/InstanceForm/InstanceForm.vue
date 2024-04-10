@@ -1142,26 +1142,42 @@ const checkDataSource = (dataSources: DataSource[]) => {
     if (!ds.externalSecret) {
       return true;
     }
-    if (!ds.externalSecret.secretName || !ds.externalSecret.passwordKeyName) {
-      return false;
+
+    switch (ds.externalSecret.secretType) {
+      case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
+        if (!ds.externalSecret.url || !ds.externalSecret.engineName) {
+          return false;
+        }
+        if (
+          !ds.externalSecret.secretName ||
+          !ds.externalSecret.passwordKeyName
+        ) {
+          return false;
+        }
+        break;
+      case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
+        if (
+          !ds.externalSecret.secretName ||
+          !ds.externalSecret.passwordKeyName
+        ) {
+          return false;
+        }
+        break;
+      case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+        if (!ds.externalSecret.secretName) {
+          return false;
+        }
+        break;
     }
 
-    if (
-      ds.externalSecret.secretType ===
-      DataSourceExternalSecret_SecretType.VAULT_KV_V2
-    ) {
-      if (!ds.externalSecret.url || !ds.externalSecret.engineName) {
-        return false;
-      }
-      switch (ds.externalSecret.authType) {
-        case DataSourceExternalSecret_AuthType.TOKEN:
-          return !!ds.externalSecret.token;
-        case DataSourceExternalSecret_AuthType.APP_ROLE:
-          return (
-            !!ds.externalSecret.appRole?.roleId &&
-            !!ds.externalSecret.appRole.secretId
-          );
-      }
+    switch (ds.externalSecret.authType) {
+      case DataSourceExternalSecret_AuthType.TOKEN:
+        return !!ds.externalSecret.token;
+      case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
+        return (
+          !!ds.externalSecret.appRole?.roleId &&
+          !!ds.externalSecret.appRole.secretId
+        );
     }
 
     return true;

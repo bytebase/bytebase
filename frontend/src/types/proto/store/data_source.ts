@@ -26,6 +26,8 @@ export enum DataSourceExternalSecret_SecretType {
   VAULT_KV_V2 = 1,
   /** AWS_SECRETS_MANAGER - ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html */
   AWS_SECRETS_MANAGER = 2,
+  /** GCP_SECRET_MANAGER - ref: https://cloud.google.com/secret-manager/docs */
+  GCP_SECRET_MANAGER = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -40,6 +42,9 @@ export function dataSourceExternalSecret_SecretTypeFromJSON(object: any): DataSo
     case 2:
     case "AWS_SECRETS_MANAGER":
       return DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER;
+    case 3:
+    case "GCP_SECRET_MANAGER":
+      return DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -55,6 +60,8 @@ export function dataSourceExternalSecret_SecretTypeToJSON(object: DataSourceExte
       return "VAULT_KV_V2";
     case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
       return "AWS_SECRETS_MANAGER";
+    case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+      return "GCP_SECRET_MANAGER";
     case DataSourceExternalSecret_SecretType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -65,10 +72,8 @@ export enum DataSourceExternalSecret_AuthType {
   AUTH_TYPE_UNSPECIFIED = 0,
   /** TOKEN - ref: https://developer.hashicorp.com/vault/docs/auth/token */
   TOKEN = 1,
-  /** APP_ROLE - ref: https://developer.hashicorp.com/vault/docs/auth/approle */
-  APP_ROLE = 2,
-  /** AWS_ENVIRONMENT - ref: https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials */
-  AWS_ENVIRONMENT = 3,
+  /** VAULT_APP_ROLE - ref: https://developer.hashicorp.com/vault/docs/auth/approle */
+  VAULT_APP_ROLE = 2,
   UNRECOGNIZED = -1,
 }
 
@@ -81,11 +86,8 @@ export function dataSourceExternalSecret_AuthTypeFromJSON(object: any): DataSour
     case "TOKEN":
       return DataSourceExternalSecret_AuthType.TOKEN;
     case 2:
-    case "APP_ROLE":
-      return DataSourceExternalSecret_AuthType.APP_ROLE;
-    case 3:
-    case "AWS_ENVIRONMENT":
-      return DataSourceExternalSecret_AuthType.AWS_ENVIRONMENT;
+    case "VAULT_APP_ROLE":
+      return DataSourceExternalSecret_AuthType.VAULT_APP_ROLE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -99,10 +101,8 @@ export function dataSourceExternalSecret_AuthTypeToJSON(object: DataSourceExtern
       return "AUTH_TYPE_UNSPECIFIED";
     case DataSourceExternalSecret_AuthType.TOKEN:
       return "TOKEN";
-    case DataSourceExternalSecret_AuthType.APP_ROLE:
-      return "APP_ROLE";
-    case DataSourceExternalSecret_AuthType.AWS_ENVIRONMENT:
-      return "AWS_ENVIRONMENT";
+    case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
+      return "VAULT_APP_ROLE";
     case DataSourceExternalSecret_AuthType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
