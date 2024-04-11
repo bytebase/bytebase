@@ -30,6 +30,7 @@ export type InstanceFormContext = {
   editingDataSource: ComputedRef<EditDataSource | undefined>;
   readonlyDataSourceList: ComputedRef<EditDataSource[]>;
   hasReadOnlyDataSource: ComputedRef<boolean>;
+  resetDataSource: () => void;
 };
 
 const KEY = Symbol(
@@ -79,6 +80,9 @@ export const provideInstanceFormContext = (
     );
   });
 
+  const resetDataSource = () => {
+    dataSourceEditState.value = extractDataSourceEditState(instance.value);
+  };
   const missingFeature = ref<FeatureType | undefined>(undefined);
 
   const context: InstanceFormContext = {
@@ -93,6 +97,7 @@ export const provideInstanceFormContext = (
     hasReadOnlyDataSource,
     hasReadonlyReplicaFeature,
     missingFeature,
+    resetDataSource,
   };
   provide(KEY, context);
 
