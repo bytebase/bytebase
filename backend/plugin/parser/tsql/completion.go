@@ -2,8 +2,10 @@ package tsql
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
 	tsql "github.com/bytebase/tsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -14,7 +16,42 @@ func init() {
 	base.RegisterCompleteFunc(storepb.Engine_MSSQL, Completion)
 }
 
+var (
+	globalFellowSetsByState = base.NewFollowSetsByState()
+)
+
+type Completer struct {
+	ctx     context.Context
+	core    *base.CodeCompletionCore
+	parser  *tsql.TSqlParser
+	lexer   *tsql.TSqlLexer
+	scanner *base.Scanner
+
+	defaultDatabase     string
+	metadataGetter      base.GetDatabaseMetadataFunc
+	databaseNamesLister base.ListDatabaseNamesFunc
+
+	noSeparatorRequired map[int]bool
+	// referencesStack is a hierarchical stack of table references.
+	// We'll update the stack when we encounter a new FROM clauses.
+	referencesStack [][]base.TableReference
+	// references is the flattened table references.
+	// It's helpful to look up the table reference.
+	references         []base.TableReference
+	cteCache           map[int][]*base.VirtualTableReference
+	cteTables          []*base.VirtualTableReference
+	caretTokenIsQuoted bool
+}
+
 func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc, databaseNamesLister base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
+	completer := NewStandardCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadataGetter, databaseNamesLister)
+	result, err := completer.complete()
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		return result, nil
+	}
 
 	return []base.Candidate{
 		{
@@ -26,19 +63,74 @@ func Completion(ctx context.Context, statement string, caretLine int, caretOffse
 	}, nil
 }
 
-func NewStandardCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc, databaseNamesLister base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
-	return nil, nil
+func NewStandardCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc, databaseNamesLister base.ListDatabaseNamesFunc) *Completer {
+	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
+	core := base.NewCodeCompletionCore(
+		parser,
+		nil, /* IgnoredTokens */
+		nil, /* PreferredRules */
+		&globalFellowSetsByState,
+		0, /* queryRule */
+		0, /* shadowQueryRule */
+		0, /* selectItemAliasRule */
+		0, /* cteRule */
+	)
+
+	return &Completer{
+		ctx:                 ctx,
+		core:                core,
+		parser:              parser,
+		lexer:               lexer,
+		scanner:             scanner,
+		defaultDatabase:     defaultDatabase,
+		metadataGetter:      metadataGetter,
+		databaseNamesLister: databaseNamesLister,
+		noSeparatorRequired: nil,
+		cteCache:            nil,
+	}
 }
 
-func preapreParserAndScanner(statement string, caretLine int, caretOffset int) (*tsql.TSqlParser, *tsql.TSqlLexer, *base.Scanner) {
+func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*tsql.TSqlParser, *tsql.TSqlLexer, *base.Scanner) {
 	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	return nil, nil, nil
+	input := antlr.NewInputStream(statement)
+	lexer := tsql.NewTSqlLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := tsql.NewTSqlParser(stream)
+	parser.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	scanner := base.NewScanner(stream, true /* fillInput */)
+	scanner.SeekPosition(caretLine, caretOffset)
+	scanner.Push()
+	return parser, lexer, scanner
+}
+
+func (c *Completer) complete() ([]base.Candidate, error) {
+	caretIndex := c.scanner.GetIndex()
+	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(true)] {
+		caretIndex--
+	}
+	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
+	c.parser.Reset()
+	context := c.parser.Tsql_file()
+	candidates := c.core.CollectCandidates(caretIndex, context)
+	var tokenCandidates []string
+	for token := range candidates.Tokens {
+		if token < 0 || token >= len(c.parser.GetSymbolicNames()) {
+			continue
+		}
+		text := c.parser.GetSymbolicNames()[token]
+		if strings.HasPrefix(strings.ToUpper(text), strings.ToUpper("SEL")) {
+			tokenCandidates = append(tokenCandidates, text)
+		}
+	}
+
+	fmt.Println(tokenCandidates)
+	return nil, nil
 }
 
 // skipHeadingSQLs skips the SQL statements which before the caret position.
 // caretLine is 1-based and caretOffset is 0-based.
 func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
-	newCaretLine, newCaretOffset := caretLine, caretOffset
 	list, err := SplitSQL(statement)
 	if err != nil || notEmptySQLCount(list) <= 1 {
 		return statement, caretLine, caretOffset
@@ -48,7 +140,7 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 	// So we need to convert the caretLine to 0-based.
 	caretLine-- // Convert to 0-based.
 
-	start := 0
+	start, newCaretLine, newCaretOffset := 0, 0, 0
 	for i, sql := range list {
 		if sql.LastLine < caretLine {
 			continue
