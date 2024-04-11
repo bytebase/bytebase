@@ -2335,7 +2335,13 @@
       "edit-indexes": "Editar índices",
       "unique": "Único"
     },
-    "generated-ddl-is-empty": "El DDL generado está vacío"
+    "generated-ddl-is-empty": "El DDL generado está vacío",
+    "table-partition": {
+      "partitions": "Particiones",
+      "edit-partitions": "Editar particiones",
+      "expression": "Expresión",
+      "value": "Valor"
+    }
   },
   "label": {
     "empty-label-value": "Valor",

@@ -2335,7 +2335,13 @@
       "edit-indexes": "Chỉnh sửa chỉ mục",
       "unique": "Độc nhất"
     },
-    "generated-ddl-is-empty": "DDL được tạo trống"
+    "generated-ddl-is-empty": "DDL được tạo trống",
+    "table-partition": {
+      "partitions": "Phân vùng",
+      "edit-partitions": "Chỉnh sửa phân vùng",
+      "expression": "Sự biểu lộ",
+      "value": "Giá trị"
+    }
   },
   "label": {
     "empty-label-value": "Trống",

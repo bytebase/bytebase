@@ -2335,7 +2335,13 @@
       "edit-indexes": "编辑索引",
       "unique": "唯一"
     },
-    "generated-ddl-is-empty": "生成的 DDL 为空"
+    "generated-ddl-is-empty": "生成的 DDL 为空",
+    "table-partition": {
+      "partitions": "分区",
+      "edit-partitions": "编辑分区",
+      "expression": "表达式",
+      "value": "值"
+    }
   },
   "label": {
     "empty-label-value": "空",

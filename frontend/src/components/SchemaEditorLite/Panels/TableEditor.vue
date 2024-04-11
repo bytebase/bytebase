@@ -47,6 +47,19 @@
                 : $t("schema-editor.index.edit-indexes")
             }}
           </NButton>
+          <NButton
+            v-if="hasTablePartitionsFeature"
+            size="small"
+            :disabled="disableChangeTable"
+            @click="state.mode = 'PARTITIONS'"
+          >
+            <TablePartitionIcon class="w-3 h-3 mr-1" />
+            {{
+              readonly
+                ? $t("schema-editor.table-partition.partitions")
+                : $t("schema-editor.table-partition.edit-partitions")
+            }}
+          </NButton>
         </template>
       </div>
       <div class="text-sm flex flex-row items-center justify-end gap-x-2">
@@ -98,6 +111,15 @@
       />
       <IndexesEditor
         :show="state.mode === 'INDEXES'"
+        :readonly="readonly"
+        :db="db"
+        :database="database"
+        :schema="schema"
+        :table="table"
+        @update="markTableStatus('updated')"
+      />
+      <PartitionsEditor
+        :show="state.mode === 'PARTITIONS'"
         :readonly="readonly"
         :db="db"
         :database="database"
@@ -164,6 +186,7 @@ import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setti
 import {
   arraySwap,
   instanceV1AllowsReorderColumns,
+  instanceV1SupportsTablePartition,
   randomString,
 } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
@@ -177,9 +200,10 @@ import {
 import type { EditStatus } from "../types";
 import ColumnSelectionSummary from "./ColumnSelectionSummary.vue";
 import IndexesEditor from "./IndexesEditor";
+import PartitionsEditor from "./PartitionsEditor";
 import TableColumnEditor from "./TableColumnEditor";
 
-type EditMode = "COLUMNS" | "INDEXES";
+type EditMode = "COLUMNS" | "INDEXES" | "PARTITIONS";
 
 const props = withDefaults(
   defineProps<{
@@ -291,6 +315,10 @@ const allowReorderColumns = computed(() => {
 
   const status = statusForTable();
   return instanceV1AllowsReorderColumns(engine.value) && status === "created";
+});
+
+const hasTablePartitionsFeature = computed(() => {
+  return instanceV1SupportsTablePartition(engine.value);
 });
 
 const disableAlterColumn = (column: ColumnMetadata): boolean => {

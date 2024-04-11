@@ -2335,7 +2335,13 @@
       "edit-indexes": "インデックスの編集",
       "unique": "ユニーク"
     },
-    "generated-ddl-is-empty": "生成されたDDLは空です"
+    "generated-ddl-is-empty": "生成されたDDLは空です",
+    "table-partition": {
+      "partitions": "パーティション",
+      "edit-partitions": "パーティションの編集",
+      "expression": "表現",
+      "value": "価値"
+    }
   },
   "label": {
     "empty-label-value": "空です",

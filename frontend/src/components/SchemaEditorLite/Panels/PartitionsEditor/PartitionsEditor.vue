@@ -1,0 +1,266 @@
+<template>
+  <div
+    v-show="show"
+    ref="containerElRef"
+    class="w-full h-full overflow-x-auto"
+    :data-height="containerHeight"
+    :data-table-header-height="tableHeaderHeight"
+    :data-table-body-height="tableBodyHeight"
+  >
+    <pre
+      class="text-xs font-mono max-h-[80vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400 z-[999999]"
+      >{{ JSON.stringify(flattenItemList, null, "  ") }}</pre
+    >
+    <NDataTable
+      v-bind="$attrs"
+      ref="dataTableRef"
+      size="small"
+      :row-key="getItemKey"
+      :columns="columns"
+      :data="layoutReady ? flattenItemList : []"
+      :max-height="tableBodyHeight"
+      :virtual-scroll="true"
+      :striped="true"
+      :bordered="true"
+      :bottom-bordered="true"
+      class="schema-editor-table-partitions-editor"
+    />
+  </div>
+</template>
+
+<script setup lang="tsx">
+import { useElementSize } from "@vueuse/core";
+import { pull } from "lodash-es";
+import type { DataTableColumn } from "naive-ui";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import type { ComposedDatabase } from "@/types";
+import type {
+  DatabaseMetadata,
+  SchemaMetadata,
+  TableMetadata,
+  TablePartitionMetadata,
+} from "@/types/proto/v1/database_service";
+import { markUUID } from "../common";
+import {
+  OperationCell,
+  NameCell,
+  TypeCell,
+  ExpressionCell,
+  ValueCell,
+} from "./components";
+
+type FlattenTablePartitionMetadata = {
+  partition: TablePartitionMetadata;
+  parent?: TablePartitionMetadata;
+};
+
+const props = withDefaults(
+  defineProps<{
+    show?: boolean;
+    readonly?: boolean;
+    db: ComposedDatabase;
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    table: TableMetadata;
+    maxBodyHeight?: number;
+  }>(),
+  {
+    show: true,
+    readonly: false,
+    maxBodyHeight: undefined,
+  }
+);
+const emit = defineEmits<{
+  (event: "update"): void;
+}>();
+
+const { t } = useI18n();
+const containerElRef = ref<HTMLElement>();
+const tableHeaderElRef = computed(
+  () =>
+    containerElRef.value?.querySelector("thead.n-data-table-thead") as
+      | HTMLElement
+      | undefined
+);
+const { height: containerHeight } = useElementSize(containerElRef);
+const { height: tableHeaderHeight } = useElementSize(tableHeaderElRef);
+const tableBodyHeight = computed(() => {
+  const bodyHeight = containerHeight.value - tableHeaderHeight.value - 2;
+  const { maxBodyHeight = 0 } = props;
+  if (maxBodyHeight > 0) {
+    return Math.min(maxBodyHeight, bodyHeight);
+  }
+  return bodyHeight;
+});
+// Use this to avoid unnecessary initial rendering
+const layoutReady = computed(() => tableHeaderHeight.value > 0);
+
+const flattenItemList = computed(() => {
+  const list: FlattenTablePartitionMetadata[] = [];
+  const dfsWalk = (
+    partition: TablePartitionMetadata,
+    parent?: TablePartitionMetadata
+  ) => {
+    list.push({
+      partition,
+      parent,
+    });
+    partition.subpartitions?.forEach((child) => {
+      dfsWalk(child, partition);
+    });
+  };
+  props.table.partitions.forEach((partition) => dfsWalk(partition, undefined));
+  return list;
+});
+
+const getItemKey = (item: FlattenTablePartitionMetadata) => {
+  return markUUID(item.partition);
+};
+
+const columns = computed(() => {
+  const columns: (DataTableColumn<FlattenTablePartitionMetadata> & {
+    hide?: boolean;
+  })[] = [
+    {
+      key: "name",
+      title: t("common.name"),
+      resizable: true,
+      minWidth: 140,
+      maxWidth: 320,
+      className: "input-cell",
+      render: (item) => {
+        return (
+          <NameCell
+            readonly={props.readonly}
+            partition={item.partition}
+            onUpdate:name={(name) => {
+              item.partition.name = name;
+              emit("update");
+            }}
+          />
+        );
+      },
+    },
+    {
+      key: "type",
+      title: t("common.type"),
+      resizable: true,
+      minWidth: 140,
+      className: "input-cell",
+      render: (item) => {
+        return (
+          <TypeCell
+            readonly={props.readonly}
+            partition={item.partition}
+            onUpdate:type={(type) => {
+              item.partition.type = type;
+              emit("update");
+            }}
+          />
+        );
+      },
+    },
+    {
+      key: "expression",
+      title: t("schema-editor.table-partition.expression"),
+      resizable: true,
+      minWidth: 140,
+      className: "input-cell",
+      render: (item) => {
+        return (
+          <ExpressionCell
+            readonly={props.readonly}
+            partition={item.partition}
+            onUpdate:expression={(expression) => {
+              item.partition.expression = expression;
+              emit("update");
+            }}
+          />
+        );
+      },
+    },
+    {
+      key: "value",
+      title: t("schema-editor.table-partition.value"),
+      resizable: true,
+      minWidth: 140,
+      className: "input-cell",
+      render: (item) => {
+        return (
+          <ValueCell
+            readonly={props.readonly}
+            partition={item.partition}
+            onUpdate:value={(value) => {
+              item.partition.value = value;
+              emit("update");
+            }}
+          />
+        );
+      },
+    },
+    {
+      key: "operations",
+      title: "",
+      resizable: false,
+      width: 30,
+      hide: props.readonly,
+      className: "!px-0",
+      render: (item) => {
+        return (
+          <OperationCell
+            partition={item.partition}
+            onDrop={() => {
+              pull(props.table.partitions, item.partition);
+              emit("update");
+            }}
+          />
+        );
+      },
+    },
+  ];
+  return columns.filter((header) => !header.hide);
+});
+</script>
+
+<style lang="postcss" scoped>
+.schema-editor-table-partitions-editor
+  :deep(.n-data-table-th .n-data-table-resize-button::after) {
+  @apply bg-control-bg h-2/3;
+}
+.schema-editor-table-partitions-editor :deep(.n-data-table-td.input-cell) {
+  @apply pl-0.5 pr-1 py-0;
+}
+.schema-editor-table-partitions-editor
+  :deep(.n-data-table-td .n-data-table-expand-placeholder) {
+  @apply hidden;
+}
+.schema-editor-table-partitions-editor
+  :deep(.n-data-table-td .n-data-table-expand-trigger) {
+  @apply ml-2 mr-0;
+}
+.schema-editor-table-partitions-editor
+  :deep(.n-data-table-td.input-cell .n-input__placeholder),
+.schema-editor-table-partitions-editor
+  :deep(.n-data-table-td.input-cell .n-base-selection-placeholder) {
+  @apply italic;
+}
+.schema-editor-table-partitions-editor :deep(.n-data-table-td.checkbox-cell) {
+  @apply pr-1 py-0;
+}
+.schema-editor-table-partitions-editor :deep(.n-data-table-td.text-cell) {
+  @apply pr-1 py-0;
+}
+.schema-editor-table-partitions-editor
+  :deep(.n-data-table-tr.created .n-data-table-td) {
+  @apply text-green-700 !bg-green-50;
+}
+.schema-editor-table-partitions-editor
+  :deep(.n-data-table-tr.dropped .n-data-table-td) {
+  @apply text-red-700 cursor-not-allowed !bg-red-50 opacity-70;
+}
+.schema-editor-table-partitions-editor
+  :deep(.n-data-table-tr.updated .n-data-table-td) {
+  @apply text-yellow-700 !bg-yellow-50;
+}
+</style>

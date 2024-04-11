@@ -6,6 +6,7 @@ import PrimaryKeyIcon from "./PrimaryKeyIcon.vue";
 import SchemaIcon from "./SchemaIcon.vue";
 import SkipIcon from "./SkipIcon.vue";
 import TableIcon from "./TableIcon.vue";
+import TablePartitionIcon from "./TablePartitionIcon.vue";
 import ViewIcon from "./ViewIcon.vue";
 
 export {
@@ -18,4 +19,5 @@ export {
   IndexIcon,
   PrimaryKeyIcon,
   ColumnIcon,
+  TablePartitionIcon,
 };
