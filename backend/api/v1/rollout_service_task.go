@@ -73,7 +73,10 @@ func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store,
 			Title: deploySchedule.Deployments[i].Name,
 		}
 		for _, database := range databases {
-			s := proto.Clone(spec).(*storepb.PlanConfig_Spec)
+			s, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
+			if !ok {
+				return nil, errors.Errorf("failed to clone, got %T", s)
+			}
 			proto.Merge(s, &storepb.PlanConfig_Spec{
 				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
