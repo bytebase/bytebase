@@ -18,7 +18,8 @@
 </template>
 
 <script lang="ts" setup>
-import { head, omit } from "lodash-es";
+import { useLocalStorage } from "@vueuse/core";
+import { debounce, head, omit } from "lodash-es";
 import { computed, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -67,7 +68,10 @@ import {
   extractWorksheetConnection,
   useSheetContext,
 } from "@/views/sql-editor/Sheet";
-import { useSQLEditorContext } from "@/views/sql-editor/context";
+import {
+  useSQLEditorContext,
+  type AsidePanelTab,
+} from "@/views/sql-editor/context";
 
 const { t } = useI18n();
 const route = useRoute();
@@ -81,7 +85,11 @@ const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
 const { isFetching: isFetchingWorksheet } = useSheetContext();
 const { filter } = useFilterStore();
-const { events: editorEvents, maybeSwitchProject } = useSQLEditorContext();
+const {
+  asidePanelTab,
+  events: editorEvents,
+  maybeSwitchProject,
+} = useSQLEditorContext();
 
 const initializeProjects = async () => {
   const initProject = async (project: string) => {
@@ -566,6 +574,21 @@ const syncURLWithConnection = () => {
   );
 };
 
+const restoreLastVisitedSidebarTab = () => {
+  const storedLastVisitedSidebarTab = useLocalStorage<AsidePanelTab>(
+    "bb.sql-editor.sidebar.last-visited-tab",
+    "WORKSHEET"
+  );
+  asidePanelTab.value = storedLastVisitedSidebarTab.value;
+
+  watch(
+    asidePanelTab,
+    debounce((tab: AsidePanelTab) => {
+      storedLastVisitedSidebarTab.value = tab;
+    }, 100)
+  );
+};
+
 onMounted(async () => {
   editorStore.projectContextReady = false;
   await initializeProjects();
@@ -577,6 +600,7 @@ onMounted(async () => {
     editorEvents.emit("project-context-ready", {
       project: editorStore.project,
     });
+    restoreLastVisitedSidebarTab();
   });
 
   watch(
