@@ -28,3 +28,7 @@ plugins:
     out: gen/grpc-doc
     opt:
       - html,index.html,source_relative
+  - plugin: buf.build/community/google-gnostic-openapi:v0.7.0
+    out: gen/grpc-doc
+    opt:
+      - paths=source_relative
