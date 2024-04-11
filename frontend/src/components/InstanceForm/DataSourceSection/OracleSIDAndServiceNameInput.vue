@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-2 sm:col-span-1 sm:col-start-1">
+  <div class="mt-2 sm:col-span-3 sm:col-start-1">
     <div class="flex items-center gap-x-4">
       <NRadio
         :checked="state.mode === 'ServiceName'"

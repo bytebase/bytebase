@@ -21,7 +21,7 @@
         </label>
         <NInput
           v-model:value="state.value.sshHost"
-          class="mt-1 w-full"
+          class="mt-2 w-full"
           :placeholder="''"
         />
       </div>
@@ -32,7 +32,7 @@
         </label>
         <NInput
           v-model:value="state.value.sshPort"
-          class="mt-1 w-full"
+          class="mt-2 w-full"
           :placeholder="''"
           :allow-input="onlyAllowNumber"
         />
@@ -42,23 +42,23 @@
     <div
       class="mt-2 grid grid-cols-1 gap-y-2 gap-x-4 border-none sm:grid-cols-3"
     >
-      <div class="mt-2 sm:col-span-1 sm:col-start-1">
+      <div class="mt-2 sm:col-span-3 sm:col-start-1">
         <label for="sshUser" class="textlabel block">
           {{ $t("data-source.ssh.user") }}
         </label>
         <NInput
           v-model:value="state.value.sshUser"
-          class="mt-1 w-full"
+          class="mt-2 w-full"
           :placeholder="''"
         />
       </div>
-      <div class="mt-2 sm:col-span-1 sm:col-start-1">
+      <div class="mt-2 sm:col-span-3 sm:col-start-1">
         <label for="sshPassword" class="textlabel block">
           {{ $t("data-source.ssh.password") }}
         </label>
         <NInput
           v-model:value="state.value.sshPassword"
-          class="mt-1 w-full"
+          class="mt-2 w-full"
           :placeholder="$t('instance.password-write-only')"
         />
       </div>
@@ -67,14 +67,14 @@
       v-if="state.type === 'TUNNEL+PK'"
       class="mt-4 sm:col-span-3 sm:col-start-1"
     >
-      <div class="mt-2 sm:col-span-1 sm:col-start-1 flex flex-col gap-y-1">
+      <div class="mt-2 sm:col-span-1 sm:col-start-1 flex flex-col">
         <label for="sshPrivateKey" class="textlabel block">
           {{ $t("data-source.ssh.ssh-key") }}
         </label>
         <DroppableTextarea
           v-model:value="state.value.sshPrivateKey"
           :resizable="false"
-          class="w-full h-24 whitespace-pre-wrap"
+          class="w-full h-24 mt-2 whitespace-pre-wrap"
         />
       </div>
     </div>

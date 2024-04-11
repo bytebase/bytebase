@@ -11,8 +11,16 @@
       <span class="textlabel">{{ getSslTypeLabel(type) }}</span>
     </NRadio>
   </NRadioGroup>
+
+  <DroppableTextarea
+    v-if="state.type === 'CA'"
+    v-model:value="state.value.sslCa"
+    :resizable="false"
+    class="w-full h-24 mt-4 whitespace-pre-wrap"
+    placeholder="Input or drag and drop YOUR_CA_CERTIFICATE"
+  />
   <NTabs
-    v-if="state.type === 'CA' || state.type === 'CA+KEY+CERT'"
+    v-else-if="state.type === 'CA+KEY+CERT'"
     v-model:value="state.tab"
     class="mt-2"
     pane-style="padding-top: 0.25rem"

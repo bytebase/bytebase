@@ -19,7 +19,7 @@
       :value="value"
       :resizable="false"
       :placeholder="placeholder"
-      class="w-full h-24 whitespace-pre-wrap"
+      class="w-full h-24 mt-2 whitespace-pre-wrap"
       @update:value="$emit('update:value', $event ?? '')"
     />
   </div>
