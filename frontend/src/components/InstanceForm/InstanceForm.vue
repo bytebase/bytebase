@@ -172,18 +172,18 @@
             >
               {{ $t("data-source.connection-string-schema") }}
             </label>
-            <div class="flex flex-col gap-y-1 mt-1">
+            <NRadioGroup
+              :value="currentMongoDBConnectionSchema"
+              @update:value="handleMongodbConnectionStringSchemaChange"
+            >
               <NRadio
                 v-for="type in MongoDBConnectionStringSchemaList"
                 :key="type"
-                :checked="type === currentMongoDBConnectionSchema"
-                @update:checked="
-                  handleMongodbConnectionStringSchemaChange(type, $event)
-                "
+                :value="type"
               >
                 <span class="textlabel">{{ type }}</span>
               </NRadio>
-            </div>
+            </NRadioGroup>
           </div>
 
           <ScanIntervalInput
@@ -337,7 +337,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual, omit } from "lodash-es";
-import { NButton, NInput, NSwitch } from "naive-ui";
+import { NButton, NInput, NSwitch, NRadioGroup, NRadio } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import type { PropType } from "vue";
 import { computed, reactive, ref, watch, onMounted, toRef } from "vue";
@@ -622,6 +622,7 @@ const handleSelectEnvironmentUID = (uid: string | undefined) => {
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
 // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
 const changeInstanceEngine = (engine: Engine) => {
+  context.resetDataSource();
   if (engine === Engine.SNOWFLAKE || engine === Engine.SPANNER) {
     if (
       adminDataSource.value.host === "127.0.0.1" ||
@@ -658,11 +659,7 @@ const changeMaximumConnections = (maximumConnections: number) => {
   basicInfo.value.options.maximumConnections = maximumConnections;
 };
 
-const handleMongodbConnectionStringSchemaChange = (
-  type: string,
-  on: boolean
-) => {
-  if (!on) return;
+const handleMongodbConnectionStringSchemaChange = (type: string) => {
   const ds = editingDataSource.value;
   if (!ds) return;
   switch (type) {

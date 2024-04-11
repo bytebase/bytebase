@@ -28,7 +28,7 @@
       </label>
     </div>
 
-    <label class="text-xs text-control-light ml-[1.5rem]">
+    <label class="text-xs text-control-light">
       <template v-if="state.mode === 'DATABASE'">
         {{ $t("instance.sync-mode.database.description") }}
       </template>
