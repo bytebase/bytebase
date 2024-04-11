@@ -84,7 +84,8 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *mo
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT(database_id) DO UPDATE SET
 			metadata = EXCLUDED.metadata,
-			raw_dump = EXCLUDED.raw_dump
+			raw_dump = EXCLUDED.raw_dump,
+			updated_ts = extract(epoch from now())
 		RETURNING metadata, raw_dump, config
 	`
 	tx, err := s.db.BeginTx(ctx, nil)
