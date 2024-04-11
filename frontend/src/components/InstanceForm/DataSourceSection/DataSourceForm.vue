@@ -373,22 +373,20 @@
           class="ml-1 text-sm"
         />
       </div>
-      <div>
-        <DroppableTextarea
-          v-model:value="dataSource.authenticationPrivateKey"
-          :resizable="false"
-          class="w-full h-32 whitespace-pre-wrap"
-          placeholder="-----BEGIN PRIVATE KEY-----
+      <DroppableTextarea
+        v-model:value="dataSource.authenticationPrivateKey"
+        :resizable="false"
+        class="w-full h-32 mt-2 whitespace-pre-wrap"
+        placeholder="-----BEGIN PRIVATE KEY-----
 MIIEvQ...
 -----END PRIVATE KEY-----"
-          :allow-edit="allowEdit"
-        />
-      </div>
+        :allow-edit="allowEdit"
+      />
     </div>
   </template>
 
   <template v-if="showAuthenticationDatabase">
-    <div class="sm:col-span-3 sm:col-start-1">
+    <div class="mt-4 sm:col-span-3 sm:col-start-1">
       <div class="flex flex-row items-center space-x-2">
         <label for="authenticationDatabase" class="textlabel block">
           {{ $t("instance.authentication-database") }}
