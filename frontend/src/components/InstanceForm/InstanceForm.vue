@@ -178,6 +178,7 @@
             >
               <NRadio
                 v-for="type in MongoDBConnectionStringSchemaList"
+                :key="type"
                 :value="type"
               >
                 <span class="textlabel">{{ type }}</span>
