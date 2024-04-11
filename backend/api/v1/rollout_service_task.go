@@ -9,6 +9,7 @@ import (
 	"log/slog"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -72,20 +73,18 @@ func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store,
 			Title: deploySchedule.Deployments[i].Name,
 		}
 		for _, database := range databases {
-			step.Specs = append(step.Specs, &storepb.PlanConfig_Spec{
-				EarliestAllowedTime: spec.EarliestAllowedTime,
-				Id:                  spec.Id,
+			s, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
+			if !ok {
+				return nil, errors.Errorf("failed to clone, got %T", s)
+			}
+			proto.Merge(s, &storepb.PlanConfig_Spec{
 				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
-						Type:            c.Type,
-						Target:          common.FormatDatabase(database.InstanceID, database.DatabaseName),
-						Sheet:           c.Sheet,
-						SchemaVersion:   getOrDefaultSchemaVersion(c.SchemaVersion),
-						RollbackEnabled: c.RollbackEnabled,
-						RollbackDetail:  c.RollbackDetail,
+						Target: common.FormatDatabase(database.InstanceID, database.DatabaseName),
 					},
 				},
 			})
+			step.Specs = append(step.Specs, s)
 		}
 		steps = append(steps, step)
 	}

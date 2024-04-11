@@ -779,20 +779,15 @@ func (driver *Driver) listPartitionTables(ctx context.Context, databaseName stri
 			}
 			// For the key partition, it can take zero or more columns, the partition expression is null if taken zero columns.
 			expression := ""
-			if partitionExpression.Valid {
+			if subpartitionExpression.Valid {
 				expression = subpartitionExpression.String
-			}
-
-			value := ""
-			if partitionDescription.Valid {
-				value = partitionDescription.String
 			}
 
 			subPartition := &storepb.TablePartitionMetadata{
 				Name:          subpartitionName.String,
 				Type:          tp,
 				Expression:    expression,
-				Value:         value,
+				Value:         "",
 				Subpartitions: []*storepb.TablePartitionMetadata{},
 			}
 

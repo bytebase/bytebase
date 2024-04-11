@@ -244,6 +244,7 @@ func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage)
 		) VALUES ( $1, $2, $3, $4, $5, $6 )
 		ON CONFLICT (database_id, log_date_ts) DO UPDATE SET
 			updater_id = EXCLUDED.updater_id,
+			updated_ts = extract(epoch from now()),
 			slow_query_statistics = EXCLUDED.slow_query_statistics
 	`
 

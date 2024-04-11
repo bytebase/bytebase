@@ -326,7 +326,7 @@ func updateAnomalyV2(ctx context.Context, tx *Tx, principalUID int, update *upda
 		UPDATE anomaly
 		SET ` + strings.Join(set, ", ") + `
 		FROM instance
-		WHERE anomaly.instance_id = instance.id AND anomaly.id = $3
+		WHERE anomaly.instance_id = instance.id AND anomaly.id = $4
 		RETURNING
 			anomaly.id,
 			anomaly.created_ts,

@@ -1443,10 +1443,16 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 		}
 	}
 	if deploymentConfigTarget > 1 {
-		return errors.Errorf("expect at most on deploymentConfig target, got %d", deploymentConfigTarget)
+		return errors.Errorf("expect at most 1 deploymentConfig target, got %d", deploymentConfigTarget)
 	}
 	if deploymentConfigTarget != 0 && (databaseTarget > 0 || databaseGroupTarget > 0) {
-		return errors.Errorf("expect no database or databaseGroup target when deploymentConfig target is set")
+		return errors.Errorf("expect no other kinds of targets if there is deploymentConfig target")
+	}
+	if databaseGroupTarget > 1 {
+		return errors.Errorf("expect at most 1 databaseGroup target, got %d", databaseGroupTarget)
+	}
+	if databaseGroupTarget > 0 && (databaseTarget > 0 || deploymentConfigTarget > 0) {
+		return errors.Errorf("expect no other kinds of targets if there is databaseGroup target")
 	}
 	return nil
 }
