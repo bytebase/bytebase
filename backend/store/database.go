@@ -292,7 +292,8 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			environment = EXCLUDED.environment,
 			name = EXCLUDED.name,
 			schema_version = EXCLUDED.schema_version,
-			metadata = EXCLUDED.metadata
+			metadata = EXCLUDED.metadata,
+			updated_ts = extract(epoch from now())
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
