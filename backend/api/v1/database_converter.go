@@ -77,6 +77,18 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, conf
 			}
 			s.Functions = append(s.Functions, v1Func)
 		}
+		for _, procedure := range schema.Procedures {
+			if procedure == nil {
+				continue
+			}
+			v1Procedure := &v1pb.ProcedureMetadata{
+				Name: procedure.GetName(),
+			}
+			if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
+				v1Procedure.Definition = procedure.GetDefinition()
+			}
+			s.Procedures = append(s.Procedures, v1Procedure)
+		}
 		for _, task := range schema.GetTasks() {
 			if task == nil {
 				continue
@@ -223,6 +235,8 @@ func convertStoreTablePartitionMetadata(partition *storepb.TablePartitionMetadat
 	metadata := &v1pb.TablePartitionMetadata{
 		Name:       partition.Name,
 		Expression: partition.Expression,
+		Value:      partition.Value,
+		UseDefault: partition.UseDefault,
 	}
 	switch partition.Type {
 	case storepb.TablePartitionMetadata_RANGE:
