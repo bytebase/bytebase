@@ -31,6 +31,7 @@
 <script setup lang="tsx">
 import { useElementSize } from "@vueuse/core";
 import { pull } from "lodash-es";
+import { ChevronDownIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -122,6 +123,16 @@ const columns = computed(() => {
   const columns: (DataTableColumn<FlattenTablePartitionMetadata> & {
     hide?: boolean;
   })[] = [
+    {
+      key: "parent",
+      resizable: false,
+      width: 24,
+      render: (item) => {
+        if (item.partition.subpartitions?.length > 0) {
+          return <ChevronDownIcon class="w-4 h-4" />;
+        }
+      },
+    },
     {
       key: "name",
       title: t("common.name"),
