@@ -1,21 +1,18 @@
 <template>
-  <li class="issue-debug">
-    {{ LogEntity.toJSON(activity) }}
-  </li>
   <li>
-    <div :id="`#${activity.name}`" class="relative pb-4">
+    <div :id="`#${issueComment.name}`" class="relative pb-4">
       <span
-        v-if="index !== activityList.length - 1"
+        v-if="index !== issueComments.length - 1"
         class="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
         aria-hidden="true"
       ></span>
       <div class="relative flex items-start">
-        <ActionIcon :activity="activity" />
+        <ActionIcon :issue-comment="issueComment" />
 
-        <ActivityAction
+        <IssueCommentAction
           :issue="issue"
           :index="index"
-          :activity="activity"
+          :issue-comment="issueComment"
           :similar="similar"
         >
           <template #subject-suffix>
@@ -25,24 +22,24 @@
           <template #comment>
             <slot name="comment" />
           </template>
-        </ActivityAction>
+        </IssueCommentAction>
       </div>
     </div>
   </li>
 </template>
 
 <script lang="ts" setup>
+import type { ComposedIssueComment } from "@/store";
 import type { ComposedIssue } from "@/types";
-import { LogEntity } from "@/types/proto/v1/logging_service";
 import ActionIcon from "./ActionIcon.vue";
-import ActivityAction from "./ActivityAction.vue";
-import type { DistinctActivity } from "./common";
+import IssueCommentAction from "./IssueCommentAction.vue";
+import type { DistinctIssueComment } from "./common";
 
 defineProps<{
   issue: ComposedIssue;
-  activityList: DistinctActivity[];
+  issueComments: DistinctIssueComment[];
   index: number;
-  activity: LogEntity;
-  similar: LogEntity[];
+  issueComment: ComposedIssueComment;
+  similar: ComposedIssueComment[];
 }>();
 </script>

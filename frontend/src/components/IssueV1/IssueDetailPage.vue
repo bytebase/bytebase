@@ -23,7 +23,7 @@
 
         <DescriptionSection />
 
-        <ActivitySection v-if="!isCreating" />
+        <IssueCommentSection v-if="!isCreating" />
       </div>
 
       <div
@@ -87,12 +87,12 @@ import {
   PlanCheckSection,
   StatementSection,
   DescriptionSection,
-  ActivitySection,
   Sidebar,
   IssueReviewActionPanel,
   IssueStatusActionPanel,
   TaskRolloutActionPanel,
   SQLCheckSection,
+  IssueCommentSection,
 } from "./components";
 import type {
   IssueReviewAction,

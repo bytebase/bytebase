@@ -19,7 +19,7 @@
 
         <DescriptionSection />
 
-        <ActivitySection v-if="!isCreating" />
+        <IssueCommentSection v-if="!isCreating" />
       </div>
 
       <div
@@ -72,7 +72,7 @@ import {
   BannerSection,
   HeaderSection,
   DescriptionSection,
-  ActivitySection,
+  IssueCommentSection,
   IssueReviewActionPanel,
   IssueStatusActionPanel,
   GrantRequestExporterForm,
