@@ -479,7 +479,7 @@ MIIEvQ...
       </template>
       <template v-else>
         <NButton
-          class="!mt-4"
+          class="!mt-2"
           :disabled="!allowEdit"
           @click.prevent="handleEditSSL"
         >
@@ -516,7 +516,7 @@ MIIEvQ...
       </template>
       <template v-else>
         <NButton
-          class="!mt-4"
+          class="!mt-2"
           :disabled="!allowEdit"
           @click.prevent="handleEditSSH"
         >

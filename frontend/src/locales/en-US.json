@@ -1997,6 +1997,7 @@
         "access-token": {
           "self": "OAuth application info",
           "personal-access-token": "personal access token",
+          "github-fine-grained-token": "fine-grained personal access token",
           "gitlab-personal-access-token": "Create a dedicated service user and generate a {token} with the maintainer role and at least following permissions for the group or projects to be managed. You can generate a project access token for managing a single project, or generate a group access token to manage all projects within the group.",
           "github-personal-access-token": "Create a dedicated service user and generate a {token} with the member role for the organization or all projects to be managed.",
           "bitbucket-app-access-token": "Generate a specific service user and create an {app_password} with at least following permissions for the relevant organizations, projects, or repositories to manage. Insert '<bitbucket username>:<generated app password>' below.",
