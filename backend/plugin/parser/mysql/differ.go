@@ -1389,7 +1389,7 @@ func writeCreatePartitionStatement(buf *strings.Builder, tableName string, parti
 		return errors.Errorf("unknown partition type %v", partition.tp)
 	}
 
-	if _, err := buf.WriteString(";"); err != nil {
+	if _, err := buf.WriteString(";\n"); err != nil {
 		return err
 	}
 
