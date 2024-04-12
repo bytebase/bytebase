@@ -51,6 +51,25 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
 
   // states
   const storage = new WebStorageHelper(LOCAL_STORAGE_KEY_PREFIX);
+
+  const loadStoredTab = (id: string) => {
+    const stored = storage.load<PersistentTab | undefined>(
+      KEYS.tab(id),
+      undefined
+    );
+    if (!stored) {
+      undefined;
+    }
+    const tab = reactive<SQLEditorTab>({
+      ...defaultSQLEditorTab(),
+      ...stored,
+      id,
+    });
+    watchTab(tab, false /* !immediate */);
+    tabsById.set(id, tab);
+    return tab;
+  };
+
   const tabIdListMapByProject = useLocalStorage<Record<string, string[]>>(
     `${LOCAL_STORAGE_KEY_PREFIX}.${KEYS.tabIdList}`,
     {}
@@ -68,18 +87,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     // Load tabs
     const validTabIdList: string[] = [];
     storedTabIdList.forEach((id) => {
-      const storedTab = storage.load<PersistentTab | undefined>(
-        KEYS.tab(id),
-        undefined
-      );
-      if (!storedTab) return;
-      const tab = reactive<SQLEditorTab>({
-        ...defaultSQLEditorTab(),
-        ...storedTab,
-        id,
-      });
-      watchTab(tab, false /* !immediate */);
-      tabsById.set(id, tab);
+      const stored = loadStoredTab(id);
+      if (!stored) return;
       validTabIdList.push(id);
     });
 
@@ -120,7 +129,12 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     },
   });
   const tabById = (id: string) => {
-    return tabsById.get(id);
+    const existed = tabsById.get(id);
+    if (existed) {
+      return existed;
+    }
+    const stored = loadStoredTab(id);
+    return stored;
   };
   const tabList = computed(() => {
     return tabIdList.value.map((id) => {
@@ -131,7 +145,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     // _maybeInitProject(project.value);
     const currId = currentTabId.value;
     if (!currId) return undefined;
-    return tabsById.get(currId);
+    return tabById(currId);
   });
 
   // actions
@@ -146,6 +160,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       ...defaultSQLEditorTab(),
       ...payload,
     });
+    watchTab(newTab, true /* immediate */);
 
     const { id } = newTab;
     const position = tabIdList.value.indexOf(currentTabId.value ?? "");
@@ -156,8 +171,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     }
     currentTabId.value = id;
     tabsById.set(id, newTab);
-
-    watchTab(newTab, true /* immediate */);
   };
   const removeTab = (tab: SQLEditorTab) => {
     const { id } = tab;

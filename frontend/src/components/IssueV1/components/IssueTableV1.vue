@@ -192,7 +192,7 @@ interface LocalState {
 const props = withDefaults(
   defineProps<{
     issueList: ComposedIssue[];
-    bordered: boolean;
+    bordered?: boolean;
     title?: string;
     mode?: Mode;
     highlightText?: string;

@@ -1,8 +1,8 @@
-import ActivitySection from "./ActivitySection";
 import BannerSection from "./BannerSection.vue";
 import DataExportSection from "./DataExportSection";
 import DescriptionSection from "./DescriptionSection";
 import HeaderSection from "./HeaderSection";
+import IssueCommentSection from "./IssueCommentSection";
 import IssueSearch from "./IssueSearch";
 import PlanCheckSection from "./PlanCheckSection";
 import SQLCheckSection from "./SQLCheckSection";
@@ -23,9 +23,9 @@ export {
   PlanCheckSection,
   StatementSection,
   DescriptionSection,
-  ActivitySection,
   IssueSearch,
   Sidebar,
   SQLCheckSection,
   DataExportSection,
+  IssueCommentSection,
 };

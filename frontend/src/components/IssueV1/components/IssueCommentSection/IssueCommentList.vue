@@ -1,0 +1,298 @@
+<template>
+  <div class="flex flex-col gap-y-4">
+    <ul>
+      <IssueCreatedComment :issue-comments="issueComments" :issue="issue" />
+      <IssueCommentView
+        v-for="(item, index) in issueComments"
+        :key="item.comment.name"
+        :issue-comments="issueComments"
+        :issue="issue"
+        :index="index"
+        :issue-comment="item.comment"
+        :similar="item.similar"
+      >
+        <template v-if="allowEditIssueComment(item.comment)" #subject-suffix>
+          <div class="space-x-2 flex items-center text-control-light">
+            <!-- mr-2 is to vertical align with the text description edit button-->
+            <div
+              v-if="!state.editCommentMode"
+              class="mr-2 flex items-center space-x-2"
+            >
+              <!-- Edit Comment Button-->
+              <NButton
+                quaternary
+                size="tiny"
+                @click.prevent="onUpdateComment(item.comment)"
+              >
+                <heroicons-outline:pencil class="w-4 h-4" />
+              </NButton>
+            </div>
+          </div>
+        </template>
+
+        <template #comment>
+          <MarkdownEditor
+            v-if="item.comment.comment"
+            :mode="
+              state.editCommentMode &&
+              state.activeComment?.name === item.comment.name
+                ? 'editor'
+                : 'preview'
+            "
+            :content="item.comment.comment"
+            :issue-list="issueList"
+            :project="issue.projectEntity"
+            @change="(val: string) => (state.editComment = val)"
+            @submit="doUpdateComment"
+            @cancel="cancelEditComment"
+          />
+          <div
+            v-if="
+              state.editCommentMode &&
+              state.activeComment?.name === item.comment.name
+            "
+            class="flex space-x-2 mt-4 items-center justify-end"
+          >
+            <NButton quaternary @click.prevent="cancelEditComment">
+              {{ $t("common.cancel") }}
+            </NButton>
+            <NButton
+              :disabled="!allowUpdateComment"
+              @click.prevent="doUpdateComment"
+            >
+              {{ $t("common.save") }}
+            </NButton>
+          </div>
+        </template>
+      </IssueCommentView>
+    </ul>
+
+    <div v-if="!state.editCommentMode && allowCreateComment">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <div class="relative">
+            <UserAvatar :user="currentUser" />
+            <span
+              class="absolute -bottom-0.5 -right-1 bg-white rounded-tl px-0.5 py-px"
+            >
+              <heroicons-solid:chat-alt
+                class="h-3.5 w-3.5 text-control-light"
+              />
+            </span>
+          </div>
+        </div>
+        <div class="ml-3 min-w-0 flex-1">
+          <label for="comment" class="sr-only">
+            {{ $t("issue.add-a-comment") }}
+          </label>
+          <MarkdownEditor
+            mode="editor"
+            :content="state.newComment"
+            :issue-list="issueList"
+            :project="issue.projectEntity"
+            @change="(val: string) => (state.newComment = val)"
+            @submit="doCreateComment(state.newComment)"
+          />
+          <div class="my-4 flex items-center justify-between">
+            <NButton
+              :disabled="state.newComment.length == 0"
+              @click.prevent="doCreateComment(state.newComment)"
+            >
+              {{ $t("common.comment") }}
+            </NButton>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
+import { useRoute } from "vue-router";
+import MarkdownEditor from "@/components/MarkdownEditor";
+import {
+  useCurrentUserV1,
+  useIssueCommentStore,
+  useIssueV1Store,
+  type ComposedIssueComment,
+} from "@/store";
+import { getIssueCommentId } from "@/store/modules/v1/common";
+import { UNKNOWN_PROJECT_NAME } from "@/types";
+import type { ComposedIssue } from "@/types";
+import { ListIssueCommentsRequest } from "@/types/proto/v1/issue_service";
+import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
+import { doSubscribeIssue, useIssueContext } from "../../logic";
+import {
+  IssueCommentView,
+  isSimilarIssueComment,
+  isUserEditableComment,
+  type DistinctIssueComment,
+} from "./IssueCommentView";
+import IssueCreatedComment from "./IssueCommentView/IssueCreatedComment.vue";
+
+interface LocalState {
+  editCommentMode: boolean;
+  activeComment?: ComposedIssueComment;
+  editComment: string;
+  newComment: string;
+}
+
+const route = useRoute();
+
+const { issue } = useIssueContext();
+const issueList = ref<ComposedIssue[]>([]);
+
+const state = reactive<LocalState>({
+  editCommentMode: false,
+  editComment: "",
+  newComment: "",
+});
+
+const currentUser = useCurrentUserV1();
+const issueV1Store = useIssueV1Store();
+const issueCommentStore = useIssueCommentStore();
+
+const prepareIssueListForMarkdownEditor = async () => {
+  const project = issue.value.project;
+  issueList.value = [];
+  if (project === UNKNOWN_PROJECT_NAME) return;
+
+  const list = await issueV1Store.listIssues({
+    find: {
+      project,
+      query: "",
+    },
+  });
+  issueList.value = list.issues;
+};
+
+const prepareIssueComments = async () => {
+  await issueCommentStore.listIssueComments(
+    ListIssueCommentsRequest.fromPartial({
+      parent: issue.value.name,
+      // Try to get all comments at once with max page size.
+      pageSize: 1000,
+    })
+  );
+};
+
+watchEffect(prepareIssueComments);
+
+const issueComments = computed((): DistinctIssueComment[] => {
+  const list = issueCommentStore.getIssueComments(issue.value.name);
+  const distinctIssueComments: DistinctIssueComment[] = [];
+  for (let i = 0; i < list.length; i++) {
+    const comment = list[i];
+    if (distinctIssueComments.length === 0) {
+      distinctIssueComments.push({ comment, similar: [] });
+      continue;
+    }
+
+    const prev = distinctIssueComments[distinctIssueComments.length - 1];
+    if (isSimilarIssueComment(prev.comment, comment)) {
+      prev.similar.push(comment);
+    } else {
+      distinctIssueComments.push({ comment, similar: [] });
+    }
+  }
+  return distinctIssueComments;
+});
+
+const allowCreateComment = computed(() => {
+  return hasProjectPermissionV2(
+    issue.value.projectEntity,
+    currentUser.value,
+    "bb.issueComments.create"
+  );
+});
+
+const cancelEditComment = () => {
+  state.activeComment = undefined;
+  state.editCommentMode = false;
+  state.editComment = "";
+};
+
+const doCreateComment = async (comment: string) => {
+  await issueCommentStore.createIssueComment({
+    issueName: issue.value.name,
+    comment,
+  });
+  state.newComment = "";
+  await prepareIssueComments();
+  // Because the user just added a comment and we assume she is interested in this
+  // issue, and we add her to the subscriber list if she is not there
+  try {
+    await doSubscribeIssue(issue.value, currentUser.value);
+  } catch {
+    // Nothing
+  }
+};
+
+const allowEditIssueComment = (comment: ComposedIssueComment) => {
+  if (!isUserEditableComment(comment)) {
+    return false;
+  }
+  if (currentUser.value.email === extractUserResourceName(comment.creator)) {
+    return true;
+  }
+  return hasProjectPermissionV2(
+    issue.value.projectEntity,
+    currentUser.value,
+    "bb.issueComments.update"
+  );
+};
+
+const onUpdateComment = (issueComment: ComposedIssueComment) => {
+  state.activeComment = issueComment;
+  state.editCommentMode = true;
+  state.editComment = issueComment.comment;
+};
+
+const doUpdateComment = async () => {
+  if (!state.activeComment) {
+    return;
+  }
+  if (!state.editComment) {
+    return;
+  }
+
+  const commentId = getIssueCommentId(state.activeComment.name);
+  await issueCommentStore.updateIssueComment({
+    issueName: issue.value.name,
+    commentId: `${commentId}`,
+    comment: state.editComment,
+  });
+  cancelEditComment();
+};
+
+const allowUpdateComment = computed(() => {
+  return state.editComment && state.editComment != state.activeComment!.comment;
+});
+
+onMounted(() => {
+  watch(
+    () => route.hash,
+    (hash) => {
+      if (hash.match(/^#activity(\d+)/)) {
+        // use '#activity' element as a fallback
+        const elem =
+          document.querySelector(hash) || document.querySelector("#activity");
+        // We use `setTimeout` here since this should be executed very late.
+        setTimeout(() => elem?.scrollIntoView());
+      }
+    },
+    {
+      immediate: true,
+    }
+  );
+});
+
+watch(
+  () => issue.value.project,
+  () => {
+    prepareIssueListForMarkdownEditor();
+  },
+  { immediate: true }
+);
+</script>

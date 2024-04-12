@@ -11,8 +11,8 @@ import { rolloutServiceClient } from "@/grpcweb";
 import {
   useCurrentUserV1,
   experimentalFetchIssueByName,
-  useIssueV1Store,
   pushNotification,
+  useIssueCommentStore,
 } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { UNKNOWN_ID } from "@/types";
@@ -155,7 +155,7 @@ export const useRollbackContext = () => {
       });
 
       try {
-        await useIssueV1Store().createIssueComment({
+        await useIssueCommentStore().createIssueComment({
           issueName: issue.value.name,
           comment: `${action} SQL rollback log for task [${issue.value.title}].`,
           payload: {
@@ -203,11 +203,8 @@ export const maybeCreateBackTraceComments = async (newIssue: ComposedIssue) => {
   if (rollbackList.length === 0) return;
 
   for (let i = 0; i < rollbackList.length; i++) {
-    const {
-      // byTask,
-      fromIssue: fromIssueName,
-      fromTask: fromTaskName,
-    } = rollbackList[i];
+    const { fromIssue: fromIssueName, fromTask: fromTaskName } =
+      rollbackList[i];
     const fromIssue = await experimentalFetchIssueByName(fromIssueName);
 
     if (fromIssue.uid === String(UNKNOWN_ID)) continue;
@@ -215,30 +212,5 @@ export const maybeCreateBackTraceComments = async (newIssue: ComposedIssue) => {
       (task) => task.name === fromTaskName
     );
     if (!fromTask || fromTask.uid === String(UNKNOWN_ID)) continue;
-
-    // const comment = [
-    //   `Create issue #${newIssue.uid}`,
-    //   "to rollback task",
-    //   `[${fromTask.title}]`,
-    // ].join(" ");
-    try {
-      // TODO: create comment
-      // await useIssueV1Store().createIssueComment({
-      //   issueId: fromIssue.uid,
-      //   comment,
-      //   payload: {
-      //     issueName: fromIssue.name,
-      //     taskRollbackBy: {
-      //       issueId: fromIssue.id,
-      //       taskId: fromTask.id,
-      //       rollbackByIssueId: newIssue.id,
-      //       rollbackByTaskId: byTask.id,
-      //     },
-      //   },
-      // });
-    } catch {
-      // do nothing
-      // failing to comment to won't be too bad
-    }
   }
 };

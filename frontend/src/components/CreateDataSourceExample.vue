@@ -1,5 +1,9 @@
 <template>
-  <div class="w-full flex flex-col justify-start" :class="props.className">
+  <div
+    v-if="grantStatement"
+    class="w-full flex flex-col justify-start"
+    :class="props.className"
+  >
     <p class="w-full mt-1 text-sm text-gray-500">
       <template v-if="isEngineUsingSQL">
         {{
@@ -82,9 +86,12 @@
       </template>
       <template v-else-if="props.engine === Engine.POSTGRES">
         <BBAttention
-          class="mb-1"
+          class="my-3"
           type="warning"
-          :title="$t('instance.sentence.create-user-example.postgresql.warn')"
+          :title="$t('instance.connection-info')"
+          :description="
+            $t('instance.sentence.create-user-example.postgresql.warn')
+          "
         />
         <i18n-t
           tag="p"
@@ -125,11 +132,16 @@
         <!-- TODO(xz): add a "detailed guide" link to docs here -->
       </template>
       <div class="mt-2 flex flex-row">
-        <span
+        <NConfigProvider
           class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre-line rounded-l-[3px]"
+          :hljs="hljs"
         >
-          {{ grantStatement(props.engine, props.dataSourceType) }}
-        </span>
+          <NCode
+            word-wrap
+            :language="languageOfEngineV1(engine)"
+            :code="grantStatement"
+          />
+        </NConfigProvider>
         <button
           tabindex="-1"
           class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed rounded-r-[3px]"
@@ -143,7 +155,8 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from "vue";
+import hljs from "highlight.js/lib/core";
+import { NCode, NConfigProvider } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
@@ -156,24 +169,20 @@ interface LocalState {
   showCreateUserExample: boolean;
 }
 
-const props = defineProps({
-  className: {
-    type: String,
-    default: "",
-  },
-  createInstanceFlag: {
-    type: Boolean,
-    default: false,
-  },
-  engine: {
-    type: Number as PropType<Engine>,
-    default: Engine.MYSQL,
-  },
-  dataSourceType: {
-    type: Number as PropType<DataSourceType>,
-    default: DataSourceType.ADMIN,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    className?: string;
+    createInstanceFlag: boolean;
+    engine: Engine;
+    dataSourceType: DataSourceType;
+  }>(),
+  {
+    className: "",
+    createInstanceFlag: false,
+    engine: Engine.MYSQL,
+    dataSourceType: DataSourceType.ADMIN,
+  }
+);
 
 const { t } = useI18n();
 
@@ -185,12 +194,9 @@ const isEngineUsingSQL = computed(() => {
   return languageOfEngineV1(props.engine) === "sql";
 });
 
-const grantStatement = (
-  engine: Engine,
-  dataSourceType: DataSourceType
-): string => {
-  if (dataSourceType === DataSourceType.ADMIN) {
-    switch (engine) {
+const grantStatement = computed(() => {
+  if (props.dataSourceType === DataSourceType.ADMIN) {
+    switch (props.engine) {
       case Engine.MYSQL:
         // RELOAD, LOCK TABLES: enables use of explicit LOCK TABLES statements for backups.
         // REPLICATION CLIENT: enables use of the SHOW MASTER STATUS, SHOW SLAVE STATUS, and SHOW BINARY LOGS statements.
@@ -306,7 +312,17 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
       case Engine.REDSHIFT:
         return "CREATE USER bytebase WITH PASSWORD 'YOUR_DB_PWD' CREATEUSER CREATEDB;";
       case Engine.MONGODB:
-        return 'use admin;\ndb.createUser({\n\tuser: "bytebase", \n\tpwd: "YOUR_DB_PWD", \n\troles: [\n\t\t{role: "readWriteAnyDatabase", db: "admin"},\n\t\t{role: "dbAdminAnyDatabase", db: "admin"},\n\t\t{role: "userAdminAnyDatabase", db: "admin"}\n\t]\n});';
+        return `use admin;
+db.createUser({
+  user: "bytebase",
+  pwd: "YOUR_DB_PWD",
+  roles: [
+    {role: "readWriteAnyDatabase", db: "admin"},
+    {role: "dbAdminAnyDatabase", db: "admin"},
+    {role: "userAdminAnyDatabase", db: "admin"}
+  ]
+});
+`;
       case Engine.SPANNER:
         return "";
       case Engine.REDIS:
@@ -321,7 +337,7 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
         return "CREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\nGRANT ALL PRIVILEGES TO bytebase;";
     }
   } else {
-    switch (engine) {
+    switch (props.engine) {
       case Engine.MYSQL:
       case Engine.TIDB:
       case Engine.OCEANBASE:
@@ -434,14 +450,14 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
     }
   }
   return ""; // fallback
-};
+});
 
 const toggleCreateUserExample = () => {
   state.showCreateUserExample = !state.showCreateUserExample;
 };
 
 const copyGrantStatement = () => {
-  toClipboard(grantStatement(props.engine, props.dataSourceType)).then(() => {
+  toClipboard(grantStatement.value).then(() => {
     pushNotification({
       module: "bytebase",
       style: "INFO",
