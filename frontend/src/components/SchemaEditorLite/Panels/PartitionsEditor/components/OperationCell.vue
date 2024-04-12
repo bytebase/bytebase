@@ -2,7 +2,7 @@
   <div class="flex justify-start items-center">
     <NPopconfirm v-if="status !== 'dropped'" @positive-click="$emit('drop')">
       <template #trigger>
-        <MiniActionButton tag="div" :disabled="readonly">
+        <MiniActionButton tag="div">
           <TrashIcon class="w-4 h-4" />
         </MiniActionButton>
       </template>
@@ -29,18 +29,28 @@
       </template>
       <span>{{ $t("schema-editor.actions.restore") }}</span>
     </NTooltip>
+    <NTooltip v-if="allowAddSub" trigger="hover" to="body">
+      <template #trigger>
+        <MiniActionButton tag="div" @click="$emit('add-sub')">
+          <CirclePlusIcon class="w-4 h-4" />
+        </MiniActionButton>
+      </template>
+      <span>{{ $t("schema-editor.table-partition.add-sub-partition") }}</span>
+    </NTooltip>
   </div>
 </template>
 <script lang="ts" setup>
-import { TrashIcon, Undo2Icon } from "lucide-vue-next";
+import { CirclePlusIcon, TrashIcon, Undo2Icon } from "lucide-vue-next";
 import { NPopconfirm, NTooltip } from "naive-ui";
+import { computed } from "vue";
 import type { EditStatus } from "@/components/SchemaEditorLite";
 import { MiniActionButton } from "@/components/v2";
 import type { TablePartitionMetadata } from "@/types/proto/v1/database_service";
+import { PartitionTypesSupportSubPartition } from "../common";
 
-defineProps<{
-  readonly: boolean;
+const props = defineProps<{
   partition: TablePartitionMetadata;
+  parent?: TablePartitionMetadata;
   status: EditStatus;
 }>();
 defineEmits<{
@@ -48,4 +58,13 @@ defineEmits<{
   (event: "restore"): void;
   (event: "add-sub"): void;
 }>();
+
+const allowAddSub = computed(() => {
+  const { partition, parent } = props;
+  if (parent) {
+    // partitions cannot nest (only 1-level parent-sub relationships)
+    return false;
+  }
+  return PartitionTypesSupportSubPartition.includes(partition.type);
+});
 </script>

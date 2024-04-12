@@ -2340,7 +2340,8 @@
       "partitions": "分区",
       "edit-partitions": "编辑分区",
       "expression": "表达式",
-      "value": "值"
+      "value": "值",
+      "add-sub-partition": "添加子分区"
     }
   },
   "label": {

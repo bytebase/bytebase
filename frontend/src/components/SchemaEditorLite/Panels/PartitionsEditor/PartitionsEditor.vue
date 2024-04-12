@@ -38,11 +38,11 @@ import type { DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
-import type {
-  DatabaseMetadata,
-  SchemaMetadata,
-  TableMetadata,
+import {
   TablePartitionMetadata,
+  type DatabaseMetadata,
+  type SchemaMetadata,
+  type TableMetadata,
 } from "@/types/proto/v1/database_service";
 import type { EditStatus } from "../..";
 import { useSchemaEditorContext } from "../../context";
@@ -207,6 +207,7 @@ const columns = computed(() => {
           <TypeCell
             readonly={!allowEditPartition(item.partition)}
             partition={item.partition}
+            parent={item.parent}
             onUpdate:type={(type) => {
               item.partition.type = type;
               emit("update");
@@ -257,15 +258,15 @@ const columns = computed(() => {
       key: "operations",
       title: "",
       resizable: false,
-      width: 30,
+      width: 60,
       hide: props.readonly,
       className: "!px-0",
       render: (item) => {
         const status = statusForPartition(item.partition);
         return (
           <OperationCell
-            readonly={props.readonly}
             partition={item.partition}
+            parent={item.parent}
             status={status}
             onDrop={() => {
               const status = statusForPartition(item.partition);
@@ -297,6 +298,16 @@ const columns = computed(() => {
                   /* !recursive */ false
                 );
               }
+            }}
+            onAdd-sub={() => {
+              const sub = TablePartitionMetadata.fromPartial({});
+              markStatus(sub, "created");
+              if (item.partition.subpartitions) {
+                item.partition.subpartitions.push(sub);
+              } else {
+                item.partition.subpartitions = [sub];
+              }
+              emit("update");
             }}
           />
         );

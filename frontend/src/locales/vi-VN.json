@@ -2340,7 +2340,8 @@
       "partitions": "Phân vùng",
       "edit-partitions": "Chỉnh sửa phân vùng",
       "expression": "Sự biểu lộ",
-      "value": "Giá trị"
+      "value": "Giá trị",
+      "add-sub-partition": "Thêm phân vùng phụ"
     }
   },
   "label": {

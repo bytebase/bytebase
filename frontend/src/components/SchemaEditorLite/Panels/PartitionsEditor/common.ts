@@ -1,6 +1,6 @@
 import { TablePartitionMetadata_Type } from "@/types/proto/v1/database_service";
 
-export const ExpandablePartitionTypes: readonly TablePartitionMetadata_Type[] =
+export const PartitionTypesSupportSubPartition: readonly TablePartitionMetadata_Type[] =
   [
     TablePartitionMetadata_Type.RANGE,
     TablePartitionMetadata_Type.RANGE_COLUMNS,

@@ -24,9 +24,10 @@ import {
   TablePartitionMetadata_Type,
 } from "@/types/proto/v1/database_service";
 
-defineProps<{
+const props = defineProps<{
   readonly?: boolean;
   partition: TablePartitionMetadata;
+  parent?: TablePartitionMetadata;
 }>();
 defineEmits<{
   (event: "update:type", type: TablePartitionMetadata_Type): void;
@@ -35,16 +36,23 @@ defineEmits<{
 const focused = ref(false);
 
 const typeOptions = computed(() => {
-  const values: TablePartitionMetadata_Type[] = [
-    TablePartitionMetadata_Type.RANGE,
-    TablePartitionMetadata_Type.RANGE_COLUMNS,
-    TablePartitionMetadata_Type.LIST,
-    TablePartitionMetadata_Type.LIST_COLUMNS,
-    TablePartitionMetadata_Type.HASH,
-    TablePartitionMetadata_Type.LINEAR_HASH,
-    TablePartitionMetadata_Type.KEY,
-    TablePartitionMetadata_Type.LINEAR_KEY,
-  ];
+  const values: TablePartitionMetadata_Type[] = props.parent
+    ? [
+        TablePartitionMetadata_Type.HASH,
+        TablePartitionMetadata_Type.LINEAR_HASH,
+        TablePartitionMetadata_Type.KEY,
+        TablePartitionMetadata_Type.LINEAR_KEY,
+      ]
+    : [
+        TablePartitionMetadata_Type.RANGE,
+        TablePartitionMetadata_Type.RANGE_COLUMNS,
+        TablePartitionMetadata_Type.LIST,
+        TablePartitionMetadata_Type.LIST_COLUMNS,
+        TablePartitionMetadata_Type.HASH,
+        TablePartitionMetadata_Type.LINEAR_HASH,
+        TablePartitionMetadata_Type.KEY,
+        TablePartitionMetadata_Type.LINEAR_KEY,
+      ];
   return values.map<SelectOption>((type) => {
     const label = tablePartitionMetadata_TypeToJSON(type);
     return {
