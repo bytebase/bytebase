@@ -24,7 +24,6 @@ import authRoutes, {
 } from "./auth";
 import dashboardRoutes from "./dashboard";
 import { INSTANCE_ROUTE_DETAIL } from "./dashboard/instance";
-import { ISSUE_ROUTE_DASHBOARD } from "./dashboard/issue";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
@@ -176,7 +175,6 @@ router.beforeEach((to, from, next) => {
     to.name?.toString().startsWith(INSTANCE_ROUTE_DASHBOARD) ||
     to.name?.toString().startsWith(PROJECT_V1_ROUTE_DASHBOARD) ||
     to.name?.toString().startsWith(DATABASE_ROUTE_DASHBOARD) ||
-    to.name?.toString().startsWith(ISSUE_ROUTE_DASHBOARD) ||
     to.name === INSTANCE_ROUTE_DETAIL ||
     to.name?.toString().startsWith("sql-editor") ||
     to.name?.toString().startsWith(SETTING_ROUTE) ||
