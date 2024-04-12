@@ -29,7 +29,6 @@ pack(){
     rm $1
 }
 
-pack mongosh-1.6.1-darwin-x64.zip darwin amd64
 pack mongosh-1.6.1-darwin-arm64.zip darwin arm64
 pack mongosh-1.6.1-linux-x64.tgz linux amd64
 pack mongosh-1.6.1-linux-arm64.tgz linux arm64
