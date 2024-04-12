@@ -1,16 +1,17 @@
 <template>
   <div class="flex flex-col gap-y-4">
     <ul>
-      <ActivityItem
-        v-for="(item, index) in activityList"
-        :key="item.activity.name"
-        :activity-list="activityList"
+      <IssueCreatedComment :issue-comments="issueComments" :issue="issue" />
+      <IssueCommentView
+        v-for="(item, index) in issueComments"
+        :key="item.comment.name"
+        :issue-comments="issueComments"
         :issue="issue"
         :index="index"
-        :activity="item.activity"
+        :issue-comment="item.comment"
         :similar="item.similar"
       >
-        <template v-if="allowEditActivity(item.activity)" #subject-suffix>
+        <template v-if="allowEditIssueComment(item.comment)" #subject-suffix>
           <div class="space-x-2 flex items-center text-control-light">
             <!-- mr-2 is to vertical align with the text description edit button-->
             <div
@@ -21,7 +22,7 @@
               <NButton
                 quaternary
                 size="tiny"
-                @click.prevent="onUpdateComment(item.activity)"
+                @click.prevent="onUpdateComment(item.comment)"
               >
                 <heroicons-outline:pencil class="w-4 h-4" />
               </NButton>
@@ -31,14 +32,14 @@
 
         <template #comment>
           <MarkdownEditor
-            v-if="item.activity.comment"
+            v-if="item.comment.comment"
             :mode="
               state.editCommentMode &&
-              state.activeActivity?.name === item.activity.name
+              state.activeComment?.name === item.comment.name
                 ? 'editor'
                 : 'preview'
             "
-            :content="item.activity.comment"
+            :content="item.comment.comment"
             :issue-list="issueList"
             :project="issue.projectEntity"
             @change="(val: string) => (state.editComment = val)"
@@ -48,7 +49,7 @@
           <div
             v-if="
               state.editCommentMode &&
-              state.activeActivity?.name === item.activity.name
+              state.activeComment?.name === item.comment.name
             "
             class="flex space-x-2 mt-4 items-center justify-end"
           >
@@ -63,7 +64,7 @@
             </NButton>
           </div>
         </template>
-      </ActivityItem>
+      </IssueCommentView>
     </ul>
 
     <div v-if="!state.editCommentMode && allowCreateComment">
@@ -110,30 +111,33 @@
 import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import MarkdownEditor from "@/components/MarkdownEditor";
-import { IssueBuiltinFieldId } from "@/plugins";
-import { useActivityV1Store, useCurrentUserV1, useIssueV1Store } from "@/store";
-import { getLogId } from "@/store/modules/v1/common";
+import {
+  useCurrentUserV1,
+  useIssueCommentStore,
+  useIssueV1Store,
+  type ComposedIssueComment,
+} from "@/store";
+import { getIssueCommentId } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
-import type { ComposedIssue, ActivityIssueFieldUpdatePayload } from "@/types";
-import type { LogEntity } from "@/types/proto/v1/logging_service";
-import { LogEntity_Action } from "@/types/proto/v1/logging_service";
+import type { ComposedIssue } from "@/types";
+import { ListIssueCommentsRequest } from "@/types/proto/v1/issue_service";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 import { doSubscribeIssue, useIssueContext } from "../../logic";
-import type { DistinctActivity } from "./Activity";
 import {
-  ActivityItem,
-  isSimilarActivity,
-  isUserEditableActivity,
-} from "./Activity";
+  IssueCommentView,
+  isSimilarIssueComment,
+  isUserEditableComment,
+  type DistinctIssueComment,
+} from "./IssueCommentView";
+import IssueCreatedComment from "./IssueCommentView/IssueCreatedComment.vue";
 
 interface LocalState {
   editCommentMode: boolean;
-  activeActivity?: LogEntity;
+  activeComment?: ComposedIssueComment;
   editComment: string;
   newComment: string;
 }
 
-const activityV1Store = useActivityV1Store();
 const route = useRoute();
 
 const { issue } = useIssueContext();
@@ -147,6 +151,7 @@ const state = reactive<LocalState>({
 
 const currentUser = useCurrentUserV1();
 const issueV1Store = useIssueV1Store();
+const issueCommentStore = useIssueCommentStore();
 
 const prepareIssueListForMarkdownEditor = async () => {
   const project = issue.value.project;
@@ -162,47 +167,36 @@ const prepareIssueListForMarkdownEditor = async () => {
   issueList.value = list.issues;
 };
 
-const prepareActivityList = () => {
-  activityV1Store.fetchActivityListForIssueV1(issue.value);
+const prepareIssueComments = async () => {
+  await issueCommentStore.listIssueComments(
+    ListIssueCommentsRequest.fromPartial({
+      parent: issue.value.name,
+      // Try to get all comments at once with max page size.
+      pageSize: 1000,
+    })
+  );
 };
 
-watchEffect(prepareActivityList);
+watchEffect(prepareIssueComments);
 
-// Need to use computed to make list reactive to activity list changes.
-const activityList = computed((): DistinctActivity[] => {
-  const list = activityV1Store
-    .getActivityListByIssueV1(issue.value.uid)
-    .filter((activity) => {
-      if (activity.action === LogEntity_Action.ACTION_ISSUE_APPROVAL_NOTIFY) {
-        return false;
-      }
-
-      if (activity.action === LogEntity_Action.ACTION_ISSUE_FIELD_UPDATE) {
-        const containUserVisibleChange =
-          (JSON.parse(activity.payload) as ActivityIssueFieldUpdatePayload)
-            .fieldId !== IssueBuiltinFieldId.SUBSCRIBER_LIST;
-        return containUserVisibleChange;
-      }
-      return true;
-    });
-
-  const distinctActivityList: DistinctActivity[] = [];
+const issueComments = computed((): DistinctIssueComment[] => {
+  const list = issueCommentStore.getIssueComments(issue.value.name);
+  const distinctIssueComments: DistinctIssueComment[] = [];
   for (let i = 0; i < list.length; i++) {
-    const activity = list[i];
-    if (distinctActivityList.length === 0) {
-      distinctActivityList.push({ activity, similar: [] });
+    const comment = list[i];
+    if (distinctIssueComments.length === 0) {
+      distinctIssueComments.push({ comment, similar: [] });
       continue;
     }
 
-    const prev = distinctActivityList[distinctActivityList.length - 1];
-    if (isSimilarActivity(prev.activity, activity)) {
-      prev.similar.push(activity);
+    const prev = distinctIssueComments[distinctIssueComments.length - 1];
+    if (isSimilarIssueComment(prev.comment, comment)) {
+      prev.similar.push(comment);
     } else {
-      distinctActivityList.push({ activity, similar: [] });
+      distinctIssueComments.push({ comment, similar: [] });
     }
   }
-
-  return distinctActivityList;
+  return distinctIssueComments;
 });
 
 const allowCreateComment = computed(() => {
@@ -214,20 +208,18 @@ const allowCreateComment = computed(() => {
 });
 
 const cancelEditComment = () => {
-  state.activeActivity = undefined;
+  state.activeComment = undefined;
   state.editCommentMode = false;
   state.editComment = "";
 };
 
 const doCreateComment = async (comment: string) => {
-  await issueV1Store.createIssueComment({
+  await issueCommentStore.createIssueComment({
     issueName: issue.value.name,
     comment,
   });
   state.newComment = "";
-
-  await prepareActivityList();
-
+  await prepareIssueComments();
   // // Because the user just added a comment and we assume she is interested in this
   // // issue, and we add her to the subscriber list if she is not there
   try {
@@ -237,11 +229,11 @@ const doCreateComment = async (comment: string) => {
   }
 };
 
-const allowEditActivity = (activity: LogEntity) => {
-  if (!isUserEditableActivity(activity)) {
+const allowEditIssueComment = (comment: ComposedIssueComment) => {
+  if (!isUserEditableComment(comment)) {
     return false;
   }
-  if (currentUser.value.email === extractUserResourceName(activity.creator)) {
+  if (currentUser.value.email === extractUserResourceName(comment.creator)) {
     return true;
   }
   return hasProjectPermissionV2(
@@ -251,35 +243,31 @@ const allowEditActivity = (activity: LogEntity) => {
   );
 };
 
-const onUpdateComment = (activity: LogEntity) => {
-  state.activeActivity = activity;
+const onUpdateComment = (issueComment: ComposedIssueComment) => {
+  state.activeComment = issueComment;
   state.editCommentMode = true;
-  state.editComment = activity.comment;
+  state.editComment = issueComment.comment;
 };
 
-const doUpdateComment = () => {
-  if (!state.activeActivity) {
+const doUpdateComment = async () => {
+  if (!state.activeComment) {
     return;
   }
   if (!state.editComment) {
     return;
   }
-  const activityId = getLogId(state.activeActivity.name);
-  issueV1Store
-    .updateIssueComment({
-      issueName: issue.value.name,
-      commentId: `${activityId}`,
-      comment: state.editComment,
-    })
-    .then(() => {
-      cancelEditComment();
-    });
+
+  const commentId = getIssueCommentId(state.activeComment.name);
+  await issueCommentStore.updateIssueComment({
+    issueName: issue.value.name,
+    commentId: `${commentId}`,
+    comment: state.editComment,
+  });
+  cancelEditComment();
 };
 
 const allowUpdateComment = computed(() => {
-  return (
-    state.editComment && state.editComment != state.activeActivity!.comment
-  );
+  return state.editComment && state.editComment != state.activeComment!.comment;
 });
 
 onMounted(() => {

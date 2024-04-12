@@ -20,8 +20,8 @@ export const issueNamePrefix = "issues/";
 export const secretNamePrefix = "secrets/";
 export const branchNamePrefix = "branches/";
 export const ssoNamePrefix = "idps/";
-
 export const protectionRulesSuffix = "/protectionRules";
+export const issueCommentNamePrefix = "issueComments/";
 
 export const getNameParentTokens = (
   name: string,
@@ -177,4 +177,16 @@ export const getVCSConnectorId = (
 export const getSSOId = (name: string) => {
   const tokens = getNameParentTokens(name, [ssoNamePrefix]);
   return tokens[0];
+};
+
+export const getIssueCommentId = (name: string) => {
+  const tokens = getNameParentTokens(name, [
+    projectNamePrefix,
+    issueNamePrefix,
+    issueCommentNamePrefix,
+  ]);
+  if (tokens.length !== 3) {
+    return "";
+  }
+  return tokens[2];
 };

@@ -21,17 +21,17 @@ import { computed } from "vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import { usePageMode, useUserStore } from "@/store";
 import { SYSTEM_BOT_EMAIL } from "@/types";
-import type { LogEntity } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
 
 const props = defineProps<{
-  activity: LogEntity;
+  // Format: users/{email}
+  creator: string;
 }>();
 
 const pageMode = usePageMode();
 
 const userEmail = computed(() => {
-  return extractUserResourceName(props.activity.creator);
+  return extractUserResourceName(props.creator);
 });
 
 const user = computed(() => {
