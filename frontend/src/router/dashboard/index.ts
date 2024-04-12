@@ -4,7 +4,6 @@ import DashboardLayout from "@/layouts/DashboardLayout.vue";
 import databaseRoutes from "./database";
 import environmentV1Routes from "./environmentV1";
 import instanceRoutes from "./instance";
-import issueRoutes from "./issue";
 import projectV1Routes from "./projectV1";
 import workspaceRoutes from "./workspace";
 import workspaceSettingRoutes from "./workspaceSetting";
@@ -23,7 +22,6 @@ const dashboardRoutes: RouteRecordRaw[] = [
           ...environmentV1Routes,
           ...instanceRoutes,
           ...projectV1Routes,
-          ...issueRoutes,
           ...databaseRoutes,
         ],
       },
