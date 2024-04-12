@@ -24,3 +24,4 @@ export * from "./activity";
 export * from "./anomaly";
 export * from "./schemaEditor";
 export * from "./changelist";
+export * from "./issueComment";

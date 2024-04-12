@@ -10,11 +10,11 @@
       </HideInStandaloneMode>
     </div>
 
-    <ActivityList />
+    <IssueCommentList />
   </div>
 </template>
 
 <script lang="ts" setup>
-import ActivityList from "./ActivityList.vue";
+import IssueCommentList from "./IssueCommentList.vue";
 import Subscribers from "./Subscribers";
 </script>
