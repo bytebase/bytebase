@@ -3409,6 +3409,10 @@
     "schema-text": "スキーマテキスト",
     "baseline": "ベースライン",
     "head": "頭",
-    "show-diff-with-branch-baseline": "ブランチベースラインとの差分を表示"
+    "show-diff-with-branch-baseline": "ブランチベースラインとの差分を表示",
+    "table-partition": {
+      "drop-partition-confirm": "テーブルパーティションを削除しますか?",
+      "drop-partition-with-subpartitions-confirm": "また、そのサブパーティションもすべて削除されます。"
+    }
   }
 }

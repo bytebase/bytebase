@@ -3409,6 +3409,10 @@
     "schema-text": "Texto del esquema",
     "baseline": "Base",
     "head": "Cabeza",
-    "show-diff-with-branch-baseline": "Mostrar diferencia con la línea base de la rama"
+    "show-diff-with-branch-baseline": "Mostrar diferencia con la línea base de la rama",
+    "table-partition": {
+      "drop-partition-confirm": "¿Eliminar partición de mesa?",
+      "drop-partition-with-subpartitions-confirm": "También eliminará todas sus subparticiones."
+    }
   }
 }

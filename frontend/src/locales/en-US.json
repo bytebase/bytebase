@@ -3409,6 +3409,10 @@
     "schema-text": "Schema Text",
     "baseline": "Baseline",
     "head": "Head",
-    "show-diff-with-branch-baseline": "Show diff with branch baseline"
+    "show-diff-with-branch-baseline": "Show diff with branch baseline",
+    "table-partition": {
+      "drop-partition-confirm": "Drop table partition?",
+      "drop-partition-with-subpartitions-confirm": "Will also drop all its subpartitions."
+    }
   }
 }

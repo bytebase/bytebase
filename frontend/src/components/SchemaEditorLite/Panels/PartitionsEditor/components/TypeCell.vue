@@ -4,6 +4,7 @@
     :options="typeOptions"
     :style="style"
     :disabled="readonly"
+    :show-arrow="!readonly"
     suffix-style="right: 3px"
     placeholder="column type"
     class="bb-schema-editor--table-partition-type-select"

@@ -4,12 +4,26 @@
   >
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex justify-start items-center gap-x-2">
-        <template v-if="state.mode === 'INDEXES'">
+        <template
+          v-if="state.mode === 'INDEXES' || state.mode === 'PARTITIONS'"
+        >
           <NButton size="small" @click="state.mode = 'COLUMNS'">
             <ArrowLeftIcon class="w-4 h-4" />
           </NButton>
           <template v-if="!readonly">
-            <NButton size="small" @click="handleAddIndex">
+            <NButton
+              v-if="state.mode === 'INDEXES'"
+              size="small"
+              @click="handleAddIndex"
+            >
+              <PlusIcon class="w-4 h-4 mr-1" />
+              {{ $t("common.add") }}
+            </NButton>
+            <NButton
+              v-if="state.mode === 'PARTITIONS'"
+              size="small"
+              @click="handleAddPartition"
+            >
               <PlusIcon class="w-4 h-4 mr-1" />
               {{ $t("common.add") }}
             </NButton>
@@ -181,6 +195,7 @@ import type {
 import {
   ColumnMetadata,
   IndexMetadata,
+  TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
@@ -400,6 +415,22 @@ const handleAddIndex = () => {
     IndexMetadata.fromPartial({
       name: `${props.table.name}_index_${randomString(8).toLowerCase()}`,
     })
+  );
+  markTableStatus("updated");
+};
+const handleAddPartition = () => {
+  const partition = TablePartitionMetadata.fromPartial({});
+  // eslint-disable-next-line vue/no-mutating-props
+  props.table.partitions.push(partition);
+  markEditStatus(
+    props.db,
+    {
+      database: props.database,
+      schema: props.schema,
+      table: props.table,
+      partition,
+    },
+    "created"
   );
   markTableStatus("updated");
 };

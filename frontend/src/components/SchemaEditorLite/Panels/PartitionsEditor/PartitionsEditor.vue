@@ -8,7 +8,7 @@
     :data-table-body-height="tableBodyHeight"
   >
     <pre
-      class="text-xs font-mono max-h-[80vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400 z-[999999]"
+      class="text-xs font-mono max-h-[80vh] max-w-[40vw] overflow-auto fixed bottom-0 left-0 p-2 bg-white/50 border border-gray-400 z-[999999]"
       >{{ JSON.stringify(flattenItemList, null, "  ") }}</pre
     >
     <NDataTable
@@ -18,12 +18,14 @@
       :row-key="getItemKey"
       :columns="columns"
       :data="layoutReady ? flattenItemList : []"
+      :row-class-name="classesForRow"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
       :striped="true"
       :bordered="true"
       :bottom-bordered="true"
       class="schema-editor-table-partitions-editor"
+      :class="[disableDiffColoring && 'disable-diff-coloring']"
     />
   </div>
 </template>
@@ -42,6 +44,8 @@ import type {
   TableMetadata,
   TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
+import type { EditStatus } from "../..";
+import { useSchemaEditorContext } from "../../context";
 import { markUUID } from "../common";
 import {
   OperationCell,
@@ -96,6 +100,39 @@ const tableBodyHeight = computed(() => {
 });
 // Use this to avoid unnecessary initial rendering
 const layoutReady = computed(() => tableHeaderHeight.value > 0);
+const {
+  disableDiffColoring,
+  markEditStatus,
+  getPartitionStatus,
+  removeEditStatus,
+} = useSchemaEditorContext();
+
+const metadataForPartition = (partition: TablePartitionMetadata) => {
+  return {
+    database: props.database,
+    schema: props.schema,
+    table: props.table,
+    partition,
+  };
+};
+const statusForPartition = (partition: TablePartitionMetadata) => {
+  return getPartitionStatus(props.db, metadataForPartition(partition));
+};
+const markStatus = (partition: TablePartitionMetadata, status: EditStatus) => {
+  markEditStatus(props.db, metadataForPartition(partition), status);
+};
+
+const allowEditPartition = (partition: TablePartitionMetadata) => {
+  if (props.readonly) {
+    return false;
+  }
+  const status = statusForPartition(partition);
+  return status === "created";
+};
+
+const classesForRow = (item: FlattenTablePartitionMetadata, index: number) => {
+  return statusForPartition(item.partition);
+};
 
 const flattenItemList = computed(() => {
   const list: FlattenTablePartitionMetadata[] = [];
@@ -143,10 +180,16 @@ const columns = computed(() => {
       render: (item) => {
         return (
           <NameCell
-            readonly={props.readonly}
+            readonly={!allowEditPartition(item.partition)}
             partition={item.partition}
             onUpdate:name={(name) => {
+              removeEditStatus(
+                props.db,
+                metadataForPartition(item.partition),
+                /* !recursive */ false
+              );
               item.partition.name = name;
+              markStatus(item.partition, "created");
               emit("update");
             }}
           />
@@ -162,7 +205,7 @@ const columns = computed(() => {
       render: (item) => {
         return (
           <TypeCell
-            readonly={props.readonly}
+            readonly={!allowEditPartition(item.partition)}
             partition={item.partition}
             onUpdate:type={(type) => {
               item.partition.type = type;
@@ -181,7 +224,7 @@ const columns = computed(() => {
       render: (item) => {
         return (
           <ExpressionCell
-            readonly={props.readonly}
+            readonly={!allowEditPartition(item.partition)}
             partition={item.partition}
             onUpdate:expression={(expression) => {
               item.partition.expression = expression;
@@ -200,7 +243,7 @@ const columns = computed(() => {
       render: (item) => {
         return (
           <ValueCell
-            readonly={props.readonly}
+            readonly={!allowEditPartition(item.partition)}
             partition={item.partition}
             onUpdate:value={(value) => {
               item.partition.value = value;
@@ -218,12 +261,42 @@ const columns = computed(() => {
       hide: props.readonly,
       className: "!px-0",
       render: (item) => {
+        const status = statusForPartition(item.partition);
         return (
           <OperationCell
+            readonly={props.readonly}
             partition={item.partition}
+            status={status}
             onDrop={() => {
-              pull(props.table.partitions, item.partition);
+              const status = statusForPartition(item.partition);
+              if (status === "created") {
+                // For newly created partitions, we remove it directly
+                if (item.parent) {
+                  pull(item.parent.subpartitions, item.partition);
+                } else {
+                  pull(props.table.partitions, item.partition);
+                }
+              } else {
+                markStatus(item.partition, "dropped");
+                item.partition.subpartitions?.forEach((subpartition) => {
+                  markStatus(subpartition, "dropped");
+                });
+              }
               emit("update");
+            }}
+            onRestore={() => {
+              removeEditStatus(
+                props.db,
+                metadataForPartition(item.partition),
+                /* !recursive */ false
+              );
+              if (item.parent) {
+                removeEditStatus(
+                  props.db,
+                  metadataForPartition(item.parent),
+                  /* !recursive */ false
+                );
+              }
             }}
           />
         );

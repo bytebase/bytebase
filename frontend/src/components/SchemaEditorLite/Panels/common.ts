@@ -1,4 +1,5 @@
 import { v1 as uuidv1 } from "uuid";
+import type { EditStatus } from "../types";
 
 export const markUUID = (obj: any) => {
   // column.name is editable, so we need to insert another hidden field
@@ -13,4 +14,17 @@ export const markUUID = (obj: any) => {
     });
   }
   return obj.__uuid as string;
+};
+
+export const markEditStatusBeforeDrop = (obj: any, status: EditStatus) => {
+  Object.defineProperty(obj, "__status_before_drop", {
+    enumerable: false,
+    writable: true,
+    configurable: false,
+    value: status,
+  });
+};
+
+export const getEditStatusBeforeDrop = (obj: any) => {
+  return obj["__status_before_drop"] as EditStatus | undefined;
 };
