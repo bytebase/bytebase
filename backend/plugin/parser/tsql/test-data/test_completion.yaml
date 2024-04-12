@@ -1,0 +1,11 @@
+- description: Simple SELECT token
+  input: SELE|
+  want:
+    - text: SELECT
+      type: KEYWORD
+      definition: ""
+      comment: ""
+    - text: SELF
+      type: KEYWORD
+      definition: ""
+      comment: ""

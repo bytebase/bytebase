@@ -2,7 +2,7 @@ package tsql
 
 import (
 	"context"
-	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -19,6 +19,26 @@ func init() {
 var (
 	globalFellowSetsByState = base.NewFollowSetsByState()
 )
+
+type CompletionMap map[string]base.Candidate
+
+func (m CompletionMap) Insert(entry base.Candidate) {
+	m[entry.String()] = entry
+}
+
+func (m CompletionMap) toSLice() []base.Candidate {
+	var result []base.Candidate
+	for _, candidate := range m {
+		result = append(result, candidate)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Type != result[j].Type {
+			return result[i].Type < result[j].Type
+		}
+		return result[i].Text < result[j].Text
+	})
+	return result
+}
 
 type Completer struct {
 	ctx     context.Context
@@ -113,19 +133,36 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 	c.parser.Reset()
 	context := c.parser.Tsql_file()
 	candidates := c.core.CollectCandidates(caretIndex, context)
-	var tokenCandidates []string
-	for token := range candidates.Tokens {
+	return c.convertCandidates(candidates)
+}
+
+func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {
+	keywordEntries := make(CompletionMap)
+
+	for token, _ := range candidates.Tokens {
 		if token < 0 || token >= len(c.parser.GetSymbolicNames()) {
 			continue
 		}
-		text := c.parser.GetSymbolicNames()[token]
-		if strings.HasPrefix(strings.ToUpper(text), strings.ToUpper("SEL")) {
-			tokenCandidates = append(tokenCandidates, text)
+		// ANTLR4 Golang target seems do not support vacabulary, and we presume that the symbolic name is the token text
+		// in Transact-SQL grammar. So we use the symbolic name as the token text.
+		// TODO(zp): filter our the token which text is not as same as the symbolic name.
+		tokenSymbolicName := c.parser.GetSymbolicNames()[token]
+
+		if !strings.HasPrefix(strings.ToUpper(tokenSymbolicName), strings.ToUpper("SEL")) {
+			continue
 		}
+
+		// TODO(zp): For the token candidate(most keyword), we should filter out the prefix which is not as same as the token text. But
+		// the frontend monaco-editor seems do this for us, but it may meanningful to do this in the future to decrese the data transfter.
+		keywordEntries.Insert(base.Candidate{
+			Type: base.CandidateTypeKeyword,
+			Text: tokenSymbolicName,
+		})
 	}
 
-	fmt.Println(tokenCandidates)
-	return nil, nil
+	result := make([]base.Candidate, 0, len(keywordEntries))
+	result = append(result, keywordEntries.toSLice()...)
+	return result, nil
 }
 
 // skipHeadingSQLs skips the SQL statements which before the caret position.
