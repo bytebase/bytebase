@@ -178,7 +178,7 @@ func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommen
 	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
 
 	if v := patch.Comment; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = payload || jsonb_build_object('comment', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("payload = payload || jsonb_build_object('comment',$%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	args = append(args, patch.UID)
 	query := `UPDATE issue_comment SET ` + strings.Join(set, ", ") + fmt.Sprintf(` WHERE id = $%d`, len(args))
