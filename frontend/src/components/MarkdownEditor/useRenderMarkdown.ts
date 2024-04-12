@@ -14,7 +14,7 @@ export type UseRenderMarkdownOptions = {
 };
 
 const defaultOptions = (): UseRenderMarkdownOptions => ({
-  minHeight: 0, // Let the iframe shrink to fit the content.
+  minHeight: 24 /* 1 line */,
   maxHeight: 192 /* 12rem */,
   placeholder: "",
 });
