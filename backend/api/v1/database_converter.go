@@ -417,6 +417,16 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 			}
 			s.Functions = append(s.Functions, storeFunc)
 		}
+		for _, procedure := range schema.GetProcedures() {
+			if procedure == nil {
+				continue
+			}
+			storeProcedure := &storepb.ProcedureMetadata{
+				Name:       procedure.GetName(),
+				Definition: procedure.GetDefinition(),
+			}
+			s.Procedures = append(s.Procedures, storeProcedure)
+		}
 		for _, task := range schema.GetTasks() {
 			if task == nil {
 				continue
@@ -522,7 +532,49 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 			MatchType:         foreignKey.GetMatchType(),
 		})
 	}
+	for _, partition := range table.Partitions {
+		if partition == nil {
+			continue
+		}
+		t.Partitions = append(t.Partitions, convertV1TablePartitionMetadata(partition))
+	}
 	return t
+}
+
+func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata) *storepb.TablePartitionMetadata {
+	metadata := &storepb.TablePartitionMetadata{
+		Name:       tablePartition.GetName(),
+		Expression: tablePartition.GetExpression(),
+		Value:      tablePartition.GetValue(),
+		UseDefault: tablePartition.GetUseDefault(),
+	}
+	switch tablePartition.GetType() {
+	case v1pb.TablePartitionMetadata_RANGE:
+		metadata.Type = storepb.TablePartitionMetadata_RANGE
+	case v1pb.TablePartitionMetadata_RANGE_COLUMNS:
+		metadata.Type = storepb.TablePartitionMetadata_RANGE_COLUMNS
+	case v1pb.TablePartitionMetadata_LIST:
+		metadata.Type = storepb.TablePartitionMetadata_LIST
+	case v1pb.TablePartitionMetadata_LIST_COLUMNS:
+		metadata.Type = storepb.TablePartitionMetadata_LIST_COLUMNS
+	case v1pb.TablePartitionMetadata_HASH:
+		metadata.Type = storepb.TablePartitionMetadata_HASH
+	case v1pb.TablePartitionMetadata_LINEAR_HASH:
+		metadata.Type = storepb.TablePartitionMetadata_LINEAR_HASH
+	case v1pb.TablePartitionMetadata_KEY:
+		metadata.Type = storepb.TablePartitionMetadata_KEY
+	case v1pb.TablePartitionMetadata_LINEAR_KEY:
+		metadata.Type = storepb.TablePartitionMetadata_LINEAR_KEY
+	default:
+		metadata.Type = storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
+	}
+	for _, subpartition := range tablePartition.GetSubpartitions() {
+		if subpartition == nil {
+			continue
+		}
+		metadata.Subpartitions = append(metadata.Subpartitions, convertV1TablePartitionMetadata(subpartition))
+	}
+	return metadata
 }
 
 func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadata {
