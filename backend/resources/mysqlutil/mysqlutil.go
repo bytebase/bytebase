@@ -41,8 +41,6 @@ func GetPath(binName binaryName, binDir string) string {
 func getTarNameAndVersion() (tarname string, version string, err error) {
 	var tarName string
 	switch {
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
-		tarName = "mysqlutil-8.0.33-darwin-amd64.tar.gz"
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
 		tarName = "mysqlutil-8.0.33-darwin-arm64.tar.gz"
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
