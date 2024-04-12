@@ -110,7 +110,8 @@ func (s *Store) UpsertInstanceUsers(ctx context.Context, instanceUID int, instan
 			VALUES %s
 			ON CONFLICT (instance_id, name) DO UPDATE SET
 				updater_id = excluded.updater_id,
-				"grant" = excluded.grant;
+				updated_ts = extract(epoch from now()),
+				"grant" = excluded.grant
 		`, strings.Join(placeholders, ", "))
 		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return err

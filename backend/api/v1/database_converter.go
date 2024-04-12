@@ -77,6 +77,18 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, conf
 			}
 			s.Functions = append(s.Functions, v1Func)
 		}
+		for _, procedure := range schema.Procedures {
+			if procedure == nil {
+				continue
+			}
+			v1Procedure := &v1pb.ProcedureMetadata{
+				Name: procedure.GetName(),
+			}
+			if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
+				v1Procedure.Definition = procedure.GetDefinition()
+			}
+			s.Procedures = append(s.Procedures, v1Procedure)
+		}
 		for _, task := range schema.GetTasks() {
 			if task == nil {
 				continue
@@ -223,14 +235,26 @@ func convertStoreTablePartitionMetadata(partition *storepb.TablePartitionMetadat
 	metadata := &v1pb.TablePartitionMetadata{
 		Name:       partition.Name,
 		Expression: partition.Expression,
+		Value:      partition.Value,
+		UseDefault: partition.UseDefault,
 	}
 	switch partition.Type {
 	case storepb.TablePartitionMetadata_RANGE:
 		metadata.Type = v1pb.TablePartitionMetadata_RANGE
+	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
+		metadata.Type = v1pb.TablePartitionMetadata_RANGE_COLUMNS
 	case storepb.TablePartitionMetadata_LIST:
 		metadata.Type = v1pb.TablePartitionMetadata_LIST
+	case storepb.TablePartitionMetadata_LIST_COLUMNS:
+		metadata.Type = v1pb.TablePartitionMetadata_LIST_COLUMNS
 	case storepb.TablePartitionMetadata_HASH:
 		metadata.Type = v1pb.TablePartitionMetadata_HASH
+	case storepb.TablePartitionMetadata_LINEAR_HASH:
+		metadata.Type = v1pb.TablePartitionMetadata_LINEAR_HASH
+	case storepb.TablePartitionMetadata_KEY:
+		metadata.Type = v1pb.TablePartitionMetadata_KEY
+	case storepb.TablePartitionMetadata_LINEAR_KEY:
+		metadata.Type = v1pb.TablePartitionMetadata_LINEAR_KEY
 	default:
 		metadata.Type = v1pb.TablePartitionMetadata_TYPE_UNSPECIFIED
 	}

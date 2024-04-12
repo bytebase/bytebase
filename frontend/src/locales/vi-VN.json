@@ -1972,7 +1972,7 @@
       "description": "Trong luồng làm việc GitOps của Bytebase, các nhà phát triển lưu trữ các tập lệnh di chuyển trong VCS. Các yêu cầu kéo gợi nhớ xem xét SQL, và các yêu cầu được hợp nhất khởi động kế hoạch di chuyển. Người quản trị cấu hình các nhà cung cấp VCS, trong khi chủ dự án thiết lập kết nối VCS trong các dự án.",
       "add-git-provider": {
         "self": "Thêm nhà cung cấp Git",
-        "description": "Trước khi bất kỳ dự án nào có thể kích hoạt quy trình làm việc GitOps, trước tiên Bytebase cần tích hợp với hệ thống kiểm soát phiên bản (VCS) tương ứng bằng cách đăng ký làm ứng dụng OAuth trong VCS đó. Dưới đây là các bước để định cấu hình tính năng này, bạn cũng có thể làm theo {guide} của chúng tôi.",
+        "description": "Trước khi bất kỳ dự án nào có thể kích hoạt quy trình làm việc GitOps, trước tiên Bytebase cần tích hợp với hệ thống kiểm soát phiên bản (VCS) tương ứng bằng cách đăng ký làm ứng dụng OAuth trong VCS đó.",
         "gitlab-self-host": "GitLab tự lưu trữ",
         "gitlab-self-host-admin-requirement": "Bạn phải là một quản trị viên của GitLab để có thể thực hiện điều này.",
         "gitlab-com-admin-requirement": "Bạn phải là quản trị viên của các dự án hoặc nhóm.",
