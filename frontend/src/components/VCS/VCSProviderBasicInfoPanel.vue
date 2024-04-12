@@ -115,13 +115,13 @@
             >
               <template #token>
                 <a
-                  :href="`${config.instanceUrl}/settings/tokens`"
+                  :href="`${config.instanceUrl}/settings/tokens?type=beta`"
                   target="_blank"
                   class="normal-link"
                 >
                   {{
                     $t(
-                      "gitops.setting.add-git-provider.access-token.personal-access-token"
+                      "gitops.setting.add-git-provider.access-token.github-fine-grained-token"
                     )
                   }}
                 </a>
