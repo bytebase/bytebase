@@ -58,8 +58,6 @@ func Install(resourceDir string) (string, error) {
 
 func getTarName() (string, error) {
 	switch {
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
-		return "postgres-darwin-amd64", nil
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
 		return "postgres-darwin-arm64", nil
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
