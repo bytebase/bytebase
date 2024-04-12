@@ -15,7 +15,7 @@
             class="w-full mb-4 flex flex-row justify-start items-center"
           >
             <span class="mr-2 text-sm">{{ $t("common.type") }}</span>
-            <NRadioGroup v-model:value="state.user.userType" name="userType">
+            <NRadioGroup v-model:value="state.user.userType">
               <NRadio :value="UserType.USER" :label="$t('common.user')" />
               <NRadio
                 :value="UserType.SERVICE_ACCOUNT"
@@ -52,7 +52,7 @@
             >
               <NInput
                 v-model:value="state.user.email"
-                :input-props="{ type: 'text', autocomplete: 'off' }"
+                :input-props="{ type: 'text', autocomplete: 'new-password' }"
                 placeholder="foo"
               />
               <span class="mt-1 textinfolabel">
@@ -62,7 +62,7 @@
             <NInput
               v-else
               v-model:value="state.user.email"
-              :input-props="{ type: 'email', autocomplete: 'off' }"
+              :input-props="{ type: 'email', autocomplete: 'new-password' }"
               placeholder="foo@example.com"
             />
           </NFormItem>
@@ -86,14 +86,18 @@
             <NFormItem :label="$t('settings.profile.phone')">
               <NInput
                 v-model:value="state.user.phone"
-                :input-props="{ type: 'tel', autocomplete: 'off' }"
+                type="text"
+                :input-props="{
+                  type: 'tel',
+                  autocomplete: 'new-password',
+                }"
               />
             </NFormItem>
             <NFormItem :label="$t('settings.profile.password')">
               <NInput
                 v-model:value="state.user.password"
                 type="password"
-                :input-props="{ autocomplete: 'off' }"
+                :input-props="{ autocomplete: 'new-password' }"
                 :placeholder="$t('common.sensitive-placeholder')"
               />
             </NFormItem>
@@ -102,7 +106,7 @@
                 <NInput
                   v-model:value="state.passwordConfirm"
                   type="password"
-                  :input-props="{ autocomplete: 'off' }"
+                  :input-props="{ autocomplete: 'new-password' }"
                   :placeholder="
                     $t('settings.profile.password-confirm-placeholder')
                   "
