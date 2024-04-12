@@ -57,7 +57,7 @@
             <BBTextField
               v-model:value="formData.password"
               type="password"
-              :input-props="{ autocomplete: 'off' }"
+              :input-props="{ autocomplete: 'new-password' }"
             />
           </NFormItem>
         </NForm>
