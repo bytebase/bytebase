@@ -2341,7 +2341,8 @@
       "edit-partitions": "Editar particiones",
       "expression": "Expresión",
       "value": "Valor",
-      "add-sub-partition": "Agregar subpartición"
+      "add-sub-partition": "Agregar subpartición",
+      "type": "Tipo"
     }
   },
   "label": {

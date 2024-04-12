@@ -2341,7 +2341,8 @@
       "edit-partitions": "パーティションの編集",
       "expression": "表現",
       "value": "価値",
-      "add-sub-partition": "サブパーティションの追加"
+      "add-sub-partition": "サブパーティションの追加",
+      "type": "タイプ"
     }
   },
   "label": {

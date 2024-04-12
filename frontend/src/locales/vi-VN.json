@@ -2341,7 +2341,8 @@
       "edit-partitions": "Chỉnh sửa phân vùng",
       "expression": "Sự biểu lộ",
       "value": "Giá trị",
-      "add-sub-partition": "Thêm phân vùng phụ"
+      "add-sub-partition": "Thêm phân vùng phụ",
+      "type": "Kiểu"
     }
   },
   "label": {
