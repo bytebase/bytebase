@@ -134,7 +134,7 @@
                 size="large"
                 :placeholder="$t('common.sensitive-placeholder')"
                 :value="state.editingUser?.password"
-                :input-props="{ autocomplete: 'off' }"
+                :input-props="{ autocomplete: 'new-password' }"
                 @update:value="updateUser('password', $event)"
               />
             </dd>
@@ -155,7 +155,7 @@
                   $t('settings.profile.password-confirm-placeholder')
                 "
                 :value="state.passwordConfirm"
-                :input-props="{ autocomplete: 'off' }"
+                :input-props="{ autocomplete: 'new-password' }"
                 @update:value="state.passwordConfirm = $event"
               />
             </dd>
