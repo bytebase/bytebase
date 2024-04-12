@@ -7,10 +7,6 @@
     :data-table-header-height="tableHeaderHeight"
     :data-table-body-height="tableBodyHeight"
   >
-    <pre
-      class="text-xs font-mono max-h-[80vh] max-w-[40vw] overflow-auto fixed bottom-0 left-0 p-2 bg-white/50 border border-gray-400 z-[999999]"
-      >{{ JSON.stringify(flattenItemList, null, "  ") }}</pre
-    >
     <NDataTable
       v-bind="$attrs"
       ref="dataTableRef"
