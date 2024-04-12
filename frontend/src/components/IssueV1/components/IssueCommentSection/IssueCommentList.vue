@@ -220,8 +220,8 @@ const doCreateComment = async (comment: string) => {
   });
   state.newComment = "";
   await prepareIssueComments();
-  // // Because the user just added a comment and we assume she is interested in this
-  // // issue, and we add her to the subscriber list if she is not there
+  // Because the user just added a comment and we assume she is interested in this
+  // issue, and we add her to the subscriber list if she is not there
   try {
     await doSubscribeIssue(issue.value, currentUser.value);
   } catch {
