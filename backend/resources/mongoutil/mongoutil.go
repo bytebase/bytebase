@@ -23,8 +23,6 @@ func GetMongoshPath(binDir string) string {
 func getTarNameAndVersion() (tarname string, version string, err error) {
 	var tarName string
 	switch {
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
-		tarName = "mongoutil-1.6.1-darwin-amd64.txz"
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
 		tarName = "mongoutil-1.6.1-darwin-arm64.txz"
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":

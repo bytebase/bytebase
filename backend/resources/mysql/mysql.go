@@ -99,10 +99,6 @@ func Install(resourceDir string) (string, error) {
 	// Mysql uses both tar.gz and tar.xz, so we use this ugly hack.
 	var extractFn func(io.Reader, string) error
 	switch {
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
-		tarName = "mysql-8.0.33-macos13-x86_64.tar.gz"
-		version = "mysql-8.0.33-macos13-x86_64"
-		extractFn = utils.ExtractTarGz
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
 		tarName = "mysql-8.0.33-macos13-arm64.tar.gz"
 		version = "mysql-8.0.33-macos13-arm64"
