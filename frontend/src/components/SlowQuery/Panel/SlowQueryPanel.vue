@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-4" v-bind="$attrs">
     <LogFilter
       v-model:params="state.params"
       :from-time="state.timeRange.fromTime"

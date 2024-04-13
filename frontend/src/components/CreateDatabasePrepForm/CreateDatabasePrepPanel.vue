@@ -3,8 +3,8 @@
     <CreateDatabasePrepForm
       ref="form"
       :project-id="projectId"
-      :environment-id="environmentId"
-      :instance-id="instanceId"
+      :environment="environment"
+      :instance="instance"
       @dismiss="$emit('dismiss')"
     />
     <template #footer>
@@ -19,20 +19,11 @@ import { DrawerContent } from "@/components/v2";
 import CreateDatabasePrepButtonGroup from "./CreateDatabasePrepButtonGroup.vue";
 import CreateDatabasePrepForm from "./CreateDatabasePrepForm.vue";
 
-defineProps({
-  projectId: {
-    type: String,
-    default: undefined,
-  },
-  environmentId: {
-    type: String,
-    default: undefined,
-  },
-  instanceId: {
-    type: String,
-    default: undefined,
-  },
-});
+defineProps<{
+  projectId?: string;
+  environment?: string;
+  instance?: string;
+}>();
 
 defineEmits<{
   (event: "dismiss"): void;
