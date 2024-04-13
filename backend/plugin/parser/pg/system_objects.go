@@ -749,6 +749,7 @@ var (
 		"_timescaledb_catalog":     true,
 		"_timescaledb_internal":    true,
 		"_timescaledb_config":      true,
+		"squeeze":                  true,
 	}
 
 	// systemTables is the list of system tables that we will exclude from the schema sync.
