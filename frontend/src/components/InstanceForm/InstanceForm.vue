@@ -1,12 +1,18 @@
 <template>
-  <component :is="drawer ? DrawerContent : 'div'" v-bind="bindings">
-    <div class="space-y-6 divide-y divide-block-border">
+  <component
+    :is="drawer ? DrawerContent : 'div'"
+    v-bind="{
+      ...$attrs,
+      ...bindings,
+    }"
+  >
+    <div class="space-y-6">
       <div class="divide-y divide-block-border w-[850px]">
         <InstanceEngineRadioGrid
           v-if="isCreating"
           :engine="basicInfo.engine"
           :engine-list="EngineList"
-          class="w-full mt-4 mb-6 grid-cols-4 gap-2"
+          class="w-full mb-6 grid-cols-4 gap-2"
           @update:engine="changeInstanceEngine"
         >
           <template #suffix="{ engine }: { engine: Engine }">
@@ -88,7 +94,6 @@
             <span class="text-red-600 ml-0.5">*</span>
             <EnvironmentSelect
               class="mt-1 w-full"
-              :disabled="!isCreating"
               required="true"
               :environment="
                 environment.uid === String(UNKNOWN_ID)
@@ -273,23 +278,29 @@
       </div>
 
       <!-- Action Button Group -->
-      <div v-if="!drawer" class="pt-4">
-        <div class="w-full flex justify-between items-center">
-          <InstanceArchiveRestoreButton
-            v-if="!isCreating && instance"
-            :instance="instance as ComposedInstance"
-          />
+      <template v-if="!drawer">
+        <InstanceArchiveRestoreButton
+          v-if="!isCreating && instance"
+          :instance="instance as ComposedInstance"
+        />
+
+        <div
+          v-if="valueChanged && allowEdit"
+          class="w-full mt-4 py-4 border-t border-block-border flex justify-between bg-white sticky -bottom-4 z-10"
+        >
+          <NButton @click.prevent="resetChanges">
+            <span> {{ $t("common.cancel") }}</span>
+          </NButton>
           <NButton
-            v-if="allowEdit"
             :disabled="!allowUpdate || state.isRequesting"
             :loading="state.isRequesting"
             type="primary"
             @click.prevent="doUpdate"
           >
-            {{ $t("common.update") }}
+            {{ $t("common.confirm-and-update") }}
           </NButton>
         </div>
-      </div>
+      </template>
     </div>
 
     <template v-if="drawer" #footer>
@@ -576,6 +587,12 @@ const allowCreate = computed(() => {
   );
 });
 
+const resetChanges = () => {
+  const original = getOriginalEditState();
+  basicInfo.value = cloneDeep(original.basicInfo);
+  dataSourceEditState.value.dataSources = cloneDeep(original.dataSources);
+};
+
 const valueChanged = computed(() => {
   const original = getOriginalEditState();
   const editing = {
@@ -822,6 +839,9 @@ const doUpdate = async () => {
     }
     if (instancePatch.activation !== instance.activation) {
       updateMask.push("activation");
+    }
+    if (instancePatch.environment !== instance.environment) {
+      updateMask.push("environment");
     }
     if (
       instancePatch.options?.schemaTenantMode !==

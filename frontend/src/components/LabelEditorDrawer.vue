@@ -1,12 +1,9 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent :title="title">
-      <BBAttention
-        v-if="showWarning"
-        class="mb-5"
-        type="warning"
-        :title="$t('database.mixed-label-values-warning')"
-      />
+      <BBAttention v-if="showWarning" class="mb-5" type="warning">
+        {{ $t("database.mixed-label-values-warning") }}
+      </BBAttention>
       <LabelListEditor
         ref="labelListEditorRef"
         v-model:kv-list="state.kvList"

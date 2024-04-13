@@ -85,14 +85,9 @@
         </i18n-t>
       </template>
       <template v-else-if="props.engine === Engine.POSTGRES">
-        <BBAttention
-          class="my-3"
-          type="warning"
-          :title="$t('instance.connection-info')"
-          :description="
-            $t('instance.sentence.create-user-example.postgresql.warn')
-          "
-        />
+        <BBAttention class="my-3" type="warning">
+          {{ $t("instance.sentence.create-user-example.postgresql.warn") }}
+        </BBAttention>
         <i18n-t
           tag="p"
           keypath="instance.sentence.create-user-example.postgresql.template"

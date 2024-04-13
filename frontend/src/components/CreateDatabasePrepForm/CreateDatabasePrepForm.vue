@@ -1,154 +1,153 @@
 <template>
-  <div class="space-y-6 divide-y divide-block-border">
-    <div class="w-72 mx-auto space-y-4">
-      <div class="w-full">
-        <label for="project" class="textlabel">
-          {{ $t("common.project") }} <span style="color: red">*</span>
-        </label>
-        <ProjectSelect
-          class="mt-1 !w-full"
-          required
-          :disabled="!allowEditProject"
-          :project="state.projectId"
-          @update:project="selectProject"
-        />
-      </div>
-
-      <div class="w-full">
-        <label for="name" class="textlabel">
-          {{ $t("create-db.new-database-name") }}
-          <span class="text-red-600">*</span>
-        </label>
-        <NInput
-          v-model:value="state.databaseName"
-          required
-          name="databaseName"
-          type="text"
-          class="mt-1 w-full"
-          :placeholder="$t('create-db.new-database-name')"
-        />
-        <span v-if="isReservedName" class="text-red-600">
-          <i18n-t keypath="create-db.reserved-db-error">
-            <template #databaseName>
-              {{ state.databaseName }}
-            </template>
-          </i18n-t>
-        </span>
-      </div>
-
-      <div v-if="selectedInstance.engine === Engine.MONGODB" class="w-full">
-        <label for="name" class="textlabel">
-          {{ $t("create-db.new-collection-name") }}
-          <span class="text-red-600">*</span>
-        </label>
-        <NInput
-          v-model:value="state.tableName"
-          required
-          name="tableName"
-          type="text"
-          class="mt-1 w-full"
-        />
-      </div>
-
-      <div v-if="selectedInstance.engine === Engine.CLICKHOUSE" class="w-full">
-        <label for="name" class="textlabel">
-          {{ $t("create-db.cluster") }}
-        </label>
-        <NInput
-          v-model:value="state.cluster"
-          name="cluster"
-          type="text"
-          class="mt-1 w-full"
-        />
-      </div>
-
-      <div class="w-full">
-        <label for="environment" class="textlabel">
-          {{ $t("common.environment") }} <span style="color: red">*</span>
-        </label>
-        <!-- It's default selected to the first env, so we don't need to set `required` here -->
-        <EnvironmentSelect
-          class="mt-1"
-          required
-          name="environment"
-          :environment="state.environmentId"
-          @update:environment="selectEnvironment"
-        />
-      </div>
-
-      <div class="w-full">
-        <div class="flex flex-row items-center space-x-1">
-          <InstanceV1EngineIcon
-            v-if="state.instanceId"
-            :instance="selectedInstance"
-          />
-          <label for="instance" class="textlabel">
-            {{ $t("common.instance") }} <span class="text-red-600">*</span>
-          </label>
-        </div>
-        <div class="flex flex-row space-x-2 items-center">
-          <InstanceSelect
-            class="mt-1"
-            name="instance"
-            required
-            :disabled="!allowEditInstance"
-            :instance="state.instanceId"
-            :filter="instanceV1HasCreateDatabase"
-            @update:instance="selectInstance"
-          />
-        </div>
-      </div>
-
-      <div v-if="requireDatabaseOwnerName" class="w-full">
-        <label for="name" class="textlabel">
-          {{ $t("create-db.database-owner-name") }}
-          <span class="text-red-600">*</span>
-        </label>
-        <InstanceRoleSelect
-          class="mt-1"
-          name="instance-user"
-          :instance-id="state.instanceId"
-          :role="state.instanceRole"
-          :filter="filterInstanceRole"
-          @update:instance-role="selectInstanceRole"
-        />
-      </div>
-
-      <template v-if="showCollationAndCharacterSet">
-        <div class="w-full">
-          <label for="charset" class="textlabel">
-            {{
-              selectedInstance.engine === Engine.POSTGRES ||
-              selectedInstance.engine === Engine.REDSHIFT
-                ? $t("db.encoding")
-                : $t("db.character-set")
-            }}</label
-          >
-          <NInput
-            v-model:value="state.characterSet"
-            name="charset"
-            type="text"
-            class="mt-1 w-full"
-            :placeholder="defaultCharsetOfEngineV1(selectedInstance.engine)"
-          />
-        </div>
-
-        <div class="w-full">
-          <label for="collation" class="textlabel">
-            {{ $t("db.collation") }}
-          </label>
-          <NInput
-            v-model:value="state.collation"
-            name="collation"
-            type="text"
-            class="mt-1 w-full"
-            :placeholder="
-              defaultCollationOfEngineV1(selectedInstance.engine) || 'default'
-            "
-          />
-        </div>
-      </template>
+  <div class="w-72 mx-auto space-y-4">
+    <div class="w-full">
+      <label for="project" class="textlabel">
+        {{ $t("common.project") }} <span style="color: red">*</span>
+      </label>
+      <ProjectSelect
+        class="mt-1 !w-full"
+        required
+        :disabled="!allowEditProject"
+        :project="state.projectId"
+        @update:project="selectProject"
+      />
     </div>
+
+    <div class="w-full">
+      <label for="name" class="textlabel">
+        {{ $t("create-db.new-database-name") }}
+        <span class="text-red-600">*</span>
+      </label>
+      <NInput
+        v-model:value="state.databaseName"
+        required
+        name="databaseName"
+        type="text"
+        class="mt-1 w-full"
+        :placeholder="$t('create-db.new-database-name')"
+      />
+      <span v-if="isReservedName" class="text-red-600">
+        <i18n-t keypath="create-db.reserved-db-error">
+          <template #databaseName>
+            {{ state.databaseName }}
+          </template>
+        </i18n-t>
+      </span>
+    </div>
+
+    <div v-if="selectedInstance.engine === Engine.MONGODB" class="w-full">
+      <label for="name" class="textlabel">
+        {{ $t("create-db.new-collection-name") }}
+        <span class="text-red-600">*</span>
+      </label>
+      <NInput
+        v-model:value="state.tableName"
+        required
+        name="tableName"
+        type="text"
+        class="mt-1 w-full"
+      />
+    </div>
+
+    <div v-if="selectedInstance.engine === Engine.CLICKHOUSE" class="w-full">
+      <label for="name" class="textlabel">
+        {{ $t("create-db.cluster") }}
+      </label>
+      <NInput
+        v-model:value="state.cluster"
+        name="cluster"
+        type="text"
+        class="mt-1 w-full"
+      />
+    </div>
+
+    <div class="w-full">
+      <div class="flex flex-row items-center space-x-1">
+        <InstanceV1EngineIcon
+          v-if="state.instance"
+          :instance="selectedInstance"
+        />
+        <label for="instance" class="textlabel">
+          {{ $t("common.instance") }} <span class="text-red-600">*</span>
+        </label>
+      </div>
+      <div class="flex flex-row space-x-2 items-center">
+        <InstanceSelect
+          class="mt-1"
+          name="instance"
+          required
+          :disabled="!allowEditInstance"
+          :instance="state.instance"
+          :use-resource-id="true"
+          :filter="instanceV1HasCreateDatabase"
+          @update:instance="selectInstance"
+        />
+      </div>
+    </div>
+
+    <div class="w-full">
+      <label for="environment" class="textlabel">
+        {{ $t("common.environment") }}
+      </label>
+      <EnvironmentSelect
+        class="mt-1"
+        required
+        name="environment"
+        :environment="state.environment"
+        :use-resource-id="true"
+        @update:environment="selectEnvironment"
+      />
+    </div>
+
+    <div v-if="requireDatabaseOwnerName" class="w-full">
+      <label for="name" class="textlabel">
+        {{ $t("create-db.database-owner-name") }}
+        <span class="text-red-600">*</span>
+      </label>
+      <InstanceRoleSelect
+        class="mt-1"
+        name="instance-user"
+        :instance-id="state.instance"
+        :role="state.instanceRole"
+        :filter="filterInstanceRole"
+        @update:instance-role="selectInstanceRole"
+      />
+    </div>
+
+    <template v-if="showCollationAndCharacterSet">
+      <div class="w-full">
+        <label for="charset" class="textlabel">
+          {{
+            selectedInstance.engine === Engine.POSTGRES ||
+            selectedInstance.engine === Engine.REDSHIFT
+              ? $t("db.encoding")
+              : $t("db.character-set")
+          }}</label
+        >
+        <NInput
+          v-model:value="state.characterSet"
+          name="charset"
+          type="text"
+          class="mt-1 w-full"
+          :placeholder="defaultCharsetOfEngineV1(selectedInstance.engine)"
+        />
+      </div>
+
+      <div class="w-full">
+        <label for="collation" class="textlabel">
+          {{ $t("db.collation") }}
+        </label>
+        <NInput
+          v-model:value="state.collation"
+          name="collation"
+          type="text"
+          class="mt-1 w-full"
+          :placeholder="
+            defaultCollationOfEngineV1(selectedInstance.engine) || 'default'
+          "
+        />
+      </div>
+    </template>
   </div>
 
   <FeatureModal
@@ -182,7 +181,6 @@ import {
   experimentalCreateIssueByPlan,
   hasFeature,
   useCurrentUserV1,
-  useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
@@ -191,7 +189,6 @@ import {
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
   UNKNOWN_ID,
-  unknownInstance,
 } from "@/types";
 import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import { Engine } from "@/types/proto/v1/common";
@@ -209,8 +206,8 @@ import {
 
 interface LocalState {
   projectId?: string;
-  environmentId?: string;
-  instanceId?: string;
+  environment?: string;
+  instance?: string;
   instanceRole?: string;
   labels: Record<string, string>;
   databaseName: string;
@@ -222,20 +219,11 @@ interface LocalState {
   creating: boolean;
 }
 
-const props = defineProps({
-  projectId: {
-    type: String,
-    default: undefined,
-  },
-  environmentId: {
-    type: String,
-    default: undefined,
-  },
-  instanceId: {
-    type: String,
-    default: undefined,
-  },
-});
+const props = defineProps<{
+  projectId?: string;
+  environment?: string;
+  instance?: string;
+}>();
 
 const emit = defineEmits<{
   (event: "dismiss"): void;
@@ -245,14 +233,13 @@ const instanceV1Store = useInstanceV1Store();
 const router = useRouter();
 
 const currentUserV1 = useCurrentUserV1();
-const environmentV1Store = useEnvironmentV1Store();
 const projectV1Store = useProjectV1Store();
 
 const state = reactive<LocalState>({
   databaseName: "",
   projectId: props.projectId,
-  environmentId: props.environmentId,
-  instanceId: props.instanceId,
+  environment: props.environment,
+  instance: props.instance,
   labels: {},
   tableName: "",
   characterSet: "",
@@ -284,8 +271,8 @@ const allowCreate = computed(() => {
     validDatabaseOwnerName.value &&
     !isReservedName.value &&
     state.projectId &&
-    state.environmentId &&
-    state.instanceId
+    state.environment &&
+    state.instance
   );
 });
 
@@ -296,13 +283,11 @@ const allowEditProject = computed(() => {
 
 // If instance has been specified, then we disallow changing it.
 const allowEditInstance = computed(() => {
-  return !props.instanceId;
+  return !props.instance;
 });
 
 const selectedInstance = computed((): ComposedInstance => {
-  return state.instanceId
-    ? instanceV1Store.getInstanceByUID(state.instanceId)
-    : unknownInstance();
+  return instanceV1Store.getInstanceByName(state.instance ?? "");
 });
 
 const showCollationAndCharacterSet = computed((): boolean => {
@@ -330,12 +315,13 @@ const selectProject = (projectId: string | undefined) => {
   state.projectId = projectId;
 };
 
-const selectEnvironment = (environmentId: string | undefined) => {
-  state.environmentId = environmentId;
+const selectEnvironment = (environment: string | undefined) => {
+  state.environment = environment;
 };
 
-const selectInstance = (instanceId: string | undefined) => {
-  state.instanceId = instanceId;
+const selectInstance = (instance: string | undefined) => {
+  state.instance = instance;
+  state.environment = selectedInstance.value.environment;
 };
 
 const selectInstanceRole = (name?: string) => {
@@ -357,10 +343,13 @@ const createV1 = async () => {
   if (!allowCreate.value) {
     return;
   }
+  if (!state.environment || !state.instance) {
+    return;
+  }
 
   const databaseName = state.databaseName;
   const tableName = state.tableName;
-  const instanceId = Number(state.instanceId);
+
   let owner = "";
   if (requireDatabaseOwnerName.value && state.instanceRole) {
     const instanceUser = await instanceV1Store.fetchInstanceRoleByName(
@@ -376,17 +365,13 @@ const createV1 = async () => {
     }
   }
 
-  const instance = instanceV1Store.getInstanceByUID(String(instanceId));
-  const environment = environmentV1Store.getEnvironmentByUID(
-    state.environmentId!
-  );
   const specs: Plan_Spec[] = [];
   const createDatabaseConfig: Plan_CreateDatabaseConfig = {
-    target: instance.name,
+    target: state.instance,
     database: databaseName,
     table: tableName,
     labels: state.labels,
-    environment: environment.name,
+    environment: state.environment,
 
     characterSet:
       state.characterSet ||
