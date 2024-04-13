@@ -7,6 +7,7 @@
     :show-database-column="false"
     :support-option-id-list="[]"
     :readonly-search-scopes="readonlyScopes"
+    v-bind="$attrs"
   />
 </template>
 

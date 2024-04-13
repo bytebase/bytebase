@@ -44,6 +44,9 @@
             class="max-h-[20rem] flex-1 flex flex-col overflow-hidden"
             :execute-params="query.params"
             :result-set="query.resultSet"
+            :database="
+              databaseStore.getDatabaseByName(query.params.connection.database)
+            "
             :loading="query.status === 'RUNNING'"
             :dark="true"
           />
@@ -80,7 +83,11 @@ import { useElementSize } from "@vueuse/core";
 import { computed, defineAsyncComponent, ref, unref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import type { IStandaloneCodeEditor } from "@/components/MonacoEditor";
-import { useSQLEditorTabStore, useWebTerminalStore } from "@/store";
+import {
+  useSQLEditorTabStore,
+  useDatabaseV1Store,
+  useWebTerminalStore,
+} from "@/store";
 import type { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
 import {
   EditorAction,
@@ -97,6 +104,7 @@ const CompactSQLEditor = defineAsyncComponent(
 
 const tabStore = useSQLEditorTabStore();
 const webTerminalStore = useWebTerminalStore();
+const databaseStore = useDatabaseV1Store();
 
 const queryState = computed(() => {
   return webTerminalStore.getQueryStateByTab(tabStore.currentTab!);

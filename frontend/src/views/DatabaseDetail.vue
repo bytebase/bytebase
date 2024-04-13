@@ -122,6 +122,7 @@
     <NTabs v-model:value="state.selectedTab">
       <NTabPane name="overview" :tab="$t('common.overview')">
         <DatabaseOverviewPanel
+          class="mt-2"
           :database="database"
           :anomaly-list="anomalyList"
         />
@@ -131,21 +132,21 @@
         name="change-history"
         :tab="$t('change-history.self')"
       >
-        <DatabaseChangeHistoryPanel :database="database" />
+        <DatabaseChangeHistoryPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
         v-if="allowToChangeDatabase && allowListSlowQueries"
         name="slow-query"
         :tab="$t('slow-query.slow-queries')"
       >
-        <DatabaseSlowQueryPanel :database="database" />
+        <DatabaseSlowQueryPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
         v-if="allowToChangeDatabase"
         name="setting"
         :tab="$t('common.settings')"
       >
-        <DatabaseSettingsPanel :database="database" />
+        <DatabaseSettingsPanel class="mt-2" :database="database" />
       </NTabPane>
     </NTabs>
 

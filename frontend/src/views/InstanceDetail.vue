@@ -32,18 +32,22 @@
 
     <NTabs>
       <NTabPane name="OVERVIEW" :tab="$t('common.overview')">
-        <InstanceForm :instance="instance" />
+        <InstanceForm class="-mt-2" :instance="instance" />
       </NTabPane>
       <NTabPane name="DATABASES" :tab="$t('common.databases')">
         <DatabaseV1Table
           mode="INSTANCE"
+          class="mt-2"
           table-class="border"
           :scroll-on-page-change="false"
           :database-list="databaseV1List"
         />
       </NTabPane>
       <NTabPane name="USERS" :tab="$t('instance.users')">
-        <InstanceRoleTable :instance-role-list="instanceRoleList" />
+        <InstanceRoleTable
+          class="mt-2"
+          :instance-role-list="instanceRoleList"
+        />
       </NTabPane>
     </NTabs>
   </div>
@@ -53,8 +57,8 @@
     :title="$t('quick-action.create-db')"
   >
     <CreateDatabasePrepPanel
-      :environment-id="environment?.uid"
-      :instance-id="instance.uid"
+      :environment="environment?.name"
+      :instance="instance.name"
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </Drawer>
