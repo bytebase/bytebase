@@ -38,7 +38,7 @@ const props = withDefaults(
     actionText?: string;
   }>(),
   {
-    title: "bbkit.attention.default",
+    title: "",
     description: "",
     link: undefined,
     actionText: "",

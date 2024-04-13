@@ -7,12 +7,9 @@
           {{ $t("database.unassigned-databases") }}
         </h1>
       </template>
-      <BBAttention
-        v-if="isDefaultProject"
-        class="mb-4"
-        type="info"
-        :title="$t('project.overview.info-slot-content')"
-      />
+      <BBAttention v-if="isDefaultProject" class="mb-4" type="info">
+        {{ $t("project.overview.info-slot-content") }}
+      </BBAttention>
     </HideInStandaloneMode>
     <QuickActionPanel
       v-if="showQuickActionPanel"

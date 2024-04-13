@@ -33,6 +33,7 @@ const props = withDefaults(
     defaultEnvironmentName?: string | undefined;
     includeArchived?: boolean;
     showProductionIcon?: boolean;
+    useResourceId?: boolean;
     filter?: (environment: Environment, index: number) => boolean;
   }>(),
   {
@@ -40,6 +41,7 @@ const props = withDefaults(
     defaultEnvironmentName: undefined,
     includeArchived: false,
     showProductionIcon: true,
+    useResourceId: false,
     filter: () => true,
   }
 );
@@ -61,12 +63,16 @@ const rawEnvironmentList = computed(() => {
   return list;
 });
 
+const getEnvironmentValue = (environment: Environment): string => {
+  return props.useResourceId ? environment.name : environment.uid;
+};
+
 const combinedEnvironmentList = computed(() => {
   let list = rawEnvironmentList.value.filter((environment) => {
     if (props.includeArchived) return true;
     if (environment.state === State.ACTIVE) return true;
     // ARCHIVED
-    if (environment.uid === props.environment) return true;
+    if (getEnvironmentValue(environment) === props.environment) return true;
     return false;
   });
 
@@ -82,7 +88,7 @@ const options = computed(() => {
     (environment) => {
       return {
         environment,
-        value: environment.uid,
+        value: getEnvironmentValue(environment),
         label: environment.title,
       };
     }

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col space-y-4">
+  <div class="flex flex-col space-y-4" v-bind="$attrs">
     <div
       class="w-full flex flex-row justify-between items-center text-lg leading-6 font-medium text-main space-x-2"
     >

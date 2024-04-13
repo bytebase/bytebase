@@ -6,8 +6,8 @@
       <div
         class="w-full h-full flex flex-col justify-center items-center text-sm gap-y-1 bg-white/80 dark:bg-black/80"
       >
-        <div class="flex flex-row gap-x-1">
-          <BBSpin />
+        <div class="flex items-center gap-x-1">
+          <BBSpin :size="20" class="mr-1" />
           <span>{{ $t("sql-editor.executing-query") }}</span>
           <span>-</span>
           <!-- use mono font to prevent the UI jitters frequently -->
