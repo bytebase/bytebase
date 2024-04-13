@@ -278,7 +278,7 @@
       </div>
 
       <!-- Action Button Group -->
-      <template v-if="!drawer" class="">
+      <template v-if="!drawer">
         <InstanceArchiveRestoreButton
           v-if="!isCreating && instance"
           :instance="instance as ComposedInstance"
