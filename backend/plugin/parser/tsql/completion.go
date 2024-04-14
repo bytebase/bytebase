@@ -18,6 +18,94 @@ func init() {
 
 var (
 	globalFellowSetsByState = base.NewFollowSetsByState()
+	ignoredTokens           = map[int]bool{
+		// Common EOF
+		tsql.TSqlParserEOF: true,
+
+		// Token with EBNF symbol
+		tsql.TSqlParserBACKSLASH:            true,
+		tsql.TSqlParserCONVERT:              true, // 'TRY_'? 'CONVERT'
+		tsql.TSqlParserDEFAULT_DOUBLE_QUOTE: true, // ["]'DEFAULT'["]
+		tsql.TSqlParserDOUBLE_BACK_SLASH:    true, // '\\\\'
+		tsql.TSqlParserDOUBLE_FORWARD_SLASH: true, // '//'
+		tsql.TSqlParserEXECUTE:              true, // 'EXE CUTE?' // TODO(zp): Find a way to improve this because it is a common keyword.
+		tsql.TSqlParserNULL_DOUBLE_QUOTE:    true, // ["]'NULL'["]
+		tsql.TSqlParserPARSE:                true, // 'TRY_'? 'PARSE'
+
+		// Abbreviation
+		tsql.TSqlParserYEAR_ABBR:        true, // 'yy' | 'yyyy'
+		tsql.TSqlParserQUARTER_ABBR:     true, // 'qq' | 'q'
+		tsql.TSqlParserMONTH_ABBR:       true, // 'mm' | 'm'
+		tsql.TSqlParserDAYOFYEAR_ABBR:   true, // 'dy' | 'y'
+		tsql.TSqlParserWEEK_ABBR:        true, // 'wk' | 'ww'
+		tsql.TSqlParserDAY_ABBR:         true, // 'dd' | 'd'
+		tsql.TSqlParserHOUR_ABBR:        true, // 'hh'
+		tsql.TSqlParserMINUTE_ABBR:      true, // 'mi' | 'n'
+		tsql.TSqlParserSECOND_ABBR:      true, // 'ss' | 's'
+		tsql.TSqlParserMILLISECOND_ABBR: true, // 'ms'
+		tsql.TSqlParserMICROSECOND_ABBR: true, // 'mcs'
+		tsql.TSqlParserNANOSECOND_ABBR:  true, // 'ns'
+		tsql.TSqlParserTZOFFSET_ABBR:    true, // 'tz'
+		tsql.TSqlParserISO_WEEK_ABBR:    true, // 'isowk' | 'isoww'
+		tsql.TSqlParserWEEKDAY_ABBR:     true, // 'dw'
+
+		tsql.TSqlParserDISK_DRIVE:   true, // [A-Z][:];
+		tsql.TSqlParserIPV4_ADDR:    true, // DEC_DIGIT+ '.' DEC_DIGIT+ '.' DEC_DIGIT+ '.' DEC_DIGIT+;
+		tsql.TSqlParserSPACE:        true,
+		tsql.TSqlParserCOMMENT:      true,
+		tsql.TSqlParserLINE_COMMENT: true,
+
+		tsql.TSqlParserDOUBLE_QUOTE_ID:    true,
+		tsql.TSqlParserDOUBLE_QUOTE_BLANK: true,
+		tsql.TSqlParserSINGLE_QUOTE:       true,
+		tsql.TSqlParserSQUARE_BRACKET_ID:  true,
+		tsql.TSqlParserLOCAL_ID:           true,
+		tsql.TSqlParserDECIMAL:            true,
+		tsql.TSqlParserID:                 true,
+		tsql.TSqlParserSTRING:             true,
+		tsql.TSqlParserBINARY:             true,
+		tsql.TSqlParserFLOAT:              true,
+		tsql.TSqlParserREAL:               true,
+
+		tsql.TSqlParserEQUAL:        true,
+		tsql.TSqlParserGREATER:      true,
+		tsql.TSqlParserLESS:         true,
+		tsql.TSqlParserEXCLAMATION:  true,
+		tsql.TSqlParserPLUS_ASSIGN:  true,
+		tsql.TSqlParserMINUS_ASSIGN: true,
+		tsql.TSqlParserMULT_ASSIGN:  true,
+		tsql.TSqlParserDIV_ASSIGN:   true,
+		tsql.TSqlParserMOD_ASSIGN:   true,
+		tsql.TSqlParserAND_ASSIGN:   true,
+		tsql.TSqlParserXOR_ASSIGN:   true,
+		tsql.TSqlParserOR_ASSIGN:    true,
+
+		tsql.TSqlParserDOUBLE_BAR:   true,
+		tsql.TSqlParserDOT:          true,
+		tsql.TSqlParserUNDERLINE:    true,
+		tsql.TSqlParserAT:           true,
+		tsql.TSqlParserSHARP:        true,
+		tsql.TSqlParserDOLLAR:       true,
+		tsql.TSqlParserLR_BRACKET:   true,
+		tsql.TSqlParserRR_BRACKET:   true,
+		tsql.TSqlParserCOMMA:        true,
+		tsql.TSqlParserSEMI:         true,
+		tsql.TSqlParserCOLON:        true,
+		tsql.TSqlParserDOUBLE_COLON: true,
+		tsql.TSqlParserSTAR:         true,
+		tsql.TSqlParserDIVIDE:       true,
+		tsql.TSqlParserMODULE:       true,
+		tsql.TSqlParserPLUS:         true,
+		tsql.TSqlParserMINUS:        true,
+		tsql.TSqlParserBIT_NOT:      true,
+		tsql.TSqlParserBIT_OR:       true,
+		tsql.TSqlParserBIT_AND:      true,
+		tsql.TSqlParserBIT_XOR:      true,
+		tsql.TSqlParserPLACEHOLDER:  true,
+	}
+	preferredRules = map[int]bool{
+		tsql.TSqlParserRULE_select_statement: true,
+	}
 )
 
 type CompletionMap map[string]base.Candidate
@@ -87,8 +175,8 @@ func NewStandardCompleter(ctx context.Context, statement string, caretLine int, 
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	core := base.NewCodeCompletionCore(
 		parser,
-		nil, /* IgnoredTokens */
-		nil, /* PreferredRules */
+		ignoredTokens, /* IgnoredTokens */
+		nil,           /* PreferredRules */
 		&globalFellowSetsByState,
 		0, /* queryRule */
 		0, /* shadowQueryRule */
