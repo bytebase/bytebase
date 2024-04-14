@@ -23,6 +23,7 @@ jobs:
       - name: Tag latest image
         run: |
           RELEASE_VERSION=${GITHUB_REF_NAME#release/}
+          echo ${RELEASE_VERSION}
           docker pull --platform=linux/arm64 bytebase/bytebase:${RELEASE_VERSION}
           docker pull --platform=linux/amd64 bytebase/bytebase:${RELEASE_VERSION}
           docker tag bytebase/bytebase:${RELEASE_VERSION} bytebase/bytebase:latest
