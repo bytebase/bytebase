@@ -15,13 +15,6 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Extract build args
-        # Extract version from branch name
-        # Example: branch name `release/1.0.0` sets up env.RELEASE_VERSION=1.0.0
-        run: |
-          RELEASE_VERSION=${GITHUB_REF_NAME#release/}
-          echo version111: ${RELEASE_VERSION}
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
