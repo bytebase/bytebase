@@ -24,7 +24,5 @@ jobs:
         run: |
           RELEASE_VERSION=${GITHUB_REF_NAME#release/}
           echo version: ${RELEASE_VERSION}
-          docker pull --platform=linux/arm64 bytebase/bytebase:${RELEASE_VERSION}
-          docker pull --platform=linux/amd64 bytebase/bytebase:${RELEASE_VERSION}
-          docker tag bytebase/bytebase:${RELEASE_VERSION} bytebase/bytebase:latest
-          docker push bytebase/bytebase:latest
+          docker manifest create bytebase/bytebase:latest bytebase/bytebase:${RELEASE_VERSION}
+          docker manifest push bytebase/bytebase:latest
