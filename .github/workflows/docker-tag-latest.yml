@@ -24,5 +24,4 @@ jobs:
         run: |
           RELEASE_VERSION=${GITHUB_REF_NAME#release/}
           echo version: ${RELEASE_VERSION}
-          docker manifest create bytebase/bytebase:latest bytebase/bytebase:${RELEASE_VERSION}
-          docker manifest push bytebase/bytebase:latest
+          docker buildx imagetools create -t bytebase/bytebase:latest bytebase/bytebase:${RELEASE_VERSION}
