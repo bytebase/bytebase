@@ -81,11 +81,7 @@ import { useI18n } from "vue-i18n";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import { ProjectSelect } from "@/components/v2";
-import {
-  pushNotification,
-  useNotificationStore,
-  useSheetV1Store,
-} from "@/store";
+import { pushNotification, useSheetV1Store } from "@/store";
 import {
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_ID,
@@ -122,7 +118,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const notificationStore = useNotificationStore();
 const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
   projectId: props.projectId,
@@ -196,7 +191,7 @@ const handleUploadFile = async (e: Event) => {
     return cleanup();
   }
   if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
-    notificationStore.pushNotification({
+    pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("issue.upload-sql-file-max-size-exceeded", {

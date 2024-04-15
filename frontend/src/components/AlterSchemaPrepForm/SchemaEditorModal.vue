@@ -422,7 +422,7 @@ const handleUploadFile = async (e: Event) => {
     return cleanup();
   }
   if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
-    notificationStore.pushNotification({
+    pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("issue.upload-sql-file-max-size-exceeded", {
@@ -438,7 +438,7 @@ const handleUploadFile = async (e: Event) => {
     const decoder = new TextDecoder("utf-8");
     state.editStatement = decoder.decode(arrayBuffer);
   } catch (error) {
-    notificationStore.pushNotification({
+    pushNotification({
       module: "bytebase",
       style: "WARN",
       title: `Read file error`,
