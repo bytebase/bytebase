@@ -117,6 +117,8 @@ export const ComparableForeignKeyFields: (keyof ForeignKeyMetadata)[] = [
   "referencedTable",
   "referencedColumns",
 ];
+export const ComparableTablePartitionFields: (keyof TablePartitionMetadata)[] =
+  ["name", "type", "expression", "value"];
 export const ComparableColumnFields: (keyof ColumnMetadata)[] = [
   "name",
   "comment",
