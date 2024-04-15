@@ -2,8 +2,8 @@ package mysql
 
 import (
 	"fmt"
-	"log/slog"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -1389,7 +1389,7 @@ func writeCreatePartitionStatement(buf *strings.Builder, tableName string, parti
 		return errors.Errorf("unknown partition type %v", partition.tp)
 	}
 
-	if _, err := buf.WriteString(";"); err != nil {
+	if _, err := buf.WriteString(";\n"); err != nil {
 		return err
 	}
 
@@ -1998,17 +1998,24 @@ func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContex
 		return
 	}
 
-	// We do not support PARTITIONS N syntax for now, because we should generate the each partition name/definition by ourself likes MySQL server side does.
-	// But it may be supported in the near future, because it's normal use case for KEY and HASH partitioning.
-	if ctx.PARTITIONS_SYMBOL() != nil {
-		slog.Warn("Skip partition clause for table %s because syntax PARTITIONS N is not supported", slog.String("table", t.currentTable))
-		return
+	result := make(map[string]*partitionDef)
+	useDefaultPartition := 0
+	if v := ctx.PARTITIONS_SYMBOL(); v != nil {
+		numberText := ctx.Real_ulong_number()
+		if numberText != nil {
+			number, err := strconv.Atoi(numberText.GetText())
+			if err != nil {
+				t.err = errors.New("invalid partitions number")
+				return
+			}
+			if number <= 0 {
+				t.err = errors.New("invalid partitions number")
+				return
+			}
+			useDefaultPartition = number
+		}
 	}
-
-	if ctx.PartitionDefinitions() == nil {
-		slog.Warn("Skip partition clause for table %s because syntax PARTITION BY is not supported", slog.String("table", t.currentTable))
-		return
-	}
+	useDefinitionDetail := ctx.PartitionDefinitions() != nil
 
 	var tp storepb.TablePartitionMetadata_Type
 	var expr string
@@ -2080,31 +2087,71 @@ func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContex
 		}
 	}
 
-	result := make(map[string]*partitionDef)
-
-	partitionDefinitionsCtx := ctx.PartitionDefinitions()
-	allPartitionDefinitions := partitionDefinitionsCtx.AllPartitionDefinition()
-	for _, partitionDefinition := range allPartitionDefinitions {
-		partitionDef := &partitionDef{
-			id:   len(table.partitions) + 1,
-			tp:   tp,
-			expr: expr,
-			name: NormalizeMySQLIdentifier(partitionDefinition.Identifier()),
-		}
-
-		switch tp {
-		case storepb.TablePartitionMetadata_RANGE_COLUMNS, storepb.TablePartitionMetadata_RANGE:
-			if partitionDefinition.LESS_SYMBOL() == nil {
-				t.err = errors.New("RANGE partition but no LESS THAN clause")
-				return
+	if useDefaultPartition != 0 {
+		// TODO(zp): HANDLE SUBPARTITION DEFAULT
+		generator := NewPartitionDefaultNameGenerator("")
+		for i := 0; i < useDefaultPartition; i++ {
+			partitionDef := &partitionDef{
+				id:   len(table.partitions) + 1,
+				tp:   tp,
+				expr: expr,
+				name: generator.Next(),
 			}
-			if partitionDefinition.PartitionValueItemListParen() != nil {
-				itemsText := partitionDefinition.PartitionValueItemListParen().GetParser().GetTokenStream().GetTextFromInterval(
-					antlr.NewInterval(
-						partitionDefinition.PartitionValueItemListParen().OPEN_PAR_SYMBOL().GetSymbol().GetTokenIndex()+1,
-						partitionDefinition.PartitionValueItemListParen().CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex()-1,
-					),
-				)
+			result[partitionDef.name] = partitionDef
+		}
+	} else if useDefinitionDetail {
+		partitionDefinitionsCtx := ctx.PartitionDefinitions()
+		allPartitionDefinitions := partitionDefinitionsCtx.AllPartitionDefinition()
+		for _, partitionDefinition := range allPartitionDefinitions {
+			partitionDef := &partitionDef{
+				id:   len(table.partitions) + 1,
+				tp:   tp,
+				expr: expr,
+				name: NormalizeMySQLIdentifier(partitionDefinition.Identifier()),
+			}
+
+			switch tp {
+			case storepb.TablePartitionMetadata_RANGE_COLUMNS, storepb.TablePartitionMetadata_RANGE:
+				if partitionDefinition.LESS_SYMBOL() == nil {
+					t.err = errors.New("RANGE partition but no LESS THAN clause")
+					return
+				}
+				if partitionDefinition.PartitionValueItemListParen() != nil {
+					itemsText := partitionDefinition.PartitionValueItemListParen().GetParser().GetTokenStream().GetTextFromInterval(
+						antlr.NewInterval(
+							partitionDefinition.PartitionValueItemListParen().OPEN_PAR_SYMBOL().GetSymbol().GetTokenIndex()+1,
+							partitionDefinition.PartitionValueItemListParen().CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex()-1,
+						),
+					)
+					itemsTextFields := strings.Split(itemsText, ",")
+					for i, itemsTextField := range itemsTextFields {
+						itemsTextField := strings.TrimSpace(itemsTextField)
+						if strings.HasPrefix(itemsTextField, "`") && strings.HasSuffix(itemsTextField, "`") {
+							itemsTextField = itemsTextField[1 : len(itemsTextField)-1]
+						}
+						itemsTextFields[i] = itemsTextField
+					}
+					partitionDef.value = strings.Join(itemsTextFields, ",")
+				} else {
+					partitionDef.value = "MAXVALUE"
+				}
+			case storepb.TablePartitionMetadata_LIST_COLUMNS, storepb.TablePartitionMetadata_LIST:
+				if partitionDefinition.PartitionValuesIn() == nil {
+					t.err = errors.New("COLUMNS partition but no partition value item in IN clause")
+					return
+				}
+				var itemsText string
+				if partitionDefinition.PartitionValuesIn().OPEN_PAR_SYMBOL() != nil {
+					itemsText = partitionDefinition.PartitionValuesIn().GetParser().GetTokenStream().GetTextFromInterval(
+						antlr.NewInterval(
+							partitionDefinition.PartitionValuesIn().OPEN_PAR_SYMBOL().GetSymbol().GetTokenIndex()+1,
+							partitionDefinition.PartitionValuesIn().CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex()-1,
+						),
+					)
+				} else {
+					itemsText = partitionDefinition.PartitionValuesIn().GetParser().GetTokenStream().GetTextFromRuleContext(partitionDefinition.PartitionValuesIn().PartitionValueItemListParen(0))
+				}
+
 				itemsTextFields := strings.Split(itemsText, ",")
 				for i, itemsTextField := range itemsTextFields {
 					itemsTextField := strings.TrimSpace(itemsTextField)
@@ -2114,44 +2161,15 @@ func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContex
 					itemsTextFields[i] = itemsTextField
 				}
 				partitionDef.value = strings.Join(itemsTextFields, ",")
-			} else {
-				partitionDef.value = "MAXVALUE"
-			}
-		case storepb.TablePartitionMetadata_LIST_COLUMNS, storepb.TablePartitionMetadata_LIST:
-			if partitionDefinition.PartitionValuesIn() == nil {
-				t.err = errors.New("COLUMNS partition but no partition value item in IN clause")
+			case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_LINEAR_HASH, storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_KEY:
+			default:
+				t.err = errors.New("unknown partition type")
 				return
 			}
-			var itemsText string
-			if partitionDefinition.PartitionValuesIn().OPEN_PAR_SYMBOL() != nil {
-				itemsText = partitionDefinition.PartitionValuesIn().GetParser().GetTokenStream().GetTextFromInterval(
-					antlr.NewInterval(
-						partitionDefinition.PartitionValuesIn().OPEN_PAR_SYMBOL().GetSymbol().GetTokenIndex()+1,
-						partitionDefinition.PartitionValuesIn().CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex()-1,
-					),
-				)
-			} else {
-				itemsText = partitionDefinition.PartitionValuesIn().GetParser().GetTokenStream().GetTextFromRuleContext(partitionDefinition.PartitionValuesIn().PartitionValueItemListParen(0))
-			}
 
-			itemsTextFields := strings.Split(itemsText, ",")
-			for i, itemsTextField := range itemsTextFields {
-				itemsTextField := strings.TrimSpace(itemsTextField)
-				if strings.HasPrefix(itemsTextField, "`") && strings.HasSuffix(itemsTextField, "`") {
-					itemsTextField = itemsTextField[1 : len(itemsTextField)-1]
-				}
-				itemsTextFields[i] = itemsTextField
-			}
-			partitionDef.value = strings.Join(itemsTextFields, ",")
-		case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_LINEAR_HASH, storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_KEY:
-		default:
-			t.err = errors.New("unknown partition type")
-			return
+			result[partitionDef.name] = partitionDef
 		}
-
-		result[partitionDef.name] = partitionDef
 	}
-
 	table.partitions = result
 }
 
