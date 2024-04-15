@@ -81,7 +81,11 @@ import { useI18n } from "vue-i18n";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import { ProjectSelect } from "@/components/v2";
-import { useNotificationStore, useSheetV1Store } from "@/store";
+import {
+  pushNotification,
+  useNotificationStore,
+  useSheetV1Store,
+} from "@/store";
 import {
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_ID,
@@ -93,10 +97,10 @@ import {
   extractSheetUID,
   getStatementSize,
   getSheetStatement,
+  readFileAsArrayBuffer,
+  MAX_UPLOAD_FILE_SIZE_MB,
 } from "@/utils";
 import type { RawSQLState } from "./types";
-
-const MAX_UPLOAD_FILE_SIZE_MB = 1;
 
 interface LocalState {
   projectId?: string;
@@ -177,7 +181,7 @@ const handleEngineChange = () => {
   });
 };
 
-const handleUploadFile = (e: Event) => {
+const handleUploadFile = async (e: Event) => {
   const target = e.target as HTMLInputElement;
   const file = (target.files || [])[0];
   const cleanup = () => {
@@ -201,9 +205,12 @@ const handleUploadFile = (e: Event) => {
     });
     return cleanup();
   }
-  const fr = new FileReader();
-  fr.onload = async () => {
-    const statement = fr.result as string;
+
+  try {
+    const { arrayBuffer } = await readFileAsArrayBuffer(file);
+    // TODO(steven): let user choose encoding.
+    const decoder = new TextDecoder("utf-8");
+    const statement = decoder.decode(arrayBuffer);
     const sheet = await sheetStore.createSheet(DEFAULT_PROJECT_V1_NAME, {
       title: file.name,
       content: new TextEncoder().encode(statement),
@@ -211,17 +218,14 @@ const handleUploadFile = (e: Event) => {
     const sheetId = Number(extractSheetUID(sheet.name));
     await handleStatementChange(statement);
     update(sheetId);
-  };
-  fr.onerror = () => {
-    notificationStore.pushNotification({
+  } catch (error) {
+    pushNotification({
       module: "bytebase",
       style: "WARN",
       title: `Read file error`,
-      description: String(fr.error),
+      description: String(error),
     });
-    return;
-  };
-  fr.readAsText(file);
+  }
 
   cleanup();
 };
