@@ -155,9 +155,6 @@ func getPipelineCreateFromDatabaseGroupTarget(ctx context.Context, s *store.Stor
 		pipelineCreate.Stages = append(pipelineCreate.Stages, stageCreate)
 	}
 
-	j, _ := json.Marshal(pipelineCreate)
-	slog.Debug("gjiowejgoiej", "j", string(j))
-
 	if len(pipelineCreate.Stages) == 0 {
 		return nil, errors.Errorf("get no tasks from the database group target")
 	}
@@ -705,13 +702,19 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.Dat
 			creates = append(creates, taskCreate)
 
 		case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+			preUpdateBackupDetail := api.PreUpdateBackupDetail{}
+			if c.GetPreUpdateBackupDetail().GetDatabase() != "" {
+				preUpdateBackupDetail.Database = c.GetPreUpdateBackupDetail().GetDatabase()
+			}
+
 			payload := api.TaskDatabaseDataUpdatePayload{
-				SpecID:            spec.Id,
-				SheetID:           0,
-				SchemaVersion:     getOrDefaultSchemaVersionWithSuffix(c.SchemaVersion, schemaVersionSuffix),
-				RollbackEnabled:   c.RollbackEnabled,
-				RollbackSQLStatus: api.RollbackSQLStatusPending,
-				SchemaGroupName:   schemaGroupName,
+				SpecID:                spec.Id,
+				SheetID:               0,
+				SchemaVersion:         getOrDefaultSchemaVersionWithSuffix(c.SchemaVersion, schemaVersionSuffix),
+				RollbackEnabled:       c.RollbackEnabled,
+				RollbackSQLStatus:     api.RollbackSQLStatusPending,
+				SchemaGroupName:       schemaGroupName,
+				PreUpdateBackupDetail: preUpdateBackupDetail,
 			}
 
 			bytes, err := json.Marshal(payload)
