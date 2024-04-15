@@ -22,8 +22,6 @@ var (
 	prodInstanceName = "testInstanceProd"
 )
 
-const baseDirectory = "bbtest"
-
 func TestTenant(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

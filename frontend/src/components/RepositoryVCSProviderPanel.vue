@@ -12,7 +12,7 @@
       </NButton>
     </template>
   </div>
-  <div class="mt-2 textinfolabel">
+  <div class="mt-4 textinfolabel">
     <template v-if="canManageVCSProvider">
       <i18n-t keypath="repository.choose-git-provider-visit-workspace">
         <template #workspace>
