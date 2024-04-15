@@ -207,12 +207,7 @@ func TestVCS(t *testing.T) {
 				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"base_directory"}},
 			})
 			a.NoError(err)
-
-			if evcs.Type == v1pb.VCSType_AZURE_DEVOPS {
-				a.Equal(fmt.Sprintf("/%s", baseDirectory), vcsConnector.BaseDirectory)
-			} else {
-				a.Equal(baseDirectory, vcsConnector.BaseDirectory)
-			}
+			a.Equal(baseDirectory, vcsConnector.BaseDirectory)
 
 			instanceName := "testInstance"
 			instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), instanceName)

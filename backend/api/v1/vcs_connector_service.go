@@ -104,6 +104,11 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 		return nil, err
 	}
 
+	baseDirectory := request.GetVcsConnector().BaseDirectory
+	if !strings.HasPrefix(baseDirectory, "/") {
+		return nil, status.Errorf(codes.InvalidArgument, `base directory should start with "/"`)
+	}
+
 	workspaceID, err := s.store.GetWorkspaceID(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace id with error: %v", err.Error())
@@ -277,6 +282,9 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 			update.Branch = &request.GetVcsConnector().Branch
 		case "base_directory":
 			baseDir := request.GetVcsConnector().BaseDirectory
+			if !strings.HasPrefix(baseDir, "/") {
+				return nil, status.Errorf(codes.InvalidArgument, `base directory should start with "/"`)
+			}
 			update.BaseDirectory = &baseDir
 		case "database_group":
 			update.DatabaseGroup = &request.GetVcsConnector().DatabaseGroup
