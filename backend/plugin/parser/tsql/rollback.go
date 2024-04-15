@@ -200,7 +200,7 @@ func (e *suffixSelectStatementExtractor) EnterDelete_statement(ctx *parser.Delet
 
 		if ctx.TOP() != nil {
 			if ctx.DECIMAL() != nil {
-				e.topClause = fmt.Sprintf("TOP DECIMAL")
+				e.topClause = "TOP DECIMAL"
 			} else {
 				if ctx.PERCENT() != nil {
 					e.topClause = ctx.GetParser().GetTokenStream().GetTextFromTokens(ctx.TOP().GetSymbol(), ctx.PERCENT().GetSymbol())
