@@ -156,7 +156,7 @@ func getPipelineCreateFromDatabaseGroupTarget(ctx context.Context, s *store.Stor
 	}
 
 	if len(pipelineCreate.Stages) == 0 {
-		return nil, errors.Errorf("get no tasks from the database group target")
+		return nil, errors.Errorf("get no tasks from the database group target, hint: your database group or schema group may not match anything")
 	}
 
 	return pipelineCreate, nil
