@@ -1733,7 +1733,7 @@
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
     "database-group-description": "默认情况下，更改将应用于项目中的所有数据库。或者，它们可以应用于数据库组。",
     "base-directory": "根目录",
-    "base-directory-description": "Bytebase 跟踪文件变更的根目录。",
+    "base-directory-description": "Bytebase 观察文件变化的根目录。如果文件存储在存储库根目录中，请使用“/”。",
     "merge-request": "合并请求",
     "pull-request": "拉取请求",
     "git-provider": "Git 提供方",
