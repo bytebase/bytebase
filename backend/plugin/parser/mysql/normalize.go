@@ -100,7 +100,7 @@ func NormalizeMySQLTextOrIdentifier(ctx parser.ITextOrIdentifierContext) string 
 	return textString[1 : len(textString)-1]
 }
 
-// NormalizeMySQLTextStringLiteral normalize the given TextStringLiteral.
+// NormalizeMySQLTextLiteral normalize the given TextStringLiteral.
 func NormalizeMySQLTextLiteral(ctx parser.ITextLiteralContext) string {
 	textString := ctx.GetText()
 	// remove the quotations.
@@ -114,7 +114,7 @@ func NormalizeMySQLTextStringLiteral(ctx parser.ITextStringLiteralContext) strin
 	return textString[1 : len(textString)-1]
 }
 
-// NormalizeMySQLSignedStringLiteral normalize the given SignedLiteral.
+// NormalizeMySQLSignedLiteral normalize the given SignedLiteral.
 func NormalizeMySQLSignedLiteral(ctx parser.ISignedLiteralContext) string {
 	textString := ctx.GetText()
 	if (strings.HasPrefix(textString, "'") && strings.HasSuffix(textString, "'")) || (strings.HasPrefix(textString, "\"") && strings.HasSuffix(textString, "\"")) {
@@ -206,7 +206,7 @@ func NormalizeMySQLSchemaRef(ctx parser.ISchemaRefContext) string {
 	return ""
 }
 
-// NormalizeMySQLSchemaRef normalize the given schemaName.
+// NormalizeMySQLSchemaName normalize the given schemaName.
 func NormalizeMySQLSchemaName(ctx parser.ISchemaNameContext) string {
 	if ctx.Identifier() != nil {
 		return NormalizeMySQLIdentifier(ctx.Identifier())
