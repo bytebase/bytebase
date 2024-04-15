@@ -7,13 +7,14 @@ import type {
   IndexMetadata,
   SchemaMetadata,
   TableMetadata,
+  TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
 import {
   ColumnConfig,
   SchemaConfig,
   TableConfig,
 } from "@/types/proto/v1/database_service";
-import { TinyTimer, keyBy } from "@/utils";
+import { ComparableTablePartitionFields, TinyTimer, keyBy } from "@/utils";
 import {
   ComparableColumnFields,
   ComparableForeignKeyFields,
@@ -192,7 +193,11 @@ export class DiffMerge {
             sourceTable.foreignKeys,
             targetTable.foreignKeys
           ) ||
-          !this.isEqualIndexes(sourceTable.indexes, targetTable.indexes)
+          !this.isEqualIndexes(sourceTable.indexes, targetTable.indexes) ||
+          !this.isEqualTablePartitions(
+            sourceTable.partitions,
+            targetTable.partitions
+          )
         ) {
           // Index and foreignKey changes are considered as table updating by now
           // for simplification
@@ -264,6 +269,39 @@ export class DiffMerge {
         !isEqual(
           pick(sourceIndex, ComparableIndexFields),
           pick(targetIndex, ComparableIndexFields)
+        )
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+  isEqualTablePartitions(
+    sourcePartitions: TablePartitionMetadata[],
+    targetPartitions: TablePartitionMetadata[]
+  ) {
+    if (sourcePartitions.length !== targetPartitions.length) {
+      return false;
+    }
+    const targetPartitionsByName = keyBy(targetPartitions, (part) => part.name);
+
+    for (let i = 0; i < sourcePartitions.length; i++) {
+      const sourcePartition = sourcePartitions[i];
+      const targetPartition = targetPartitionsByName.get(sourcePartition.name);
+      // targetPartition not found
+      if (!targetPartition) return false;
+      if (
+        !isEqual(
+          pick(sourcePartition, ComparableTablePartitionFields),
+          pick(targetPartition, ComparableTablePartitionFields)
+        )
+      ) {
+        return false;
+      }
+      if (
+        !this.isEqualTablePartitions(
+          sourcePartition.subpartitions ?? [],
+          targetPartition.subpartitions ?? []
         )
       ) {
         return false;
