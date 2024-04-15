@@ -1,5 +1,7 @@
 <template>
-  <BBAttention type="warning" :description="attentionText" />
+  <BBAttention type="warning">
+    {{ attentionText }}
+  </BBAttention>
   <div class="mt-4 space-y-2">
     <div class="flex justify-between items-center">
       <BBSpin v-if="state.loading" :size="20" />

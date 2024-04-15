@@ -13,6 +13,7 @@
         class="project-select"
         :project="projectUID"
         :include-all="false"
+        :include-default-project="true"
         :loading="!projectContextReady"
         @update:project="handleSwitchProject"
       />
