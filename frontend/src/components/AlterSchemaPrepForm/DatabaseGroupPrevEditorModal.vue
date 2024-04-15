@@ -76,11 +76,10 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
-import { useDBGroupStore, useNotificationStore } from "@/store";
+import { pushNotification, useDBGroupStore } from "@/store";
 import type { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
+import { MAX_UPLOAD_FILE_SIZE_MB, readFileAsArrayBuffer } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
-
-const MAX_UPLOAD_FILE_SIZE_MB = 1;
 
 interface LocalState {
   editStatement: string;
@@ -111,7 +110,6 @@ const state = reactive<LocalState>({
   editStatement: "",
   showActionConfirmModal: false,
 });
-const notificationStore = useNotificationStore();
 
 const allowPreviewIssue = computed(() => {
   return state.editStatement !== "";
@@ -158,7 +156,7 @@ const dismissModal = () => {
   }
 };
 
-const handleUploadFile = (e: Event) => {
+const handleUploadFile = async (e: Event) => {
   const target = e.target as HTMLInputElement;
   const file = (target.files || [])[0];
   const cleanup = () => {
@@ -173,7 +171,7 @@ const handleUploadFile = (e: Event) => {
     return cleanup();
   }
   if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
-    notificationStore.pushNotification({
+    pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("issue.upload-sql-file-max-size-exceeded", {
@@ -182,21 +180,21 @@ const handleUploadFile = (e: Event) => {
     });
     return cleanup();
   }
-  const fr = new FileReader();
-  fr.onload = () => {
-    const sql = fr.result as string;
-    state.editStatement = sql;
-  };
-  fr.onerror = () => {
-    notificationStore.pushNotification({
+
+  try {
+    const { arrayBuffer } = await readFileAsArrayBuffer(file);
+    // TODO(steven): let user choose encoding.
+    const decoder = new TextDecoder("utf-8");
+    const statement = decoder.decode(arrayBuffer);
+    state.editStatement = statement;
+  } catch (error) {
+    pushNotification({
       module: "bytebase",
       style: "WARN",
       title: `Read file error`,
-      description: String(fr.error),
+      description: String(error),
     });
-    return;
-  };
-  fr.readAsText(file);
+  }
 
   cleanup();
 };
