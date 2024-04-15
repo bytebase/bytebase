@@ -1733,7 +1733,7 @@
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
     "database-group-description": "By default, changes will be applied to all databases within the project. Alternatively, they can be applied to the database group.",
     "base-directory": "Base directory",
-    "base-directory-description": "The root directory where Bytebase observes the file change.",
+    "base-directory-description": "The root directory where Bytebase observes the file change. Use \"/\" if files stored in the repository root directory.",
     "merge-request": "merge request",
     "pull-request": "pull request",
     "git-provider": "Git provider",

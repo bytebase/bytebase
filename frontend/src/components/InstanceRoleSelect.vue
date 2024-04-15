@@ -14,10 +14,8 @@
 
 <script lang="ts" setup>
 import type { SelectOption } from "naive-ui";
-import type { PropType } from "vue";
 import { computed, ref, watch } from "vue";
 import { useInstanceV1Store } from "@/store";
-import { UNKNOWN_ID } from "@/types";
 import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
 
 interface InstanceRoleSelectOption extends SelectOption {
@@ -25,20 +23,11 @@ interface InstanceRoleSelectOption extends SelectOption {
   instanceRole: InstanceRole;
 }
 
-const props = defineProps({
-  role: {
-    type: String,
-    default: undefined,
-  },
-  instanceId: {
-    type: String,
-    default: String(UNKNOWN_ID),
-  },
-  filter: {
-    type: Function as PropType<(role: InstanceRole) => boolean>,
-    default: undefined,
-  },
-});
+const props = defineProps<{
+  role?: string;
+  instance?: string;
+  filter: (role: InstanceRole) => boolean;
+}>();
 
 const emit = defineEmits<{
   (event: "update:instance-role", role: string | undefined): void;
@@ -48,13 +37,14 @@ const instanceV1Store = useInstanceV1Store();
 const instanceRoleList = ref<InstanceRole[]>([]);
 
 watch(
-  () => props.instanceId,
-  async () => {
-    const instance = instanceV1Store.getInstanceByUID(props.instanceId);
-    instanceRoleList.value = await instanceV1Store.fetchInstanceRoleListByName(
-      instance.name
-    );
-    emit("update:instance-role", undefined);
+  () => props.instance,
+  async (instanceName) => {
+    if (instanceName) {
+      const instance = instanceV1Store.getInstanceByName(instanceName);
+      instanceRoleList.value =
+        await instanceV1Store.fetchInstanceRoleListByName(instance.name);
+      emit("update:instance-role", undefined);
+    }
   },
   { immediate: true }
 );

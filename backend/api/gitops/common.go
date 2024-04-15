@@ -38,7 +38,11 @@ func getChangesByFileList(files []*vcs.PullRequestFile, rootDir string) []*fileC
 		if v.IsDeleted {
 			continue
 		}
-		if filepath.Dir(v.Path) != rootDir {
+		prFilePath := v.Path
+		if !strings.HasPrefix(prFilePath, "/") {
+			prFilePath = fmt.Sprintf("/%s", prFilePath)
+		}
+		if filepath.Dir(prFilePath) != rootDir {
 			continue
 		}
 		change, err := getFileChange(v.Path)

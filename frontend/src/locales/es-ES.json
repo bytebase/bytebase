@@ -1733,7 +1733,7 @@
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
     "database-group-description": "Por defecto, los cambios se aplicarán a todas las bases de datos dentro del proyecto. Alternativamente, pueden aplicarse al grupo de bases de datos.",
     "base-directory": "Directorio base",
-    "base-directory-description": "El directorio raíz donde Bytebase observa el cambio de archivo.",
+    "base-directory-description": "El directorio raíz donde Bytebase observa el cambio del archivo. Utilice \"/\" si los archivos están almacenados en el directorio raíz del repositorio.",
     "merge-request": "solicitud de extracción",
     "pull-request": "solicitud de extracción",
     "git-provider": "Proveedor de Git",

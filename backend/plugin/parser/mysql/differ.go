@@ -300,7 +300,7 @@ func dropTableOption(oldOption *tableOptionDef) *tableOptionDef {
 	return oldOption
 }
 
-// isTableOptionValEqual compare the two table options value, if they are equal, returns true.
+// isTableOptionEqual compare the two table options value, if they are equal, returns true.
 // Caller need to ensure the two table options are not nil and the type is the same.
 func isTableOptionEqual(oldOption, newOption *tableOptionDef) bool {
 	if oldOption.option == "DEFAULT CHARACTER SET" {

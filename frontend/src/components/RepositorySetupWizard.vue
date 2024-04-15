@@ -1,18 +1,20 @@
 <template>
   <div>
-    <div class="textinfolabel">
-      <i18n-t keypath="repository.setup-wizard-guide">
-        <template #guide>
-          <a
-            href="https://bytebase.com/docs/vcs-integration/enable-gitops-workflow?source=console"
-            target="_blank"
-            class="normal-link"
-          >
-            {{ $t("common.detailed-guide") }}
-          </a>
-        </template>
-      </i18n-t>
-    </div>
+    <BBAttention type="info">
+      <div class="textinfolabel">
+        <i18n-t keypath="repository.setup-wizard-guide">
+          <template #guide>
+            <a
+              href="https://bytebase.com/docs/vcs-integration/add-gitops-connector?source=console"
+              target="_blank"
+              class="normal-link"
+            >
+              {{ $t("common.detailed-guide") }}
+            </a>
+          </template>
+        </i18n-t>
+      </div>
+    </BBAttention>
 
     <StepTab
       class="mt-4 mb-8"
@@ -92,7 +94,7 @@ const state = reactive<LocalState>({
     vcs: VCSProvider.fromPartial({}),
     repositoryInfo: VCSRepository.fromPartial({}),
     repositoryConfig: {
-      baseDirectory: "bytebase",
+      baseDirectory: "/bytebase",
       branch: "main",
       resourceId: "",
       databaseGroup: "",
@@ -130,6 +132,14 @@ const tryChangeStep = (nextStepIndex: number) => {
   state.currentStep = nextStepIndex;
 };
 
+const validBaseDirectory = computed(() => {
+  let directory = state.config.repositoryConfig.baseDirectory;
+  if (directory.endsWith("/")) {
+    directory = directory.slice(0, directory.length - 1);
+  }
+  return directory || "/";
+});
+
 const tryFinishSetup = async () => {
   if (state.processing) {
     return;
@@ -152,8 +162,8 @@ const tryFinishSetup = async () => {
         title: state.config.repositoryInfo.title,
         externalId,
         vcsProvider: state.config.vcs.name,
-        baseDirectory: state.config.repositoryConfig.baseDirectory,
-        branch: state.config.repositoryConfig.branch,
+        baseDirectory: validBaseDirectory.value,
+        branch: state.config.repositoryConfig.branch.trim(),
         databaseGroup: state.config.repositoryConfig.databaseGroup,
         fullPath: state.config.repositoryInfo.fullPath,
         webUrl: state.config.repositoryInfo.webUrl,

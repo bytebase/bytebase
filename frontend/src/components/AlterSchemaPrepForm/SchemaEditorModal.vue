@@ -152,7 +152,13 @@ import { Engine } from "@/types/proto/v1/common";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { TinyTimer, defer, extractProjectResourceName } from "@/utils";
+import {
+  MAX_UPLOAD_FILE_SIZE_MB,
+  TinyTimer,
+  defer,
+  extractProjectResourceName,
+  readFileAsArrayBuffer,
+} from "@/utils";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import type { EditTarget, GenerateDiffDDLResult } from "../SchemaEditorLite";
@@ -161,8 +167,6 @@ import SchemaEditorLite, {
 } from "../SchemaEditorLite";
 import MaskSpinner from "../misc/MaskSpinner.vue";
 import SchemaEditorSQLCheckButton from "./SchemaEditorSQLCheckButton/SchemaEditorSQLCheckButton.vue";
-
-const MAX_UPLOAD_FILE_SIZE_MB = 1;
 
 type TabType = "raw-sql" | "schema-editor";
 
@@ -403,7 +407,7 @@ const generateDiffDDLMap = async (silent: boolean) => {
   return statementMap;
 };
 
-const handleUploadFile = (e: Event) => {
+const handleUploadFile = async (e: Event) => {
   const target = e.target as HTMLInputElement;
   const file = (target.files || [])[0];
   const cleanup = () => {
@@ -418,7 +422,7 @@ const handleUploadFile = (e: Event) => {
     return cleanup();
   }
   if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
-    notificationStore.pushNotification({
+    pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("issue.upload-sql-file-max-size-exceeded", {
@@ -427,22 +431,20 @@ const handleUploadFile = (e: Event) => {
     });
     return cleanup();
   }
-  const fr = new FileReader();
-  fr.onload = () => {
-    const sql = fr.result as string;
-    state.editStatement = sql;
-  };
-  fr.onerror = () => {
-    notificationStore.pushNotification({
+
+  try {
+    const { arrayBuffer } = await readFileAsArrayBuffer(file);
+    // TODO(steven): let user choose encoding.
+    const decoder = new TextDecoder("utf-8");
+    state.editStatement = decoder.decode(arrayBuffer);
+  } catch (error) {
+    pushNotification({
       module: "bytebase",
       style: "WARN",
       title: `Read file error`,
-      description: String(fr.error),
+      description: String(error),
     });
-    return;
-  };
-  fr.readAsText(file);
-
+  }
   cleanup();
 };
 
