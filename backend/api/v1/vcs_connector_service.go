@@ -104,16 +104,6 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 		return nil, err
 	}
 
-	baseDir := request.GetVcsConnector().BaseDirectory
-	// Azure DevOps base directory should start with /.
-	if vcsProvider.Type == storepb.VCSType_AZURE_DEVOPS {
-		if !strings.HasPrefix(baseDir, "/") {
-			baseDir = "/" + request.GetVcsConnector().BaseDirectory
-		}
-	} else {
-		baseDir = strings.Trim(request.GetVcsConnector().BaseDirectory, "/")
-	}
-
 	workspaceID, err := s.store.GetWorkspaceID(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace id with error: %v", err.Error())
@@ -133,7 +123,7 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 			FullPath:           request.GetVcsConnector().FullPath,
 			WebUrl:             request.GetVcsConnector().WebUrl,
 			Branch:             request.GetVcsConnector().Branch,
-			BaseDirectory:      baseDir,
+			BaseDirectory:      request.GetVcsConnector().BaseDirectory,
 			ExternalId:         request.GetVcsConnector().ExternalId,
 			WebhookSecretToken: secretToken,
 			DatabaseGroup:      request.GetVcsConnector().DatabaseGroup,
@@ -287,14 +277,6 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 			update.Branch = &request.GetVcsConnector().Branch
 		case "base_directory":
 			baseDir := request.GetVcsConnector().BaseDirectory
-			// Azure DevOps base directory should start with /.
-			if vcsProvider.Type == storepb.VCSType_AZURE_DEVOPS {
-				if !strings.HasPrefix(baseDir, "/") {
-					baseDir = "/" + request.GetVcsConnector().BaseDirectory
-				}
-			} else {
-				baseDir = strings.Trim(request.GetVcsConnector().BaseDirectory, "/")
-			}
 			update.BaseDirectory = &baseDir
 		case "database_group":
 			update.DatabaseGroup = &request.GetVcsConnector().DatabaseGroup

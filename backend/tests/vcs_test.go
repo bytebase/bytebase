@@ -19,6 +19,8 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+const baseDirectory = "/bbtest"
+
 func TestVCS(t *testing.T) {
 	branchName := "feature/foo"
 	pullRequestFiles := []*vcs.PullRequestFile{

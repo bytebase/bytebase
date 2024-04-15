@@ -1733,7 +1733,7 @@
     "branch-observe-file-change": "Bytebaseがファイルの変更を監視するブランチ。",
     "database-group-description": "デフォルトでは、変更はプロジェクト内のすべてのデータベースに適用されます。また、データベースグループに適用することもできます。",
     "base-directory": "ベースディレクトリ",
-    "base-directory-description": "Bytebaseがファイルの変更を監視するルートディレクトリ。",
+    "base-directory-description": "Bytebase がファイルの変更を監視するルート ディレクトリ。ファイルがリポジトリのルート ディレクトリに保存されている場合は、「/」を使用します。",
     "merge-request": "マージリクエスト",
     "pull-request": "プルリクエスト",
     "git-provider": "Gitプロバイダ",
