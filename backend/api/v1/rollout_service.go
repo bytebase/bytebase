@@ -1459,10 +1459,6 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 
 // GetPipelineCreate gets a pipeline create message from a plan.
 func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
-	pipelineCreate := &store.PipelineMessage{
-		Name: "Rollout Pipeline",
-	}
-
 	transformedSteps := steps
 	if len(steps) == 1 && len(steps[0].Specs) == 1 {
 		spec := steps[0].Specs[0]
@@ -1474,7 +1470,14 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 				}
 				transformedSteps = stepsFromDeploymentConfig
 			}
+			if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
+				return getPipelineCreateFromDatabaseGroupTarget(ctx, s, spec, config, project)
+			}
 		}
+	}
+
+	pipelineCreate := &store.PipelineMessage{
+		Name: "Rollout Pipeline",
 	}
 
 	for _, step := range transformedSteps {
