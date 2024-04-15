@@ -1733,7 +1733,7 @@
     "branch-observe-file-change": "Nhánh nơi Bytebase quan sát sự thay đổi tập tin.",
     "database-group-description": "Mặc định, các thay đổi sẽ được áp dụng cho tất cả các cơ sở dữ liệu trong dự án. Hoặc có thể áp dụng cho nhóm cơ sở dữ liệu.",
     "base-directory": "Thư mục cơ sở",
-    "base-directory-description": "Thư mục gốc nơi Bytebase quan sát sự thay đổi của tập tin.",
+    "base-directory-description": "Thư mục gốc nơi Bytebase quan sát sự thay đổi của tập tin. Sử dụng \"/\" nếu các tệp được lưu trữ trong thư mục gốc của kho lưu trữ.",
     "merge-request": "yêu cầu hợp nhất",
     "pull-request": "yêu cầu kéo",
     "git-provider": "Nhà cung cấp Git",
