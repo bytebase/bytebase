@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-start items-center">
-    <NPopconfirm v-if="status !== 'dropped'" @positive-click="$emit('drop')">
+    <NPopconfirm v-if="status === 'created'" @positive-click="$emit('drop')">
       <template #trigger>
         <MiniActionButton tag="div">
           <TrashIcon class="w-4 h-4" />
@@ -21,7 +21,7 @@
         </div>
       </template>
     </NPopconfirm>
-    <NTooltip v-else trigger="hover" to="body">
+    <NTooltip v-if="status === 'dropped'" trigger="hover" to="body">
       <template #trigger>
         <MiniActionButton tag="div" @click="$emit('restore')">
           <Undo2Icon class="w-4 h-4" />
