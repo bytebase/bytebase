@@ -1,13 +1,13 @@
 import { cloneDeep, isEqual, pick } from "lodash-es";
 import type { ComposedDatabase } from "@/types";
-import type {
-  ColumnMetadata,
-  DatabaseMetadata,
-  ForeignKeyMetadata,
-  IndexMetadata,
-  SchemaMetadata,
-  TableMetadata,
-  TablePartitionMetadata,
+import type { TablePartitionMetadata } from "@/types/proto/v1/database_service";
+import {
+  type ColumnMetadata,
+  type DatabaseMetadata,
+  type ForeignKeyMetadata,
+  type IndexMetadata,
+  type SchemaMetadata,
+  type TableMetadata,
 } from "@/types/proto/v1/database_service";
 import {
   ColumnConfig,
@@ -66,6 +66,7 @@ export class DiffMerge {
     | "mergeSchemas"
     | "mergeTables"
     | "mergeColumns"
+    | "mergeTablePartitions"
     | "diffColumn"
     | "mergeSchemaConfigs"
     | "mergeTableConfigs"
@@ -184,6 +185,10 @@ export class DiffMerge {
           { ...source, table: sourceTable },
           { ...target, table: targetTable }
         );
+        this.mergeTablePartitions(
+          { ...source, table: sourceTable },
+          { ...target, table: targetTable }
+        );
         if (
           !isEqual(
             pick(sourceTable, ComparableTableFields),
@@ -193,11 +198,7 @@ export class DiffMerge {
             sourceTable.foreignKeys,
             targetTable.foreignKeys
           ) ||
-          !this.isEqualIndexes(sourceTable.indexes, targetTable.indexes) ||
-          !this.isEqualTablePartitions(
-            sourceTable.partitions,
-            targetTable.partitions
-          )
+          !this.isEqualIndexes(sourceTable.indexes, targetTable.indexes)
         ) {
           // Index and foreignKey changes are considered as table updating by now
           // for simplification
@@ -308,6 +309,89 @@ export class DiffMerge {
       }
     }
     return true;
+  }
+  mergeTablePartitions(source: RichTableMetadata, target: RichTableMetadata) {
+    const { context, database } = this;
+    const { schema: sourceSchema, table: sourceTable } = source;
+    const { schema: targetSchema, table: targetTable } = target;
+
+    const doMergePartitions = (
+      sourcePartitions: TablePartitionMetadata[],
+      targetPartitions: TablePartitionMetadata[]
+    ) => {
+      const sourcePartitionMap = new Map<string, TablePartitionMetadata>();
+      const targetPartitionMap = new Map<string, TablePartitionMetadata>();
+
+      mapTablePartitions(
+        database,
+        sourceSchema,
+        sourceTable,
+        sourcePartitions,
+        sourcePartitionMap
+      );
+      mapTablePartitions(
+        database,
+        targetSchema,
+        targetTable,
+        targetPartitions,
+        targetPartitionMap
+      );
+
+      const mergedPartitions: TablePartitionMetadata[] = [];
+      for (let i = 0; i < sourcePartitions.length; i++) {
+        const sourcePartition = sourcePartitions[i];
+        const key = keyForResourceName(
+          database.name,
+          sourceSchema.name,
+          sourceTable.name,
+          /* column */ undefined,
+          sourcePartition.name
+        );
+        let targetPartition = targetPartitionMap.get(key);
+        if (targetPartition) {
+          // existed partition
+          mergedPartitions.push(targetPartition);
+          targetPartition.subpartitions = doMergePartitions(
+            sourcePartition.subpartitions ?? [],
+            targetPartition.subpartitions ?? []
+          );
+          continue;
+        }
+        // dropped partition
+        // copy the source partition to target and mark it as 'dropped'
+        targetPartition = cloneDeep(sourcePartition);
+        mergedPartitions.push(targetPartition);
+        context.markEditStatusByKey(key, "dropped");
+      }
+      for (let i = 0; i < targetPartitions.length; i++) {
+        const targetPartition = targetPartitions[i];
+        const key = keyForResourceName(
+          database.name,
+          targetSchema.name,
+          targetTable.name,
+          /* column */ undefined,
+          targetPartition.name
+        );
+        const sourcePartition = sourcePartitionMap.get(key);
+        if (!sourcePartition) {
+          // newly created partition
+          // mark it as 'created'
+          mergedPartitions.push(targetPartition);
+          context.markEditStatusByKey(key, "created");
+        }
+      }
+      return mergedPartitions;
+    };
+
+    this.timer.begin("mergeTablePartitions");
+    targetTable.partitions = doMergePartitions(
+      sourceTable.partitions,
+      targetTable.partitions
+    );
+    this.timer.end(
+      "mergeTablePartitions",
+      sourceTable.partitions.length + targetTable.partitions.length
+    );
   }
   mergeColumns(source: RichTableMetadata, target: RichTableMetadata) {
     const { context, database, sourceColumnMap, targetColumnMap } = this;
@@ -666,6 +750,24 @@ const mapColumns = (
       column.name
     );
     map.set(key, column);
+  });
+};
+const mapTablePartitions = (
+  database: ComposedDatabase,
+  schema: SchemaMetadata,
+  table: TableMetadata,
+  partitions: TablePartitionMetadata[],
+  map: Map<string, TablePartitionMetadata>
+) => {
+  partitions.forEach((partition) => {
+    const key = keyForResourceName(
+      database.name,
+      schema.name,
+      table.name,
+      /* column */ undefined,
+      partition.name
+    );
+    map.set(key, partition);
   });
 };
 const mapSchemaConfigs = (
