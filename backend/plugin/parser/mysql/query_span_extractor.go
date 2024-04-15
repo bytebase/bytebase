@@ -915,12 +915,12 @@ func (l *recursiveCTEExtractListener) EnterQueryExpression(ctx *mysql.QueryExpre
 	}
 }
 
-// EnterCommonTableExpression is called when production commonTableExpression is entered.
+// EnterWithClause is called when production commonTableExpression is entered.
 func (l *recursiveCTEExtractListener) EnterWithClause(_ *mysql.WithClauseContext) {
 	l.inCTE = true
 }
 
-// ExitCommonTableExpression is called when production commonTableExpression is exited.
+// ExitWithClause is called when production commonTableExpression is exited.
 func (l *recursiveCTEExtractListener) ExitWithClause(_ *mysql.WithClauseContext) {
 	l.inCTE = false
 }
