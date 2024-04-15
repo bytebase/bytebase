@@ -3,15 +3,15 @@
     <BytebaseLogo component="span" class="mx-auto" />
 
     <div class="mt-8">
-      <n-card>
-        <n-tabs
+      <NCard>
+        <NTabs
           class="card-tabs"
           default-value="standard"
           size="small"
           animated
           pane-style="padding: 12px 0 0 0"
         >
-          <n-tab-pane name="standard" tab="Standard">
+          <NTabPane name="standard" tab="Standard">
             <form class="space-y-6 px-1" @submit.prevent="trySignin()">
               <div>
                 <label
@@ -74,11 +74,8 @@
                       }
                     "
                   >
-                    <heroicons-outline:eye
-                      v-if="state.showPassword"
-                      class="w-4 h-4"
-                    />
-                    <heroicons-outline:eye-slash v-else class="w-4 h-4" />
+                    <EyeIcon v-if="state.showPassword" class="w-4 h-4" />
+                    <EyeOffIcon v-else class="w-4 h-4" />
                   </div>
                 </div>
               </div>
@@ -124,13 +121,13 @@
                 </template>
               </div>
             </div>
-          </n-tab-pane>
+          </NTabPane>
 
           <template
             v-for="identityProvider in groupedIdentityProviderList"
             :key="identityProvider.name"
           >
-            <n-tab-pane
+            <NTabPane
               v-if="identityProvider.type === IdentityProviderType.LDAP"
               :name="identityProvider.name"
               :tab="identityProvider.title"
@@ -184,11 +181,8 @@
                         }
                       "
                     >
-                      <heroicons-outline:eye
-                        v-if="state.showPassword"
-                        class="w-4 h-4"
-                      />
-                      <heroicons-outline:eye-slash v-else class="w-4 h-4" />
+                      <EyeIcon v-if="state.showPassword" class="w-4 h-4" />
+                      <EyeOffIcon v-else class="w-4 h-4" />
                     </div>
                   </div>
                 </div>
@@ -206,10 +200,10 @@
                   </NButton>
                 </div>
               </form>
-            </n-tab-pane>
+            </NTabPane>
           </template>
-        </n-tabs>
-      </n-card>
+        </NTabs>
+      </NCard>
     </div>
 
     <div v-if="separatedIdentityProviderList.length > 0" class="mb-3 px-1">
@@ -245,6 +239,8 @@
 </template>
 
 <script lang="ts" setup>
+import { EyeIcon, EyeOffIcon } from "lucide-vue-next";
+import { NButton, NCard, NTabPane, NTabs } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
