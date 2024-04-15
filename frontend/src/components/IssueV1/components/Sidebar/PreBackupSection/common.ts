@@ -17,7 +17,11 @@ export const usePreBackupContext = () => {
     }
     const database = databaseForTask(issue.value, task.value);
     const { engine } = database.instanceEntity;
-    if (engine !== Engine.MYSQL && engine !== Engine.TIDB) {
+    if (
+      engine !== Engine.MYSQL &&
+      engine !== Engine.TIDB &&
+      engine !== Engine.MSSQL
+    ) {
       return false;
     }
     return true;

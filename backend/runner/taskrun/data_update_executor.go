@@ -119,6 +119,13 @@ func (exec *DataUpdateExecutor) backupData(
 	if err != nil {
 		return err
 	}
+	defer driver.Close(driverCtx)
+
+	backupDriver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, backupDatabase, db.ConnectionContext{})
+	if err != nil {
+		return err
+	}
+	defer backupDriver.Close(driverCtx)
 
 	suffix := "_" + time.Now().Format("20060102150405")
 	statements, err := base.TransformDMLToSelect(instance.Engine, statement, database.DatabaseName, backupDatabaseName, suffix)
@@ -130,8 +137,15 @@ func (exec *DataUpdateExecutor) backupData(
 		if _, err := driver.Execute(driverCtx, statement.Statement, db.ExecuteOptions{}); err != nil {
 			return err
 		}
-		if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
-			return err
+		switch instance.Engine {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
+				return err
+			}
+		case storepb.Engine_MSSQL:
+			if _, err := backupDriver.Execute(driverCtx, fmt.Sprintf("EXEC sp_addextendedproperty 'MS_Description', 'issue %d', 'SCHEMA', 'dbo', 'TABLE', '%s'", issue.UID, statement.TableName), db.ExecuteOptions{}); err != nil {
+				return err
+			}
 		}
 
 		createActivityPayload := api.ActivityPipelineTaskPriorBackupPayload{
