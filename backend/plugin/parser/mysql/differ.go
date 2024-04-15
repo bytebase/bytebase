@@ -2088,7 +2088,7 @@ func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContex
 	}
 
 	if useDefaultPartition != 0 {
-		//TODO(zp): HANDLE SUBPARTITION DEFAULT
+		// TODO(zp): HANDLE SUBPARTITION DEFAULT
 		generator := NewPartitionDefaultNameGenerator("")
 		for i := 0; i < useDefaultPartition; i++ {
 			partitionDef := &partitionDef{
