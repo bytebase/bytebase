@@ -1,4 +1,4 @@
-package cmd
+package version
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ var gitcommit = "unknown"
 var buildtime = "unknown"
 var builduser = "unknown"
 
-func newVersionCmd() *cobra.Command {
+func Cmd() *cobra.Command {
 	versionCmd := &cobra.Command{
 		Use:   "version",
 		Short: "Show bb version",
