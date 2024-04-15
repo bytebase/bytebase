@@ -2336,7 +2336,15 @@
       "edit-indexes": "インデックスの編集",
       "unique": "ユニーク"
     },
-    "generated-ddl-is-empty": "生成されたDDLは空です"
+    "generated-ddl-is-empty": "生成されたDDLは空です",
+    "table-partition": {
+      "partitions": "パーティション",
+      "edit-partitions": "パーティションの編集",
+      "expression": "表現",
+      "value": "価値",
+      "add-sub-partition": "サブパーティションの追加",
+      "type": "タイプ"
+    }
   },
   "label": {
     "empty-label-value": "空です",
@@ -3404,6 +3412,10 @@
     "schema-text": "スキーマテキスト",
     "baseline": "ベースライン",
     "head": "頭",
-    "show-diff-with-branch-baseline": "ブランチベースラインとの差分を表示"
+    "show-diff-with-branch-baseline": "ブランチベースラインとの差分を表示",
+    "table-partition": {
+      "drop-partition-confirm": "テーブルパーティションを削除しますか?",
+      "drop-partition-with-subpartitions-confirm": "また、そのサブパーティションもすべて削除されます。"
+    }
   }
 }

@@ -2336,7 +2336,15 @@
       "edit-indexes": "Chỉnh sửa chỉ mục",
       "unique": "Độc nhất"
     },
-    "generated-ddl-is-empty": "DDL được tạo trống"
+    "generated-ddl-is-empty": "DDL được tạo trống",
+    "table-partition": {
+      "partitions": "Phân vùng",
+      "edit-partitions": "Chỉnh sửa phân vùng",
+      "expression": "Sự biểu lộ",
+      "value": "Giá trị",
+      "add-sub-partition": "Thêm phân vùng phụ",
+      "type": "Kiểu"
+    }
   },
   "label": {
     "empty-label-value": "Trống",
@@ -3404,6 +3412,10 @@
     "schema-text": "Văn bản lược đồ",
     "baseline": "Đường cơ sở",
     "head": "Cái đầu",
-    "show-diff-with-branch-baseline": "Hiển thị sự khác biệt với đường cơ sở của nhánh"
+    "show-diff-with-branch-baseline": "Hiển thị sự khác biệt với đường cơ sở của nhánh",
+    "table-partition": {
+      "drop-partition-confirm": "Bỏ phân vùng bảng?",
+      "drop-partition-with-subpartitions-confirm": "Cũng sẽ bỏ tất cả các phân vùng của nó."
+    }
   }
 }
