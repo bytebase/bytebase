@@ -174,6 +174,7 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
       });
     },
     pattern,
+    virtualScroll: true,
     showIrrelevantNodes: false,
     defaultExpandedKeys: defaultExpandedKeys.value,
     checkedKeys: selectedValueList.value,
@@ -196,6 +197,7 @@ const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
     defaultExpandAll: true,
     data: targetTreeOptions.value,
     blockLine: true,
+    virtualScroll: true,
     style: "height: 468px", // since <NTransfer> height is 512
     renderLabel: ({ option }: { option: TreeOption }) => {
       return h(Label, {
