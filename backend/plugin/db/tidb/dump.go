@@ -504,7 +504,7 @@ func getTableStmt(txn *sql.Tx, dbType storepb.Engine, dbName, tblName, tblType s
 	}
 }
 
-// getTableStmt gets the create statement of a table.
+// getViewColumns gets the create statement of a table.
 func getViewColumns(txn *sql.Tx, dbName, tblName string) ([]string, error) {
 	query := fmt.Sprintf("SHOW COLUMNS FROM `%s`.`%s`;", dbName, tblName)
 	// https://dev.mysql.com/doc/refman/8.0/en/show-columns.html
