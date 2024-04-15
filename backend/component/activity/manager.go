@@ -120,7 +120,7 @@ func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, tasks []
 			Name: issue.Project.Title,
 		},
 		Description:  anyActivity.Comment,
-		Link:         fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID),
+		Link:         fmt.Sprintf("%s/projects/%s/issues/%s-%d", setting.ExternalUrl, issue.Project.ResourceID, slug.Make(issue.Title), issue.UID),
 		CreatorID:    anyActivity.CreatorUID,
 		CreatorName:  user.Name,
 		CreatorEmail: user.Email,
@@ -206,7 +206,7 @@ func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks [
 			Name: issue.Project.Title,
 		},
 		Description:  anyActivity.Comment,
-		Link:         fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID),
+		Link:         fmt.Sprintf("%s/projects/%s/issues/%s-%d", setting.ExternalUrl, issue.Project.ResourceID, slug.Make(issue.Title), issue.UID),
 		CreatorID:    anyActivity.CreatorUID,
 		CreatorName:  user.Name,
 		CreatorEmail: user.Email,
@@ -293,7 +293,7 @@ func (m *Manager) BatchCreateActivitiesForCancelTaskRuns(ctx context.Context, ta
 			Name: issue.Project.Title,
 		},
 		Description:  anyActivity.Comment,
-		Link:         fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(issue.Title), issue.UID),
+		Link:         fmt.Sprintf("%s/projects/%s/issues/%s-%d", setting.ExternalUrl, issue.Project.ResourceID, slug.Make(issue.Title), issue.UID),
 		CreatorID:    anyActivity.CreatorUID,
 		CreatorName:  user.Name,
 		CreatorEmail: user.Email,
@@ -382,7 +382,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 	level := webhook.WebhookInfo
 	title := ""
 	titleZh := ""
-	link := fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(meta.Issue.Title), meta.Issue.UID)
+	link := fmt.Sprintf("%s/projects/%s/issues/%s-%d", setting.ExternalUrl, meta.Issue.Project.ResourceID, slug.Make(meta.Issue.Title), meta.Issue.UID)
 	switch activity.Type {
 	case api.ActivityIssueCreate:
 		title = fmt.Sprintf("Issue created - %s", meta.Issue.Title)
@@ -403,7 +403,6 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 	case api.ActivityIssueCommentCreate:
 		title = fmt.Sprintf("Comment created - %s", meta.Issue.Title)
 		titleZh = fmt.Sprintf("工单新评论 - %s", meta.Issue.Title)
-		link += fmt.Sprintf("#activity%d", activity.UID)
 	case api.ActivityIssueFieldUpdate:
 		update := new(api.ActivityIssueFieldUpdatePayload)
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
