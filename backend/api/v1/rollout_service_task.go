@@ -23,6 +23,148 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+func getPipelineCreateFromDatabaseGroupTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage) (*store.PipelineMessage, error) {
+	switch c.Type {
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+	default:
+		return nil, errors.Errorf("unsupported change database config type %q for database group target", c.Type)
+	}
+
+	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(c.Target)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project id and database group id from target %q", c.Target)
+	}
+	if projectID != project.ResourceID {
+		return nil, errors.Errorf("project id %q in target %q does not match project id %q in plan config", projectID, c.Target, project.ResourceID)
+	}
+	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
+	}
+	if databaseGroup == nil {
+		return nil, errors.Errorf("database group %q not found", databaseGroupID)
+	}
+	schemaGroups, err := s.ListSchemaGroups(ctx, &store.FindSchemaGroupMessage{DatabaseGroupUID: &databaseGroup.UID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list schema groups for database group %q", databaseGroupID)
+	}
+	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
+	}
+
+	matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroupID)
+	}
+	if len(matchedDatabases) == 0 {
+		return nil, errors.Errorf("no matched databases found in database group %q", databaseGroupID)
+	}
+
+	environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list environments")
+	}
+
+	_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+	}
+	sheetStatement, err := s.GetSheetStatementByID(ctx, sheetUID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet statement %q", sheetUID)
+	}
+
+	taskCreatesMatrixByEnv := map[string][][]*store.TaskMessage{}
+	taskIndexDAGsMatrixByEnv := map[string][][]store.TaskIndexDAG{}
+
+	for _, db := range matchedDatabases {
+		dbSchema, err := s.GetDBSchema(ctx, db.UID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get db schema %q", db.UID)
+		}
+		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &db.InstanceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance %q", db.InstanceID)
+		}
+		if instance == nil {
+			return nil, errors.Errorf("instance %q not found", db.InstanceID)
+		}
+
+		schemaGroupsMatchedTables := map[string][]string{}
+		for _, schemaGroup := range schemaGroups {
+			matches, _, err := utils.GetMatchedAndUnmatchedTablesInSchemaGroup(ctx, dbSchema, schemaGroup)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get matched and unmatched tables in schema group %q", schemaGroup.ResourceID)
+			}
+			schemaGroupsMatchedTables[schemaGroup.ResourceID] = matches
+		}
+
+		parserEngineType, err := utils.ConvertDatabaseToParserEngineType(instance.Engine)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert database engine %q to parser engine type", instance.Engine)
+		}
+
+		statements, schemaGroupNames, err := utils.GetStatementsAndSchemaGroupsFromSchemaGroups(sheetStatement, parserEngineType, c.Target, schemaGroups, schemaGroupsMatchedTables)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get statements from schema groups")
+		}
+
+		taskCreates, err := getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db, instance, spec, c, statements, schemaGroupNames)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get task creates from change database config database group statements")
+		}
+		var taskIndexDAGs []store.TaskIndexDAG
+		for i := 1; i < len(taskCreates); i++ {
+			taskIndexDAGs = append(taskIndexDAGs, store.TaskIndexDAG{
+				FromIndex: i - 1,
+				ToIndex:   i,
+			})
+		}
+
+		if len(taskCreates) == 0 {
+			continue
+		}
+
+		taskCreatesMatrixByEnv[db.EffectiveEnvironmentID] = append(taskCreatesMatrixByEnv[db.EffectiveEnvironmentID], taskCreates)
+		taskIndexDAGsMatrixByEnv[db.EffectiveEnvironmentID] = append(taskIndexDAGsMatrixByEnv[db.EffectiveEnvironmentID], taskIndexDAGs)
+	}
+
+	pipelineCreate := &store.PipelineMessage{
+		Name: "Rollout Pipeline",
+	}
+
+	for _, env := range environments {
+		taskCreatesMatrix := taskCreatesMatrixByEnv[env.ResourceID]
+		taskIndexDAGsMatrix := taskIndexDAGsMatrixByEnv[env.ResourceID]
+		if len(taskCreatesMatrix) == 0 {
+			continue
+		}
+		creates, dags, err := utils.MergeTaskCreateLists(taskCreatesMatrix, taskIndexDAGsMatrix)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to merge task create lists")
+		}
+
+		stageCreate := &store.StageMessage{
+			EnvironmentID:    env.UID,
+			Name:             fmt.Sprintf("%s Stage", env.Title),
+			TaskList:         creates,
+			TaskIndexDAGList: dags,
+		}
+		pipelineCreate.Stages = append(pipelineCreate.Stages, stageCreate)
+	}
+
+	j, _ := json.Marshal(pipelineCreate)
+	slog.Debug("gjiowejgoiej", "j", string(j))
+
+	if len(pipelineCreate.Stages) == 0 {
+		return nil, errors.Errorf("get no tasks from the database group target")
+	}
+
+	return pipelineCreate, nil
+}
+
 func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage) ([]*storepb.PlanConfig_Step, error) {
 	projectID, _, err := common.GetProjectIDDeploymentConfigID(c.Target)
 	if err != nil {
@@ -262,7 +404,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		return getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx, s, spec, c, project, registerEnvironmentID)
 	}
 	if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
-		return getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx, s, spec, c, project, registerEnvironmentID)
+		return nil, nil, errors.Errorf("unexpected database group target %q", c.Target)
 	}
 	if _, _, err := common.GetProjectIDDeploymentConfigID(c.Target); err == nil {
 		return nil, nil, errors.Errorf("unexpected deployment config target %q", c.Target)
@@ -531,125 +673,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 	default:
 		return nil, nil, errors.Errorf("unsupported change database config type %q", c.Type)
 	}
-}
-
-func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
-	switch c.Type {
-	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
-	default:
-		return nil, nil, errors.Errorf("unsupported change database config type %q for database group target", c.Type)
-	}
-
-	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(c.Target)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get project id and database group id from target %q", c.Target)
-	}
-	if projectID != project.ResourceID {
-		return nil, nil, errors.Errorf("project id %q in target %q does not match project id %q in plan config", projectID, c.Target, project.ResourceID)
-	}
-	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
-	}
-	if databaseGroup == nil {
-		return nil, nil, errors.Errorf("database group %q not found", databaseGroupID)
-	}
-	schemaGroups, err := s.ListSchemaGroups(ctx, &store.FindSchemaGroupMessage{DatabaseGroupUID: &databaseGroup.UID})
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to list schema groups for database group %q", databaseGroupID)
-	}
-	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
-	}
-
-	matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroupID)
-	}
-	if len(matchedDatabases) == 0 {
-		return nil, nil, errors.Errorf("no matched databases found in database group %q", databaseGroupID)
-	}
-
-	var environmentID string
-	for _, db := range matchedDatabases {
-		if environmentID == "" {
-			environmentID = db.EffectiveEnvironmentID
-		}
-		if environmentID != db.EffectiveEnvironmentID {
-			return nil, nil, errors.Errorf("matched databases are in different environments")
-		}
-	}
-	if err := registerEnvironmentID(environmentID); err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to register environment id %q", environmentID)
-	}
-
-	_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
-	}
-	sheetStatement, err := s.GetSheetStatementByID(ctx, sheetUID)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get sheet statement %q", sheetUID)
-	}
-
-	var taskCreatesMatrix [][]*store.TaskMessage
-	var taskIndexDAGsMatrix [][]store.TaskIndexDAG
-	for _, db := range matchedDatabases {
-		dbSchema, err := s.GetDBSchema(ctx, db.UID)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get db schema %q", db.UID)
-		}
-		instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &db.InstanceID})
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get instance %q", db.InstanceID)
-		}
-		if instance == nil {
-			return nil, nil, errors.Errorf("instance %q not found", db.InstanceID)
-		}
-
-		schemaGroupsMatchedTables := map[string][]string{}
-		for _, schemaGroup := range schemaGroups {
-			matches, _, err := utils.GetMatchedAndUnmatchedTablesInSchemaGroup(ctx, dbSchema, schemaGroup)
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get matched and unmatched tables in schema group %q", schemaGroup.ResourceID)
-			}
-			schemaGroupsMatchedTables[schemaGroup.ResourceID] = matches
-		}
-
-		parserEngineType, err := utils.ConvertDatabaseToParserEngineType(instance.Engine)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to convert database engine %q to parser engine type", instance.Engine)
-		}
-
-		statements, schemaGroupNames, err := utils.GetStatementsAndSchemaGroupsFromSchemaGroups(sheetStatement, parserEngineType, c.Target, schemaGroups, schemaGroupsMatchedTables)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get statements from schema groups")
-		}
-
-		taskCreates, err := getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db, instance, spec, c, statements, schemaGroupNames)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get task creates from change database config database group statements")
-		}
-		var taskIndexDAGs []store.TaskIndexDAG
-		for i := 1; i < len(taskCreates); i++ {
-			taskIndexDAGs = append(taskIndexDAGs, store.TaskIndexDAG{
-				FromIndex: i - 1,
-				ToIndex:   i,
-			})
-		}
-
-		taskCreatesMatrix = append(taskCreatesMatrix, taskCreates)
-		taskIndexDAGsMatrix = append(taskIndexDAGsMatrix, taskIndexDAGs)
-	}
-
-	creates, dags, err := utils.MergeTaskCreateLists(taskCreatesMatrix, taskIndexDAGsMatrix)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to merge task create lists")
-	}
-
-	return creates, dags, nil
 }
 
 func getTaskCreatesFromChangeDatabaseConfigDatabaseGroupStatements(db *store.DatabaseMessage, instance *store.InstanceMessage, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, statements []string, schemaGroupNames []string) ([]*store.TaskMessage, error) {
