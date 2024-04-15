@@ -57,6 +57,7 @@ import { pushNotification } from "@/store";
 import { BBSpin } from "@/bbkit";
 import { onMounted } from "vue";
 import { NInput } from "naive-ui";
+import { readFileAsArrayBuffer } from "@/utils";
 
 type LocalState = {
   value: string | undefined;
@@ -101,7 +102,7 @@ watch(
   (value) => emit("update:value", value)
 );
 
-const onDrop = (files: File[] | FileList | null) => {
+const onDrop = async (files: File[] | FileList | null) => {
   // called when files are dropped on zone
   const file = head(files);
   if (file) {
@@ -114,23 +115,23 @@ const onDrop = (files: File[] | FileList | null) => {
       });
       return;
     }
-    const fr = new FileReader();
-    fr.addEventListener("load", (e) => {
-      emit("update:value", fr.result as string);
-      state.reading = false;
-    });
-    fr.addEventListener("error", () => {
+
+    state.reading = true;
+    try {
+      const { arrayBuffer } = await readFileAsArrayBuffer(file);
+      // TODO(steven): let user choose encoding.
+      const decoder = new TextDecoder("utf-8");
+      const statement = decoder.decode(arrayBuffer);
+      emit("update:value", statement);
+    } catch (error) {
       pushNotification({
         module: "bytebase",
         style: "WARN",
         title: `Read file error`,
-        description: String(fr.error),
+        description: String(error),
       });
-      state.reading = false;
-      return;
-    });
+    }
     state.reading = true;
-    fr.readAsText(file);
   }
 };
 
