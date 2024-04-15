@@ -230,6 +230,13 @@ export const instanceV1SupportsConciseSchema = (
   return [Engine.ORACLE].includes(engine);
 };
 
+export const instanceV1SupportsTablePartition = (
+  instanceOrEngine: Instance | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return [Engine.MYSQL, Engine.TIDB].includes(engine);
+};
+
 export const engineOfInstanceV1 = (instanceOrEngine: Instance | Engine) => {
   if (typeof instanceOrEngine === "number") {
     return instanceOrEngine;

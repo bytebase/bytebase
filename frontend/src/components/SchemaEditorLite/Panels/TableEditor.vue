@@ -4,12 +4,26 @@
   >
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex justify-start items-center gap-x-2">
-        <template v-if="state.mode === 'INDEXES'">
+        <template
+          v-if="state.mode === 'INDEXES' || state.mode === 'PARTITIONS'"
+        >
           <NButton size="small" @click="state.mode = 'COLUMNS'">
             <ArrowLeftIcon class="w-4 h-4" />
           </NButton>
           <template v-if="!readonly">
-            <NButton size="small" @click="handleAddIndex">
+            <NButton
+              v-if="state.mode === 'INDEXES'"
+              size="small"
+              @click="handleAddIndex"
+            >
+              <PlusIcon class="w-4 h-4 mr-1" />
+              {{ $t("common.add") }}
+            </NButton>
+            <NButton
+              v-if="state.mode === 'PARTITIONS'"
+              size="small"
+              @click="handleAddPartition"
+            >
               <PlusIcon class="w-4 h-4 mr-1" />
               {{ $t("common.add") }}
             </NButton>
@@ -45,6 +59,19 @@
               readonly
                 ? $t("schema-editor.index.indexes")
                 : $t("schema-editor.index.edit-indexes")
+            }}
+          </NButton>
+          <NButton
+            v-if="hasTablePartitionsFeature"
+            size="small"
+            :disabled="disableChangeTable"
+            @click="state.mode = 'PARTITIONS'"
+          >
+            <TablePartitionIcon class="w-3 h-3 mr-1" />
+            {{
+              readonly
+                ? $t("schema-editor.table-partition.partitions")
+                : $t("schema-editor.table-partition.edit-partitions")
             }}
           </NButton>
         </template>
@@ -98,6 +125,15 @@
       />
       <IndexesEditor
         :show="state.mode === 'INDEXES'"
+        :readonly="readonly"
+        :db="db"
+        :database="database"
+        :schema="schema"
+        :table="table"
+        @update="markTableStatus('updated')"
+      />
+      <PartitionsEditor
+        :show="state.mode === 'PARTITIONS'"
         :readonly="readonly"
         :db="db"
         :database="database"
@@ -159,11 +195,13 @@ import type {
 import {
   ColumnMetadata,
   IndexMetadata,
+  TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
   arraySwap,
   instanceV1AllowsReorderColumns,
+  instanceV1SupportsTablePartition,
   randomString,
 } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
@@ -177,9 +215,10 @@ import {
 import type { EditStatus } from "../types";
 import ColumnSelectionSummary from "./ColumnSelectionSummary.vue";
 import IndexesEditor from "./IndexesEditor";
+import PartitionsEditor from "./PartitionsEditor";
 import TableColumnEditor from "./TableColumnEditor";
 
-type EditMode = "COLUMNS" | "INDEXES";
+type EditMode = "COLUMNS" | "INDEXES" | "PARTITIONS";
 
 const props = withDefaults(
   defineProps<{
@@ -293,6 +332,10 @@ const allowReorderColumns = computed(() => {
   return instanceV1AllowsReorderColumns(engine.value) && status === "created";
 });
 
+const hasTablePartitionsFeature = computed(() => {
+  return instanceV1SupportsTablePartition(engine.value);
+});
+
 const disableAlterColumn = (column: ColumnMetadata): boolean => {
   return (
     isDroppedSchema.value || isDroppedTable.value || isDroppedColumn(column)
@@ -372,6 +415,22 @@ const handleAddIndex = () => {
     IndexMetadata.fromPartial({
       name: `${props.table.name}_index_${randomString(8).toLowerCase()}`,
     })
+  );
+  markTableStatus("updated");
+};
+const handleAddPartition = () => {
+  const partition = TablePartitionMetadata.fromPartial({});
+  // eslint-disable-next-line vue/no-mutating-props
+  props.table.partitions.push(partition);
+  markEditStatus(
+    props.db,
+    {
+      database: props.database,
+      schema: props.schema,
+      table: props.table,
+      partition,
+    },
+    "created"
   );
   markTableStatus("updated");
 };

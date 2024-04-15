@@ -5,6 +5,7 @@ import {
   IndexMetadata,
   SchemaMetadata,
   TableMetadata,
+  TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
 
 // filterDatabaseMetadata filter out the objects/attributes we do not support.
@@ -61,6 +62,21 @@ export const filterForeignKeyMetadata = (fk: ForeignKeyMetadata) => {
   });
 };
 
+export const filterTablePartitionMetadata = (
+  partition: TablePartitionMetadata
+): TablePartitionMetadata => {
+  return TablePartitionMetadata.fromPartial({
+    name: partition.name,
+    type: partition.type,
+    useDefault: partition.useDefault,
+    value: partition.value,
+    expression: partition.expression,
+    subpartitions: partition.subpartitions
+      ? partition.subpartitions.map((sub) => filterTablePartitionMetadata(sub))
+      : undefined,
+  });
+};
+
 export const filterTableMetadata = (table: TableMetadata) => {
   return TableMetadata.fromPartial({
     name: table.name,
@@ -72,6 +88,9 @@ export const filterTableMetadata = (table: TableMetadata) => {
     columns: table.columns.map((column) => filterColumnMetadata(column)),
     indexes: table.indexes.map((index) => filterIndexMetadata(index)),
     foreignKeys: table.foreignKeys.map((fk) => filterForeignKeyMetadata(fk)),
+    partitions: table.partitions.map((partition) =>
+      filterTablePartitionMetadata(partition)
+    ),
   });
 };
 
@@ -98,6 +117,8 @@ export const ComparableForeignKeyFields: (keyof ForeignKeyMetadata)[] = [
   "referencedTable",
   "referencedColumns",
 ];
+export const ComparableTablePartitionFields: (keyof TablePartitionMetadata)[] =
+  ["name", "type", "expression", "value"];
 export const ComparableColumnFields: (keyof ColumnMetadata)[] = [
   "name",
   "comment",

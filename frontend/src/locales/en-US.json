@@ -2336,7 +2336,15 @@
       "edit-indexes": "Edit indexes",
       "unique": "Unique"
     },
-    "generated-ddl-is-empty": "Generated DDL is empty"
+    "generated-ddl-is-empty": "Generated DDL is empty",
+    "table-partition": {
+      "partitions": "Partitions",
+      "edit-partitions": "Edit partitions",
+      "expression": "Expression",
+      "value": "Value",
+      "add-sub-partition": "Add sub partition",
+      "type": "Type"
+    }
   },
   "label": {
     "empty-label-value": "Empty",
@@ -3404,6 +3412,10 @@
     "schema-text": "Schema Text",
     "baseline": "Baseline",
     "head": "Head",
-    "show-diff-with-branch-baseline": "Show diff with branch baseline"
+    "show-diff-with-branch-baseline": "Show diff with branch baseline",
+    "table-partition": {
+      "drop-partition-confirm": "Drop table partition?",
+      "drop-partition-with-subpartitions-confirm": "Will also drop all its subpartitions."
+    }
   }
 }

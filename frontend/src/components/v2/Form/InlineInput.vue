@@ -2,6 +2,7 @@
   <NInput
     :value="value"
     :style="style"
+    v-bind="$attrs"
     @focus="focused = true"
     @blur="focused = false"
     @update:value="$emit('update:value', $event)"
@@ -12,6 +13,10 @@
 import { NInput } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, ref } from "vue";
+
+defineOptions({
+  inheritAttrs: false,
+});
 
 defineProps<{
   value: string | undefined | null;
