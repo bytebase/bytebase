@@ -1,7 +1,7 @@
 import Long from "long";
 
-// MAX_UPLOAD_FILE_SIZE_MB is the maximum size of the file that can be uploaded in MB.
-export const MAX_UPLOAD_FILE_SIZE_MB = 1;
+// Default maximum size of a statement in bytes (100MB).
+export const MAX_UPLOAD_FILE_SIZE_MB = 100;
 
 export const getStatementSize = (statement: string): Long => {
   return Long.fromNumber(new TextEncoder().encode(statement).length);
