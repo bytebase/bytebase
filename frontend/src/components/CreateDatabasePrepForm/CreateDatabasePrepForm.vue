@@ -107,7 +107,7 @@
       <InstanceRoleSelect
         class="mt-1"
         name="instance-user"
-        :instance-id="state.instance"
+        :instance="state.instance"
         :role="state.instanceRole"
         :filter="filterInstanceRole"
         @update:instance-role="selectInstanceRole"
