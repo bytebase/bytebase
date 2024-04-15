@@ -1,0 +1,32 @@
+- input: |-
+    DELETE FROM test WHERE c1 = 1;
+    UPDATE test SET test.c1 = 2 WHERE test.c1 = 1;
+  result:
+    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test WHERE c1 = 1;
+      tablename: rollback_0_test
+    - statement: |-
+        SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_1_test" FROM test WHERE test.c1 = 1
+        ;
+      tablename: rollback_1_test
+- input: DELETE FROM test WHERE c1 = 1;
+  result:
+    - statement: |-
+        SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test WHERE c1 = 1
+        ;
+      tablename: rollback_0_test
+- input: UPDATE test SET c1 = 1 WHERE c1=2;
+  result:
+    - statement: |-
+        SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test WHERE c1=2
+        ;
+      tablename: rollback_0_test
+- input: |-
+    UPDATE test SET test.c1 = 2 WHERE test.c1 = 1 ;
+    UPDATE test SET test.c1 = 3 WHERE test.c1 = 5 ;
+  result:
+    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test WHERE test.c1 = 1 ;
+      tablename: rollback_0_test
+    - statement: |-
+        SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_1_test" FROM test WHERE test.c1 = 5
+        ;
+      tablename: rollback_1_test
