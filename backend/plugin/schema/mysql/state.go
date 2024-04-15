@@ -16,6 +16,8 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -781,10 +783,10 @@ func (p *partitionState) convertToPartitionMetadata() []*storepb.TablePartitionM
 	}
 	var partitions []*storepb.TablePartitionMetadata
 	if p.info.useDefault != 0 {
-		generator := newPartitionDefaultNameGenerator("")
+		generator := mysqlparser.NewPartitionDefaultNameGenerator("")
 		for i := 0; i < p.info.useDefault; i++ {
 			partitions = append(partitions, &storepb.TablePartitionMetadata{
-				Name:       generator.next(),
+				Name:       generator.Next(),
 				Type:       p.info.tp,
 				Expression: p.info.expr,
 				Value:      "",
@@ -812,10 +814,10 @@ func (p *partitionState) convertToPartitionMetadata() []*storepb.TablePartitionM
 			if p.subInfo != nil {
 				if p.subInfo.useDefault != 0 {
 					subUseDefault := strconv.Itoa(p.subInfo.useDefault)
-					generator := newPartitionDefaultNameGenerator(partition.name)
+					generator := mysqlparser.NewPartitionDefaultNameGenerator(partition.name)
 					for i := 0; i < p.subInfo.useDefault; i++ {
 						partitionMetadata.Subpartitions = append(partitionMetadata.Subpartitions, &storepb.TablePartitionMetadata{
-							Name:       generator.next(),
+							Name:       generator.Next(),
 							Type:       p.subInfo.tp,
 							Expression: p.subInfo.expr,
 							UseDefault: subUseDefault,
@@ -845,31 +847,6 @@ func (p *partitionState) convertToPartitionMetadata() []*storepb.TablePartitionM
 	}
 
 	return partitions
-}
-
-// partitionDefaultNameGenerator is the name generator of MySQL partition, which use the default clause.
-// The behavior of this generator should be compatible with MySQL.
-// - If do not specify the `parentName`, the default partition name series is "p0", "p1", "p2", ...
-// - Otherwise, the default partition name series is "parentNamesp0", "parentNamesp1", "parentNamesp2", ...
-type partitionDefaultNameGenerator struct {
-	parentName string
-	count      int
-}
-
-func newPartitionDefaultNameGenerator(parentName string) *partitionDefaultNameGenerator {
-	return &partitionDefaultNameGenerator{
-		parentName: parentName,
-		count:      -1,
-	}
-}
-
-func (g *partitionDefaultNameGenerator) next() string {
-	g.count++
-
-	if g.parentName == "" {
-		return fmt.Sprintf("p%d", g.count)
-	}
-	return fmt.Sprintf("%ssp%d", g.parentName, g.count)
 }
 
 // toString() writes the partition state as SHOW CREATE TABLE syntax to buf, referencing MySQL source code:
