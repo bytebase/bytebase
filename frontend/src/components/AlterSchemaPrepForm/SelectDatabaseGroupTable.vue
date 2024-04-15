@@ -64,10 +64,6 @@ const COLUMN_LIST = computed(() => {
       title: t("common.project"),
       width: "1fr",
     },
-    {
-      title: t("common.environment"),
-      width: "1fr",
-    },
   ];
 
   if (props.showSelection) {
