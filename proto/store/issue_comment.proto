@@ -76,6 +76,7 @@ message IssueCommentPayload {
   message TaskPriorBackup {
     string task = 1;
     repeated Table tables = 2;
+    optional int32 original_line = 3;
 
     message Table {
       string schema = 1;

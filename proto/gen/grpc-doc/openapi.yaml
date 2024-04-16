@@ -9998,6 +9998,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/TaskPriorBackup_Table'
+                originalLine:
+                    type: integer
+                    format: int32
         IssueComment_TaskUpdate:
             type: object
             properties:

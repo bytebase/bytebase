@@ -212,6 +212,7 @@ export function issueCommentPayload_TaskUpdate_StatusToJSON(object: IssueComment
 export interface IssueCommentPayload_TaskPriorBackup {
   task: string;
   tables: IssueCommentPayload_TaskPriorBackup_Table[];
+  originalLine?: number | undefined;
 }
 
 export interface IssueCommentPayload_TaskPriorBackup_Table {
@@ -809,7 +810,7 @@ export const IssueCommentPayload_TaskUpdate = {
 };
 
 function createBaseIssueCommentPayload_TaskPriorBackup(): IssueCommentPayload_TaskPriorBackup {
-  return { task: "", tables: [] };
+  return { task: "", tables: [], originalLine: undefined };
 }
 
 export const IssueCommentPayload_TaskPriorBackup = {
@@ -819,6 +820,9 @@ export const IssueCommentPayload_TaskPriorBackup = {
     }
     for (const v of message.tables) {
       IssueCommentPayload_TaskPriorBackup_Table.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.originalLine !== undefined) {
+      writer.uint32(24).int32(message.originalLine);
     }
     return writer;
   },
@@ -844,6 +848,13 @@ export const IssueCommentPayload_TaskPriorBackup = {
 
           message.tables.push(IssueCommentPayload_TaskPriorBackup_Table.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.originalLine = reader.int32();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -859,6 +870,7 @@ export const IssueCommentPayload_TaskPriorBackup = {
       tables: globalThis.Array.isArray(object?.tables)
         ? object.tables.map((e: any) => IssueCommentPayload_TaskPriorBackup_Table.fromJSON(e))
         : [],
+      originalLine: isSet(object.originalLine) ? globalThis.Number(object.originalLine) : undefined,
     };
   },
 
@@ -870,6 +882,9 @@ export const IssueCommentPayload_TaskPriorBackup = {
     if (message.tables?.length) {
       obj.tables = message.tables.map((e) => IssueCommentPayload_TaskPriorBackup_Table.toJSON(e));
     }
+    if (message.originalLine !== undefined) {
+      obj.originalLine = Math.round(message.originalLine);
+    }
     return obj;
   },
 
@@ -880,6 +895,7 @@ export const IssueCommentPayload_TaskPriorBackup = {
     const message = createBaseIssueCommentPayload_TaskPriorBackup();
     message.task = object.task ?? "";
     message.tables = object.tables?.map((e) => IssueCommentPayload_TaskPriorBackup_Table.fromPartial(e)) || [];
+    message.originalLine = object.originalLine ?? undefined;
     return message;
   },
 };

@@ -913,7 +913,8 @@
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "đã thay đổi {name}. {link}",
-      "prior-back-table": "Sao lưu dữ liệu vào cơ sở dữ liệu {database} và bảng {tables}"
+      "prior-back-table": "Sao lưu dữ liệu vào cơ sở dữ liệu {database} và bảng {tables}",
+      "prior-back-table-for-line": "Sao lưu dữ liệu vào cơ sở dữ liệu {database} và bảng {tables} cho DML tại dòng {line}"
     },
     "subject-prefix": {
       "task": "Nhiệm vụ",

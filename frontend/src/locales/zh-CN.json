@@ -913,7 +913,8 @@
       "verb-type-target-by-people": "{verb}{type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "修改了 {name}。{link}",
-      "prior-back-table": "已备份到数据库 {database} 中表 {tables}"
+      "prior-back-table": "已备份到数据库 {database} 中表 {tables}",
+      "prior-back-table-for-line": "数据备份到数据库 {database} 和表 {tables}，用于第 {line} 行的DML"
     },
     "subject-prefix": {
       "task": "任务",
