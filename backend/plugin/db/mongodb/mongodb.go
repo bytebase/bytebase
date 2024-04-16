@@ -295,7 +295,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		ColumnTypeNames: []string{"TEXT"},
 		Rows: []*v1pb.QueryRow{{
 			Values: []*v1pb.RowValue{{
-				Kind: &v1pb.RowValue_StringValue{StringValue: outContent.String()},
+				Kind: &v1pb.RowValue_StringValue{StringValue: string(content)},
 			}},
 		}},
 		Latency:   durationpb.New(time.Since(startTime)),
@@ -442,5 +442,8 @@ func (driver *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement s
 
 func isMongoStatement(statement string) bool {
 	statement = strings.ToLower(statement)
-	return strings.HasPrefix(statement, "db.")
+	if strings.HasPrefix(statement, "db.") {
+		return true
+	}
+	return strings.HasPrefix(statement, `db["`)
 }
