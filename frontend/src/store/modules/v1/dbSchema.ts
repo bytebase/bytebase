@@ -98,7 +98,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     dropIfNotExist: boolean = false
   ) => {
     const [existed, existedView] = getCache(metadata.name);
-    if (!existed || view === VIEW_FULL) {
+    if (!existed) {
       return setCache(metadata, view);
     }
     if (!existedView) {
@@ -201,7 +201,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     });
     // updateDatabaseMetadata actually returns basic view
     // so we cannot setCache(updated) here
-    mergeCache(metadata, VIEW_BASIC, true);
+    mergeCache(metadata, VIEW_FULL, true);
   };
   /**
    *
@@ -252,14 +252,15 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     const metadataResourceName = ensureDatabaseMetadataResourceName(database);
 
+    const cacheView = view ?? VIEW_BASIC;
     if (!skipCache) {
-      const [existed] = getCache(database, view);
+      const [existed] = getCache(database, cacheView);
       if (existed) {
         // The metadata entity is stored in local dictionary.
         return existed;
       }
 
-      const [cachedRequest] = getRequestCache(metadataResourceName, view);
+      const [cachedRequest] = getRequestCache(metadataResourceName, cacheView);
       if (cachedRequest) {
         // The request was sent but still not returned.
         // We won't create a duplicated request.
@@ -271,22 +272,22 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     console.debug("[getOrFetchDatabaseMetadata]", {
       name: metadataResourceName,
       filter,
-      view: view ?? VIEW_BASIC,
+      view: cacheView,
     });
     const promise = databaseServiceClient.getDatabaseMetadata(
       {
         name: metadataResourceName,
         filter,
-        view: view ?? VIEW_BASIC,
+        view: cacheView,
       },
       {
         silent,
       }
     );
-    setRequestCache(metadataResourceName, view ?? VIEW_BASIC, promise);
+    setRequestCache(metadataResourceName, cacheView, promise);
     promise.then((res) => {
       // drop not exist data if we don't have the filter in the request.
-      mergeCache(res, view, !filter);
+      mergeCache(res, cacheView, !filter);
     });
 
     return promise;
@@ -317,8 +318,13 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     }
     return getTableList(database, schema);
   };
-  const getTableByName = (database: string, table: string, schema?: string) => {
-    const [databaseMetadata] = getCache(database);
+  const getTableByName = (
+    database: string,
+    table: string,
+    schema?: string,
+    view?: DatabaseMetadataView
+  ) => {
+    const [databaseMetadata] = getCache(database, view);
     if (!databaseMetadata) {
       return undefined;
     }
@@ -342,7 +348,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(database);
 
     if (!skipCache) {
-      const existedTable = getTableByName(database, table);
+      const existedTable = getTableByName(database, table, schema, VIEW_FULL);
       if (existedTable && existedTable.columns.length > 0) {
         return existedTable;
       }
@@ -360,20 +366,20 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     console.debug("[getOrFetchDatabaseMetadata]", {
       name: metadataResourceName,
       filter: `schemas/${schema || "-"}/tables/${table}`,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+      view: VIEW_FULL,
     });
     const promise = databaseServiceClient
       .getDatabaseMetadata(
         {
           name: metadataResourceName,
           filter: `schemas/${schema || "-"}/tables/${table}`,
-          view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+          view: VIEW_FULL,
         },
         {
           silent,
         }
       )
-      .then((res) => mergeCache(res))
+      .then((res) => mergeCache(res, VIEW_FULL))
       .then((res) => {
         return res.schemas
           .find((s) => s.name === schema)

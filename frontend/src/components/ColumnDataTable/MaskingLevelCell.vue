@@ -1,18 +1,20 @@
 <template>
   <div class="flex items-center">
     <span class="mr-2">
-      <template v-if="isColumnConfigMasking">
-        {{ maskingLevelText }}
-      </template>
-      <template v-else
-        >({{
+      {{ maskingLevelText }}
+      <span
+        v-if="
+          columnMasking.maskingLevel === MaskingLevel.MASKING_LEVEL_UNSPECIFIED
+        "
+      >
+        ({{
           $t(
             `settings.sensitive-data.masking-level.${maskingLevelToJSON(
               column.effectiveMaskingLevel
             ).toLowerCase()}`
           )
-        }})</template
-      >
+        }})
+      </span>
     </span>
     <NTooltip v-if="!isColumnConfigMasking">
       <template #trigger>
