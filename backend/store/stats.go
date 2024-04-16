@@ -51,6 +51,12 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 	if v := find.EnvironmentID; v != nil {
 		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
+	query := `
+		SELECT
+			count(1)
+		FROM instance
+		LEFT JOIN environment ON environment.resource_id = instance.environment
+		WHERE ` + strings.Join(where, " AND ")
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -58,17 +64,8 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 	}
 	defer tx.Rollback()
 
-	query := `
-		SELECT
-			count(1)
-		FROM instance
-		WHERE ` + strings.Join(where, " AND ")
 	var count int
-	if err := tx.QueryRowContext(ctx, query,
-		args...).Scan(&count); err != nil {
-		if err == sql.ErrNoRows {
-			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
 		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
