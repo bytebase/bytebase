@@ -218,20 +218,33 @@ const renderActionSentence = () => {
       });
     }
   } else if (issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP) {
-    const { task, tables } = IssueComment_TaskPriorBackup.fromPartial(
-      issueComment.taskPriorBackup || {}
-    );
+    const { task, tables, originalLine } =
+      IssueComment_TaskPriorBackup.fromPartial(
+        issueComment.taskPriorBackup || {}
+      );
     const taskEntity = findTaskByUID(issue.rolloutEntity, extractTaskUID(task));
-    const params: VerbTypeTarget = {
-      issueComment,
-      verb: t("activity.sentence.prior-back-table", {
+    let verb = t("activity.sentence.prior-back-table", {
+      database: "bbdataarchive",
+      tables: tables
+        .map((table) =>
+          table.schema ? `${table.schema}.${table.table}` : table.table
+        )
+        .join(", "),
+    });
+    if (originalLine) {
+      verb = t("activity.sentence.prior-back-table-for-line", {
         database: "bbdataarchive",
         tables: tables
           .map((table) =>
             table.schema ? `${table.schema}.${table.table}` : table.table
           )
           .join(", "),
-      }),
+        line: originalLine,
+      });
+    }
+    const params: VerbTypeTarget = {
+      issueComment,
+      verb: verb,
       type: t("common.task"),
       target: "",
     };
