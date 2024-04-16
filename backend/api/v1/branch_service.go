@@ -980,13 +980,6 @@ func filterDatabaseMetadataByEngine(metadata *storepb.DatabaseSchemaMetadata, en
 				}
 				filteredSchema.Procedures = append(filteredSchema.Procedures, filteredProcedure)
 			}
-			for _, view := range schema.Views {
-				filteredView := &storepb.ViewMetadata{
-					Name:       view.Name,
-					Definition: view.Definition,
-				}
-				filteredSchema.Views = append(filteredSchema.Views, filteredView)
-			}
 		}
 		filteredDatabase.Schemas = append(filteredDatabase.Schemas, filteredSchema)
 	}
@@ -1014,17 +1007,6 @@ func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, target
 
 			if !equalTable(table, tt.GetProto()) {
 				trimSchema.Tables = append(trimSchema.Tables, table)
-				continue
-			}
-		}
-		for _, view := range schema.GetViews() {
-			tv := ts.GetView(view.GetName())
-			if tv == nil {
-				trimSchema.Views = append(trimSchema.Views, view)
-				continue
-			}
-			if view.GetDefinition() != tv.Definition {
-				trimSchema.Views = append(trimSchema.Views, view)
 				continue
 			}
 		}
