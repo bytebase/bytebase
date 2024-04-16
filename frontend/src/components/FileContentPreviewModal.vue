@@ -41,6 +41,7 @@
 import { NSelect, NButton, NSpin } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
+import { pushNotification } from "@/store";
 import { readFileAsArrayBuffer } from "@/utils";
 
 // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Encoding_API/Encodings
@@ -128,7 +129,12 @@ watch(
       const text = new TextDecoder(state.encoding).decode(arrayBuffer);
       decodedText.value = text;
     } catch (error) {
-      console.error("Failed to read file", error);
+      console.error(error);
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Failed to read file",
+      });
     }
     isLoading.value = false;
   },
