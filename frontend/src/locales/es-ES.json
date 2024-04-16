@@ -2245,7 +2245,8 @@
     "click-to-sync-now": "Haga clic para sincronizar ahora",
     "sync-in-progress": "Sincronización en progreso",
     "create-a-worksheet": "Crear una hoja de trabajo",
-    "select-a-database-to-start": "Seleccione una base de datos para comenzar"
+    "select-a-database-to-start": "Seleccione una base de datos para comenzar",
+    "select-encoding": "Seleccionar codificación"
   },
   "schema-editor": {
     "self": "Editor de esquema",

@@ -2245,7 +2245,8 @@
     "click-to-sync-now": "Bấm để đồng bộ ngay",
     "sync-in-progress": "Đang đồng bộ hóa",
     "create-a-worksheet": "Tạo một bảng tính",
-    "select-a-database-to-start": "Chọn cơ sở dữ liệu để bắt đầu"
+    "select-a-database-to-start": "Chọn cơ sở dữ liệu để bắt đầu",
+    "select-encoding": "Chọn mã hóa"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",

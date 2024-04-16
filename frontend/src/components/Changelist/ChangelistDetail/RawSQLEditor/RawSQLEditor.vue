@@ -1,9 +1,12 @@
 <template>
   <div class="flex flex-col gap-y-2">
     <div v-if="!readonly" class="flex justify-end">
-      <UploadProgressButton :upload="handleUploadFile">
+      <SQLUploadButton
+        :loading="state.isUploadingFile"
+        @update:sql="handleUpdateStatement"
+      >
         {{ $t("issue.upload-sql") }}
-      </UploadProgressButton>
+      </SQLUploadButton>
     </div>
 
     <div
@@ -24,13 +27,17 @@
 
 <script setup lang="ts">
 import { useElementSize } from "@vueuse/core";
-import { ref, watch } from "vue";
+import { reactive, ref, watch } from "vue";
 import {
   type IStandaloneCodeEditor,
   type MonacoModule,
   MonacoEditor,
 } from "@/components/MonacoEditor";
-import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
+import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
+
+interface LocalState {
+  isUploadingFile: boolean;
+}
 
 defineProps<{
   statement: string;
@@ -43,11 +50,19 @@ const emit = defineEmits<{
   (event: "upload", e: Event): void;
 }>();
 
+const state = reactive<LocalState>({
+  isUploadingFile: false,
+});
 const editorWrapperRef = ref<HTMLDivElement>();
 const { height: editorWrapperHeight } = useElementSize(editorWrapperRef);
 
-const handleUploadFile = async (event: Event) => {
-  emit("upload", event);
+const handleUpdateStatement = async (statement: string) => {
+  try {
+    state.isUploadingFile = true;
+    emit("update:statement", statement);
+  } finally {
+    state.isUploadingFile = false;
+  }
 };
 
 const handleEditorReady = (

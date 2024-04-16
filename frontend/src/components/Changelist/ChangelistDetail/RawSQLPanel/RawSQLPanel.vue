@@ -26,7 +26,6 @@
             :readonly="!allowEdit"
             :is-sheet-oversize="isSheetOversize"
             class="flex-1 overflow-hidden relative"
-            @upload="handleUploadEvent"
           />
         </div>
         <div
@@ -74,8 +73,6 @@ import {
   getSheetStatement,
   setSheetStatement,
   getStatementSize,
-  MAX_UPLOAD_FILE_SIZE_MB,
-  readFileAsArrayBuffer,
 } from "@/utils";
 import RawSQLEditor from "../RawSQLEditor";
 import { useChangelistDetailContext } from "../context";
@@ -134,48 +131,6 @@ const reset = () => {
   } else {
     statement.value = getSheetStatement(sheet.value);
   }
-};
-
-const handleUploadEvent = async (e: Event) => {
-  const target = e.target as HTMLInputElement;
-  const file = (target.files || [])[0];
-  const cleanup = () => {
-    // Note that once selected a file, selecting the same file again will not
-    // trigger <input type="file">'s change event.
-    // So we need to do some cleanup stuff here.
-    target.files = null;
-    target.value = "";
-  };
-
-  if (!file) {
-    return cleanup();
-  }
-  if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("issue.upload-sql-file-max-size-exceeded", {
-        size: `${MAX_UPLOAD_FILE_SIZE_MB}MB`,
-      }),
-    });
-    return cleanup();
-  }
-
-  try {
-    const { arrayBuffer } = await readFileAsArrayBuffer(file);
-    // TODO(steven): let user choose encoding.
-    const decoder = new TextDecoder("utf-8");
-    statement.value = decoder.decode(arrayBuffer);
-  } catch (error) {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: `Read file error`,
-      description: String(error),
-    });
-  }
-
-  cleanup();
 };
 
 const doSaveChange = async () => {

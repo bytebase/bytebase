@@ -119,7 +119,6 @@ const onDrop = async (files: File[] | FileList | null) => {
     state.reading = true;
     try {
       const { arrayBuffer } = await readFileAsArrayBuffer(file);
-      // TODO(steven): let user choose encoding.
       const decoder = new TextDecoder("utf-8");
       const statement = decoder.decode(arrayBuffer);
       emit("update:value", statement);

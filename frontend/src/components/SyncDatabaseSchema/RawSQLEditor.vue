@@ -32,22 +32,12 @@
         v-if="!viewMode"
         class="flex flex-row justify-end items-center space-x-3"
       >
-        <label
-          for="sql-file-input"
-          class="text-sm border px-3 leading-8 flex items-center rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+        <SQLUploadButton
+          :loading="state.isUploadingFile"
+          @update:sql="handleSQLUpload"
         >
-          <heroicons-outline:arrow-up-tray
-            class="w-4 h-auto mr-1 text-gray-500"
-          />
           {{ $t("issue.upload-sql") }}
-          <input
-            id="sql-file-input"
-            type="file"
-            accept=".sql,.txt,application/sql,text/plain"
-            class="hidden"
-            @change="handleUploadFile"
-          />
-        </label>
+        </SQLUploadButton>
       </div>
     </div>
     <BBAttention
@@ -77,11 +67,11 @@
 import { useDebounceFn } from "@vueuse/core";
 import { NSelect } from "naive-ui";
 import { computed, onMounted, nextTick, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
+import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { ProjectSelect } from "@/components/v2";
-import { pushNotification, useSheetV1Store } from "@/store";
+import { useSheetV1Store } from "@/store";
 import {
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_ID,
@@ -93,8 +83,6 @@ import {
   extractSheetUID,
   getStatementSize,
   getSheetStatement,
-  readFileAsArrayBuffer,
-  MAX_UPLOAD_FILE_SIZE_MB,
 } from "@/utils";
 import type { RawSQLState } from "./types";
 
@@ -102,6 +90,7 @@ interface LocalState {
   projectId?: string;
   engine: Engine;
   editStatement: string;
+  isUploadingFile: boolean;
 }
 
 const props = defineProps<{
@@ -117,12 +106,12 @@ const emit = defineEmits<{
   (event: "update", rawSQLState: RawSQLState): void;
 }>();
 
-const { t } = useI18n();
 const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
   projectId: props.projectId,
   engine: props.engine || Engine.MYSQL,
   editStatement: props.statement || "",
+  isUploadingFile: false,
 });
 
 const availableEngines = computed(() => {
@@ -176,53 +165,23 @@ const handleEngineChange = () => {
   });
 };
 
-const handleUploadFile = async (e: Event) => {
-  const target = e.target as HTMLInputElement;
-  const file = (target.files || [])[0];
-  const cleanup = () => {
-    // Note that once selected a file, selecting the same file again will not
-    // trigger <input type="file">'s change event.
-    // So we need to do some cleanup stuff here.
-    target.files = null;
-    target.value = "";
-  };
-
-  if (!file) {
-    return cleanup();
-  }
-  if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("issue.upload-sql-file-max-size-exceeded", {
-        size: `${MAX_UPLOAD_FILE_SIZE_MB}MB`,
-      }),
-    });
-    return cleanup();
+const handleSQLUpload = async (statement: string, filename: string) => {
+  if (state.isUploadingFile) {
+    return;
   }
 
+  state.isUploadingFile = true;
   try {
-    const { arrayBuffer } = await readFileAsArrayBuffer(file);
-    // TODO(steven): let user choose encoding.
-    const decoder = new TextDecoder("utf-8");
-    const statement = decoder.decode(arrayBuffer);
     const sheet = await sheetStore.createSheet(DEFAULT_PROJECT_V1_NAME, {
-      title: file.name,
+      title: filename,
       content: new TextEncoder().encode(statement),
     });
     const sheetId = Number(extractSheetUID(sheet.name));
     await handleStatementChange(statement);
     update(sheetId);
-  } catch (error) {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: `Read file error`,
-      description: String(error),
-    });
+  } finally {
+    state.isUploadingFile = false;
   }
-
-  cleanup();
 };
 
 const handleStatementChange = (statement: string) => {

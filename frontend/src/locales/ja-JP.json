@@ -2245,7 +2245,8 @@
     "click-to-sync-now": "今すぐ同期するにはクリックしてください",
     "sync-in-progress": "同期中",
     "create-a-worksheet": "ワークシートを作成する",
-    "select-a-database-to-start": "開始するデータベースを選択してください"
+    "select-a-database-to-start": "開始するデータベースを選択してください",
+    "select-encoding": "エンコードを選択"
   },
   "schema-editor": {
     "self": "スキーマエディター",

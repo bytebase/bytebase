@@ -38,9 +38,13 @@
               v-model:value="formatOnSave"
               :language="language"
             />
-            <UploadProgressButton :upload="handleUploadFile" size="tiny">
+            <SQLUploadButton
+              size="tiny"
+              :loading="state.isUploadingFile"
+              @update:sql="handleUpdateStatement"
+            >
               {{ $t("issue.upload-sql") }}
-            </UploadProgressButton>
+            </SQLUploadButton>
           </template>
         </template>
 
@@ -60,14 +64,14 @@
                     {{ $t("common.edit") }}
                   </NButton>
                   <!-- for oversized sheets, only allow to upload and overwrite the sheet -->
-                  <UploadProgressButton
+                  <SQLUploadButton
                     v-else
-                    :upload="handleUploadAndOverwrite"
-                    :disabled="denyEditTaskReasons.length > 0"
                     size="tiny"
+                    :loading="state.isUploadingFile"
+                    @update:sql="handleUpdateStatementAndOverwrite"
                   >
                     {{ $t("issue.upload-sql") }}
-                  </UploadProgressButton>
+                  </SQLUploadButton>
                 </template>
                 <template #default>
                   <ErrorList :errors="denyEditTaskReasons" />
@@ -80,9 +84,13 @@
               v-model:value="formatOnSave"
               :language="language"
             />
-            <UploadProgressButton :upload="handleUploadFile" size="tiny">
+            <SQLUploadButton
+              size="tiny"
+              :loading="state.isUploadingFile"
+              @update:sql="handleUpdateStatement"
+            >
               {{ $t("issue.upload-sql") }}
-            </UploadProgressButton>
+            </SQLUploadButton>
             <NButton
               v-if="state.isEditing"
               size="tiny"
@@ -230,7 +238,7 @@ import {
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
-import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
+import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { rolloutServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import {
@@ -254,8 +262,6 @@ import {
   getStatementSize,
   isDatabaseChangeRelatedIssue,
   isDatabaseDataExportIssue,
-  MAX_UPLOAD_FILE_SIZE_MB,
-  readFileAsArrayBuffer,
 } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
@@ -582,111 +588,28 @@ const showOverwriteConfirmDialog = () => {
   });
 };
 
-const handleUploadAndOverwrite = async (e: Event) => {
-  if (state.isUploadingFile) {
+const handleUpdateStatementAndOverwrite = async (
+  statement: string,
+  filename: string
+) => {
+  try {
+    await showOverwriteConfirmDialog();
+  } catch (error) {
     return;
   }
-  try {
-    state.isUploadingFile = true;
-    await showOverwriteConfirmDialog();
 
-    const target = e.target as HTMLInputElement;
-    const file = (target.files || [])[0];
-    const cleanup = () => {
-      // Note that once selected a file, selecting the same file again will not
-      // trigger <input type="file">'s change event.
-      // So we need to do some cleanup stuff here.
-      target.files = null;
-      target.value = "";
-    };
-
-    if (!file) {
-      return cleanup();
-    }
-    if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("issue.upload-sql-file-max-size-exceeded", {
-          size: `${MAX_UPLOAD_FILE_SIZE_MB}MB`,
-        }),
-      });
-      return cleanup();
-    }
-
-    try {
-      const { filename, arrayBuffer } = await readFileAsArrayBuffer(file);
-      // TODO(steven): let user choose encoding.
-      const decoder = new TextDecoder("utf-8");
-      const statement = decoder.decode(arrayBuffer);
-      state.isEditing = true;
-      state.statement = statement;
-      handleStatementChange(statement);
-      if (sheet.value) {
-        sheet.value.title = filename;
-      }
-    } catch (error) {
-      pushNotification({
-        module: "bytebase",
-        style: "WARN",
-        title: `Read file error`,
-        description: String(error),
-      });
-    }
-
-    cleanup();
-    resetTempEditState();
-  } finally {
-    state.isUploadingFile = false;
-  }
+  state.isEditing = true;
+  state.statement = statement;
+  await handleUpdateStatement(statement, filename);
 };
 
-const handleUploadFile = async (e: Event) => {
+const handleUpdateStatement = async (statement: string, filename: string) => {
   try {
     state.isUploadingFile = true;
-    const target = e.target as HTMLInputElement;
-    const file = (target.files || [])[0];
-    const cleanup = () => {
-      // Note that once selected a file, selecting the same file again will not
-      // trigger <input type="file">'s change event.
-      // So we need to do some cleanup stuff here.
-      target.files = null;
-      target.value = "";
-    };
-
-    if (!file) {
-      return cleanup();
+    handleStatementChange(statement);
+    if (sheet.value) {
+      sheet.value.title = filename;
     }
-    if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("issue.upload-sql-file-max-size-exceeded", {
-          size: `${MAX_UPLOAD_FILE_SIZE_MB}MB`,
-        }),
-      });
-      return cleanup();
-    }
-
-    try {
-      const { filename, arrayBuffer } = await readFileAsArrayBuffer(file);
-      // TODO(steven): let user choose encoding.
-      const decoder = new TextDecoder("utf-8");
-      const statement = decoder.decode(arrayBuffer);
-      handleStatementChange(statement);
-      if (sheet.value) {
-        sheet.value.title = filename;
-      }
-    } catch (error) {
-      pushNotification({
-        module: "bytebase",
-        style: "WARN",
-        title: `Read file error`,
-        description: String(error),
-      });
-    }
-
-    cleanup();
     resetTempEditState();
   } finally {
     state.isUploadingFile = false;

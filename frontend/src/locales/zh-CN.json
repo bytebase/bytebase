@@ -2245,7 +2245,8 @@
     "click-to-sync-now": "点击立即同步",
     "sync-in-progress": "正在同步",
     "create-a-worksheet": "新建工作表",
-    "select-a-database-to-start": "选择数据库以开始"
+    "select-a-database-to-start": "选择数据库以开始",
+    "select-encoding": "选择编码"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
