@@ -387,6 +387,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 	case api.ActivityIssueCreate:
 		title = fmt.Sprintf("Issue created - %s", meta.Issue.Title)
 		titleZh = fmt.Sprintf("创建工单 - %s", meta.Issue.Title)
+
 	case api.ActivityIssueStatusUpdate:
 		switch meta.Issue.Status {
 		case "OPEN":
@@ -400,9 +401,11 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			title = fmt.Sprintf("Issue canceled - %s", meta.Issue.Title)
 			titleZh = fmt.Sprintf("工单取消 - %s", meta.Issue.Title)
 		}
+
 	case api.ActivityIssueCommentCreate:
 		title = fmt.Sprintf("Comment created - %s", meta.Issue.Title)
 		titleZh = fmt.Sprintf("工单新评论 - %s", meta.Issue.Title)
+
 	case api.ActivityIssueFieldUpdate:
 		update := new(api.ActivityIssueFieldUpdatePayload)
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
@@ -482,6 +485,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			title = fmt.Sprintf("Updated issue - %s", meta.Issue.Title)
 			titleZh = fmt.Sprintf("工单信息变更 - %s", meta.Issue.Title)
 		}
+
 	case api.ActivityPipelineStageStatusUpdate:
 		payload := &api.ActivityPipelineStageStatusUpdatePayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
