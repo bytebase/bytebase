@@ -20,7 +20,6 @@ import {
   LayersIcon,
   SquareStackIcon,
   ShieldCheck,
-  SettingsIcon,
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
@@ -49,7 +48,6 @@ import {
   WORKSPACE_ROUTE_SSO,
   WORKSPACE_ROUTE_MAIL_DELIVERY,
 } from "@/router/dashboard/workspaceRoutes";
-import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { useCurrentUserV1 } from "@/store";
 import type { WorkspacePermission } from "@/types";
 import { hasWorkspacePermissionV2, hasProjectPermissionV2 } from "@/utils";
@@ -274,13 +272,6 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
           type: "route",
         },
       ],
-    },
-    {
-      title: t("common.setting"),
-      icon: h(SettingsIcon),
-      name: SETTING_ROUTE_WORKSPACE_GENERAL,
-      type: "route",
-      hide: !hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.get"),
     },
   ];
 
