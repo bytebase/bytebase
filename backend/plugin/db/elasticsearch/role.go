@@ -12,7 +12,7 @@ import (
 )
 
 func (d *Driver) ListRole(ctx context.Context) ([]*db.DatabaseRoleMessage, error) {
-	resp, err := esapi.SecurityGetRoleRequest{}.Do(ctx, d.client)
+	resp, err := esapi.SecurityGetRoleRequest{}.Do(ctx, d.typedClient)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (d *Driver) ListRole(ctx context.Context) ([]*db.DatabaseRoleMessage, error
 }
 
 func (d *Driver) FindRole(ctx context.Context, name string) (*db.DatabaseRoleMessage, error) {
-	resp, err := esapi.SecurityGetRoleRequest{Name: []string{name}}.Do(ctx, d.client)
+	resp, err := esapi.SecurityGetRoleRequest{Name: []string{name}}.Do(ctx, d.typedClient)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (d *Driver) FindRole(ctx context.Context, name string) (*db.DatabaseRoleMes
 }
 
 func (d *Driver) CreateRole(ctx context.Context, msg *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
-	resp, err := esapi.SecurityPutRoleRequest{Name: msg.Name}.Do(ctx, d.client)
+	resp, err := esapi.SecurityPutRoleRequest{Name: msg.Name}.Do(ctx, d.typedClient)
 	if err != nil || resp.StatusCode != 200 {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (d *Driver) CreateRole(ctx context.Context, msg *db.DatabaseRoleUpsertMessa
 }
 
 func (d *Driver) DeleteRole(ctx context.Context, name string) error {
-	resp, err := esapi.SecurityDeleteRoleRequest{Name: name}.Do(ctx, d.client)
+	resp, err := esapi.SecurityDeleteRoleRequest{Name: name}.Do(ctx, d.typedClient)
 	if err != nil || resp.StatusCode != 200 {
 		return err
 	}
@@ -102,7 +102,7 @@ type UserResult struct {
 }
 
 func (d *Driver) getUsersWithRoles() (map[string]UserResult, error) {
-	resp, err := esapi.SecurityGetUserRequest{Pretty: true}.Do(context.Background(), d.client)
+	resp, err := esapi.SecurityGetUserRequest{Pretty: true}.Do(context.Background(), d.typedClient)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (d *Driver) getUserPrivileges(usrName string) (string, error) {
 	header := http.Header{}
 	header.Add("Authorization", d.config.AuthenticationPrivateKey)
 	header.Add("es-security-runas-user", usrName)
-	resp, err := esapi.SecurityGetUserPrivilegesRequest{Header: header}.Do(context.Background(), d.client)
+	resp, err := esapi.SecurityGetUserPrivilegesRequest{Header: header}.Do(context.Background(), d.typedClient)
 	if err != nil {
 		return "", err
 	}

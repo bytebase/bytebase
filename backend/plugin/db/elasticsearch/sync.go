@@ -90,12 +90,7 @@ type VersionResult struct {
 }
 
 func (d *Driver) getVerison() (string, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%s", d.config.Host, d.config.Port), nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Add("Authorization", d.config.AuthenticationPrivateKey)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := d.basicAuthClient.Do("GET", []byte("/"), nil)
 	if err != nil {
 		return "", err
 	}
@@ -125,7 +120,7 @@ type IndicesResult struct {
 
 func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 	// GET _cat/indices.
-	res, err := esapi.CatIndicesRequest{Format: "json", Pretty: true}.Do(context.Background(), d.client)
+	res, err := esapi.CatIndicesRequest{Format: "json", Pretty: true}.Do(context.Background(), d.typedClient)
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list indices")
