@@ -913,7 +913,8 @@
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "{name}が変更されました。{link}",
-      "prior-back-table": "データのバックアップをデータベース{database}とテーブル{tables}に保存します"
+      "prior-back-table": "データのバックアップをデータベース{database}とテーブル{tables}に保存します",
+      "prior-back-table-for-line": "DML のデータベース {database} とテーブル {tables} へのデータのバックアップ (行 {line})"
     },
     "subject-prefix": {
       "task": "タスク",
@@ -2244,7 +2245,8 @@
     "click-to-sync-now": "今すぐ同期するにはクリックしてください",
     "sync-in-progress": "同期中",
     "create-a-worksheet": "ワークシートを作成する",
-    "select-a-database-to-start": "開始するデータベースを選択してください"
+    "select-a-database-to-start": "開始するデータベースを選択してください",
+    "select-encoding": "エンコードを選択"
   },
   "schema-editor": {
     "self": "スキーマエディター",

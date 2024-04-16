@@ -500,7 +500,7 @@ func (diff *diffNode) diffProcedure(oldDatabase, newDatabase *databaseDef) error
 
 		oldProcedure, ok := oldDatabase.schemas[""].procedures[procedureName]
 		if ok {
-			delete(oldDatabase.schemas[""].functions, procedureName)
+			delete(oldDatabase.schemas[""].procedures, procedureName)
 			if isProcedureEqual(oldProcedure, procedure) {
 				continue
 			}

@@ -913,7 +913,8 @@
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "changed {name}. {link}",
-      "prior-back-table": "Data backup to database {database} and tables {tables}"
+      "prior-back-table": "Data backup to database {database} and tables {tables}",
+      "prior-back-table-for-line": "Data backup to database {database} and table {tables} for DML in line {line}"
     },
     "subject-prefix": {
       "task": "Task",
@@ -2244,7 +2245,8 @@
     "click-to-sync-now": "Click to sync now",
     "sync-in-progress": "Sync in progress",
     "create-a-worksheet": "Create a new worksheet",
-    "select-a-database-to-start": "Select a database to start"
+    "select-a-database-to-start": "Select a database to start",
+    "select-encoding": "Select encoding"
   },
   "schema-editor": {
     "self": "Schema Editor",

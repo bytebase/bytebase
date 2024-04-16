@@ -913,7 +913,8 @@
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "cambiado {name}. \n{link}",
-      "prior-back-table": "Copia de seguridad de datos en la base de datos {database} y tablas {tables}"
+      "prior-back-table": "Copia de seguridad de datos en la base de datos {database} y tablas {tables}",
+      "prior-back-table-for-line": "Copia de seguridad de datos en la base de datos {database} y la tabla {tables} para DML en la línea {line}"
     },
     "subject-prefix": {
       "task": "Tarea",
@@ -2244,7 +2245,8 @@
     "click-to-sync-now": "Haga clic para sincronizar ahora",
     "sync-in-progress": "Sincronización en progreso",
     "create-a-worksheet": "Crear una hoja de trabajo",
-    "select-a-database-to-start": "Seleccione una base de datos para comenzar"
+    "select-a-database-to-start": "Seleccione una base de datos para comenzar",
+    "select-encoding": "Seleccionar codificación"
   },
   "schema-editor": {
     "self": "Editor de esquema",
