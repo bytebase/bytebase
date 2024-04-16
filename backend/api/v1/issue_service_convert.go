@@ -479,8 +479,9 @@ func convertToIssueCommentEventTaskUpdateStatus(s *storepb.IssueCommentPayload_T
 func convertToIssueCommentEventTaskPriorBackup(b *storepb.IssueCommentPayload_TaskPriorBackup_) *v1pb.IssueComment_TaskPriorBackup_ {
 	return &v1pb.IssueComment_TaskPriorBackup_{
 		TaskPriorBackup: &v1pb.IssueComment_TaskPriorBackup{
-			Task:   b.TaskPriorBackup.Task,
-			Tables: convertToIssueCommentEventTaskPriorBackupTables(b.TaskPriorBackup.Tables),
+			Task:         b.TaskPriorBackup.Task,
+			Tables:       convertToIssueCommentEventTaskPriorBackupTables(b.TaskPriorBackup.Tables),
+			OriginalLine: b.TaskPriorBackup.OriginalLine,
 		},
 	}
 }

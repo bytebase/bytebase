@@ -913,7 +913,8 @@
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "{name}が変更されました。{link}",
-      "prior-back-table": "データのバックアップをデータベース{database}とテーブル{tables}に保存します"
+      "prior-back-table": "データのバックアップをデータベース{database}とテーブル{tables}に保存します",
+      "prior-back-table-for-line": "DML のデータベース {database} とテーブル {tables} へのデータのバックアップ (行 {line})"
     },
     "subject-prefix": {
       "task": "タスク",
