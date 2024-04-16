@@ -28,49 +28,39 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   const cacheByName = useCache<DatabaseMetadataCacheKey, DatabaseMetadata>(
     "bb.db-schema.by-name"
   );
-  const tableMetadataCacheByName = useCache<
+  const tableRequestCacheByName = useCache<
     TableMetadataCacheKey,
     TableMetadata | undefined
   >("bb.db-schema.table-metadata-by-name");
 
+  // getCache try use cache (full -> basic). VIEW_FULL is always the source of truth.
   const getCache = (
     name: string,
     view?: DatabaseMetadataView
   ): [DatabaseMetadata | undefined, DatabaseMetadataView | undefined] => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
-    if (view === undefined) {
-      const full = cacheByName.getEntity([metadataResourceName, VIEW_FULL]);
-      if (full) {
-        return [full, VIEW_FULL];
-      }
-      const basic = cacheByName.getEntity([metadataResourceName, VIEW_BASIC]);
-      if (basic) {
-        return [basic, VIEW_BASIC];
-      }
-      return [undefined, undefined];
+
+    const full = cacheByName.getEntity([metadataResourceName, VIEW_FULL]);
+    if (full) {
+      return [full, VIEW_FULL];
     }
-    const entity = cacheByName.getEntity([metadataResourceName, view]);
-    return [entity, view];
+
+    if (view && view !== VIEW_BASIC) {
+      // want FULL but only found BASIC
+      return [undefined, view];
+    }
+
+    const entity = cacheByName.getEntity([metadataResourceName, VIEW_BASIC]);
+    return [entity, VIEW_BASIC];
   };
   const getRequestCache = (
     name: string,
-    view?: DatabaseMetadataView
+    view: DatabaseMetadataView
   ): [
     Promise<DatabaseMetadata> | undefined,
     DatabaseMetadataView | undefined,
   ] => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
-    if (view === undefined) {
-      const full = cacheByName.getRequest([metadataResourceName, VIEW_FULL]);
-      if (full) {
-        return [full, VIEW_FULL];
-      }
-      const basic = cacheByName.getRequest([metadataResourceName, VIEW_BASIC]);
-      if (basic) {
-        return [basic, VIEW_BASIC];
-      }
-      return [undefined, undefined];
-    }
     const entity = cacheByName.getRequest([metadataResourceName, view]);
     return [entity, view];
   };
@@ -97,8 +87,8 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     view: DatabaseMetadataView = VIEW_BASIC,
     dropIfNotExist: boolean = false
   ) => {
-    const [existed, existedView] = getCache(metadata.name);
-    if (!existed) {
+    const [existed, existedView] = getCache(metadata.name, view);
+    if (!existed || view === VIEW_FULL) {
       return setCache(metadata, view);
     }
     if (!existedView) {
@@ -171,7 +161,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     dropCacheIfNotExist(dropIfNotExist, metadata.schemas, existed.schemas);
 
-    return setCache(existed, view ?? existedView);
+    return setCache(existed, existedView);
   };
 
   // drop old data if it not exists in the new data list.
@@ -233,7 +223,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   }) => {
     const {
       database,
-      view,
+      view = VIEW_BASIC,
       filter = "",
       skipCache = false,
       silent = false,
@@ -252,15 +242,14 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     const metadataResourceName = ensureDatabaseMetadataResourceName(database);
 
-    const cacheView = view ?? VIEW_BASIC;
     if (!skipCache) {
-      const [existed] = getCache(database, cacheView);
+      const [existed] = getCache(database, view);
       if (existed) {
         // The metadata entity is stored in local dictionary.
         return existed;
       }
 
-      const [cachedRequest] = getRequestCache(metadataResourceName, cacheView);
+      const [cachedRequest] = getRequestCache(metadataResourceName, view);
       if (cachedRequest) {
         // The request was sent but still not returned.
         // We won't create a duplicated request.
@@ -272,31 +261,28 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     console.debug("[getOrFetchDatabaseMetadata]", {
       name: metadataResourceName,
       filter,
-      view: cacheView,
+      view,
     });
     const promise = databaseServiceClient.getDatabaseMetadata(
       {
         name: metadataResourceName,
         filter,
-        view: cacheView,
+        view,
       },
       {
         silent,
       }
     );
-    setRequestCache(metadataResourceName, cacheView, promise);
+    setRequestCache(metadataResourceName, view, promise);
     promise.then((res) => {
       // drop not exist data if we don't have the filter in the request.
-      mergeCache(res, cacheView, !filter);
+      mergeCache(res, view, !filter);
     });
 
     return promise;
   };
   const getSchemaList = (database: string) => {
     return getCache(database)[0]?.schemas ?? [];
-  };
-  const getSchemaByName = (database: string, schema: string) => {
-    return getSchemaList(database).find((metadata) => metadata.name === schema);
   };
   const getTableList = (database: string, schema?: string) => {
     const [databaseMetadata] = getCache(database);
@@ -311,12 +297,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     }
 
     return databaseMetadata.schemas.flatMap((s) => s.tables);
-  };
-  const getOrFetchTableList = async (database: string, schema?: string) => {
-    if (!getCache(database)[0]) {
-      await getOrFetchDatabaseMetadata({ database, view: VIEW_BASIC });
-    }
-    return getTableList(database, schema);
   };
   const getTableByName = (
     database: string,
@@ -353,7 +333,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
         return existedTable;
       }
 
-      const existedRequest = tableMetadataCacheByName.getRequest([
+      const existedRequest = tableRequestCacheByName.getRequest([
         metadataResourceName,
         schema,
         table,
@@ -379,13 +359,13 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
           silent,
         }
       )
-      .then((res) => mergeCache(res, VIEW_FULL))
+      .then((res) => mergeCache(res, VIEW_BASIC))
       .then((res) => {
         return res.schemas
           .find((s) => s.name === schema)
           ?.tables.find((t) => t.name === table);
       });
-    tableMetadataCacheByName.setRequest(
+    tableRequestCacheByName.setRequest(
       [metadataResourceName, schema, table],
       promise
     );
@@ -429,12 +409,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     return databaseMetadata.schemas.flatMap((s) => s.views);
   };
-  const getOrFetchViewList = async (database: string, schema?: string) => {
-    if (!getCache(database)[0]) {
-      await getOrFetchDatabaseMetadata({ database, view: VIEW_BASIC });
-    }
-    return getViewList(database, schema);
-  };
   const getExtensionList = (database: string) => {
     const [databaseMetadata] = getCache(database);
     if (!databaseMetadata) {
@@ -442,12 +416,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     }
 
     return databaseMetadata.extensions;
-  };
-  const getOrFetchExtensionList = async (database: string) => {
-    if (!getCache(database)[0]) {
-      await getOrFetchDatabaseMetadata({ database, view: VIEW_BASIC });
-    }
-    return getExtensionList(database);
   };
   const getFunctionList = (database: string, schema?: string) => {
     const [databaseMetadata] = getCache(database);
@@ -461,28 +429,15 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     }
     return databaseMetadata.schemas.flatMap((s) => s.functions);
   };
-  const getOrFetchFunctionList = async (database: string, schema?: string) => {
-    if (!getCache(database)[0]) {
-      await getOrFetchDatabaseMetadata({ database, view: VIEW_BASIC });
-    }
-    return getFunctionList(database, schema);
-  };
 
   const removeCache = (name: string) => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
     cacheByName.invalidateEntity([metadataResourceName, VIEW_FULL]);
     cacheByName.invalidateEntity([metadataResourceName, VIEW_BASIC]);
-    Array.from(tableMetadataCacheByName.entityCacheMap.values()).forEach(
+    Array.from(tableRequestCacheByName.requestCacheMap.values()).forEach(
       (cache) => {
         if (cache.keys[0] === metadataResourceName) {
-          tableMetadataCacheByName.invalidateEntity(cache.keys);
-        }
-      }
-    );
-    Array.from(tableMetadataCacheByName.requestCacheMap.values()).forEach(
-      (cache) => {
-        if (cache.keys[0] === metadataResourceName) {
-          tableMetadataCacheByName.invalidateRequest(cache.keys);
+          tableRequestCacheByName.invalidateRequest(cache.keys);
         }
       }
     );
@@ -493,20 +448,13 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     getDatabaseMetadata,
     getOrFetchDatabaseMetadata,
     getSchemaList,
-    getSchemaByName,
     getTableList,
-    getOrFetchTableList,
-    getTableByName,
     getOrFetchTableMetadata,
     getExternalTableList,
     getOrFetchExternalTableList,
     getViewList,
-    getOrFetchViewList,
     getExtensionList,
-    getOrFetchExtensionList,
     getFunctionList,
-    getOrFetchFunctionList,
-    getCache,
     removeCache,
   };
 });
