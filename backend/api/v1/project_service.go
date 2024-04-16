@@ -700,7 +700,14 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 			CreatorName:  "Bytebase",
 			CreatorEmail: api.SystemBotEmail,
 			CreatedTs:    time.Now().Unix(),
-			Project:      &webhookplugin.Project{Name: project.Title},
+			Issue: &webhookplugin.Issue{
+				ID:          1,
+				Name:        "Test issue",
+				Status:      "OPEN",
+				Type:        "bb.issue.database.create",
+				Description: "This is a test issue",
+			},
+			Project: &webhookplugin.Project{Name: project.Title},
 		},
 	)
 	if err != nil {
