@@ -3,6 +3,8 @@ package elasticsearch
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
@@ -10,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -34,31 +37,103 @@ var (
 )
 
 type Driver struct {
-	client *elasticsearch.TypedClient
-	config db.ConnectionConfig
+	typedClient     *elasticsearch.TypedClient
+	basicAuthClient *BasicAuthClient
+	config          db.ConnectionConfig
+}
+
+type BasicAuthClient struct {
+	httpClient      *http.Client
+	addrScheduler   *AddressScheduler
+	basicAuthString string
+}
+
+func (client *BasicAuthClient) Do(method string, route []byte, queryString []byte) (*http.Response, error) {
+	address := client.addrScheduler.GetNewAddress()
+	req, err := http.NewRequest(method, fmt.Sprintf("%s%s", address, string(route)), bytes.NewReader(queryString))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to init a HTTP request")
+	}
+
+	req.Header.Add("Authorization", client.basicAuthString)
+	req.Header.Set("Content-Type", "application/json")
+
+	return client.httpClient.Do(req)
+}
+
+type AddressScheduler struct {
+	addresses []string
+	mutex     sync.Mutex
+	count     int
+}
+
+// Get a new address using round-robin. No failover mechanisms temporarily.
+func (scheduler *AddressScheduler) GetNewAddress() string {
+	scheduler.mutex.Lock()
+	address := scheduler.addresses[scheduler.count]
+	scheduler.count = (scheduler.count + 1) % len(scheduler.addresses)
+	scheduler.mutex.Unlock()
+	return address
 }
 
 func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	cfg := elasticsearch.Config{
-		Addresses: []string{
-			// TODO(tommy): support multiple connections and HTTPS.
-			fmt.Sprintf("http://%s:%s", config.Host, config.Port),
-		},
-		Username: config.Username,
-		Password: config.Password,
+	// addresses.
+	addresses := []string{}
+	protocol := "http"
+	if config.TLSConfig.SslCert != "" {
+		protocol = "https"
+	}
+	if len(config.MultiHosts) == 0 {
+		addresses = append(addresses, fmt.Sprintf("%s://%s:%s", protocol, config.Host, config.Port))
+	} else {
+		for idx := range config.MultiHosts {
+			addresses = append(addresses, fmt.Sprintf("%s://%s:%s", protocol, config.MultiHosts[idx], config.MultiPorts[idx]))
+		}
 	}
 
-	client, err := elasticsearch.NewTypedClient(cfg)
+	// typed elasticsearch client.
+	typedClient, err := elasticsearch.NewTypedClient(elasticsearch.Config{
+		Username:  config.Username,
+		Password:  config.Password,
+		Addresses: addresses,
+		CACert:    []byte(config.TLSConfig.SslCert),
+	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create elasticsearch client")
 	}
 
-	// generate basic authentication string.
+	// default http client.
+	var httpClient *http.Client
+	if config.TLSConfig.SslCert != "" {
+		certPool := x509.NewCertPool()
+		if ok := certPool.AppendCertsFromPEM([]byte(config.TLSConfig.SslCert)); !ok {
+			return nil, errors.New("cannot add CA cert to pool")
+		}
+		httpClient = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					RootCAs: certPool,
+				},
+			},
+		}
+	} else {
+		httpClient = http.DefaultClient
+	}
+
+	// generate basic authentication string for http client.
 	encodedUsrAndPasswd := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.Username, config.Password)))
-	config.AuthenticationPrivateKey = fmt.Sprintf("Basic %s", string(encodedUsrAndPasswd))
+	basicAuthString := fmt.Sprintf("Basic %s", string(encodedUsrAndPasswd))
 
 	return &Driver{
-		client: client,
+		typedClient: typedClient,
+		basicAuthClient: &BasicAuthClient{
+			httpClient: httpClient,
+			addrScheduler: &AddressScheduler{
+				addresses: addresses,
+				count:     0,
+			},
+			basicAuthString: basicAuthString,
+		},
 		config: config,
 	}, nil
 }
@@ -69,7 +144,7 @@ func (*Driver) Close(_ context.Context) error {
 }
 
 func (d *Driver) Ping(ctx context.Context) error {
-	_, err := d.client.Ping().Do(ctx)
+	_, err := d.typedClient.Ping().Do(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to ping db")
 	}
@@ -94,16 +169,7 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *
 	for _, s := range statements {
 		startTime := time.Now()
 		// send HTTP request.
-		req, err := http.NewRequest(s.method, fmt.Sprintf("http://%s:%s/%s",
-			d.config.Host, d.config.Port, strings.TrimLeft(string(s.route), "/")), bytes.NewReader(s.queryString))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to init a HTTP request")
-		}
-
-		req.Header.Add("Authorization", d.config.AuthenticationPrivateKey)
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := d.basicAuthClient.Do(s.method, s.route, s.queryString)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to send HTTP request, status code message: %s", resp.Status)
 		}
@@ -135,7 +201,7 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *
 				row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
 			}
 		} else if strings.Contains(contentType, "text/plain") {
-			result.ColumnNames = append(result.ColumnNames, "plain/text")
+			result.ColumnNames = append(result.ColumnNames, "text/plain")
 			row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(respBytes)}})
 		} else {
 			return nil, errors.Errorf("Content-Type not supported: %s", contentType)
