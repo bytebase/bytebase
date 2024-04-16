@@ -158,11 +158,14 @@ type MigrationInfo struct {
 
 // ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
-	Database string
+	Host string
+	Port string
+	// More hosts and ports are required by elasticsearch.
+	MultiHosts []string
+	MultiPorts []string
+	Username   string
+	Password   string
+	Database   string
 	// The database used to connect.
 	// It's only set for Redshift datashare database.
 	ConnectionDatabase string
