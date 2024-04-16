@@ -17,6 +17,14 @@
         :schema="state.schema"
         :column="state.column"
       />
+      <TablePartitionInfo
+        v-else-if="state.table && state.partition"
+        :db="state.db"
+        :database="state.database"
+        :schema="state.schema"
+        :table="state.table"
+        :partition="state.partition"
+      />
       <TableInfo
         v-else-if="state.table"
         :db="state.db"
@@ -51,6 +59,7 @@ import { minmax } from "@/utils";
 import ColumnInfo from "./ColumnInfo.vue";
 import ExternalTableInfo from "./ExternalTableInfo.vue";
 import TableInfo from "./TableInfo.vue";
+import TablePartitionInfo from "./TablePartitionInfo.vue";
 import ViewInfo from "./ViewInfo.vue";
 import { useHoverStateContext } from "./hover-state";
 
