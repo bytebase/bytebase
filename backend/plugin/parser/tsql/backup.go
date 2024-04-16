@@ -49,7 +49,7 @@ type statementInfo struct {
 	tables    []TableReference
 }
 
-func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.RollbackStatement, error) {
+func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
 	statementInfoList, err := prepareTransformation(sourceDatabase, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
@@ -58,8 +58,8 @@ func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabas
 	return generateSQL(statementInfoList, targetDatabase, tablePrefix)
 }
 
-func generateSQL(statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.RollbackStatement, error) {
-	var result []base.RollbackStatement
+func generateSQL(statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+	var result []base.BackupStatement
 	offsetLength := 1
 	if len(statementInfoList) > 1 {
 		offsetLength = getOffsetLength(statementInfoList[len(statementInfoList)-1].offset)
@@ -95,7 +95,7 @@ func generateSQL(statementInfoList []statementInfo, targetDatabase string, table
 			if _, err := buf.WriteString(";"); err != nil {
 				return nil, errors.Wrap(err, "failed to write buffer")
 			}
-			result = append(result, base.RollbackStatement{
+			result = append(result, base.BackupStatement{
 				Statement: buf.String(),
 				TableName: targetTable,
 			})
