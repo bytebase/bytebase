@@ -21,7 +21,6 @@ func init() {
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
-	statement = mysqlAddSemicolonIfNeeded(statement)
 	lexer := parser.NewMySQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
