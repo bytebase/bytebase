@@ -194,10 +194,11 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         type === "table" ||
         type === "external-table" ||
         type === "column" ||
-        type === "view"
+        type === "view" ||
+        type === "partition-table"
       ) {
         const target = node.meta.target as NodeTarget<
-          "table" | "external-table" | "column" | "view"
+          "table" | "external-table" | "column" | "view" | "partition-table"
         >;
         if (hoverState.value) {
           updateHoverState(target, "before", 0 /* overrideDelay */);

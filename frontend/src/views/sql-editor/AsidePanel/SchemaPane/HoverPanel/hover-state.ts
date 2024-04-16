@@ -5,6 +5,7 @@ import type {
   ExternalTableMetadata,
   SchemaMetadata,
   TableMetadata,
+  TablePartitionMetadata,
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import {
@@ -22,6 +23,7 @@ export type HoverState = {
   externalTable?: ExternalTableMetadata;
   view?: ViewMetadata;
   column?: ColumnMetadata;
+  partition?: TablePartitionMetadata;
 };
 
 export const useHoverStateContext = () => {

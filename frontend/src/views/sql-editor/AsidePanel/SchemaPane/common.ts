@@ -149,11 +149,12 @@ export const keyForNodeTarget = <T extends NodeType>(
     return [parentKey, `columns/${column.name}`].join("/");
   }
   if (type === "partition-table") {
-    const { db, schema, parentPartition, partition } =
+    const { db, schema, table, parentPartition, partition } =
       target as NodeTarget<"partition-table">;
     return [
       db.name,
       `schemas/${schema.name}`,
+      `tables/${table.name}`,
       `partitionTables/${parentPartition?.name ?? ""}/${partition.name}`,
     ].join("/");
   }

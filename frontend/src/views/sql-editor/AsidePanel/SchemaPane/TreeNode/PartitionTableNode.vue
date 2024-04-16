@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <TableIcon class="w-4 h-4" />
+    <TablePartitionIcon class="w-4 h-4 opacity-75" :stroke-width="1.75" />
     <HighlightLabelText
       :text="target.partition.name"
       :keyword="keyword"
@@ -11,7 +11,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { TableIcon } from "@/components/Icon";
+import { TablePartitionIcon } from "@/components/Icon";
 import type { TreeNode } from "../common";
 import HighlightLabelText from "./HighlightLabelText.vue";
 
