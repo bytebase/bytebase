@@ -17,7 +17,7 @@ func init() {
 	base.RegisterTransformDMLToSelect(store.Engine_MYSQL, TransformDMLToSelect)
 }
 
-func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]base.RollbackStatement, error) {
+func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]base.BackupStatement, error) {
 	tableStatementMap, err := prepareTransformation(sourceDatabase, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
@@ -94,8 +94,8 @@ func getSQLType(statement string) (*ParseResult, bool, bool, error) {
 	return stmts[0], listener.IsDML, listener.IsDDL, nil
 }
 
-func generateSQL(tableStatementMap map[string][]*tableStatement, databaseName string, tableSuffix string) ([]base.RollbackStatement, error) {
-	var result []base.RollbackStatement
+func generateSQL(tableStatementMap map[string][]*tableStatement, databaseName string, tableSuffix string) ([]base.BackupStatement, error) {
+	var result []base.BackupStatement
 	for tableName, tableStatements := range tableStatementMap {
 		targetTable := fmt.Sprintf("%s%s", tableName, tableSuffix)
 		var buf strings.Builder
@@ -123,7 +123,7 @@ func generateSQL(tableStatementMap map[string][]*tableStatement, databaseName st
 		if err := buf.WriteByte(';'); err != nil {
 			return nil, errors.Wrap(err, "failed to write semicolon")
 		}
-		result = append(result, base.RollbackStatement{
+		result = append(result, base.BackupStatement{
 			Statement: buf.String(),
 			TableName: targetTable,
 		})

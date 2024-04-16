@@ -1,6 +1,6 @@
 package base
 
-type RollbackStatement struct {
+type BackupStatement struct {
 	Statement string
 	TableName string
 }

@@ -14,17 +14,17 @@ import (
 
 type rollbackCase struct {
 	Input  string
-	Result []base.RollbackStatement
+	Result []base.BackupStatement
 }
 
-func TestRollback(t *testing.T) {
+func TestBackup(t *testing.T) {
 	tests := []rollbackCase{}
 
 	const (
 		record = false
 	)
 	var (
-		filepath = "test-data/test_rollback.yaml"
+		filepath = "test-data/test_backup.yaml"
 	)
 
 	a := require.New(t)
