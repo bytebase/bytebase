@@ -18,21 +18,11 @@
           />
         </div>
         <div class="flex flex-row justify-end items-center shrink-0">
-          <NButton class="relative">
-            <template #icon>
-              <UploadIcon class="w-4 h-4 text-control-light" />
-            </template>
-            <template #default>
-              {{ $t("issue.upload-sql") }}
-              <input
-                id="sql-file-input"
-                type="file"
-                accept=".sql,.txt,application/sql,text/plain"
-                class="opacity-0 absolute inset-0"
-                @change="handleUploadFile"
-              />
-            </template>
-          </NButton>
+          <SQLUploadButton
+            @update:sql="(statement) => (state.editStatement = statement)"
+          >
+            {{ $t("issue.upload-sql") }}
+          </SQLUploadButton>
         </div>
       </div>
       <div class="relative w-full h-96 border rounded overflow-clip">
@@ -68,7 +58,6 @@
 </template>
 
 <script lang="ts" setup>
-import { UploadIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, onMounted, reactive } from "vue";
@@ -76,9 +65,9 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
-import { pushNotification, useDBGroupStore } from "@/store";
+import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
+import { useDBGroupStore } from "@/store";
 import type { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
-import { MAX_UPLOAD_FILE_SIZE_MB, readFileAsArrayBuffer } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 interface LocalState {
@@ -154,49 +143,6 @@ const dismissModal = () => {
   } else {
     emit("close");
   }
-};
-
-const handleUploadFile = async (e: Event) => {
-  const target = e.target as HTMLInputElement;
-  const file = (target.files || [])[0];
-  const cleanup = () => {
-    // Note that once selected a file, selecting the same file again will not
-    // trigger <input type="file">'s change event.
-    // So we need to do some cleanup stuff here.
-    target.files = null;
-    target.value = "";
-  };
-
-  if (!file) {
-    return cleanup();
-  }
-  if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("issue.upload-sql-file-max-size-exceeded", {
-        size: `${MAX_UPLOAD_FILE_SIZE_MB}MB`,
-      }),
-    });
-    return cleanup();
-  }
-
-  try {
-    const { arrayBuffer } = await readFileAsArrayBuffer(file);
-    // TODO(steven): let user choose encoding.
-    const decoder = new TextDecoder("utf-8");
-    const statement = decoder.decode(arrayBuffer);
-    state.editStatement = statement;
-  } catch (error) {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: `Read file error`,
-      description: String(error),
-    });
-  }
-
-  cleanup();
 };
 
 const handlePreviewIssue = async () => {
