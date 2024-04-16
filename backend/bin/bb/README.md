@@ -1,10 +1,14 @@
-# bb - the Bytebase CLI
+# bb
 
-## Supported database engines
+The CLI interacting with https://api.bytebase.com
 
-- MySQL
-- PostgreSQL
+## Usage
 
-## Supported command
+```shell
+bb version
+```
 
-- bb dump - similar to mysqldump (MySQL), pg_dump (PostgreSQL)
+```shell
+# List all projects
+bb projects list --url=https://bytebase.example.com --token=xxxx
+```

@@ -1,4 +1,4 @@
-package cmd
+package version
 
 import (
 	"fmt"
@@ -13,16 +13,12 @@ var gitcommit = "unknown"
 var buildtime = "unknown"
 var builduser = "unknown"
 
-func newVersionCmd() *cobra.Command {
+func Cmd() *cobra.Command {
 	versionCmd := &cobra.Command{
 		Use:   "version",
-		Short: "Print the version of bb",
+		Short: "Show bb version",
 		Run: func(_ *cobra.Command, _ []string) {
-			fmt.Printf("bb version: %s\n", version)
-			fmt.Printf("Golang version: %s\n", goversion)
-			fmt.Printf("Git commit hash: %s\n", gitcommit)
-			fmt.Printf("Built on: %s\n", buildtime)
-			fmt.Printf("Built by: %s\n", builduser)
+			fmt.Printf("bb version %s (Golang version: %s build on: %s by: %s commit: %s)\n", version, goversion, buildtime, builduser, gitcommit)
 		},
 	}
 	return versionCmd
