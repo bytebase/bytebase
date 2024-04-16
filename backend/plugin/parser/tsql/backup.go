@@ -46,7 +46,7 @@ type statementInfo struct {
 	offset    int
 	statement string
 	tree      antlr.Tree
-	tables    []TableReference
+	table     *TableReference
 	line      int
 }
 
@@ -66,42 +66,47 @@ func generateSQL(statementInfoList []statementInfo, targetDatabase string, table
 		offsetLength = getOffsetLength(statementInfoList[len(statementInfoList)-1].offset)
 	}
 	for _, statementInfo := range statementInfoList {
-		for _, table := range statementInfo.tables {
-			targetTable := fmt.Sprintf("%s_%0*d_%s", tablePrefix, offsetLength, statementInfo.offset, table.Table)
-			targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
-			topClause, fromClause, err := extractSuffixSelectStatement(statementInfo.tree)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to extract suffix select statement")
-			}
-			var buf strings.Builder
+		table := statementInfo.table
+		targetTable := fmt.Sprintf("%s_%0*d_%s", tablePrefix, offsetLength, statementInfo.offset, table.Table)
+		targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
+		topClause, fromClause, err := extractSuffixSelectStatement(statementInfo.tree)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to extract suffix select statement")
+		}
+		var buf strings.Builder
+		if len(table.Alias) == 0 {
 			if _, err := buf.WriteString(fmt.Sprintf(`SELECT "%s"."%s"."%s".* `, table.Database, table.Schema, table.Table)); err != nil {
 				return nil, errors.Wrap(err, "failed to write buffer")
 			}
-			if len(topClause) > 0 {
-				if _, err := buf.WriteString(topClause); err != nil {
-					return nil, errors.Wrap(err, "failed to write buffer")
-				}
-				if _, err := buf.WriteString(" "); err != nil {
-					return nil, errors.Wrap(err, "failed to write buffer")
-				}
-			}
-			if _, err := buf.WriteString(fmt.Sprintf(`INTO "%s"."%s"."%s" `, targetDatabase, defaultSchema, targetTable)); err != nil {
+		} else {
+			if _, err := buf.WriteString(fmt.Sprintf(`SELECT "%s".* `, table.Alias)); err != nil {
 				return nil, errors.Wrap(err, "failed to write buffer")
 			}
-			if len(fromClause) > 0 {
-				if _, err := buf.WriteString(fromClause); err != nil {
-					return nil, errors.Wrap(err, "failed to write buffer")
-				}
-			}
-			if _, err := buf.WriteString(";"); err != nil {
-				return nil, errors.Wrap(err, "failed to write buffer")
-			}
-			result = append(result, base.BackupStatement{
-				Statement:    buf.String(),
-				TableName:    targetTable,
-				OriginalLine: statementInfo.line,
-			})
 		}
+		if len(topClause) > 0 {
+			if _, err := buf.WriteString(topClause); err != nil {
+				return nil, errors.Wrap(err, "failed to write buffer")
+			}
+			if _, err := buf.WriteString(" "); err != nil {
+				return nil, errors.Wrap(err, "failed to write buffer")
+			}
+		}
+		if _, err := buf.WriteString(fmt.Sprintf(`INTO "%s"."%s"."%s" `, targetDatabase, defaultSchema, targetTable)); err != nil {
+			return nil, errors.Wrap(err, "failed to write buffer")
+		}
+		if len(fromClause) > 0 {
+			if _, err := buf.WriteString(fromClause); err != nil {
+				return nil, errors.Wrap(err, "failed to write buffer")
+			}
+		}
+		if _, err := buf.WriteString(";"); err != nil {
+			return nil, errors.Wrap(err, "failed to write buffer")
+		}
+		result = append(result, base.BackupStatement{
+			Statement:    buf.String(),
+			TableName:    targetTable,
+			OriginalLine: statementInfo.line,
+		})
 	}
 	return result, nil
 }
@@ -126,11 +131,6 @@ func (e *suffixSelectStatementExtractor) EnterUpdate_statement(ctx *parser.Updat
 	}
 
 	if isTopLevel(ctx.GetParent()) && ctx.Ddl_object() != nil {
-		if ctx.FROM() != nil {
-			// TODO: Support update statement with FROM clause.
-			e.err = errors.New("UPDATE statement with FROM clause is not supported")
-			return
-		}
 		if ctx.CURRENT() != nil {
 			e.err = errors.New("UPDATE statement with CURSOR clause is not supported")
 			return
@@ -149,9 +149,16 @@ func (e *suffixSelectStatementExtractor) EnterUpdate_statement(ctx *parser.Updat
 			e.err = errors.Wrap(err, "failed to write buffer")
 			return
 		}
-		if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Ddl_object())); err != nil {
-			e.err = errors.Wrap(err, "failed to write buffer")
-			return
+		if ctx.Table_sources() == nil {
+			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Ddl_object())); err != nil {
+				e.err = errors.Wrap(err, "failed to write buffer")
+				return
+			}
+		} else {
+			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Table_sources())); err != nil {
+				e.err = errors.Wrap(err, "failed to write buffer")
+				return
+			}
 		}
 		if _, err := buf.WriteString(" "); err != nil {
 			e.err = errors.Wrap(err, "failed to write buffer")
@@ -189,12 +196,6 @@ func (e *suffixSelectStatementExtractor) EnterDelete_statement(ctx *parser.Delet
 	}
 
 	if isTopLevel(ctx.GetParent()) {
-		if ctx.Table_sources() != nil {
-			// TODO: Support delete statement with double FROM clause.
-			e.err = errors.New("DELETE statement with double FROM clause is not supported")
-			return
-		}
-
 		if ctx.CURRENT() != nil {
 			e.err = errors.New("DELETE statement with CURSOR clause is not supported")
 			return
@@ -217,10 +218,18 @@ func (e *suffixSelectStatementExtractor) EnterDelete_statement(ctx *parser.Delet
 			e.err = errors.Wrap(err, "failed to write buffer")
 			return
 		}
-		if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Delete_statement_from())); err != nil {
-			e.err = errors.Wrap(err, "failed to write buffer")
-			return
+		if ctx.Table_sources() == nil {
+			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Delete_statement_from())); err != nil {
+				e.err = errors.Wrap(err, "failed to write buffer")
+				return
+			}
+		} else {
+			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Table_sources())); err != nil {
+				e.err = errors.Wrap(err, "failed to write buffer")
+				return
+			}
 		}
+
 		if _, err := buf.WriteString(" "); err != nil {
 			e.err = errors.Wrap(err, "failed to write buffer")
 			return
@@ -317,11 +326,16 @@ func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext
 			databaseName: e.databaseName,
 		}
 		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx.Ddl_object())
+
+		table := extractor.table
+		if extractor.table != nil && ctx.Table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
+			table = extractPhysicalTable(ctx.Table_sources(), extractor.table)
+		}
 		e.dmls = append(e.dmls, statementInfo{
 			offset:    e.offset,
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
-			tables:    extractor.singleTables,
+			table:     table,
 			line:      ctx.GetStart().GetLine(),
 		})
 	}
@@ -333,13 +347,57 @@ func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext
 			databaseName: e.databaseName,
 		}
 		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx.Delete_statement_from())
+
+		table := extractor.table
+		if extractor.table != nil && ctx.Table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
+			table = extractPhysicalTable(ctx.Table_sources(), extractor.table)
+		}
+
 		e.dmls = append(e.dmls, statementInfo{
 			offset:    e.offset,
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
-			tables:    extractor.singleTables,
+			table:     table,
 			line:      ctx.GetStart().GetLine(),
 		})
+	}
+}
+
+func extractPhysicalTable(ctx antlr.Tree, table *TableReference) *TableReference {
+	if ctx == nil || table == nil {
+		return table
+	}
+
+	extractor := &physicalTableExtractor{
+		table: table,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(extractor, ctx)
+	if extractor.result != nil {
+		return extractor.result
+	}
+	return table
+}
+
+type physicalTableExtractor struct {
+	*parser.BaseTSqlParserListener
+
+	table  *TableReference
+	result *TableReference
+}
+
+func (e *physicalTableExtractor) EnterTable_source_item(ctx *parser.Table_source_itemContext) {
+	if ctx.As_table_alias() != nil && ctx.Full_table_name() != nil {
+		alias := unquote(ctx.As_table_alias().Table_alias().GetText())
+		if alias == e.table.Table {
+			databaseName, schemaName, tableName := extractFullTableName(ctx.Full_table_name(), e.table.Database, e.table.Schema)
+			e.result = &TableReference{
+				Database:      databaseName,
+				Schema:        schemaName,
+				Table:         tableName,
+				Alias:         alias,
+				StatementType: e.table.StatementType,
+			}
+		}
 	}
 }
 
@@ -347,25 +405,30 @@ type tableExtractor struct {
 	*parser.BaseTSqlParserListener
 
 	databaseName string
-	singleTables []TableReference
+	table        *TableReference
 }
 
 func (e *tableExtractor) EnterFull_table_name(ctx *parser.Full_table_nameContext) {
-	tableName := unquote(ctx.GetTable().GetText())
-	schemaName := defaultSchema
-	if ctx.GetSchema() != nil {
-		schemaName = unquote(ctx.GetSchema().GetText())
-	}
-	databaseName := e.databaseName
-	if ctx.GetDatabase() != nil {
-		databaseName = unquote(ctx.GetDatabase().GetText())
-	}
+	databaseName, schemaName, tableName := extractFullTableName(ctx, e.databaseName, defaultSchema)
 	table := TableReference{
 		Database: databaseName,
 		Schema:   schemaName,
 		Table:    tableName,
 	}
-	e.singleTables = append(e.singleTables, table)
+	e.table = &table
+}
+
+func extractFullTableName(ctx parser.IFull_table_nameContext, defaultDatabase string, defaultSchema string) (string, string, string) {
+	tableName := unquote(ctx.GetTable().GetText())
+	schemaName := defaultSchema
+	if ctx.GetSchema() != nil {
+		schemaName = unquote(ctx.GetSchema().GetText())
+	}
+	databaseName := defaultDatabase
+	if ctx.GetDatabase() != nil {
+		databaseName = unquote(ctx.GetDatabase().GetText())
+	}
+	return databaseName, schemaName, tableName
 }
 
 func unquote(s string) string {
