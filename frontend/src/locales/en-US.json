@@ -2245,7 +2245,8 @@
     "click-to-sync-now": "Click to sync now",
     "sync-in-progress": "Sync in progress",
     "create-a-worksheet": "Create a new worksheet",
-    "select-a-database-to-start": "Select a database to start"
+    "select-a-database-to-start": "Select a database to start",
+    "select-encoding": "Select encoding"
   },
   "schema-editor": {
     "self": "Schema Editor",

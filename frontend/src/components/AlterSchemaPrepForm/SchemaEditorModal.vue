@@ -52,22 +52,12 @@
           >
             <div>{{ $t("sql-editor.self") }}</div>
             <div class="flex flex-row justify-end items-center space-x-3">
-              <NButton @click="onUploaderClick">
-                <template #icon>
-                  <heroicons-outline:arrow-up-tray
-                    class="w-4 h-auto text-gray-500"
-                  />
-                </template>
+              <SQLUploadButton
+                :loading="state.isUploadingFile"
+                @update:sql="(statement) => (state.editStatement = statement)"
+              >
                 {{ $t("issue.upload-sql") }}
-                <input
-                  id="sql-file-input"
-                  ref="sqlFileUploader"
-                  type="file"
-                  accept=".sql,.txt,application/sql,text/plain"
-                  class="hidden"
-                  @change="handleUploadFile"
-                />
-              </NButton>
+              </SQLUploadButton>
               <NButton @click="handleSyncSQLFromSchemaEditor">
                 <template #icon>
                   <heroicons-outline:arrow-path
@@ -135,6 +125,7 @@ import { computed, onMounted, h, reactive, ref, watch } from "vue";
 import { I18nT, useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
+import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { databaseServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -152,13 +143,7 @@ import { Engine } from "@/types/proto/v1/common";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import {
-  MAX_UPLOAD_FILE_SIZE_MB,
-  TinyTimer,
-  defer,
-  extractProjectResourceName,
-  readFileAsArrayBuffer,
-} from "@/utils";
+import { TinyTimer, defer, extractProjectResourceName } from "@/utils";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import type { EditTarget, GenerateDiffDDLResult } from "../SchemaEditorLite";
@@ -178,6 +163,7 @@ interface LocalState {
   isGeneratingDDL: boolean;
   previewStatus: string;
   targets: EditTarget[];
+  isUploadingFile: boolean;
 }
 
 const props = defineProps({
@@ -200,7 +186,6 @@ const emit = defineEmits<{
 }>();
 
 const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
-const sqlFileUploader = ref<HTMLInputElement | null>(null);
 const { t } = useI18n();
 const router = useRouter();
 const state = reactive<LocalState>({
@@ -211,15 +196,12 @@ const state = reactive<LocalState>({
   isGeneratingDDL: false,
   previewStatus: "",
   targets: [],
+  isUploadingFile: false,
 });
 const databaseV1Store = useDatabaseV1Store();
 const notificationStore = useNotificationStore();
 const { runSQLCheck } = provideSQLCheckContext();
 const $dialog = useDialog();
-
-const onUploaderClick = () => {
-  sqlFileUploader.value?.click();
-};
 
 const allowPreviewIssue = computed(() => {
   if (state.selectedTab === "schema-editor") {
@@ -405,47 +387,6 @@ const generateDiffDDLMap = async (silent: boolean) => {
 
   state.isGeneratingDDL = false;
   return statementMap;
-};
-
-const handleUploadFile = async (e: Event) => {
-  const target = e.target as HTMLInputElement;
-  const file = (target.files || [])[0];
-  const cleanup = () => {
-    // Note that once selected a file, selecting the same file again will not
-    // trigger <input type="file">'s change event.
-    // So we need to do some cleanup stuff here.
-    target.files = null;
-    target.value = "";
-  };
-
-  if (!file) {
-    return cleanup();
-  }
-  if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("issue.upload-sql-file-max-size-exceeded", {
-        size: `${MAX_UPLOAD_FILE_SIZE_MB}MB`,
-      }),
-    });
-    return cleanup();
-  }
-
-  try {
-    const { arrayBuffer } = await readFileAsArrayBuffer(file);
-    // TODO(steven): let user choose encoding.
-    const decoder = new TextDecoder("utf-8");
-    state.editStatement = decoder.decode(arrayBuffer);
-  } catch (error) {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: `Read file error`,
-      description: String(error),
-    });
-  }
-  cleanup();
 };
 
 const handlePreviewIssue = async () => {
