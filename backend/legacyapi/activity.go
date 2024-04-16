@@ -20,27 +20,37 @@ const (
 	// Issue related.
 
 	// ActivityIssueCreate is the type for creating issues.
+	// Used for notification only.
 	ActivityIssueCreate ActivityType = "bb.issue.create"
 	// ActivityIssueCommentCreate is the type for creating issue comments.
+	// Used for notification only.
 	ActivityIssueCommentCreate ActivityType = "bb.issue.comment.create"
 	// ActivityIssueFieldUpdate is the type for updating issue fields.
+	// Used for notification only.
 	ActivityIssueFieldUpdate ActivityType = "bb.issue.field.update"
 	// ActivityIssueStatusUpdate is the type for updating issue status.
+	// Used for notification only.
 	ActivityIssueStatusUpdate ActivityType = "bb.issue.status.update"
 	// ActivityIssueApprovalNotify is the type for notifying issue approval.
+	// Used for notification only.
 	ActivityIssueApprovalNotify ActivityType = "bb.issue.approval.notify"
 	// ActivityPipelineStageStatusUpdate is the type for stage begins or ends.
+	// Used for notification only.
 	ActivityPipelineStageStatusUpdate ActivityType = "bb.pipeline.stage.status.update"
 	// ActivityPipelineTaskStatusUpdate is the type for updating pipeline task status.
 	// Deprecated: use `ActivityPipelineTaskRunStatusUpdate` instead.
 	ActivityPipelineTaskStatusUpdate ActivityType = "bb.pipeline.task.status.update"
 	// ActivityPipelineTaskRunStatusUpdate is the type for updating pipeline task run status.
+	// Used for notification only.
 	ActivityPipelineTaskRunStatusUpdate ActivityType = "bb.pipeline.taskrun.status.update"
 	// ActivityPipelineTaskStatementUpdate is the type for updating pipeline task SQL statement.
+	// Deprecated.
 	ActivityPipelineTaskStatementUpdate ActivityType = "bb.pipeline.task.statement.update"
 	// ActivityPipelineTaskEarliestAllowedTimeUpdate is the type for updating pipeline task the earliest allowed time.
+	// Deprecated.
 	ActivityPipelineTaskEarliestAllowedTimeUpdate ActivityType = "bb.pipeline.task.general.earliest-allowed-time.update"
 	// ActivityPipelineTaskStatementUpdate is the type for updating pipeline task SQL statement.
+	// Deprecated.
 	ActivityPipelineTaskPriorBackup ActivityType = "bb.pipeline.task.prior-backup"
 
 	// Member related.
