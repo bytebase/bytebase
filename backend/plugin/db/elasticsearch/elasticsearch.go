@@ -86,7 +86,7 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	if len(config.MultiHosts) == 0 {
 		addresses = append(addresses, fmt.Sprintf("%s://%s:%s", protocol, config.Host, config.Port))
 	} else {
-		for idx := 0; idx < len(config.MultiHosts); idx++ {
+		for idx := range config.MultiHosts {
 			addresses = append(addresses, fmt.Sprintf("%s://%s:%s", protocol, config.MultiHosts[idx], config.MultiPorts[idx]))
 		}
 	}
