@@ -1,4 +1,46 @@
 - input: |-
+    DELETE FROM t_alias
+    FROM test AS t_alias
+    WHERE t_alias.c1 = 1;
+  result:
+    - statement: |-
+        SELECT "t_alias".* INTO "backupDB"."dbo"."rollback_0_test" FROM test AS t_alias WHERE t_alias.c1 = 1
+        ;
+      tablename: rollback_0_test
+      originalline: 1
+- input: |-
+    UPDATE t_alias
+    SET t_alias.c1 = 2
+    FROM test AS t_alias
+    WHERE t_alias.c1 = 1;
+  result:
+    - statement: |-
+        SELECT "t_alias".* INTO "backupDB"."dbo"."rollback_0_test" FROM test AS t_alias WHERE t_alias.c1 = 1
+        ;
+      tablename: rollback_0_test
+      originalline: 1
+- input: |-
+    DELETE FROM test
+    FROM test JOIN test2 ON test.c1 = test2.c1
+    WHERE test.c1 = 1;
+  result:
+    - statement: |-
+        SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1
+        ;
+      tablename: rollback_0_test
+      originalline: 1
+- input: |-
+    UPDATE test
+    SET test.c1 = 2
+    FROM test JOIN test2 ON test.c1 = test2.c1
+    WHERE test.c1 = 1;
+  result:
+    - statement: |-
+        SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1
+        ;
+      tablename: rollback_0_test
+      originalline: 1
+- input: |-
     DELETE FROM test WHERE c1 = 1;
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1;
   result:

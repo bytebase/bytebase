@@ -1268,26 +1268,6 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		}(); err != nil {
 			slog.Warn("failed to create issue comments for statement update", "issueUID", issue.UID, log.BBError(err))
 		}
-
-		if err := func() error {
-			payload, err := json.Marshal(statementUpdate)
-			if err != nil {
-				return errors.Wrapf(err, "failed to marshal payload")
-			}
-			_, err = s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-				CreatorUID:        user.ID,
-				ResourceContainer: project.GetName(),
-				ContainerUID:      task.PipelineID,
-				Type:              api.ActivityPipelineTaskStatementUpdate,
-				Payload:           string(payload),
-				Level:             api.ActivityInfo,
-			}, &activity.Metadata{
-				Issue: issue,
-			})
-			return errors.Wrapf(err, "failed to create activity")
-		}(); err != nil {
-			slog.Error("failed to create statement update activity after updating plan", log.BBError(err))
-		}
 	}
 	for _, earliestUpdate := range earliestUpdates {
 		task := tasksMap[earliestUpdate.TaskID]
@@ -1307,26 +1287,6 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 			}, user.ID)
 		}(); err != nil {
 			slog.Warn("failed to create issue comments for earliest allowed time update", "issueUID", issue.UID, log.BBError(err))
-		}
-
-		if err := func() error {
-			payload, err := json.Marshal(earliestUpdate)
-			if err != nil {
-				return errors.Wrapf(err, "failed to marshal payload")
-			}
-			_, err = s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-				CreatorUID:        user.ID,
-				ResourceContainer: project.GetName(),
-				ContainerUID:      task.PipelineID,
-				Type:              api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
-				Payload:           string(payload),
-				Level:             api.ActivityInfo,
-			}, &activity.Metadata{
-				Issue: issue,
-			})
-			return errors.Wrapf(err, "failed to create activity")
-		}(); err != nil {
-			slog.Error("failed to create earliest update activity after updating plan", log.BBError(err))
 		}
 	}
 
