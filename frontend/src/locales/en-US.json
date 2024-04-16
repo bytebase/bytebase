@@ -913,7 +913,8 @@
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "changed {name}. {link}",
-      "prior-back-table": "Data backup to database {database} and tables {tables}"
+      "prior-back-table": "Data backup to database {database} and tables {tables}",
+      "prior-back-table-for-line": "Data backup to database {database} and table {tables} for DML in line {line}"
     },
     "subject-prefix": {
       "task": "Task",

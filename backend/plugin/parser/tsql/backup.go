@@ -47,6 +47,7 @@ type statementInfo struct {
 	statement string
 	tree      antlr.Tree
 	tables    []TableReference
+	line      int
 }
 
 func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
@@ -96,8 +97,9 @@ func generateSQL(statementInfoList []statementInfo, targetDatabase string, table
 				return nil, errors.Wrap(err, "failed to write buffer")
 			}
 			result = append(result, base.BackupStatement{
-				Statement: buf.String(),
-				TableName: targetTable,
+				Statement:    buf.String(),
+				TableName:    targetTable,
+				OriginalLine: statementInfo.line,
 			})
 		}
 	}
@@ -320,6 +322,7 @@ func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
 			tables:    extractor.singleTables,
+			line:      ctx.GetStart().GetLine(),
 		})
 	}
 }
@@ -335,6 +338,7 @@ func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 			tree:      ctx,
 			tables:    extractor.singleTables,
+			line:      ctx.GetStart().GetLine(),
 		})
 	}
 }
