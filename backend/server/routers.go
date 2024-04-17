@@ -16,11 +16,13 @@ import (
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
 
+	"github.com/bytebase/bytebase/backend/api/gitops"
+	"github.com/bytebase/bytebase/backend/api/lsp"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 )
 
-func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntime.ServeMux, profile config.Profile) {
+func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, lspServer *lsp.Server, gitOpsServer *gitops.Service, mux *grpcruntime.ServeMux, profile config.Profile) {
 	// Embed frontend.
 	embedFrontend(e)
 
@@ -98,6 +100,13 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntim
 	}
 	wrappedGrpc := grpcweb.WrapServer(grpcServer, options...)
 	e.Any("/bytebase.v1.*", echo.WrapHandler(wrappedGrpc))
+
+	// LSP server.
+	e.GET(lspAPI, lspServer.Router)
+
+	// GitOps Webhook server.
+	webhookGroup := e.Group(webhookAPIPrefix)
+	gitOpsServer.RegisterWebhookRoutes(webhookGroup)
 }
 
 func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
