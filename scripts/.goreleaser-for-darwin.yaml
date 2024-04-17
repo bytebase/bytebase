@@ -1,6 +1,3 @@
-before:
-  hooks:
-    - go mod tidy
 builds:
   - id: server
     main: ./backend/bin/server
@@ -55,6 +52,11 @@ archives:
   id: bytebase
   builds: [server,cli]
   name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+  files:
+    - LICENSE*
+
+checksum:
+  disable: true
 
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
