@@ -572,7 +572,7 @@
         "user-info-url-description": "La dirección API para obtener la información del usuario mediante el token de acceso",
         "security-protocol": "Protocolo de seguridad",
         "connection-security": "Seguridad de la conexión",
-        "connection-security-skip-tls-verify": "Omitir verificación TLS para certificados autofirmados",
+        "connection-security-skip-tls-verify": "Omitir verificación TLS",
         "user-information-mapping": "Mapeo de información del usuario",
         "user-information-mapping-description": "Mapea los nombres de campo de la API de información del usuario al usuario Bytebase.",
         "identifier": "Correo electrónico de usuario de Bytebase",
