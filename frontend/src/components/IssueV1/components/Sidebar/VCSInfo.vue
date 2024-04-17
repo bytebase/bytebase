@@ -3,7 +3,7 @@
     v-if="issue.planEntity?.vcsSource?.pullRequestUrl"
     class="text-sm text-control-light flex space-x-1 items-center"
   >
-    <VCSIcon :type="issue.planEntity?.vcsSource.vcsType" />
+    <VCSIcon custom-class="h-5" :type="issue.planEntity?.vcsSource.vcsType" />
     <EllipsisText>
       <a
         :href="issue.planEntity?.vcsSource.pullRequestUrl"

@@ -52,7 +52,7 @@ func getGitLabPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 		if err != nil {
 			return nil, errors.Errorf("failed read file content, merge request %q, file %q, error %v", pushEvent.ObjectAttributes.URL, file.path, err)
 		}
-		file.content = content
+		file.content = convertFileContentToUTF8String(content)
 	}
 	return prInfo, nil
 }

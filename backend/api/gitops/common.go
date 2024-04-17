@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -101,4 +102,13 @@ func getPullRequestID(url string) string {
 
 func getPullRequestComment(externalURL, issue string) string {
 	return fmt.Sprintf("Bytebase Bot: this pull request has triggered a Bytebase rollout 🚀. Check out the status at %s/%s.", externalURL, issue)
+}
+
+func convertFileContentToUTF8String(content string) string {
+	convertedContent, err := utils.ConvertBytesToUTF8String([]byte(content))
+	if err != nil {
+		// After failed to convert to UTF-8, we will try to convert to valid UTF-8.
+		convertedContent = strings.ToValidUTF8(content, "")
+	}
+	return convertedContent
 }
