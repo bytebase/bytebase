@@ -52,11 +52,6 @@ jobs:
         with:
           name: bytebase-linux
           path: ./bytebase-build/linux
-      - name: Merge checksum file
-        run: |
-          cd ./bytebase-build
-          cat ./linux/bytebase*checksums.txt >> checksums.txt
-          rm ./linux/bytebase*checksums.txt
       - name: Release
         uses: goreleaser/goreleaser-action@v5
         with:
