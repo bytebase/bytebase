@@ -7,6 +7,8 @@ import type {
   ColumnMetadata,
   DatabaseMetadata,
   ExternalTableMetadata,
+  FunctionMetadata,
+  ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
   TablePartitionMetadata,
@@ -19,6 +21,8 @@ export type NodeType =
   | "table"
   | "external-table"
   | "view"
+  | "procedure"
+  | "function"
   | "partition-table"
   | "column"
   | "expandable-text" // Text nodes to display "Tables / Views / Functions / Triggers" etc.
@@ -50,6 +54,12 @@ export type RichPartitionTableMetadata = RichTableMetadata & {
 export type RichViewMetadata = RichSchemaMetadata & {
   view: ViewMetadata;
 };
+export type RichProcedureMetadata = RichSchemaMetadata & {
+  procedure: ProcedureMetadata;
+};
+export type RichFunctionMetadata = RichSchemaMetadata & {
+  function: FunctionMetadata;
+};
 export type TextTarget<E extends boolean = any, S extends boolean = any> = {
   expandable: E;
   id: string;
@@ -76,11 +86,15 @@ export type NodeTarget<T extends NodeType = NodeType> = T extends "database"
             ? RichPartitionTableMetadata
             : T extends "view"
               ? RichViewMetadata
-              : T extends "expandable-text"
-                ? TextTarget<true, any>
-                : T extends "error"
-                  ? ErrorTarget
-                  : never;
+              : T extends "procedure"
+                ? RichProcedureMetadata
+                : T extends "function"
+                  ? RichFunctionMetadata
+                  : T extends "expandable-text"
+                    ? TextTarget<true, any>
+                    : T extends "error"
+                      ? ErrorTarget
+                      : never;
 
 export type TreeState = "UNSET" | "LOADING" | "READY";
 
@@ -107,6 +121,8 @@ export const ExpandableNodeTypes: readonly NodeType[] = [
 export const LeafNodeTypes: readonly NodeType[] = [
   "column",
   "view",
+  "procedure",
+  "function",
   "error",
 ] as const;
 
@@ -162,6 +178,20 @@ export const keyForNodeTarget = <T extends NodeType>(
     const { db, schema, view } = target as NodeTarget<"view">;
     return [db.name, `schemas/${schema.name}`, `views/${view.name}`].join("/");
   }
+  if (type === "procedure") {
+    const { db, schema, procedure } = target as NodeTarget<"procedure">;
+    return [
+      db.name,
+      `schemas/${schema.name}`,
+      `procedures/${procedure.name}`,
+    ].join("/");
+  }
+  if (type === "procedure") {
+    const { db, schema, function: func } = target as NodeTarget<"function">;
+    return [db.name, `schemas/${schema.name}`, `functions/${func.name}`].join(
+      "/"
+    );
+  }
   if (type === "expandable-text") {
     const { id } = target as NodeTarget<"expandable-text">;
     return `expandableTexts/${id}`;
@@ -198,6 +228,12 @@ const readableTextForNodeTarget = <T extends NodeType>(
   }
   if (type === "view") {
     return (target as RichViewMetadata).view.name;
+  }
+  if (type === "procedure") {
+    return (target as RichProcedureMetadata).procedure.name;
+  }
+  if (type === "function") {
+    return (target as RichFunctionMetadata).function.name;
   }
   if (type === "expandable-text") {
     const { text, searchable } = target as TextTarget;
@@ -236,7 +272,7 @@ export const mapTreeNodeByType = <T extends NodeType>(
 };
 
 const createDummyNode = (
-  type: "column" | "table" | "view",
+  type: "column" | "table" | "view" | "procedure" | "function",
   parent: TreeNode,
   error: unknown | undefined = undefined
 ) => {
@@ -381,6 +417,32 @@ const mapViewNodes = (
   }
   return children;
 };
+const mapProcedureNodes = (
+  target: NodeTarget<"schema">,
+  parent: TreeNode<"expandable-text">
+) => {
+  const { schema } = target;
+  const children = schema.procedures.map((procedure) =>
+    mapTreeNodeByType("procedure", { ...target, procedure }, parent)
+  );
+  if (children.length === 0) {
+    return [createDummyNode("procedure", parent)];
+  }
+  return children;
+};
+const mapFunctionNodes = (
+  target: NodeTarget<"schema">,
+  parent: TreeNode<"expandable-text">
+) => {
+  const { schema } = target;
+  const children = schema.functions.map((func) =>
+    mapTreeNodeByType("function", { ...target, function: func }, parent)
+  );
+  if (children.length === 0) {
+    return [createDummyNode("function", parent)];
+  }
+  return children;
+};
 const buildSchemaNodeChildren = (
   target: NodeTarget<"schema">,
   parent: TreeNode<"schema"> | TreeNode<"database">
@@ -389,7 +451,9 @@ const buildSchemaNodeChildren = (
   if (
     schema.tables.length === 0 &&
     schema.externalTables.length === 0 &&
-    schema.views.length === 0
+    schema.views.length === 0 &&
+    schema.procedures.length === 0 &&
+    schema.functions.length === 0
   ) {
     return [createDummyNode("table", parent)];
   }
@@ -425,6 +489,24 @@ const buildSchemaNodeChildren = (
     );
     viewsNode.children = mapViewNodes(target, viewsNode);
     children.push(viewsNode);
+  }
+
+  // Show "Procedures" if there's at least 1 procedure
+  if (schema.procedures.length > 0) {
+    const procedureNode = createExpandableTextNode("procedure", parent, () =>
+      t("db.procedures")
+    );
+    procedureNode.children = mapProcedureNodes(target, procedureNode);
+    children.push(procedureNode);
+  }
+
+  // Show "Functions" if there's at least 1 function
+  if (schema.functions.length > 0) {
+    const functionNode = createExpandableTextNode("function", parent, () =>
+      t("db.functions")
+    );
+    functionNode.children = mapFunctionNodes(target, functionNode);
+    children.push(functionNode);
   }
   return children;
 };
