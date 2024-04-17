@@ -94,6 +94,10 @@ func NormalizeTSQLIdentifier(part parser.IId_Context) (original string, lowercas
 		return "", ""
 	}
 	text := part.GetText()
+	return NormalizeTSQLIdentifierText(text)
+}
+
+func NormalizeTSQLIdentifierText(text string) (original string, lowercase string) {
 	if text == "" {
 		return "", ""
 	}

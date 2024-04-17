@@ -7,11 +7,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 type candidatesTest struct {
@@ -52,12 +54,22 @@ func TestCompletion(t *testing.T) {
 	for i, t := range tests {
 		statement, caretLine, caretPosition := getCaretPosition(t.Input)
 		getter, lister := buildMockDatabaseMetadataGetterLister()
-		results, err := Completion(context.Background(), statement, caretLine, caretPosition, "db", getter, lister)
+		results, err := Completion(context.Background(), statement, caretLine, caretPosition, "Company", getter, lister)
 		a.NoErrorf(err, "Case %02d: %s", i, t.Description)
+		var filteredResult []base.Candidate
+		for _, r := range results {
+			switch r.Type {
+			case base.CandidateTypeKeyword, base.CandidateTypeFunction:
+				continue
+			default:
+				filteredResult = append(filteredResult, r)
+			}
+		}
+
 		if record {
-			tests[i].Want = results
+			tests[i].Want = filteredResult
 		} else {
-			a.Equalf(t.Want, results, t.Input, "Case %02d: %s", i, t.Description)
+			a.Equalf(t.Want, filteredResult, t.Input, "Case %02d: %s", i, t.Description)
 		}
 	}
 
@@ -81,10 +93,96 @@ func getCaretPosition(statement string) (string, int, int) {
 	panic("caret position not found")
 }
 
+var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
+	{
+		Name: "Company",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "dbo",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "Employees",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name: "Id",
+							},
+							{
+								Name: "Name",
+							},
+						},
+					},
+					{
+						Name: "Address",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name: "EmployeeId",
+							},
+							{
+								Name: "Street",
+							},
+						},
+					},
+				},
+			},
+			{
+				Name: "MySchema",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "SalaryLevel",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name: "Id",
+							},
+							{
+								Name: "SalaryUpBound",
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	{
+		Name: "School",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "dbo",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "Student",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name: "Id",
+							},
+							{
+								Name: "ParentName",
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
 func buildMockDatabaseMetadataGetterLister() (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
-	return func(context.Context, string) (string, *model.DatabaseMetadata, error) {
-			return "", nil, nil
+
+	return func(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
+			m := make(map[string]*model.DatabaseMetadata)
+			for _, metadata := range databaseMetadatas {
+				m[metadata.Name] = model.NewDatabaseMetadata(metadata)
+			}
+
+			if databaseMetadata, ok := m[databaseName]; ok {
+				return "", databaseMetadata, nil
+			}
+
+			return "", nil, errors.Errorf("database %q not found", databaseName)
 		}, func(context.Context) ([]string, error) {
-			return nil, nil
+			var names []string
+			for _, metadata := range databaseMetadatas {
+				names = append(names, metadata.Name)
+			}
+			return names, nil
 		}
 }

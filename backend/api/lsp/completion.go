@@ -74,8 +74,6 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		items = append(items, completionItem)
 	}
 
-	slog.Debug("Barny1", slog.Any("Completion candidates", items))
-
 	return &lsp.CompletionList{
 		IsIncomplete: false,
 		Items:        items,

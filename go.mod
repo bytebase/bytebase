@@ -334,3 +334,5 @@ replace github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-2023102608
 replace github.com/antlr4-go/antlr/v4 => github.com/bytebase/antlr/v4 v4.0.0-20231103101006-5fe1a93b199f
 
 replace github.com/sourcegraph/go-lsp => github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c
+
+replace github.com/bytebase/tsql-parser => /Users/h3n4l/OpenSource/tsql-parser

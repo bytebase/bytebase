@@ -1,11 +1,11 @@
-- description: Simple SELECT token
-  input: SELE|
+- description: Completion table for simple select
+  input: SELECT * FROM |
   want:
-    - text: SELECT
-      type: KEYWORD
+    - text: Company
+      type: DATABASE
       definition: ""
       comment: ""
-    - text: SELF
-      type: KEYWORD
+    - text: School
+      type: DATABASE
       definition: ""
       comment: ""
