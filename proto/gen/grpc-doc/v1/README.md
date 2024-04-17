@@ -3,7 +3,7 @@
 
 ## Table of Contents
 
-- [v1/actuator_service.proto](#v1_actuator_service-proto)
+- [actuator_service.proto](#actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
     - [DebugLog](#bytebase-v1-DebugLog)
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
@@ -16,7 +16,7 @@
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
-- [v1/anomaly_service.proto](#v1_anomaly_service-proto)
+- [anomaly_service.proto](#anomaly_service-proto)
     - [Anomaly](#bytebase-v1-Anomaly)
     - [Anomaly.DatabaseConnectionDetail](#bytebase-v1-Anomaly-DatabaseConnectionDetail)
     - [Anomaly.DatabaseSchemaDriftDetail](#bytebase-v1-Anomaly-DatabaseSchemaDriftDetail)
@@ -29,14 +29,14 @@
   
     - [AnomalyService](#bytebase-v1-AnomalyService)
   
-- [v1/common.proto](#v1_common-proto)
+- [common.proto](#common-proto)
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
     - [MaskingLevel](#bytebase-v1-MaskingLevel)
     - [State](#bytebase-v1-State)
     - [VCSType](#bytebase-v1-VCSType)
   
-- [v1/auth_service.proto](#v1_auth_service-proto)
+- [auth_service.proto](#auth_service-proto)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
     - [DeleteUserRequest](#bytebase-v1-DeleteUserRequest)
     - [GetUserRequest](#bytebase-v1-GetUserRequest)
@@ -56,7 +56,7 @@
   
     - [AuthService](#bytebase-v1-AuthService)
   
-- [v1/instance_service.proto](#v1_instance_service-proto)
+- [instance_service.proto](#instance_service-proto)
     - [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest)
     - [BatchSyncInstanceRequest](#bytebase-v1-BatchSyncInstanceRequest)
     - [BatchSyncInstanceResponse](#bytebase-v1-BatchSyncInstanceResponse)
@@ -88,7 +88,7 @@
   
     - [InstanceService](#bytebase-v1-InstanceService)
   
-- [v1/database_service.proto](#v1_database_service-proto)
+- [database_service.proto](#database_service-proto)
     - [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest)
     - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
@@ -161,7 +161,7 @@
   
     - [DatabaseService](#bytebase-v1-DatabaseService)
   
-- [v1/branch_service.proto](#v1_branch_service-proto)
+- [branch_service.proto](#branch_service-proto)
     - [Branch](#bytebase-v1-Branch)
     - [CreateBranchRequest](#bytebase-v1-CreateBranchRequest)
     - [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest)
@@ -181,7 +181,7 @@
   
     - [BranchService](#bytebase-v1-BranchService)
   
-- [v1/cel_service.proto](#v1_cel_service-proto)
+- [cel_service.proto](#cel_service-proto)
     - [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest)
     - [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse)
     - [BatchParseRequest](#bytebase-v1-BatchParseRequest)
@@ -189,7 +189,7 @@
   
     - [CelService](#bytebase-v1-CelService)
   
-- [v1/changelist_service.proto](#v1_changelist_service-proto)
+- [changelist_service.proto](#changelist_service-proto)
     - [Changelist](#bytebase-v1-Changelist)
     - [Changelist.Change](#bytebase-v1-Changelist-Change)
     - [CreateChangelistRequest](#bytebase-v1-CreateChangelistRequest)
@@ -201,7 +201,7 @@
   
     - [ChangelistService](#bytebase-v1-ChangelistService)
   
-- [v1/environment_service.proto](#v1_environment_service-proto)
+- [environment_service.proto](#environment_service-proto)
     - [CreateEnvironmentRequest](#bytebase-v1-CreateEnvironmentRequest)
     - [DeleteEnvironmentRequest](#bytebase-v1-DeleteEnvironmentRequest)
     - [Environment](#bytebase-v1-Environment)
@@ -215,11 +215,11 @@
   
     - [EnvironmentService](#bytebase-v1-EnvironmentService)
   
-- [v1/iam_policy.proto](#v1_iam_policy-proto)
+- [iam_policy.proto](#iam_policy-proto)
     - [Binding](#bytebase-v1-Binding)
     - [IamPolicy](#bytebase-v1-IamPolicy)
   
-- [v1/idp_service.proto](#v1_idp_service-proto)
+- [idp_service.proto](#idp_service-proto)
     - [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest)
     - [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest)
     - [FieldMapping](#bytebase-v1-FieldMapping)
@@ -242,7 +242,7 @@
   
     - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
   
-- [v1/instance_role_service.proto](#v1_instance_role_service-proto)
+- [instance_role_service.proto](#instance_role_service-proto)
     - [CreateInstanceRoleRequest](#bytebase-v1-CreateInstanceRoleRequest)
     - [DeleteInstanceRoleRequest](#bytebase-v1-DeleteInstanceRoleRequest)
     - [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest)
@@ -254,7 +254,7 @@
   
     - [InstanceRoleService](#bytebase-v1-InstanceRoleService)
   
-- [v1/issue_service.proto](#v1_issue_service-proto)
+- [issue_service.proto](#issue_service-proto)
     - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
     - [ApprovalNode](#bytebase-v1-ApprovalNode)
     - [ApprovalStep](#bytebase-v1-ApprovalStep)
@@ -299,7 +299,7 @@
   
     - [IssueService](#bytebase-v1-IssueService)
   
-- [v1/logging_service.proto](#v1_logging_service-proto)
+- [logging_service.proto](#logging_service-proto)
     - [ExportLogsRequest](#bytebase-v1-ExportLogsRequest)
     - [ExportLogsResponse](#bytebase-v1-ExportLogsResponse)
     - [GetLogRequest](#bytebase-v1-GetLogRequest)
@@ -312,7 +312,7 @@
   
     - [LoggingService](#bytebase-v1-LoggingService)
   
-- [v1/org_policy_service.proto](#v1_org_policy_service-proto)
+- [org_policy_service.proto](#org_policy_service-proto)
     - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
     - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
@@ -340,7 +340,7 @@
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
-- [v1/project_service.proto](#v1_project_service-proto)
+- [project_service.proto](#project_service-proto)
     - [Activity](#bytebase-v1-Activity)
     - [AddWebhookRequest](#bytebase-v1-AddWebhookRequest)
     - [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest)
@@ -404,7 +404,7 @@
   
     - [ProjectService](#bytebase-v1-ProjectService)
   
-- [v1/risk_service.proto](#v1_risk_service-proto)
+- [risk_service.proto](#risk_service-proto)
     - [CreateRiskRequest](#bytebase-v1-CreateRiskRequest)
     - [DeleteRiskRequest](#bytebase-v1-DeleteRiskRequest)
     - [ListRisksRequest](#bytebase-v1-ListRisksRequest)
@@ -416,7 +416,7 @@
   
     - [RiskService](#bytebase-v1-RiskService)
   
-- [v1/role_service.proto](#v1_role_service-proto)
+- [role_service.proto](#role_service-proto)
     - [CreateRoleRequest](#bytebase-v1-CreateRoleRequest)
     - [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest)
     - [ListRolesRequest](#bytebase-v1-ListRolesRequest)
@@ -426,7 +426,7 @@
   
     - [RoleService](#bytebase-v1-RoleService)
   
-- [v1/rollout_service.proto](#v1_rollout_service-proto)
+- [rollout_service.proto](#rollout_service-proto)
     - [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest)
     - [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse)
     - [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest)
@@ -488,7 +488,7 @@
   
     - [RolloutService](#bytebase-v1-RolloutService)
   
-- [v1/subscription_service.proto](#v1_subscription_service-proto)
+- [subscription_service.proto](#subscription_service-proto)
     - [Feature](#bytebase-v1-Feature)
     - [Feature.MatrixEntry](#bytebase-v1-Feature-MatrixEntry)
     - [FeatureMatrix](#bytebase-v1-FeatureMatrix)
@@ -502,7 +502,7 @@
   
     - [SubscriptionService](#bytebase-v1-SubscriptionService)
   
-- [v1/setting_service.proto](#v1_setting_service-proto)
+- [setting_service.proto](#setting_service-proto)
     - [AgentPluginSetting](#bytebase-v1-AgentPluginSetting)
     - [Announcement](#bytebase-v1-Announcement)
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
@@ -546,7 +546,7 @@
   
     - [SettingService](#bytebase-v1-SettingService)
   
-- [v1/sheet_service.proto](#v1_sheet_service-proto)
+- [sheet_service.proto](#sheet_service-proto)
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
@@ -557,7 +557,7 @@
   
     - [SheetService](#bytebase-v1-SheetService)
   
-- [v1/sql_service.proto](#v1_sql_service-proto)
+- [sql_service.proto](#sql_service-proto)
     - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
     - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
     - [Advice](#bytebase-v1-Advice)
@@ -590,7 +590,7 @@
   
     - [SQLService](#bytebase-v1-SQLService)
   
-- [v1/vcs_connector_service.proto](#v1_vcs_connector_service-proto)
+- [vcs_connector_service.proto](#vcs_connector_service-proto)
     - [CreateVCSConnectorRequest](#bytebase-v1-CreateVCSConnectorRequest)
     - [DeleteVCSConnectorRequest](#bytebase-v1-DeleteVCSConnectorRequest)
     - [GetVCSConnectorRequest](#bytebase-v1-GetVCSConnectorRequest)
@@ -601,7 +601,7 @@
   
     - [VCSConnectorService](#bytebase-v1-VCSConnectorService)
   
-- [v1/vcs_provider_service.proto](#v1_vcs_provider_service-proto)
+- [vcs_provider_service.proto](#vcs_provider_service-proto)
     - [CreateVCSProviderRequest](#bytebase-v1-CreateVCSProviderRequest)
     - [DeleteVCSProviderRequest](#bytebase-v1-DeleteVCSProviderRequest)
     - [GetVCSProviderRequest](#bytebase-v1-GetVCSProviderRequest)
@@ -617,7 +617,7 @@
   
     - [VCSProviderService](#bytebase-v1-VCSProviderService)
   
-- [v1/worksheet_service.proto](#v1_worksheet_service-proto)
+- [worksheet_service.proto](#worksheet_service-proto)
     - [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest)
     - [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest)
     - [GetWorksheetRequest](#bytebase-v1-GetWorksheetRequest)
@@ -636,10 +636,10 @@
 
 
 
-<a name="v1_actuator_service-proto"></a>
+<a name="actuator_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/actuator_service.proto
+## actuator_service.proto
 
 
 
@@ -814,10 +814,10 @@ The theme resources.
 
 
 
-<a name="v1_anomaly_service-proto"></a>
+<a name="anomaly_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/anomaly_service.proto
+## anomaly_service.proto
 
 
 
@@ -981,10 +981,10 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 
 
 
-<a name="v1_common-proto"></a>
+<a name="common-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/common.proto
+## common.proto
 
 
  
@@ -1086,10 +1086,10 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 
 
 
-<a name="v1_auth_service-proto"></a>
+<a name="auth_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/auth_service.proto
+## auth_service.proto
 
 
 
@@ -1364,10 +1364,10 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 
 
-<a name="v1_instance_service-proto"></a>
+<a name="instance_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/instance_service.proto
+## instance_service.proto
 
 
 
@@ -1857,10 +1857,10 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
-<a name="v1_database_service-proto"></a>
+<a name="database_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/database_service.proto
+## database_service.proto
 
 
 
@@ -3121,10 +3121,10 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 
 
 
-<a name="v1_branch_service-proto"></a>
+<a name="branch_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/branch_service.proto
+## branch_service.proto
 
 
 
@@ -3419,10 +3419,10 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 
 
 
-<a name="v1_cel_service-proto"></a>
+<a name="cel_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/cel_service.proto
+## cel_service.proto
 
 
 
@@ -3506,10 +3506,10 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 
 
 
-<a name="v1_changelist_service-proto"></a>
+<a name="changelist_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/changelist_service.proto
+## changelist_service.proto
 
 
 
@@ -3676,10 +3676,10 @@ The changelist&#39;s `name` field is used to identify the changelist to update. 
 
 
 
-<a name="v1_environment_service-proto"></a>
+<a name="environment_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/environment_service.proto
+## environment_service.proto
 
 
 
@@ -3856,10 +3856,10 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 
 
-<a name="v1_iam_policy-proto"></a>
+<a name="iam_policy-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/iam_policy.proto
+## iam_policy.proto
 
 
 
@@ -3905,10 +3905,10 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 
 
-<a name="v1_idp_service-proto"></a>
+<a name="idp_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/idp_service.proto
+## idp_service.proto
 
 
 
@@ -4251,10 +4251,10 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 
 
-<a name="v1_instance_role_service-proto"></a>
+<a name="instance_role_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/instance_role_service.proto
+## instance_role_service.proto
 
 
 
@@ -4417,10 +4417,10 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 
 
 
-<a name="v1_issue_service-proto"></a>
+<a name="issue_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/issue_service.proto
+## issue_service.proto
 
 
 
@@ -5142,10 +5142,10 @@ ANY means approving any node will proceed.
 
 
 
-<a name="v1_logging_service-proto"></a>
+<a name="logging_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/logging_service.proto
+## logging_service.proto
 
 
 
@@ -5328,10 +5328,10 @@ ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query. |
 
 
 
-<a name="v1_org_policy_service-proto"></a>
+<a name="org_policy_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/org_policy_service.proto
+## org_policy_service.proto
 
 
 
@@ -5752,10 +5752,10 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 
 
-<a name="v1_project_service-proto"></a>
+<a name="project_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/project_service.proto
+## project_service.proto
 
 
 
@@ -6778,10 +6778,10 @@ The type of target.
 
 
 
-<a name="v1_risk_service-proto"></a>
+<a name="risk_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/risk_service.proto
+## risk_service.proto
 
 
 
@@ -6927,10 +6927,10 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 
 
 
-<a name="v1_role_service-proto"></a>
+<a name="role_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/role_service.proto
+## role_service.proto
 
 
 
@@ -7057,10 +7057,10 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
-<a name="v1_rollout_service-proto"></a>
+<a name="rollout_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/rollout_service.proto
+## rollout_service.proto
 
 
 
@@ -8079,10 +8079,10 @@ Type is the database change type.
 
 
 
-<a name="v1_subscription_service-proto"></a>
+<a name="subscription_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/subscription_service.proto
+## subscription_service.proto
 
 
 
@@ -8239,10 +8239,10 @@ Type is the database change type.
 
 
 
-<a name="v1_setting_service-proto"></a>
+<a name="setting_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/setting_service.proto
+## setting_service.proto
 
 
 
@@ -8933,10 +8933,10 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
-<a name="v1_sheet_service-proto"></a>
+<a name="sheet_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/sheet_service.proto
+## sheet_service.proto
 
 
 
@@ -9063,10 +9063,10 @@ Type of the SheetPayload.
 
 
 
-<a name="v1_sql_service-proto"></a>
+<a name="sql_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/sql_service.proto
+## sql_service.proto
 
 
 
@@ -9577,10 +9577,10 @@ Type of the SheetPayload.
 
 
 
-<a name="v1_vcs_connector_service-proto"></a>
+<a name="vcs_connector_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/vcs_connector_service.proto
+## vcs_connector_service.proto
 
 
 
@@ -9736,10 +9736,10 @@ The vcsConnector&#39;s `name` field is used to identify the vcsConnector to upda
 
 
 
-<a name="v1_vcs_provider_service-proto"></a>
+<a name="vcs_provider_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/vcs_provider_service.proto
+## vcs_provider_service.proto
 
 
 
@@ -9961,10 +9961,10 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
-<a name="v1_worksheet_service-proto"></a>
+<a name="worksheet_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/worksheet_service.proto
+## worksheet_service.proto
 
 
 

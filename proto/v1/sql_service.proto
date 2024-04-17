@@ -7,8 +7,8 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "v1/common.proto";
-import "v1/database_service.proto";
+import "common.proto";
+import "database_service.proto";
 
 option go_package = "generated-go/v1";
 
