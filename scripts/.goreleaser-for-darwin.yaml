@@ -53,5 +53,8 @@ archives:
   builds: [server,cli]
   name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
 
+checksum:
+  disable: true
+
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
