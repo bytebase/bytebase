@@ -25,7 +25,6 @@ builds:
     goos:
       - darwin
     goarch:
-      - amd64
       - arm64
   - id: cli
     main: ./backend/bin/bb
@@ -49,7 +48,13 @@ builds:
     goos:
       - darwin
     goarch:
-      - amd64
       - arm64
+
+archives:
+- format: tar.gz
+  id: bytebase
+  builds: [server,cli]
+  name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
