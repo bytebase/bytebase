@@ -10,4 +10,4 @@ If so please remove the brew alias in `~/.oh-my-zsh/plugins/brew/brew.plugin.zsh
 
 # Clients
 - Web: grpcui -plaintext localhost:8080
-- CLI: grpcurl -plaintext localhost:8081 bytebase.v1.ActuatorService.GetActuatorInfo
+- CLI: grpcurl -plaintext localhost:8080 bytebase.v1.ActuatorService.GetActuatorInfo
