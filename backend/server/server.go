@@ -420,11 +420,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Shutdown echo
-	if s.e != nil {
-		if err := s.e.Shutdown(ctx); err != nil {
-			s.e.Logger.Fatal(err)
-		}
-	}
 	if s.grpcServer != nil {
 		stopped := make(chan struct{})
 		go func() {
@@ -438,6 +433,12 @@ func (s *Server) Shutdown(ctx context.Context) error {
 			s.grpcServer.Stop()
 		case <-stopped:
 			t.Stop()
+		}
+	}
+
+	if s.e != nil {
+		if err := s.e.Shutdown(ctx); err != nil {
+			s.e.Logger.Fatal(err)
 		}
 	}
 
