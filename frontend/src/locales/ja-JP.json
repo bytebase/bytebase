@@ -1251,7 +1251,8 @@
     "start-to-sync-schema": "スキーマ同期に失敗しました",
     "failed-to-sync-schema": "スキーマを正常に同期しました",
     "successfully-synced-schema": "インスタンスを選択してください",
-    "create": "データベースの作成"
+    "create": "データベースの作成",
+    "procedures": "手順"
   },
   "instance": {
     "select": "データベースユーザーを選択してください",
