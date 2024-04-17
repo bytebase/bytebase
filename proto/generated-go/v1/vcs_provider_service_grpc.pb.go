@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: v1/vcs_provider_service.proto
+// source: vcs_provider_service.proto
 
 package v1
 
@@ -328,5 +328,5 @@ var VCSProviderService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "v1/vcs_provider_service.proto",
+	Metadata: "vcs_provider_service.proto",
 }

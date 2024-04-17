@@ -1,10 +1,10 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { Duration } from "../google/protobuf/duration";
-import { FieldMask } from "../google/protobuf/field_mask";
-import { Timestamp } from "../google/protobuf/timestamp";
-import { Expr } from "../google/type/expr";
+import { Duration } from "./google/protobuf/duration";
+import { FieldMask } from "./google/protobuf/field_mask";
+import { Timestamp } from "./google/protobuf/timestamp";
+import { Expr } from "./google/type/expr";
 
 export const protobufPackage = "bytebase.v1";
 

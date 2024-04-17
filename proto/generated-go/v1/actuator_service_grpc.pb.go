@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: v1/actuator_service.proto
+// source: actuator_service.proto
 
 package v1
 
@@ -254,5 +254,5 @@ var ActuatorService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "v1/actuator_service.proto",
+	Metadata: "actuator_service.proto",
 }

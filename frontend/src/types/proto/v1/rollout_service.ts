@@ -1,8 +1,6 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { FieldMask } from "../google/protobuf/field_mask";
-import { Timestamp } from "../google/protobuf/timestamp";
 import {
   ExportFormat,
   exportFormatFromJSON,
@@ -12,6 +10,8 @@ import {
   vCSTypeToJSON,
 } from "./common";
 import { ChangedResources } from "./database_service";
+import { FieldMask } from "./google/protobuf/field_mask";
+import { Timestamp } from "./google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 

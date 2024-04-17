@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.33.0
 // 	protoc        (unknown)
-// source: store/export_archive.proto
+// source: export_archive.proto
 
 package store
 
@@ -32,7 +32,7 @@ type ExportArchivePayload struct {
 func (x *ExportArchivePayload) Reset() {
 	*x = ExportArchivePayload{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_export_archive_proto_msgTypes[0]
+		mi := &file_export_archive_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -45,7 +45,7 @@ func (x *ExportArchivePayload) String() string {
 func (*ExportArchivePayload) ProtoMessage() {}
 
 func (x *ExportArchivePayload) ProtoReflect() protoreflect.Message {
-	mi := &file_store_export_archive_proto_msgTypes[0]
+	mi := &file_export_archive_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +58,7 @@ func (x *ExportArchivePayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportArchivePayload.ProtoReflect.Descriptor instead.
 func (*ExportArchivePayload) Descriptor() ([]byte, []int) {
-	return file_store_export_archive_proto_rawDescGZIP(), []int{0}
+	return file_export_archive_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ExportArchivePayload) GetFileFormat() ExportFormat {
@@ -68,41 +68,40 @@ func (x *ExportArchivePayload) GetFileFormat() ExportFormat {
 	return ExportFormat_FORMAT_UNSPECIFIED
 }
 
-var File_store_export_archive_proto protoreflect.FileDescriptor
+var File_export_archive_proto protoreflect.FileDescriptor
 
-var file_store_export_archive_proto_rawDesc = []byte{
-	0x0a, 0x1a, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2f, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x5f, 0x61,
-	0x72, 0x63, 0x68, 0x69, 0x76, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0e, 0x62, 0x79,
-	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x1a, 0x12, 0x73, 0x74,
-	0x6f, 0x72, 0x65, 0x2f, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x22, 0x55, 0x0a, 0x14, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x41, 0x72, 0x63, 0x68, 0x69, 0x76,
-	0x65, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x3d, 0x0a, 0x0b, 0x66, 0x69, 0x6c, 0x65,
-	0x5f, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x1c, 0x2e,
-	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x45,
-	0x78, 0x70, 0x6f, 0x72, 0x74, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x52, 0x0a, 0x66, 0x69, 0x6c,
-	0x65, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72,
-	0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x33,
+var file_export_archive_proto_rawDesc = []byte{
+	0x0a, 0x14, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x5f, 0x61, 0x72, 0x63, 0x68, 0x69, 0x76, 0x65,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
+	0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x1a, 0x0c, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x22, 0x55, 0x0a, 0x14, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x41, 0x72,
+	0x63, 0x68, 0x69, 0x76, 0x65, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x3d, 0x0a, 0x0b,
+	0x66, 0x69, 0x6c, 0x65, 0x5f, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x0e, 0x32, 0x1c, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f,
+	0x72, 0x65, 0x2e, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x52,
+	0x0a, 0x66, 0x69, 0x6c, 0x65, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x42, 0x14, 0x5a, 0x12, 0x67,
+	0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
-	file_store_export_archive_proto_rawDescOnce sync.Once
-	file_store_export_archive_proto_rawDescData = file_store_export_archive_proto_rawDesc
+	file_export_archive_proto_rawDescOnce sync.Once
+	file_export_archive_proto_rawDescData = file_export_archive_proto_rawDesc
 )
 
-func file_store_export_archive_proto_rawDescGZIP() []byte {
-	file_store_export_archive_proto_rawDescOnce.Do(func() {
-		file_store_export_archive_proto_rawDescData = protoimpl.X.CompressGZIP(file_store_export_archive_proto_rawDescData)
+func file_export_archive_proto_rawDescGZIP() []byte {
+	file_export_archive_proto_rawDescOnce.Do(func() {
+		file_export_archive_proto_rawDescData = protoimpl.X.CompressGZIP(file_export_archive_proto_rawDescData)
 	})
-	return file_store_export_archive_proto_rawDescData
+	return file_export_archive_proto_rawDescData
 }
 
-var file_store_export_archive_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_store_export_archive_proto_goTypes = []interface{}{
+var file_export_archive_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_export_archive_proto_goTypes = []interface{}{
 	(*ExportArchivePayload)(nil), // 0: bytebase.store.ExportArchivePayload
 	(ExportFormat)(0),            // 1: bytebase.store.ExportFormat
 }
-var file_store_export_archive_proto_depIdxs = []int32{
+var file_export_archive_proto_depIdxs = []int32{
 	1, // 0: bytebase.store.ExportArchivePayload.file_format:type_name -> bytebase.store.ExportFormat
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
@@ -111,14 +110,14 @@ var file_store_export_archive_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_store_export_archive_proto_init() }
-func file_store_export_archive_proto_init() {
-	if File_store_export_archive_proto != nil {
+func init() { file_export_archive_proto_init() }
+func file_export_archive_proto_init() {
+	if File_export_archive_proto != nil {
 		return
 	}
-	file_store_common_proto_init()
+	file_common_proto_init()
 	if !protoimpl.UnsafeEnabled {
-		file_store_export_archive_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_export_archive_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ExportArchivePayload); i {
 			case 0:
 				return &v.state
@@ -135,18 +134,18 @@ func file_store_export_archive_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_store_export_archive_proto_rawDesc,
+			RawDescriptor: file_export_archive_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_store_export_archive_proto_goTypes,
-		DependencyIndexes: file_store_export_archive_proto_depIdxs,
-		MessageInfos:      file_store_export_archive_proto_msgTypes,
+		GoTypes:           file_export_archive_proto_goTypes,
+		DependencyIndexes: file_export_archive_proto_depIdxs,
+		MessageInfos:      file_export_archive_proto_msgTypes,
 	}.Build()
-	File_store_export_archive_proto = out.File
-	file_store_export_archive_proto_rawDesc = nil
-	file_store_export_archive_proto_goTypes = nil
-	file_store_export_archive_proto_depIdxs = nil
+	File_export_archive_proto = out.File
+	file_export_archive_proto_rawDesc = nil
+	file_export_archive_proto_goTypes = nil
+	file_export_archive_proto_depIdxs = nil
 }
