@@ -20,6 +20,12 @@
   <template v-if="type === 'view'">
     <ViewNode :node="node" :keyword="keyword" />
   </template>
+  <template v-if="type === 'procedure'">
+    <ProcedureNode :node="node" :keyword="keyword" />
+  </template>
+  <template v-if="type === 'function'">
+    <FunctionNode :node="node" :keyword="keyword" />
+  </template>
   <template v-if="type === 'expandable-text'">
     <TextNode :node="node" :keyword="keyword" />
   </template>
@@ -35,7 +41,9 @@ import ColumnNode from "./ColumnNode.vue";
 import DatabaseNode from "./DatabaseNode.vue";
 import DummyNode from "./DummyNode.vue";
 import ExternalTableNode from "./ExternalTableNode.vue";
+import FunctionNode from "./FunctionNode.vue";
 import PartitionTableNode from "./PartitionTableNode.vue";
+import ProcedureNode from "./ProcedureNode.vue";
 import SchemaNode from "./SchemaNode.vue";
 import TableNode from "./TableNode.vue";
 import TextNode from "./TextNode.vue";
