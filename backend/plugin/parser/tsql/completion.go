@@ -166,6 +166,140 @@ func (m CompletionMap) insertDatabases(c *Completer, linkedServer string) {
 	}
 }
 
+func (m CompletionMap) insertSchemas(c *Completer, linkedServer string, database string) {
+	if linkedServer != "" {
+		return
+	}
+
+	anchor := c.defaultDatabase
+	if database != "" {
+		anchor = database
+	}
+	if anchor == "" {
+		return
+	}
+
+	allDBNames, err := c.databaseNamesLister(c.ctx)
+	if err != nil {
+		return
+	}
+	for _, dbName := range allDBNames {
+		if strings.EqualFold(dbName, anchor) {
+			anchor = dbName
+			break
+		}
+	}
+
+	_, databaseMetadata, err := c.metadataGetter(c.ctx, anchor)
+	if err != nil {
+		return
+	}
+
+	for _, schema := range databaseMetadata.ListSchemaNames() {
+		if _, ok := m[schema]; !ok {
+			m[schema] = base.Candidate{
+				Type: base.CandidateTypeSchema,
+				Text: schema,
+			}
+		}
+	}
+}
+
+func (m CompletionMap) insertTables(c *Completer, linkedServer string, database string, schema string) {
+	if linkedServer != "" {
+		return
+	}
+	if database == "" && schema == "" {
+		// TODO(zp): insertCTE
+	}
+
+	databaseName, schemaName := c.defaultDatabase, c.defaultSchema
+	if database != "" {
+		databaseName = database
+	}
+	if schema == "" {
+		schemaName = schema
+	}
+	if databaseName == "" || schemaName == "" {
+		return
+	}
+
+	_, databaseMetadata, err := c.metadataGetter(c.ctx, databaseName)
+	if err != nil {
+		return
+	}
+	for _, schema := range databaseMetadata.ListSchemaNames() {
+		if strings.EqualFold(schema, schemaName) {
+			schemaName = schema
+			break
+		}
+	}
+
+	schemaMetadata := databaseMetadata.GetSchema(schemaName)
+	for _, table := range schemaMetadata.ListTableNames() {
+		if _, ok := m[table]; !ok {
+			m[table] = base.Candidate{
+				Type: base.CandidateTypeTable,
+				Text: table,
+			}
+		}
+	}
+}
+
+func (m CompletionMap) insertViews(c *Completer, linkedServer string, database string, schema string) {
+	if linkedServer != "" {
+		return
+	}
+
+	databaseName, schemaName := c.defaultDatabase, c.defaultSchema
+	if database != "" {
+		databaseName = database
+	}
+	if schema == "" {
+		schemaName = schema
+	}
+	if databaseName == "" || schemaName == "" {
+		return
+	}
+
+	_, databaseMetadata, err := c.metadataGetter(c.ctx, databaseName)
+	if err != nil {
+		return
+	}
+	for _, schema := range databaseMetadata.ListSchemaNames() {
+		if strings.EqualFold(schema, schemaName) {
+			schemaName = schema
+			break
+		}
+	}
+
+	schemaMetadata := databaseMetadata.GetSchema(schemaName)
+	for _, view := range schemaMetadata.ListViewNames() {
+		if _, ok := m[view]; !ok {
+			m[view] = base.Candidate{
+				Type: base.CandidateTypeView,
+				Text: view,
+			}
+		}
+	}
+	for _, materializeView := range schemaMetadata.ListMaterializedViewNames() {
+		if _, ok := m[materializeView]; !ok {
+			m[materializeView] = base.Candidate{
+				Type: base.CandidateTypeView,
+				Text: materializeView,
+			}
+		}
+	}
+	for _, foreignTable := range schemaMetadata.ListForeignTableNames() {
+		if _, ok := m[foreignTable]; !ok {
+			m[foreignTable] = base.Candidate{
+				Type: base.CandidateTypeView,
+				Text: foreignTable,
+			}
+		}
+	}
+}
+
 type Completer struct {
 	ctx     context.Context
 	core    *base.CodeCompletionCore
@@ -174,6 +308,7 @@ type Completer struct {
 	scanner *base.Scanner
 
 	defaultDatabase     string
+	defaultSchema       string
 	metadataGetter      base.GetDatabaseMetadataFunc
 	databaseNamesLister base.ListDatabaseNamesFunc
 
@@ -229,6 +364,7 @@ func NewStandardCompleter(ctx context.Context, statement string, caretLine int, 
 		lexer:               lexer,
 		scanner:             scanner,
 		defaultDatabase:     defaultDatabase,
+		defaultSchema:       "dbo",
 		metadataGetter:      metadataGetter,
 		databaseNamesLister: databaseNamesLister,
 		noSeparatorRequired: nil,
@@ -301,6 +437,13 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			for _, context := range completionContexts {
 				if context.flags&objectFlagShowDatabase != 0 {
 					databaseEntries.insertDatabases(c, context.linkedServer)
+				}
+				if context.flags&objectFlagShowSchema != 0 {
+					schemaEntries.insertSchemas(c, context.linkedServer, context.database)
+				}
+				if context.flags&objectFlagShowObject != 0 {
+					tableEntries.insertTables(c, context.linkedServer, context.database, context.schema)
+					viewEntries.insertViews(c, context.linkedServer, context.database, context.schema)
 				}
 			}
 		}
