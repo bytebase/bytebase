@@ -1251,7 +1251,8 @@
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
-    "create": "Crear base de datos"
+    "create": "Crear base de datos",
+    "procedures": "Trámites"
   },
   "instance": {
     "select": "Seleccionar instancia",

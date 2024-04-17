@@ -195,10 +195,18 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         type === "external-table" ||
         type === "column" ||
         type === "view" ||
-        type === "partition-table"
+        type === "partition-table" ||
+        type === "procedure" ||
+        type === "function"
       ) {
         const target = node.meta.target as NodeTarget<
-          "table" | "external-table" | "column" | "view" | "partition-table"
+          | "table"
+          | "external-table"
+          | "column"
+          | "view"
+          | "partition-table"
+          | "procedure"
+          | "function"
         >;
         if (hoverState.value) {
           updateHoverState(target, "before", 0 /* overrideDelay */);

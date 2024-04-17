@@ -1251,7 +1251,8 @@
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
     "failed-to-sync-schema": "Không thể đồng bộ hóa lược đồ",
     "successfully-synced-schema": "Đã đồng bộ hóa lược đồ thành công",
-    "create": "Tạo nên cơ sở dữ liệu"
+    "create": "Tạo nên cơ sở dữ liệu",
+    "procedures": "Thủ tục"
   },
   "instance": {
     "select": "Chọn phiên bản",

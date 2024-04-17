@@ -1251,7 +1251,8 @@
     "start-to-sync-schema": "Start to sync schema",
     "failed-to-sync-schema": "Failed to sync schema",
     "successfully-synced-schema": "Successfully synced schema",
-    "create": "Create database"
+    "create": "Create database",
+    "procedures": "Procedures"
   },
   "instance": {
     "select": "Select instance",
