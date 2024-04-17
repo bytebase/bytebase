@@ -8,7 +8,7 @@
   >
     {{ user?.title }}
   </component>
-  <div v-else class="inline-flex items-center">
+  <div v-else class="inline-flex items-center gap-1">
     <span class="font-medium text-main whitespace-nowrap">
       {{ user?.title }}
     </span>
