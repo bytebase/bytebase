@@ -2,13 +2,13 @@ syntax = "proto3";
 
 package bytebase.v1;
 
-import "common.proto";
-import "database_service.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/common.proto";
+import "v1/database_service.proto";
 
 option go_package = "generated-go/v1";
 
