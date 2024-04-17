@@ -1,11 +1,11 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { Duration } from "../google/protobuf/duration";
-import { Timestamp } from "../google/protobuf/timestamp";
-import { Expr } from "../google/type/expr";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
 import { ColumnConfig, ColumnMetadata, TableConfig, TableMetadata } from "./database_service";
+import { Duration } from "./google/protobuf/duration";
+import { Timestamp } from "./google/protobuf/timestamp";
+import { Expr } from "./google/type/expr";
 import { ApprovalTemplate } from "./issue_service";
 import { PlanType, planTypeFromJSON, planTypeToJSON } from "./subscription_service";
 

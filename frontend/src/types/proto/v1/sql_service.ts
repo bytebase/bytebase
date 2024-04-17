@@ -1,11 +1,11 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { Duration } from "../google/protobuf/duration";
-import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
-import { Timestamp } from "../google/protobuf/timestamp";
 import { Engine, engineFromJSON, engineToJSON, ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
 import { DatabaseMetadata } from "./database_service";
+import { Duration } from "./google/protobuf/duration";
+import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "./google/protobuf/struct";
+import { Timestamp } from "./google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
