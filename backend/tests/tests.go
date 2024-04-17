@@ -433,7 +433,7 @@ func waitForVCSStart(p fake.VCSProvider, errChan <-chan error) error {
 func (ctl *controller) waitForHealthz(ctx context.Context) error {
 	begin := time.Now()
 	ticker := time.NewTicker(100 * time.Millisecond)
-	timer := time.NewTimer(30 * time.Second)
+	timer := time.NewTimer(10 * time.Second)
 	defer ticker.Stop()
 	defer timer.Stop()
 	for {

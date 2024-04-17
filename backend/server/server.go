@@ -327,7 +327,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			recoveryStreamInterceptor,
 		),
 	)
-	configureEchoRouters(s.e, s.grpcServer, mux, profile)
+	reflection.Register(s.grpcServer)
+
+	// LSP server.
+	s.lspServer = lsp.NewServer(s.store)
+
 	postCreateUser := func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
 		if profile.TestOnlySkipOnboardingData {
 			return nil
@@ -350,15 +354,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	s.rolloutService, s.issueService = rolloutService, issueService
+	// GitOps webhook server.
+	gitOpsServer := gitops.NewService(s.store, s.dbFactory, s.activityManager, s.stateCfg, s.licenseService, rolloutService, issueService)
 
-	webhookGroup := s.e.Group(webhookAPIPrefix)
-	gitOpsService := gitops.NewService(s.store, s.dbFactory, s.activityManager, s.stateCfg, s.licenseService, rolloutService, issueService)
-	gitOpsService.RegisterWebhookRoutes(webhookGroup)
-
-	reflection.Register(s.grpcServer)
-
-	s.lspServer = lsp.NewServer(s.store)
-	s.e.GET(lspAPI, s.lspServer.Router)
+	// Configure echo server routes.
+	configureEchoRouters(s.e, s.grpcServer, s.lspServer, gitOpsServer, mux, profile)
 
 	serverStarted = true
 	return s, nil
