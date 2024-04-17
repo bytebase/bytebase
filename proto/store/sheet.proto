@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
-import "database.proto";
+import "store/database.proto";
 
 option go_package = "generated-go/store";
 

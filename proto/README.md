@@ -1,7 +1,7 @@
 # Installation
 
 - Install buf: https://docs.buf.build/installation
-- Run: sh gen.sh
+- Run: buf generate
 - Format: buf format -w
 
 Note:

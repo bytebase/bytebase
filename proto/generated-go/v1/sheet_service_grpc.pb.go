@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: sheet_service.proto
+// source: v1/sheet_service.proto
 
 package v1
 
@@ -179,5 +179,5 @@ var SheetService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "sheet_service.proto",
+	Metadata: "v1/sheet_service.proto",
 }

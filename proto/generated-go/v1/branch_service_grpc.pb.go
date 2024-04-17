@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: branch_service.proto
+// source: v1/branch_service.proto
 
 package v1
 
@@ -414,5 +414,5 @@ var BranchService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "branch_service.proto",
+	Metadata: "v1/branch_service.proto",
 }
