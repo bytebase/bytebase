@@ -572,7 +572,7 @@
         "user-info-url-description": "accessTokenによるユーザー情報を取得するためのAPIアドレス",
         "security-protocol": "セキュリティプロトコル",
         "connection-security": "接続のセキュリティ",
-        "connection-security-skip-tls-verify": "自己署名証明書のTLS検証をスキップする",
+        "connection-security-skip-tls-verify": "TLS検証をスキップ",
         "user-information-mapping": "ユーザー情報のマッピング",
         "user-information-mapping-description": "ユーザー情報APIからのフィールド名をBytebaseユーザーにマッピングします。",
         "identifier": "Bytebaseユーザーのメールアドレス",
@@ -1251,7 +1251,8 @@
     "start-to-sync-schema": "スキーマ同期に失敗しました",
     "failed-to-sync-schema": "スキーマを正常に同期しました",
     "successfully-synced-schema": "インスタンスを選択してください",
-    "create": "データベースの作成"
+    "create": "データベースの作成",
+    "procedures": "手順"
   },
   "instance": {
     "select": "データベースユーザーを選択してください",

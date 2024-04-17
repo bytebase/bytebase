@@ -453,6 +453,7 @@
           <NRadioGroup v-model:value="configForLDAP.securityProtocol">
             <NRadio value="starttls" label="StartTLS" />
             <NRadio value="ldaps" label="LDAPS" />
+            <NRadio value="" label="None" />
           </NRadioGroup>
         </p>
       </div>
@@ -804,7 +805,6 @@ const isFormCompleted = computed(() => {
       !configForLDAP.value.bindDn ||
       !configForLDAP.value.baseDn ||
       !configForLDAP.value.userFilter ||
-      !configForLDAP.value.securityProtocol ||
       (isCreating.value && !configForLDAP.value.bindPassword)
     ) {
       return false;

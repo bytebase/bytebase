@@ -30,21 +30,6 @@ func TestNewIdentityProvider(t *testing.T) {
 		containsErr string
 	}{
 		{
-			name: "no security protocol",
-			config: IdentityProviderConfig{
-				Host:             "ldap.example.com",
-				BindDN:           "uid=system,ou=Users,o=6456a5e9c25dabb51ccad385,dc=example,dc=com",
-				BindPassword:     "pa$$word",
-				BaseDN:           "ou=Users,o=6456a5e9c25dabb51ccad385,dc=example,dc=com",
-				UserFilter:       "(&(objectClass=posixAccount)(uid=%s))",
-				SecurityProtocol: "",
-				FieldMapping: &storepb.FieldMapping{
-					Identifier: "uid",
-				},
-			},
-			containsErr: `the field "securityProtocol" must be either "starttls" or "ldaps"`,
-		},
-		{
 			name: "no host",
 			config: IdentityProviderConfig{
 				Host:             "",

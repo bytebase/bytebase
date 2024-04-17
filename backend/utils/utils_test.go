@@ -451,6 +451,10 @@ func TestConvertBytesToUTF8String(t *testing.T) {
 			expected: "你好",
 		},
 		{
+			input:    []byte("Hello 世界 😊"),
+			expected: "Hello 世界 😊",
+		},
+		{
 			// string: SELECT "�ݱ�˼"
 			input:    []byte{83, 69, 76, 69, 67, 84, 32, 34, 176, 221, 177, 180, 203, 188, 34},
 			expected: "SELECT \"拜贝思\"",
