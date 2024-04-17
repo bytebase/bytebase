@@ -1,8 +1,8 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { Empty } from "./google/protobuf/empty";
-import { FieldMask } from "./google/protobuf/field_mask";
+import { Empty } from "../google/protobuf/empty";
+import { FieldMask } from "../google/protobuf/field_mask";
 
 export const protobufPackage = "bytebase.v1";
 

@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: rollout_service.proto
+// source: v1/rollout_service.proto
 
 package v1
 
@@ -549,5 +549,5 @@ var RolloutService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rollout_service.proto",
+	Metadata: "v1/rollout_service.proto",
 }

@@ -21,11 +21,7 @@ jobs:
       - name: buf lint
         uses: bufbuild/buf-lint-action@v1
         with:
-          input: "proto/v1"
-      - name: buf lint
-        uses: bufbuild/buf-lint-action@v1
-        with:
-          input: "proto/store"
+          input: "proto"
       - name: buf format
         run: |
           if [[ $(buf format -d) ]]; then
