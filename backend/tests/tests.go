@@ -303,7 +303,7 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) compon
 	return component.Profile{
 		Mode:                 common.ReleaseModeDev,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
-		GrpcPort:             port + 1,
+		Port:                 port,
 		DatastorePort:        port + 2,
 		SampleDatabasePort:   0,
 		PgUser:               "bbtest",
@@ -323,7 +323,7 @@ func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser 
 	return component.Profile{
 		Mode:                       common.ReleaseModeDev,
 		ExternalURL:                fmt.Sprintf("http://localhost:%d", port),
-		GrpcPort:                   port + 1,
+		Port:                       port,
 		SampleDatabasePort:         0,
 		PgUser:                     pgUser,
 		DataDir:                    dataDir,
@@ -375,7 +375,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.client = &http.Client{}
 
 	// initialize grpc connection.
-	grpcConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", ctl.profile.GrpcPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", port), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to dial grpc")
 	}
@@ -433,7 +433,7 @@ func waitForVCSStart(p fake.VCSProvider, errChan <-chan error) error {
 func (ctl *controller) waitForHealthz(ctx context.Context) error {
 	begin := time.Now()
 	ticker := time.NewTicker(100 * time.Millisecond)
-	timer := time.NewTimer(30 * time.Second)
+	timer := time.NewTimer(10 * time.Second)
 	defer ticker.Stop()
 	defer timer.Stop()
 	for {

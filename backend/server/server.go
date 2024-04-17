@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net"
 	"os"
 	"sync"
 	"time"
@@ -393,12 +392,8 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.planCheckScheduler.Run(ctx, &s.runnerWG)
 	}
 
-	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))
-	if err != nil {
-		return err
-	}
 	go func() {
-		if err := s.grpcServer.Serve(listen); err != nil {
+		if err := s.grpcServer.Serve(s.e.Listener); err != nil {
 			slog.Error("grpc server listen error", log.BBError(err))
 		}
 	}()

@@ -250,10 +250,6 @@ func start() {
 			return
 		}
 	}
-	if err := checkPort(profile.GrpcPort); err != nil {
-		slog.Error(fmt.Sprintf("gRPC server port %d is not available", profile.GrpcPort), log.BBError(err))
-		return
-	}
 
 	var s *server.Server
 	// Setup signal handlers.
