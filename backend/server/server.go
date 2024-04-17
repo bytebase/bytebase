@@ -51,7 +51,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
-	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
 )
 
 const (

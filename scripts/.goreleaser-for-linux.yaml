@@ -24,7 +24,6 @@ builds:
       - BUILD_USER="unknown"
     goos:
       - linux
-    # We currently cannot run mysqlbinlog on arm64.
     goarch:
       - amd64
     overrides:
@@ -53,7 +52,6 @@ builds:
       - BUILD_USER="unknown"
     goos:
       - linux
-    # We currently cannot run mysqlbinlog on arm64.
     goarch:
       - amd64
     overrides:
@@ -61,5 +59,12 @@ builds:
         goarch: amd64
         env:
           - CC=gcc
+
+archives:
+- format: tar.gz
+  id: bytebase
+  builds: [server,cli]
+  name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
