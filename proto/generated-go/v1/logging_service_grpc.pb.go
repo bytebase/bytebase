@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: v1/logging_service.proto
+// source: logging_service.proto
 
 package v1
 
@@ -179,5 +179,5 @@ var LoggingService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "v1/logging_service.proto",
+	Metadata: "logging_service.proto",
 }

@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: v1/org_policy_service.proto
+// source: org_policy_service.proto
 
 package v1
 
@@ -254,5 +254,5 @@ var OrgPolicyService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "v1/org_policy_service.proto",
+	Metadata: "org_policy_service.proto",
 }

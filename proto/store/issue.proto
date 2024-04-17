@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "approval.proto";
 import "google/protobuf/duration.proto";
 import "google/type/expr.proto";
-import "store/approval.proto";
 
 option go_package = "generated-go/store";
 

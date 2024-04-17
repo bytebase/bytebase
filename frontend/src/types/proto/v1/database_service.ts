@@ -1,11 +1,11 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { Duration } from "../google/protobuf/duration";
-import { Empty } from "../google/protobuf/empty";
-import { FieldMask } from "../google/protobuf/field_mask";
-import { Timestamp } from "../google/protobuf/timestamp";
 import { MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON, State, stateFromJSON, stateToJSON } from "./common";
+import { Duration } from "./google/protobuf/duration";
+import { Empty } from "./google/protobuf/empty";
+import { FieldMask } from "./google/protobuf/field_mask";
+import { Timestamp } from "./google/protobuf/timestamp";
 import { InstanceResource } from "./instance_service";
 
 export const protobufPackage = "bytebase.v1";

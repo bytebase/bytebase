@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: v1/changelist_service.proto
+// source: changelist_service.proto
 
 package v1
 
@@ -254,5 +254,5 @@ var ChangelistService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "v1/changelist_service.proto",
+	Metadata: "changelist_service.proto",
 }
