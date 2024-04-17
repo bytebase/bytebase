@@ -1,8 +1,8 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
-import { Expr } from "../google/type/expr";
+import { ParsedExpr } from "./google/api/expr/v1alpha1/syntax";
+import { Expr } from "./google/type/expr";
 
 export const protobufPackage = "bytebase.v1";
 
