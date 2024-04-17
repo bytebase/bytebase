@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"reflect"
 	"regexp"
@@ -13,8 +14,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/pkg/errors"
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/encoding/simplifiedchinese"
+	textunicode "golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -826,4 +833,28 @@ func uniq[T comparable](array []T) []T {
 	}
 
 	return res
+}
+
+// ConvertBytesToUTF8String tries to decode a byte slice into a UTF-8 string using common encodings.
+func ConvertBytesToUTF8String(data []byte) (string, error) {
+	encodings := []encoding.Encoding{
+		textunicode.UTF8,
+		simplifiedchinese.GBK,
+		textunicode.UTF16(textunicode.LittleEndian, textunicode.UseBOM),
+		textunicode.UTF16(textunicode.BigEndian, textunicode.UseBOM),
+		charmap.ISO8859_1,
+	}
+
+	for _, enc := range encodings {
+		reader := transform.NewReader(strings.NewReader(string(data)), enc.NewDecoder())
+		decoded, err := io.ReadAll(reader)
+		if err == nil && isUtf8(decoded) {
+			return string(decoded), nil
+		}
+	}
+	return "", errors.New("failed to decode the byte slice into a UTF-8 string")
+}
+
+func isUtf8(data []byte) bool {
+	return !strings.Contains(string(data), string(unicode.ReplacementChar))
 }
