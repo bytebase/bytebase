@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: sql_service.proto
+// source: v1/sql_service.proto
 
 package v1
 
@@ -471,5 +471,5 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "sql_service.proto",
+	Metadata: "v1/sql_service.proto",
 }

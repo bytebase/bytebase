@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: cel_service.proto
+// source: v1/cel_service.proto
 
 package v1
 
@@ -142,5 +142,5 @@ var CelService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "cel_service.proto",
+	Metadata: "v1/cel_service.proto",
 }
