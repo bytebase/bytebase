@@ -572,7 +572,7 @@
         "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
         "security-protocol": "安全协议",
         "connection-security": "安全性选项",
-        "connection-security-skip-tls-verify": "跳过自签名证书验证",
+        "connection-security-skip-tls-verify": "跳过证书验证",
         "user-information-mapping": "用户信息映射",
         "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
         "identifier": "Bytebase 用户的邮箱",

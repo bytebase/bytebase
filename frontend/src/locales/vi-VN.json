@@ -572,7 +572,7 @@
         "user-info-url-description": "Địa chỉ API để lấy thông tin người dùng bằng accessToken",
         "security-protocol": "Giao thức bảo mật",
         "connection-security": "Bảo mật kết nối",
-        "connection-security-skip-tls-verify": "Bỏ qua xác minh TLS cho chứng chỉ tự ký",
+        "connection-security-skip-tls-verify": "Bỏ qua xác minh TLS",
         "user-information-mapping": "Ánh xạ thông tin người dùng",
         "user-information-mapping-description": "Ánh xạ tên trường từ API thông tin người dùng tới người dùng Bytebase.",
         "identifier": "Email của người dùng Bytebase",

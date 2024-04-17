@@ -572,7 +572,7 @@
         "user-info-url-description": "accessTokenによるユーザー情報を取得するためのAPIアドレス",
         "security-protocol": "セキュリティプロトコル",
         "connection-security": "接続のセキュリティ",
-        "connection-security-skip-tls-verify": "自己署名証明書のTLS検証をスキップする",
+        "connection-security-skip-tls-verify": "TLS検証をスキップ",
         "user-information-mapping": "ユーザー情報のマッピング",
         "user-information-mapping-description": "ユーザー情報APIからのフィールド名をBytebaseユーザーにマッピングします。",
         "identifier": "Bytebaseユーザーのメールアドレス",

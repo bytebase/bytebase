@@ -572,7 +572,7 @@
         "user-info-url-description": "The API address for obtaining user information by accessToken",
         "security-protocol": "Security protocol",
         "connection-security": "Connection security",
-        "connection-security-skip-tls-verify": "Skip TLS verify for self-signed certificates",
+        "connection-security-skip-tls-verify": "Skip TLS verify",
         "user-information-mapping": "User information mapping",
         "user-information-mapping-description": "Maps the field names from user info API to the Bytebase user.",
         "identifier": "Bytebase user's email",
