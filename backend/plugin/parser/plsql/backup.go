@@ -210,11 +210,11 @@ type dmlExtractor struct {
 	offset        int
 }
 
-func (e *dmlExtractor) ExitUnit_statement(ctx *parser.Unit_statementContext) {
+func (e *dmlExtractor) ExitUnit_statement(_ *parser.Unit_statementContext) {
 	e.offset++
 }
 
-func (e *dmlExtractor) ExitSql_plus_command(ctx *parser.Sql_plus_commandContext) {
+func (e *dmlExtractor) ExitSql_plus_command(_ *parser.Sql_plus_commandContext) {
 	e.offset++
 }
 
