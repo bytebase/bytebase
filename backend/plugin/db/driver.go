@@ -63,10 +63,6 @@ var (
 type DriverConfig struct {
 	// The directiory contains db specific utilites (e.g. mysqldump for MySQL, pg_dump for PostgreSQL, mongosh for MongoDB).
 	DbBinDir string
-
-	// NOTE, introducing db specific fields is the last resort.
-	// MySQL specific
-	BinlogDir string
 }
 
 type driverFunc func(DriverConfig) Driver

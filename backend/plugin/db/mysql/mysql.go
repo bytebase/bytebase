@@ -47,7 +47,6 @@ type Driver struct {
 	connCfg       db.ConnectionConfig
 	dbType        storepb.Engine
 	dbBinDir      string
-	binlogDir     string
 	db            *sql.DB
 	databaseName  string
 	sshClient     *ssh.Client
@@ -55,8 +54,7 @@ type Driver struct {
 
 func newDriver(dc db.DriverConfig) db.Driver {
 	return &Driver{
-		dbBinDir:  dc.DbBinDir,
-		binlogDir: dc.BinlogDir,
+		dbBinDir: dc.DbBinDir,
 	}
 }
 
