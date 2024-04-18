@@ -80,12 +80,13 @@ import {
   useProjectV1ByUID,
   useProjectV1Store,
 } from "@/store";
-import type { ComposedInstance, ComposedDatabase } from "@/types";
+import type { ComposedInstance } from "@/types";
 import {
   DEFAULT_PROJECT_ID,
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
+import type { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
 import type { Project } from "@/types/proto/v1/project_service";
 import {
   filterDatabaseV1ByKeyword,
@@ -212,24 +213,23 @@ const transferDatabase = async () => {
   const databaseList = state.selectedDatabaseUidList.map((uid) =>
     databaseStore.getDatabaseByUID(uid)
   );
-  const transferOneDatabase = async (database: ComposedDatabase) => {
-    const targetProject = projectStore.getProjectByUID(props.projectId);
-    const databasePatch = cloneDeep(database);
-    databasePatch.project = targetProject.name;
-    const updateMask = ["project"];
-    const updated = await useDatabaseV1Store().updateDatabase({
-      database: databasePatch,
-      updateMask,
-    });
-    return updated;
-  };
 
   try {
     state.loading = true;
-    const requests = databaseList.map((db) => {
-      transferOneDatabase(db);
+    const updates = databaseList.map((db) => {
+      const targetProject = projectStore.getProjectByUID(props.projectId);
+      const databasePatch = cloneDeep(db);
+      databasePatch.project = targetProject.name;
+      const updateMask = ["project"];
+      return {
+        database: databasePatch,
+        updateMask,
+      } as UpdateDatabaseRequest;
     });
-    await Promise.all(requests);
+    await databaseStore.batchUpdateDatabases({
+      parent: "-",
+      requests: updates,
+    });
     const displayDatabaseName =
       databaseList.length > 1
         ? `${databaseList.length} databases`
