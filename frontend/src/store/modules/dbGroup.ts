@@ -61,7 +61,7 @@ const batchComposeDatabaseGroup = async (
       ...databaseGroup,
       databaseGroupName,
       projectName,
-      project,
+      projectEntity: project,
       simpleExpr: emptySimpleExpr(),
     });
 
