@@ -29,6 +29,11 @@
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
+- [store/audit_log.proto](#store_audit_log-proto)
+    - [AuditLog](#bytebase-store-AuditLog)
+  
+    - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
+  
 - [store/database.proto](#store_database-proto)
     - [ColumnConfig](#bytebase-store-ColumnConfig)
     - [ColumnConfig.LabelsEntry](#bytebase-store-ColumnConfig-LabelsEntry)
@@ -582,6 +587,61 @@ convert to the expected struct there.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_FEISHU | 1 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_audit_log-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/audit_log.proto
+
+
+
+<a name="bytebase-store-AuditLog"></a>
+
+### AuditLog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| method | [string](#string) |  | e.g. /bytebase.v1.SQLService/Query |
+| resource | [string](#string) |  | resource name projects/{project} |
+| user | [string](#string) |  | Format: users/d@d.com |
+| severity | [AuditLog.Severity](#bytebase-store-AuditLog-Severity) |  |  |
+| request | [string](#string) |  | Marshalled request. |
+| response | [string](#string) |  | Marshalled response. Some fields are omitted because they are too large or contain sensitive information. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-AuditLog-Severity"></a>
+
+### AuditLog.Severity
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DEFAULT | 0 |  |
+| DEBUG | 1 |  |
+| INFO | 2 |  |
+| NOTICE | 3 |  |
+| WARNING | 4 |  |
+| ERROR | 5 |  |
+| CRITICAL | 6 |  |
+| ALERT | 7 |  |
+| EMERGENCY | 8 |  |
 
 
  
