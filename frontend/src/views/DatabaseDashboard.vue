@@ -19,40 +19,13 @@
     <div class="space-y-2">
       <DatabaseOperations :databases="selectedDatabases" />
 
-      <DatabaseV1Table
-        pagination-class="mb-4"
-        table-class="border-y"
+      <DatabaseDataTable
+        mode="ALL"
         :database-list="filteredDatabaseList"
-        :database-group-list="filteredDatabaseGroupList"
-        :show-placeholder="true"
-        :show-selection-column="true"
-        :custom-click="isStandaloneMode"
-        @select-database="
-          (db: ComposedDatabase) =>
-            toggleDatabasesSelection(
-              [db as ComposedDatabase],
-              !isDatabaseSelected(db)
-            )
-        "
-      >
-        <template #selection-all="{ databaseList }">
-          <NCheckbox
-            v-if="databaseList.length > 0"
-            v-bind="getAllSelectionState(databaseList)"
-            @update:checked="toggleDatabasesSelection(databaseList, $event)"
-          />
-        </template>
-        <template #selection="{ database }">
-          <NCheckbox
-            v-if="isDatabase(database)"
-            :checked="isDatabaseSelected(database as ComposedDatabase)"
-            @update:checked="toggleDatabasesSelection([database], $event)"
-          />
-          <div v-else class="text-control-light cursor-not-allowed ml-auto">
-            -
-          </div>
-        </template>
-      </DatabaseV1Table>
+        :custom-click="true"
+        @row-click="handleDatabaseClick"
+        @update:selected-databases="handleDatabasesSelectionChanged"
+      />
     </div>
 
     <div
@@ -65,25 +38,17 @@
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox } from "naive-ui";
-import { computed, watchEffect, onMounted, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { DatabaseV1Table } from "@/components/v2";
-import { isDatabase } from "@/components/v2/Model/DatabaseV1Table/utils";
+import DatabaseDataTable from "@/components/DatabaseDataTable";
 import {
-  useCurrentUserV1,
-  useDBGroupStore,
   useDatabaseV1Store,
   usePageMode,
   useProjectV1List,
   useUIStateStore,
 } from "@/store";
-import type { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
-import {
-  UNKNOWN_ID,
-  UNKNOWN_USER_NAME,
-  DEFAULT_PROJECT_V1_NAME,
-} from "@/types";
+import type { ComposedDatabase } from "@/types";
+import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import type { SearchScopeId, SearchParams } from "@/utils";
 import {
   filterDatabaseV1ByKeyword,
@@ -94,10 +59,10 @@ import {
   extractProjectResourceName,
   buildSearchTextBySearchParams,
   buildSearchParamsBySearchText,
+  databaseV1Url,
 } from "@/utils";
 
 interface LocalState {
-  databaseGroupList: ComposedDatabaseGroup[];
   loading: boolean;
   selectedDatabaseIds: Set<string>;
   params: SearchParams;
@@ -127,7 +92,6 @@ const initializeSearchParamsFromQuery = () => {
 };
 
 const state = reactive<LocalState>({
-  databaseGroupList: [],
   loading: false,
   selectedDatabaseIds: new Set(),
   params: initializeSearchParamsFromQuery(),
@@ -149,9 +113,7 @@ watch(
   { deep: true }
 );
 
-const currentUserV1 = useCurrentUserV1();
 const databaseV1Store = useDatabaseV1Store();
-const dbGroupStore = useDBGroupStore();
 
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
@@ -196,24 +158,6 @@ const databaseV1List = computed(() => {
   return sortDatabaseV1List(databaseV1Store.databaseList).filter((db) =>
     projectList.value.map((project) => project.name).includes(db.project)
   );
-});
-
-const prepareDatabaseGroupList = async () => {
-  if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-    state.databaseGroupList = (
-      await dbGroupStore.fetchAllDatabaseGroupList()
-    ).filter((dbGroup) =>
-      projectList.value
-        .map((project) => project.name)
-        .includes(dbGroup.project.name)
-    );
-  }
-};
-
-watchEffect(async () => {
-  state.loading = true;
-  await prepareDatabaseGroupList();
-  state.loading = false;
 });
 
 const filteredDatabaseList = computed(() => {
@@ -270,65 +214,9 @@ const filteredDatabaseList = computed(() => {
   return list;
 });
 
-const filteredDatabaseGroupList = computed(() => {
-  let list = [...state.databaseGroupList];
-  const keyword = state.params.query.trim().toLowerCase();
-  if (keyword) {
-    list = list.filter(
-      (dbGroup) =>
-        dbGroup.name.includes(keyword) ||
-        dbGroup.databasePlaceholder.includes(keyword)
-    );
-  }
-  return list;
-});
-
-const getAllSelectionState = (
-  databaseList: (ComposedDatabase | ComposedDatabaseGroup)[]
-): { checked: boolean; indeterminate: boolean } => {
-  const filteredDatabases = databaseList.filter((db) =>
-    isDatabase(db)
-  ) as ComposedDatabase[];
-
-  const checked =
-    state.selectedDatabaseIds.size > 0 &&
-    filteredDatabases.every((db) => state.selectedDatabaseIds.has(db.uid));
-  const indeterminate =
-    !checked &&
-    filteredDatabases.some((db) => state.selectedDatabaseIds.has(db.uid));
-
-  return {
-    checked,
-    indeterminate,
-  };
-};
-
-const toggleDatabasesSelection = (
-  databaseList: (ComposedDatabase | ComposedDatabaseGroup)[],
-  on: boolean
-): void => {
-  if (on) {
-    databaseList.forEach((db) => {
-      if (isDatabase(db)) {
-        state.selectedDatabaseIds.add((db as ComposedDatabase).uid);
-      }
-    });
-  } else {
-    databaseList.forEach((db) => {
-      if (isDatabase(db)) {
-        state.selectedDatabaseIds.delete((db as ComposedDatabase).uid);
-      }
-    });
-  }
-};
-
-const isDatabaseSelected = (database: ComposedDatabase): boolean => {
-  return state.selectedDatabaseIds.has((database as ComposedDatabase).uid);
-};
-
 const selectedDatabases = computed((): ComposedDatabase[] => {
-  return filteredDatabaseList.value.filter(
-    (db) => isDatabase(db) && state.selectedDatabaseIds.has(db.uid)
+  return filteredDatabaseList.value.filter((db) =>
+    state.selectedDatabaseIds.has(db.uid)
   );
 });
 
@@ -337,4 +225,23 @@ const supportOptionIdList = computed((): SearchScopeId[] => [
   "project",
   "project-assigned",
 ]);
+
+const handleDatabasesSelectionChanged = (
+  selectedDatabaseNameList: Set<string>
+): void => {
+  state.selectedDatabaseIds = new Set(
+    Array.from(selectedDatabaseNameList).map(
+      (name) => databaseV1Store.getDatabaseByName(name)?.uid
+    )
+  );
+};
+
+const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
+  const url = databaseV1Url(database);
+  if (event.ctrlKey || event.metaKey) {
+    window.open(url, "_blank");
+  } else {
+    router.push(url);
+  }
+};
 </script>

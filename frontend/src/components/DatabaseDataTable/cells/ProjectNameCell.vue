@@ -1,7 +1,6 @@
 <template>
   <div class="flex flex-row space-x-2 items-center">
     <ProjectV1Name :project="project" :link="false" tag="div" />
-
     <NTooltip
       v-if="
         showTenantIcon && project.tenantMode === TenantMode.TENANT_MODE_ENABLED
@@ -40,19 +39,24 @@
 
 <script setup lang="ts">
 import { NTooltip } from "naive-ui";
-import type { Mode } from "@/components/DatabaseDataTable/DatabaseDataTable.vue";
+import { computed } from "vue";
+import { ProjectV1Name } from "@/components/v2";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
+import type { Mode } from "../DatabaseDataTable.vue";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     project: Project;
     mode?: Mode;
-    showTenantIcon: boolean;
   }>(),
   {
     mode: "ALL",
   }
 );
+
+const showTenantIcon = computed(() => {
+  return ["ALL", "ALL_SHORT", "INSTANCE"].includes(props.mode);
+});
 </script>
