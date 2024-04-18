@@ -10001,6 +10001,8 @@ components:
                 originalLine:
                     type: integer
                     format: int32
+                database:
+                    type: string
         IssueComment_TaskUpdate:
             type: object
             properties:

@@ -213,6 +213,7 @@ export interface IssueCommentPayload_TaskPriorBackup {
   task: string;
   tables: IssueCommentPayload_TaskPriorBackup_Table[];
   originalLine?: number | undefined;
+  database: string;
 }
 
 export interface IssueCommentPayload_TaskPriorBackup_Table {
@@ -810,7 +811,7 @@ export const IssueCommentPayload_TaskUpdate = {
 };
 
 function createBaseIssueCommentPayload_TaskPriorBackup(): IssueCommentPayload_TaskPriorBackup {
-  return { task: "", tables: [], originalLine: undefined };
+  return { task: "", tables: [], originalLine: undefined, database: "" };
 }
 
 export const IssueCommentPayload_TaskPriorBackup = {
@@ -823,6 +824,9 @@ export const IssueCommentPayload_TaskPriorBackup = {
     }
     if (message.originalLine !== undefined) {
       writer.uint32(24).int32(message.originalLine);
+    }
+    if (message.database !== "") {
+      writer.uint32(34).string(message.database);
     }
     return writer;
   },
@@ -855,6 +859,13 @@ export const IssueCommentPayload_TaskPriorBackup = {
 
           message.originalLine = reader.int32();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -871,6 +882,7 @@ export const IssueCommentPayload_TaskPriorBackup = {
         ? object.tables.map((e: any) => IssueCommentPayload_TaskPriorBackup_Table.fromJSON(e))
         : [],
       originalLine: isSet(object.originalLine) ? globalThis.Number(object.originalLine) : undefined,
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
     };
   },
 
@@ -885,6 +897,9 @@ export const IssueCommentPayload_TaskPriorBackup = {
     if (message.originalLine !== undefined) {
       obj.originalLine = Math.round(message.originalLine);
     }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
     return obj;
   },
 
@@ -896,6 +911,7 @@ export const IssueCommentPayload_TaskPriorBackup = {
     message.task = object.task ?? "";
     message.tables = object.tables?.map((e) => IssueCommentPayload_TaskPriorBackup_Table.fromPartial(e)) || [];
     message.originalLine = object.originalLine ?? undefined;
+    message.database = object.database ?? "";
     return message;
   },
 };

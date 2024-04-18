@@ -536,6 +536,7 @@ message IssueComment {
     string task = 1;
     repeated Table tables = 2;
     optional int32 original_line = 3;
+    string database = 4;
 
     message Table {
       string schema = 1;
