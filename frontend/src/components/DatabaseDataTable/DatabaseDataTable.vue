@@ -78,6 +78,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
   const SELECTION: DatabaseDataTableColumn = {
     type: "selection",
     multiple: !props.singleSelection,
+    hide: !props.showSelection,
     cellProps: () => {
       return {
         onClick: (e: MouseEvent) => {
@@ -85,7 +86,6 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
         },
       };
     },
-    hide: !props.showSelection,
   };
   const NAME: DatabaseDataTableColumn = {
     key: "title",
