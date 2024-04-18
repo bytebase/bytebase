@@ -51,9 +51,6 @@ type Driver struct {
 	db            *sql.DB
 	databaseName  string
 	sshClient     *ssh.Client
-
-	replayedBinlogBytes *common.CountingReader
-	restoredBackupBytes *common.CountingReader
 }
 
 func newDriver(dc db.DriverConfig) db.Driver {
