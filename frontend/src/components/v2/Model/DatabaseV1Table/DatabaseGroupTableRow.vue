@@ -17,7 +17,7 @@
   <div class="bb-grid-cell">
     <!-- project -->
     <ProjectCol
-      :project="databaseGroup.project"
+      :project="databaseGroup.projectEntity"
       :mode="mode"
       :show-tenant-icon="showTenantIcon"
     />

@@ -150,55 +150,12 @@
                     :placement="'left-start'"
                   />
                 </div>
-                <DatabaseV1Table
+                <DatabaseDataTable
                   mode="ALL_SHORT"
-                  table-class="border"
-                  :custom-click="true"
-                  :database-list="selectableDatabaseList"
-                  :show-selection-column="true"
                   :show-sql-editor-button="false"
-                  :show-placeholder="true"
-                  @select-database="
-                    (db: ComposedDatabase) =>
-                      toggleDatabasesSelection(
-                        [db as ComposedDatabase],
-                        !isDatabaseSelected(db)
-                      )
-                  "
-                >
-                  <template
-                    #selection-all="{ databaseList: selectedDatabaseList }"
-                  >
-                    <NCheckbox
-                      v-if="selectedDatabaseList.length > 0"
-                      class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                      v-bind="
-                        getAllSelectionState(
-                          selectedDatabaseList as ComposedDatabase[]
-                        )
-                      "
-                      @update:checked="
-                        toggleDatabasesSelection(
-                          selectedDatabaseList as ComposedDatabase[],
-                          $event
-                        )
-                      "
-                    />
-                  </template>
-                  <template #selection="{ database }">
-                    <NCheckbox
-                      :checked="
-                        isDatabaseSelected(database as ComposedDatabase)
-                      "
-                      @update:checked="
-                        toggleDatabasesSelection(
-                          [database as ComposedDatabase],
-                          $event
-                        )
-                      "
-                    />
-                  </template>
-                </DatabaseV1Table>
+                  :database-list="selectableDatabaseList"
+                  @update:selected-databases="handleDatabasesSelectionChanged"
+                />
                 <SchemalessDatabaseTable
                   v-if="isEditSchema"
                   mode="ALL"
@@ -299,10 +256,10 @@
   />
 
   <DatabaseGroupPrevEditorModal
-    v-if="state.selectedDatabaseGroup"
+    v-if="state.showDatabaseGroupPrevModal"
     :issue-type="type"
-    :database-group="state.selectedDatabaseGroup"
-    @close="state.selectedDatabaseGroup = undefined"
+    :database-group-name="state.selectedDatabaseGroupName!"
+    @close="state.showDatabaseGroupPrevModal = false"
   />
 </template>
 
@@ -315,12 +272,12 @@ import {
   NRadio,
   NInputGroup,
   NInputGroupLabel,
-  NCheckbox,
 } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, reactive, ref, watch, watchEffect, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import DatabaseDataTable from "@/components/DatabaseDataTable";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -351,7 +308,7 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
 } from "@/utils";
-import { DatabaseLabelFilter, DatabaseV1Table, DrawerContent } from "../v2";
+import { DatabaseLabelFilter, DrawerContent } from "../v2";
 import DatabaseGroupPrevEditorModal from "./DatabaseGroupPrevEditorModal.vue";
 import ProjectStandardView from "./ProjectStandardView.vue";
 import ProjectTenantView from "./ProjectTenantView.vue";
@@ -364,12 +321,11 @@ type LocalState = {
   alterType: "MULTI_DB" | "TENANT";
   databaseSelectedTab: "DATABASE" | "DATABASE_GROUP";
   showSchemaLessDatabaseList: boolean;
-  showSchemaEditorModal: boolean;
-  selectedDatabaseGroupName?: string;
-  // Using to display the database group prev editor.
-  selectedDatabaseGroup?: ComposedDatabaseGroup;
   selectedLabels: { key: string; value: string }[];
   selectedDatabaseUidList: Set<string>;
+  showSchemaEditorModal: boolean;
+  selectedDatabaseGroupName?: string;
+  showDatabaseGroupPrevModal: boolean;
   params: SearchParams;
 };
 
@@ -413,6 +369,7 @@ const state = reactive<LocalState>({
   showSchemaLessDatabaseList: false,
   showSchemaEditorModal: false,
   selectedLabels: [],
+  showDatabaseGroupPrevModal: false,
   params: {
     query: "",
     scopes: [],
@@ -616,10 +573,7 @@ const generateMultiDb = async () => {
     state.databaseSelectedTab === "DATABASE_GROUP" &&
     state.selectedDatabaseGroupName
   ) {
-    const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
-      state.selectedDatabaseGroupName
-    );
-    state.selectedDatabaseGroup = databaseGroup;
+    state.showDatabaseGroupPrevModal = true;
     return;
   }
 
@@ -675,33 +629,14 @@ const allowGenerateTenant = computed(() => {
   return true;
 });
 
-const getAllSelectionState = (
-  databaseList: ComposedDatabase[]
-): { checked: boolean; indeterminate: boolean } => {
-  const set = state.selectedDatabaseUidList;
-
-  const checked = set.size > 0 && databaseList.every((db) => set.has(db.uid));
-  const indeterminate = !checked && databaseList.some((db) => set.has(db.uid));
-
-  return {
-    checked,
-    indeterminate,
-  };
-};
-
-const toggleDatabasesSelection = (
-  databaseList: ComposedDatabase[],
-  on: boolean
-): void => {
-  if (on) {
-    databaseList.forEach((db) => {
-      state.selectedDatabaseUidList.add(db.uid);
-    });
-  } else {
-    databaseList.forEach((db) => {
-      state.selectedDatabaseUidList.delete(db.uid);
-    });
-  }
+const handleDatabasesSelectionChanged = (
+  selectedDatabaseNameList: Set<string>
+) => {
+  state.selectedDatabaseUidList = new Set(
+    Array.from(selectedDatabaseNameList).map(
+      (name) => databaseV1Store.getDatabaseByName(name)?.uid
+    )
+  );
 };
 
 const selectDatabaseGroup = async (
@@ -716,15 +651,8 @@ const selectDatabaseGroup = async (
   state.selectedDatabaseGroupName = databaseGroupName;
 
   if (showModal) {
-    const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
-      state.selectedDatabaseGroupName
-    );
-    state.selectedDatabaseGroup = databaseGroup;
+    state.showDatabaseGroupPrevModal = true;
   }
-};
-
-const isDatabaseSelected = (database: ComposedDatabase): boolean => {
-  return state.selectedDatabaseUidList.has(database.uid);
 };
 
 const generateTenant = async () => {
@@ -732,10 +660,7 @@ const generateTenant = async () => {
     state.databaseSelectedTab === "DATABASE_GROUP" &&
     state.selectedDatabaseGroupName
   ) {
-    const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
-      state.selectedDatabaseGroupName
-    );
-    state.selectedDatabaseGroup = databaseGroup;
+    state.showDatabaseGroupPrevModal = true;
     return;
   }
 

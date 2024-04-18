@@ -25,7 +25,7 @@
         {{ dbGroup.databasePlaceholder }}
       </div>
       <div class="bb-grid-cell">
-        <ProjectCol :project="dbGroup.project" :show-tenant-icon="true" />
+        <ProjectCol :project="dbGroup.projectEntity" :show-tenant-icon="true" />
       </div>
     </template>
   </BBGrid>
