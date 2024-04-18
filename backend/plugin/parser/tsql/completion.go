@@ -2,6 +2,7 @@ package tsql
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -106,6 +107,10 @@ var (
 	preferredRules = map[int]bool{
 		tsqlparser.TSqlParserRULE_built_in_functions: true,
 		tsqlparser.TSqlParserRULE_full_table_name:    true,
+		tsqlparser.TSqlParserRULE_asterisk:           true,
+		tsqlparser.TSqlParserRULE_udt_elem:           true,
+		tsqlparser.TSqlParserRULE_expression:         true,
+		tsqlparser.TSqlParserRULE_expression_elem:    true,
 	}
 )
 
@@ -395,6 +400,15 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 	c.parser.Reset()
 	context := c.parser.Tsql_file()
 	candidates := c.core.CollectCandidates(caretIndex, context)
+
+	for ruleName := range candidates.Rules {
+		if ruleName == tsqlparser.TSqlParserRULE_asterisk || ruleName == tsqlparser.TSqlParserRULE_udt_elem || ruleName == tsqlparser.TSqlParserRULE_expression || ruleName == tsqlparser.TSqlParserRULE_expression_elem {
+			c.collectLeadingTableReferences(caretIndex)
+			c.takeReferencesSnapshot()
+			c.collectRemainingTableReferences()
+			c.takeReferencesSnapshot()
+		}
+	}
 	return c.convertCandidates(candidates)
 }
 
@@ -446,6 +460,20 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					viewEntries.insertViews(c, context.linkedServer, context.database, context.schema)
 				}
 			}
+		case tsqlparser.TSqlParserRULE_asterisk:
+			completionContexts := c.determineTableNameContext()
+			for _, context := range completionContexts {
+				if context.flags&objectFlagShowDatabase != 0 {
+					databaseEntries.insertDatabases(c, context.linkedServer)
+				}
+				if context.flags&objectFlagShowSchema != 0 {
+					schemaEntries.insertSchemas(c, context.linkedServer, context.database)
+				}
+				if context.flags&objectFlagShowObject != 0 {
+					tableEntries.insertTables(c, context.linkedServer, context.database, context.schema)
+
+				}
+			}
 		}
 	}
 
@@ -479,9 +507,16 @@ func withColumn() objectRefContextOption {
 	}
 }
 
+func withLinkedServer() objectRefContextOption {
+	return func(c *objectRefContext) {
+		c.linkedServer = ""
+		c.flags |= objectFlagShowLinkedServer
+	}
+}
+
 func newObjectRefContext(options ...objectRefContextOption) *objectRefContext {
 	o := &objectRefContext{
-		flags: objectFlagShowLinkedServer | objectFlagShowDatabase | objectFlagShowSchema | objectFlagShowObject,
+		flags: objectFlagShowDatabase | objectFlagShowSchema | objectFlagShowObject,
 	}
 	for _, option := range options {
 		option(o)
@@ -502,6 +537,17 @@ type objectRefContext struct {
 	column string
 
 	flags objectFlag
+}
+
+func (o *objectRefContext) clone() *objectRefContext {
+	return &objectRefContext{
+		linkedServer: o.linkedServer,
+		database:     o.database,
+		schema:       o.schema,
+		object:       o.object,
+		column:       o.column,
+		flags:        o.flags,
+	}
 }
 
 func (o *objectRefContext) setLinkedServer(linkedServer string) *objectRefContext {
@@ -532,6 +578,79 @@ func (o *objectRefContext) setColumn(column string) *objectRefContext {
 	o.column = column
 	o.flags &= ^objectFlagShowColumn
 	return o
+}
+
+func (c *Completer) determineTableNameContext() []*objectRefContext {
+	tokenIndex := c.scanner.GetIndex()
+	if c.scanner.GetTokenChannel() != antlr.TokenDefaultChannel {
+		// Skip to the next non-hidden token.
+		c.scanner.Forward(true /* skipHidden */)
+	}
+
+	tokenType := c.scanner.GetTokenType()
+	if c.scanner.GetTokenText() != "." && !c.lexer.IsID_(tokenType) && c.scanner.GetTokenType() != tsqlparser.TSqlParserBLOCKING_HIERARCHY {
+		// We are at the end of an incomplete identifier spec. Jump back.
+		// For example, SELECT * FROM db.| WHERE a = 1, the scanner will be seek to the token ' ', and
+		// forwards to WHERE because we skip to the next non-hidden token in the above code.
+		// Also, for SELECT * FROM |, the scanner will be backward to the token 'FROM'.
+		c.scanner.Backward(true /* skipHidden */)
+	}
+
+	if tokenIndex > 0 {
+		// Go backward until we hit a non-identifier token.
+		for {
+			curID := c.lexer.IsID_(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "."
+			curBLOCKINGHIERARCHY := c.scanner.GetTokenType() == tsqlparser.TSqlParserBLOCKING_HIERARCHY && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "."
+			curDOT := c.scanner.GetTokenText() == "." && c.lexer.IsID_(c.scanner.GetPreviousTokenType(false /* skipHidden */))
+			if curID || curDOT || curBLOCKINGHIERARCHY {
+				c.scanner.Backward(true /* skipHidden */)
+				continue
+			}
+			break
+		}
+	}
+
+	// The c.scanner is now on the leading identifier (or dot?) if there's no leading id.
+	var candidates []string
+	var temp string
+	var count int
+	for {
+		count++
+		if count < 2 {
+			if c.lexer.IsID_(c.scanner.GetTokenType()) {
+				temp, _ = NormalizeTSQLIdentifierText(c.scanner.GetTokenText())
+				c.scanner.Forward(true /* skipHidden */)
+			}
+			if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
+				return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */)
+			}
+			candidates = append(candidates, temp)
+			c.scanner.Forward(true /* skipHidden */)
+		}
+		if count == 2 {
+			// table_name
+			// : (database=id_ '.' schema=id_? '.' | schema=id_ '.')? (table=id_ | blocking_hierarchy=BLOCKING_HIERARCHY)
+			// The last token can be blocking hierarchy.
+			if c.lexer.IsID_(c.scanner.GetTokenType()) {
+				temp, _ = NormalizeTSQLIdentifierText(c.scanner.GetTokenText())
+				c.scanner.Forward(true /* skipHidden */)
+			} else if c.scanner.GetTokenType() == tsqlparser.TSqlParserBLOCKING_HIERARCHY {
+				temp = c.scanner.GetTokenText()
+				c.scanner.Forward(true /* skipHidden */)
+			}
+			if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
+				return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */)
+			}
+			candidates = append(candidates, temp)
+			c.scanner.Forward(true /* skipHidden */)
+		}
+
+		if count > 2 {
+			break
+		}
+	}
+
+	return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */)
 }
 
 func (c *Completer) determineFullTableNameContext() []*objectRefContext {
@@ -574,7 +693,7 @@ func (c *Completer) determineFullTableNameContext() []*objectRefContext {
 			c.scanner.Forward(true /* skipHidden */)
 		}
 		if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
-			return deriveObjectRefContextsFromCandidates(candidates)
+			return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */)
 		}
 		candidates = append(candidates, temp)
 		c.scanner.Forward(true /* skipHidden */)
@@ -583,7 +702,7 @@ func (c *Completer) determineFullTableNameContext() []*objectRefContext {
 		}
 	}
 
-	return deriveObjectRefContextsFromCandidates(candidates)
+	return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */)
 }
 
 // deriveObjectRefContextsFromCandidates derives the object reference contexts from the candidates.
@@ -591,41 +710,58 @@ func (c *Completer) determineFullTableNameContext() []*objectRefContext {
 // The size of candidates is the window size in the object reference,
 // for example, if the candidates are ["a", "b", "c"], the size is 3,
 // and objectRefContext would be [linked_server_name: "a", database_name: "b", schema_name: "c", object_name: ""] or[linked_server_name: "", database_name: "a", schema_name: "b", object_name: "c"].
-func deriveObjectRefContextsFromCandidates(candidates []string) []*objectRefContext {
+func deriveObjectRefContextsFromCandidates(candidates []string, ignoredLinkedServer bool) []*objectRefContext {
+	var options []objectRefContextOption
+	if !ignoredLinkedServer {
+		options = append(options, withLinkedServer())
+	}
+	refCtx := newObjectRefContext(options...)
 	if len(candidates) == 0 {
 		return []*objectRefContext{
-			newObjectRefContext(),
+			refCtx.clone(),
 		}
 	}
 
+	var results []*objectRefContext
 	switch len(candidates) {
 	case 1:
-		return []*objectRefContext{
-			newObjectRefContext().setLinkedServer(candidates[0]),
-			newObjectRefContext().setLinkedServer("").setDatabase(candidates[0]),
-			newObjectRefContext().setLinkedServer("").setDatabase("").setSchema(candidates[0]),
-			newObjectRefContext().setLinkedServer("").setDatabase("").setSchema("").setObject(candidates[0]),
+		if !ignoredLinkedServer {
+			results = append(results, refCtx.clone().setLinkedServer(candidates[0]))
 		}
+		results = append(
+			results,
+			refCtx.clone().setLinkedServer("").setDatabase(candidates[0]),
+			refCtx.clone().setLinkedServer("").setDatabase("").setSchema(candidates[0]),
+			refCtx.clone().setLinkedServer("").setDatabase("").setSchema("").setObject(candidates[0]),
+		)
 	case 2:
-		return []*objectRefContext{
-			newObjectRefContext().setLinkedServer(candidates[0]).setDatabase(candidates[1]),
-			newObjectRefContext().setLinkedServer("").setDatabase(candidates[0]).setSchema(candidates[1]),
-			newObjectRefContext().setLinkedServer("").setDatabase("").setSchema(candidates[0]).setObject(candidates[1]),
+		if !ignoredLinkedServer {
+			results = append(results, refCtx.clone().setLinkedServer(candidates[0]).setDatabase(candidates[1]))
 		}
+		results = append(
+			results,
+			refCtx.clone().setLinkedServer("").setDatabase(candidates[0]).setSchema(candidates[1]),
+			refCtx.clone().setLinkedServer("").setDatabase("").setSchema(candidates[0]).setObject(candidates[1]),
+		)
 	case 3:
-		return []*objectRefContext{
-			newObjectRefContext().setLinkedServer(candidates[0]).setDatabase(candidates[1]).setSchema(candidates[2]),
-			newObjectRefContext().setLinkedServer("").setDatabase(candidates[0]).setSchema(candidates[1]).setObject(candidates[2]),
+		if !ignoredLinkedServer {
+			results = append(results, refCtx.clone().setLinkedServer(candidates[0]).setDatabase(candidates[1]).setSchema(candidates[2]))
 		}
+		results = append(
+			results,
+			refCtx.clone().setLinkedServer("").setDatabase(candidates[0]).setSchema(candidates[1]).setObject(candidates[2]),
+		)
 	case 4:
-		return []*objectRefContext{
-			newObjectRefContext().setLinkedServer(candidates[0]).setDatabase(candidates[1]).setSchema(candidates[2]).setObject(candidates[3]),
+		if !ignoredLinkedServer {
+			results = append(results, refCtx.clone().setLinkedServer(candidates[0]).setDatabase(candidates[1]).setSchema(candidates[2]).setObject(candidates[3]))
 		}
 	}
 
-	return []*objectRefContext{
-		newObjectRefContext(),
+	if len(results) == 0 {
+		results = append(results, refCtx.clone())
 	}
+
+	return results
 }
 
 // skipHeadingSQLs skips the SQL statements which before the caret position.
@@ -684,4 +820,268 @@ func notEmptySQLCount(list []base.SingleSQL) int {
 		}
 	}
 	return count
+}
+
+func (c *Completer) takeReferencesSnapshot() {
+	for _, references := range c.referencesStack {
+		c.references = append(c.references, references...)
+	}
+}
+
+func (c *Completer) collectLeadingTableReferences(caretIndex int) {
+	c.scanner.Push()
+
+	c.scanner.SeekIndex(0)
+
+	level := 0
+	for {
+		found := c.scanner.GetTokenType() == tsqlparser.TSqlLexerFROM
+		for !found {
+			if !c.scanner.Forward(false) || c.scanner.GetIndex() >= caretIndex {
+				break
+			}
+
+			switch c.scanner.GetTokenType() {
+			case tsqlparser.TSqlLexerLR_BRACKET:
+				level++
+				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
+			case tsqlparser.TSqlLexerRR_BRACKET:
+				if level == 0 {
+					c.scanner.PopAndRestore()
+					return // We cannot go above the initial nesting level.
+				}
+			case tsqlparser.TSqlLexerFROM:
+				found = true
+			}
+		}
+		if !found {
+			c.scanner.PopAndRestore()
+			return // No FROM clause found.
+		}
+		c.parseTableReferences(c.scanner.GetFollowingText())
+		if c.scanner.GetTokenType() == tsqlparser.TSqlLexerFROM {
+			c.scanner.Forward(false /* skipHidden */)
+		}
+	}
+}
+
+func (c *Completer) collectRemainingTableReferences() {
+	c.scanner.Push()
+
+	level := 0
+	for {
+		found := c.scanner.GetTokenType() == tsqlparser.TSqlLexerFROM
+		for !found {
+			if !c.scanner.Forward(false /* skipHidden */) {
+				break
+			}
+
+			switch c.scanner.GetTokenType() {
+			case tsqlparser.TSqlLexerLR_BRACKET:
+				level++
+				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
+			case tsqlparser.TSqlLexerRR_BRACKET:
+				if level > 0 {
+					level--
+				}
+
+			case tsqlparser.TSqlLexerFROM:
+				if level == 0 {
+					found = true
+				}
+			}
+		}
+
+		if !found {
+			c.scanner.PopAndRestore()
+			return // No more FROM clause found.
+		}
+
+		c.parseTableReferences(c.scanner.GetFollowingText())
+		if c.scanner.GetTokenType() == tsqlparser.TSqlLexerFROM {
+			c.scanner.Forward(false /* skipHidden */)
+		}
+	}
+}
+
+func (c *Completer) parseTableReferences(fromClause string) {
+	input := antlr.NewInputStream(fromClause)
+	lexer := tsqlparser.NewTSqlLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := tsqlparser.NewTSqlParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	tree := parser.From_table_sources()
+	listener := &tableRefListener{
+		context:        c,
+		fromClauseMode: true,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+}
+
+type tableRefListener struct {
+	*tsqlparser.BaseTSqlParserListener
+
+	context        *Completer
+	fromClauseMode bool
+	done           bool
+	level          int
+}
+
+func (l *tableRefListener) ExitAs_table_alias(ctx *tsqlparser.As_table_aliasContext) {
+	if l.done {
+		return
+	}
+	if l.level == 0 && len(l.context.referencesStack) != 0 && len(l.context.referencesStack[0]) != 0 {
+		if physicalTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*base.PhysicalTableReference); ok {
+			physicalTable.Alias = unquote(ctx.Table_alias().GetText())
+			return
+		}
+		if virtualTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*base.VirtualTableReference); ok {
+			virtualTable.Table = unquote(ctx.Table_alias().GetText())
+		}
+	}
+}
+
+func (l *tableRefListener) ExitColumn_alias_list(ctx *tsqlparser.Column_alias_listContext) {
+	if l.done {
+		return
+	}
+
+	if l.level == 0 && len(l.context.referencesStack) != 0 && len(l.context.referencesStack[0]) != 0 {
+		if virtualTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*base.VirtualTableReference); ok {
+			var newColumns []string
+			for _, column := range ctx.AllColumn_alias() {
+				newColumns = append(newColumns, unquote(column.GetText()))
+			}
+			virtualTable.Columns = newColumns
+		}
+	}
+}
+
+func (l *tableRefListener) ExitFull_table_name(ctx *tsqlparser.Full_table_nameContext) {
+	if l.done {
+		return
+	}
+
+	if !l.fromClauseMode || l.level == 0 {
+		reference := &base.PhysicalTableReference{}
+		_ /*Linked Server*/, database, schema, table := normalizeFullTableName(ctx, "", "", "")
+		reference.Database = database
+		reference.Schema = schema
+		reference.Table = table
+		l.context.references = append(l.context.references, reference)
+	}
+}
+
+func (l *tableRefListener) ExitRowset_function(ctx *tsqlparser.Derived_tableContext) {
+	if l.done {
+		return
+	}
+
+	if !l.fromClauseMode || l.level == 0 {
+		reference := &base.VirtualTableReference{}
+		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+	}
+}
+
+func (l *tableRefListener) ExitDerivedTable(ctx *tsqlparser.Derived_tableContext) {
+	if l.done {
+		return
+	}
+
+	pCtx, ok := ctx.GetParent().(*tsqlparser.Table_source_itemContext)
+	if !ok {
+		return
+	}
+
+	derivedTableName := unquote(pCtx.As_table_alias().Table_alias().GetText())
+	reference := &base.VirtualTableReference{
+		Table: derivedTableName,
+	}
+
+	if pCtx.Column_alias_list() == nil {
+		// User do not specify the column alias, we should use query span to get the column alias.
+		if span, err := base.GetQuerySpan(
+			l.context.ctx,
+			storepb.Engine_MSSQL,
+			fmt.Sprintf("SELECT * FROM (%s);", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)),
+			l.context.defaultDatabase,
+			l.context.defaultSchema,
+			l.context.metadataGetter,
+			l.context.databaseNamesLister,
+			false,
+		); err == nil && len(span) == 1 {
+			for _, column := range span[0].Results {
+				reference.Columns = append(reference.Columns, column.Name)
+			}
+		}
+	}
+	l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+}
+
+func (l *tableRefListener) ExitChange_table(ctx *tsqlparser.Change_tableContext) {
+	if l.done {
+		return
+	}
+
+	if !l.fromClauseMode || l.level == 0 {
+		reference := &base.VirtualTableReference{}
+		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+	}
+}
+
+func (l *tableRefListener) ExitNodes_method(ctx *tsqlparser.Nodes_methodContext) {
+	if l.done {
+		return
+	}
+
+	if !l.fromClauseMode || l.level == 0 {
+		reference := &base.VirtualTableReference{}
+		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+	}
+}
+
+func (l *tableRefListener) EnterTable_source_item(ctx *tsqlparser.Table_source_itemContext) {
+	if l.done {
+		return
+	}
+
+	if !l.fromClauseMode || l.level == 0 {
+		if ctx.GetLoc_id() != nil {
+			reference := &base.VirtualTableReference{}
+			l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+		} else if ctx.GetLoc_id_call() != nil {
+			reference := &base.VirtualTableReference{}
+			l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+		} else if ctx.GetOldstyle_fcall() != nil {
+			reference := &base.VirtualTableReference{}
+			l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+		}
+	}
+}
+
+func (l *tableRefListener) EnterSubquery(ctx *tsqlparser.SubqueryContext) {
+	if l.done {
+		return
+	}
+
+	if l.fromClauseMode {
+		l.level++
+	} else {
+		l.context.referencesStack = append([][]base.TableReference{{}}, l.context.referencesStack...)
+	}
+}
+
+func (l *tableRefListener) ExitSubquery(ctx *tsqlparser.SubqueryContext) {
+	if l.done {
+		return
+	}
+
+	if l.fromClauseMode {
+		l.level--
+	} else {
+		l.context.referencesStack = l.context.referencesStack[1:]
+	}
 }

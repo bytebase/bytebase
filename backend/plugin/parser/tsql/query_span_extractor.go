@@ -3530,3 +3530,17 @@ func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normal
 
 	return linkedServer, database, schema, table
 }
+
+func unquote(name string) string {
+	if len(name) < 2 {
+		return name
+	}
+	if name[0] == '[' && name[len(name)-1] == ']' {
+		return name[1 : len(name)-1]
+	}
+
+	if len(name) > 3 && name[0] == 'N' && name[1] == '\'' && name[len(name)-1] == '\'' {
+		return name[2 : len(name)-1]
+	}
+	return name
+}
