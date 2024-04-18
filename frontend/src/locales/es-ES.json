@@ -1252,7 +1252,8 @@
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
     "create": "Crear base de datos",
-    "procedures": "Trámites"
+    "procedures": "Trámites",
+    "partitions": "Particiones"
   },
   "instance": {
     "select": "Seleccionar instancia",

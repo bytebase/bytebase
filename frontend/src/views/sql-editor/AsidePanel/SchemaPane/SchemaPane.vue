@@ -280,10 +280,15 @@ watch(tree, () => {
   padding: 0;
 }
 .schema-tree :deep(.n-tree-node-indent) {
-  width: 1rem;
+  width: 20px;
+}
+.schema-tree :deep(.n-tree-node-switcher) {
+  width: 20px !important;
+  height: 20px !important;
+  align-self: center;
 }
 .schema-tree :deep(.n-tree-node-switcher--hide) {
-  width: 0.5rem !important;
+  width: 0 !important;
 }
 .schema-tree :deep(.n-tree-node-content__prefix) {
   @apply shrink-0 !mr-1;
