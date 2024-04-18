@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message AuditLog {
+  // e.g. /bytebase.v1.SQLService/Query
+  string method = 1;
+
+  // resource name
+  // projects/{project}
+  string resource = 2;
+
+  // Format: users/d@d.com
+  string user = 3;
+
+  Severity severity = 4;
+
+  // Marshalled request.
+  string request = 5;
+
+  // Marshalled response.
+  // Some fields are omitted because they are too large or contain sensitive information.
+  string response = 6;
+
+  enum Severity {
+    DEFAULT = 0;
+    DEBUG = 1;
+    INFO = 2;
+    NOTICE = 3;
+    WARNING = 4;
+    ERROR = 5;
+    CRITICAL = 6;
+    ALERT = 7;
+    EMERGENCY = 8;
+  }
+}
