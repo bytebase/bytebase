@@ -156,7 +156,8 @@ func (exec *DataUpdateExecutor) backupData(
 			Payload: &storepb.IssueCommentPayload{
 				Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
 					TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
-						Task: common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+						Task:     common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+						Database: backupDatabaseName,
 						Tables: []*storepb.IssueCommentPayload_TaskPriorBackup_Table{
 							{
 								Schema: "",

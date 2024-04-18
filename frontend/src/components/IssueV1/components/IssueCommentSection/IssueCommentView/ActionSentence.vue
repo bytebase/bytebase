@@ -218,13 +218,13 @@ const renderActionSentence = () => {
       });
     }
   } else if (issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP) {
-    const { task, tables, originalLine } =
+    const { task, tables, originalLine, database } =
       IssueComment_TaskPriorBackup.fromPartial(
         issueComment.taskPriorBackup || {}
       );
     const taskEntity = findTaskByUID(issue.rolloutEntity, extractTaskUID(task));
     let verb = t("activity.sentence.prior-back-table", {
-      database: "bbdataarchive",
+      database: database.length > 0 ? database : "bbdataarchive",
       tables: tables
         .map((table) =>
           table.schema ? `${table.schema}.${table.table}` : table.table
@@ -233,7 +233,7 @@ const renderActionSentence = () => {
     });
     if (originalLine) {
       verb = t("activity.sentence.prior-back-table-for-line", {
-        database: "bbdataarchive",
+        database: database.length > 0 ? database : "bbdataarchive",
         tables: tables
           .map((table) =>
             table.schema ? `${table.schema}.${table.table}` : table.table

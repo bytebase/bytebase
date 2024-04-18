@@ -1973,6 +1973,7 @@ InstanceOptions is the option for instances.
 | task | [string](#string) |  |  |
 | tables | [IssueCommentPayload.TaskPriorBackup.Table](#bytebase-store-IssueCommentPayload-TaskPriorBackup-Table) | repeated |  |
 | original_line | [int32](#int32) | optional |  |
+| database | [string](#string) |  |  |
 
 
 
