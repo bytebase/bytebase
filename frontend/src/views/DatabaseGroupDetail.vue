@@ -118,7 +118,7 @@
   <DatabaseGroupPrevEditorModal
     v-if="issueType"
     :issue-type="issueType"
-    :database-group="databaseGroup"
+    :database-group-name="databaseGroup.name"
     @close="issueType = undefined"
   />
 </template>

@@ -5,14 +5,13 @@
         {{ $t("database.show-schemaless-databases") }}
       </NCheckbox>
     </div>
-    <DatabaseV1Table
+    <DatabaseDataTable
       v-if="expand"
       :mode="`${mode}_SHORT`"
-      class="overflow-y-auto mt-2"
-      table-class="border"
       :schemaless="true"
-      :row-clickable="false"
       :database-list="databaseList"
+      :show-selection="false"
+      :show-sql-editor-button="false"
     />
   </div>
 </template>
@@ -20,8 +19,8 @@
 <script setup lang="ts">
 import { NCheckbox } from "naive-ui";
 import { ref } from "vue";
+import DatabaseDataTable from "@/components/DatabaseDataTable";
 import type { ComposedDatabase } from "@/types";
-import { DatabaseV1Table } from "../v2/";
 
 defineProps<{
   databaseList: ComposedDatabase[];

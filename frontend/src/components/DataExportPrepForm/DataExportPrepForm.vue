@@ -26,27 +26,13 @@
               :placement="'left-start'"
             />
           </div>
-          <DatabaseV1Table
+          <DatabaseDataTable
             mode="ALL_SHORT"
-            table-class="border"
-            :custom-click="true"
-            :database-list="selectableDatabaseList"
-            :show-selection-column="true"
+            :database-list="filteredDatabaseList"
             :show-sql-editor-button="false"
-            :show-placeholder="true"
-            @select-database="handleSelectedDatabaseChange"
-          >
-            <template #selection="{ database }">
-              <NRadio
-                :checked="isDatabaseSelected(database as ComposedDatabase)"
-                :value="(database as ComposedDatabase).uid"
-                @click="
-                  () =>
-                    handleSelectedDatabaseChange(database as ComposedDatabase)
-                "
-              />
-            </template>
-          </DatabaseV1Table>
+            :single-selection="true"
+            @update:selected-databases="handleDatabasesSelectionChanged"
+          />
         </div>
       </div>
       <div
@@ -79,9 +65,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NRadio } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
+import DatabaseDataTable from "@/components/DatabaseDataTable";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentUserV1,
@@ -101,7 +88,7 @@ import {
   generateIssueName,
   extractProjectResourceName,
 } from "@/utils";
-import { DatabaseLabelFilter, DatabaseV1Table, DrawerContent } from "../v2";
+import { DatabaseLabelFilter, DrawerContent } from "../v2";
 
 type LocalState = {
   label: string;
@@ -211,16 +198,15 @@ const filteredDatabaseList = computed(() => {
   return sortDatabaseV1List(list);
 });
 
-const selectableDatabaseList = computed(() => {
-  return filteredDatabaseList.value;
-});
-
-const handleSelectedDatabaseChange = (database: ComposedDatabase) => {
-  state.selectedDatabaseUid = database.uid;
-};
-
-const isDatabaseSelected = (database: ComposedDatabase): boolean => {
-  return state.selectedDatabaseUid === database.uid;
+const handleDatabasesSelectionChanged = (
+  selectedDatabaseNameList: Set<string>
+): void => {
+  if (selectedDatabaseNameList.size !== 1) {
+    return;
+  }
+  state.selectedDatabaseUid = databaseV1Store.getDatabaseByName(
+    Array.from(selectedDatabaseNameList)[0]
+  )?.uid;
 };
 
 const navigateToIssuePage = async () => {
@@ -228,7 +214,7 @@ const navigateToIssuePage = async () => {
     return;
   }
 
-  const selectedDatabase = selectableDatabaseList.value.find(
+  const selectedDatabase = filteredDatabaseList.value.find(
     (db) => db.uid === state.selectedDatabaseUid
   ) as ComposedDatabase;
 
