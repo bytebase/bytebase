@@ -1,0 +1,278 @@
+package plsql
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/antlr4-go/antlr/v4"
+	"github.com/pkg/errors"
+
+	parser "github.com/bytebase/plsql-parser"
+
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/proto/generated-go/store"
+)
+
+const (
+	maxTableNameLength = 128
+)
+
+func init() {
+	base.RegisterTransformDMLToSelect(store.Engine_ORACLE, TransformDMLToSelect)
+}
+
+type StatementType int
+
+const (
+	StatementTypeUnknown StatementType = iota
+	StatementTypeUpdate
+	StatementTypeInsert
+	StatementTypeDelete
+)
+
+type TableReference struct {
+	Database      string
+	Schema        string
+	Table         string
+	Alias         string
+	StatementType StatementType
+}
+
+type statementInfo struct {
+	offset    int
+	statement string
+	tree      antlr.Tree
+	table     *TableReference
+	line      int
+}
+
+// TransformDMLToSelect transforms DML statement to SELECT statement.
+// For Oracle, we only consider the managed on schema mode.
+func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+	statementInfoList, err := prepareTransformation(sourceDatabase, statement)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare transformation")
+	}
+
+	return generateSQL(statementInfoList, targetDatabase, tablePrefix)
+}
+
+func generateSQL(statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+	var result []base.BackupStatement
+	offsetLength := 1
+	if len(statementInfoList) > 1 {
+		offsetLength = getOffsetLength(statementInfoList[len(statementInfoList)-1].offset)
+	}
+
+	for _, info := range statementInfoList {
+		table := info.table
+		targetTable := fmt.Sprintf("%s_%0*d_%s", tablePrefix, offsetLength, info.offset, table.Table)
+		targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
+		var buf strings.Builder
+		if _, err := buf.WriteString(fmt.Sprintf(`CREATE TABLE "%s"."%s" AS SELECT `, targetDatabase, targetTable)); err != nil {
+			return nil, errors.Wrap(err, "failed to write to buffer")
+		}
+		if table.Alias != "" {
+			if _, err := buf.WriteString(fmt.Sprintf(`"%s".* FROM `, table.Alias)); err != nil {
+				return nil, errors.Wrap(err, "failed to write to buffer")
+			}
+		} else {
+			if _, err := buf.WriteString(fmt.Sprintf(`"%s"."%s".* FROM `, table.Schema, table.Table)); err != nil {
+				return nil, errors.Wrap(err, "failed to write to buffer")
+			}
+		}
+
+		if err := writeSuffixSelectClause(&buf, info.tree); err != nil {
+			return nil, errors.Wrap(err, "failed to write suffix select clause")
+		}
+
+		if _, err := buf.WriteString(";"); err != nil {
+			return nil, errors.Wrap(err, "failed to write to buffer")
+		}
+
+		result = append(result, base.BackupStatement{
+			Statement:    buf.String(),
+			TableName:    targetTable,
+			OriginalLine: info.line,
+		})
+	}
+
+	return result, nil
+}
+
+func writeSuffixSelectClause(buf *strings.Builder, tree antlr.Tree) error {
+	extractor := &suffixSelectClauseExtractor{
+		buf: buf,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
+	return extractor.err
+}
+
+type suffixSelectClauseExtractor struct {
+	*parser.BasePlSqlParserListener
+
+	buf *strings.Builder
+	err error
+}
+
+func (e *suffixSelectClauseExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext) {
+	if e.err != nil || !isTopLevel(ctx.GetParent()) {
+		return
+	}
+
+	if _, err := e.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.General_table_ref())); err != nil {
+		e.err = errors.Wrap(err, "failed to write to buffer")
+		return
+	}
+
+	if ctx.Where_clause() != nil {
+		if _, err := e.buf.WriteString(" "); err != nil {
+			e.err = errors.Wrap(err, "failed to write to buffer")
+			return
+		}
+		if _, err := e.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Where_clause())); err != nil {
+			e.err = errors.Wrap(err, "failed to write to buffer")
+			return
+		}
+	}
+}
+
+func (e *suffixSelectClauseExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext) {
+	if e.err != nil || !isTopLevel(ctx.GetParent()) {
+		return
+	}
+
+	if _, err := e.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.General_table_ref())); err != nil {
+		e.err = errors.Wrap(err, "failed to write to buffer")
+		return
+	}
+
+	if ctx.Where_clause() != nil {
+		if _, err := e.buf.WriteString(" "); err != nil {
+			e.err = errors.Wrap(err, "failed to write to buffer")
+			return
+		}
+		if _, err := e.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Where_clause())); err != nil {
+			e.err = errors.Wrap(err, "failed to write to buffer")
+			return
+		}
+	}
+}
+
+func getOffsetLength(total int) int {
+	length := 1
+	for {
+		if total < 10 {
+			return length
+		}
+		total /= 10
+		length++
+	}
+}
+
+func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
+	tree, _, err := ParsePLSQL(statement)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse PLSQL")
+	}
+
+	extractor := &dmlExtractor{
+		databaseName: databaseName,
+		// We only consider the managed on schema mode.
+		// For managed on schema mode, the default schema is the database name.
+		defaultSchema: databaseName,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
+	return extractor.dmls, nil
+}
+
+func isTopLevel(ctx antlr.Tree) bool {
+	if ctx == nil {
+		return true
+	}
+	switch ctx := ctx.(type) {
+	case *parser.Unit_statementContext, *parser.Sql_scriptContext:
+		return true
+	case *parser.Data_manipulation_language_statementsContext:
+		return isTopLevel(ctx.GetParent())
+	default:
+		return false
+	}
+}
+
+type dmlExtractor struct {
+	*parser.BasePlSqlParserListener
+
+	databaseName  string
+	defaultSchema string
+	dmls          []statementInfo
+	offset        int
+}
+
+func (e *dmlExtractor) ExitUnit_statement(_ *parser.Unit_statementContext) {
+	e.offset++
+}
+
+func (e *dmlExtractor) ExitSql_plus_command(_ *parser.Sql_plus_commandContext) {
+	e.offset++
+}
+
+func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext) {
+	if isTopLevel(ctx.GetParent()) {
+		extractor := &tableExtractor{
+			databaseName:  e.databaseName,
+			defaultSchema: e.defaultSchema,
+		}
+		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx)
+
+		e.dmls = append(e.dmls, statementInfo{
+			offset:    e.offset,
+			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+			tree:      ctx,
+			table:     extractor.table,
+			line:      ctx.GetStart().GetLine(),
+		})
+	}
+}
+
+func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext) {
+	if isTopLevel(ctx.GetParent()) {
+		extractor := &tableExtractor{
+			databaseName:  e.databaseName,
+			defaultSchema: e.defaultSchema,
+		}
+		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx)
+
+		e.dmls = append(e.dmls, statementInfo{
+			offset:    e.offset,
+			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+			tree:      ctx,
+			table:     extractor.table,
+			line:      ctx.GetStart().GetLine(),
+		})
+	}
+}
+
+type tableExtractor struct {
+	*parser.BasePlSqlParserListener
+
+	databaseName  string
+	defaultSchema string
+	table         *TableReference
+}
+
+func (e *tableExtractor) EnterGeneral_table_ref(ctx *parser.General_table_refContext) {
+	dmlTableExpr := ctx.Dml_table_expression_clause()
+	if dmlTableExpr != nil && dmlTableExpr.Tableview_name() != nil {
+		schemaName, tableName := NormalizeTableViewName(e.defaultSchema, dmlTableExpr.Tableview_name())
+		e.table = &TableReference{
+			Database: schemaName,
+			Schema:   schemaName,
+			Table:    tableName,
+		}
+		if ctx.Table_alias() != nil {
+			e.table.Alias = normalizeTableAlias(ctx.Table_alias())
+		}
+	}
+}
