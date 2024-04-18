@@ -3,8 +3,8 @@
     :db="db"
     :database="database"
     :schema="schema"
-    :name="view.name"
-    :code="view.definition"
+    :name="procedure.name"
+    :code="procedure.definition"
   />
 </template>
 
@@ -13,7 +13,7 @@ import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
-  ViewMetadata,
+  ProcedureMetadata,
 } from "@/types/proto/v1/database_service";
 import CodeViewer from "./CodeViewer.vue";
 
@@ -21,6 +21,6 @@ defineProps<{
   db: ComposedDatabase;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
-  view: ViewMetadata;
+  procedure: ProcedureMetadata;
 }>();
 </script>

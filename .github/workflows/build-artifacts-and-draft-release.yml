@@ -15,7 +15,7 @@ jobs:
           go-version: 1.21.6
       - uses: pnpm/action-setup@v3.0.0
         with:
-          version: 8.12.1
+          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: "20.12.0"
@@ -52,11 +52,6 @@ jobs:
         with:
           name: bytebase-linux
           path: ./bytebase-build/linux
-      - name: Merge checksum file
-        run: |
-          cd ./bytebase-build
-          cat ./linux/bytebase*checksums.txt >> checksums.txt
-          rm ./linux/bytebase*checksums.txt
       - name: Release
         uses: goreleaser/goreleaser-action@v5
         with:
