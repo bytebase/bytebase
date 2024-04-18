@@ -41,7 +41,6 @@
 import { computed, onMounted, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import DatabaseDataTable from "@/components/DatabaseDataTable";
-import { isDatabase } from "@/components/v2/Model/DatabaseV1Table/utils";
 import {
   useDatabaseV1Store,
   usePageMode,
@@ -216,8 +215,8 @@ const filteredDatabaseList = computed(() => {
 });
 
 const selectedDatabases = computed((): ComposedDatabase[] => {
-  return filteredDatabaseList.value.filter(
-    (db) => isDatabase(db) && state.selectedDatabaseIds.has(db.uid)
+  return filteredDatabaseList.value.filter((db) =>
+    state.selectedDatabaseIds.has(db.uid)
   );
 });
 

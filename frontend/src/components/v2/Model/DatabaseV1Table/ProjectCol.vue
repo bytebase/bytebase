@@ -40,10 +40,10 @@
 
 <script setup lang="ts">
 import { NTooltip } from "naive-ui";
+import type { Mode } from "@/components/DatabaseDataTable/DatabaseDataTable.vue";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
-import type { Mode } from "./utils";
 
 withDefaults(
   defineProps<{
