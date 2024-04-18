@@ -1252,7 +1252,8 @@
     "failed-to-sync-schema": "Không thể đồng bộ hóa lược đồ",
     "successfully-synced-schema": "Đã đồng bộ hóa lược đồ thành công",
     "create": "Tạo nên cơ sở dữ liệu",
-    "procedures": "Thủ tục"
+    "procedures": "Thủ tục",
+    "partitions": "Phân vùng"
   },
   "instance": {
     "select": "Chọn phiên bản",

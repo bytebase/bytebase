@@ -8,7 +8,12 @@
       class="w-4"
     />
     <ViewIcon v-if="type === 'view'" class="w-4 h-4" />
+    <ProcedureIcon v-if="type === 'procedure'" class="w-4 h-4" />
+    <FunctionIcon v-if="type === 'function'" class="w-4 h-4" />
+    <TablePartitionIcon v-if="type === 'partition-table'" class="w-4 h-4" />
+
     <component :is="render" v-if="render" />
+
     <span v-else>{{ text }}</span>
   </div>
 </template>
@@ -16,7 +21,13 @@
 <script setup lang="ts">
 import { isFunction } from "lodash-es";
 import { computed } from "vue";
-import { TableIcon, ViewIcon } from "@/components/Icon";
+import {
+  FunctionIcon,
+  ProcedureIcon,
+  TableIcon,
+  TablePartitionIcon,
+  ViewIcon,
+} from "@/components/Icon";
 import type { TreeNode } from "../common";
 
 const props = defineProps<{

@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <TablePartitionIcon class="w-4 h-4 opacity-75" :stroke-width="1.75" />
+    <TablePartitionIcon class="w-4 h-4" />
     <HighlightLabelText
       :text="target.partition.name"
       :keyword="keyword"
