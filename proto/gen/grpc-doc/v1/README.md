@@ -4758,6 +4758,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | task | [string](#string) |  |  |
 | tables | [IssueComment.TaskPriorBackup.Table](#bytebase-v1-IssueComment-TaskPriorBackup-Table) | repeated |  |
 | original_line | [int32](#int32) | optional |  |
+| database | [string](#string) |  |  |
 
 
 
