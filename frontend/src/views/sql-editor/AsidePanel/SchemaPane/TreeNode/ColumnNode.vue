@@ -1,8 +1,9 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <PrimaryKeyIcon v-if="isPrimaryKey" class="w-4 h-4" />
-    <IndexIcon v-else-if="isIndex" class="!w-4 !h-4 text-gray-500" />
-    <div v-else class="w-4 h-4" />
+    <div class="w-4 h-4 inline-flex items-center justify-center">
+      <PrimaryKeyIcon v-if="isPrimaryKey" class="w-4 h-4" />
+      <IndexIcon v-else-if="isIndex" class="!w-4 !h-4 text-gray-500" />
+    </div>
     <HighlightLabelText
       :text="target.column.name"
       :keyword="keyword"

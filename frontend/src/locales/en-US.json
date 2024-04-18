@@ -1252,7 +1252,8 @@
     "failed-to-sync-schema": "Failed to sync schema",
     "successfully-synced-schema": "Successfully synced schema",
     "create": "Create database",
-    "procedures": "Procedures"
+    "procedures": "Procedures",
+    "partitions": "Partitions"
   },
   "instance": {
     "select": "Select instance",

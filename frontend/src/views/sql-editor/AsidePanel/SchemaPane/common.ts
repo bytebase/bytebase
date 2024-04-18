@@ -334,6 +334,12 @@ const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
 
     // Map table-level partitions.
     if (table.partitions.length > 0) {
+      const partitionTableTextNode = createExpandableTextNode(
+        "partition-table",
+        node,
+        () => t("db.partitions")
+      );
+      partitionTableTextNode.children = [];
       for (const partition of table.partitions) {
         const subnode = mapTreeNodeByType(
           "partition-table",
@@ -346,8 +352,9 @@ const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
         } else {
           subnode.isLeaf = true;
         }
-        node.children.push(subnode);
+        partitionTableTextNode.children?.push(subnode);
       }
+      node.children?.push(partitionTableTextNode);
     }
     return node;
   });
