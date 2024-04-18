@@ -19,6 +19,7 @@ import type {
   UpdateDatabaseRequest,
   DiffSchemaRequest,
   SearchDatabasesRequest,
+  BatchUpdateDatabasesRequest,
 } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName, isMemberOfProjectV1 } from "@/utils";
 import { useGracefulRequest } from "../utils";
@@ -147,10 +148,14 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     await fetchDatabaseByUID(uid, silent);
     return getDatabaseByUID(uid);
   };
+  const batchUpdateDatabases = async (params: BatchUpdateDatabasesRequest) => {
+    const updated = await databaseServiceClient.batchUpdateDatabases(params);
+    const composed = await upsertDatabaseMap(updated.databases);
+    return composed;
+  };
   const updateDatabase = async (params: UpdateDatabaseRequest) => {
     const updated = await databaseServiceClient.updateDatabase(params);
     const [composed] = await upsertDatabaseMap([updated]);
-
     return composed;
   };
   const fetchDatabaseSchema = async (
@@ -208,6 +213,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     fetchDatabaseByUID,
     getDatabaseByUID,
     getOrFetchDatabaseByUID,
+    batchUpdateDatabases,
     updateDatabase,
     fetchDatabaseSchema,
     updateDatabaseInstance,
