@@ -107,8 +107,8 @@ import {
 import { computed, reactive, ref, watch } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
-import DatabaseLabelsCell from "@/components/DatabaseDataTable/cells/DatabaseLabelsCell.vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
+import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import {
   hasFeature,
   useConnectionOfCurrentSQLEditorTab,
