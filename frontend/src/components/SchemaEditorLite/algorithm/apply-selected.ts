@@ -44,11 +44,11 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
     const sourceTableConfigMap = new Map(
       source.schemaConfigs.flatMap((schemaConfig) => {
         return schemaConfig.tableConfigs.map((tableConfig) => {
-          const key = keyForResourceName(
-            db.name,
-            schemaConfig.name,
-            tableConfig.name
-          );
+          const key = keyForResourceName({
+            database: db.name,
+            schema: schemaConfig.name,
+            table: tableConfig.name,
+          });
           return [key, { schemaConfig, tableConfig }];
         });
       })
@@ -69,12 +69,12 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
       const pickedColumnConfigs: ColumnConfig[] = [];
       for (let i = 0; i < table.columns.length; i++) {
         const column = table.columns[i];
-        const key = keyForResourceName(
-          db.name,
-          schema.name,
-          table.name,
-          column.name
-        );
+        const key = keyForResourceName({
+          database: db.name,
+          schema: schema.name,
+          table: table.name,
+          column: column.name,
+        });
         const picked = selectedObjectKeys.has(key);
         if (picked) {
           const status = getColumnStatus(db, {

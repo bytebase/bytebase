@@ -81,6 +81,7 @@ import type { TreeOption, DropdownOption } from "naive-ui";
 import { NInput, NDropdown, NTree, NPerformantEllipsis } from "naive-ui";
 import type { VNodeChild } from "vue";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
+import { watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { DatabaseIcon, SchemaIcon, TableIcon } from "@/components/Icon";
 import { InstanceV1EngineIcon } from "@/components/v2";
@@ -104,6 +105,7 @@ import type {
   TreeNodeForInstance,
   TreeNodeForSchema,
   TreeNodeForTable,
+  TreeNodeForGroup,
 } from "./common";
 import { buildTree } from "./common";
 
@@ -252,36 +254,44 @@ const expandNodeRecursively = (node: TreeNode | undefined) => {
     // column nodes are not expandable
     expandNodeRecursively(node.parent);
   }
+  if (node.type === "group") {
+    upsertExpandedKeys(node.key);
+    expandNodeRecursively(node.parent);
+  }
   if (node.type === "table") {
-    const key = keyForResource(node.db, node.metadata);
-    upsertExpandedKeys(key);
+    upsertExpandedKeys(node.key);
     expandNodeRecursively(node.parent);
   }
   if (node.type === "schema") {
-    const key = keyForResource(node.db, node.metadata);
-    upsertExpandedKeys(key);
+    upsertExpandedKeys(node.key);
     expandNodeRecursively(node.parent);
   }
   if (node.type === "database") {
-    const key = node.db.name;
-    upsertExpandedKeys(key);
+    upsertExpandedKeys(node.key);
     expandNodeRecursively(node.parent);
   }
   if (node.type === "instance") {
-    const key = node.instance.name;
-    upsertExpandedKeys(key);
+    upsertExpandedKeys(node.key);
   }
 };
-const findFirstSchemaNode = (
-  nodeList: TreeNodeForSchema[] | TreeNodeForInstance[]
-) => {
+const findFirstTableGroupNode = (
+  nodeList: TreeNodeForSchema[] | TreeNodeForInstance[] | TreeNodeForGroup[]
+): TreeNodeForGroup<"table"> | undefined => {
   const first = nodeList[0];
-  if (!first) return undefined;
-  if (first.type === "schema") {
-    return first;
+  if (!first) {
+    return undefined;
   }
-  const firstDatabaseNode = head(first.children);
-  return head(firstDatabaseNode?.children);
+  if (first.type === "group" && first.group === "table") {
+    return first as TreeNodeForGroup<"table">;
+  }
+  if (first.type === "instance") {
+    const firstDatabaseNode = head(first.children);
+    return findFirstTableGroupNode(firstDatabaseNode?.children ?? []);
+  }
+  if (first.type === "schema") {
+    return findFirstTableGroupNode(first.children);
+  }
+  return undefined;
 };
 const buildDatabaseTreeData = (openFirstChild: boolean) => {
   const treeNodeList = buildTree(targets.value, treeNodeMap, {
@@ -290,11 +300,11 @@ const buildDatabaseTreeData = (openFirstChild: boolean) => {
   treeDataRef.value = treeNodeList;
 
   if (openFirstChild) {
-    const firstSchemaNode = findFirstSchemaNode(treeNodeList);
-    if (firstSchemaNode) {
+    const firstTableGroupNode = findFirstTableGroupNode(treeNodeList);
+    if (firstTableGroupNode) {
       nextTick(() => {
         // Auto expand the first tree node.
-        openTabForTreeNode(firstSchemaNode);
+        openTabForTreeNode(firstTableGroupNode);
       });
     }
   }
@@ -303,12 +313,27 @@ const debouncedBuildDatabaseTreeData = debounce(buildDatabaseTreeData, 100);
 useEmitteryEventListener(events, "rebuild-tree", (params) => {
   debouncedBuildDatabaseTreeData(params.openFirstChild);
 });
+watchEffect(() => {
+  const rows: string[] = [];
+  const walk = (node: TreeNode, depth = 0) => {
+    const indent = " ".repeat(depth);
+    rows.push(`${indent}${node.key}`);
+    if (node.children && node.children.length > 0) {
+      node.children.forEach((child) => walk(child, depth + 1));
+    }
+  };
+  treeDataRef.value.forEach((node) => walk(node, 0));
+  console.log(rows.join("\n"));
+});
 
 const tabWatchKey = computed(() => {
   const tab = currentTab.value;
   if (!tab) return undefined;
   if (tab.type === "database") {
-    return keyForResourceName(tab.database.name, tab.selectedSchema);
+    return keyForResourceName({
+      database: tab.database.name,
+      schema: tab.selectedSchema,
+    });
   }
   return keyForResource(tab.database, tab.metadata);
 });
@@ -324,7 +349,7 @@ watch(tabWatchKey, () => {
     if (tab.type === "database") {
       const { database, selectedSchema: schema } = tab;
       if (schema) {
-        const key = keyForResourceName(database.name, schema);
+        const key = keyForResourceName({ database: database.name, schema });
         const node = treeNodeMap.get(key);
         if (node) {
           expandNodeRecursively(node);
@@ -372,7 +397,7 @@ const openTabForTreeNode = (node: TreeNode) => {
       database: node.db,
       metadata: node.metadata,
     });
-  } else if (node.type === "schema") {
+  } else if (node.type === "schema" || node.type === "group") {
     expandNodeRecursively(node);
     addTab({
       type: "database",
@@ -460,12 +485,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
   if (treeNode.type === "schema") {
     const { db, metadata } = treeNode;
     additionalClassList.push(getSchemaStatus(db, metadata));
-
-    if (db.instanceEntity.engine !== Engine.POSTGRES) {
-      label = t("db.tables");
-    } else {
-      label = metadata.schema.name;
-    }
+    label = metadata.schema.name;
   } else if (treeNode.type === "table") {
     const { db, metadata } = treeNode;
     additionalClassList.push(getTableStatus(db, metadata));
@@ -480,6 +500,8 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
       label = `<${t("common.untitled")}>`;
       additionalClassList.push("text-control-placeholder italic");
     }
+  } else if (treeNode.type === "group") {
+    label = `(${treeNode.group} - group)`;
   }
   return h(
     NPerformantEllipsis,
@@ -659,7 +681,9 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
       // And ignore the fold/unfold arrow.
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
         state.shouldRelocateTreeNode = false;
-        if (treeNode.type === "instance") {
+        if (treeNode.type === "group") {
+          expandNodeRecursively(treeNode);
+        } else if (treeNode.type === "instance") {
           expandNodeRecursively(treeNode);
         } else if (treeNode.type === "database") {
           expandNodeRecursively(treeNode);
