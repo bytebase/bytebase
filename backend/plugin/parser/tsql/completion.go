@@ -106,11 +106,9 @@ var (
 	}
 	preferredRules = map[int]bool{
 		tsqlparser.TSqlParserRULE_built_in_functions: true,
-		tsqlparser.TSqlParserRULE_full_table_name:    true,
-		tsqlparser.TSqlParserRULE_asterisk:           true,
-		tsqlparser.TSqlParserRULE_udt_elem:           true,
-		tsqlparser.TSqlParserRULE_expression:         true,
-		tsqlparser.TSqlParserRULE_expression_elem:    true,
+		// full_table_name appears in the rule stack:
+		// table_sources -> table_source -> table_source_item_joined -> table_source_item -> full_table_name
+		tsqlparser.TSqlParserRULE_full_table_name: true,
 	}
 )
 
@@ -222,7 +220,7 @@ func (m CompletionMap) insertTables(c *Completer, linkedServer string, database 
 	if database != "" {
 		databaseName = database
 	}
-	if schema == "" {
+	if schema != "" {
 		schemaName = schema
 	}
 	if databaseName == "" || schemaName == "" {
@@ -246,6 +244,17 @@ func (m CompletionMap) insertTables(c *Completer, linkedServer string, database 
 			m[table] = base.Candidate{
 				Type: base.CandidateTypeTable,
 				Text: table,
+			}
+		}
+	}
+}
+
+func (m CompletionMap) insertCTEs(c *Completer) {
+	for _, cte := range c.cteTables {
+		if _, ok := m[cte.Table]; !ok {
+			m[cte.Table] = base.Candidate{
+				Type: base.CandidateTypeTable,
+				Text: cte.Table,
 			}
 		}
 	}
@@ -331,7 +340,9 @@ type Completer struct {
 
 func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc, databaseNamesLister base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
 	completer := NewStandardCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadataGetter, databaseNamesLister)
+	completer.fetchCommonTableExpression(statement)
 	result, err := completer.complete()
+
 	if err != nil {
 		return nil, err
 	}
@@ -459,19 +470,9 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					tableEntries.insertTables(c, context.linkedServer, context.database, context.schema)
 					viewEntries.insertViews(c, context.linkedServer, context.database, context.schema)
 				}
-			}
-		case tsqlparser.TSqlParserRULE_asterisk:
-			completionContexts := c.determineTableNameContext()
-			for _, context := range completionContexts {
-				if context.flags&objectFlagShowDatabase != 0 {
-					databaseEntries.insertDatabases(c, context.linkedServer)
-				}
-				if context.flags&objectFlagShowSchema != 0 {
-					schemaEntries.insertSchemas(c, context.linkedServer, context.database)
-				}
-				if context.flags&objectFlagShowObject != 0 {
-					tableEntries.insertTables(c, context.linkedServer, context.database, context.schema)
-
+				if context.linkedServer == "" && context.database == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
+					// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
+					tableEntries.insertCTEs(c)
 				}
 			}
 		}
@@ -1011,7 +1012,7 @@ func (l *tableRefListener) ExitDerivedTable(ctx *tsqlparser.Derived_tableContext
 			l.context.defaultSchema,
 			l.context.metadataGetter,
 			l.context.databaseNamesLister,
-			false,
+			true,
 		); err == nil && len(span) == 1 {
 			for _, column := range span[0].Results {
 				reference.Columns = append(reference.Columns, column.Name)
@@ -1083,5 +1084,87 @@ func (l *tableRefListener) ExitSubquery(ctx *tsqlparser.SubqueryContext) {
 		l.level--
 	} else {
 		l.context.referencesStack = l.context.referencesStack[1:]
+	}
+}
+
+func (c *Completer) fetchCommonTableExpression(statement string) {
+	c.cteTables = nil
+
+	// SQL Server only allows CTEs in the first level, the following statement is invalid:
+	// SELECT * FROM (WITH t AS (SELECT * FROM [Employees]) SELECT * FROM t) t2;
+	// https://stackoverflow.com/questions/1914151/how-we-can-use-cte-in-subquery-in-sql-server
+	// So it's easy for SQL server to find the CTEs than other engines, we only need to construct a listener to find the CTEs.
+	extractor := &cteExtractor{
+		completer: c,
+	}
+	input := antlr.NewInputStream(statement)
+	lexer := tsqlparser.NewTSqlLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := tsqlparser.NewTSqlParser(tokens)
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	tree := parser.Tsql_file()
+	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
+	c.cteTables = extractor.virtualReferences
+}
+
+type cteExtractor struct {
+	*tsqlparser.BaseTSqlParserListener
+
+	completer         *Completer
+	handled           bool
+	virtualReferences []*base.VirtualTableReference
+}
+
+func (c *cteExtractor) EnterWith_expression(ctx *tsqlparser.With_expressionContext) {
+	if c.handled {
+		return
+	}
+	c.handled = true
+
+	for _, cte := range ctx.AllCommon_table_expression() {
+		cteName := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(cte.GetExpression_name())
+		if cteName == "" {
+			continue
+		}
+		if cte.GetColumns() != nil {
+			var columns []string
+			for _, columnId := range cte.GetColumns().AllId_() {
+				columns = append(columns, unquote(columnId.GetText()))
+			}
+			c.virtualReferences = append(c.virtualReferences, &base.VirtualTableReference{
+				Table:   unquote(cteName),
+				Columns: columns,
+			})
+			continue
+		}
+
+		cteBody := ctx.GetParser().GetTokenStream().GetTextFromInterval(
+			antlr.Interval{
+				Start: ctx.AllCommon_table_expression()[0].GetStart().GetTokenIndex(),
+				Stop:  cte.GetStop().GetTokenIndex(),
+			},
+		)
+
+		statement := fmt.Sprintf("WITH %s SELECT * FROM %s", cteBody, cteName)
+		if span, err := base.GetQuerySpan(
+			c.completer.ctx,
+			storepb.Engine_MSSQL,
+			statement,
+			c.completer.defaultDatabase,
+			c.completer.defaultSchema,
+			c.completer.metadataGetter,
+			c.completer.databaseNamesLister,
+			true,
+		); err == nil && len(span) == 1 {
+			var columns []string
+			for _, column := range span[0].Results {
+				columns = append(columns, column.Name)
+			}
+			c.virtualReferences = append(c.virtualReferences, &base.VirtualTableReference{
+				Table:   unquote(cteName),
+				Columns: columns,
+			})
+		}
 	}
 }

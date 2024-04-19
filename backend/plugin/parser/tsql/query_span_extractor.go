@@ -310,8 +310,8 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ct
 	}
 
 	var compoundFrom []base.TableSource
-	if from := ctx.GetFrom(); from != nil {
-		fromFieldList, err := q.extractTSqlSensitiveFieldsFromTableSources(ctx.Table_sources())
+	if from := ctx.From_table_sources(); from != nil {
+		fromFieldList, err := q.extractTSqlSensitiveFieldsFromTableSources(from.GetFrom())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_sources` in `query_specification`")
 		}
