@@ -47,19 +47,14 @@ type Driver struct {
 	connCfg       db.ConnectionConfig
 	dbType        storepb.Engine
 	dbBinDir      string
-	binlogDir     string
 	db            *sql.DB
 	databaseName  string
 	sshClient     *ssh.Client
-
-	replayedBinlogBytes *common.CountingReader
-	restoredBackupBytes *common.CountingReader
 }
 
 func newDriver(dc db.DriverConfig) db.Driver {
 	return &Driver{
-		dbBinDir:  dc.DbBinDir,
-		binlogDir: dc.BinlogDir,
+		dbBinDir: dc.DbBinDir,
 	}
 }
 

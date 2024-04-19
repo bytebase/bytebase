@@ -5,13 +5,11 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
-	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 	"unicode/utf8"
 
 	"github.com/nyaruka/phonenumbers"
@@ -82,26 +80,6 @@ func GetResourceDir(dataDir string) string {
 // We cannot add task ID because tenant mode databases should use the same migration version string when applying a schema update.
 func DefaultMigrationVersion() model.Version {
 	return model.Version{Version: time.Now().Format("20060102150405")}
-}
-
-// GetFileSizeSum calculates the sum of file sizes for file names in the list.
-func GetFileSizeSum(fileNameList []string) (int64, error) {
-	var sum int64
-	for _, fileName := range fileNameList {
-		stat, err := os.Stat(fileName)
-		if err != nil {
-			return 0, err
-		}
-		sum += stat.Size()
-	}
-	return sum, nil
-}
-
-// GetBinlogRelativeDir composes the relative directory for binlog.
-// It's useful to convert a local absolute binlog directory path to the cloud path.
-func GetBinlogRelativeDir(binlogDir string) string {
-	instanceID := filepath.Base(binlogDir)
-	return filepath.Join("backup", "instance", instanceID)
 }
 
 // TruncateString truncates the string to have a maximum length of `limit` characters.
@@ -236,35 +214,4 @@ func SanitizeUTF8String(s string) string {
 	}
 
 	return b.String()
-}
-
-// IsCamelCase checks whether a string conforms to the camel case format.
-func IsCamelCase(s string) bool {
-	// If the string is empty, it does not conform to camel case format.
-	if s == "" {
-		return false
-	}
-	// The first character must be a lowercase letter.
-	if !unicode.IsLower(rune(s[0])) {
-		return false
-	}
-	// Check if the string contains uppercase letters.
-	hasUpperCase := false
-	for _, char := range s {
-		if unicode.IsUpper(char) {
-			hasUpperCase = true
-			break
-		}
-	}
-	// If the string does not contain uppercase letters, it is not in camel case format.
-	if !hasUpperCase {
-		return false
-	}
-	// Check for consecutive uppercase letters.
-	for i := 1; i < len(s); i++ {
-		if unicode.IsUpper(rune(s[i])) && unicode.IsUpper(rune(s[i-1])) {
-			return false
-		}
-	}
-	return true
 }
