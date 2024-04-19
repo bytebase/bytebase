@@ -99,14 +99,14 @@ importers:
         specifier: 6.3.4
         version: 6.3.4
       monaco-editor:
-        specifier: 0.45.0
-        version: 0.45.0
+        specifier: 0.47.0
+        version: 0.47.0
       monaco-editor-workers:
         specifier: 0.45.0
-        version: 0.45.0(monaco-editor@0.45.0)
+        version: 0.45.0(monaco-editor@0.47.0)
       monaco-languageclient:
         specifier: 7.3.0
-        version: 7.3.0(@codingame/monaco-vscode-api@1.85.6)(monaco-editor@0.45.0)
+        version: 7.3.0(@codingame/monaco-vscode-api@1.85.6)(monaco-editor@0.47.0)
       naive-ui:
         specifier: 2.38.1
         version: 2.38.1(vue@3.4.23(typescript@5.4.5))
@@ -2869,6 +2869,9 @@ packages:
 
   monaco-editor@0.45.0:
     resolution: {integrity: sha512-mjv1G1ZzfEE3k9HZN0dQ2olMdwIfaeAAjFiwNprLfYNRSz7ctv9XuCT7gPtBGrMUeV1/iZzYKj17Khu1hxoHOA==}
+
+  monaco-editor@0.47.0:
+    resolution: {integrity: sha512-VabVvHvQ9QmMwXu4du008ZDuyLnHs9j7ThVFsiJoXSOQk18+LF89N4ADzPbFenm0W4V2bGHnFBztIRQTgBfxzw==}
 
   monaco-languageclient@7.3.0:
     resolution: {integrity: sha512-8mAl+qa1JhTv5Iwm8P4a08XAJoN2XrG7tyckOYLn0jipLLdXNCRuUA6HaaFkc/naTzjy/bgqpiMoFy9k5J6gKA==}
@@ -6660,18 +6663,20 @@ snapshots:
       pkg-types: 1.0.3
       ufo: 1.5.3
 
-  monaco-editor-workers@0.45.0(monaco-editor@0.45.0):
+  monaco-editor-workers@0.45.0(monaco-editor@0.47.0):
     dependencies:
-      monaco-editor: 0.45.0
+      monaco-editor: 0.47.0
 
   monaco-editor@0.45.0: {}
 
-  monaco-languageclient@7.3.0(@codingame/monaco-vscode-api@1.85.6)(monaco-editor@0.45.0):
+  monaco-editor@0.47.0: {}
+
+  monaco-languageclient@7.3.0(@codingame/monaco-vscode-api@1.85.6)(monaco-editor@0.47.0):
     dependencies:
       '@codingame/monaco-vscode-editor-service-override': 1.85.6
       '@codingame/monaco-vscode-languages-service-override': 1.85.6
       '@codingame/monaco-vscode-model-service-override': 1.85.6
-      monaco-editor: 0.45.0
+      monaco-editor: 0.47.0
       vscode: '@codingame/monaco-vscode-api@1.85.6'
       vscode-languageclient: 9.0.1
 
