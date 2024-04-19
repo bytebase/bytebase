@@ -19,11 +19,7 @@
         </span>
       </div>
       <div class="bb-grid-cell truncate">
-        <ProjectCol
-          mode="ALL_SHORT"
-          :project="project"
-          :show-tenant-icon="true"
-        />
+        <ProjectNameCell mode="ALL_SHORT" :project="project" />
       </div>
     </template>
   </BBGrid>
@@ -36,6 +32,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import type { BBGridColumn, BBGridRow } from "@/bbkit";
 import { BBGrid } from "@/bbkit";
+import ProjectNameCell from "@/components/DatabaseDataTable/cells/ProjectNameCell.vue";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";

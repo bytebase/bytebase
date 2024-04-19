@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center space-x-1">
-    <LabelsColumn :labels="labels" :show-count="2" />
+    <DatabaseLabelsCell :labels="labels" :show-count="2" />
     <button
       v-if="!readonly"
       class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
@@ -26,6 +26,7 @@ import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import DatabaseLabelsCell from "@/components/DatabaseDataTable/cells/DatabaseLabelsCell.vue";
 import { pushNotification, useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
