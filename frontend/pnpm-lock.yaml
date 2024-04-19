@@ -45,8 +45,8 @@ importers:
         specifier: 1.11.10
         version: 1.11.10
       dompurify:
-        specifier: 3.0.11
-        version: 3.0.11
+        specifier: 3.1.0
+        version: 3.1.0
       downloadjs:
         specifier: 1.4.7
         version: 1.4.7
@@ -2116,8 +2116,8 @@ packages:
     resolution: {integrity: sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==}
     engines: {node: '>=6.0.0'}
 
-  dompurify@3.0.11:
-    resolution: {integrity: sha512-Fan4uMuyB26gFV3ovPoEoQbxRRPfTu3CvImyZnhGq5fsIEO+gEFLp45ISFt+kQBWsK5ulDdT0oV28jS1UrwQLg==}
+  dompurify@3.1.0:
+    resolution: {integrity: sha512-yoU4rhgPKCo+p5UrWWWNKiIq+ToGqmVVhk0PmMYBK4kRsR3/qhemNFL8f6CFmBd4gMwm3F4T7HBoydP5uY07fA==}
 
   dotenv@16.4.5:
     resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
@@ -6000,7 +6000,7 @@ snapshots:
     dependencies:
       esutils: 2.0.3
 
-  dompurify@3.0.11: {}
+  dompurify@3.1.0: {}
 
   dotenv@16.4.5: {}
 
