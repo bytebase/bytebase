@@ -50,7 +50,6 @@ const props = withDefaults(
     bordered?: boolean;
     loading?: boolean;
     showSelection?: boolean;
-    singleSelection?: boolean;
     showOperation?: boolean;
     canAssignLicense?: boolean;
   }>(),

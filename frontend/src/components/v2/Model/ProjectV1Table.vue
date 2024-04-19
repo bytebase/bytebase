@@ -1,49 +1,55 @@
 <template>
-  <BBGrid
-    :column-list="columnList"
-    :data-source="projectList"
-    class="border"
-    :show-placeholder="true"
-    @click-row="clickProject"
-  >
-    <template #item="{ item: project }: ProjectGridRow">
-      <div v-if="currentProject" class="bb-grid-cell">
-        <CheckIcon
-          v-if="currentProject.name === project.name"
-          class="w-4 text-accent"
-        />
-      </div>
-      <div class="bb-grid-cell text-gray-500">
-        <span class="flex flex-row items-center space-x-1">
-          <span>{{ project.key }}</span>
-        </span>
-      </div>
-      <div class="bb-grid-cell truncate">
-        <ProjectNameCell mode="ALL_SHORT" :project="project" />
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    size="small"
+    :columns="columnList"
+    :data="projectList"
+    :striped="true"
+    :bordered="bordered"
+    :loading="loading"
+    :row-key="(data: ComposedProject) => data.name"
+    :row-props="rowProps"
+    :pagination="pagination"
+  />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { CheckIcon } from "lucide-vue-next";
+import {
+  NDataTable,
+  type DataTableColumn,
+  type PaginationProps,
+} from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import type { BBGridColumn, BBGridRow } from "@/bbkit";
-import { BBGrid } from "@/bbkit";
+import type { BBGridRow } from "@/bbkit";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";
+import type { ComposedProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
+
+type ProjectDataTableColumn = DataTableColumn<ComposedProject> & {
+  hide?: boolean;
+};
 
 export type ProjectGridRow = BBGridRow<Project>;
 
-const props = defineProps<{
-  projectList: Project[];
-  currentProject?: Project;
-}>();
+const props = withDefaults(
+  defineProps<{
+    projectList: ComposedProject[];
+    currentProject?: ComposedProject;
+    bordered?: boolean;
+    loading?: boolean;
+    pagination?: false | PaginationProps;
+  }>(),
+  {
+    bordered: true,
+    currentProject: undefined,
+    pagination: () => ({ pageSize: 20 }) as PaginationProps,
+  }
+);
 
 const emit = defineEmits<{
   (event: "click"): void;
@@ -51,53 +57,66 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const { t } = useI18n();
-const columnList = computed((): BBGridColumn[] => {
-  const list = [
-    {
-      title: t("project.table.key"),
-      width: "minmax(min-content, 25%)",
-    },
-    {
-      title: t("project.table.name"),
-      width: "minmax(min-content, auto)",
-    },
-  ];
-  if (props.currentProject) {
-    list.unshift({
-      title: "",
-      width: "minmax(min-content, 3rem)",
-    });
-  }
-  return list;
+
+const columnList = computed((): ProjectDataTableColumn[] => {
+  return (
+    [
+      {
+        key: "selection",
+        width: 50,
+        hide: !props.currentProject,
+        render: (project) => {
+          return (
+            props.currentProject?.name === project.name && (
+              <CheckIcon class="w-4 text-accent" />
+            )
+          );
+        },
+      },
+      {
+        key: "key",
+        title: t("project.table.key"),
+        width: 200,
+        render: (project) => project.key,
+      },
+      {
+        key: "title",
+        title: t("project.table.name"),
+        render: (project) => (
+          <ProjectNameCell mode="ALL_SHORT" project={project} />
+        ),
+      },
+    ] as ProjectDataTableColumn[]
+  ).filter((column) => !column.hide);
 });
 
-const clickProject = function (
-  project: Project,
-  section: number,
-  row: number,
-  e: MouseEvent
-) {
-  let routeName = PROJECT_V1_ROUTE_DETAIL;
-  const currentRouteName = router.currentRoute.value.name?.toString();
-  if (
-    currentRouteName?.startsWith(PROJECT_V1_ROUTE_DASHBOARD) &&
-    currentRouteName !== PROJECT_V1_ROUTE_DASHBOARD
-  ) {
-    routeName = currentRouteName;
-  }
+const rowProps = (project: ComposedProject) => {
+  return {
+    style: "cursor: pointer;",
+    onClick: (e: MouseEvent) => {
+      let routeName = PROJECT_V1_ROUTE_DETAIL;
+      const currentRouteName = router.currentRoute.value.name?.toString();
+      if (
+        currentRouteName?.startsWith(PROJECT_V1_ROUTE_DASHBOARD) &&
+        currentRouteName !== PROJECT_V1_ROUTE_DASHBOARD
+      ) {
+        routeName = currentRouteName;
+      }
 
-  const route = router.resolve({
-    name: routeName,
-    params: {
-      projectId: getProjectName(project.name),
+      const route = router.resolve({
+        name: routeName,
+        params: {
+          projectId: getProjectName(project.name),
+        },
+      });
+
+      if (e.ctrlKey || e.metaKey) {
+        window.open(route.fullPath, "_blank");
+      } else {
+        window.location.href = route.fullPath;
+      }
+      emit("click");
     },
-  });
-
-  if (e.ctrlKey || e.metaKey) {
-    window.open(route.fullPath, "_blank");
-  } else {
-    window.location.href = route.fullPath;
-  }
-  emit("click");
+  };
 };
 </script>
