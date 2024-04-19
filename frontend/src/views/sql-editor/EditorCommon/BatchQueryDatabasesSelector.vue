@@ -99,8 +99,8 @@ import { NPopover, NDivider, NDataTable, NTag, NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
+import DatabaseLabelsCell from "@/components/DatabaseDataTable/cells/DatabaseLabelsCell.vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import LabelsColumn from "@/components/v2/Model/DatabaseV1Table/LabelsColumn.vue";
 import {
   hasFeature,
   useConnectionOfCurrentSQLEditorTab,
@@ -210,7 +210,7 @@ const dataTableColumns = computed((): DataTableColumn<ComposedDatabase>[] => {
       resizable: true,
       width: 100,
       render(row: ComposedDatabase) {
-        return h(LabelsColumn, {
+        return h(DatabaseLabelsCell, {
           labels: row.labels,
           showCount: 1,
           placeholder: "",

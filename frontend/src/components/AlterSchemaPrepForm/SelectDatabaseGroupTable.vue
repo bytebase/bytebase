@@ -25,7 +25,7 @@
         {{ dbGroup.databasePlaceholder }}
       </div>
       <div class="bb-grid-cell">
-        <ProjectCol :project="dbGroup.projectEntity" :show-tenant-icon="true" />
+        <ProjectNameCell :project="dbGroup.projectEntity" />
       </div>
     </template>
   </BBGrid>
@@ -36,6 +36,7 @@ import { NRadio } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridColumn } from "@/bbkit";
+import ProjectNameCell from "@/components/DatabaseDataTable/cells/ProjectNameCell.vue";
 import type { ComposedDatabaseGroup } from "@/types";
 
 interface LocalState {
