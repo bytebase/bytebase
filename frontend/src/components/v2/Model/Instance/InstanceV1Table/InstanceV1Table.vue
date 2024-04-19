@@ -33,6 +33,7 @@ import { InstanceV1Name } from "@/components/v2";
 import type { ComposedInstance } from "@/types";
 import { urlfy, hostPortOfInstanceV1 } from "@/utils";
 import EnvironmentV1Name from "../../EnvironmentV1Name.vue";
+import InstanceOperations from "./InstanceOperations.vue";
 
 type InstanceDataTableColumn = DataTableColumn<ComposedInstance> & {
   hide?: boolean;
