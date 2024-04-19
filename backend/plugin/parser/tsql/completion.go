@@ -1129,8 +1129,8 @@ func (c *cteExtractor) EnterWith_expression(ctx *tsqlparser.With_expressionConte
 		}
 		if cte.GetColumns() != nil {
 			var columns []string
-			for _, columnId := range cte.GetColumns().AllId_() {
-				columns = append(columns, unquote(columnId.GetText()))
+			for _, columnID := range cte.GetColumns().AllId_() {
+				columns = append(columns, unquote(columnID.GetText()))
 			}
 			c.virtualReferences = append(c.virtualReferences, &base.VirtualTableReference{
 				Table:   unquote(cteName),

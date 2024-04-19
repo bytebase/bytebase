@@ -1,3 +1,10 @@
+- description: Completion should not consider CTE if no schema specified
+  input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM MySchema.|
+  want:
+    - text: SalaryLevel
+      type: TABLE
+      definition: ""
+      comment: ""
 - description: Completion should consider CTE if no schema specified
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM |
   want:
