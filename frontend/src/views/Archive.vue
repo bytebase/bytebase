@@ -8,25 +8,26 @@
         :placeholder="$t('common.filter-by-name')"
       />
     </div>
-    <div class="border-x">
+    <div class="">
       <ProjectV1Table
         v-if="state.selectedTab == 'PROJECT'"
         :project-list="filteredProjectList"
-        class="border-x-0"
       />
       <InstanceV1Table
         v-else-if="state.selectedTab == 'INSTANCE'"
-        :allow-selection="false"
-        :can-assign-license="false"
         :instance-list="filteredInstanceList"
+        :show-selection="false"
+        :can-assign-license="false"
         :show-operation="false"
       />
       <EnvironmentV1Table
         v-else-if="state.selectedTab == 'ENVIRONMENT'"
+        class="border-x"
         :environment-list="filteredEnvironmentList"
       />
       <IdentityProviderTable
         v-else-if="state.selectedTab == 'SSO'"
+        class="border-x"
         :identity-provider-list="filteredSSOList(deletedSSOList)"
       />
     </div>
