@@ -75,7 +75,7 @@
     "sql-formatter": "15.3.0",
     "uuid": "9.0.1",
     "vdirs": "^0.1.8",
-    "vscode": "npm:@codingame/monaco-vscode-api@1.85.6",
+    "vscode": "npm:@codingame/monaco-vscode-api@4.4.1",
     "vscode-languageclient": "9.0.1",
     "vscode-languageserver": "9.0.1",
     "vscode-languageserver-protocol": "3.17.5",
