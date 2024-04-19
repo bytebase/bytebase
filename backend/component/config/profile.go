@@ -72,6 +72,8 @@ type Profile struct {
 	Lsp             bool
 	PreUpdateBackup bool
 	ExecuteDetail   bool
+
+	DevelopmentAudit bool
 }
 
 // UseEmbedDB returns whether to use embedDB.
