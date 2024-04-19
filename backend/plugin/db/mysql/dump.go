@@ -899,10 +899,8 @@ func (driver *Driver) restoreImpl(ctx context.Context, backup io.Reader, databas
 	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.dbBinDir), mysqlArgs...)
 
 	var stderr bytes.Buffer
-	countingReader := common.NewCountingReader(backup)
-	mysqlCmd.Stdin = countingReader
+	mysqlCmd.Stdin = backup
 	mysqlCmd.Stderr = &stderr
-	driver.restoredBackupBytes = countingReader
 
 	if err := mysqlCmd.Run(); err != nil {
 		return errors.Wrapf(err, "mysql command fails: %s", stderr.String())
