@@ -1,7 +1,13 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
   <template v-if="basicInfo.engine !== Engine.SPANNER">
-    <div v-if="basicInfo.engine === Engine.MYSQL" class="mt-2">
+    <div
+      v-if="
+        basicInfo.engine === Engine.MYSQL ||
+        basicInfo.engine === Engine.POSTGRES
+      "
+      class="mt-2"
+    >
       <NRadioGroup
         v-model:value="dataSource.authenticationType"
         class="textlabel"

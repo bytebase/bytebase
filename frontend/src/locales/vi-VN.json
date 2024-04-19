@@ -1320,6 +1320,9 @@
         "instance-name-tips": "Tên kết nối phiên bản phải như project-id:region:instance-name.",
         "mysql": {
           "template": "Tạo một tài khoản dịch vụ có tên {user}, sau đó thêm tài khoản đó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {user}{'@'}'%'. Cấp cho người dùng này những đặc quyền cần thiết."
+        },
+        "postgresql": {
+          "template": "Tạo một tài khoản dịch vụ có tên {user}, sau đó thêm tài khoản đó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {user}{'@'}project-id.iam. Cấp cho người dùng những đặc quyền cần thiết."
         }
       },
       "create-user-example": {
