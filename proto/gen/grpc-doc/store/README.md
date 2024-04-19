@@ -619,6 +619,7 @@ convert to the expected struct there.
 | severity | [AuditLog.Severity](#bytebase-store-AuditLog-Severity) |  |  |
 | request | [string](#string) |  | Marshalled request. |
 | response | [string](#string) |  | Marshalled response. Some fields are omitted because they are too large or contain sensitive information. |
+| status | [google.rpc.Status](#google-rpc-Status) |  |  |
 
 
 

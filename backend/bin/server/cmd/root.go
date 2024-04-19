@@ -88,7 +88,8 @@ var (
 		backupBucket     string
 		backupCredential string
 
-		executeDetail bool
+		executeDetail    bool
+		developmentAudit bool
 	}
 
 	rootCmd = &cobra.Command{
@@ -142,6 +143,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS/GCP credential files.")
 
 	rootCmd.PersistentFlags().BoolVar(&flags.executeDetail, "execute-detail", true, "expose execute details")
+
+	rootCmd.PersistentFlags().BoolVar(&flags.developmentAudit, "development-audit", false, "enable audit logs")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
