@@ -31,6 +31,9 @@ func NewAuditInterceptor(store *store.Store) *AuditInterceptor {
 }
 
 func getRequestResource(request any) string {
+	if request == nil {
+		return ""
+	}
 	switch r := request.(type) {
 	case *v1pb.QueryRequest:
 		return r.Name
@@ -121,9 +124,9 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 			return errors.Wrapf(err, "failed to get response string")
 		}
 
-		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-		if !ok {
-			return errors.Errorf("user not found")
+		var user string
+		if u, ok := ctx.Value(common.UserContextKey).(*store.UserMessage); ok {
+			user = common.FormatUserEmail(u.Email)
 		}
 
 		st, _ := status.FromError(rerr)
@@ -132,7 +135,7 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 			Method:   serverInfo.FullMethod,
 			Resource: getRequestResource(request),
 			Severity: storepb.AuditLog_INFO,
-			User:     common.FormatUserEmail(user.Email),
+			User:     user,
 			Request:  requestString,
 			Response: responseString,
 			Status:   st.Proto(),
