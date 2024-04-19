@@ -2271,7 +2271,10 @@
       "drop-column": "删除列",
       "sql-preview": "预览 SQL",
       "reset": "重置",
-      "save": "保存"
+      "save": "保存",
+      "create-procedure": "新建存储过程",
+      "create-function": "新建函数",
+      "drop": "删除"
     },
     "database": {
       "name": "名称",
@@ -2324,7 +2327,9 @@
       "failed-to-fetch-database-schema": "请求数据库 Schema 失败",
       "invalid-schema": "无效的 Schema",
       "cannot-drop-the-last-column": "不能删除最后一列",
-      "cannot-change-config": "数据库配置必须同 Schema 一起变更"
+      "cannot-change-config": "数据库配置必须同 Schema 一起变更",
+      "duplicated-procedure-name": "重复的存储过程名称",
+      "invalid-procedure-name": "无效的存储过程名称"
     },
     "confirm-to-close": {
       "title": "确定关闭？",

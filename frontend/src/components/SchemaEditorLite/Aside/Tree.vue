@@ -45,13 +45,13 @@
       <NDropdown
         trigger="manual"
         placement="bottom-start"
-        :show="contextMenu.showDropdown"
+        :show="contextMenu.show"
         :options="contextMenuOptions"
         :x="contextMenu.clientX"
         :y="contextMenu.clientY"
         to="body"
-        @select="handleContextMenuDropdownSelect"
-        @clickoutside="handleDropdownClickoutside"
+        @select="handleContextMenuSelect"
+        @clickoutside="handleContextMenuClickoutside"
       />
     </div>
   </div>
@@ -71,13 +71,22 @@
     :table="state.tableNameModalContext.table"
     @close="state.tableNameModalContext = undefined"
   />
+
+  <ProcedureNameModal
+    v-if="state.procedureNameModalContext !== undefined"
+    :database="state.procedureNameModalContext.db"
+    :metadata="state.procedureNameModalContext.database"
+    :schema="state.procedureNameModalContext.schema"
+    :procedure="state.procedureNameModalContext.procedure"
+    @close="state.procedureNameModalContext = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { cloneDeep, debounce, escape, head } from "lodash-es";
 import { MoreHorizontalIcon, CopyIcon } from "lucide-vue-next";
-import type { TreeOption, DropdownOption } from "naive-ui";
+import type { TreeOption } from "naive-ui";
 import { NInput, NDropdown, NTree, NPerformantEllipsis } from "naive-ui";
 import type { VNodeChild } from "vue";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
@@ -87,13 +96,14 @@ import { DatabaseIcon, SchemaIcon, TableIcon } from "@/components/Icon";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import type {
   DatabaseMetadata,
+  ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
+import ProcedureNameModal from "../Modals/ProcedureNameModal.vue";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
@@ -108,13 +118,8 @@ import type {
   TreeNodeForGroup,
 } from "./common";
 import { buildTree } from "./common";
+import { useContextMenu } from "./context-menu";
 
-interface TreeContextMenu {
-  showDropdown: boolean;
-  clientX: number;
-  clientY: number;
-  treeNode?: TreeNode;
-}
 interface LocalState {
   shouldRelocateTreeNode: boolean;
   schemaNameModalContext?: {
@@ -127,6 +132,12 @@ interface LocalState {
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     table?: TableMetadata;
+  };
+  procedureNameModalContext?: {
+    db: ComposedDatabase;
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    procedure?: ProcedureMetadata;
   };
 }
 
@@ -145,6 +156,7 @@ const {
   getSchemaStatus,
   getTableStatus,
   getColumnStatus,
+  getProcedureStatus,
   upsertTableConfig,
   queuePendingScrollToTable,
   queuePendingScrollToColumn,
@@ -153,12 +165,6 @@ const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
 
-const contextMenu = reactive<TreeContextMenu>({
-  showDropdown: false,
-  clientX: 0,
-  clientY: 0,
-  treeNode: undefined,
-});
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
   treeContainerElRef,
@@ -174,76 +180,14 @@ const selectedKeysRef = ref<string[]>([]);
 const treeDataRef = ref<TreeNode[]>([]);
 const treeNodeMap = new Map<string, TreeNode>();
 
-const contextMenuOptions = computed((): DropdownOption[] => {
-  const treeNode = contextMenu.treeNode;
-  if (!treeNode) return [];
-  if (treeNode.type === "instance") return [];
-  const { engine } = treeNode.db.instanceEntity;
-  if (treeNode.type === "database") {
-    if (engineSupportsMultiSchema(engine)) {
-      return [
-        {
-          key: "create-schema",
-          label: t("schema-editor.actions.create-schema"),
-        },
-      ];
-    }
-    return [];
-  } else if (treeNode.type === "schema") {
-    const options: DropdownOption[] = [];
-    if (engine === Engine.POSTGRES) {
-      const status = getSchemaStatus(treeNode.db, treeNode.metadata);
-      if (status === "dropped") {
-        options.push({
-          key: "restore",
-          label: t("schema-editor.actions.restore"),
-        });
-      } else {
-        options.push({
-          key: "rename",
-          label: t("schema-editor.actions.rename"),
-        });
-        options.push({
-          key: "drop-schema",
-          label: t("schema-editor.actions.drop-schema"),
-        });
-      }
-    }
-    return options;
-  } else if (treeNode.type === "group") {
-    if (treeNode.group === "table") {
-      return [
-        {
-          key: "create-table",
-          label: t("schema-editor.actions.create-table"),
-        },
-      ];
-    }
-  } else if (treeNode.type === "table") {
-    const options: DropdownOption[] = [];
-    const status = getTableStatus(treeNode.db, treeNode.metadata);
-    if (status === "dropped") {
-      options.push({
-        key: "restore",
-        label: t("schema-editor.actions.restore"),
-      });
-    } else {
-      if (status !== "normal") {
-        options.push({
-          key: "rename",
-          label: t("schema-editor.actions.rename"),
-        });
-      }
-      options.push({
-        key: "drop",
-        label: t("schema-editor.actions.drop-table"),
-      });
-    }
-    return options;
-  }
-
-  return [];
-});
+const {
+  menu: contextMenu,
+  options: contextMenuOptions,
+  events: contextMenuEvents,
+  handleShow: handleContextMenuShow,
+  handleSelect: handleContextMenuSelect,
+  handleClickOutside: handleContextMenuClickoutside,
+} = useContextMenu();
 
 const upsertExpandedKeys = (key: string) => {
   if (expandedKeysRef.value.includes(key)) return;
@@ -487,11 +431,16 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     const { db, metadata } = treeNode;
     additionalClassList.push(getSchemaStatus(db, metadata));
     label = metadata.schema.name;
-  } else if (treeNode.type === "table") {
+  }
+  if (treeNode.type === "group") {
+    label = `(${treeNode.group} - group)`;
+  }
+  if (treeNode.type === "table") {
     const { db, metadata } = treeNode;
     additionalClassList.push(getTableStatus(db, metadata));
     label = metadata.table.name;
-  } else if (treeNode.type === "column") {
+  }
+  if (treeNode.type === "column") {
     const { db, metadata } = treeNode;
     additionalClassList.push(getColumnStatus(db, metadata));
     const { name } = metadata.column;
@@ -501,8 +450,11 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
       label = `<${t("common.untitled")}>`;
       additionalClassList.push("text-control-placeholder italic");
     }
-  } else if (treeNode.type === "group") {
-    label = `(${treeNode.group} - group)`;
+  }
+  if (treeNode.type === "procedure") {
+    const { db, metadata } = treeNode;
+    additionalClassList.push(getProcedureStatus(db, metadata));
+    label = metadata.procedure.name;
   }
   return h(
     NPerformantEllipsis,
@@ -525,23 +477,26 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
   if (readonly.value) {
     return null;
   }
-  const treeNode = option as TreeNode;
+  const node = option as TreeNode;
   const menuIcon = h(MoreHorizontalIcon, {
     class: "w-4 h-auto text-gray-600",
     onClick: (e) => {
-      handleShowDropdown(e, treeNode);
+      handleContextMenuShow(e, node);
     },
   });
-  if (treeNode.type === "database") {
-    const { engine } = treeNode.db.instanceEntity;
+  if (node.type === "database") {
+    const { engine } = node.db.instanceEntity;
     if (engineSupportsMultiSchema(engine)) {
       return menuIcon;
     }
   }
-  if (treeNode.type === "group") {
+  if (node.type === "schema") {
     return menuIcon;
   }
-  if (treeNode.type === "table") {
+  if (node.type === "group") {
+    return menuIcon;
+  }
+  if (node.type === "table") {
     const icons = [menuIcon];
     const duplicateIcon = h(CopyIcon, {
       class: "w-4 h-auto mr-2 text-gray-600",
@@ -550,11 +505,17 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
         e.stopPropagation();
         e.stopImmediatePropagation();
 
-        handleDuplicateTable(treeNode);
+        handleDuplicateTable(node);
       },
     });
     icons.unshift(duplicateIcon);
     return icons;
+  }
+  if (node.type === "procedure") {
+    return menuIcon;
+  }
+  if (node.type === "function") {
+    return menuIcon;
   }
 
   return null;
@@ -663,39 +624,29 @@ const handleDuplicateTable = (treeNode: TreeNodeForTable) => {
   });
 };
 
-const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
-  e.preventDefault();
-  e.stopPropagation();
-  contextMenu.treeNode = treeNode;
-  contextMenu.showDropdown = true;
-  contextMenu.clientX = e.clientX;
-  contextMenu.clientY = e.clientY;
-  selectedKeysRef.value = [treeNode.key];
-};
-
 // Set event handler to tree nodes.
 const nodeProps = ({ option }: { option: TreeOption }) => {
-  const treeNode = option as TreeNode;
+  const node = option as TreeNode;
   return {
     async onClick(e: MouseEvent) {
       // Check if clicked on the content part.
       // And ignore the fold/unfold arrow.
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
         state.shouldRelocateTreeNode = false;
-        if (treeNode.type === "group") {
-          expandNodeRecursively(treeNode);
-        } else if (treeNode.type === "instance") {
-          expandNodeRecursively(treeNode);
-        } else if (treeNode.type === "database") {
-          expandNodeRecursively(treeNode);
+        if (node.type === "group") {
+          expandNodeRecursively(node);
+        } else if (node.type === "instance") {
+          expandNodeRecursively(node);
+        } else if (node.type === "database") {
+          expandNodeRecursively(node);
           addTab({
             type: "database",
-            database: treeNode.db,
-            metadata: treeNode.metadata,
-            selectedSchema: head(treeNode.metadata.database.schemas)?.name,
+            database: node.db,
+            metadata: node.metadata,
+            selectedSchema: head(node.metadata.database.schemas)?.name,
           });
         } else {
-          openTabForTreeNode(treeNode);
+          openTabForTreeNode(node);
         }
       } else {
         nextTick(() => {
@@ -704,66 +655,111 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
       }
     },
     oncontextmenu(e: MouseEvent) {
-      handleShowDropdown(e, treeNode);
+      handleContextMenuShow(e, node);
     },
   };
 };
 
-const handleContextMenuDropdownSelect = async (key: string) => {
-  const treeNode = contextMenu.treeNode;
-  if (!treeNode) return;
-  if (treeNode.type === "database") {
-    const engine = treeNode.db.instanceEntity.engine;
-    if (key === "create-schema") {
-      if (engineSupportsMultiSchema(engine)) {
-        state.schemaNameModalContext = {
-          db: treeNode.db,
-          database: treeNode.metadata.database,
-          schema: undefined,
-        };
-      }
-    }
-  } else if (treeNode.type === "schema") {
-    if (key === "drop-schema") {
-      markEditStatus(treeNode.db, treeNode.metadata, "dropped");
-    } else if (key === "restore") {
-      removeEditStatus(treeNode.db, treeNode.metadata, /* recursive */ false);
-    }
-  } else if (treeNode.type === "group") {
-    if (treeNode.group === "table" && key === "create-table") {
-      state.tableNameModalContext = {
-        db: treeNode.db,
-        database: treeNode.metadata.database,
-        schema: treeNode.metadata.schema,
-        table: undefined,
-      };
-    }
-  } else if (treeNode.type === "table") {
-    if (key === "rename") {
-      state.tableNameModalContext = {
-        db: treeNode.db,
-        database: treeNode.metadata.database,
-        schema: treeNode.metadata.schema,
-        table: treeNode.metadata.table,
-      };
-    } else if (key === "drop") {
-      markEditStatus(treeNode.db, treeNode.metadata, "dropped");
-    } else if (key === "restore") {
-      removeEditStatus(treeNode.db, treeNode.metadata, /* recursive */ false);
-    }
-  }
-  contextMenu.showDropdown = false;
-};
+// Handle context menu actions
+useEmitteryEventListener(contextMenuEvents, "show", ({ node }) => {
+  selectedKeysRef.value = [node.key];
+});
+useEmitteryEventListener(contextMenuEvents, "hide", () => {
+  selectedKeysRef.value = [];
+});
 
-const handleDropdownClickoutside = (e: MouseEvent) => {
-  if (
-    !isDescendantOf(e.target as Element, ".n-tree-node-wrapper") ||
-    e.button !== 2
-  ) {
-    selectedKeysRef.value = [];
-    contextMenu.showDropdown = false;
-  }
-};
+useEmitteryEventListener(contextMenuEvents, "create-schema", (node) => {
+  state.schemaNameModalContext = {
+    db: node.db,
+    database: node.metadata.database,
+    schema: undefined,
+  };
+});
+useEmitteryEventListener(contextMenuEvents, "drop-schema", (node) => {
+  markEditStatus(node.db, node.metadata, "dropped");
+});
+useEmitteryEventListener(contextMenuEvents, "restore-schema", (node) => {
+  removeEditStatus(node.db, node.metadata, /* recursive */ false);
+});
+
+useEmitteryEventListener(contextMenuEvents, "create-table", (node) => {
+  state.tableNameModalContext = {
+    db: node.db,
+    database: node.metadata.database,
+    schema: node.metadata.schema,
+    table: undefined,
+  };
+});
+useEmitteryEventListener(contextMenuEvents, "drop-table", (node) => {
+  markEditStatus(node.db, node.metadata, "dropped");
+});
+useEmitteryEventListener(contextMenuEvents, "restore-table", (node) => {
+  removeEditStatus(node.db, node.metadata, /* recursive */ false);
+});
+useEmitteryEventListener(contextMenuEvents, "rename-table", (node) => {
+  state.tableNameModalContext = {
+    db: node.db,
+    database: node.metadata.database,
+    schema: node.metadata.schema,
+    table: node.metadata.table,
+  };
+});
+
+useEmitteryEventListener(contextMenuEvents, "create-procedure", (node) => {
+  state.procedureNameModalContext = {
+    db: node.db,
+    database: node.metadata.database,
+    schema: node.metadata.schema,
+    procedure: undefined,
+  };
+  expandNodeRecursively(node);
+});
+
+// const handleContextMenuSelect = async (key: string) => {
+//   const treeNode = contextMenu.treeNode;
+//   if (!treeNode) return;
+//   if (treeNode.type === "database") {
+//     const engine = treeNode.db.instanceEntity.engine;
+//     if (key === "create-schema") {
+//       if (engineSupportsMultiSchema(engine)) {
+//         state.schemaNameModalContext = {
+//           db: treeNode.db,
+//           database: treeNode.metadata.database,
+//           schema: undefined,
+//         };
+//       }
+//     }
+//   } else if (treeNode.type === "schema") {
+//     if (key === "drop-schema") {
+//       markEditStatus(treeNode.db, treeNode.metadata, "dropped");
+//     } else if (key === "restore") {
+//       removeEditStatus(treeNode.db, treeNode.metadata, /* recursive */ false);
+//     }
+//   } else if (treeNode.type === "group") {
+//     if (treeNode.group === "table" && key === "create-table") {
+//       state.tableNameModalContext = {
+//         db: treeNode.db,
+//         database: treeNode.metadata.database,
+//         schema: treeNode.metadata.schema,
+//         table: undefined,
+//       };
+//     }
+//   } else if (treeNode.type === "table") {
+//     if (key === "rename") {
+//       state.tableNameModalContext = {
+//         db: treeNode.db,
+//         database: treeNode.metadata.database,
+//         schema: treeNode.metadata.schema,
+//         table: treeNode.metadata.table,
+//       };
+//     } else if (key === "drop") {
+//       markEditStatus(treeNode.db, treeNode.metadata, "dropped");
+//     } else if (key === "restore") {
+//       removeEditStatus(treeNode.db, treeNode.metadata, /* recursive */ false);
+//     }
+//   }
+//   contextMenu.showDropdown = false;
+// };
 
 const handleExpandedKeysChange = (expandedKeys: string[]) => {
   expandedKeysRef.value = expandedKeys;
