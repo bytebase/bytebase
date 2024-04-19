@@ -1,6 +1,9 @@
 import { cloneDeep, isEqual, pick } from "lodash-es";
 import type { ComposedDatabase } from "@/types";
-import type { TablePartitionMetadata } from "@/types/proto/v1/database_service";
+import type {
+  ProcedureMetadata,
+  TablePartitionMetadata,
+} from "@/types/proto/v1/database_service";
 import {
   type ColumnMetadata,
   type DatabaseMetadata,
@@ -55,6 +58,8 @@ export class DiffMerge {
   targetTableMap = new Map<string, TableMetadata>();
   sourceColumnMap = new Map<string, ColumnMetadata>();
   targetColumnMap = new Map<string, ColumnMetadata>();
+  sourceProcedureMap = new Map<string, ProcedureMetadata>();
+  targetProcedureMap = new Map<string, ProcedureMetadata>();
   sourceSchemaConfigMap = new Map<string, SchemaConfig>();
   targetSchemaConfigMap = new Map<string, SchemaConfig>();
   sourceTableConfigMap = new Map<string, TableConfig>();
@@ -68,6 +73,7 @@ export class DiffMerge {
     | "mergeColumns"
     | "mergeTablePartitions"
     | "diffColumn"
+    | "mergeProcedures"
     | "mergeSchemaConfigs"
     | "mergeTableConfigs"
     | "mergeColumnConfigs"
@@ -130,6 +136,16 @@ export class DiffMerge {
         mergedSchemas.push(targetSchema);
         // merge tables for existed (maybe updated) schema
         this.mergeTables(
+          {
+            database: sourceMetadata,
+            schema: sourceSchema,
+          },
+          {
+            database: targetMetadata,
+            schema: targetSchema,
+          }
+        );
+        this.mergeProcedures(
           {
             database: sourceMetadata,
             schema: sourceSchema,
@@ -488,6 +504,60 @@ export class DiffMerge {
     }
     this.timer.end("diffColumn", 1);
   }
+  mergeProcedures(source: RichSchemaMetadata, target: RichSchemaMetadata) {
+    const { context, database, sourceProcedureMap, targetProcedureMap } = this;
+    const { schema: sourceSchema } = source;
+    const { schema: targetSchema } = target;
+    const sourceProcedures = sourceSchema.procedures;
+    const targetProcedures = targetSchema.procedures;
+    this.timer.begin("mergeProcedures");
+    mapProcedures(database, sourceSchema, sourceProcedures, sourceProcedureMap);
+    mapProcedures(database, targetSchema, targetProcedures, targetProcedureMap);
+
+    const mergedProcedures: ProcedureMetadata[] = [];
+    for (let i = 0; i < sourceProcedures.length; i++) {
+      const sourceProcedure = sourceProcedures[i];
+      const key = keyForResourceName({
+        database: database.name,
+        schema: sourceSchema.name,
+        procedure: sourceProcedure.name,
+      });
+      let targetProcedure = targetProcedureMap.get(key);
+      if (targetProcedure) {
+        // existed procedure
+        mergedProcedures.push(targetProcedure);
+        if (sourceProcedure.definition !== targetProcedure.definition) {
+          context.markEditStatusByKey(key, "updated");
+        }
+        continue;
+      }
+      // dropped procedure
+      // copy the source procedure to target and mark it as 'dropped'
+      targetProcedure = cloneDeep(sourceProcedure);
+      mergedProcedures.push(targetProcedure);
+      context.markEditStatusByKey(key, "dropped");
+    }
+    for (let i = 0; i < targetProcedures.length; i++) {
+      const targetProcedure = targetProcedures[i];
+      const key = keyForResourceName({
+        database: database.name,
+        schema: targetSchema.name,
+        procedure: targetProcedure.name,
+      });
+      const sourceProcedure = sourceProcedureMap.get(key);
+      if (!sourceProcedure) {
+        // newly created procedure
+        // mark it as 'created'
+        mergedProcedures.push(targetProcedure);
+        context.markEditStatusByKey(key, "created");
+      }
+    }
+    targetSchema.procedures = mergedProcedures;
+    this.timer.end(
+      "mergeProcedures",
+      sourceProcedures.length + targetProcedures.length
+    );
+  }
   mergeSchemaConfigs() {
     const {
       context,
@@ -785,6 +855,21 @@ const mapTablePartitions = (
       partition: partition.name,
     });
     map.set(key, partition);
+  });
+};
+const mapProcedures = (
+  database: ComposedDatabase,
+  schema: SchemaMetadata,
+  procedures: ProcedureMetadata[],
+  map: Map<string, ProcedureMetadata>
+) => {
+  procedures.forEach((procedure) => {
+    const key = keyForResourceName({
+      database: database.name,
+      schema: schema.name,
+      procedure: procedure.name,
+    });
+    map.set(key, procedure);
   });
 };
 const mapSchemaConfigs = (

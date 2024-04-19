@@ -714,6 +714,29 @@ useEmitteryEventListener(contextMenuEvents, "create-procedure", (node) => {
   };
   expandNodeRecursively(node);
 });
+useEmitteryEventListener(contextMenuEvents, "drop-procedure", (node) => {
+  markEditStatus(node.db, node.metadata, "dropped");
+});
+useEmitteryEventListener(contextMenuEvents, "restore-procedure", (node) => {
+  removeEditStatus(node.db, node.metadata, /* recursive */ false);
+});
+
+useEmitteryEventListener(contextMenuEvents, "create-function", (node) => {
+  // TODO
+  // state.procedureNameModalContext = {
+  //   db: node.db,
+  //   database: node.metadata.database,
+  //   schema: node.metadata.schema,
+  //   procedure: undefined,
+  // };
+  expandNodeRecursively(node);
+});
+useEmitteryEventListener(contextMenuEvents, "drop-function", (node) => {
+  markEditStatus(node.db, node.metadata, "dropped");
+});
+useEmitteryEventListener(contextMenuEvents, "restore-function", (node) => {
+  removeEditStatus(node.db, node.metadata, /* recursive */ false);
+});
 
 // const handleContextMenuSelect = async (key: string) => {
 //   const treeNode = contextMenu.treeNode;

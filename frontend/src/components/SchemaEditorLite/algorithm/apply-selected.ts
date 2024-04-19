@@ -4,6 +4,7 @@ import type {
   ColumnConfig,
   ColumnMetadata,
   DatabaseMetadata,
+  ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -19,7 +20,7 @@ import {
 } from "./utils";
 
 export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
-  const { getTableStatus, getColumnStatus } = context;
+  const { getTableStatus, getColumnStatus, getProcedureStatus } = context;
 
   const applySelectedMetadataEdit = (
     db: ComposedDatabase,
@@ -38,6 +39,17 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
             table,
           });
           return [key, { schema, table }];
+        });
+      })
+    );
+    const sourceProcedureMap = new Map(
+      source.schemas.flatMap((schema) => {
+        return schema.procedures.map((procedure) => {
+          const key = keyForResource(db, {
+            schema,
+            procedure,
+          });
+          return [key, { schema, procedure }];
         });
       })
     );
@@ -171,6 +183,35 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
       if (schemaConfig.tableConfigs.length > 0) {
         schemaConfigs.push(schemaConfig);
       }
+
+      const procedures: ProcedureMetadata[] = [];
+      for (let j = 0; j < schema.procedures.length; j++) {
+        const procedure = schema.procedures[j];
+        const key = keyForResource(db, { schema, procedure });
+        const picked = selectedObjectKeys.has(key);
+        if (picked) {
+          const status = getProcedureStatus(db, {
+            database: target,
+            schema,
+            procedure,
+          });
+          if (status === "dropped") {
+            // Drop procedure
+            // Don't collect the dropped procedure
+            continue;
+          } else {
+            // Collect the edited procedure
+            procedures.push(procedure);
+          }
+        } else {
+          const sourceProcedure = sourceProcedureMap.get(key);
+          if (sourceProcedure) {
+            // Collect the original procedure
+            procedures.push(cloneDeep(sourceProcedure.procedure));
+          }
+        }
+      }
+      schema.procedures = procedures;
     }
     target.schemaConfigs = schemaConfigs;
 
