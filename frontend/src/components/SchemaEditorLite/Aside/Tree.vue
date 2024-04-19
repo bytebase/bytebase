@@ -98,7 +98,7 @@ import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
-import { engineHasSchema } from "../engine-specs";
+import { engineSupportsMultiSchema } from "../spec";
 import NodeCheckbox from "./NodeCheckbox";
 import type {
   TreeNode,
@@ -174,25 +174,21 @@ const selectedKeysRef = ref<string[]>([]);
 const treeDataRef = ref<TreeNode[]>([]);
 const treeNodeMap = new Map<string, TreeNode>();
 
-const contextMenuOptions = computed(() => {
+const contextMenuOptions = computed((): DropdownOption[] => {
   const treeNode = contextMenu.treeNode;
   if (!treeNode) return [];
   if (treeNode.type === "instance") return [];
   const { engine } = treeNode.db.instanceEntity;
   if (treeNode.type === "database") {
-    const options: DropdownOption[] = [];
-    if (engineHasSchema(engine)) {
-      options.push({
-        key: "create-schema",
-        label: t("schema-editor.actions.create-schema"),
-      });
-    } else {
-      options.push({
-        key: "create-table",
-        label: t("schema-editor.actions.create-table"),
-      });
+    if (engineSupportsMultiSchema(engine)) {
+      return [
+        {
+          key: "create-schema",
+          label: t("schema-editor.actions.create-schema"),
+        },
+      ];
     }
-    return options;
+    return [];
   } else if (treeNode.type === "schema") {
     const options: DropdownOption[] = [];
     if (engine === Engine.POSTGRES) {
@@ -204,10 +200,6 @@ const contextMenuOptions = computed(() => {
         });
       } else {
         options.push({
-          key: "create-table",
-          label: t("schema-editor.actions.create-table"),
-        });
-        options.push({
           key: "rename",
           label: t("schema-editor.actions.rename"),
         });
@@ -218,6 +210,15 @@ const contextMenuOptions = computed(() => {
       }
     }
     return options;
+  } else if (treeNode.type === "group") {
+    if (treeNode.group === "table") {
+      return [
+        {
+          key: "create-table",
+          label: t("schema-editor.actions.create-table"),
+        },
+      ];
+    }
   } else if (treeNode.type === "table") {
     const options: DropdownOption[] = [];
     const status = getTableStatus(treeNode.db, treeNode.metadata);
@@ -532,30 +533,30 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
     },
   });
   if (treeNode.type === "database") {
-    return menuIcon;
-  } else if (treeNode.type === "schema") {
     const { engine } = treeNode.db.instanceEntity;
-    if (engine === Engine.POSTGRES) {
+    if (engineSupportsMultiSchema(engine)) {
       return menuIcon;
     }
-  } else if (treeNode.type === "table") {
+  }
+  if (treeNode.type === "group") {
+    return menuIcon;
+  }
+  if (treeNode.type === "table") {
     const icons = [menuIcon];
+    const duplicateIcon = h(CopyIcon, {
+      class: "w-4 h-auto mr-2 text-gray-600",
+      onClick: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
 
-    if (!readonly.value) {
-      const duplicateIcon = h(CopyIcon, {
-        class: "w-4 h-auto mr-2 text-gray-600",
-        onClick: (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-
-          handleDuplicateTable(treeNode);
-        },
-      });
-      icons.unshift(duplicateIcon);
-    }
+        handleDuplicateTable(treeNode);
+      },
+    });
+    icons.unshift(duplicateIcon);
     return icons;
   }
+
   return null;
 };
 
@@ -713,21 +714,8 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   if (!treeNode) return;
   if (treeNode.type === "database") {
     const engine = treeNode.db.instanceEntity.engine;
-    if (key === "create-table") {
-      if (!engineHasSchema(engine)) {
-        const schema = head(treeNode.metadata.database.schemas);
-        if (!schema) {
-          return;
-        }
-        state.tableNameModalContext = {
-          db: treeNode.db,
-          database: treeNode.metadata.database,
-          schema: schema,
-          table: undefined,
-        };
-      }
-    } else if (key === "create-schema") {
-      if (engineHasSchema(engine)) {
+    if (key === "create-schema") {
+      if (engineSupportsMultiSchema(engine)) {
         state.schemaNameModalContext = {
           db: treeNode.db,
           database: treeNode.metadata.database,
@@ -736,17 +724,19 @@ const handleContextMenuDropdownSelect = async (key: string) => {
       }
     }
   } else if (treeNode.type === "schema") {
-    if (key === "create-table") {
+    if (key === "drop-schema") {
+      markEditStatus(treeNode.db, treeNode.metadata, "dropped");
+    } else if (key === "restore") {
+      removeEditStatus(treeNode.db, treeNode.metadata, /* recursive */ false);
+    }
+  } else if (treeNode.type === "group") {
+    if (treeNode.group === "table" && key === "create-table") {
       state.tableNameModalContext = {
         db: treeNode.db,
         database: treeNode.metadata.database,
         schema: treeNode.metadata.schema,
         table: undefined,
       };
-    } else if (key === "drop-schema") {
-      markEditStatus(treeNode.db, treeNode.metadata, "dropped");
-    } else if (key === "restore") {
-      removeEditStatus(treeNode.db, treeNode.metadata, /* recursive */ false);
     }
   } else if (treeNode.type === "table") {
     if (key === "rename") {
