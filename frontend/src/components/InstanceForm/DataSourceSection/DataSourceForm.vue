@@ -1,11 +1,25 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
   <template v-if="basicInfo.engine !== Engine.SPANNER">
+    <div v-if="basicInfo.engine === Engine.MYSQL" class="mt-2">
+      <NRadioGroup
+        v-model:value="dataSource.authenticationType"
+        class="textlabel"
+      >
+        <NRadio :value="DataSource_AuthenticationType.PASSWORD">
+          {{ $t("instance.password-type.password") }}
+        </NRadio>
+        <NRadio :value="DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM">
+          {{ $t("instance.password-type.google-iam") }}
+        </NRadio>
+      </NRadioGroup>
+    </div>
     <CreateDataSourceExample
       class-name="sm:col-span-3 border-none mt-2"
       :create-instance-flag="isCreating"
       :engine="basicInfo.engine"
       :data-source-type="dataSource.type"
+      :authentication-type="dataSource.authenticationType"
     />
     <div class="mt-4 sm:col-span-3 sm:col-start-1">
       <label for="username" class="textlabel block">
@@ -23,7 +37,12 @@
         "
       />
     </div>
-    <div class="mt-4 sm:col-span-3 sm:col-start-1">
+    <div
+      v-if="
+        dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD
+      "
+      class="mt-4 sm:col-span-3 sm:col-start-1"
+    >
       <div class="mb-4">
         <NRadioGroup
           class="textlabel"
@@ -405,6 +424,8 @@ MIIEvQ...
   <template
     v-if="
       dataSource.type === DataSourceType.READ_ONLY &&
+      dataSource.authenticationType ===
+        DataSource_AuthenticationType.PASSWORD &&
       (hasReadonlyReplicaHost || hasReadonlyReplicaPort)
     "
   >
@@ -456,7 +477,13 @@ MIIEvQ...
     />
   </div>
 
-  <div v-if="showSSL" class="mt-4 sm:col-span-3 sm:col-start-1">
+  <div
+    v-if="
+      showSSL &&
+      dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD
+    "
+    class="mt-4 sm:col-span-3 sm:col-start-1"
+  >
     <div class="flex flex-row items-center">
       <label for="ssl" class="textlabel block">
         {{ $t("data-source.ssl-connection") }}
@@ -489,7 +516,13 @@ MIIEvQ...
     </template>
   </div>
 
-  <div v-if="showSSH" class="mt-4 sm:col-span-3 sm:col-start-1">
+  <div
+    v-if="
+      showSSH &&
+      dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD
+    "
+    class="mt-4 sm:col-span-3 sm:col-start-1"
+  >
     <div class="flex flex-row items-center gap-x-1">
       <label for="ssh" class="textlabel block">
         {{ $t("data-source.ssh-connection") }}
@@ -541,6 +574,7 @@ import {
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
+  DataSource_AuthenticationType,
 } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";

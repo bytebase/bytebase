@@ -853,6 +853,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.ExternalSecret = externalSecret
 			patch.ExternalSecret = externalSecret
 			patch.RemoveExternalSecret = externalSecret == nil
+		case "authentication_type":
+			authType := convertToAuthenticationType(request.DataSource.AuthenticationType)
+			dataSource.AuthenticationType = authType
+			patch.AuthenticationType = &authType
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1128,6 +1132,14 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			dataSourceType = v1pb.DataSourceType_READ_ONLY
 		}
 
+		authenticationType := v1pb.DataSource_AUTHENTICATION_UNSPECIFIED
+		switch ds.AuthenticationType {
+		case storepb.DataSourceOptions_AUTHENTICATION_UNSPECIFIED, storepb.DataSourceOptions_PASSWORD:
+			authenticationType = v1pb.DataSource_PASSWORD
+		case storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM:
+			authenticationType = v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM
+		}
+
 		dataSourceList = append(dataSourceList, &v1pb.DataSource{
 			Id:       ds.ID,
 			Type:     dataSourceType,
@@ -1141,6 +1153,7 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			Sid:                    ds.SID,
 			ServiceName:            ds.ServiceName,
 			ExternalSecret:         externalSecret,
+			AuthenticationType:     authenticationType,
 		})
 	}
 
@@ -1190,6 +1203,17 @@ func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExter
 	return secret, nil
 }
 
+func convertToAuthenticationType(authType v1pb.DataSource_AuthenticationType) storepb.DataSourceOptions_AuthenticationType {
+	authenticationType := storepb.DataSourceOptions_AUTHENTICATION_UNSPECIFIED
+	switch authType {
+	case v1pb.DataSource_AUTHENTICATION_UNSPECIFIED, v1pb.DataSource_PASSWORD:
+		authenticationType = storepb.DataSourceOptions_PASSWORD
+	case v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM:
+		authenticationType = storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM
+	}
+	return authenticationType
+}
+
 func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource) (*store.DataSourceMessage, error) {
 	dsType, err := convertDataSourceTp(dataSource.Type)
 	if err != nil {
@@ -1222,6 +1246,7 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		SSHObfuscatedPrivateKey:            common.Obfuscate(dataSource.SshPrivateKey, s.secret),
 		AuthenticationPrivateKeyObfuscated: common.Obfuscate(dataSource.AuthenticationPrivateKey, s.secret),
 		ExternalSecret:                     externalSecret,
+		AuthenticationType:                 convertToAuthenticationType(dataSource.AuthenticationType),
 	}, nil
 }
 

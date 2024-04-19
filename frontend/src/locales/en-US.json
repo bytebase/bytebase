@@ -1315,28 +1315,29 @@
       "create-readonly-user": "This is the connection used by Bytebase to perform read-only operations such as SELECT query.",
       "create-admin-user-non-sql": "This is the connection user used by Bytebase to perform write and admin operations.",
       "create-readonly-user-non-sql": "This is the connection used by Bytebase to perform read-only operations.",
+      "google-cloud-sql": {
+        "instance-name": "Instance Connection Name",
+        "instance-name-tips": "The instance connection name should like project-id:region:instance-name.",
+        "mysql": {
+          "template": "Create a service account named {user}, then add it in your Google Cloud SQL as IAM user {user}{'@'}'%'. Grant this user with the needed privileges."
+        }
+      },
       "create-user-example": {
         "snowflake": {
-          "user": "bytebase{'@'}%",
-          "password": "YOUR_DB_PWD",
-          "template": "Below is an example to create user 'bytebase' with password {password} for {warehouse} and grant the user with the needed privileges."
+          "template": "Below is an example to create user '{user}' with password {password} for {warehouse} and grant the user with the needed privileges."
         },
         "mysql": {
-          "password": "YOUR_DB_PWD",
-          "user": "bytebase{'@'}%",
-          "template": "Below is an example to create user {user} with password {password} and grant the user with the needed privileges."
+          "template": "Below is an example to create user {user}{'@'}% with password {password} and grant the user with the needed privileges."
         },
         "clickhouse": {
-          "template": "Below is an example to create user 'bytebase' with password {password} and grant the user with the needed privileges. First you need to enable ClickHouse SQL-driven workflow {link} and then run the following query to create the user.",
+          "template": "Below is an example to create user '{user}' with password {password} and grant the user with the needed privileges. First you need to enable ClickHouse SQL-driven workflow {link} and then run the following query to create the user.",
           "sql-driven-workflow": "SQL-driven workflow"
         },
         "postgresql": {
           "warn": "If the connecting instance is managed by the cloud provider, then SUPERUSER is not available and you should create the user via that provider's admin console. The created user will have provider specific semi-SUPERUSER privileges. You should grant Bytebase privileges with 'GRANT role_name TO bytebase;' for all existing roles, otherwise Bytebase may not access existing databases or tables.",
-          "template": "Below is an example to create user 'bytebase' with password {password} and grant the user with the needed privileges. If the connecting instance is self-hosted, then you can grant SUPERUSER."
+          "template": "Below is an example to create user '{user}' with password {password} and grant the user with the needed privileges. If the connecting instance is self-hosted, then you can grant SUPERUSER."
         },
         "redis": {
-          "password": "YOUR_DB_PWD",
-          "user": "bytebase",
           "template": "Below is an example to create user {user} with password {password} and grant the user with the needed privileges."
         }
       }
@@ -1348,6 +1349,7 @@
     "password-type": {
       "password": "Password",
       "password-tip": "You can also specify external secret manage endpoint",
+      "google-iam": "Google CloudSQL IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"

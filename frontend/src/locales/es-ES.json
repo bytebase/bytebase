@@ -1315,28 +1315,29 @@
       "create-readonly-user": "Esta es la conexión utilizada por Bytebase para realizar operaciones de solo lectura como la consulta SELECT.",
       "create-admin-user-non-sql": "Este es el usuario de conexión utilizado por Bytebase para realizar operaciones de escritura y administración.",
       "create-readonly-user-non-sql": "Esta es la conexión utilizada por Bytebase para realizar operaciones de solo lectura.",
+      "google-cloud-sql": {
+        "instance-name": "Nombre de conexión de instancia",
+        "instance-name-tips": "El nombre de la conexión de la instancia debería ser project-id:region:instance-name.",
+        "mysql": {
+          "template": "Cree una cuenta de servicio llamada {user} y luego agréguela en su Google Cloud SQL como usuario de IAM {user}{'@'}'%'. Otorgue a este usuario los privilegios necesarios."
+        }
+      },
       "create-user-example": {
         "snowflake": {
-          "user": "bytebase{'@'}%",
-          "password": "SU_CONTRASEÑA_DE_BD",
           "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {password} para {warehouse} y otorgar al usuario los privilegios necesarios."
         },
         "mysql": {
-          "password": "SU_CONTRASEÑA_DE_BD",
-          "user": "bytebase{'@'}%",
-          "template": "A continuación se muestra un ejemplo para crear el usuario {password} con la contraseña {password} y otorgar al usuario los privilegios necesarios."
+          "template": "A continuación se muestra un ejemplo para crear el usuario {user}{'@'}% con la contraseña {password} y otorgarle al usuario los privilegios necesarios."
         },
         "clickhouse": {
-          "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {password} y otorgar al usuario los privilegios necesarios. Primero debe habilitar el flujo de trabajo impulsado por SQL de ClickHouse {link} y luego ejecutar la siguiente consulta para crear el usuario.",
+          "template": "A continuación se muestra un ejemplo para crear el usuario '{user}' con la contraseña {password} y otorgar al usuario los privilegios necesarios. Primero debe habilitar el flujo de trabajo impulsado por SQL de ClickHouse {link} y luego ejecutar la siguiente consulta para crear el usuario.",
           "sql-driven-workflow": "Flujo de trabajo impulsado por SQL"
         },
         "postgresql": {
           "warn": "Si la instancia de conexión es administrada por el proveedor de la nube, entonces SUPERUSER no está disponible y debes crear el usuario a través de la consola de administración del proveedor. El usuario creado tendrá privilegios semi-SUPERUSER específicos del proveedor. Debes otorgar privilegios de Bytebase con 'GRANT role_name TO bytebase;' para todos los roles existentes, de lo contrario Bytebase puede no tener acceso a las bases de datos o tablas existentes.",
-          "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {password} y otorgar al usuario los privilegios necesarios. Si la instancia de conexión está alojada por ti mismo, puedes otorgar SUPERUSER."
+          "template": "A continuación se muestra un ejemplo para crear el usuario '{user}' con la contraseña {password} y otorgar al usuario los privilegios necesarios. Si la instancia de conexión está alojada por ti mismo, puedes otorgar SUPERUSER."
         },
         "redis": {
-          "password": "TU_DB_PWD",
-          "user": "bytebase",
           "template": "A continuación se muestra un ejemplo para crear el usuario {user} con la contraseña {password} y otorgar al usuario los privilegios necesarios."
         }
       }
@@ -1348,6 +1349,7 @@
     "password-type": {
       "password": "Contraseña",
       "password-tip": "También puede especificar un punto final de gestión de secreto externo",
+      "google-iam": "Google CloudSQL IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"

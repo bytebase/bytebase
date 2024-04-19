@@ -41,31 +41,46 @@
         "
       >
         <i18n-t
-          tag="p"
-          keypath="instance.sentence.create-user-example.mysql.template"
+          v-if="
+            authenticationType ===
+            DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+          "
+          tag="span"
+          keypath="instance.sentence.google-cloud-sql.mysql.template"
         >
-          <template #user>{{
-            $t("instance.sentence.create-user-example.mysql.user")
-          }}</template>
-          <template #password>
-            <span class="text-red-600">
-              {{ $t("instance.sentence.create-user-example.mysql.password") }}
+          <template #user>
+            <span class="font-semibold">
+              {{ userName }}
             </span>
           </template>
         </i18n-t>
-        <a
-          href="https://www.bytebase.com/docs/tutorials/local-mysql-instance?source=console"
-          target="_blank"
-          class="normal-link"
+        <i18n-t
+          v-else
+          tag="span"
+          keypath="instance.sentence.create-user-example.mysql.template"
         >
-          {{ $t("common.detailed-guide") }}
-        </a>
+          <template #user>
+            <span class="font-semibold">
+              {{ userName }}
+            </span>
+          </template>
+          <template #password>
+            <span class="text-red-600"> YOUR_DB_PWD </span>
+          </template>
+        </i18n-t>
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/tutorials/local-mysql-instance?source=console"
+          class="ml-1 text-sm"
+        />
       </template>
       <template v-else-if="props.engine === Engine.CLICKHOUSE">
         <i18n-t
           tag="p"
           keypath="instance.sentence.create-user-example.clickhouse.template"
         >
+          <template #user>
+            <span class="font-semibold">{{ userName }}</span>
+          </template>
           <template #password>
             <span class="text-red-600">YOUR_DB_PWD</span>
           </template>
@@ -92,6 +107,9 @@
           tag="p"
           keypath="instance.sentence.create-user-example.postgresql.template"
         >
+          <template #user>
+            <span class="font-semibold">{{ userName }}</span>
+          </template>
           <template #password>
             <span class="text-red-600">YOUR_DB_PWD</span>
           </template>
@@ -102,6 +120,9 @@
           tag="p"
           keypath="instance.sentence.create-user-example.snowflake.template"
         >
+          <template #user>
+            <span class="font-semibold">{{ userName }}</span>
+          </template>
           <template #password>
             <span class="text-red-600">YOUR_DB_PWD</span>
           </template>
@@ -115,13 +136,11 @@
           tag="p"
           keypath="instance.sentence.create-user-example.redis.template"
         >
-          <template #user>{{
-            $t("instance.sentence.create-user-example.redis.user")
-          }}</template>
+          <template #user>
+            <span class="font-semibold">{{ userName }}</span>
+          </template>
           <template #password>
-            <span class="text-red-600">
-              {{ $t("instance.sentence.create-user-example.redis.password") }}
-            </span>
+            <span class="text-red-600"> YOUR_DB_PWD </span>
           </template>
         </i18n-t>
         <!-- TODO(xz): add a "detailed guide" link to docs here -->
@@ -157,12 +176,18 @@ import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import { languageOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
+import {
+  DataSourceType,
+  DataSource_AuthenticationType,
+} from "@/types/proto/v1/instance_service";
 import { engineNameV1, toClipboard } from "@/utils";
 
 interface LocalState {
   showCreateUserExample: boolean;
 }
+
+const ADMIN_USER_NAME = "bytebase";
+const READONLY_USER_NAME = `${ADMIN_USER_NAME}-readonly`;
 
 const props = withDefaults(
   defineProps<{
@@ -170,6 +195,7 @@ const props = withDefaults(
     createInstanceFlag: boolean;
     engine: Engine;
     dataSourceType: DataSourceType;
+    authenticationType: DataSource_AuthenticationType;
   }>(),
   {
     className: "",
@@ -189,30 +215,45 @@ const isEngineUsingSQL = computed(() => {
   return languageOfEngineV1(props.engine) === "sql";
 });
 
+const userName = computed(() => {
+  return props.dataSourceType === DataSourceType.ADMIN
+    ? ADMIN_USER_NAME
+    : READONLY_USER_NAME;
+});
+
 const grantStatement = computed(() => {
   if (props.dataSourceType === DataSourceType.ADMIN) {
+    const createUserStatement = `CREATE USER ${ADMIN_USER_NAME}@'%' IDENTIFIED BY 'YOUR_DB_PWD';`;
     switch (props.engine) {
       case Engine.MYSQL:
+        if (
+          props.authenticationType ===
+          DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+        ) {
+          return `GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nRELOAD, LOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE \n/*!80000 , SET_USER_ID */\nON *.* to ${ADMIN_USER_NAME}@'%';`;
+        }
         // RELOAD, LOCK TABLES: enables use of explicit LOCK TABLES statements for backups.
         // REPLICATION CLIENT: enables use of the SHOW MASTER STATUS, SHOW SLAVE STATUS, and SHOW BINARY LOGS statements.
         // REPLICATION SLAVE: use of the SHOW SLAVE HOSTS, SHOW RELAYLOG EVENTS, and SHOW BINLOG EVENTS statements. This privilege is also required to use the mysqlbinlog options --read-from-remote-server (-R) and --read-from-remote-master.
-        return "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nRELOAD, LOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE \n/*!80000 , SET_USER_ID */\nON *.* to bytebase@'%';";
+        // REPLICATION_APPLIER: execute the internal-use BINLOG statements used by mysqlbinlog.
+        // SESSION_VARIABLES_ADMIN: use of the SET sql_log_bin statements during PITR.
+        return `${createUserStatement}\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nRELOAD, LOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE \n/*!80000 , REPLICATION_APPLIER, SYSTEM_VARIABLES_ADMIN, SET_USER_ID */\nON *.* to ${ADMIN_USER_NAME}@'%';`;
       case Engine.TIDB:
-        return "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nLOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE \nON *.* to bytebase@'%';";
+        return `${createUserStatement}\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nLOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE \nON *.* to ${ADMIN_USER_NAME}@'%';`;
       case Engine.MARIADB:
-        return "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nRELOAD, LOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE \nON *.* to bytebase@'%';";
+        return `${createUserStatement}\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nRELOAD, LOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE \nON *.* to ${ADMIN_USER_NAME}@'%';`;
       case Engine.OCEANBASE:
-        return "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, CREATE, CREATE VIEW, DELETE, DROP, INDEX, INSERT, \nPROCESS, SELECT, SHOW DATABASES, SHOW VIEW, UPDATE, USAGE, \nREPLICATION CLIENT, REPLICATION SLAVE \nON *.* to bytebase@'%';";
+        return `${createUserStatement}\n\nGRANT ALTER, CREATE, CREATE VIEW, DELETE, DROP, INDEX, INSERT, \nPROCESS, SELECT, SHOW DATABASES, SHOW VIEW, UPDATE, USAGE, \nREPLICATION CLIENT, REPLICATION SLAVE \nON *.* to ${ADMIN_USER_NAME}@'%';`;
       case Engine.CLICKHOUSE:
-        return "CREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALL ON *.* TO bytebase WITH GRANT OPTION;";
+        return `CREATE USER ${ADMIN_USER_NAME} IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALL ON *.* TO ${ADMIN_USER_NAME} WITH GRANT OPTION;`;
       case Engine.SNOWFLAKE:
         return `-- Option 1: grant ACCOUNTADMIN role
 
-CREATE OR REPLACE USER bytebase PASSWORD = 'YOUR_DB_PWD'
+CREATE OR REPLACE USER ${ADMIN_USER_NAME} PASSWORD = 'YOUR_DB_PWD'
 DEFAULT_ROLE = "ACCOUNTADMIN"
 DEFAULT_WAREHOUSE = 'YOUR_COMPUTE_WAREHOUSE';
 
-GRANT ROLE "ACCOUNTADMIN" TO USER bytebase;
+GRANT ROLE "ACCOUNTADMIN" TO USER ${ADMIN_USER_NAME};
 
 -- Option 2: grant more granular privileges
 
@@ -301,13 +342,13 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
 `;
       case Engine.RISINGWAVE:
       case Engine.POSTGRES:
-        return "CREATE USER bytebase WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER bytebase WITH SUPERUSER;";
+        return `CREATE USER ${ADMIN_USER_NAME} WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER ${ADMIN_USER_NAME} WITH SUPERUSER;`;
       case Engine.REDSHIFT:
-        return "CREATE USER bytebase WITH PASSWORD 'YOUR_DB_PWD' CREATEUSER CREATEDB;";
+        return `CREATE USER ${ADMIN_USER_NAME} WITH PASSWORD 'YOUR_DB_PWD' CREATEUSER CREATEDB;`;
       case Engine.MONGODB:
         return `use admin;
 db.createUser({
-  user: "bytebase",
+  user: "${ADMIN_USER_NAME}",
   pwd: "YOUR_DB_PWD",
   roles: [
     {role: "readWriteAnyDatabase", db: "admin"},
@@ -319,32 +360,45 @@ db.createUser({
       case Engine.SPANNER:
         return "";
       case Engine.REDIS:
-        return "ACL SETUSER bytebase on >YOUR_DB_PWD +@all &*";
+        return `ACL SETUSER ${ADMIN_USER_NAME} on >YOUR_DB_PWD +@all &*`;
       case Engine.MSSQL:
-        return "-- If you use Cloud RDS, you need to checkout their documentation for setting up a semi-super privileged user.\n\nCREATE LOGIN bytebase WITH PASSWORD = 'YOUR_DB_PWD';\nALTER SERVER ROLE sysadmin ADD MEMBER bytebase;";
+        return `-- If you use Cloud RDS, you need to checkout their documentation for setting up a semi-super privileged user.
+CREATE LOGIN ${ADMIN_USER_NAME} WITH PASSWORD = 'YOUR_DB_PWD';
+ALTER SERVER ROLE sysadmin ADD MEMBER ${ADMIN_USER_NAME};`;
       case Engine.ORACLE:
-        return "-- If you use Cloud RDS, you need to checkout their documentation for setting up a semi-super privileged user.\n\nCREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\nGRANT ALL PRIVILEGES TO bytebase;";
+        return `-- If you use Cloud RDS, you need to checkout their documentation for setting up a semi-super privileged user.
+CREATE USER ${ADMIN_USER_NAME} IDENTIFIED BY 'YOUR_DB_PWD';
+GRANT ALL PRIVILEGES TO ${ADMIN_USER_NAME};`;
       case Engine.DM:
-        return 'CREATE USER BYTEBASE IDENTIFIED BY "YOUR_DB_PWD";\nGRANT "DBA" TO BYTEBASE;';
+        return `CREATE USER ${ADMIN_USER_NAME.toUpperCase()} IDENTIFIED BY "YOUR_DB_PWD";\nGRANT "DBA" TO ${ADMIN_USER_NAME.toUpperCase()};`;
       case Engine.OCEANBASE_ORACLE:
-        return "CREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\nGRANT ALL PRIVILEGES TO bytebase;";
+        return `CREATE USER ${ADMIN_USER_NAME} IDENTIFIED BY 'YOUR_DB_PWD';
+GRANT ALL PRIVILEGES TO ${ADMIN_USER_NAME};`;
     }
   } else {
+    const mysqlReadonlyStatement = `CREATE USER ${READONLY_USER_NAME}@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT SELECT, SHOW DATABASES, SHOW VIEW, USAGE ON *.* to ${READONLY_USER_NAME}@'%';`;
     switch (props.engine) {
       case Engine.MYSQL:
+        if (
+          props.authenticationType ===
+          DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+        ) {
+          return `GRANT SELECT, SHOW DATABASES, SHOW VIEW, USAGE ON *.* to ${READONLY_USER_NAME}@'%';`;
+        }
+        return mysqlReadonlyStatement;
       case Engine.TIDB:
       case Engine.OCEANBASE:
-        return "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT SELECT, SHOW DATABASES, SHOW VIEW, USAGE ON *.* to bytebase@'%';";
+        return mysqlReadonlyStatement;
       case Engine.CLICKHOUSE:
-        return "CREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT SHOW TABLES, SELECT ON database.* TO bytebase;";
+        return `CREATE USER ${READONLY_USER_NAME} IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT SHOW TABLES, SELECT ON database.* TO ${READONLY_USER_NAME};`;
       case Engine.SNOWFLAKE:
         return `-- Option 1: grant ACCOUNTADMIN role
 
-CREATE OR REPLACE USER bytebase PASSWORD = 'YOUR_DB_PWD'
+CREATE OR REPLACE USER ${READONLY_USER_NAME} PASSWORD = 'YOUR_DB_PWD'
 DEFAULT_ROLE = "ACCOUNTADMIN"
 DEFAULT_WAREHOUSE = 'YOUR_COMPUTE_WAREHOUSE';
 
-GRANT ROLE "ACCOUNTADMIN" TO USER bytebase;
+GRANT ROLE "ACCOUNTADMIN" TO USER ${READONLY_USER_NAME};
 
 -- Option 2: grant more granular privileges
 
@@ -433,13 +487,24 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
 `;
       case Engine.RISINGWAVE:
       case Engine.POSTGRES:
-        return "CREATE USER bytebase WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER bytebase WITH SUPERUSER;";
+        return `CREATE USER ${READONLY_USER_NAME} WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';
+ALTER USER ${READONLY_USER_NAME} WITH SUPERUSER;`;
       case Engine.MONGODB:
-        return 'use admin;\ndb.createUser({\n\tuser: "bytebase", \n\tpwd: "YOUR_DB_PWD", \n\troles: [\n\t\t{role: "readAnyDatabase", db: "admin"},\n\t\t{role: "dbAdminAnyDatabase", db: "admin"},\n\t\t{role: "userAdminAnyDatabase", db: "admin"}\n\t]\n});';
+        return `use admin;
+db.createUser({
+  user: "${READONLY_USER_NAME}",
+  pwd: "YOUR_DB_PWD",
+  roles: [
+    {role: "readAnyDatabase", db: "admin"},
+    {role: "dbAdminAnyDatabase", db: "admin"},
+    {role: "userAdminAnyDatabase", db: "admin"}
+  ]
+});
+        `;
       case Engine.SPANNER:
         return "";
       case Engine.REDIS:
-        return "ACL SETUSER bytebase on >YOUR_DB_PWD +@read &*";
+        return `ACL SETUSER ${READONLY_USER_NAME} on >YOUR_DB_PWD +@read &*`;
     }
   }
   return ""; // fallback

@@ -81,6 +81,7 @@
     - [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest)
     - [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest)
   
+    - [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType)
     - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType)
@@ -1461,6 +1462,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
 | authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
 | external_secret | [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret) |  |  |
+| authentication_type | [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType) |  |  |
 
 
 
@@ -1773,6 +1775,19 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
  
+
+
+<a name="bytebase-v1-DataSource-AuthenticationType"></a>
+
+### DataSource.AuthenticationType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTHENTICATION_UNSPECIFIED | 0 |  |
+| PASSWORD | 1 |  |
+| GOOGLE_CLOUD_SQL_IAM | 2 |  |
+
 
 
 <a name="bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption-SecretType"></a>

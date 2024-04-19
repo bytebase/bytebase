@@ -122,6 +122,24 @@
                     class="text-sm"
                   />
                 </template>
+                <div
+                  v-else-if="
+                    adminDataSource.authenticationType ===
+                    DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+                  "
+                >
+                  <span>
+                    {{ $t("instance.sentence.google-cloud-sql.instance-name") }}
+                    <span class="text-red-600 mr-2">*</span>
+                  </span>
+                  <div class="textinfolabel mb-1">
+                    {{
+                      $t(
+                        "instance.sentence.google-cloud-sql.instance-name-tips"
+                      )
+                    }}
+                  </div>
+                </div>
                 <template v-else>
                   {{ $t("instance.host-or-socket") }}
                   <span class="text-red-600 mr-2">*</span>
@@ -152,7 +170,13 @@
             />
           </div>
 
-          <template v-if="basicInfo.engine !== Engine.SPANNER">
+          <template
+            v-if="
+              basicInfo.engine !== Engine.SPANNER &&
+              adminDataSource.authenticationType ===
+                DataSource_AuthenticationType.PASSWORD
+            "
+          >
             <div class="sm:col-span-1">
               <label for="port" class="textlabel block">
                 {{ $t("instance.port") }}
@@ -385,6 +409,7 @@ import {
   InstanceOptions,
   DataSourceExternalSecret_SecretType,
   DataSourceExternalSecret_AuthType,
+  DataSource_AuthenticationType,
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
@@ -1156,6 +1181,14 @@ const checkExternalSecretFeature = (instance: Instance) => {
 
 const checkDataSource = (dataSources: DataSource[]) => {
   return dataSources.every((ds) => {
+    if (
+      ds.authenticationType ===
+      DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+    ) {
+      // CloudSQL instance name shoule be {project}:{region}:{cloud sql name}
+      return /.+:.+:.+/.test(ds.host);
+    }
+
     if (!ds.externalSecret) {
       return true;
     }
