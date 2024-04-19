@@ -21,18 +21,13 @@
 
       <DatabaseDataTable
         mode="ALL"
+        :loading="state.loading"
+        :bordered="false"
         :database-list="filteredDatabaseList"
         :custom-click="true"
         @row-click="handleDatabaseClick"
         @update:selected-databases="handleDatabasesSelectionChanged"
       />
-    </div>
-
-    <div
-      v-if="state.loading"
-      class="absolute inset-0 bg-white/50 flex justify-center items-center"
-    >
-      <BBSpin />
     </div>
   </div>
 </template>

@@ -84,10 +84,7 @@
               </span>
             </div>
             <div v-if="showProjectColumn" class="bb-grid-cell">
-              <ProjectCol
-                :project="database.projectEntity"
-                :show-tenant-icon="true"
-              />
+              <ProjectNameCell :project="database.projectEntity" />
             </div>
             <div class="bb-grid-cell gap-x-1 textinfolabel justify-end">
               <InstanceV1Name
@@ -106,6 +103,7 @@
 import { NCollapse, NCollapseItem, NCheckbox } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { type BBGridColumn, BBGrid } from "@/bbkit";
+import ProjectNameCell from "@/components/DatabaseDataTable/cells/ProjectNameCell.vue";
 import { useEnvironmentV1List } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
