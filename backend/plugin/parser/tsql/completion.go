@@ -212,9 +212,6 @@ func (m CompletionMap) insertTables(c *Completer, linkedServer string, database 
 	if linkedServer != "" {
 		return
 	}
-	if database == "" && schema == "" {
-		// TODO(zp): insertCTE
-	}
 
 	databaseName, schemaName := c.defaultDatabase, c.defaultSchema
 	if database != "" {
