@@ -12,7 +12,7 @@ import { PencilIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
 import { MiniActionButton } from "@/components/v2";
-import DatabaseLabelsCell from "@/components/v2/Model/DatabaseV1Table/cells/DatabaseLabelsCell.vue";
+import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,

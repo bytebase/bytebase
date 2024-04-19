@@ -10,7 +10,7 @@
 <script lang="ts" setup>
 import { PencilIcon } from "lucide-vue-next";
 import { MiniActionButton } from "@/components/v2";
-import DatabaseLabelsCell from "@/components/v2/Model/DatabaseV1Table/cells/DatabaseLabelsCell.vue";
+import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import type { Column } from "@/types/v1/schemaEditor";
 
 defineProps<{

@@ -100,7 +100,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
-import ProjectNameCell from "@/components/v2/Model/DatabaseV1Table/cells/ProjectNameCell.vue";
+import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   SQL_EDITOR_HOME_MODULE,
