@@ -476,6 +476,46 @@ export interface DataSource {
    */
   authenticationPrivateKey: string;
   externalSecret: DataSourceExternalSecret | undefined;
+  authenticationType: DataSource_AuthenticationType;
+}
+
+export enum DataSource_AuthenticationType {
+  AUTHENTICATION_UNSPECIFIED = 0,
+  PASSWORD = 1,
+  GOOGLE_CLOUD_SQL_IAM = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function dataSource_AuthenticationTypeFromJSON(object: any): DataSource_AuthenticationType {
+  switch (object) {
+    case 0:
+    case "AUTHENTICATION_UNSPECIFIED":
+      return DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED;
+    case 1:
+    case "PASSWORD":
+      return DataSource_AuthenticationType.PASSWORD;
+    case 2:
+    case "GOOGLE_CLOUD_SQL_IAM":
+      return DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSource_AuthenticationType.UNRECOGNIZED;
+  }
+}
+
+export function dataSource_AuthenticationTypeToJSON(object: DataSource_AuthenticationType): string {
+  switch (object) {
+    case DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED:
+      return "AUTHENTICATION_UNSPECIFIED";
+    case DataSource_AuthenticationType.PASSWORD:
+      return "PASSWORD";
+    case DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM:
+      return "GOOGLE_CLOUD_SQL_IAM";
+    case DataSource_AuthenticationType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface InstanceResource {
@@ -2310,6 +2350,7 @@ function createBaseDataSource(): DataSource {
     sshPrivateKey: "",
     authenticationPrivateKey: "",
     externalSecret: undefined,
+    authenticationType: 0,
   };
 }
 
@@ -2377,6 +2418,9 @@ export const DataSource = {
     }
     if (message.externalSecret !== undefined) {
       DataSourceExternalSecret.encode(message.externalSecret, writer.uint32(170).fork()).ldelim();
+    }
+    if (message.authenticationType !== 0) {
+      writer.uint32(176).int32(message.authenticationType);
     }
     return writer;
   },
@@ -2535,6 +2579,13 @@ export const DataSource = {
 
           message.externalSecret = DataSourceExternalSecret.decode(reader, reader.uint32());
           continue;
+        case 22:
+          if (tag !== 176) {
+            break;
+          }
+
+          message.authenticationType = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2573,6 +2624,9 @@ export const DataSource = {
       externalSecret: isSet(object.externalSecret)
         ? DataSourceExternalSecret.fromJSON(object.externalSecret)
         : undefined,
+      authenticationType: isSet(object.authenticationType)
+        ? dataSource_AuthenticationTypeFromJSON(object.authenticationType)
+        : 0,
     };
   },
 
@@ -2641,6 +2695,9 @@ export const DataSource = {
     if (message.externalSecret !== undefined) {
       obj.externalSecret = DataSourceExternalSecret.toJSON(message.externalSecret);
     }
+    if (message.authenticationType !== 0) {
+      obj.authenticationType = dataSource_AuthenticationTypeToJSON(message.authenticationType);
+    }
     return obj;
   },
 
@@ -2672,6 +2729,7 @@ export const DataSource = {
     message.externalSecret = (object.externalSecret !== undefined && object.externalSecret !== null)
       ? DataSourceExternalSecret.fromPartial(object.externalSecret)
       : undefined;
+    message.authenticationType = object.authenticationType ?? 0;
     return message;
   },
 };

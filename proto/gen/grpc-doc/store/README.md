@@ -91,6 +91,7 @@
     - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
+    - [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType)
   
 - [store/export_archive.proto](#store_export_archive-proto)
     - [ExportArchivePayload](#bytebase-store-ExportArchivePayload)
@@ -1495,6 +1496,7 @@ Used internally for obfuscating the page token.
 | ssh_obfuscated_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
 | authentication_private_key_obfuscated | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
 | external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
+| authentication_type | [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType) |  |  |
 
 
 
@@ -1540,6 +1542,19 @@ Used internally for obfuscating the page token.
 | VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
 | AWS_SECRETS_MANAGER | 2 | ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html |
 | GCP_SECRET_MANAGER | 3 | ref: https://cloud.google.com/secret-manager/docs |
+
+
+
+<a name="bytebase-store-DataSourceOptions-AuthenticationType"></a>
+
+### DataSourceOptions.AuthenticationType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTHENTICATION_UNSPECIFIED | 0 |  |
+| PASSWORD | 1 |  |
+| GOOGLE_CLOUD_SQL_IAM | 2 |  |
 
 
  

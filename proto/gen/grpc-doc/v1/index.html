@@ -476,6 +476,10 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.DataSource.AuthenticationType"><span class="badge">E</span>DataSource.AuthenticationType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType"><span class="badge">E</span>DataSourceExternalSecret.AppRoleAuthOption.SecretType</a>
                 </li>
               
@@ -4777,6 +4781,13 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>authentication_type</td>
+                  <td><a href="#bytebase.v1.DataSource.AuthenticationType">DataSource.AuthenticationType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5487,6 +5498,35 @@ Format: instances/{instance} </p></td>
         
       
 
+      
+        <h3 id="bytebase.v1.DataSource.AuthenticationType">DataSource.AuthenticationType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTHENTICATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PASSWORD</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GOOGLE_CLOUD_SQL_IAM</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</h3>
         <p></p>
