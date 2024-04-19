@@ -5,7 +5,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentUserV1, useProjectV1List } from "@/store";
 import { DEFAULT_PROJECT_ID } from "@/types";
-import { isMemberOfProjectV1 } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 
 export const useProjectActions = () => {
   const { t } = useI18n();
@@ -17,8 +17,7 @@ export const useProjectActions = () => {
     return projectList.value.filter((project) => {
       return (
         project.uid != String(DEFAULT_PROJECT_ID) &&
-        // Only show projects that the user is a member of.
-        isMemberOfProjectV1(project.iamPolicy, me.value)
+        hasProjectPermissionV2(project, me.value, "bb.projects.get")
       );
     });
   });
