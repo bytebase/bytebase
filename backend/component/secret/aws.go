@@ -3,6 +3,7 @@ package secret
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -33,6 +34,9 @@ func getSecretFromAWS(ctx context.Context, externalSecret *storepb.DataSourceExt
 	if err != nil {
 		// For a list of exceptions thrown, see
 		// https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+		if strings.Contains(err.Error(), "ResourceNotFoundException") {
+			return "", errors.Wrapf(err, "cannot found secret %s", externalSecret.SecretName)
+		}
 		return "", errors.Wrapf(err, "failed to get aws secret")
 	}
 
@@ -46,7 +50,7 @@ func getSecretFromAWS(ctx context.Context, externalSecret *storepb.DataSourceExt
 	}
 	val, ok := dataMap[externalSecret.PasswordKeyName].(string)
 	if !ok {
-		return "", errors.Errorf("cannot convert %s value to string", externalSecret.PasswordKeyName)
+		return "", errors.Errorf("cannot get value for %s, please make sure the secret exists", externalSecret.PasswordKeyName)
 	}
 	return val, nil
 }
