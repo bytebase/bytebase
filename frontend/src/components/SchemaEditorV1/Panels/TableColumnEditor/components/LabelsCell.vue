@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-start items-center">
-    <LabelsColumn :labels="column.config.labels" :show-count="1" />
+    <DatabaseLabelsCell :labels="column.config.labels" :show-count="1" />
     <MiniActionButton v-if="!readonly && !disabled" @click="$emit('edit')">
       <PencilIcon class="w-3 h-3" />
     </MiniActionButton>
@@ -9,8 +9,8 @@
 
 <script lang="ts" setup>
 import { PencilIcon } from "lucide-vue-next";
+import DatabaseLabelsCell from "@/components/DatabaseDataTable/cells/DatabaseLabelsCell.vue";
 import { MiniActionButton } from "@/components/v2";
-import LabelsColumn from "@/components/v2/Model/DatabaseV1Table/LabelsColumn.vue";
 import type { Column } from "@/types/v1/schemaEditor";
 
 defineProps<{
