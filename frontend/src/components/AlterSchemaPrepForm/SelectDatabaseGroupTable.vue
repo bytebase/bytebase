@@ -36,7 +36,7 @@ import { NRadio } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridColumn } from "@/bbkit";
-import ProjectNameCell from "@/components/DatabaseDataTable/cells/ProjectNameCell.vue";
+import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import type { ComposedDatabaseGroup } from "@/types";
 
 interface LocalState {
