@@ -971,16 +971,15 @@ const testConnection = async (
     return { success: true, message: "" };
   };
   const fail = (host: string, err: unknown) => {
-    const error = extractGrpcErrorMessage(err);
+    let error = extractGrpcErrorMessage(err);
     if (!silent) {
-      let title = t("instance.failed-to-connect-instance");
       if (host === "localhost" || host === "127.0.0.1") {
-        title = t("instance.failed-to-connect-instance-localhost");
+        error = `${error}\n\n${t("instance.failed-to-connect-instance-localhost")}`;
       }
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title,
+        title: t("instance.failed-to-connect-instance"),
         description: error,
         // Manual hide, because user may need time to inspect the error
         manualHide: true,

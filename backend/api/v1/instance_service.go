@@ -176,7 +176,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 			err := func() error {
 				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage, ds, "", false /* datashare */, ds.Type == api.RO, false /* schemaTenantMode */, db.ConnectionContext{})
 				if err != nil {
-					return err
+					return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 				}
 				defer driver.Close(ctx)
 				if err := driver.Ping(ctx); err != nil {
@@ -696,7 +696,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		err := func() error {
 			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */, db.ConnectionContext{})
 			if err != nil {
-				return err
+				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 			}
 			defer driver.Close(ctx)
 			if err := driver.Ping(ctx); err != nil {
@@ -873,7 +873,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		err := func() error {
 			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, &dataSource, "", false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */, db.ConnectionContext{})
 			if err != nil {
-				return err
+				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 			}
 			defer driver.Close(ctx)
 			if err := driver.Ping(ctx); err != nil {

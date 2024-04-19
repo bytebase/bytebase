@@ -1401,7 +1401,7 @@
     "copy-grant-statement": "TẠO câu lệnh NGƯỜI DÙNG và CẤP được sao chép vào khay nhớ tạm. Dán vào ứng dụng khách {engine} của bạn để áp dụng.",
     "successfully-connected-instance": "Phiên bản được kết nối thành công.",
     "failed-to-connect-instance": "Không thể kết nối phiên bản.",
-    "failed-to-connect-instance-localhost": "Không thể kết nối phiên bản.\nNếu bạn chạy Bytebase bằng Docker, vui lòng thử \"host.docker.internal\" để biết địa chỉ máy chủ.",
+    "failed-to-connect-instance-localhost": "Nếu bạn chạy Bytebase bằng Docker, vui lòng thử \"host.docker.internal\" để biết địa chỉ máy chủ.",
     "filter-instance-name": "Lọc tên phiên bản",
     "grants": "tài trợ",
     "find-gcp-project-id-and-instance-id": "Để tìm ID dự án GCP và ID phiên bản, hãy xem",
