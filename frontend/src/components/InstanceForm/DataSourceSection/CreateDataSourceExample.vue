@@ -104,6 +104,21 @@
           {{ $t("instance.sentence.create-user-example.postgresql.warn") }}
         </BBAttention>
         <i18n-t
+          v-if="
+            authenticationType ===
+            DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+          "
+          tag="p"
+          keypath="instance.sentence.google-cloud-sql.postgresql.template"
+        >
+          <template #user>
+            <span class="font-semibold">
+              {{ userName }}
+            </span>
+          </template>
+        </i18n-t>
+        <i18n-t
+          v-else
           tag="p"
           keypath="instance.sentence.create-user-example.postgresql.template"
         >
@@ -342,6 +357,12 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
 `;
       case Engine.RISINGWAVE:
       case Engine.POSTGRES:
+        if (
+          props.authenticationType ===
+          DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+        ) {
+          return `GRANT pg_write_all_data TO "${ADMIN_USER_NAME}@{project-id}.iam";`;
+        }
         return `CREATE USER ${ADMIN_USER_NAME} WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER ${ADMIN_USER_NAME} WITH SUPERUSER;`;
       case Engine.REDSHIFT:
         return `CREATE USER ${ADMIN_USER_NAME} WITH PASSWORD 'YOUR_DB_PWD' CREATEUSER CREATEDB;`;
@@ -487,6 +508,12 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
 `;
       case Engine.RISINGWAVE:
       case Engine.POSTGRES:
+        if (
+          props.authenticationType ===
+          DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+        ) {
+          return `GRANT pg_read_all_data TO "${READONLY_USER_NAME}@{project-id}.iam";`;
+        }
         return `CREATE USER ${READONLY_USER_NAME} WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';
 ALTER USER ${READONLY_USER_NAME} WITH SUPERUSER;`;
       case Engine.MONGODB:
