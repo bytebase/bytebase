@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { Status } from "../google/rpc/status";
 
 export const protobufPackage = "bytebase.store";
 
@@ -22,6 +23,7 @@ export interface AuditLog {
    * Some fields are omitted because they are too large or contain sensitive information.
    */
   response: string;
+  status: Status | undefined;
 }
 
 export enum AuditLog_Severity {
@@ -100,7 +102,7 @@ export function auditLog_SeverityToJSON(object: AuditLog_Severity): string {
 }
 
 function createBaseAuditLog(): AuditLog {
-  return { method: "", resource: "", user: "", severity: 0, request: "", response: "" };
+  return { method: "", resource: "", user: "", severity: 0, request: "", response: "", status: undefined };
 }
 
 export const AuditLog = {
@@ -122,6 +124,9 @@ export const AuditLog = {
     }
     if (message.response !== "") {
       writer.uint32(50).string(message.response);
+    }
+    if (message.status !== undefined) {
+      Status.encode(message.status, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -175,6 +180,13 @@ export const AuditLog = {
 
           message.response = reader.string();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.status = Status.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -192,6 +204,7 @@ export const AuditLog = {
       severity: isSet(object.severity) ? auditLog_SeverityFromJSON(object.severity) : 0,
       request: isSet(object.request) ? globalThis.String(object.request) : "",
       response: isSet(object.response) ? globalThis.String(object.response) : "",
+      status: isSet(object.status) ? Status.fromJSON(object.status) : undefined,
     };
   },
 
@@ -215,6 +228,9 @@ export const AuditLog = {
     if (message.response !== "") {
       obj.response = message.response;
     }
+    if (message.status !== undefined) {
+      obj.status = Status.toJSON(message.status);
+    }
     return obj;
   },
 
@@ -229,6 +245,9 @@ export const AuditLog = {
     message.severity = object.severity ?? 0;
     message.request = object.request ?? "";
     message.response = object.response ?? "";
+    message.status = (object.status !== undefined && object.status !== null)
+      ? Status.fromPartial(object.status)
+      : undefined;
     return message;
   },
 };
