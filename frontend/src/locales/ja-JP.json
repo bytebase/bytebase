@@ -1315,29 +1315,30 @@
       "create-readonly-user": "Bytebaseが書き込みおよび管理操作を実行するために使用する接続ユーザーです。",
       "create-admin-user-non-sql": "Bytebaseが読み取り専用操作を実行するために使用する接続です。",
       "create-readonly-user-non-sql": "bytebase{'@'}%",
+      "google-cloud-sql": {
+        "instance-name": "インスタンス接続名",
+        "instance-name-tips": "インスタンス接続名は、project-id:region:instance-name のようになります。",
+        "mysql": {
+          "template": "{user} という名前のサービス アカウントを作成し、それを IAM ユーザー {user}{'@'}'%' として Google Cloud SQL に追加します。このユーザーに必要な権限を付与します。"
+        }
+      },
       "create-user-example": {
         "snowflake": {
-          "user": "YOUR_DB_PWD",
-          "password": "以下は、ユーザー 'bytebase' をパスワード {password} で {warehouse} に作成し、必要な権限を付与する例です。",
-          "template": "YOUR_DB_PWD"
+          "template": "以下は、ユーザー '{user}' をパスワード {password} で {warehouse} に作成し、必要な権限を付与する例です。"
         },
         "mysql": {
-          "password": "bytebase{'@'}%",
-          "user": "以下は、ユーザー {user} をパスワード {password} で作成し、必要な権限を付与する例です。",
-          "template": "以下は、ユーザー 'bytebase' をパスワード {password} で作成し、必要な権限を付与する例です。まず、ClickHouseのSQL駆動型ワークフロー {link} を有効にする必要があります。その後、次のクエリを実行してユーザーを作成してください。"
+          "template": "以下は、ユーザー {user} をパスワード {password} で作成し、必要な権限を付与する例です。"
         },
         "clickhouse": {
-          "template": "SQL駆動型ワークフロー",
-          "sql-driven-workflow": "接続インスタンスがクラウドプロバイダーによって管理されている場合、SUPERUSERは使用できず、そのプロバイダーの管理コンソールを介してユーザーを作成する必要があります。作成されたユーザーは、プロバイダー固有の半-SUPERUSER権限を持ちます。既存のすべてのロールに対して 'GRANT role_name TO bytebase;' を使用してBytebaseに権限を付与する必要があります。そうしないと、Bytebaseは既存のデータベースやテーブルにアクセスできない場合があります。"
+          "template": "以下は、パスワード {password} を持つユーザー '{user}' を作成し、必要な権限をユーザーに付与する例です。まず、ClickHouse SQL 駆動型ワークフロー {link} を有効にし、次のクエリを実行してユーザーを作成する必要があります。",
+          "sql-driven-workflow": "SQL駆動型ワークフロー"
         },
         "postgresql": {
-          "warn": "以下は、ユーザー 'bytebase' をパスワード {password} で作成し、必要な権限を付与する例です。接続先が自己ホストされている場合は、SUPERUSER を付与することができます。",
-          "template": "YOUR_DB_PWD"
+          "warn": "接続インスタンスがクラウド プロバイダーによって管理されている場合、SUPERUSER は利用できないため、そのプロバイダーの管理コンソールからユーザーを作成する必要があります。作成されたユーザーには、プロバイダー固有の準 SUPERUSER 権限が付与されます。既存のすべてのロールに対して、「GRANT role_name TO bytebase;」を使用して Bytebase 権限を付与する必要があります。そうしないと、Bytebase が既存のデータベースまたはテーブルにアクセスできない可能性があります。",
+          "template": "以下は、パスワード {password} を使用してユーザー '{user}' を作成し、必要な権限をユーザーに付与する例です。接続インスタンスがセルフホストされている場合は、SUPERUSER を付与できます。"
         },
         "redis": {
-          "password": "bytebase",
-          "user": "以下は、ユーザー {user} をパスワード {password} で作成し、必要な権限を付与する例です。",
-          "template": "パスワードなし"
+          "template": "以下は、パスワード {password} を持つユーザー {user} を作成し、そのユーザーに必要な権限を付与する例です。"
         }
       }
     },
@@ -1348,6 +1349,7 @@
     "password-type": {
       "password": "パスワード",
       "password-tip": "外部シークレット管理エンドポイントを指定することもできます",
+      "google-iam": "Google CloudSQL IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"

@@ -1315,28 +1315,29 @@
       "create-readonly-user": "Đây là kết nối được Bytebase sử dụng để thực hiện các hoạt động chỉ đọc, chẳng hạn như truy vấn CHỌN.",
       "create-admin-user-non-sql": "Đây là người dùng kết nối được Bytebase sử dụng để thực hiện các hoạt động ghi và quản trị.",
       "create-readonly-user-non-sql": "Đây là kết nối được Bytebase sử dụng để thực hiện các hoạt động chỉ đọc.",
+      "google-cloud-sql": {
+        "instance-name": "Tên kết nối sơ thẩm",
+        "instance-name-tips": "Tên kết nối phiên bản phải như project-id:region:instance-name.",
+        "mysql": {
+          "template": "Tạo một tài khoản dịch vụ có tên {user}, sau đó thêm tài khoản đó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {user}{'@'}'%'. Cấp cho người dùng này những đặc quyền cần thiết."
+        }
+      },
       "create-user-example": {
         "snowflake": {
-          "user": "cơ sở byte{'@'}%",
-          "password": "YOUR_DB_PWD",
-          "template": "Dưới đây là ví dụ để tạo người dùng 'bytebase' bằng mật khẩu {password} cho {warehouse} và cấp cho người dùng các đặc quyền cần thiết."
+          "template": "Dưới đây là ví dụ để tạo người dùng '{user}' bằng mật khẩu {password} cho {warehouse} và cấp cho người dùng các đặc quyền cần thiết."
         },
         "mysql": {
-          "password": "YOUR_DB_PWD",
-          "user": "cơ sở byte{'@'}%",
           "template": "Dưới đây là ví dụ để tạo người dùng {user} bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết."
         },
         "clickhouse": {
-          "template": "Dưới đây là ví dụ để tạo 'bytebase' người dùng bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết. Trước tiên, bạn cần bật quy trình làm việc dựa trên SQL ClickHouse {link}, sau đó chạy truy vấn sau để tạo người dùng.",
+          "template": "Dưới đây là ví dụ để tạo '{user}' người dùng bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết. Trước tiên, bạn cần bật quy trình làm việc dựa trên SQL ClickHouse {link}, sau đó chạy truy vấn sau để tạo người dùng.",
           "sql-driven-workflow": "Quy trình làm việc dựa trên SQL"
         },
         "postgresql": {
           "warn": "Nếu phiên bản kết nối được quản lý bởi nhà cung cấp đám mây thì SUPERUSER sẽ không khả dụng và bạn nên tạo người dùng thông qua bảng điều khiển dành cho quản trị viên của nhà cung cấp đó. Người dùng đã tạo sẽ có các đặc quyền bán SIÊU NGƯỜI DÙNG cụ thể của nhà cung cấp. Bạn nên cấp đặc quyền Bytebase với 'GRANT role_name TO bytebase;' đối với tất cả các vai trò hiện có, nếu không Bytebase có thể không truy cập được cơ sở dữ liệu hoặc bảng hiện có.",
-          "template": "Dưới đây là ví dụ để tạo 'bytebase' người dùng bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết. Nếu phiên bản kết nối được tự lưu trữ thì bạn có thể cấp quyền SUPERUSER."
+          "template": "Dưới đây là ví dụ để tạo '{user}' người dùng bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết. Nếu phiên bản kết nối được tự lưu trữ thì bạn có thể cấp quyền SUPERUSER."
         },
         "redis": {
-          "password": "YOUR_DB_PWD",
-          "user": "cơ sở byte",
           "template": "Dưới đây là ví dụ để tạo người dùng {user} bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết."
         }
       }
@@ -1348,6 +1349,7 @@
     "password-type": {
       "password": "Mật khẩu",
       "password-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
+      "google-iam": "Google CloudSQL IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"

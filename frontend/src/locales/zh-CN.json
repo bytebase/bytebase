@@ -1315,28 +1315,29 @@
       "create-readonly-user": "这是 Bytebase 用于连接数据库，执行诸如 SELECT 的只读操作的用户。",
       "create-admin-user-non-sql": "这是 Bytebase 用于连接数据库，执行写和管理操作的用户。",
       "create-readonly-user-non-sql": "这是 Bytebase 用于连接数据库，执行只读操作的用户。",
+      "google-cloud-sql": {
+        "instance-name": "实例连接名称",
+        "instance-name-tips": "实例连接名称应为 project-id:region:instance-name。",
+        "mysql": {
+          "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}'%' 添加到您的 Google Cloud SQL 中。授予此用户所需的权限。"
+        }
+      },
       "create-user-example": {
         "snowflake": {
-          "user": "bytebase{'@'}%",
-          "password": "YOUR_DB_PWD",
-          "template": "创建用户 bytebase，密码 {password}，warehouse 为{warehouse}，并授予必要权限的例子如下。"
+          "template": "创建用户 {user}，密码 {password}，warehouse 为{warehouse}，并授予必要权限的例子如下。"
         },
         "mysql": {
-          "password": "YOUR_DB_PWD",
-          "user": "bytebase{'@'}%",
           "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。"
         },
         "clickhouse": {
-          "template": "创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。",
+          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。",
           "sql-driven-workflow": "SQL 工作流"
         },
         "postgresql": {
           "warn": "如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER 是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。 您应该对所有 role 用 'GRANT role_name TO bytebase;' 语句赋予 Bytebase 权限，否则 Bytebase 可能没有权限操作已有的数据库或者表导致操作失败。",
-          "template": "创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。"
+          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。"
         },
         "redis": {
-          "password": "YOUR_DB_PWD",
-          "user": "bytebase",
           "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。"
         }
       }
@@ -1348,6 +1349,7 @@
     "password-type": {
       "password": "密码",
       "password-tip": "您也可以指定外部的密码管理服务 endpoint",
+      "google-iam": "Google CloudSQL IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
