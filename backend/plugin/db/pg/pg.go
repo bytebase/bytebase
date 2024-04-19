@@ -14,6 +14,7 @@ import (
 
 	// Import pg driver.
 	// init() in pgx/v5/stdlib will register it's pgx driver.
+	"cloud.google.com/go/cloudsqlconn"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
@@ -64,6 +65,68 @@ func newDriver(config db.DriverConfig) db.Driver {
 
 // Open opens a Postgres driver.
 func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	var connConfig *pgx.ConnConfig
+	if config.AuthenticationType == storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM {
+		cloudSQLConfig, err := getCloudSQLConnectionConfig(ctx, config)
+		if err != nil {
+			return nil, err
+		}
+		connConfig = cloudSQLConfig
+	} else {
+		pgConfig, err := getPGConnectionConfig(config)
+		if err != nil {
+			return nil, err
+		}
+		connConfig = pgConfig
+	}
+
+	if config.SSHConfig.Host != "" {
+		sshClient, err := util.GetSSHClient(config.SSHConfig)
+		if err != nil {
+			return nil, err
+		}
+		driver.sshClient = sshClient
+
+		connConfig.Config.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
+			conn, err := sshClient.Dial(network, addr)
+			if err != nil {
+				return nil, err
+			}
+			return &noDeadlineConn{Conn: conn}, nil
+		}
+	}
+
+	driver.databaseName = config.Database
+	if config.Database == "" {
+		databaseName, cfg, err := guessDSN(connConfig, config.Username)
+		if err != nil {
+			return nil, err
+		}
+		connConfig = cfg
+		driver.databaseName = databaseName
+	}
+	driver.config = config
+
+	driver.connectionString = stdlib.RegisterConnConfig(connConfig)
+	db, err := sql.Open(driverName, driver.connectionString)
+	if err != nil {
+		return nil, err
+	}
+	driver.db = db
+	if config.ConnectionContext.UseDatabaseOwner {
+		owner, err := driver.GetCurrentDatabaseOwner(ctx)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database owner")
+		}
+		if _, err := driver.db.ExecContext(ctx, fmt.Sprintf("SET ROLE \"%s\";", owner)); err != nil {
+			return nil, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+		}
+	}
+	driver.connectionCtx = config.ConnectionContext
+	return driver, nil
+}
+
+func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) {
 	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
 	if config.Username == "" {
@@ -102,54 +165,33 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	if cfg != nil {
 		connConfig.TLSConfig = cfg
 	}
-
-	if config.SSHConfig.Host != "" {
-		sshClient, err := util.GetSSHClient(config.SSHConfig)
-		if err != nil {
-			return nil, err
-		}
-		driver.sshClient = sshClient
-
-		connConfig.Config.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
-			conn, err := sshClient.Dial(network, addr)
-			if err != nil {
-				return nil, err
-			}
-			return &noDeadlineConn{Conn: conn}, nil
-		}
-	}
 	if config.ReadOnly {
 		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
 	}
 
-	driver.databaseName = config.Database
-	if config.Database == "" {
-		databaseName, cfg, err := guessDSN(connConfig, config.Username)
-		if err != nil {
-			return nil, err
-		}
-		connConfig = cfg
-		driver.databaseName = databaseName
-	}
-	driver.config = config
+	return connConfig, nil
+}
 
-	driver.connectionString = stdlib.RegisterConnConfig(connConfig)
-	db, err := sql.Open(driverName, driver.connectionString)
+// getCloudSQLConnectionConfig returns config for Cloud SQL connector.
+// refs:
+// https://cloud.google.com/sql/docs/postgres/connect-connectors
+// https://github.com/GoogleCloudPlatform/golang-samples/blob/main/cloudsql/postgres/database-sql/cloudsql.go
+func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
+	d, err := cloudsqlconn.NewDialer(ctx, cloudsqlconn.WithIAMAuthN())
 	if err != nil {
 		return nil, err
 	}
-	driver.db = db
-	if config.ConnectionContext.UseDatabaseOwner {
-		owner, err := driver.GetCurrentDatabaseOwner(ctx)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database owner")
-		}
-		if _, err := db.ExecContext(ctx, fmt.Sprintf("SET ROLE \"%s\";", owner)); err != nil {
-			return nil, errors.Wrapf(err, "failed to set role to database owner %q", owner)
-		}
+
+	dsn := fmt.Sprintf("user=%s database=%s", conf.Username, conf.Database)
+	config, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		return nil, err
 	}
-	driver.connectionCtx = config.ConnectionContext
-	return driver, nil
+	config.DialFunc = func(ctx context.Context, _, _ string) (net.Conn, error) {
+		return d.Dial(ctx, conf.Host)
+	}
+
+	return config, nil
 }
 
 type noDeadlineConn struct{ net.Conn }

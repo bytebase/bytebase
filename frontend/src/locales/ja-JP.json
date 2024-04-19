@@ -1320,6 +1320,9 @@
         "instance-name-tips": "インスタンス接続名は、project-id:region:instance-name のようになります。",
         "mysql": {
           "template": "{user} という名前のサービス アカウントを作成し、それを IAM ユーザー {user}{'@'}'%' として Google Cloud SQL に追加します。このユーザーに必要な権限を付与します。"
+        },
+        "postgresql": {
+          "template": "{user} という名前のサービス アカウントを作成し、それを IAM ユーザー {user}{'@'}project-id.iam として Google Cloud SQL に追加します。ユーザーに必要な権限を付与します。"
         }
       },
       "create-user-example": {

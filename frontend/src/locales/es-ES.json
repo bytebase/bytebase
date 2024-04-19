@@ -1320,6 +1320,9 @@
         "instance-name-tips": "El nombre de la conexión de la instancia debería ser project-id:region:instance-name.",
         "mysql": {
           "template": "Cree una cuenta de servicio llamada {user} y luego agréguela en su Google Cloud SQL como usuario de IAM {user}{'@'}'%'. Otorgue a este usuario los privilegios necesarios."
+        },
+        "postgresql": {
+          "template": "Cree una cuenta de servicio llamada {user} y luego agréguela en su Google Cloud SQL como usuario de IAM {user}{'@'}project-id.iam. Otorgue al usuario los privilegios necesarios."
         }
       },
       "create-user-example": {
