@@ -1,5 +1,4 @@
 <template>
-  <!-- eslint-disable vue/no-v-html -->
   <div
     v-if="title"
     class="text-left pl-4 pt-4 pb-2 py-text-base leading-6 font-medium text-gray-900"
@@ -185,7 +184,6 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
 });
 
 interface LocalState {
-  dataSource: any[];
   selectedIssueIdList: Set<string>;
 }
 
@@ -212,7 +210,6 @@ const props = withDefaults(
 const router = useRouter();
 
 const state = reactive<LocalState>({
-  dataSource: [],
   selectedIssueIdList: new Set(),
 });
 const currentUserV1 = useCurrentUserV1();

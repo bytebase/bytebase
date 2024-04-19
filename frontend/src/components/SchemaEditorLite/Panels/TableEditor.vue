@@ -50,6 +50,7 @@
             </NButton>
           </template>
           <NButton
+            v-if="engineSupportsEditIndexes(engine)"
             size="small"
             :disabled="disableChangeTable"
             @click="state.mode = 'INDEXES'"
@@ -62,7 +63,7 @@
             }}
           </NButton>
           <NButton
-            v-if="hasTablePartitionsFeature"
+            v-if="engineSupportsEditTablePartitions(engine)"
             size="small"
             :disabled="disableChangeTable"
             @click="state.mode = 'PARTITIONS'"
@@ -201,7 +202,6 @@ import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setti
 import {
   arraySwap,
   instanceV1AllowsReorderColumns,
-  instanceV1SupportsTablePartition,
   randomString,
 } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
@@ -212,6 +212,10 @@ import {
   removeColumnPrimaryKey,
   upsertColumnPrimaryKey,
 } from "../edit";
+import {
+  engineSupportsEditIndexes,
+  engineSupportsEditTablePartitions,
+} from "../spec";
 import type { EditStatus } from "../types";
 import ColumnSelectionSummary from "./ColumnSelectionSummary.vue";
 import IndexesEditor from "./IndexesEditor";
@@ -330,10 +334,6 @@ const allowReorderColumns = computed(() => {
 
   const status = statusForTable();
   return instanceV1AllowsReorderColumns(engine.value) && status === "created";
-});
-
-const hasTablePartitionsFeature = computed(() => {
-  return instanceV1SupportsTablePartition(engine.value);
 });
 
 const disableAlterColumn = (column: ColumnMetadata): boolean => {

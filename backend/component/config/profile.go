@@ -20,8 +20,8 @@ type Profile struct {
 	// SampleDatabasePort is the start binding port for sample database instance.
 	// If SampleDatabasePort is not 0, then we start 2 sample instance at SampleDatabasePort and SampleDatabasePort+1.
 	SampleDatabasePort int
-	// GrpcPort is the binding port for gRPC server.
-	GrpcPort int
+	// Port is the binding port for the server.
+	Port int
 	// PgUser is the user we use to connect to bytebase's Postgres database.
 	// The name of the database storing metadata is the same as pgUser.
 	PgUser string

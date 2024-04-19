@@ -91,7 +91,7 @@ func configureGrpcRouters(
 	v1pb.RegisterVCSConnectorServiceServer(grpcServer, apiv1.NewVCSConnectorService(stores))
 
 	// REST gateway proxy.
-	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)
+	grpcEndpoint := fmt.Sprintf(":%d", profile.Port)
 	grpcConn, err := grpc.Dial(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, nil, err

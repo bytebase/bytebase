@@ -19,8 +19,9 @@ import type {
   UpdateDatabaseRequest,
   DiffSchemaRequest,
   SearchDatabasesRequest,
+  BatchUpdateDatabasesRequest,
 } from "@/types/proto/v1/database_service";
-import { extractDatabaseResourceName, isMemberOfProjectV1 } from "@/utils";
+import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
 import { useGracefulRequest } from "../utils";
 import { useEnvironmentV1Store } from "./environment";
 import { useInstanceV1Store } from "./instance";
@@ -77,7 +78,8 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   };
   const databaseListByUser = (user: User) => {
     return databaseList.value.filter((db) => {
-      if (isMemberOfProjectV1(db.projectEntity.iamPolicy, user)) return true;
+      if (hasProjectPermissionV2(db.projectEntity, user, "bb.databases.get"))
+        return true;
       return false;
     });
   };
@@ -147,10 +149,14 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     await fetchDatabaseByUID(uid, silent);
     return getDatabaseByUID(uid);
   };
+  const batchUpdateDatabases = async (params: BatchUpdateDatabasesRequest) => {
+    const updated = await databaseServiceClient.batchUpdateDatabases(params);
+    const composed = await upsertDatabaseMap(updated.databases);
+    return composed;
+  };
   const updateDatabase = async (params: UpdateDatabaseRequest) => {
     const updated = await databaseServiceClient.updateDatabase(params);
     const [composed] = await upsertDatabaseMap([updated]);
-
     return composed;
   };
   const fetchDatabaseSchema = async (
@@ -208,6 +214,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     fetchDatabaseByUID,
     getDatabaseByUID,
     getOrFetchDatabaseByUID,
+    batchUpdateDatabases,
     updateDatabase,
     fetchDatabaseSchema,
     updateDatabaseInstance,

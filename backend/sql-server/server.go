@@ -8,10 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	echoswagger "github.com/swaggo/echo-swagger"
-
 	"github.com/bytebase/bytebase/backend/plugin/metric/segment"
-	_ "github.com/bytebase/bytebase/docs/sqlservice" // initial the swagger doc
 
 	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo-contrib/prometheus"
@@ -28,25 +25,6 @@ type Server struct {
 	startedTs      int64
 	metricReporter *metricReporter
 }
-
-// Use following cmd to generate swagger doc
-// swag init -g ./backend/server.go -d ./backend/sql-server --output docs/sqlservice --parseDependency
-
-// @title Bytebase SQL Service
-// @version 1.0
-// @description The OpenAPI for Bytebase SQL Service.
-// @termsOfService https://www.bytebase.com/terms
-
-// @contact.name API Support
-// @contact.url https://github.com/bytebase/bytebase/
-// @contact.email support@bytebase.com
-
-// @license.name MIT
-// @license.url https://github.com/bytebase/bytebase/blob/main/LICENSE
-
-// @host localhost:8081
-// @BasePath /v1/
-// @schemes http
 
 // NewServer creates a server.
 func NewServer(ctx context.Context, prof Profile) (*Server, error) {
@@ -90,7 +68,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		}))
 	}
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{}))
-	e.GET("/swagger/*", echoswagger.WrapHandler)
 
 	apiGroup := e.Group("/v1")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {

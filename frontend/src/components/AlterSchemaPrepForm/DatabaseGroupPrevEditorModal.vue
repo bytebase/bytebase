@@ -76,8 +76,8 @@ interface LocalState {
 }
 
 const props = defineProps({
-  databaseGroup: {
-    type: Object as PropType<ComposedDatabaseGroup>,
+  databaseGroupName: {
+    type: Object as PropType<string>,
     required: true,
   },
   issueType: {
@@ -100,6 +100,12 @@ const state = reactive<LocalState>({
   showActionConfirmModal: false,
 });
 
+const databaseGroup = computed(() => {
+  return dbGroupStore.getDBGroupByName(
+    props.databaseGroupName
+  ) as ComposedDatabaseGroup;
+});
+
 const allowPreviewIssue = computed(() => {
   return state.editStatement !== "";
 });
@@ -115,7 +121,7 @@ const title = computed(() => {
 onMounted(async () => {
   const schemaGroupList =
     await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(
-      props.databaseGroup.name
+      databaseGroup.value.name
     );
   // Initial statement with schema group list;
   state.editStatement = generateReferenceStatement(schemaGroupList);
@@ -148,7 +154,7 @@ const dismissModal = () => {
 const handlePreviewIssue = async () => {
   const issueRoute = generateDatabaseGroupIssueRoute(
     props.issueType,
-    props.databaseGroup,
+    databaseGroup.value,
     state.editStatement
   );
   router.push(issueRoute);

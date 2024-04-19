@@ -13,6 +13,7 @@ import (
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
@@ -51,7 +52,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
-	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
 )
 
 const (
@@ -83,8 +83,9 @@ type Server struct {
 	licenseService enterprise.LicenseService
 
 	profile         *config.Profile
-	e               *echo.Echo
+	echoServer      *echo.Echo
 	grpcServer      *grpc.Server
+	muxServer       cmux.CMux
 	lspServer       *lsp.Server
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
@@ -243,7 +244,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
 
 	// Configure echo server.
-	s.e = echo.New()
+	s.echoServer = echo.New()
 
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
@@ -329,7 +330,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			recoveryStreamInterceptor,
 		),
 	)
-	configureEchoRouters(s.e, s.grpcServer, mux, profile)
+	reflection.Register(s.grpcServer)
+
+	// LSP server.
+	s.lspServer = lsp.NewServer(s.store)
+
 	postCreateUser := func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
 		if profile.TestOnlySkipOnboardingData {
 			return nil
@@ -352,15 +357,11 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 	s.rolloutService, s.issueService = rolloutService, issueService
+	// GitOps webhook server.
+	gitOpsServer := gitops.NewService(s.store, s.dbFactory, s.activityManager, s.stateCfg, s.licenseService, rolloutService, issueService)
 
-	webhookGroup := s.e.Group(webhookAPIPrefix)
-	gitOpsService := gitops.NewService(s.store, s.dbFactory, s.activityManager, s.stateCfg, s.licenseService, rolloutService, issueService)
-	gitOpsService.RegisterWebhookRoutes(webhookGroup)
-
-	reflection.Register(s.grpcServer)
-
-	s.lspServer = lsp.NewServer(s.store)
-	s.e.GET(lspAPI, s.lspServer.Router)
+	// Configure echo server routes.
+	configureEchoRouters(s.echoServer, s.grpcServer, s.lspServer, gitOpsServer, mux, profile)
 
 	serverStarted = true
 	return s, nil
@@ -394,17 +395,34 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.planCheckScheduler.Run(ctx, &s.runnerWG)
 	}
 
-	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port+1))
+	address := fmt.Sprintf(":%d", port)
+	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		return err
 	}
+
+	s.muxServer = cmux.New(listener)
+	grpcListener := s.muxServer.MatchWithWriters(cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"))
+	httpListener := s.muxServer.Match(cmux.HTTP1Fast(), cmux.Any())
+	s.echoServer.Listener = httpListener
+
 	go func() {
-		if err := s.grpcServer.Serve(listen); err != nil {
+		if err := s.grpcServer.Serve(grpcListener); err != nil {
 			slog.Error("grpc server listen error", log.BBError(err))
 		}
 	}()
+	go func() {
+		if err := s.echoServer.Start(address); err != nil {
+			slog.Error("http server listen error", log.BBError(err))
+		}
+	}()
+	go func() {
+		if err := s.muxServer.Serve(); err != nil {
+			slog.Error("mux server listen error", log.BBError(err))
+		}
+	}()
 
-	return s.e.Start(fmt.Sprintf(":%d", port))
+	return nil
 }
 
 // Shutdown will shut down the server.
@@ -426,11 +444,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Shutdown echo
-	if s.e != nil {
-		if err := s.e.Shutdown(ctx); err != nil {
-			s.e.Logger.Fatal(err)
-		}
-	}
 	if s.grpcServer != nil {
 		stopped := make(chan struct{})
 		go func() {
@@ -445,6 +458,14 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		case <-stopped:
 			t.Stop()
 		}
+	}
+	if s.echoServer != nil {
+		if err := s.echoServer.Shutdown(ctx); err != nil {
+			s.echoServer.Logger.Fatal(err)
+		}
+	}
+	if s.muxServer != nil {
+		s.muxServer.Close()
 	}
 
 	// Wait for all runners to exit.

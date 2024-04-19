@@ -20,7 +20,8 @@ export const usePreBackupContext = () => {
     if (
       engine !== Engine.MYSQL &&
       engine !== Engine.TIDB &&
-      engine !== Engine.MSSQL
+      engine !== Engine.MSSQL &&
+      engine !== Engine.ORACLE
     ) {
       return false;
     }
@@ -38,6 +39,16 @@ export const usePreBackupContext = () => {
     return database !== undefined && database !== "";
   });
 
+  const archiveDatabase = computed((): string => {
+    const database = databaseForTask(issue.value, task.value);
+    const { engine } = database.instanceEntity;
+    if (engine === Engine.ORACLE) {
+      return "BBDATAARCHIVE";
+    }
+
+    return "bbdataarchive";
+  });
+
   const togglePreBackup = async (on: boolean) => {
     if (isCreating.value) {
       const spec = specForTask(issue.value.planEntity, task.value);
@@ -45,7 +56,7 @@ export const usePreBackupContext = () => {
         const database = databaseForTask(issue.value, task.value);
         if (on) {
           spec.changeDatabaseConfig.preUpdateBackupDetail = {
-            database: database.instance + "/databases/bbdataarchive",
+            database: database.instance + "/databases/" + archiveDatabase.value,
           };
         } else {
           spec.changeDatabaseConfig.preUpdateBackupDetail = undefined;

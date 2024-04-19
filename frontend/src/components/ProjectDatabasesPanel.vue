@@ -24,73 +24,22 @@
         :databases="selectedDatabases"
       />
 
-      <DatabaseV1Table
+      <DatabaseDataTable
         mode="PROJECT"
-        table-class="border"
-        :show-selection-column="true"
-        :show-placeholder="true"
-        :custom-click="isStandaloneMode"
         :database-list="filteredDatabaseList"
-        @select-database="
-          (db: ComposedDatabase) =>
-            toggleDatabasesSelection(
-              [db as ComposedDatabase],
-              !isDatabaseSelected(db)
-            )
-        "
-      >
-        <template #selection-all="{ databaseList: selectedDatabaseList }">
-          <NCheckbox
-            v-if="selectedDatabaseList.length > 0"
-            v-bind="
-              getAllSelectionState(selectedDatabaseList as ComposedDatabase[])
-            "
-            @update:checked="
-              toggleDatabasesSelection(
-                selectedDatabaseList as ComposedDatabase[],
-                $event
-              )
-            "
-          />
-        </template>
-        <template #selection="{ database }">
-          <NCheckbox
-            :checked="isDatabaseSelected(database as ComposedDatabase)"
-            @update:checked="
-              toggleDatabasesSelection([database as ComposedDatabase], $event)
-            "
-          />
-        </template>
-        <template v-if="databaseList.length === 0" #placeholder>
-          <div class="p-8 text-center textinfolabel">
-            <i18n-t
-              v-if="showEmptyActions"
-              keypath="project.overview.no-db-prompt"
-              tag="p"
-            >
-              <template #newDb>
-                <span class="text-main font-bold">{{
-                  $t("quick-action.new-db")
-                }}</span>
-              </template>
-              <template #transferInDb>
-                <span class="text-main font-bold">{{
-                  $t("quick-action.transfer-in-db")
-                }}</span>
-              </template>
-            </i18n-t>
-            <i18n-t v-else keypath="common.no-data" tag="p"></i18n-t>
-          </div>
-        </template>
-      </DatabaseV1Table>
+        :custom-click="true"
+        @row-click="handleDatabaseClick"
+        @update:selected-databases="handleDatabasesSelectionChanged"
+      />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox } from "naive-ui";
 import { reactive, computed } from "vue";
-import { useFilterStore, usePageMode } from "@/store";
+import { useRouter } from "vue-router";
+import DatabaseDataTable from "@/components/DatabaseDataTable";
+import { useDatabaseV1Store, useFilterStore, usePageMode } from "@/store";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import type { SearchParams } from "@/utils";
@@ -99,8 +48,9 @@ import {
   CommonFilterScopeIdList,
   extractEnvironmentResourceName,
   extractInstanceResourceName,
+  databaseV1Url,
 } from "@/utils";
-import { DatabaseV1Table, DatabaseOperations, DatabaseLabelFilter } from "./v2";
+import { DatabaseOperations, DatabaseLabelFilter } from "./v2";
 
 interface LocalState {
   selectedDatabaseIds: Set<string>;
@@ -113,8 +63,10 @@ const props = defineProps<{
   databaseList: ComposedDatabase[];
 }>();
 
+const router = useRouter();
 const pageMode = usePageMode();
 const { filter } = useFilterStore();
+const databaseV1Store = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
   selectedDatabaseIds: new Set(),
@@ -124,8 +76,6 @@ const state = reactive<LocalState>({
     scopes: [],
   },
 });
-
-const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const selectedInstance = computed(() => {
   return (
@@ -187,45 +137,6 @@ const showDatabaseOperations = computed(() => {
   return true;
 });
 
-const showEmptyActions = computed(() => {
-  return pageMode.value === "BUNDLED";
-});
-
-const getAllSelectionState = (
-  databaseList: ComposedDatabase[]
-): { checked: boolean; indeterminate: boolean } => {
-  const checked =
-    state.selectedDatabaseIds.size > 0 &&
-    databaseList.every((db) => state.selectedDatabaseIds.has(db.uid));
-  const indeterminate =
-    !checked &&
-    databaseList.some((db) => state.selectedDatabaseIds.has(db.uid));
-
-  return {
-    checked,
-    indeterminate,
-  };
-};
-
-const toggleDatabasesSelection = (
-  databaseList: ComposedDatabase[],
-  on: boolean
-): void => {
-  if (on) {
-    databaseList.forEach((db) => {
-      state.selectedDatabaseIds.add(db.uid);
-    });
-  } else {
-    databaseList.forEach((db) => {
-      state.selectedDatabaseIds.delete(db.uid);
-    });
-  }
-};
-
-const isDatabaseSelected = (database: ComposedDatabase): boolean => {
-  return state.selectedDatabaseIds.has((database as ComposedDatabase).uid);
-};
-
 const selectedDatabases = computed((): ComposedDatabase[] => {
   return filteredDatabaseList.value.filter((db) =>
     state.selectedDatabaseIds.has(db.uid)
@@ -233,4 +144,23 @@ const selectedDatabases = computed((): ComposedDatabase[] => {
 });
 
 const supportOptionIdList = computed(() => [...CommonFilterScopeIdList]);
+
+const handleDatabasesSelectionChanged = (
+  selectedDatabaseNameList: Set<string>
+): void => {
+  state.selectedDatabaseIds = new Set(
+    Array.from(selectedDatabaseNameList).map(
+      (name) => databaseV1Store.getDatabaseByName(name)?.uid
+    )
+  );
+};
+
+const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
+  const url = databaseV1Url(database);
+  if (event.ctrlKey || event.metaKey) {
+    window.open(url, "_blank");
+  } else {
+    router.push(url);
+  }
+};
 </script>

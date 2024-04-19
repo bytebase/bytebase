@@ -191,8 +191,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 		ctx,
 		instance.Engine,
 		db.DriverConfig{
-			DbBinDir:  dbBinDir,
-			BinlogDir: common.GetBinlogAbsDir(d.dataDir, instance.UID),
+			DbBinDir: dbBinDir,
 		},
 		db.ConnectionConfig{
 			Username: dataSource.Username,

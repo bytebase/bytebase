@@ -61,9 +61,6 @@ type IdentityProviderConfig struct {
 // NewIdentityProvider initializes a new LDAP Identity Provider with the given
 // configuration.
 func NewIdentityProvider(config IdentityProviderConfig) (*IdentityProvider, error) {
-	if config.SecurityProtocol != SecurityProtocolStartTLS && config.SecurityProtocol != SecurityProtocolLDAPS {
-		return nil, errors.Errorf("the field %q must be either %q or %q", "securityProtocol", SecurityProtocolStartTLS, SecurityProtocolLDAPS)
-	}
 	for v, field := range map[string]string{
 		config.Host:                    "host",
 		config.BindDN:                  "bindDn",
