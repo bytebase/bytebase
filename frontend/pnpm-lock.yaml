@@ -406,8 +406,8 @@ importers:
         specifier: 9.10.2
         version: 9.10.2(vue@3.4.21(typescript@5.4.5))
       vue-router:
-        specifier: 4.3.0
-        version: 4.3.0(vue@3.4.21(typescript@5.4.5))
+        specifier: 4.3.2
+        version: 4.3.2(vue@3.4.21(typescript@5.4.5))
       vue-tsc:
         specifier: 2.0.13
         version: 2.0.13(typescript@5.4.5)
@@ -3949,8 +3949,8 @@ packages:
     peerDependencies:
       vue: ^3.0.0
 
-  vue-router@4.3.0:
-    resolution: {integrity: sha512-dqUcs8tUeG+ssgWhcPbjHvazML16Oga5w34uCUmsk7i0BcnskoLGwjpa15fqMr2Fa5JgVBrdL2MEgqz6XZ/6IQ==}
+  vue-router@4.3.2:
+    resolution: {integrity: sha512-hKQJ1vDAZ5LVkKEnHhmm1f9pMiWIBNGF5AwU67PdH7TyXCj/a4hTccuUuYCAMgJK6rO/NVYtQIEN3yL8CECa7Q==}
     peerDependencies:
       vue: ^3.2.0
 
@@ -7924,7 +7924,7 @@ snapshots:
       '@vue/devtools-api': 6.6.1
       vue: 3.4.21(typescript@5.4.5)
 
-  vue-router@4.3.0(vue@3.4.21(typescript@5.4.5)):
+  vue-router@4.3.2(vue@3.4.21(typescript@5.4.5)):
     dependencies:
       '@vue/devtools-api': 6.6.1
       vue: 3.4.21(typescript@5.4.5)
