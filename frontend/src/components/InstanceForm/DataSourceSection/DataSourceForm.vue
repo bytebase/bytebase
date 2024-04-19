@@ -3,8 +3,8 @@
   <template v-if="basicInfo.engine !== Engine.SPANNER">
     <div v-if="basicInfo.engine === Engine.MYSQL" class="mt-2">
       <NRadioGroup
-        class="textlabel"
         v-model:value="dataSource.authenticationType"
+        class="textlabel"
       >
         <NRadio :value="DataSource_AuthenticationType.PASSWORD">
           {{ $t("instance.password-type.password") }}
