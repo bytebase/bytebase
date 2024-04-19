@@ -13,8 +13,8 @@
       :support-option-id-list="supportOptionIdList"
     />
     <InstanceV1Table
-      :allow-selection="true"
-      :show-operation="true"
+      :bordered="false"
+      :loading="!ready"
       :instance-list="filteredInstanceV1List"
       :can-assign-license="subscriptionStore.currentPlan !== PlanType.FREE"
     />
@@ -49,7 +49,7 @@ const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
 const uiStateStore = useUIStateStore();
 const environmentList = useEnvironmentV1List();
-const { instanceList: rawInstanceV1List } = useInstanceV1List();
+const { instanceList: rawInstanceV1List, ready } = useInstanceV1List();
 
 const state = reactive<LocalState>({
   params: {
