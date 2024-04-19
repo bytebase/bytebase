@@ -1322,7 +1322,7 @@
           "template": "Create a service account named {user}, then add it in your Google Cloud SQL as IAM user {user}{'@'}'%'. Grant this user with the needed privileges."
         },
         "postgresql": {
-          "template": "Create a service account named {user}, then add it in your Google Cloud SQL as IAM user {user}@project-id.iam. Grant the user with the needed privileges."
+          "template": "Create a service account named {user}, then add it in your Google Cloud SQL as IAM user {user}{'@'}project-id.iam. Grant the user with the needed privileges."
         }
       },
       "create-user-example": {
