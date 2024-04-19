@@ -886,9 +886,9 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	}
 
 	v1Branch.Schema = string(branch.HeadSchema)
-	v1Branch.SchemaMetadata = convertStoreDatabaseMetadata(branch.Head.Metadata, branch.Head.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
+	v1Branch.SchemaMetadata = convertStoreDatabaseMetadata(branch.Head.Metadata, branch.Head.DatabaseConfig, nil /* filter */)
 	v1Branch.BaselineSchema = string(branch.BaseSchema)
-	v1Branch.BaselineSchemaMetadata = convertStoreDatabaseMetadata(branch.Base.Metadata, branch.Base.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
+	v1Branch.BaselineSchemaMetadata = convertStoreDatabaseMetadata(branch.Base.Metadata, branch.Base.DatabaseConfig, nil /* filter */)
 	return v1Branch, nil
 }
 

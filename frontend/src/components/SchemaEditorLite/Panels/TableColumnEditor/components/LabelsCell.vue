@@ -10,9 +10,9 @@
 <script lang="ts" setup>
 import { PencilIcon } from "lucide-vue-next";
 import { computed } from "vue";
-import DatabaseLabelsCell from "@/components/DatabaseDataTable/cells/DatabaseLabelsCell.vue";
 import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
 import { MiniActionButton } from "@/components/v2";
+import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,

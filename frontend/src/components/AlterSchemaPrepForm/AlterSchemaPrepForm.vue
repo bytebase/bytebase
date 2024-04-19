@@ -150,7 +150,7 @@
                     :placement="'left-start'"
                   />
                 </div>
-                <DatabaseDataTable
+                <DatabaseV1Table
                   mode="ALL_SHORT"
                   :show-sql-editor-button="false"
                   :database-list="selectableDatabaseList"
@@ -277,8 +277,8 @@ import type { PropType } from "vue";
 import { computed, reactive, ref, watch, watchEffect, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import DatabaseDataTable from "@/components/DatabaseDataTable";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
+import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   hasFeature,
