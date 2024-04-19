@@ -34,6 +34,8 @@ func getRequestResource(request any) string {
 	switch r := request.(type) {
 	case *v1pb.QueryRequest:
 		return r.Name
+	case *v1pb.CreateUserRequest:
+		return ""
 	default:
 		return ""
 	}
@@ -54,7 +56,7 @@ func getRequestString(request any) (string, error) {
 		}
 	}()
 	if m == nil {
-		return "{}", nil
+		return "", nil
 	}
 	b, err := protojson.Marshal(m)
 	if err != nil {
@@ -83,7 +85,7 @@ func getResponseString(response any) (string, error) {
 		}
 	}()
 	if m == nil {
-		return "{}", nil
+		return "", nil
 	}
 	b, err := protojson.Marshal(m)
 	if err != nil {
