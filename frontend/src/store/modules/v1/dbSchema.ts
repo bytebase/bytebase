@@ -217,14 +217,12 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   const getOrFetchDatabaseMetadata = async (params: {
     database: string;
     view?: DatabaseMetadataView;
-    filter?: string;
     skipCache?: boolean;
     silent?: boolean;
   }) => {
     const {
       database,
       view = VIEW_BASIC,
-      filter = "",
       skipCache = false,
       silent = false,
     } = params;
@@ -260,13 +258,11 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     // Send a request and cache it.
     console.debug("[getOrFetchDatabaseMetadata]", {
       name: metadataResourceName,
-      filter,
       view,
     });
     const promise = databaseServiceClient.getDatabaseMetadata(
       {
         name: metadataResourceName,
-        filter,
         view,
       },
       {
@@ -275,8 +271,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     );
     setRequestCache(metadataResourceName, view, promise);
     promise.then((res) => {
-      // drop not exist data if we don't have the filter in the request.
-      mergeCache(res, view, !filter);
+      mergeCache(res, view, true);
     });
 
     return promise;
