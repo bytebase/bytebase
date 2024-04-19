@@ -271,7 +271,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     );
     setRequestCache(metadataResourceName, view, promise);
     promise.then((res) => {
-      // drop not exist data if we don't have the filter in the request.
       mergeCache(res, view, true);
     });
 
