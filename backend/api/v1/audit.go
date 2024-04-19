@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"log/slog"
+	"reflect"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
@@ -31,7 +32,7 @@ func NewAuditInterceptor(store *store.Store) *AuditInterceptor {
 }
 
 func getRequestResource(request any) string {
-	if request == nil {
+	if request == nil || reflect.ValueOf(request).IsNil() {
 		return ""
 	}
 	switch r := request.(type) {
@@ -46,7 +47,7 @@ func getRequestResource(request any) string {
 
 func getRequestString(request any) (string, error) {
 	m := func() protoreflect.ProtoMessage {
-		if request == nil {
+		if request == nil || reflect.ValueOf(request).IsNil() {
 			return nil
 		}
 		switch r := request.(type) {
@@ -70,7 +71,7 @@ func getRequestString(request any) (string, error) {
 
 func getResponseString(response any) (string, error) {
 	m := func() protoreflect.ProtoMessage {
-		if response == nil {
+		if response == nil || reflect.ValueOf(response).IsNil() {
 			return nil
 		}
 		switch r := response.(type) {
