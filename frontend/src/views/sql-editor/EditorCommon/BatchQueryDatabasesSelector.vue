@@ -74,6 +74,7 @@
         </div>
         <NDataTable
           size="small"
+          class="batch-query-database-table"
           :checked-row-keys="selectedDatabaseNames"
           :columns="dataTableColumns"
           :data="filteredDatabaseList"
@@ -95,7 +96,14 @@
 
 <script lang="ts" setup>
 import type { DataTableRowKey, DataTableColumn } from "naive-ui";
-import { NPopover, NDivider, NDataTable, NTag, NButton } from "naive-ui";
+import {
+  NPopover,
+  NDivider,
+  NDataTable,
+  NTag,
+  NButton,
+  NPerformantEllipsis,
+} from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
@@ -158,6 +166,7 @@ const dataTableColumns = computed((): DataTableColumn<ComposedDatabase>[] => {
   return [
     {
       type: "selection",
+      width: 40,
     },
     {
       title: t("common.database"),
@@ -187,19 +196,23 @@ const dataTableColumns = computed((): DataTableColumn<ComposedDatabase>[] => {
       title: t("common.instance"),
       key: "instance",
       resizable: true,
-      width: 100,
-      ellipsis: {
-        tooltip: true,
-      },
+      width: 120,
       render(row: ComposedDatabase) {
         return h(
           "div",
-          { class: "flex flex-row justify-start items-center gap-2" },
+          {
+            class:
+              "flex flex-row justify-start items-center gap-1 whitespace-nowrap overflow-hidden",
+          },
           [
             h(InstanceV1EngineIcon, {
               instance: row.instanceEntity,
             }),
-            h("span", {}, [row.effectiveEnvironmentEntity.title]),
+            h(
+              NPerformantEllipsis,
+              { class: "overflow-hidden truncate" },
+              { default: () => row.instanceEntity.title }
+            ),
           ]
         );
       },
@@ -208,7 +221,6 @@ const dataTableColumns = computed((): DataTableColumn<ComposedDatabase>[] => {
       title: t("common.labels"),
       key: "labels",
       resizable: true,
-      width: 100,
       render(row: ComposedDatabase) {
         return h(DatabaseLabelsCell, {
           labels: row.labels,
@@ -254,3 +266,10 @@ watch(
   }
 );
 </script>
+
+<style lang="postcss" scoped>
+.batch-query-database-table :deep(.n-data-table-td),
+.batch-query-database-table :deep(.n-data-table-th) {
+  @apply px-0.5;
+}
+</style>
