@@ -109,6 +109,7 @@ var (
 		// full_table_name appears in the rule stack:
 		// table_sources -> table_source -> table_source_item_joined -> table_source_item -> full_table_name
 		tsqlparser.TSqlParserRULE_full_table_name: true,
+		tsqlparser.TSqlParserRULE_asterisk:        true,
 	}
 )
 
@@ -472,6 +473,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					tableEntries.insertCTEs(c)
 				}
 			}
+		case tsqlparser.TSqlParserRULE_asterisk:
+
 		}
 	}
 
@@ -649,6 +652,66 @@ func (c *Completer) determineTableNameContext() []*objectRefContext {
 	}
 
 	return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */)
+}
+
+func (c *Completer) determineAsteriskContext() []*objectRefContext {
+	tokenIndex := c.scanner.GetIndex()
+	if c.scanner.GetTokenChannel() != antlr.TokenDefaultChannel {
+		// Skip to the next non-hidden token.
+		c.scanner.Forward(true /* skipHidden */)
+	}
+
+	tokenType := c.scanner.GetTokenType()
+	if c.scanner.GetTokenText() != "." && !c.lexer.IsID_(tokenType) && c.scanner.GetTokenText() != "*" {
+		// We are at the end of an incomplete identifier spec. Jump back.
+		// For example, SELECT * FROM db.| WHERE a = 1, the scanner will be seek to the token ' ', and
+		// forwards to WHERE because we skip to the next non-hidden token in the above code.
+		// Also, for SELECT * FROM |, the scanner will be backward to the token 'FROM'.
+		c.scanner.Backward(true /* skipHidden */)
+	}
+
+	if tokenIndex > 0 {
+		// Go backward until we hit a non-identifier token.
+		var count int
+		for {
+			var curAsterisk bool
+			if count == 0 {
+				if c.scanner.GetTokenText() == "*" && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "." {
+					curAsterisk = true
+				}
+			}
+			count++
+			curID := c.lexer.IsID_(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "."
+			curDOT := c.scanner.GetTokenText() == "." && c.lexer.IsID_(c.scanner.GetPreviousTokenType(false /* skipHidden */))
+			if curID || curDOT || curAsterisk {
+				c.scanner.Backward(true /* skipHidden */)
+				continue
+			}
+			break
+		}
+	}
+
+	// The c.scanner is now on the leading identifier (or dot?) if there's no leading id.
+	var candidates []string
+	var temp string
+	var count int
+	for {
+		count++
+		if c.lexer.IsID_(c.scanner.GetTokenType()) {
+			temp, _ = NormalizeTSQLIdentifierText(c.scanner.GetTokenText())
+			c.scanner.Forward(true /* skipHidden */)
+		}
+		if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
+			return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */)
+		}
+		candidates = append(candidates, temp)
+		c.scanner.Forward(true /* skipHidden */)
+		if count > 3 {
+			break
+		}
+	}
+
+	return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */)
 }
 
 func (c *Completer) determineFullTableNameContext() []*objectRefContext {

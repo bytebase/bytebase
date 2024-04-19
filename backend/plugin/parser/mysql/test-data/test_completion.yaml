@@ -1,3 +1,33 @@
+- input: SELECT |.* FROM t2 t2_alias;
+  want:
+    - text: db
+      type: DATABASE
+      definition: ""
+      comment: ""
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: t2_alias
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: c1
+      type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
+    - text: c2
+      type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
 - input: SELECT * FROM |
   want:
     - text: db
