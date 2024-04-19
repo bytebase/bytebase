@@ -215,6 +215,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			SchemaTenantMode:         schemaTenantMode,
 			ConnectionContext:        connectionContext,
 			AuthenticationPrivateKey: authenticationPrivateKey,
+			AuthenticationType:       dataSource.AuthenticationType,
 		},
 	)
 	if err != nil {

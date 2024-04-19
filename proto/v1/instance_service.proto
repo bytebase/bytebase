@@ -396,6 +396,14 @@ message DataSource {
   string authentication_private_key = 20 [(google.api.field_behavior) = INPUT_ONLY];
 
   DataSourceExternalSecret external_secret = 21;
+
+  enum AuthenticationType {
+    AUTHENTICATION_UNSPECIFIED = 0;
+    PASSWORD = 1;
+    GOOGLE_CLOUD_SQL_IAM = 2;
+  }
+
+  AuthenticationType authentication_type = 22;
 }
 
 enum DataSourceType {

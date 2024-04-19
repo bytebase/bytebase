@@ -175,6 +175,55 @@ func (DataSourceExternalSecret_AppRoleAuthOption_SecretType) EnumDescriptor() ([
 	return file_store_data_source_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
+type DataSourceOptions_AuthenticationType int32
+
+const (
+	DataSourceOptions_AUTHENTICATION_UNSPECIFIED DataSourceOptions_AuthenticationType = 0
+	DataSourceOptions_PASSWORD                   DataSourceOptions_AuthenticationType = 1
+	DataSourceOptions_GOOGLE_CLOUD_SQL_IAM       DataSourceOptions_AuthenticationType = 2
+)
+
+// Enum value maps for DataSourceOptions_AuthenticationType.
+var (
+	DataSourceOptions_AuthenticationType_name = map[int32]string{
+		0: "AUTHENTICATION_UNSPECIFIED",
+		1: "PASSWORD",
+		2: "GOOGLE_CLOUD_SQL_IAM",
+	}
+	DataSourceOptions_AuthenticationType_value = map[string]int32{
+		"AUTHENTICATION_UNSPECIFIED": 0,
+		"PASSWORD":                   1,
+		"GOOGLE_CLOUD_SQL_IAM":       2,
+	}
+)
+
+func (x DataSourceOptions_AuthenticationType) Enum() *DataSourceOptions_AuthenticationType {
+	p := new(DataSourceOptions_AuthenticationType)
+	*p = x
+	return p
+}
+
+func (x DataSourceOptions_AuthenticationType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DataSourceOptions_AuthenticationType) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_data_source_proto_enumTypes[3].Descriptor()
+}
+
+func (DataSourceOptions_AuthenticationType) Type() protoreflect.EnumType {
+	return &file_store_data_source_proto_enumTypes[3]
+}
+
+func (x DataSourceOptions_AuthenticationType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DataSourceOptions_AuthenticationType.Descriptor instead.
+func (DataSourceOptions_AuthenticationType) EnumDescriptor() ([]byte, []int) {
+	return file_store_data_source_proto_rawDescGZIP(), []int{1, 0}
+}
+
 type DataSourceExternalSecret struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -332,8 +381,9 @@ type DataSourceOptions struct {
 	SshObfuscatedPrivateKey string `protobuf:"bytes,9,opt,name=ssh_obfuscated_private_key,json=sshObfuscatedPrivateKey,proto3" json:"ssh_obfuscated_private_key,omitempty"`
 	// PKCS#8 private key in PEM format. If it's empty string, no private key is required.
 	// Used for authentication when connecting to the data source.
-	AuthenticationPrivateKeyObfuscated string                    `protobuf:"bytes,10,opt,name=authentication_private_key_obfuscated,json=authenticationPrivateKeyObfuscated,proto3" json:"authentication_private_key_obfuscated,omitempty"`
-	ExternalSecret                     *DataSourceExternalSecret `protobuf:"bytes,11,opt,name=external_secret,json=externalSecret,proto3" json:"external_secret,omitempty"`
+	AuthenticationPrivateKeyObfuscated string                               `protobuf:"bytes,10,opt,name=authentication_private_key_obfuscated,json=authenticationPrivateKeyObfuscated,proto3" json:"authentication_private_key_obfuscated,omitempty"`
+	ExternalSecret                     *DataSourceExternalSecret            `protobuf:"bytes,11,opt,name=external_secret,json=externalSecret,proto3" json:"external_secret,omitempty"`
+	AuthenticationType                 DataSourceOptions_AuthenticationType `protobuf:"varint,12,opt,name=authentication_type,json=authenticationType,proto3,enum=bytebase.store.DataSourceOptions_AuthenticationType" json:"authentication_type,omitempty"`
 }
 
 func (x *DataSourceOptions) Reset() {
@@ -443,6 +493,13 @@ func (x *DataSourceOptions) GetExternalSecret() *DataSourceExternalSecret {
 		return x.ExternalSecret
 	}
 	return nil
+}
+
+func (x *DataSourceOptions) GetAuthenticationType() DataSourceOptions_AuthenticationType {
+	if x != nil {
+		return x.AuthenticationType
+	}
+	return DataSourceOptions_AUTHENTICATION_UNSPECIFIED
 }
 
 type DataSourceExternalSecret_AppRoleAuthOption struct {
@@ -579,7 +636,7 @@ var file_store_data_source_proto_rawDesc = []byte{
 	0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12,
 	0x09, 0x0a, 0x05, 0x54, 0x4f, 0x4b, 0x45, 0x4e, 0x10, 0x01, 0x12, 0x12, 0x0a, 0x0e, 0x56, 0x41,
 	0x55, 0x4c, 0x54, 0x5f, 0x41, 0x50, 0x50, 0x5f, 0x52, 0x4f, 0x4c, 0x45, 0x10, 0x02, 0x42, 0x0d,
-	0x0a, 0x0b, 0x61, 0x75, 0x74, 0x68, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0xff, 0x03,
+	0x0a, 0x0b, 0x61, 0x75, 0x74, 0x68, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0xc4, 0x05,
 	0x0a, 0x11, 0x44, 0x61, 0x74, 0x61, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x4f, 0x70, 0x74, 0x69,
 	0x6f, 0x6e, 0x73, 0x12, 0x10, 0x0a, 0x03, 0x73, 0x72, 0x76, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08,
 	0x52, 0x03, 0x73, 0x72, 0x76, 0x12, 0x37, 0x0a, 0x17, 0x61, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74,
@@ -611,9 +668,22 @@ var file_store_data_source_proto_rawDesc = []byte{
 	0x0b, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x28, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
 	0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x53, 0x6f, 0x75, 0x72, 0x63,
 	0x65, 0x45, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x52,
-	0x0e, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x42,
-	0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f,
-	0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x0e, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x12,
+	0x65, 0x0a, 0x13, 0x61, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f,
+	0x6e, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x0c, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x34, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x44, 0x61,
+	0x74, 0x61, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e,
+	0x41, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x54, 0x79,
+	0x70, 0x65, 0x52, 0x12, 0x61, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x54, 0x79, 0x70, 0x65, 0x22, 0x5c, 0x0a, 0x12, 0x41, 0x75, 0x74, 0x68, 0x65, 0x6e,
+	0x74, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x54, 0x79, 0x70, 0x65, 0x12, 0x1e, 0x0a, 0x1a,
+	0x41, 0x55, 0x54, 0x48, 0x45, 0x4e, 0x54, 0x49, 0x43, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x55,
+	0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0c, 0x0a, 0x08,
+	0x50, 0x41, 0x53, 0x53, 0x57, 0x4f, 0x52, 0x44, 0x10, 0x01, 0x12, 0x18, 0x0a, 0x14, 0x47, 0x4f,
+	0x4f, 0x47, 0x4c, 0x45, 0x5f, 0x43, 0x4c, 0x4f, 0x55, 0x44, 0x5f, 0x53, 0x51, 0x4c, 0x5f, 0x49,
+	0x41, 0x4d, 0x10, 0x02, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65,
+	0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var (
@@ -628,27 +698,29 @@ func file_store_data_source_proto_rawDescGZIP() []byte {
 	return file_store_data_source_proto_rawDescData
 }
 
-var file_store_data_source_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_store_data_source_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_store_data_source_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_data_source_proto_goTypes = []interface{}{
 	(DataSourceExternalSecret_SecretType)(0),                   // 0: bytebase.store.DataSourceExternalSecret.SecretType
 	(DataSourceExternalSecret_AuthType)(0),                     // 1: bytebase.store.DataSourceExternalSecret.AuthType
 	(DataSourceExternalSecret_AppRoleAuthOption_SecretType)(0), // 2: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
-	(*DataSourceExternalSecret)(nil),                           // 3: bytebase.store.DataSourceExternalSecret
-	(*DataSourceOptions)(nil),                                  // 4: bytebase.store.DataSourceOptions
-	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 5: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
+	(DataSourceOptions_AuthenticationType)(0),                  // 3: bytebase.store.DataSourceOptions.AuthenticationType
+	(*DataSourceExternalSecret)(nil),                           // 4: bytebase.store.DataSourceExternalSecret
+	(*DataSourceOptions)(nil),                                  // 5: bytebase.store.DataSourceOptions
+	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 6: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
 }
 var file_store_data_source_proto_depIdxs = []int32{
 	0, // 0: bytebase.store.DataSourceExternalSecret.secret_type:type_name -> bytebase.store.DataSourceExternalSecret.SecretType
 	1, // 1: bytebase.store.DataSourceExternalSecret.auth_type:type_name -> bytebase.store.DataSourceExternalSecret.AuthType
-	5, // 2: bytebase.store.DataSourceExternalSecret.app_role:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
-	3, // 3: bytebase.store.DataSourceOptions.external_secret:type_name -> bytebase.store.DataSourceExternalSecret
-	2, // 4: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	6, // 2: bytebase.store.DataSourceExternalSecret.app_role:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
+	4, // 3: bytebase.store.DataSourceOptions.external_secret:type_name -> bytebase.store.DataSourceExternalSecret
+	3, // 4: bytebase.store.DataSourceOptions.authentication_type:type_name -> bytebase.store.DataSourceOptions.AuthenticationType
+	2, // 5: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_store_data_source_proto_init() }
@@ -703,7 +775,7 @@ func file_store_data_source_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_data_source_proto_rawDesc,
-			NumEnums:      3,
+			NumEnums:      4,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,

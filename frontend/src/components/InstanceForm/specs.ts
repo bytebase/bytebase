@@ -1,6 +1,9 @@
 import { computed } from "vue";
 import { Engine } from "@/types/proto/v1/common";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
+import {
+  DataSourceType,
+  DataSource_AuthenticationType,
+} from "@/types/proto/v1/instance_service";
 import { instanceV1HasSSH, instanceV1HasSSL } from "@/utils";
 import { defaultPortForEngine } from "./constants";
 import type { InstanceFormContext } from "./context";

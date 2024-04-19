@@ -8846,6 +8846,9 @@ components:
                          Used for authentication when connecting to the data source.
                 externalSecret:
                     $ref: '#/components/schemas/DataSourceExternalSecret'
+                authenticationType:
+                    type: integer
+                    format: enum
         DataSourceExternalSecret:
             type: object
             properties:

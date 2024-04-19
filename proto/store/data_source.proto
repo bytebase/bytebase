@@ -83,4 +83,12 @@ message DataSourceOptions {
   string authentication_private_key_obfuscated = 10;
 
   DataSourceExternalSecret external_secret = 11;
+
+  enum AuthenticationType {
+    AUTHENTICATION_UNSPECIFIED = 0;
+    PASSWORD = 1;
+    GOOGLE_CLOUD_SQL_IAM = 2;
+  }
+
+  AuthenticationType authentication_type = 12;
 }

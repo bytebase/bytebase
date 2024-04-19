@@ -186,6 +186,9 @@ type ConnectionConfig struct {
 	AuthenticationPrivateKey string
 
 	ConnectionContext ConnectionContext
+
+	// AuthenticationType is for the database connection, we support normal username & password or Google IAM.
+	AuthenticationType storepb.DataSourceOptions_AuthenticationType
 }
 
 // SSHConfig is the configuration for connection over SSH.
