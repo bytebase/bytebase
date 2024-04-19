@@ -44,7 +44,7 @@ import { ProjectV1Name } from "@/components/v2";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
-import type { Mode } from "../DatabaseDataTable.vue";
+import type { Mode } from "../DatabaseV1Table.vue";
 
 const props = withDefaults(
   defineProps<{

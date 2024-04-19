@@ -103,7 +103,7 @@
 import { NCollapse, NCollapseItem, NCheckbox } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { type BBGridColumn, BBGrid } from "@/bbkit";
-import ProjectNameCell from "@/components/DatabaseDataTable/cells/ProjectNameCell.vue";
+import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { useEnvironmentV1List } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";

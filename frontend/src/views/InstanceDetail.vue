@@ -35,7 +35,7 @@
         <InstanceForm class="-mt-2" :instance="instance" />
       </NTabPane>
       <NTabPane name="DATABASES" :tab="$t('common.databases')">
-        <DatabaseDataTable
+        <DatabaseV1Table
           mode="INSTANCE"
           :show-selection="false"
           :database-list="databaseV1List"
@@ -67,10 +67,10 @@ import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
-import DatabaseDataTable from "@/components/DatabaseDataTable";
 import { EngineIcon } from "@/components/Icon";
 import InstanceForm from "@/components/InstanceForm/";
 import { InstanceRoleTable, Drawer } from "@/components/v2";
+import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import {
   pushNotification,
   useDBSchemaV1Store,

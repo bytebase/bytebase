@@ -26,7 +26,7 @@
               :placement="'left-start'"
             />
           </div>
-          <DatabaseDataTable
+          <DatabaseV1Table
             mode="ALL_SHORT"
             :database-list="filteredDatabaseList"
             :show-sql-editor-button="false"
@@ -68,7 +68,7 @@
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
-import DatabaseDataTable from "@/components/DatabaseDataTable";
+import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentUserV1,

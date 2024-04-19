@@ -26,7 +26,7 @@ import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import DatabaseLabelsCell from "@/components/DatabaseDataTable/cells/DatabaseLabelsCell.vue";
+import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { pushNotification, useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
