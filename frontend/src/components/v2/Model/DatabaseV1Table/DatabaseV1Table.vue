@@ -23,8 +23,8 @@ import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
-import { EnvironmentV1Name, InstanceV1Name } from "../v2";
 import { DatabaseNameCell, ProjectNameCell, DatabaseLabelsCell } from "./cells";
 
 interface LocalState {
