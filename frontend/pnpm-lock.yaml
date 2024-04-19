@@ -129,8 +129,8 @@ importers:
         specifier: 5.4.1
         version: 5.4.1
       pev2:
-        specifier: 1.10.0
-        version: 1.10.0(@popperjs/core@2.11.8)(typescript@5.4.5)
+        specifier: 1.11.0
+        version: 1.11.0(@popperjs/core@2.11.8)(typescript@5.4.5)
       pinia:
         specifier: 2.1.7
         version: 2.1.7(typescript@5.4.5)(vue@3.4.21(typescript@5.4.5))
@@ -838,14 +838,6 @@ packages:
 
   '@fortawesome/fontawesome-svg-core@6.5.2':
     resolution: {integrity: sha512-5CdaCBGl8Rh9ohNdxeeTMxIj8oc3KNBgIeLMvJosBMdslK/UnEB8rzyDRrbKdL1kDweqBPo4GT9wvnakHWucZw==}
-    engines: {node: '>=6'}
-
-  '@fortawesome/free-brands-svg-icons@6.5.2':
-    resolution: {integrity: sha512-zi5FNYdmKLnEc0jc0uuHH17kz/hfYTg4Uei0wMGzcoCL/4d3WM3u1VMc0iGGa31HuhV5i7ZK8ZlTCQrHqRHSGQ==}
-    engines: {node: '>=6'}
-
-  '@fortawesome/free-regular-svg-icons@6.5.2':
-    resolution: {integrity: sha512-iabw/f5f8Uy2nTRtJ13XZTS1O5+t+anvlamJ3zJGLEVE2pKsAWhPv2lq01uQlfgCX7VaveT3EVs515cCN9jRbw==}
     engines: {node: '>=6'}
 
   '@fortawesome/free-solid-svg-icons@6.5.2':
@@ -3141,8 +3133,8 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  pev2@1.10.0:
-    resolution: {integrity: sha512-3ua2zrJ5qsCkP/wSmuR2jofJxf6jWAh24Z7uYkfOrCGDxb3aDClXlZ5PoUTwkHyzvTUi4EsMJMtvyHnppQ4NUg==}
+  pev2@1.11.0:
+    resolution: {integrity: sha512-OKsUdUL7JhUQVC9IhpGozXfkeSb3HGvLIth3YoGmKgwTv8UO3/OqU2gfuNjs2NlbArGx4cJYIs/R3NHOTxtu7Q==}
 
   picocolors@1.0.0:
     resolution: {integrity: sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==}
@@ -4612,14 +4604,6 @@ snapshots:
   '@fortawesome/fontawesome-common-types@6.5.2': {}
 
   '@fortawesome/fontawesome-svg-core@6.5.2':
-    dependencies:
-      '@fortawesome/fontawesome-common-types': 6.5.2
-
-  '@fortawesome/free-brands-svg-icons@6.5.2':
-    dependencies:
-      '@fortawesome/fontawesome-common-types': 6.5.2
-
-  '@fortawesome/free-regular-svg-icons@6.5.2':
     dependencies:
       '@fortawesome/fontawesome-common-types': 6.5.2
 
@@ -7046,11 +7030,9 @@ snapshots:
       commander: 10.0.1
       source-map-generator: 0.8.0
 
-  pev2@1.10.0(@popperjs/core@2.11.8)(typescript@5.4.5):
+  pev2@1.11.0(@popperjs/core@2.11.8)(typescript@5.4.5):
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.5.2
-      '@fortawesome/free-brands-svg-icons': 6.5.2
-      '@fortawesome/free-regular-svg-icons': 6.5.2
       '@fortawesome/free-solid-svg-icons': 6.5.2
       '@fortawesome/vue-fontawesome': 3.0.6(@fortawesome/fontawesome-svg-core@6.5.2)(vue@3.4.21(typescript@5.4.5))
       bootstrap: 5.3.3(@popperjs/core@2.11.8)
