@@ -1320,6 +1320,9 @@
         "instance-name-tips": "实例连接名称应为 project-id:region:instance-name。",
         "mysql": {
           "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}'%' 添加到您的 Google Cloud SQL 中。授予此用户所需的权限。"
+        },
+        "postgresql": {
+          "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}project-id.iam 添加到您的 Google Cloud SQL 中。授予用户所需的权限。"
         }
       },
       "create-user-example": {
