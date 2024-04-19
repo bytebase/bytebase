@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
@@ -40,6 +41,9 @@ func getRequestResource(request any) string {
 
 func getRequestString(request any) (string, error) {
 	m := func() protoreflect.ProtoMessage {
+		if request == nil {
+			return nil
+		}
 		switch r := request.(type) {
 		case *v1pb.QueryRequest:
 			return r
@@ -61,6 +65,9 @@ func getRequestString(request any) (string, error) {
 
 func getResponseString(response any) (string, error) {
 	m := func() protoreflect.ProtoMessage {
+		if response == nil {
+			return nil
+		}
 		switch r := response.(type) {
 		case *v1pb.QueryResponse:
 			return nil
@@ -97,7 +104,7 @@ func isAuditMethod(method string) bool {
 }
 
 func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	response, err := handler(ctx, request)
+	response, rerr := handler(ctx, request)
 
 	if err := func() error {
 		if !isAuditMethod(serverInfo.FullMethod) {
@@ -117,6 +124,8 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 			return errors.Errorf("user not found")
 		}
 
+		st, _ := status.FromError(rerr)
+
 		p := &storepb.AuditLog{
 			Method:   serverInfo.FullMethod,
 			Resource: getRequestResource(request),
@@ -124,6 +133,7 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 			User:     common.FormatUserEmail(user.Email),
 			Request:  requestString,
 			Response: responseString,
+			Status:   st.Proto(),
 		}
 
 		if err := in.store.CreateAuditLog(ctx, p); err != nil {
@@ -134,5 +144,5 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 		slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 	}
 
-	return response, err
+	return response, rerr
 }
