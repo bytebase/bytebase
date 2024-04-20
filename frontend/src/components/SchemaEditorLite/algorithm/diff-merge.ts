@@ -1,6 +1,7 @@
 import { cloneDeep, isEqual, pick } from "lodash-es";
 import type { ComposedDatabase } from "@/types";
 import type {
+  FunctionMetadata,
   ProcedureMetadata,
   TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
@@ -60,6 +61,8 @@ export class DiffMerge {
   targetColumnMap = new Map<string, ColumnMetadata>();
   sourceProcedureMap = new Map<string, ProcedureMetadata>();
   targetProcedureMap = new Map<string, ProcedureMetadata>();
+  sourceFunctionMap = new Map<string, FunctionMetadata>();
+  targetFunctionMap = new Map<string, FunctionMetadata>();
   sourceSchemaConfigMap = new Map<string, SchemaConfig>();
   targetSchemaConfigMap = new Map<string, SchemaConfig>();
   sourceTableConfigMap = new Map<string, TableConfig>();
@@ -74,6 +77,7 @@ export class DiffMerge {
     | "mergeTablePartitions"
     | "diffColumn"
     | "mergeProcedures"
+    | "mergeFunctions"
     | "mergeSchemaConfigs"
     | "mergeTableConfigs"
     | "mergeColumnConfigs"
@@ -155,6 +159,17 @@ export class DiffMerge {
             schema: targetSchema,
           }
         );
+        this.mergeFunctions(
+          {
+            database: sourceMetadata,
+            schema: sourceSchema,
+          },
+          {
+            database: targetMetadata,
+            schema: targetSchema,
+          }
+        );
+
         continue;
       }
       // dropped schema
@@ -558,6 +573,60 @@ export class DiffMerge {
       sourceProcedures.length + targetProcedures.length
     );
   }
+  mergeFunctions(source: RichSchemaMetadata, target: RichSchemaMetadata) {
+    const { context, database, sourceFunctionMap, targetFunctionMap } = this;
+    const { schema: sourceSchema } = source;
+    const { schema: targetSchema } = target;
+    const sourceFunctions = sourceSchema.functions;
+    const targetFunctions = targetSchema.functions;
+    this.timer.begin("mergeFunctions");
+    mapFunctions(database, sourceSchema, sourceFunctions, sourceFunctionMap);
+    mapFunctions(database, targetSchema, targetFunctions, targetFunctionMap);
+
+    const mergedFunctions: FunctionMetadata[] = [];
+    for (let i = 0; i < sourceFunctions.length; i++) {
+      const sourceFunction = sourceFunctions[i];
+      const key = keyForResourceName({
+        database: database.name,
+        schema: sourceSchema.name,
+        function: sourceFunction.name,
+      });
+      let targetFunction = targetFunctionMap.get(key);
+      if (targetFunction) {
+        // existed function
+        mergedFunctions.push(targetFunction);
+        if (sourceFunction.definition !== targetFunction.definition) {
+          context.markEditStatusByKey(key, "updated");
+        }
+        continue;
+      }
+      // dropped function
+      // copy the source function to target and mark it as 'dropped'
+      targetFunction = cloneDeep(sourceFunction);
+      mergedFunctions.push(targetFunction);
+      context.markEditStatusByKey(key, "dropped");
+    }
+    for (let i = 0; i < targetFunctions.length; i++) {
+      const targetFunction = targetFunctions[i];
+      const key = keyForResourceName({
+        database: database.name,
+        schema: targetSchema.name,
+        function: targetFunction.name,
+      });
+      const sourceFunction = sourceFunctionMap.get(key);
+      if (!sourceFunction) {
+        // newly created function
+        // mark it as 'created'
+        mergedFunctions.push(targetFunction);
+        context.markEditStatusByKey(key, "created");
+      }
+    }
+    targetSchema.functions = mergedFunctions;
+    this.timer.end(
+      "mergeFunctions",
+      sourceFunctions.length + targetFunctions.length
+    );
+  }
   mergeSchemaConfigs() {
     const {
       context,
@@ -870,6 +939,21 @@ const mapProcedures = (
       procedure: procedure.name,
     });
     map.set(key, procedure);
+  });
+};
+const mapFunctions = (
+  database: ComposedDatabase,
+  schema: SchemaMetadata,
+  functions: FunctionMetadata[],
+  map: Map<string, FunctionMetadata>
+) => {
+  functions.forEach((fn) => {
+    const key = keyForResourceName({
+      database: database.name,
+      schema: schema.name,
+      function: fn.name,
+    });
+    map.set(key, fn);
   });
 };
 const mapSchemaConfigs = (
