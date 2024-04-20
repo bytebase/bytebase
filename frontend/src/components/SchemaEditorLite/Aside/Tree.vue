@@ -275,10 +275,13 @@ const tabWatchKey = computed(() => {
   const tab = currentTab.value;
   if (!tab) return undefined;
   if (tab.type === "database") {
-    return keyForResourceName({
-      database: tab.database.name,
-      schema: tab.selectedSchema,
-    });
+    return keyForResourceName(
+      {
+        database: tab.database.name,
+        schema: tab.selectedSchema,
+      },
+      "table-group"
+    );
   }
   return keyForResource(tab.database, tab.metadata);
 });
@@ -293,8 +296,11 @@ watch(tabWatchKey, () => {
 
     if (tab.type === "database") {
       const { database, selectedSchema: schema } = tab;
-      if (schema) {
-        const key = keyForResourceName({ database: database.name, schema });
+      if (schema !== undefined) {
+        const key = keyForResourceName(
+          { database: database.name, schema },
+          "table-group"
+        );
         const node = treeNodeMap.get(key);
         if (node) {
           expandNodeRecursively(node);
@@ -313,6 +319,18 @@ watch(tabWatchKey, () => {
       }
       const tableKey = keyForResource(database, { schema, table });
       selectedKeysRef.value = [tableKey];
+    } else if (tab.type === "procedure") {
+      const {
+        database,
+        metadata: { schema, procedure },
+      } = tab;
+      const schemaKey = keyForResource(database, { schema });
+      const schemaNode = treeNodeMap.get(schemaKey);
+      if (schemaNode) {
+        expandNodeRecursively(schemaNode);
+      }
+      const procedureKey = keyForResource(database, { schema, procedure });
+      selectedKeysRef.value = [procedureKey];
     }
 
     if (state.shouldRelocateTreeNode) {
@@ -335,20 +353,41 @@ const openTabForTreeNode = (node: TreeNode) => {
       metadata: node.metadata,
     });
     return;
-  } else if (node.type === "table") {
+  }
+  if (node.type === "table") {
     expandNodeRecursively(node);
     addTab({
       type: "table",
       database: node.db,
       metadata: node.metadata,
     });
-  } else if (node.type === "schema" || node.type === "group") {
+  }
+  if (
+    node.type === "schema" ||
+    (node.type === "group" && node.group === "table")
+  ) {
     expandNodeRecursively(node);
     addTab({
       type: "database",
       database: node.db,
       metadata: node.metadata,
       selectedSchema: node.metadata.schema.name,
+    });
+  }
+  if (node.type === "procedure") {
+    expandNodeRecursively(node);
+    addTab({
+      type: "procedure",
+      database: node.db,
+      metadata: node.metadata,
+    });
+  }
+  if (node.type === "function") {
+    expandNodeRecursively(node);
+    addTab({
+      type: "function",
+      database: node.db,
+      metadata: node.metadata,
     });
   }
 
@@ -635,6 +674,9 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         state.shouldRelocateTreeNode = false;
         if (node.type === "group") {
           expandNodeRecursively(node);
+          if (node.group === "table") {
+            openTabForTreeNode(node);
+          }
         } else if (node.type === "instance") {
           expandNodeRecursively(node);
         } else if (node.type === "database") {
