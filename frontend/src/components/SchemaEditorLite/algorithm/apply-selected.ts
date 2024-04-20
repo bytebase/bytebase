@@ -4,6 +4,7 @@ import type {
   ColumnConfig,
   ColumnMetadata,
   DatabaseMetadata,
+  FunctionMetadata,
   ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -20,7 +21,12 @@ import {
 } from "./utils";
 
 export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
-  const { getTableStatus, getColumnStatus, getProcedureStatus } = context;
+  const {
+    getTableStatus,
+    getColumnStatus,
+    getProcedureStatus,
+    getFunctionStatus,
+  } = context;
 
   const applySelectedMetadataEdit = (
     db: ComposedDatabase,
@@ -50,6 +56,17 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
             procedure,
           });
           return [key, { schema, procedure }];
+        });
+      })
+    );
+    const sourceFunctionMap = new Map(
+      source.schemas.flatMap((schema) => {
+        return schema.functions.map((func) => {
+          const key = keyForResource(db, {
+            schema,
+            function: func,
+          });
+          return [key, { schema, function: func }];
         });
       })
     );
@@ -212,7 +229,37 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
         }
       }
       schema.procedures = procedures;
+
+      const functions: FunctionMetadata[] = [];
+      for (let j = 0; j < schema.functions.length; j++) {
+        const func = schema.functions[j];
+        const key = keyForResource(db, { schema, function: func });
+        const picked = selectedObjectKeys.has(key);
+        if (picked) {
+          const status = getFunctionStatus(db, {
+            database: target,
+            schema,
+            function: func,
+          });
+          if (status === "dropped") {
+            // Drop function
+            // Don't collect the dropped function
+            continue;
+          } else {
+            // Collect the edited function
+            functions.push(func);
+          }
+        } else {
+          const sourceFunction = sourceFunctionMap.get(key);
+          if (sourceFunction) {
+            // Collect the original function
+            functions.push(cloneDeep(sourceFunction.function));
+          }
+        }
+      }
+      schema.functions = functions;
     }
+
     target.schemaConfigs = schemaConfigs;
 
     cleanupUnusedConfigs(target);
