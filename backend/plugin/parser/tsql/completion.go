@@ -108,8 +108,9 @@ var (
 		tsqlparser.TSqlParserRULE_built_in_functions: true,
 		// full_table_name appears in the rule stack:
 		// table_sources -> table_source -> table_source_item_joined -> table_source_item -> full_table_name
-		tsqlparser.TSqlParserRULE_full_table_name: true,
-		tsqlparser.TSqlParserRULE_asterisk:        true,
+		tsqlparser.TSqlParserRULE_full_table_name:  true,
+		tsqlparser.TSqlParserRULE_asterisk:         true,
+		tsqlparser.TSqlParserRULE_full_column_name: true,
 	}
 )
 
@@ -474,7 +475,24 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				}
 			}
 		case tsqlparser.TSqlParserRULE_asterisk:
-
+			completionContexts := c.determineAsteriskContext()
+			for _, context := range completionContexts {
+				if context.flags&objectFlagShowDatabase != 0 {
+					databaseEntries.insertDatabases(c, context.linkedServer)
+				}
+				if context.flags&objectFlagShowSchema != 0 {
+					schemaEntries.insertSchemas(c, context.linkedServer, context.database)
+				}
+				if context.flags&objectFlagShowObject != 0 {
+					tableEntries.insertTables(c, context.linkedServer, context.database, context.schema)
+					viewEntries.insertViews(c, context.linkedServer, context.database, context.schema)
+				}
+				if context.linkedServer == "" && context.database == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
+					// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
+					tableEntries.insertCTEs(c)
+				}
+			}
+		case tsqlparser.TSqlParserRULE_full_column_name:
 		}
 	}
 
@@ -652,6 +670,10 @@ func (c *Completer) determineTableNameContext() []*objectRefContext {
 	}
 
 	return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */)
+}
+
+func (c *Completer) determineFullColumnName() []*objectRefContext {
+
 }
 
 func (c *Completer) determineAsteriskContext() []*objectRefContext {

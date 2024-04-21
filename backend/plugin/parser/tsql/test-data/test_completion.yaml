@@ -1,3 +1,34 @@
+- description: Asterisk appearred in select item list
+  input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT |.* FROM MyCTE_01 JOIN dbo.Address ON MyCTE_01.EmployeeID = dbo.Address.EmployeeID
+  want:
+    - text: Company
+      type: DATABASE
+      definition: ""
+      comment: ""
+    - text: School
+      type: DATABASE
+      definition: ""
+      comment: ""
+    - text: MySchema
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: dbo
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: Address
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: Employees
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: MyCTE_01
+      type: TABLE
+      definition: ""
+      comment: ""
 - description: Completion should not consider CTE if no schema specified
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM MySchema.|
   want:
