@@ -166,7 +166,7 @@ type ConnectionConfig struct {
 	// It's only set for Redshift datashare database.
 	ConnectionDatabase string
 	TLSConfig          TLSConfig
-	// only used for Hive.
+	// Only used for Hive.
 	SASLConfig SASLConfig
 	// ReadOnly is only supported for Postgres at the moment.
 	ReadOnly bool

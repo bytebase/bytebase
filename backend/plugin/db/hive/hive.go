@@ -37,7 +37,7 @@ type Driver struct {
 
 var (
 	_          db.Driver = (*Driver)(nil)
-	numMaxConn           = 6
+	numMaxConn           = 5
 )
 
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {

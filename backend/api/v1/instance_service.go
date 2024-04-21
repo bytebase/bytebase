@@ -667,7 +667,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	}
 	// We only support add RO type datasouce to instance now, see more details in instance_service.proto.
 	if request.DataSource.Type != v1pb.DataSourceType_READ_ONLY {
-		return nil, status.Errorf(codes.InvalidArgument, "only support add read-only data source")
+		return nil, status.Errorf(codes.InvalidArgument, "only support adding read-only data source")
 	}
 
 	dataSource, err := s.convertToDataSourceMessage(request.DataSource)
@@ -853,6 +853,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.ExternalSecret = externalSecret
 			patch.ExternalSecret = externalSecret
 			patch.RemoveExternalSecret = externalSecret == nil
+		case "sasl_config":
+			dataSource.SASLConfig = convertToStoreDataSourceSaslConfig(request.DataSource.SaslConfig)
+			patch.SASLConfig = dataSource.SASLConfig
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1190,6 +1193,32 @@ func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExter
 	return secret, nil
 }
 
+// TODO(tommy): add field legality check.
+func convertToStoreDataSourceSaslConfig(saslConfig *v1pb.SASLConfig) *storepb.SASLConfig {
+	var storeSaslConfig *storepb.SASLConfig
+	switch m := saslConfig.Mechanism.(type) {
+	case *v1pb.SASLConfig_KrbConfig:
+		storeSaslConfig.Mechanism = &storepb.SASLConfig_KrbConfig{
+			KrbConfig: &storepb.KerberosConfig{
+				Primary:              m.KrbConfig.Primary,
+				Instance:             m.KrbConfig.Instance,
+				Realm:                m.KrbConfig.Realm,
+				Keytab:               m.KrbConfig.Keytab,
+				KdcHost:              m.KrbConfig.KdcHost,
+				KdcTransportProtocol: m.KrbConfig.KdcTransportProtocol,
+			},
+		}
+	case *v1pb.SASLConfig_PlainConfig:
+		storeSaslConfig.Mechanism = &storepb.SASLConfig_PlainConfig{
+			PlainConfig: &storepb.PlainSASLConfig{
+				Username: m.PlainConfig.Username,
+				Password: m.PlainConfig.Password,
+			},
+		}
+	}
+	return storeSaslConfig
+}
+
 func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource) (*store.DataSourceMessage, error) {
 	dsType, err := convertDataSourceTp(dataSource.Type)
 	if err != nil {
@@ -1199,6 +1228,7 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 	if err != nil {
 		return nil, err
 	}
+	saslConfig := convertToStoreDataSourceSaslConfig(dataSource.SaslConfig)
 
 	return &store.DataSourceMessage{
 		ID:                                 dataSource.Id,
@@ -1222,6 +1252,7 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		SSHObfuscatedPrivateKey:            common.Obfuscate(dataSource.SshPrivateKey, s.secret),
 		AuthenticationPrivateKeyObfuscated: common.Obfuscate(dataSource.AuthenticationPrivateKey, s.secret),
 		ExternalSecret:                     externalSecret,
+		SASLConfig:                         saslConfig,
 	}, nil
 }
 

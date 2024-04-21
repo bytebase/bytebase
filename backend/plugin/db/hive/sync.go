@@ -199,6 +199,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 			}
 		}
 
+		tableMetadata.Engine = "HDFS"
 		tableMetadata.Comment = tabInfo.comment
 		tableMetadata.Columns = tabInfo.colMetadatas
 		tableMetadata.DataSize = int64(tabInfo.totalSize)

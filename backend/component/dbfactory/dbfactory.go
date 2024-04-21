@@ -185,6 +185,21 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 		Password:   sshPassword,
 		PrivateKey: sshPrivateKey,
 	}
+	var dbSaslConfig db.SASLConfig
+	switch t := dataSource.SASLConfig.GetMechanism().(type) {
+	case *storepb.SASLConfig_KrbConfig:
+		dbSaslConfig = &db.KerberosConfig{
+			Primary:  t.KrbConfig.Primary,
+			Instance: t.KrbConfig.Instance,
+			Realm: db.Realm{
+				Name:                 t.KrbConfig.Realm,
+				KDCHost:              t.KrbConfig.KdcHost,
+				KDCTransportProtocol: t.KrbConfig.KdcTransportProtocol,
+			},
+		}
+	case *storepb.SASLConfig_PlainConfig:
+		dbSaslConfig = &db.PlainSASLConfig{}
+	}
 	connectionContext.InstanceID = instance.ResourceID
 	connectionContext.EngineVersion = instance.EngineVersion
 	driver, err := db.Open(
@@ -214,6 +229,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			SchemaTenantMode:         schemaTenantMode,
 			ConnectionContext:        connectionContext,
 			AuthenticationPrivateKey: authenticationPrivateKey,
+			SASLConfig:               dbSaslConfig,
 		},
 	)
 	if err != nil {
