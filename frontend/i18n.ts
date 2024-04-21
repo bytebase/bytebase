@@ -37,6 +37,9 @@ async function translateText(
   text: string,
   targetLang: string
 ): Promise<string> {
+  // Replace all templates like `{user}` in the text before translation.
+  // For example, "创建用户 {user}，密码 {password}" will be formatted to "创建用户 {0}，密码 {1}"
+  // This can avoid translation for the template text in mistake.
   const matches = text.match(/\{.+?\}/g);
   const replacements: { source: string; target: string }[] = [];
   let sourceText = text;
