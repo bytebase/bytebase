@@ -94,7 +94,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		statement,
 		database.DatabaseName,
 		schemaName,
-		apiv1.BuildGetDatabaseMetadataFunc(exec.store, instance, database.DatabaseName),
+		apiv1.BuildGetDatabaseMetadataFunc(exec.store, instance),
 		apiv1.BuildListDatabaseNamesFunc(exec.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)

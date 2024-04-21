@@ -365,7 +365,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		statement,
 		database.DatabaseName,
 		schemaName,
-		BuildGetDatabaseMetadataFunc(s.store, instance, database.DatabaseName),
+		BuildGetDatabaseMetadataFunc(s.store, instance),
 		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
@@ -823,7 +823,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		statement,
 		database.DatabaseName,
 		schemaName,
-		BuildGetDatabaseMetadataFunc(s.store, instance, database.DatabaseName),
+		BuildGetDatabaseMetadataFunc(s.store, instance),
 		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
@@ -1006,29 +1006,7 @@ func (s *SQLService) postQuery(ctx context.Context, database *store.DatabaseMess
 	return nil
 }
 
-func BuildGetDatabaseMetadataFunc(storeInstance *store.Store, instance *store.InstanceMessage, connectionDatabase string) base.GetDatabaseMetadataFunc {
-	if instance.Engine == storepb.Engine_ORACLE {
-		return func(ctx context.Context, schemaName string) (string, *model.DatabaseMetadata, error) {
-			database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:   &instance.ResourceID,
-				DatabaseName: &schemaName,
-			})
-			if err != nil {
-				return "", nil, err
-			}
-			if database == nil {
-				return "", nil, nil
-			}
-			databaseMetadata, err := storeInstance.GetDBSchema(ctx, database.UID)
-			if err != nil {
-				return "", nil, err
-			}
-			if databaseMetadata == nil {
-				return "", nil, nil
-			}
-			return schemaName, databaseMetadata.GetDatabaseMetadata(), nil
-		}
-	}
+func BuildGetDatabaseMetadataFunc(storeInstance *store.Store, instance *store.InstanceMessage) base.GetDatabaseMetadataFunc {
 	return func(ctx context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
