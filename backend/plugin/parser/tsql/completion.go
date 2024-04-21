@@ -493,6 +493,23 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				}
 			}
 		case tsqlparser.TSqlParserRULE_full_column_name:
+			completionContexts := c.determineFullColumnName()
+			for _, context := range completionContexts {
+				if context.flags&objectFlagShowDatabase != 0 {
+					databaseEntries.insertDatabases(c, context.linkedServer)
+				}
+				if context.flags&objectFlagShowSchema != 0 {
+					schemaEntries.insertSchemas(c, context.linkedServer, context.database)
+				}
+				if context.flags&objectFlagShowObject != 0 {
+					tableEntries.insertTables(c, context.linkedServer, context.database, context.schema)
+					viewEntries.insertViews(c, context.linkedServer, context.database, context.schema)
+				}
+				if context.linkedServer == "" && context.database == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
+					// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
+					tableEntries.insertCTEs(c)
+				}
+			}
 		}
 	}
 
@@ -641,7 +658,7 @@ func (c *Completer) determineTableNameContext() []*objectRefContext {
 				c.scanner.Forward(true /* skipHidden */)
 			}
 			if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
-				return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */)
+				return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */, false /* includeColumn */)
 			}
 			candidates = append(candidates, temp)
 			c.scanner.Forward(true /* skipHidden */)
@@ -658,7 +675,7 @@ func (c *Completer) determineTableNameContext() []*objectRefContext {
 				c.scanner.Forward(true /* skipHidden */)
 			}
 			if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
-				return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */)
+				return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */, false /* includeColumn */)
 			}
 			candidates = append(candidates, temp)
 			c.scanner.Forward(true /* skipHidden */)
@@ -669,11 +686,65 @@ func (c *Completer) determineTableNameContext() []*objectRefContext {
 		}
 	}
 
-	return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */)
+	return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */, false /* includeColumn */)
 }
 
 func (c *Completer) determineFullColumnName() []*objectRefContext {
+	tokenIndex := c.scanner.GetIndex()
+	if c.scanner.GetTokenChannel() != antlr.TokenDefaultChannel {
+		// Skip to the next non-hidden token.
+		c.scanner.Forward(true /* skipHidden */)
+	}
 
+	tokenType := c.scanner.GetTokenType()
+	if c.scanner.GetTokenText() != "." && !c.lexer.IsID_(tokenType) && c.scanner.GetTokenText() != "DELETED" &&
+		c.scanner.GetTokenText() != "INSERTED" && c.scanner.GetTokenText() != "$" &&
+		c.scanner.GetTokenText() != "IDENTITY" && c.scanner.GetTokenText() != "ROWGUID" {
+		c.scanner.Backward(true /* skipHidden */)
+	}
+
+	if tokenIndex > 0 {
+		// Go backward until we hit a non-identifier token.
+		for {
+			curID := c.lexer.IsID_(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "."
+			curDOT := c.scanner.GetTokenText() == "." && (c.lexer.IsID_(c.scanner.GetPreviousTokenType(false /* skipHidden */)) || c.scanner.GetPreviousTokenText(false /* skipHidden */) == "DELETED" || c.scanner.GetPreviousTokenText(false /* skipHidden */) == "INSERTED")
+			curRowguid := c.scanner.GetTokenText() == "ROWGUID" && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "$"
+			curIdentity := c.scanner.GetTokenText() == "IDENTITY" && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "$"
+			if curID || curDOT || curRowguid || curIdentity {
+				c.scanner.Backward(true /* skipHidden */)
+				continue
+			}
+			break
+		}
+	}
+
+	// The c.scanner is now on the leading identifier (or dot?) if there's no leading id.
+	var candidates []string
+	var temp string
+	var count int
+	for {
+		count++
+		if c.scanner.GetTokenText() == "DELETED" || c.scanner.GetTokenText() == "INSERTED" {
+			candidates = append(candidates, "", "", "", "")
+			count += 3
+			if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
+				return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, true /* includeColumn */)
+			}
+		} else if c.lexer.IsID_(c.scanner.GetTokenType()) {
+			temp, _ = NormalizeTSQLIdentifierText(c.scanner.GetTokenText())
+			c.scanner.Forward(true /* skipHidden */)
+			if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
+				return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, true /* includeColumn */)
+			}
+			candidates = append(candidates, temp)
+		}
+		c.scanner.Forward(true /* skipHidden */)
+		if count > 4 {
+			break
+		}
+	}
+
+	return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, true /* includeColumn */)
 }
 
 func (c *Completer) determineAsteriskContext() []*objectRefContext {
@@ -724,7 +795,7 @@ func (c *Completer) determineAsteriskContext() []*objectRefContext {
 			c.scanner.Forward(true /* skipHidden */)
 		}
 		if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
-			return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */)
+			return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, false /* includeColumn */)
 		}
 		candidates = append(candidates, temp)
 		c.scanner.Forward(true /* skipHidden */)
@@ -733,7 +804,7 @@ func (c *Completer) determineAsteriskContext() []*objectRefContext {
 		}
 	}
 
-	return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */)
+	return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, false /* includeColumn */)
 }
 
 func (c *Completer) determineFullTableNameContext() []*objectRefContext {
@@ -776,7 +847,7 @@ func (c *Completer) determineFullTableNameContext() []*objectRefContext {
 			c.scanner.Forward(true /* skipHidden */)
 		}
 		if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
-			return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */)
+			return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, false /* includeColumn */)
 		}
 		candidates = append(candidates, temp)
 		c.scanner.Forward(true /* skipHidden */)
@@ -785,7 +856,7 @@ func (c *Completer) determineFullTableNameContext() []*objectRefContext {
 		}
 	}
 
-	return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */)
+	return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, false /* includeColumn */)
 }
 
 // deriveObjectRefContextsFromCandidates derives the object reference contexts from the candidates.
@@ -793,10 +864,13 @@ func (c *Completer) determineFullTableNameContext() []*objectRefContext {
 // The size of candidates is the window size in the object reference,
 // for example, if the candidates are ["a", "b", "c"], the size is 3,
 // and objectRefContext would be [linked_server_name: "a", database_name: "b", schema_name: "c", object_name: ""] or[linked_server_name: "", database_name: "a", schema_name: "b", object_name: "c"].
-func deriveObjectRefContextsFromCandidates(candidates []string, ignoredLinkedServer bool) []*objectRefContext {
+func deriveObjectRefContextsFromCandidates(candidates []string, ignoredLinkedServer bool, includeColumn bool) []*objectRefContext {
 	var options []objectRefContextOption
 	if !ignoredLinkedServer {
 		options = append(options, withLinkedServer())
+	}
+	if includeColumn {
+		options = append(options, withColumn())
 	}
 	refCtx := newObjectRefContext(options...)
 	if len(candidates) == 0 {
@@ -817,6 +891,9 @@ func deriveObjectRefContextsFromCandidates(candidates []string, ignoredLinkedSer
 			refCtx.clone().setLinkedServer("").setDatabase("").setSchema(candidates[0]),
 			refCtx.clone().setLinkedServer("").setDatabase("").setSchema("").setObject(candidates[0]),
 		)
+		if includeColumn {
+			results = append(results, refCtx.clone().setLinkedServer("").setDatabase("").setSchema("").setObject("").setColumn(candidates[0]))
+		}
 	case 2:
 		if !ignoredLinkedServer {
 			results = append(results, refCtx.clone().setLinkedServer(candidates[0]).setDatabase(candidates[1]))
@@ -826,6 +903,9 @@ func deriveObjectRefContextsFromCandidates(candidates []string, ignoredLinkedSer
 			refCtx.clone().setLinkedServer("").setDatabase(candidates[0]).setSchema(candidates[1]),
 			refCtx.clone().setLinkedServer("").setDatabase("").setSchema(candidates[0]).setObject(candidates[1]),
 		)
+		if includeColumn {
+			results = append(results, refCtx.clone().setLinkedServer("").setDatabase("").setSchema(candidates[0]).setObject("").setColumn(candidates[1]))
+		}
 	case 3:
 		if !ignoredLinkedServer {
 			results = append(results, refCtx.clone().setLinkedServer(candidates[0]).setDatabase(candidates[1]).setSchema(candidates[2]))
@@ -834,9 +914,19 @@ func deriveObjectRefContextsFromCandidates(candidates []string, ignoredLinkedSer
 			results,
 			refCtx.clone().setLinkedServer("").setDatabase(candidates[0]).setSchema(candidates[1]).setObject(candidates[2]),
 		)
+		if includeColumn {
+			results = append(results, refCtx.clone().setLinkedServer("").setDatabase(candidates[0]).setSchema(candidates[1]).setObject("").setColumn(candidates[2]))
+		}
 	case 4:
 		if !ignoredLinkedServer {
 			results = append(results, refCtx.clone().setLinkedServer(candidates[0]).setDatabase(candidates[1]).setSchema(candidates[2]).setObject(candidates[3]))
+		}
+		if includeColumn {
+			results = append(results, refCtx.clone().setLinkedServer("").setDatabase(candidates[0]).setSchema(candidates[1]).setObject(candidates[2]).setColumn(candidates[3]))
+		}
+	case 5:
+		if includeColumn {
+			results = append(results, refCtx.clone().setLinkedServer(candidates[0]).setDatabase(candidates[1]).setSchema(candidates[2]).setObject(candidates[3]).setColumn(candidates[4]))
 		}
 	}
 
