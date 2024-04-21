@@ -39,7 +39,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
-	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -1166,17 +1165,6 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 	}
 
 	return activity, nil
-}
-
-// getReadOnlyDataSource returns the read-only data source for the instance.
-// If the read-only data source is not defined, we will fallback to admin data source.
-func getReadOnlyDataSource(instance *store.InstanceMessage) *store.DataSourceMessage {
-	dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
-	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
-	if dataSource == nil {
-		dataSource = adminDataSource
-	}
-	return dataSource
 }
 
 func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName string, requestDatabaseName string) (*store.UserMessage, *store.EnvironmentMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
