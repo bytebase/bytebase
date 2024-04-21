@@ -354,23 +354,10 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return nil, err
 	}
 
+	// TODO(d): are we sure about this?
 	schemaName := ""
 	if instance.Engine == storepb.Engine_ORACLE {
-		// For Oracle, there are two modes, schema-based and database-based management.
-		// For schema-based management, also say tenant mode, we need to use the schemaName as the databaseName.
-		// So the default schemaName is the database name.
-		// For database-based management, we need to use the dataSource.Username as the schemaName.
-		// So the default schemaName is the dataSource.Username.
-		isSchemaTenantMode := (instance.Options != nil && instance.Options.GetSchemaTenantMode())
-		if isSchemaTenantMode {
-			schemaName = database.DatabaseName
-		} else {
-			dataSource, _, err := s.dbFactory.GetReadOnlyDatabaseSource(instance, database, "" /* dataSourceID */)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get read only database source: %v", err.Error())
-			}
-			schemaName = dataSource.Username
-		}
+		schemaName = database.DatabaseName
 	}
 
 	spans, err := base.GetQuerySpan(
@@ -824,23 +811,10 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 
+	// TODO(d): are we sure about this?
 	schemaName := ""
 	if instance.Engine == storepb.Engine_ORACLE {
-		// For Oracle, there are two modes, schema-based and database-based management.
-		// For schema-based management, also say tenant mode, we need to use the schemaName as the databaseName.
-		// So the default schemaName is the database name.
-		// For database-based management, we need to use the dataSource.Username as the schemaName.
-		// So the default schemaName is the dataSource.Username.
-		isSchemaTenantMode := (instance.Options != nil && instance.Options.GetSchemaTenantMode())
-		if isSchemaTenantMode {
-			schemaName = database.DatabaseName
-		} else {
-			dataSource, _, err := s.dbFactory.GetReadOnlyDatabaseSource(instance, database, "" /* dataSourceID */)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get read only database source: %v", err.Error())
-			}
-			schemaName = dataSource.Username
-		}
+		schemaName = database.DatabaseName
 	}
 
 	// Get query span.
@@ -1036,18 +1010,9 @@ func (s *SQLService) postQuery(ctx context.Context, database *store.DatabaseMess
 func BuildGetDatabaseMetadataFunc(storeInstance *store.Store, instance *store.InstanceMessage, connectionDatabase string) base.GetDatabaseMetadataFunc {
 	if instance.Engine == storepb.Engine_ORACLE {
 		return func(ctx context.Context, schemaName string) (string, *model.DatabaseMetadata, error) {
-			// There are two modes for Oracle, schema-based and database-based management.
-			// For schema-based management, also say tenant mode, we need to use the schemaName as the databaseName.
-			// For database-based management, we need to use the connectionDatabase as the databaseName.
-			databaseName := connectionDatabase
-			isSchemaTenantMode := (instance.Options != nil && instance.Options.GetSchemaTenantMode())
-			if isSchemaTenantMode {
-				databaseName = schemaName
-			}
-
 			database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 				InstanceID:   &instance.ResourceID,
-				DatabaseName: &databaseName,
+				DatabaseName: &schemaName,
 			})
 			if err != nil {
 				return "", nil, err
@@ -1062,7 +1027,7 @@ func BuildGetDatabaseMetadataFunc(storeInstance *store.Store, instance *store.In
 			if databaseMetadata == nil {
 				return "", nil, nil
 			}
-			return databaseName, databaseMetadata.GetDatabaseMetadata(), nil
+			return schemaName, databaseMetadata.GetDatabaseMetadata(), nil
 		}
 	}
 	return func(ctx context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
@@ -1465,13 +1430,10 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
 	}
 
+	// TODO(d): are we sure about this?
 	currentSchema := ""
 	if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
-		if instance.Options == nil || !instance.Options.SchemaTenantMode {
-			currentSchema = getReadOnlyDataSource(instance).Username
-		} else {
-			currentSchema = database.DatabaseName
-		}
+		currentSchema = database.DatabaseName
 	}
 
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})

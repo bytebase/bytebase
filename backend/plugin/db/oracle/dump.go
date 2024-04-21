@@ -22,23 +22,8 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 	}
 	defer txn.Rollback()
 
-	schemas, err := getSchemas(txn)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get schemas")
-	}
-
-	if len(schemas) == 0 {
-		return "", nil
-	}
-
-	var list []string
-	if driver.schemaTenantMode {
-		list = append(list, driver.databaseName)
-	} else {
-		list = append(list, schemas...)
-	}
-	if err := driver.dumpTxn(ctx, txn, list, out); err != nil {
-		return "", errors.Wrapf(err, "failed to dump schemas")
+	if err := driver.dumpSchemaTxn(ctx, txn, driver.databaseName, out); err != nil {
+		return "", errors.Wrapf(err, "failed to dump database %q", driver.databaseName)
 	}
 
 	if err := txn.Commit(); err != nil {
@@ -47,23 +32,13 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 	return "", nil
 }
 
-func (driver *Driver) dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) error {
-	for _, schema := range schemas {
-		slog.Debug("dump schema", slog.String("schema", schema))
-		if err := driver.dumpSchemaTxn(ctx, txn, schema, out); err != nil {
-			return errors.Wrapf(err, "failed to dump schema %q", schema)
-		}
-	}
-	return nil
-}
-
 func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
 	version, err := parseVersion(driver.connectionCtx.EngineVersion)
 	if err != nil {
 		return err
 	}
 	slog.Debug("dump tables", slog.String("schema", schema))
-	if err := dumpTableTxn(ctx, txn, schema, version, driver.schemaTenantMode, out); err != nil {
+	if err := dumpTableTxn(ctx, txn, schema, version, out); err != nil {
 		return errors.Wrapf(err, "failed to dump tables")
 	}
 	/*
@@ -77,7 +52,7 @@ func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema str
 		}
 	*/
 	slog.Debug("dump indexes", slog.String("schema", schema))
-	if err := dumpIndexTxn(ctx, txn, schema, driver.schemaTenantMode, out); err != nil {
+	if err := dumpIndexTxn(ctx, txn, schema, out); err != nil {
 		return errors.Wrapf(err, "failed to dump indexes")
 	}
 	/*
@@ -93,7 +68,7 @@ func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema str
 	return nil
 }
 
-func assembleTableStatement(tableMap map[string]*tableSchema, schemaTenantMode bool, out io.Writer) error {
+func assembleTableStatement(tableMap map[string]*tableSchema, out io.Writer) error {
 	var tableList []*tableSchema
 	for _, table := range tableMap {
 		switch {
@@ -108,7 +83,7 @@ func assembleTableStatement(tableMap map[string]*tableSchema, schemaTenantMode b
 	})
 
 	for _, table := range tableList {
-		if err := table.assembleStatement(schemaTenantMode, out); err != nil {
+		if err := table.assembleStatement(out); err != nil {
 			return err
 		}
 		if _, err := out.Write([]byte("\n")); err != nil {
@@ -124,17 +99,9 @@ type tableSchema struct {
 	constraints []*mergedConstraintMeta
 }
 
-func (t *tableSchema) assembleStatement(schemaTenantMode bool, out io.Writer) error {
+func (t *tableSchema) assembleStatement(out io.Writer) error {
 	if _, err := out.Write([]byte(`CREATE TABLE "`)); err != nil {
 		return err
-	}
-	if !schemaTenantMode {
-		if _, err := out.Write([]byte(t.meta.Owner.String)); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte(`"."`)); err != nil {
-			return err
-		}
 	}
 	if _, err := out.Write([]byte(t.meta.TableName.String)); err != nil {
 		return err
@@ -797,9 +764,9 @@ type functionMeta struct {
 	Text          sql.NullString
 }
 
-func assembleIndexes(indexes []*mergedIndexMeta, schemaTenantMode bool, out io.Writer) error {
+func assembleIndexes(indexes []*mergedIndexMeta, out io.Writer) error {
 	for _, index := range indexes {
-		if err := assembleIndexStatement(index, schemaTenantMode, out); err != nil {
+		if err := assembleIndexStatement(index, out); err != nil {
 			return err
 		}
 		if _, err := out.Write([]byte("\n;\n\n")); err != nil {
@@ -809,7 +776,7 @@ func assembleIndexes(indexes []*mergedIndexMeta, schemaTenantMode bool, out io.W
 	return nil
 }
 
-func assembleIndexStatement(index *mergedIndexMeta, schemaTenantMode bool, out io.Writer) error {
+func assembleIndexStatement(index *mergedIndexMeta, out io.Writer) error {
 	if _, err := out.Write([]byte(`CREATE`)); err != nil {
 		return err
 	}
@@ -831,15 +798,6 @@ func assembleIndexStatement(index *mergedIndexMeta, schemaTenantMode bool, out i
 		return err
 	}
 
-	if !schemaTenantMode {
-		if _, err := out.Write([]byte(index.Owner.String)); err != nil {
-			return err
-		}
-
-		if _, err := out.Write([]byte(`"."`)); err != nil {
-			return err
-		}
-	}
 	if _, err := out.Write([]byte(index.IndexName.String)); err != nil {
 		return err
 	}
@@ -1720,7 +1678,7 @@ ORDER BY AT.TABLE_OWNER, AT.TABLE_NAME, AT.TRIGGER_NAME, ATC.COLUMN_NAME ASC
 `
 )
 
-func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, version *oracleVersion, schemaTenantMode bool, out io.Writer) error {
+func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, version *oracleVersion, out io.Writer) error {
 	tableMap := make(map[string]*tableSchema)
 	slog.Debug("running dump table query", slog.String("schema", schema))
 	tableRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpTableSQL, schema))
@@ -1953,7 +1911,7 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, version *orac
 		tableMap[constraint.TableName.String].constraints = append(tableMap[constraint.TableName.String].constraints, constraint)
 	}
 
-	return assembleTableStatement(tableMap, schemaTenantMode, out)
+	return assembleTableStatement(tableMap, out)
 }
 
 // nolint
@@ -2060,7 +2018,7 @@ func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Write
 	return nil
 }
 
-func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, schemaTenantMode bool, out io.Writer) error {
+func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
 	indexes := []*indexMeta{}
 	slog.Debug("running dump index query", slog.String("schema", schema))
 	indexRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpIndexSQL, schema))
@@ -2226,7 +2184,7 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, schemaTenantM
 		}
 	}
 
-	return assembleIndexes(mergedIndexList, schemaTenantMode, out)
+	return assembleIndexes(mergedIndexList, out)
 }
 
 // nolint

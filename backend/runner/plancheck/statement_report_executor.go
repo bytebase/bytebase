@@ -13,7 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -136,14 +135,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 
 		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
 	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-		schema := ""
-		if instance.Options == nil || !instance.Options.SchemaTenantMode {
-			adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
-			schema = adminSource.Username
-		} else {
-			schema = database.DatabaseName
-		}
-		return reportForOracle(database.DatabaseName, schema, renderedStatement, dbSchema)
+		return reportForOracle(database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
 	default:
 		return []*storepb.PlanCheckRunResult_Result{
 			{
@@ -293,14 +285,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 
 					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
 				case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-					schema := ""
-					if instance.Options == nil || !instance.Options.SchemaTenantMode {
-						adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
-						schema = adminSource.Username
-					} else {
-						schema = database.DatabaseName
-					}
-					return reportForOracle(database.DatabaseName, schema, renderedStatement, dbSchema)
+					return reportForOracle(database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
 				default:
 					return nil, nil
 				}
