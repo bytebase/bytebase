@@ -5,6 +5,19 @@ import { promises as fs } from "fs";
 // GOOGLE_TRANSLATE_API_KEY=xxxx
 config({ path: "./.env.i18n" });
 
+// Exec script
+// pnpm i18n: will use en-US.json as source file to translate all other files
+// pnpm --source=zh-CN --target=ja-JP,es-ES i18n: specific the source file and target files
+const SOURCE_LANG = process.env.npm_config_source ?? "en-US";
+const TARGET_LANGS = process.env.npm_config_target?.split(".") ?? [
+  "es-ES",
+  "ja-JP",
+  "vi-VN",
+  "zh-CN",
+];
+
+console.log(`source file: ${SOURCE_LANG}, targets: ${TARGET_LANGS.join(", ")}`);
+
 // Replace 'YOUR_API_KEY' with your actual Google Cloud API key
 const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
 const url = `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`;
@@ -18,25 +31,36 @@ type JsonValue =
 type JsonObject = { [key: string]: JsonValue };
 type JsonArray = Array<JsonValue>;
 
-const SOURCE_LANG = "en-US";
-
-const TARGET_LANGS = ["es-ES", "ja-JP", "vi-VN", "zh-CN"];
-
 // Function to translate text using Google Cloud Translation API
+// ref: https://cloud.google.com/translate/docs/basic/translate-text-basic
 async function translateText(
   text: string,
-  targetLang: string,
-  sourceLang: string = "en"
+  targetLang: string
 ): Promise<string> {
+  // Replace all templates like `{user}` in the text before translation.
+  // For example, "创建用户 {user}，密码 {password}" will be formatted to "创建用户 {0}，密码 {1}"
+  // This can avoid translation for the template text in mistake.
+  const matches = text.match(/\{.+?\}/g);
+  const replacements: { source: string; target: string }[] = [];
+  let sourceText = text;
+
+  if (matches) {
+    for (let i = 0; i < matches.length; i++) {
+      const convert = `{${i}}`;
+      replacements.push({ source: matches[i], target: convert });
+      sourceText = sourceText.replace(matches[i], convert);
+    }
+  }
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      q: text,
+      q: sourceText,
       target: targetLang,
-      source: sourceLang,
+      source: SOURCE_LANG.split("-")[0],
       format: "text",
     }),
   });
@@ -49,7 +73,14 @@ async function translateText(
     );
   }
 
-  return data.data.translations[0].translatedText;
+  let translatedText = data.data.translations[0].translatedText;
+  for (const replacement of replacements) {
+    translatedText = translatedText.replace(
+      replacement.target,
+      replacement.source
+    );
+  }
+  return translatedText;
 }
 
 // Function specifically for JsonObject translation
