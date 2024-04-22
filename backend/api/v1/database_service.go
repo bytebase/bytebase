@@ -204,11 +204,11 @@ func getDatabaseFind(filter string) (*store.FindDatabaseMessage, error) {
 	find := &store.FindDatabaseMessage{}
 
 	for _, spec := range filters {
+		if spec.operator != comparatorTypeEqual {
+			return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for filter`)
+		}
 		switch spec.key {
 		case "instance":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "instance" filter`)
-			}
 			instanceID, err := common.GetInstanceID(spec.value)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -217,10 +217,6 @@ func getDatabaseFind(filter string) (*store.FindDatabaseMessage, error) {
 				find.InstanceID = &instanceID
 			}
 		case "project":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "project" filter`)
-			}
-
 			projectID, err := common.GetProjectID(spec.value)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -228,6 +224,8 @@ func getDatabaseFind(filter string) (*store.FindDatabaseMessage, error) {
 			if projectID != "-" {
 				find.ProjectID = &projectID
 			}
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", spec.key)
 		}
 	}
 
@@ -896,9 +894,31 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
 		find.ShowFull = true
 	}
-	if request.Filter != "" {
-		find.ResourcesFilter = &request.Filter
+
+	filters, err := parseFilter(request.Filter)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	for _, expr := range filters {
+		if expr.operator != comparatorTypeEqual {
+			return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for filter`)
+		}
+		switch expr.key {
+		case "source":
+			changeSource := db.MigrationSource(expr.value)
+			find.Source = &changeSource
+		case "type":
+			for _, changeType := range strings.Split(expr.value, " | ") {
+				find.TypeList = append(find.TypeList, db.MigrationType(changeType))
+			}
+		case "table":
+			resourcesFilter := expr.value
+			find.ResourcesFilter = &resourcesFilter
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", expr.key)
+		}
+	}
+
 	changeHistories, err := s.store.ListInstanceChangeHistory(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
