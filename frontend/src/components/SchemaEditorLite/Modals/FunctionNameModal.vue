@@ -99,7 +99,7 @@ const handleConfirmButtonClick = async () => {
       definition: [
         "CREATE FUNCTION `" +
           state.functionName +
-          "`( ... )` RETURNS ... DETERMINISTIC",
+          "` ( ... ) RETURNS ... DETERMINISTIC",
         "BEGIN",
         "  ...",
         "END",

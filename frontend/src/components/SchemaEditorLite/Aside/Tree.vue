@@ -174,6 +174,7 @@ const {
   getTableStatus,
   getColumnStatus,
   getProcedureStatus,
+  getFunctionStatus,
   upsertTableConfig,
   queuePendingScrollToTable,
   queuePendingScrollToColumn,
@@ -523,6 +524,11 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     const { db, metadata } = treeNode;
     additionalClassList.push(getProcedureStatus(db, metadata));
     label = metadata.procedure.name;
+  }
+  if (treeNode.type === "function") {
+    const { db, metadata } = treeNode;
+    additionalClassList.push(getFunctionStatus(db, metadata));
+    label = metadata.function.name;
   }
   return h(
     NPerformantEllipsis,

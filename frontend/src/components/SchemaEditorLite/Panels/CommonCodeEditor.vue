@@ -38,7 +38,7 @@
     </div>
     <MonacoEditor
       v-model:content="state.code"
-      :readonly="readonly || state.unlocked === false"
+      :readonly="!editable"
       :auto-complete-context="{
         instance: db.instance,
         database: db.name,
@@ -51,7 +51,7 @@
 <script setup lang="ts">
 import { XIcon, CheckIcon, SquarePenIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import type { ComposedDatabase } from "@/types";
 import type { EditStatus } from "..";
@@ -75,6 +75,19 @@ const emit = defineEmits<{
 const state = reactive<LocalState>({
   code: props.code,
   unlocked: false,
+});
+
+const editable = computed(() => {
+  if (props.readonly) {
+    return false;
+  }
+  if (props.status === "dropped") {
+    return false;
+  }
+  if (props.status === "created") {
+    return true;
+  }
+  return state.unlocked;
 });
 
 const cancelEdit = () => {
