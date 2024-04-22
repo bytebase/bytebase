@@ -26,18 +26,6 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	tokens := strings.Fields(fullVersion)
 	version := tokens[len(tokens)-1]
 
-	databases, err := driver.syncSchemaTenantModeInstance(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return &db.InstanceMetadata{
-		Version:   version,
-		Databases: databases,
-	}, nil
-}
-
-func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -48,17 +36,21 @@ func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*stor
 	if err != nil {
 		return nil, err
 	}
-
-	var result []*storepb.DatabaseSchemaMetadata
-
+	var databases []*storepb.DatabaseSchemaMetadata
 	for _, schema := range schemas {
-		result = append(result, &storepb.DatabaseSchemaMetadata{
+		databases = append(databases, &storepb.DatabaseSchemaMetadata{
 			Name:        schema,
 			ServiceName: "",
 		})
 	}
+	if err := txn.Commit(); err != nil {
+		return nil, err
+	}
 
-	return result, nil
+	return &db.InstanceMetadata{
+		Version:   version,
+		Databases: databases,
+	}, nil
 }
 
 // SyncDBSchema syncs a single database schema.

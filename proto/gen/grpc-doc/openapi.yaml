@@ -9751,11 +9751,6 @@ components:
         InstanceOptions:
             type: object
             properties:
-                schemaTenantMode:
-                    type: boolean
-                    description: |-
-                        The schema tenant mode is used to determine whether the instance is in schema tenant mode.
-                         For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
                 syncInterval:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string

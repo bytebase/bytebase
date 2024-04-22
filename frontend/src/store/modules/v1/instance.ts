@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, reactive, ref, unref, watch, watchEffect } from "vue";
+import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { instanceRoleServiceClient, instanceServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -10,7 +10,6 @@ import {
   unknownEnvironment,
   unknownInstance,
   UNKNOWN_ID,
-  UNKNOWN_INSTANCE_NAME,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
@@ -237,10 +236,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     batchSyncInstance,
     fetchInstanceList,
     fetchProjectInstanceList,
-    fetchInstanceByName,
     getInstanceByName,
     getOrFetchInstanceByName,
-    fetchInstanceByUID,
     getInstanceByUID,
     getOrFetchInstanceByUID,
     fetchInstanceRoleByName,
@@ -251,28 +248,6 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     deleteDataSource,
   };
 });
-
-export const useInstanceV1ByUID = (uid: MaybeRef<string>) => {
-  const store = useInstanceV1Store();
-  const ready = ref(true);
-  watch(
-    () => unref(uid),
-    (uid) => {
-      if (uid !== String(UNKNOWN_ID)) {
-        ready.value = false;
-        if (store.getInstanceByUID(uid).name === UNKNOWN_INSTANCE_NAME) {
-          store.fetchInstanceByUID(uid).then(() => {
-            ready.value = true;
-          });
-        }
-      }
-    },
-    { immediate: true }
-  );
-
-  const instance = computed(() => store.getInstanceByUID(unref(uid)));
-  return { instance, ready };
-};
 
 export const useInstanceV1List = (
   showDeleted: MaybeRef<boolean> = false,

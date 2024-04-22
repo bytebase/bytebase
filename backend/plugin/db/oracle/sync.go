@@ -46,80 +46,6 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		version = fmt.Sprintf("%s (%s)", version, canonicalVersion)
 	}
 
-	if driver.schemaTenantMode {
-		databases, err := driver.syncSchemaTenantModeInstance(ctx)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to sync schema tenant mode instance")
-		}
-
-		return &db.InstanceMetadata{
-			Version:   version,
-			Databases: databases,
-		}, nil
-	}
-
-	var databases []*storepb.DatabaseSchemaMetadata
-	// sync CDB
-	queryDB := "SELECT name FROM v$database"
-	cdbRows, err := driver.db.QueryContext(ctx, queryDB)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, queryDB)
-	}
-	defer cdbRows.Close()
-
-	for cdbRows.Next() {
-		database := &storepb.DatabaseSchemaMetadata{}
-		if err := cdbRows.Scan(&database.Name); err != nil {
-			return nil, err
-		}
-		databases = append(databases, database)
-	}
-	if err := cdbRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, queryDB)
-	}
-	if err := cdbRows.Close(); err != nil {
-		return nil, errors.Wrapf(err, "failed to close rows")
-	}
-
-	// sync PDBs
-	query := `
-		WITH db AS (
-			SELECT pdb_name FROM dba_pdbs WHERE pdb_name NOT IN ('PDB$SEED') and status = 'NORMAL'
-		)
-		SELECT db.pdb_name, s.name FROM db INNER JOIN v$services s ON db.pdb_name = s.pdb
-	`
-	rows, err := driver.db.QueryContext(ctx, query)
-	if err != nil {
-		// nolint
-		// Failed-open for non-CDB database
-		return &db.InstanceMetadata{
-			Version:   version,
-			Databases: databases,
-		}, nil
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		database := &storepb.DatabaseSchemaMetadata{}
-		if err := rows.Scan(&database.Name, &database.ServiceName); err != nil {
-			return nil, err
-		}
-		databases = append(databases, database)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, errors.Wrapf(err, "failed to close rows")
-	}
-
-	return &db.InstanceMetadata{
-		Version:   version,
-		Databases: databases,
-	}, nil
-}
-
-func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -130,63 +56,26 @@ func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*stor
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
-
-	var result []*storepb.DatabaseSchemaMetadata
-
+	var databases []*storepb.DatabaseSchemaMetadata
 	for _, schema := range schemas {
-		result = append(result, &storepb.DatabaseSchemaMetadata{
+		databases = append(databases, &storepb.DatabaseSchemaMetadata{
 			Name:        schema,
 			ServiceName: "",
 		})
-	}
-
-	return result, nil
-}
-
-// SyncDBSchema syncs a single database schema.
-func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	if driver.schemaTenantMode {
-		return driver.syncSchemaTenantModeDBSchema(ctx)
-	}
-
-	txn, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer txn.Rollback()
-
-	schemaNames, err := getSchemas(txn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
-	}
-	tableMap, err := getTables(txn, "")
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
-	}
-	viewMap, err := getViews(txn, "")
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
 	}
 
-	databaseMetadata := &storepb.DatabaseSchemaMetadata{
-		Name:        driver.databaseName,
-		ServiceName: driver.serviceName,
-	}
-	for _, schemaName := range schemaNames {
-		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-			Name:   schemaName,
-			Tables: tableMap[schemaName],
-			Views:  viewMap[schemaName],
-		})
-	}
-	return databaseMetadata, nil
+	return &db.InstanceMetadata{
+		Version:   version,
+		Databases: databases,
+	}, nil
 }
 
-func (driver *Driver) syncSchemaTenantModeDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+// SyncDBSchema syncs a single database schema.
+func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err

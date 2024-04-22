@@ -104,13 +104,6 @@
             />
           </div>
 
-          <OracleSyncModeInput
-            v-if="basicInfo.engine === Engine.ORACLE"
-            :schema-tenant-mode="basicInfo.options?.schemaTenantMode ?? false"
-            :allow-edit="allowEdit"
-            @update:schema-tenant-mode="changeSyncMode"
-          />
-
           <div class="sm:col-span-3 sm:col-start-1">
             <template v-if="basicInfo.engine !== Engine.SPANNER">
               <label for="host" class="textlabel block">
@@ -422,7 +415,6 @@ import {
 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
-import OracleSyncModeInput from "./OracleSyncModeInput.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
 import type { EditDataSource } from "./common";
@@ -682,12 +674,6 @@ const changeInstanceEngine = (engine: Engine) => {
   basicInfo.value.engine = engine;
 };
 
-const changeSyncMode = (schemaTenantMode: boolean) => {
-  if (!basicInfo.value.options) {
-    basicInfo.value.options = InstanceOptions.fromJSON({});
-  }
-  basicInfo.value.options.schemaTenantMode = schemaTenantMode;
-};
 const changeScanInterval = (duration: Duration | undefined) => {
   if (!basicInfo.value.options) {
     basicInfo.value.options = InstanceOptions.fromPartial({});
@@ -867,12 +853,6 @@ const doUpdate = async () => {
     }
     if (instancePatch.environment !== instance.environment) {
       updateMask.push("environment");
-    }
-    if (
-      instancePatch.options?.schemaTenantMode !==
-      instance.options?.schemaTenantMode
-    ) {
-      updateMask.push("options.schema_tenant_mode");
     }
     if (
       instancePatch.options?.syncInterval?.seconds?.toNumber() !==
