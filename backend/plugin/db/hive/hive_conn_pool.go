@@ -51,7 +51,7 @@ func CreateHiveConnPool(
 	switch t := config.SASLConfig.(type) {
 	// Kerberos.
 	case *db.KerberosConfig:
-		// hiveConfig.Hostname = t.Instance
+		hiveConfig.Hostname = t.Instance
 		hiveConfig.Service = t.Primary
 
 	// Plain.
