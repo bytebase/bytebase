@@ -41,7 +41,7 @@ export const usePreBackupContext = () => {
     return true;
   });
 
-  const allowUpdatePreBackup = computed((): boolean => {
+  const allowPreBackup = computed((): boolean => {
     if (isCreating.value) {
       return true;
     }
@@ -50,11 +50,6 @@ export const usePreBackupContext = () => {
 
     if (user.email === extractUserResourceName(issue.value.creator)) {
       // Allowed to the issue creator.
-      return true;
-    }
-
-    if (user.email === extractUserResourceName(issue.value.assignee)) {
-      // Allowed to the issue assignee.
       return true;
     }
 
@@ -143,7 +138,7 @@ export const usePreBackupContext = () => {
   return {
     showPreBackupSection,
     preBackupEnabled,
-    allowUpdatePreBackup,
+    allowPreBackup,
     togglePreBackup,
   };
 };
