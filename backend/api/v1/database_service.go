@@ -174,6 +174,14 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 	return response, nil
 }
 
+func searchDatabases(ctx context.Context, s *store.Store, iamManager *iam.Manager, find *store.FindDatabaseMessage, permission iam.Permission) ([]*store.DatabaseMessage, error) {
+	databases, err := s.ListDatabases(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return filterDatabasesV2(ctx, s, iamManager, databases, permission)
+}
+
 // ListDatabases lists all databases.
 func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
 	instanceID, err := common.GetInstanceID(request.Parent)
