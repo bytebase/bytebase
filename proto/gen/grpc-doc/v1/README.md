@@ -78,9 +78,12 @@
     - [Instance](#bytebase-v1-Instance)
     - [InstanceOptions](#bytebase-v1-InstanceOptions)
     - [InstanceResource](#bytebase-v1-InstanceResource)
+    - [KerberosConfig](#bytebase-v1-KerberosConfig)
     - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
+    - [PlainSASLConfig](#bytebase-v1-PlainSASLConfig)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
+    - [SASLConfig](#bytebase-v1-SASLConfig)
     - [SearchInstancesRequest](#bytebase-v1-SearchInstancesRequest)
     - [SearchInstancesResponse](#bytebase-v1-SearchInstancesResponse)
     - [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest)
@@ -1574,6 +1577,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
 | external_secret | [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType) |  |  |
+| sasl_config | [SASLConfig](#bytebase-v1-SASLConfig) |  |  |
 
 
 
@@ -1711,6 +1715,26 @@ InstanceOptions is the option for instances.
 
 
 
+<a name="bytebase-v1-KerberosConfig"></a>
+
+### KerberosConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| primary | [string](#string) |  |  |
+| instance | [string](#string) |  |  |
+| realm | [string](#string) |  |  |
+| keytab | [string](#string) |  |  |
+| kdc_host | [string](#string) |  |  |
+| kdc_transport_protocol | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-ListInstancesRequest"></a>
 
 ### ListInstancesRequest
@@ -1747,6 +1771,22 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 
 
+<a name="bytebase-v1-PlainSASLConfig"></a>
+
+### PlainSASLConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| username | [string](#string) |  |  |
+| password | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-RemoveDataSourceRequest"></a>
 
 ### RemoveDataSourceRequest
@@ -1757,6 +1797,22 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
 | data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be removed. |
+
+
+
+
+
+
+<a name="bytebase-v1-SASLConfig"></a>
+
+### SASLConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| krb_config | [KerberosConfig](#bytebase-v1-KerberosConfig) |  |  |
+| plain_config | [PlainSASLConfig](#bytebase-v1-PlainSASLConfig) |  |  |
 
 
 

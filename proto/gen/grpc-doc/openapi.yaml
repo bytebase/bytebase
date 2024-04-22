@@ -8893,6 +8893,8 @@ components:
                 authenticationType:
                     type: integer
                     format: enum
+                saslConfig:
+                    $ref: '#/components/schemas/SASLConfig'
         DataSourceExternalSecret:
             type: object
             properties:
@@ -10077,6 +10079,21 @@ components:
                 principal:
                     type: string
                     description: 'Format: users/hello@world.com'
+        KerberosConfig:
+            type: object
+            properties:
+                primary:
+                    type: string
+                instance:
+                    type: string
+                realm:
+                    type: string
+                keytab:
+                    type: string
+                kdcHost:
+                    type: string
+                kdcTransportProtocol:
+                    type: string
         LDAPIdentityProviderConfig:
             type: object
             properties:
@@ -10763,6 +10780,13 @@ components:
             type: object
             properties:
                 license:
+                    type: string
+        PlainSASLConfig:
+            type: object
+            properties:
+                username:
+                    type: string
+                password:
                     type: string
         Plan:
             type: object
@@ -11501,6 +11525,13 @@ components:
         RunPlanChecksResponse:
             type: object
             properties: {}
+        SASLConfig:
+            type: object
+            properties:
+                krbConfig:
+                    $ref: '#/components/schemas/KerberosConfig'
+                plainConfig:
+                    $ref: '#/components/schemas/PlainSASLConfig'
         SMTPMailDeliverySettingValue:
             type: object
             properties:

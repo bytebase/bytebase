@@ -87,6 +87,9 @@
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
+    - [KerberosConfig](#bytebase-store-KerberosConfig)
+    - [PlainSASLConfig](#bytebase-store-PlainSASLConfig)
+    - [SASLConfig](#bytebase-store-SASLConfig)
   
     - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
     - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
@@ -1498,6 +1501,59 @@ Used internally for obfuscating the page token.
 | authentication_private_key_obfuscated | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
 | external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType) |  |  |
+| sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-KerberosConfig"></a>
+
+### KerberosConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| primary | [string](#string) |  |  |
+| instance | [string](#string) |  |  |
+| realm | [string](#string) |  |  |
+| keytab | [string](#string) |  |  |
+| kdc_host | [string](#string) |  |  |
+| kdc_transport_protocol | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlainSASLConfig"></a>
+
+### PlainSASLConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| username | [string](#string) |  |  |
+| password | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SASLConfig"></a>
+
+### SASLConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| krb_config | [KerberosConfig](#bytebase-store-KerberosConfig) |  |  |
+| plain_config | [PlainSASLConfig](#bytebase-store-PlainSASLConfig) |  |  |
 
 
 

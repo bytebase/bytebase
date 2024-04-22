@@ -511,6 +511,18 @@
                   <a href="#bytebase.store.DataSourceOptions"><span class="badge">M</span>DataSourceOptions</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.KerberosConfig"><span class="badge">M</span>KerberosConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlainSASLConfig"><span class="badge">M</span>PlainSASLConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SASLConfig"><span class="badge">M</span>SASLConfig</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType"><span class="badge">E</span>DataSourceExternalSecret.AppRoleAuthOption.SecretType</a>
@@ -4228,6 +4240,134 @@ Used for authentication when connecting to the data source. </p></td>
                 <tr>
                   <td>authentication_type</td>
                   <td><a href="#bytebase.store.DataSourceOptions.AuthenticationType">DataSourceOptions.AuthenticationType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sasl_config</td>
+                  <td><a href="#bytebase.store.SASLConfig">SASLConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.KerberosConfig">KerberosConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>primary</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>instance</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>realm</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>keytab</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kdc_host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kdc_transport_protocol</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlainSASLConfig">PlainSASLConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SASLConfig">SASLConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>krb_config</td>
+                  <td><a href="#bytebase.store.KerberosConfig">KerberosConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>plain_config</td>
+                  <td><a href="#bytebase.store.PlainSASLConfig">PlainSASLConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
