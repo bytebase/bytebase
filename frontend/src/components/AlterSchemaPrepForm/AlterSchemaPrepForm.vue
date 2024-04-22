@@ -91,13 +91,12 @@
                 />
               </div>
               <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
-                <SelectDatabaseGroupTable
-                  :show-selection="true"
+                <DatabaseGroupDataTable
                   :database-group-list="filteredDatabaseGroupList"
-                  :selected-database-group-name="
-                    state.selectedDatabaseGroupName
+                  :show-edit="false"
+                  @update:selected-database-groups="
+                    handleDatabaseGroupsSelectionChanged
                   "
-                  @update="(name) => selectDatabaseGroup(name, true)"
                 />
               </div>
             </NTabPane>
@@ -171,13 +170,12 @@
                   :placeholder="$t('database.filter-database')"
                   :support-option-id-list="supportOptionIdList"
                 />
-                <SelectDatabaseGroupTable
+                <DatabaseGroupDataTable
                   :database-group-list="filteredDatabaseGroupList"
-                  :selected-database-group-name="
-                    state.selectedDatabaseGroupName
+                  :show-edit="false"
+                  @update:selected-database-groups="
+                    handleDatabaseGroupsSelectionChanged
                   "
-                  :show-selection="true"
-                  @update="(name) => selectDatabaseGroup(name, true)"
                 />
               </div>
             </NTabPane>
@@ -264,7 +262,7 @@
 </template>
 
 <script lang="ts" setup>
-import { uniqBy } from "lodash-es";
+import { head, uniqBy } from "lodash-es";
 import {
   NButton,
   NTabs,
@@ -277,6 +275,7 @@ import type { PropType } from "vue";
 import { computed, reactive, ref, watch, watchEffect, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { DatabaseGroupDataTable } from "@/components/DatabaseGroup";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
@@ -314,7 +313,6 @@ import ProjectStandardView from "./ProjectStandardView.vue";
 import ProjectTenantView from "./ProjectTenantView.vue";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
 import SchemalessDatabaseTable from "./SchemalessDatabaseTable.vue";
-import SelectDatabaseGroupTable from "./SelectDatabaseGroupTable.vue";
 
 type LocalState = {
   label: string;
@@ -637,6 +635,14 @@ const handleDatabasesSelectionChanged = (
       (name) => databaseV1Store.getDatabaseByName(name)?.uid
     )
   );
+};
+
+const handleDatabaseGroupsSelectionChanged = (
+  databaseGroupNames: Set<string>
+): void => {
+  const databaseGroupName = head(Array.from(databaseGroupNames));
+  if (!databaseGroupName) return;
+  selectDatabaseGroup(databaseGroupName, true);
 };
 
 const selectDatabaseGroup = async (

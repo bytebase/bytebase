@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/pkg/errors"
@@ -38,6 +39,8 @@ func getRequestResource(request any) string {
 	switch r := request.(type) {
 	case *v1pb.QueryRequest:
 		return r.Name
+	case *v1pb.ExportRequest:
+		return r.Name
 	case *v1pb.CreateUserRequest:
 		return ""
 	default:
@@ -52,6 +55,11 @@ func getRequestString(request any) (string, error) {
 		}
 		switch r := request.(type) {
 		case *v1pb.QueryRequest:
+			return r
+		case *v1pb.ExportRequest:
+			//nolint:revive
+			r = proto.Clone(r).(*v1pb.ExportRequest)
+			r.Password = ""
 			return r
 		case *v1pb.CreateUserRequest:
 			return r
@@ -76,6 +84,8 @@ func getResponseString(response any) (string, error) {
 		}
 		switch r := response.(type) {
 		case *v1pb.QueryResponse:
+			return nil
+		case *v1pb.ExportResponse:
 			return nil
 		case *v1pb.User:
 			return &v1pb.User{
@@ -102,6 +112,7 @@ func isAuditMethod(method string) bool {
 	switch method {
 	case
 		v1pb.AuthService_CreateUser_FullMethodName,
+		v1pb.SQLService_Export_FullMethodName,
 		v1pb.SQLService_Query_FullMethodName:
 		return true
 	default:

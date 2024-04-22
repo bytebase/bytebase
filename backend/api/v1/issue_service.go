@@ -301,20 +301,9 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		return nil, status.Errorf(codes.Internal, "failed to get project ids and issue types filter, error: %v", err)
 	}
 
-	limit := int(request.PageSize)
-	offset := 0
-	if request.PageToken != "" {
-		var pageToken storepb.PageToken
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-		offset = int(pageToken.Offset)
-	}
-	if limit == 0 {
-		limit = 10
-	}
-	if limit > 1000 {
-		limit = 1000
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	limitPlusOne := limit + 1
 
@@ -368,20 +357,9 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		return nil, status.Errorf(codes.Internal, "failed to get project ids and issue types filter, error: %v", err)
 	}
 
-	limit := int(request.PageSize)
-	offset := 0
-	if request.PageToken != "" {
-		var pageToken storepb.PageToken
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-		offset = int(pageToken.Offset)
-	}
-	if limit == 0 {
-		limit = 10
-	}
-	if limit > 1000 {
-		limit = 1000
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	limitPlusOne := limit + 1
 
@@ -1797,20 +1775,9 @@ func (s *IssueService) ListIssueComments(ctx context.Context, request *v1pb.List
 		return nil, err
 	}
 
-	limit := int(request.PageSize)
-	offset := 0
-	if request.PageToken != "" {
-		var pageToken storepb.PageToken
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-		offset = int(pageToken.Offset)
-	}
-	if limit == 0 {
-		limit = 10
-	}
-	if limit > 1000 {
-		limit = 1000
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	limitPlusOne := limit + 1
 
