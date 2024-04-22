@@ -975,5 +975,5 @@ CREATE TABLE sql_lint_config (
   created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
   updater_id INTEGER NOT NULL REFERENCES principal (id),
   updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-  payload JSONB NOT NULL DEFAULT '{}'
+  config JSONB NOT NULL DEFAULT '{}'
 );
