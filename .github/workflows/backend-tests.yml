@@ -40,7 +40,7 @@ jobs:
         uses: golangci/golangci-lint-action@v4
         with:
           version: v1.57.2
-          args: -j 8 --verbose --timeout 20m --max-same-issues=30 --allow-parallel-runners
+          args: --verbose --timeout 20m --max-same-issues=30 --allow-parallel-runners
           skip-cache: true
       - name: Run all tests
         run: go test -p=8 -tags=mysql -v ./backend/... | tee test.log; exit ${PIPESTATUS[0]}
