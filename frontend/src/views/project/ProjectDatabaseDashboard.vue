@@ -6,7 +6,6 @@
 import { computed } from "vue";
 import ProjectDatabasesPanel from "@/components/ProjectDatabasesPanel.vue";
 import {
-  useSearchDatabaseV1List,
   useDatabaseV1Store,
   useProjectV1Store,
   useCurrentUserV1,
@@ -28,12 +27,6 @@ const project = computed(() => {
     `${projectNamePrefix}${props.projectId}`
   );
 });
-
-useSearchDatabaseV1List(
-  computed(() => ({
-    filter: `project = "${project.value.name}" && instance = instances/-`,
-  }))
-);
 
 const databaseV1List = computed(() => {
   let list = useDatabaseV1Store().databaseListByProject(project.value.name);
