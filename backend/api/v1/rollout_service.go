@@ -1003,6 +1003,42 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				return nil, err
 			}
 
+			// PreUpdateBackupDetail
+			if err := func() error {
+				if task.Type != api.TaskDatabaseDataUpdate {
+					return nil
+				}
+				payload := &api.TaskDatabaseDataUpdatePayload{}
+				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+					return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
+				}
+				config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
+				if !ok {
+					return nil
+				}
+
+				var databaseName *string
+				if config.ChangeDatabaseConfig.PreUpdateBackupDetail == nil {
+					if payload.PreUpdateBackupDetail.Database != "" {
+						emptyValue := ""
+						databaseName = &emptyValue
+					}
+				} else {
+					if config.ChangeDatabaseConfig.PreUpdateBackupDetail.Database != payload.PreUpdateBackupDetail.Database {
+						databaseName = &config.ChangeDatabaseConfig.PreUpdateBackupDetail.Database
+					}
+				}
+				if databaseName != nil {
+					taskPatch.PreUpdateBackupDetail = &api.PreUpdateBackupDetail{
+						Database: *databaseName,
+					}
+					doUpdate = true
+				}
+				return nil
+			}(); err != nil {
+				return nil, err
+			}
+
 			// Sheet
 			if err := func() error {
 				switch task.Type {
