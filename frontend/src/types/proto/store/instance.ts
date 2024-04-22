@@ -8,11 +8,6 @@ export const protobufPackage = "bytebase.store";
 
 /** InstanceOptions is the option for instances. */
 export interface InstanceOptions {
-  /**
-   * The schema tenant mode is used to determine whether the instance is in schema tenant mode.
-   * For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
-   */
-  schemaTenantMode: boolean;
   /** How often the instance is synced. */
   syncInterval:
     | Duration
@@ -35,14 +30,11 @@ export interface InstanceMetadata {
 }
 
 function createBaseInstanceOptions(): InstanceOptions {
-  return { schemaTenantMode: false, syncInterval: undefined, maximumConnections: 0 };
+  return { syncInterval: undefined, maximumConnections: 0 };
 }
 
 export const InstanceOptions = {
   encode(message: InstanceOptions, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.schemaTenantMode === true) {
-      writer.uint32(8).bool(message.schemaTenantMode);
-    }
     if (message.syncInterval !== undefined) {
       Duration.encode(message.syncInterval, writer.uint32(18).fork()).ldelim();
     }
@@ -59,13 +51,6 @@ export const InstanceOptions = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.schemaTenantMode = reader.bool();
-          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -91,7 +76,6 @@ export const InstanceOptions = {
 
   fromJSON(object: any): InstanceOptions {
     return {
-      schemaTenantMode: isSet(object.schemaTenantMode) ? globalThis.Boolean(object.schemaTenantMode) : false,
       syncInterval: isSet(object.syncInterval) ? Duration.fromJSON(object.syncInterval) : undefined,
       maximumConnections: isSet(object.maximumConnections) ? globalThis.Number(object.maximumConnections) : 0,
     };
@@ -99,9 +83,6 @@ export const InstanceOptions = {
 
   toJSON(message: InstanceOptions): unknown {
     const obj: any = {};
-    if (message.schemaTenantMode === true) {
-      obj.schemaTenantMode = message.schemaTenantMode;
-    }
     if (message.syncInterval !== undefined) {
       obj.syncInterval = Duration.toJSON(message.syncInterval);
     }
@@ -116,7 +97,6 @@ export const InstanceOptions = {
   },
   fromPartial(object: DeepPartial<InstanceOptions>): InstanceOptions {
     const message = createBaseInstanceOptions();
-    message.schemaTenantMode = object.schemaTenantMode ?? false;
     message.syncInterval = (object.syncInterval !== undefined && object.syncInterval !== null)
       ? Duration.fromPartial(object.syncInterval)
       : undefined;
