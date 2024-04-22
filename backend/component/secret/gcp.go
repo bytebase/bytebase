@@ -3,6 +3,7 @@ package secret
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 
@@ -45,6 +46,9 @@ func getSecretFromGCP(ctx context.Context, externalSecret *storepb.DataSourceExt
 
 	result, err := client.AccessSecretVersion(ctx, req)
 	if err != nil {
+		if strings.Contains(err.Error(), "NotFound") {
+			return "", errors.Wrapf(err, "cannot found secret %s", externalSecret.SecretName)
+		}
 		return "", errors.Wrapf(err, "failed to get GCP secret %s", externalSecret.SecretName)
 	}
 

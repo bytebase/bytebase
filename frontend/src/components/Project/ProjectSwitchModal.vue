@@ -31,7 +31,7 @@
           <ProjectV1Table
             :project-list="tab.list"
             :current-project="currentProject"
-            class="border"
+            :pagination="false"
             @click="$emit('dismiss')"
           />
         </NTabPane>

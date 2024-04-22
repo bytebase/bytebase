@@ -69,6 +69,9 @@ type FindDatabaseMessage struct {
 
 	// IgnoreCaseSensitive is used to ignore case sensitive when finding database.
 	IgnoreCaseSensitive bool
+
+	Limit  *int
+	Offset *int
 }
 
 // GetDatabaseV2 gets a database.
@@ -510,8 +513,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		where, args = append(where, fmt.Sprintf("db.sync_status = $%d", len(args)+1)), append(args, api.OK)
 	}
 
-	var databaseMessages []*DatabaseMessage
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	query := fmt.Sprintf(`
 		SELECT
 			db.id,
 			project.resource_id AS project_id,
@@ -533,7 +535,16 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		LEFT JOIN project ON db.project_id = project.id
 		LEFT JOIN instance ON db.instance_id = instance.id
 		WHERE %s
-		GROUP BY db.id, project.resource_id, instance.resource_id`, strings.Join(where, " AND ")),
+		GROUP BY db.id, project.resource_id, instance.resource_id`, strings.Join(where, " AND "))
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
+
+	var databaseMessages []*DatabaseMessage
+	rows, err := tx.QueryContext(ctx, query,
 		args...,
 	)
 	if err != nil {

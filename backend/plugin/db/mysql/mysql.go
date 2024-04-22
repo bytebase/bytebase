@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/cloudsqlconn"
 	"github.com/blang/semver/v4"
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -59,42 +60,22 @@ func newDriver(dc db.DriverConfig) db.Driver {
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
-	protocol := "tcp"
-	if strings.HasPrefix(connCfg.Host, "/") {
-		protocol = "unix"
-	}
-
-	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	if connCfg.SSHConfig.Host != "" {
-		sshClient, err := util.GetSSHClient(connCfg.SSHConfig)
+func (driver *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
+	var dsn string
+	if connCfg.AuthenticationType == storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM {
+		connStr, err := getCloudSQLConnection(ctx, connCfg)
 		if err != nil {
 			return nil, err
 		}
-		driver.sshClient = sshClient
-		// Now we register the dialer with the ssh connection as a parameter.
-		mysql.RegisterDialContext("mysql+tcp", func(_ context.Context, addr string) (net.Conn, error) {
-			return sshClient.Dial("tcp", addr)
-		})
-		protocol = "mysql+tcp"
-	}
-
-	// TODO(zp): mysql and mysqlbinlog doesn't support SSL yet. We need to write certs to temp files and load them as CLI flags.
-	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "sql: tls config error")
-	}
-	tlsKey := "storepb.Engine_MYSQL.tls"
-	if tlsConfig != nil {
-		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
-			return nil, errors.Wrap(err, "sql: failed to register tls config")
+		dsn = connStr
+	} else {
+		connStr, err := driver.getMySQLConnection(connCfg)
+		if err != nil {
+			return nil, err
 		}
-		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
-		defer mysql.DeregisterTLSConfig(tlsKey)
-		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
+		dsn = connStr
 	}
 
-	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, connCfg.Port, connCfg.Database, strings.Join(params, "&"))
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
@@ -110,6 +91,58 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.
 	driver.databaseName = connCfg.Database
 
 	return driver, nil
+}
+
+func (driver *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error) {
+	protocol := "tcp"
+	if strings.HasPrefix(connCfg.Host, "/") {
+		protocol = "unix"
+	}
+
+	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
+	if connCfg.SSHConfig.Host != "" {
+		sshClient, err := util.GetSSHClient(connCfg.SSHConfig)
+		if err != nil {
+			return "", err
+		}
+		driver.sshClient = sshClient
+		// Now we register the dialer with the ssh connection as a parameter.
+		mysql.RegisterDialContext("mysql+tcp", func(_ context.Context, addr string) (net.Conn, error) {
+			return sshClient.Dial("tcp", addr)
+		})
+		protocol = "mysql+tcp"
+	}
+
+	// TODO(zp): mysql and mysqlbinlog doesn't support SSL yet. We need to write certs to temp files and load them as CLI flags.
+	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
+	if err != nil {
+		return "", errors.Wrap(err, "sql: tls config error")
+	}
+	tlsKey := "storepb.Engine_MYSQL.tls"
+	if tlsConfig != nil {
+		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
+			return "", errors.Wrap(err, "sql: failed to register tls config")
+		}
+		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
+		defer mysql.DeregisterTLSConfig(tlsKey)
+		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
+	}
+
+	return fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, connCfg.Port, connCfg.Database, strings.Join(params, "&")), nil
+}
+
+func getCloudSQLConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
+	d, err := cloudsqlconn.NewDialer(ctx, cloudsqlconn.WithIAMAuthN())
+	if err != nil {
+		return "", err
+	}
+	mysql.RegisterDialContext("cloudsqlconn",
+		func(ctx context.Context, _ string) (net.Conn, error) {
+			return d.Dial(ctx, connCfg.Host)
+		})
+
+	return fmt.Sprintf("%s:empty@cloudsqlconn(localhost:3306)/%s?parseTime=true",
+		connCfg.Username, connCfg.Database), nil
 }
 
 // Close closes the driver.

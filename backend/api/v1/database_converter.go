@@ -7,62 +7,61 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, requestView v1pb.DatabaseMetadataView, filter *metadataFilter) *v1pb.DatabaseMetadata {
+func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, filter *metadataFilter) *v1pb.DatabaseMetadata {
 	m := &v1pb.DatabaseMetadata{
-		CharacterSet: metadata.GetCharacterSet(),
-		Collation:    metadata.GetCollation(),
+		CharacterSet: metadata.CharacterSet,
+		Collation:    metadata.Collation,
 	}
-	for _, schema := range metadata.GetSchemas() {
+	for _, schema := range metadata.Schemas {
 		if schema == nil {
 			continue
 		}
-		if filter != nil && (schema.GetName() != "" && filter.schema != schema.GetName()) {
+		if filter != nil && (schema.Name != "" && filter.schema != schema.Name) {
 			continue
 		}
 		s := &v1pb.SchemaMetadata{
-			Name: schema.GetName(),
+			Name: schema.Name,
 		}
-		for _, table := range schema.GetTables() {
+		for _, table := range schema.Tables {
 			if table == nil {
 				continue
 			}
 			if filter != nil && filter.table != table.Name {
 				continue
 			}
-			s.Tables = append(s.Tables, convertStoreTableMetadata(table, requestView))
+			s.Tables = append(s.Tables, convertStoreTableMetadata(table))
 		}
-		for _, externalTable := range schema.GetExternalTables() {
+		for _, externalTable := range schema.ExternalTables {
 			if externalTable == nil {
 				continue
 			}
-			s.ExternalTables = append(s.ExternalTables, convertStoreExternalTableMetadata(externalTable, requestView))
+			s.ExternalTables = append(s.ExternalTables, convertStoreExternalTableMetadata(externalTable))
 		}
 		// Only return table for request with a filter.
 		if filter != nil {
 			m.Schemas = append(m.Schemas, s)
 			continue
 		}
-		for _, view := range schema.GetViews() {
+
+		for _, view := range schema.Views {
 			if view == nil {
 				continue
 			}
 			v1View := &v1pb.ViewMetadata{
-				Name: view.GetName(),
+				Name:       view.Name,
+				Definition: view.Definition,
+				Comment:    view.Comment,
 			}
-			if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
-				var dependentColumnList []*v1pb.DependentColumn
-				for _, dependentColumn := range view.GetDependentColumns() {
-					dependentColumnList = append(dependentColumnList, &v1pb.DependentColumn{
-						Schema: dependentColumn.GetSchema(),
-						Table:  dependentColumn.GetTable(),
-						Column: dependentColumn.GetColumn(),
-					})
+			for _, dependentColumn := range view.DependentColumns {
+				if dependentColumn == nil {
+					continue
 				}
-				v1View.Definition = view.GetDefinition()
-				v1View.Comment = view.GetComment()
-				v1View.DependentColumns = dependentColumnList
+				v1View.DependentColumns = append(v1View.DependentColumns, &v1pb.DependentColumn{
+					Schema: dependentColumn.Schema,
+					Table:  dependentColumn.Table,
+					Column: dependentColumn.Column,
+				})
 			}
-
 			s.Views = append(s.Views, v1View)
 		}
 		for _, function := range schema.Functions {
@@ -70,10 +69,8 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, conf
 				continue
 			}
 			v1Func := &v1pb.FunctionMetadata{
-				Name: function.GetName(),
-			}
-			if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
-				v1Func.Definition = function.GetDefinition()
+				Name:       function.Name,
+				Definition: function.Definition,
 			}
 			s.Functions = append(s.Functions, v1Func)
 		}
@@ -82,30 +79,26 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, conf
 				continue
 			}
 			v1Procedure := &v1pb.ProcedureMetadata{
-				Name: procedure.GetName(),
-			}
-			if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
-				v1Procedure.Definition = procedure.GetDefinition()
+				Name:       procedure.Name,
+				Definition: procedure.Definition,
 			}
 			s.Procedures = append(s.Procedures, v1Procedure)
 		}
-		for _, task := range schema.GetTasks() {
+		for _, task := range schema.Tasks {
 			if task == nil {
 				continue
 			}
 			v1Task := &v1pb.TaskMetadata{
-				Name: task.GetName(),
-			}
-			if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
-				v1Task.Id = task.GetId()
-				v1Task.Owner = task.GetOwner()
-				v1Task.Comment = task.GetComment()
-				v1Task.Warehouse = task.GetWarehouse()
-				v1Task.Schedule = task.GetSchedule()
-				v1Task.Predecessors = task.GetPredecessors()
-				v1Task.State = v1pb.TaskMetadata_State(task.GetState())
-				v1Task.Condition = task.GetCondition()
-				v1Task.Definition = task.GetDefinition()
+				Name:         task.Name,
+				Id:           task.Id,
+				Owner:        task.Owner,
+				Comment:      task.Comment,
+				Warehouse:    task.Warehouse,
+				Schedule:     task.Schedule,
+				Predecessors: task.Predecessors,
+				State:        v1pb.TaskMetadata_State(task.State),
+				Condition:    task.Condition,
+				Definition:   task.Definition,
 			}
 			s.Tasks = append(s.Tasks, v1Task)
 		}
@@ -114,55 +107,51 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, conf
 				continue
 			}
 			v1Stream := &v1pb.StreamMetadata{
-				Name: stream.GetName(),
-			}
-			if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
-				v1Stream.TableName = stream.GetTableName()
-				v1Stream.Owner = stream.GetOwner()
-				v1Stream.Comment = stream.GetComment()
-				v1Stream.Type = v1pb.StreamMetadata_Type(stream.GetType())
-				v1Stream.Stale = stream.GetStale()
-				v1Stream.Mode = v1pb.StreamMetadata_Mode(stream.GetMode())
-				v1Stream.Definition = stream.GetDefinition()
+				Name:       stream.Name,
+				TableName:  stream.TableName,
+				Owner:      stream.Owner,
+				Comment:    stream.Comment,
+				Type:       v1pb.StreamMetadata_Type(stream.Type),
+				Stale:      stream.Stale,
+				Mode:       v1pb.StreamMetadata_Mode(stream.Mode),
+				Definition: stream.Definition,
 			}
 			s.Streams = append(s.Streams, v1Stream)
 		}
 		m.Schemas = append(m.Schemas, s)
 	}
-	for _, extension := range metadata.GetExtensions() {
+	for _, extension := range metadata.Extensions {
 		if extension == nil {
 			continue
 		}
 		m.Extensions = append(m.Extensions, &v1pb.ExtensionMetadata{
-			Name:        extension.GetName(),
-			Schema:      extension.GetSchema(),
-			Version:     extension.GetVersion(),
-			Description: extension.GetDescription(),
+			Name:        extension.Name,
+			Schema:      extension.Schema,
+			Version:     extension.Version,
+			Description: extension.Description,
 		})
 	}
 
-	if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
-		databaseConfig := convertStoreDatabaseConfig(config, filter)
-		if databaseConfig != nil {
-			m.SchemaConfigs = databaseConfig.GetSchemaConfigs()
-		}
+	databaseConfig := convertStoreDatabaseConfig(config, filter)
+	if databaseConfig != nil {
+		m.SchemaConfigs = databaseConfig.SchemaConfigs
 	}
 	return m
 }
 
-func convertStoreTableMetadata(table *storepb.TableMetadata, view v1pb.DatabaseMetadataView) *v1pb.TableMetadata {
+func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata {
 	t := &v1pb.TableMetadata{
-		Name:           table.GetName(),
-		Engine:         table.GetEngine(),
-		Collation:      table.GetCollation(),
-		RowCount:       table.GetRowCount(),
-		DataSize:       table.GetDataSize(),
-		IndexSize:      table.GetIndexSize(),
-		DataFree:       table.GetDataFree(),
-		CreateOptions:  table.GetCreateOptions(),
-		Comment:        table.GetComment(),
-		Classification: table.GetClassification(),
-		UserComment:    table.GetUserComment(),
+		Name:           table.Name,
+		Engine:         table.Engine,
+		Collation:      table.Collation,
+		RowCount:       table.RowCount,
+		DataSize:       table.DataSize,
+		IndexSize:      table.IndexSize,
+		DataFree:       table.DataFree,
+		CreateOptions:  table.CreateOptions,
+		Comment:        table.Comment,
+		Classification: table.Classification,
+		UserComment:    table.UserComment,
 	}
 	for _, partition := range table.Partitions {
 		if partition == nil {
@@ -170,18 +159,14 @@ func convertStoreTableMetadata(table *storepb.TableMetadata, view v1pb.DatabaseM
 		}
 		t.Partitions = append(t.Partitions, convertStoreTablePartitionMetadata(partition))
 	}
-	// We only return the table info for basic view.
-	if view != v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
-		return t
-	}
 
-	for _, column := range table.GetColumns() {
+	for _, column := range table.Columns {
 		if column == nil {
 			continue
 		}
 		t.Columns = append(t.Columns, convertStoreColumnMetadata(column))
 	}
-	for _, index := range table.GetIndexes() {
+	for _, index := range table.Indexes {
 		if index == nil {
 			continue
 		}
@@ -197,32 +182,32 @@ func convertStoreTableMetadata(table *storepb.TableMetadata, view v1pb.DatabaseM
 			Definition:  index.Definition,
 		})
 	}
-	for _, foreignKey := range table.GetForeignKeys() {
+	for _, foreignKey := range table.ForeignKeys {
 		if foreignKey == nil {
 			continue
 		}
 		t.ForeignKeys = append(t.ForeignKeys, &v1pb.ForeignKeyMetadata{
-			Name:              foreignKey.GetName(),
-			Columns:           foreignKey.GetColumns(),
-			ReferencedSchema:  foreignKey.GetReferencedSchema(),
-			ReferencedTable:   foreignKey.GetReferencedTable(),
-			ReferencedColumns: foreignKey.GetReferencedColumns(),
-			OnDelete:          foreignKey.GetOnDelete(),
-			OnUpdate:          foreignKey.GetOnUpdate(),
-			MatchType:         foreignKey.GetMatchType(),
+			Name:              foreignKey.Name,
+			Columns:           foreignKey.Columns,
+			ReferencedSchema:  foreignKey.ReferencedSchema,
+			ReferencedTable:   foreignKey.ReferencedTable,
+			ReferencedColumns: foreignKey.ReferencedColumns,
+			OnDelete:          foreignKey.OnDelete,
+			OnUpdate:          foreignKey.OnUpdate,
+			MatchType:         foreignKey.MatchType,
 		})
 	}
 	return t
 }
 
-func convertStoreExternalTableMetadata(externalTable *storepb.ExternalTableMetadata, _ v1pb.DatabaseMetadataView) *v1pb.ExternalTableMetadata {
+func convertStoreExternalTableMetadata(externalTable *storepb.ExternalTableMetadata) *v1pb.ExternalTableMetadata {
 	t := &v1pb.ExternalTableMetadata{
-		Name:                 externalTable.GetName(),
-		ExternalServerName:   externalTable.GetExternalServerName(),
-		ExternalDatabaseName: externalTable.GetExternalDatabaseName(),
+		Name:                 externalTable.Name,
+		ExternalServerName:   externalTable.ExternalServerName,
+		ExternalDatabaseName: externalTable.ExternalDatabaseName,
 	}
 	// Now we'd like to return column info for external table by default.
-	for _, column := range externalTable.GetColumns() {
+	for _, column := range externalTable.Columns {
 		if column == nil {
 			continue
 		}
@@ -258,7 +243,7 @@ func convertStoreTablePartitionMetadata(partition *storepb.TablePartitionMetadat
 	default:
 		metadata.Type = v1pb.TablePartitionMetadata_TYPE_UNSPECIFIED
 	}
-	for _, subpartition := range partition.GetSubpartitions() {
+	for _, subpartition := range partition.Subpartitions {
 		if subpartition == nil {
 			continue
 		}
@@ -269,20 +254,20 @@ func convertStoreTablePartitionMetadata(partition *storepb.TablePartitionMetadat
 
 func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMetadata {
 	metadata := &v1pb.ColumnMetadata{
-		Name:           column.GetName(),
-		Position:       column.GetPosition(),
-		HasDefault:     column.GetDefaultValue() != nil,
-		OnUpdate:       column.GetOnUpdate(),
-		Nullable:       column.GetNullable(),
-		Type:           column.GetType(),
-		CharacterSet:   column.GetCharacterSet(),
-		Collation:      column.GetCollation(),
-		Comment:        column.GetComment(),
-		Classification: column.GetClassification(),
-		UserComment:    column.GetUserComment(),
+		Name:           column.Name,
+		Position:       column.Position,
+		HasDefault:     column.DefaultValue != nil,
+		OnUpdate:       column.OnUpdate,
+		Nullable:       column.Nullable,
+		Type:           column.Type,
+		CharacterSet:   column.CharacterSet,
+		Collation:      column.Collation,
+		Comment:        column.Comment,
+		Classification: column.Classification,
+		UserComment:    column.UserComment,
 	}
 	if metadata.HasDefault {
-		switch value := column.GetDefaultValue().(type) {
+		switch value := column.DefaultValue.(type) {
 		case *storepb.ColumnMetadata_Default:
 			if value.Default == nil {
 				metadata.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
@@ -300,23 +285,23 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 
 func convertStoreDatabaseConfig(config *storepb.DatabaseConfig, filter *metadataFilter) *v1pb.DatabaseConfig {
 	databaseConfig := &v1pb.DatabaseConfig{
-		Name: config.GetName(),
+		Name: config.Name,
 	}
-	for _, schema := range config.GetSchemaConfigs() {
+	for _, schema := range config.SchemaConfigs {
 		if schema == nil {
 			continue
 		}
-		if filter != nil && filter.schema != schema.GetName() {
+		if filter != nil && filter.schema != schema.Name {
 			continue
 		}
 		s := &v1pb.SchemaConfig{
-			Name: schema.GetName(),
+			Name: schema.Name,
 		}
-		for _, table := range schema.GetTableConfigs() {
+		for _, table := range schema.TableConfigs {
 			if table == nil {
 				continue
 			}
-			if filter != nil && filter.table != table.GetName() {
+			if filter != nil && filter.table != table.Name {
 				continue
 			}
 			s.TableConfigs = append(s.TableConfigs, convertStoreTableConfig(table))
@@ -328,9 +313,9 @@ func convertStoreDatabaseConfig(config *storepb.DatabaseConfig, filter *metadata
 
 func convertStoreTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
 	t := &v1pb.TableConfig{
-		Name: table.GetName(),
+		Name: table.Name,
 	}
-	for _, column := range table.GetColumnConfigs() {
+	for _, column := range table.ColumnConfigs {
 		if column == nil {
 			continue
 		}
@@ -341,69 +326,70 @@ func convertStoreTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
 
 func convertStoreColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
 	return &v1pb.ColumnConfig{
-		Name:           column.GetName(),
-		SemanticTypeId: column.GetSemanticTypeId(),
-		Labels:         column.GetLabels(),
+		Name:           column.Name,
+		SemanticTypeId: column.SemanticTypeId,
+		Labels:         column.Labels,
 	}
 }
 
 func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseConfig) {
 	m := &storepb.DatabaseSchemaMetadata{
-		CharacterSet: metadata.GetCharacterSet(),
-		Collation:    metadata.GetCollation(),
+		CharacterSet: metadata.CharacterSet,
+		Collation:    metadata.Collation,
 	}
-	for _, schema := range metadata.GetSchemas() {
+	for _, schema := range metadata.Schemas {
 		if schema == nil {
 			continue
 		}
 		s := &storepb.SchemaMetadata{
-			Name: schema.GetName(),
+			Name: schema.Name,
 		}
-		for _, table := range schema.GetTables() {
+		for _, table := range schema.Tables {
 			if table == nil {
 				continue
 			}
 			s.Tables = append(s.Tables, convertV1TableMetadata(table))
 		}
-		for _, view := range schema.GetViews() {
+		for _, view := range schema.Views {
 			if view == nil {
 				continue
 			}
 			storeView := &storepb.ViewMetadata{
-				Name: view.GetName(),
+				Name:       view.Name,
+				Definition: view.Definition,
+				Comment:    view.Comment,
 			}
-			var dependentColumnList []*storepb.DependentColumn
-			for _, dependentColumn := range view.GetDependentColumns() {
-				dependentColumnList = append(dependentColumnList, &storepb.DependentColumn{
-					Schema: dependentColumn.GetSchema(),
-					Table:  dependentColumn.GetTable(),
-					Column: dependentColumn.GetColumn(),
-				})
+			for _, dependentColumn := range view.DependentColumns {
+				storeView.DependentColumns = append(storeView.DependentColumns,
+					&storepb.DependentColumn{
+						Schema: dependentColumn.Schema,
+						Table:  dependentColumn.Table,
+						Column: dependentColumn.Column,
+					})
 			}
-			storeView.Definition = view.GetDefinition()
-			storeView.Comment = view.GetComment()
-			storeView.DependentColumns = dependentColumnList
 
 			s.Views = append(s.Views, storeView)
 		}
-		for _, materializedView := range schema.GetMaterializedViews() {
+		for _, materializedView := range schema.MaterializedViews {
 			if materializedView == nil {
 				continue
 			}
 			storeMaterializedView := &storepb.MaterializedViewMetadata{
-				Name: materializedView.GetName(),
+				Name:       materializedView.Name,
+				Definition: materializedView.Definition,
+				Comment:    materializedView.Comment,
 			}
-			var dependentColumnList []*storepb.DependentColumn
-			for _, dependentColumn := range materializedView.GetDependentColumns() {
-				dependentColumnList = append(dependentColumnList, &storepb.DependentColumn{
-					Schema: dependentColumn.GetSchema(),
-					Table:  dependentColumn.GetTable(),
-					Column: dependentColumn.GetColumn(),
-				})
+			for _, dependentColumn := range materializedView.DependentColumns {
+				if dependentColumn == nil {
+					continue
+				}
+				storeMaterializedView.DependentColumns = append(storeMaterializedView.DependentColumns,
+					&storepb.DependentColumn{
+						Schema: dependentColumn.Schema,
+						Table:  dependentColumn.Table,
+						Column: dependentColumn.Column,
+					})
 			}
-			storeMaterializedView.Definition = materializedView.GetDefinition()
-			storeMaterializedView.Comment = materializedView.GetComment()
-			storeMaterializedView.DependentColumns = dependentColumnList
 
 			s.MaterializedViews = append(s.MaterializedViews, storeMaterializedView)
 		}
@@ -412,36 +398,36 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				continue
 			}
 			storeFunc := &storepb.FunctionMetadata{
-				Name:       function.GetName(),
-				Definition: function.GetDefinition(),
+				Name:       function.Name,
+				Definition: function.Definition,
 			}
 			s.Functions = append(s.Functions, storeFunc)
 		}
-		for _, procedure := range schema.GetProcedures() {
+		for _, procedure := range schema.Procedures {
 			if procedure == nil {
 				continue
 			}
 			storeProcedure := &storepb.ProcedureMetadata{
-				Name:       procedure.GetName(),
-				Definition: procedure.GetDefinition(),
+				Name:       procedure.Name,
+				Definition: procedure.Definition,
 			}
 			s.Procedures = append(s.Procedures, storeProcedure)
 		}
-		for _, task := range schema.GetTasks() {
+		for _, task := range schema.Tasks {
 			if task == nil {
 				continue
 			}
 			storeTask := &storepb.TaskMetadata{
-				Name:         task.GetName(),
-				Id:           task.GetId(),
-				Owner:        task.GetOwner(),
-				Comment:      task.GetComment(),
-				Warehouse:    task.GetWarehouse(),
-				Schedule:     task.GetSchedule(),
-				Predecessors: task.GetPredecessors(),
-				State:        storepb.TaskMetadata_State(task.GetState()),
-				Condition:    task.GetCondition(),
-				Definition:   task.GetDefinition(),
+				Name:         task.Name,
+				Id:           task.Id,
+				Owner:        task.Owner,
+				Comment:      task.Comment,
+				Warehouse:    task.Warehouse,
+				Schedule:     task.Schedule,
+				Predecessors: task.Predecessors,
+				State:        storepb.TaskMetadata_State(task.State),
+				Condition:    task.Condition,
+				Definition:   task.Definition,
 			}
 			s.Tasks = append(s.Tasks, storeTask)
 		}
@@ -450,50 +436,52 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				continue
 			}
 			storeStream := &storepb.StreamMetadata{
-				Name:       stream.GetName(),
-				TableName:  stream.GetTableName(),
-				Owner:      stream.GetOwner(),
-				Comment:    stream.GetComment(),
-				Type:       storepb.StreamMetadata_Type(stream.GetType()),
-				Stale:      stream.GetStale(),
-				Mode:       storepb.StreamMetadata_Mode(stream.GetMode()),
-				Definition: stream.GetDefinition(),
+				Name:       stream.Name,
+				TableName:  stream.TableName,
+				Owner:      stream.Owner,
+				Comment:    stream.Comment,
+				Type:       storepb.StreamMetadata_Type(stream.Type),
+				Stale:      stream.Stale,
+				Mode:       storepb.StreamMetadata_Mode(stream.Mode),
+				Definition: stream.Definition,
 			}
 			s.Streams = append(s.Streams, storeStream)
 		}
 		m.Schemas = append(m.Schemas, s)
 	}
-	for _, extension := range metadata.GetExtensions() {
+	for _, extension := range metadata.Extensions {
 		if extension == nil {
 			continue
 		}
 		m.Extensions = append(m.Extensions, &storepb.ExtensionMetadata{
-			Name:        extension.GetName(),
-			Schema:      extension.GetSchema(),
-			Version:     extension.GetVersion(),
-			Description: extension.GetDescription(),
+			Name:        extension.Name,
+			Schema:      extension.Schema,
+			Version:     extension.Version,
+			Description: extension.Description,
 		})
 	}
 
-	databaseConfig := convertV1DatabaseConfig(&v1pb.DatabaseConfig{
-		SchemaConfigs: metadata.GetSchemaConfigs(),
-	})
+	databaseConfig := convertV1DatabaseConfig(
+		&v1pb.DatabaseConfig{
+			SchemaConfigs: metadata.SchemaConfigs,
+		},
+	)
 	return m, databaseConfig
 }
 
 func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 	t := &storepb.TableMetadata{
-		Name:           table.GetName(),
-		Engine:         table.GetEngine(),
-		Collation:      table.GetCollation(),
-		RowCount:       table.GetRowCount(),
-		DataSize:       table.GetDataSize(),
-		IndexSize:      table.GetIndexSize(),
-		DataFree:       table.GetDataFree(),
-		CreateOptions:  table.GetCreateOptions(),
-		Comment:        table.GetComment(),
-		Classification: table.GetClassification(),
-		UserComment:    table.GetUserComment(),
+		Name:           table.Name,
+		Engine:         table.Engine,
+		Collation:      table.Collation,
+		RowCount:       table.RowCount,
+		DataSize:       table.DataSize,
+		IndexSize:      table.IndexSize,
+		DataFree:       table.DataFree,
+		CreateOptions:  table.CreateOptions,
+		Comment:        table.Comment,
+		Classification: table.Classification,
+		UserComment:    table.UserComment,
 	}
 	for _, column := range table.Columns {
 		if column == nil {
@@ -501,20 +489,20 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 		}
 		t.Columns = append(t.Columns, convertV1ColumnMetadata(column))
 	}
-	for _, index := range table.GetIndexes() {
+	for _, index := range table.Indexes {
 		if index == nil {
 			continue
 		}
 		t.Indexes = append(t.Indexes, &storepb.IndexMetadata{
-			Name:        index.GetName(),
-			Expressions: index.GetExpressions(),
-			KeyLength:   index.GetKeyLength(),
-			Type:        index.GetType(),
-			Unique:      index.GetUnique(),
-			Primary:     index.GetPrimary(),
-			Visible:     index.GetVisible(),
-			Comment:     index.GetComment(),
-			Definition:  index.GetDefinition(),
+			Name:        index.Name,
+			Expressions: index.Expressions,
+			KeyLength:   index.KeyLength,
+			Type:        index.Type,
+			Unique:      index.Unique,
+			Primary:     index.Primary,
+			Visible:     index.Visible,
+			Comment:     index.Comment,
+			Definition:  index.Definition,
 		})
 	}
 	for _, foreignKey := range table.ForeignKeys {
@@ -522,14 +510,14 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 			continue
 		}
 		t.ForeignKeys = append(t.ForeignKeys, &storepb.ForeignKeyMetadata{
-			Name:              foreignKey.GetName(),
-			Columns:           foreignKey.GetColumns(),
-			ReferencedSchema:  foreignKey.GetReferencedSchema(),
-			ReferencedTable:   foreignKey.GetReferencedTable(),
-			ReferencedColumns: foreignKey.GetReferencedColumns(),
-			OnDelete:          foreignKey.GetOnDelete(),
-			OnUpdate:          foreignKey.GetOnUpdate(),
-			MatchType:         foreignKey.GetMatchType(),
+			Name:              foreignKey.Name,
+			Columns:           foreignKey.Columns,
+			ReferencedSchema:  foreignKey.ReferencedSchema,
+			ReferencedTable:   foreignKey.ReferencedTable,
+			ReferencedColumns: foreignKey.ReferencedColumns,
+			OnDelete:          foreignKey.OnDelete,
+			OnUpdate:          foreignKey.OnUpdate,
+			MatchType:         foreignKey.MatchType,
 		})
 	}
 	for _, partition := range table.Partitions {
@@ -543,12 +531,12 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 
 func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata) *storepb.TablePartitionMetadata {
 	metadata := &storepb.TablePartitionMetadata{
-		Name:       tablePartition.GetName(),
-		Expression: tablePartition.GetExpression(),
-		Value:      tablePartition.GetValue(),
-		UseDefault: tablePartition.GetUseDefault(),
+		Name:       tablePartition.Name,
+		Expression: tablePartition.Expression,
+		Value:      tablePartition.Value,
+		UseDefault: tablePartition.UseDefault,
 	}
-	switch tablePartition.GetType() {
+	switch tablePartition.Type {
 	case v1pb.TablePartitionMetadata_RANGE:
 		metadata.Type = storepb.TablePartitionMetadata_RANGE
 	case v1pb.TablePartitionMetadata_RANGE_COLUMNS:
@@ -568,7 +556,7 @@ func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata
 	default:
 		metadata.Type = storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
 	}
-	for _, subpartition := range tablePartition.GetSubpartitions() {
+	for _, subpartition := range tablePartition.Subpartitions {
 		if subpartition == nil {
 			continue
 		}
@@ -579,20 +567,20 @@ func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata
 
 func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadata {
 	metadata := &storepb.ColumnMetadata{
-		Name:           column.GetName(),
-		Position:       column.GetPosition(),
-		Nullable:       column.GetNullable(),
-		Type:           column.GetType(),
-		CharacterSet:   column.GetCharacterSet(),
-		Collation:      column.GetCollation(),
-		Comment:        column.GetComment(),
-		Classification: column.GetClassification(),
-		UserComment:    column.GetUserComment(),
-		OnUpdate:       column.GetOnUpdate(),
+		Name:           column.Name,
+		Position:       column.Position,
+		Nullable:       column.Nullable,
+		Type:           column.Type,
+		CharacterSet:   column.CharacterSet,
+		Collation:      column.Collation,
+		Comment:        column.Comment,
+		Classification: column.Classification,
+		UserComment:    column.UserComment,
+		OnUpdate:       column.OnUpdate,
 	}
 
 	if column.HasDefault {
-		switch value := column.GetDefault().(type) {
+		switch value := column.Default.(type) {
 		case *v1pb.ColumnMetadata_DefaultString:
 			metadata.DefaultValue = &storepb.ColumnMetadata_Default{Default: wrapperspb.String(value.DefaultString)}
 		case *v1pb.ColumnMetadata_DefaultNull:
@@ -606,30 +594,30 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 
 func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.DatabaseConfig {
 	config := &storepb.DatabaseConfig{
-		Name: databaseConfig.GetName(),
+		Name: databaseConfig.Name,
 	}
-	for _, schema := range databaseConfig.GetSchemaConfigs() {
+	for _, schema := range databaseConfig.SchemaConfigs {
 		if schema == nil {
 			continue
 		}
 		s := &storepb.SchemaConfig{
-			Name: schema.GetName(),
+			Name: schema.Name,
 		}
-		for _, table := range schema.GetTableConfigs() {
+		for _, table := range schema.TableConfigs {
 			if table == nil {
 				continue
 			}
 			t := &storepb.TableConfig{
-				Name: table.GetName(),
+				Name: table.Name,
 			}
-			for _, column := range table.GetColumnConfigs() {
+			for _, column := range table.ColumnConfigs {
 				if column == nil {
 					continue
 				}
 				t.ColumnConfigs = append(t.ColumnConfigs, &storepb.ColumnConfig{
-					Name:           column.GetName(),
-					SemanticTypeId: column.GetSemanticTypeId(),
-					Labels:         column.GetLabels(),
+					Name:           column.Name,
+					SemanticTypeId: column.SemanticTypeId,
+					Labels:         column.Labels,
 				})
 			}
 			s.TableConfigs = append(s.TableConfigs, t)
@@ -641,9 +629,9 @@ func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.Datab
 
 func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
 	t := &storepb.TableConfig{
-		Name: table.GetName(),
+		Name: table.Name,
 	}
-	for _, column := range table.GetColumnConfigs() {
+	for _, column := range table.ColumnConfigs {
 		if column == nil {
 			continue
 		}
@@ -654,8 +642,8 @@ func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
 
 func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnConfig {
 	return &storepb.ColumnConfig{
-		Name:           column.GetName(),
-		SemanticTypeId: column.GetSemanticTypeId(),
-		Labels:         column.GetLabels(),
+		Name:           column.Name,
+		SemanticTypeId: column.SemanticTypeId,
+		Labels:         column.Labels,
 	}
 }

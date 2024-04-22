@@ -476,6 +476,10 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.DataSource.AuthenticationType"><span class="badge">E</span>DataSource.AuthenticationType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType"><span class="badge">E</span>DataSourceExternalSecret.AppRoleAuthOption.SecretType</a>
                 </li>
               
@@ -4777,6 +4781,13 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>authentication_type</td>
+                  <td><a href="#bytebase.v1.DataSource.AuthenticationType">DataSource.AuthenticationType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5064,14 +5075,6 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>schema_tenant_mode</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>The schema tenant mode is used to determine whether the instance is in schema tenant mode.
-For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema. </p></td>
-                </tr>
               
                 <tr>
                   <td>sync_interval</td>
@@ -5487,6 +5490,35 @@ Format: instances/{instance} </p></td>
         
       
 
+      
+        <h3 id="bytebase.v1.DataSource.AuthenticationType">DataSource.AuthenticationType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTHENTICATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PASSWORD</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GOOGLE_CLOUD_SQL_IAM</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</h3>
         <p></p>
@@ -7355,7 +7387,16 @@ the call that provided the page token. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The filter of the change histories.
-Follow the CEL syntax.
+follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+Support filter by type, source or table.
+For example:
+table = &#34;tableExists(&#39;{database}&#39;, &#39;{schema}&#39;, &#39;{table}&#39;)&#34;
+table = &#34;tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table1&#39;) || tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table2&#39;)&#34;
+type = &#34;MIGRATE | DATA&#34;
+source = &#34;UI&#34;
+source = &#34;VCS&#34;
+
+The table filter follow the CEL syntax.
 currently, we have one function for CEL:
 - tableExists(database, schema, table): return true if the table exists in changed resources.
 

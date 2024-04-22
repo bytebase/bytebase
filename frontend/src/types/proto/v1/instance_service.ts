@@ -237,11 +237,6 @@ export interface SyncSlowQueriesRequest {
 
 /** InstanceOptions is the option for instances. */
 export interface InstanceOptions {
-  /**
-   * The schema tenant mode is used to determine whether the instance is in schema tenant mode.
-   * For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
-   */
-  schemaTenantMode: boolean;
   /** How often the instance is synced. */
   syncInterval:
     | Duration
@@ -476,6 +471,46 @@ export interface DataSource {
    */
   authenticationPrivateKey: string;
   externalSecret: DataSourceExternalSecret | undefined;
+  authenticationType: DataSource_AuthenticationType;
+}
+
+export enum DataSource_AuthenticationType {
+  AUTHENTICATION_UNSPECIFIED = 0,
+  PASSWORD = 1,
+  GOOGLE_CLOUD_SQL_IAM = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function dataSource_AuthenticationTypeFromJSON(object: any): DataSource_AuthenticationType {
+  switch (object) {
+    case 0:
+    case "AUTHENTICATION_UNSPECIFIED":
+      return DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED;
+    case 1:
+    case "PASSWORD":
+      return DataSource_AuthenticationType.PASSWORD;
+    case 2:
+    case "GOOGLE_CLOUD_SQL_IAM":
+      return DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSource_AuthenticationType.UNRECOGNIZED;
+  }
+}
+
+export function dataSource_AuthenticationTypeToJSON(object: DataSource_AuthenticationType): string {
+  switch (object) {
+    case DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED:
+      return "AUTHENTICATION_UNSPECIFIED";
+    case DataSource_AuthenticationType.PASSWORD:
+      return "PASSWORD";
+    case DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM:
+      return "GOOGLE_CLOUD_SQL_IAM";
+    case DataSource_AuthenticationType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface InstanceResource {
@@ -1691,14 +1726,11 @@ export const SyncSlowQueriesRequest = {
 };
 
 function createBaseInstanceOptions(): InstanceOptions {
-  return { schemaTenantMode: false, syncInterval: undefined, maximumConnections: 0 };
+  return { syncInterval: undefined, maximumConnections: 0 };
 }
 
 export const InstanceOptions = {
   encode(message: InstanceOptions, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.schemaTenantMode === true) {
-      writer.uint32(8).bool(message.schemaTenantMode);
-    }
     if (message.syncInterval !== undefined) {
       Duration.encode(message.syncInterval, writer.uint32(18).fork()).ldelim();
     }
@@ -1715,13 +1747,6 @@ export const InstanceOptions = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.schemaTenantMode = reader.bool();
-          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -1747,7 +1772,6 @@ export const InstanceOptions = {
 
   fromJSON(object: any): InstanceOptions {
     return {
-      schemaTenantMode: isSet(object.schemaTenantMode) ? globalThis.Boolean(object.schemaTenantMode) : false,
       syncInterval: isSet(object.syncInterval) ? Duration.fromJSON(object.syncInterval) : undefined,
       maximumConnections: isSet(object.maximumConnections) ? globalThis.Number(object.maximumConnections) : 0,
     };
@@ -1755,9 +1779,6 @@ export const InstanceOptions = {
 
   toJSON(message: InstanceOptions): unknown {
     const obj: any = {};
-    if (message.schemaTenantMode === true) {
-      obj.schemaTenantMode = message.schemaTenantMode;
-    }
     if (message.syncInterval !== undefined) {
       obj.syncInterval = Duration.toJSON(message.syncInterval);
     }
@@ -1772,7 +1793,6 @@ export const InstanceOptions = {
   },
   fromPartial(object: DeepPartial<InstanceOptions>): InstanceOptions {
     const message = createBaseInstanceOptions();
-    message.schemaTenantMode = object.schemaTenantMode ?? false;
     message.syncInterval = (object.syncInterval !== undefined && object.syncInterval !== null)
       ? Duration.fromPartial(object.syncInterval)
       : undefined;
@@ -2310,6 +2330,7 @@ function createBaseDataSource(): DataSource {
     sshPrivateKey: "",
     authenticationPrivateKey: "",
     externalSecret: undefined,
+    authenticationType: 0,
   };
 }
 
@@ -2377,6 +2398,9 @@ export const DataSource = {
     }
     if (message.externalSecret !== undefined) {
       DataSourceExternalSecret.encode(message.externalSecret, writer.uint32(170).fork()).ldelim();
+    }
+    if (message.authenticationType !== 0) {
+      writer.uint32(176).int32(message.authenticationType);
     }
     return writer;
   },
@@ -2535,6 +2559,13 @@ export const DataSource = {
 
           message.externalSecret = DataSourceExternalSecret.decode(reader, reader.uint32());
           continue;
+        case 22:
+          if (tag !== 176) {
+            break;
+          }
+
+          message.authenticationType = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2573,6 +2604,9 @@ export const DataSource = {
       externalSecret: isSet(object.externalSecret)
         ? DataSourceExternalSecret.fromJSON(object.externalSecret)
         : undefined,
+      authenticationType: isSet(object.authenticationType)
+        ? dataSource_AuthenticationTypeFromJSON(object.authenticationType)
+        : 0,
     };
   },
 
@@ -2641,6 +2675,9 @@ export const DataSource = {
     if (message.externalSecret !== undefined) {
       obj.externalSecret = DataSourceExternalSecret.toJSON(message.externalSecret);
     }
+    if (message.authenticationType !== 0) {
+      obj.authenticationType = dataSource_AuthenticationTypeToJSON(message.authenticationType);
+    }
     return obj;
   },
 
@@ -2672,6 +2709,7 @@ export const DataSource = {
     message.externalSecret = (object.externalSecret !== undefined && object.externalSecret !== null)
       ? DataSourceExternalSecret.fromPartial(object.externalSecret)
       : undefined;
+    message.authenticationType = object.authenticationType ?? 0;
     return message;
   },
 };

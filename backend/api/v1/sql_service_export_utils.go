@@ -371,20 +371,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 
 		return result, nil
 	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-		dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
-		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
-		// If there are no read-only data source, fall back to admin data source.
-		if dataSource == nil {
-			dataSource = adminDataSource
-		}
-		if dataSource == nil {
-			return nil, status.Errorf(codes.Internal, "failed to find data source for instance: %s", instance.ResourceID)
-		}
-		currentSchema := dataSource.Username
-		if instance.Options != nil && instance.Options.SchemaTenantMode {
-			currentSchema = databaseName
-		}
-		list, err := base.ExtractResourceList(engine, databaseName, currentSchema, statement)
+		list, err := base.ExtractResourceList(engine, databaseName, databaseName, statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
@@ -409,9 +396,6 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		var result []base.SchemaResource
 		for _, resource := range list {
 			if resource.Database != dbSchema.GetMetadata().Name {
-				if instance.Options == nil || !instance.Options.SchemaTenantMode {
-					continue
-				}
 				// Schema tenant mode allows cross-database query, we should check the corresponding database.
 				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &instance.ResourceID,

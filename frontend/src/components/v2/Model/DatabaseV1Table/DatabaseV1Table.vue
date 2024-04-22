@@ -1,21 +1,19 @@
 <template>
-  <div>
-    <NDataTable
-      size="small"
-      :columns="columnList"
-      :data="data"
-      :striped="true"
-      :bordered="bordered"
-      :loading="loading"
-      :row-key="(data: ComposedDatabase) => data.name"
-      :checked-row-keys="Array.from(state.selectedDatabaseNameList)"
-      :row-props="rowProps"
-      :pagination="{ pageSize: 20 }"
-      @update:checked-row-keys="
+  <NDataTable
+    size="small"
+    :columns="columnList"
+    :data="data"
+    :striped="true"
+    :bordered="bordered"
+    :loading="loading"
+    :row-key="(data: ComposedDatabase) => data.name"
+    :checked-row-keys="Array.from(state.selectedDatabaseNameList)"
+    :row-props="rowProps"
+    :pagination="{ pageSize: 20 }"
+    @update:checked-row-keys="
         (val) => (state.selectedDatabaseNameList = new Set(val as string[]))
       "
-    ></NDataTable>
-  </div>
+  ></NDataTable>
 </template>
 
 <script setup lang="tsx">
@@ -23,8 +21,8 @@ import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
-import { EnvironmentV1Name, InstanceV1Name } from "../v2";
 import { DatabaseNameCell, ProjectNameCell, DatabaseLabelsCell } from "./cells";
 
 interface LocalState {

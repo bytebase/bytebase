@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/rpc/status.proto";
+
 option go_package = "generated-go/store";
 
 message AuditLog {
@@ -23,6 +25,8 @@ message AuditLog {
   // Marshalled response.
   // Some fields are omitted because they are too large or contain sensitive information.
   string response = 6;
+
+  google.rpc.Status status = 7;
 
   enum Severity {
     DEFAULT = 0;

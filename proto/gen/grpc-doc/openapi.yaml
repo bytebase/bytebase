@@ -1333,7 +1333,16 @@ paths:
                   in: query
                   description: |-
                     The filter of the change histories.
-                     Follow the CEL syntax.
+                     follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+                     Support filter by type, source or table.
+                     For example:
+                     table = "tableExists('{database}', '{schema}', '{table}')"
+                     table = "tableExists('db', 'public', 'table1') || tableExists('db', 'public', 'table2')"
+                     type = "MIGRATE | DATA"
+                     source = "UI"
+                     source = "VCS"
+
+                     The table filter follow the CEL syntax.
                      currently, we have one function for CEL:
                      - tableExists(database, schema, table): return true if the table exists in changed resources.
 
@@ -8846,6 +8855,9 @@ components:
                          Used for authentication when connecting to the data source.
                 externalSecret:
                     $ref: '#/components/schemas/DataSourceExternalSecret'
+                authenticationType:
+                    type: integer
+                    format: enum
         DataSourceExternalSecret:
             type: object
             properties:
@@ -9748,11 +9760,6 @@ components:
         InstanceOptions:
             type: object
             properties:
-                schemaTenantMode:
-                    type: boolean
-                    description: |-
-                        The schema tenant mode is used to determine whether the instance is in schema tenant mode.
-                         For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
                 syncInterval:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
