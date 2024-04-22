@@ -211,7 +211,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     getDatabaseByName,
     fetchDatabaseByName,
     getOrFetchDatabaseByName,
-    fetchDatabaseByUID,
     getDatabaseByUID,
     getOrFetchDatabaseByUID,
     batchUpdateDatabases,
@@ -260,33 +259,6 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
     { immediate: true }
   );
   const database = computed(() => store.getDatabaseByName(unref(name)));
-
-  return {
-    database,
-    ready,
-  };
-};
-
-// useDatabaseV1ByUID returns a database by uid.
-// Mainly using in SQL Editor.
-export const useDatabaseV1ByUID = (uid: MaybeRef<string>) => {
-  const store = useDatabaseV1Store();
-  const ready = ref(true);
-  watch(
-    () => unref(uid),
-    (uid) => {
-      if (uid !== String(UNKNOWN_ID)) {
-        if (store.getDatabaseByUID(uid).uid === String(UNKNOWN_ID)) {
-          ready.value = false;
-          store.fetchDatabaseByUID(uid, true /* silent */).then(() => {
-            ready.value = true;
-          });
-        }
-      }
-    },
-    { immediate: true }
-  );
-  const database = computed(() => store.getDatabaseByUID(unref(uid)));
 
   return {
     database,
