@@ -134,7 +134,6 @@ import {
   useInstanceV1List,
 } from "@/store";
 import type { ComposedProject } from "@/types";
-import { UNKNOWN_USER_NAME } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Anomaly_AnomalySeverity } from "@/types/proto/v1/anomaly_service";
 import { databaseV1Url, sortDatabaseV1List, sortInstanceV1List } from "@/utils";

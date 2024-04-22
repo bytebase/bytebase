@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, reactive, ref, unref, watch, watchEffect } from "vue";
+import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { instanceRoleServiceClient, instanceServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -10,7 +10,6 @@ import {
   unknownEnvironment,
   unknownInstance,
   UNKNOWN_ID,
-  UNKNOWN_INSTANCE_NAME,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { InstanceRole } from "@/types/proto/v1/instance_role_service";
