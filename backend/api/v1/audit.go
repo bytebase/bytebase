@@ -57,7 +57,7 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.QueryRequest:
 			return r
 		case *v1pb.ExportRequest:
-			//nolint:unchecked-type-assertion
+			//nolint:revive
 			r = proto.Clone(r).(*v1pb.ExportRequest)
 			r.Password = ""
 			return r
