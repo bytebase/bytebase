@@ -1520,8 +1520,8 @@ Used internally for obfuscating the page token.
 | instance | [string](#string) |  |  |
 | realm | [string](#string) |  |  |
 | keytab | [string](#string) |  |  |
-| kdcHost | [string](#string) |  |  |
-| kdcTransportProtocol | [string](#string) |  |  |
+| kdc_hosr | [string](#string) |  |  |
+| kdc_transport_protocol | [string](#string) |  |  |
 
 
 
