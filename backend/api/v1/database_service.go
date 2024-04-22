@@ -127,17 +127,44 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 		return nil, err
 	}
 
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := limit + 1
+	find.Limit = &limitPlusOne
+	find.Offset = &offset
+
 	permission := iam.PermissionDatabasesGet
 	if request.GetPermission() == iam.PermissionDatabasesQuery.String() {
 		permission = iam.PermissionDatabasesQuery
 	}
-	databases, err := searchDatabases(ctx, s.store, s.iamManager, find, permission)
+
+	databases, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	response := &v1pb.SearchDatabasesResponse{}
-	for _, databaseMessage := range databases {
+	nextPageToken := ""
+	if len(databases) == limitPlusOne {
+		databases = databases[:limit]
+		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
+			Limit:  int32(limit),
+			Offset: int32(limit + offset),
+		}); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
+	}
+
+	databaseMessages, err := filterDatabasesV2(ctx, s.store, s.iamManager, databases, permission)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to filter databases, error: %v", err)
+	}
+
+	response := &v1pb.SearchDatabasesResponse{
+		NextPageToken: nextPageToken,
+	}
+	for _, databaseMessage := range databaseMessages {
 		database, err := s.convertToDatabase(ctx, databaseMessage)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
@@ -162,7 +189,16 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	find := &store.FindDatabaseMessage{}
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := limit + 1
+
+	find := &store.FindDatabaseMessage{
+		Limit:  &limitPlusOne,
+		Offset: &offset,
+	}
 	if instanceID != "-" {
 		find.InstanceID = &instanceID
 	}
@@ -182,12 +218,26 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	nextPageToken := ""
+	if len(databaseMessages) == limitPlusOne {
+		databaseMessages = databaseMessages[:limit]
+		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
+			Limit:  int32(limit),
+			Offset: int32(limit + offset),
+		}); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
+	}
+
 	databaseMessages, err = filterDatabasesV2(ctx, s.store, s.iamManager, databaseMessages, iam.PermissionDatabasesList)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to filter databases, error: %v", err)
 	}
 
-	response := &v1pb.ListDatabasesResponse{}
+	response := &v1pb.ListDatabasesResponse{
+		NextPageToken: nextPageToken,
+	}
 	for _, databaseMessage := range databaseMessages {
 		database, err := s.convertToDatabase(ctx, databaseMessage)
 		if err != nil {
@@ -240,6 +290,17 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
+
+	for _, role := range user.Roles {
+		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(role.String()))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get permissions")
+		}
+		if slices.Contains(permissions, needPermission) {
+			return databases, nil
+		}
+	}
+
 	projectDatabases := make(map[string][]*store.DatabaseMessage)
 	for _, database := range databases {
 		projectDatabases[database.ProjectID] = append(projectDatabases[database.ProjectID], database)
@@ -256,16 +317,6 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 }
 
 func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, user *store.UserMessage, projectID string, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
-	for _, role := range user.Roles {
-		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(role.String()))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get permissions")
-		}
-		if slices.Contains(permissions, needPermission) {
-			return databases, nil
-		}
-	}
-
 	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
 		ProjectID: &projectID,
 	})
@@ -303,7 +354,6 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 			}
 			break
 		}
-		break
 	}
 
 	var filteredDatabases []*store.DatabaseMessage
