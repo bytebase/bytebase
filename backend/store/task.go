@@ -321,6 +321,13 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 	if v := patch.ExportPassword; v != nil {
 		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('password', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
 	}
+	if v := patch.PreUpdateBackupDetail; v != nil {
+		jsonb, err := json.Marshal(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal preUpdateBackupDetail")
+		}
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('preUpdateBackupDetail', $%d::JSONB)`, len(args)+1)), append(args, jsonb)
+	}
 	if v := patch.Flags; v != nil {
 		jsonb, err := json.Marshal(v)
 		if err != nil {
