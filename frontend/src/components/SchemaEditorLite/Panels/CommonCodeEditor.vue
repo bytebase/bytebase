@@ -38,7 +38,7 @@
     </div>
     <MonacoEditor
       v-model:content="state.code"
-      :readonly="readonly"
+      :readonly="readonly || state.unlocked === false"
       :auto-complete-context="{
         instance: db.instance,
         database: db.name,
