@@ -45,6 +45,8 @@ func getRequestResource(request any) string {
 		return r.Database.Name
 	case *v1pb.BatchUpdateDatabasesRequest:
 		return r.Parent
+	case *v1pb.SetIamPolicyRequest:
+		return r.Project
 	case *v1pb.CreateUserRequest:
 		return ""
 	default:
@@ -68,6 +70,8 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.UpdateDatabaseRequest:
 			return r
 		case *v1pb.BatchUpdateDatabasesRequest:
+			return r
+		case *v1pb.SetIamPolicyRequest:
 			return r
 		case *v1pb.CreateUserRequest:
 			return r
@@ -99,6 +103,8 @@ func getResponseString(response any) (string, error) {
 			return r
 		case *v1pb.BatchUpdateDatabasesResponse:
 			return r
+		case *v1pb.IamPolicy:
+			return r
 		case *v1pb.User:
 			return &v1pb.User{
 				Name:     r.Name,
@@ -126,6 +132,7 @@ func isAuditMethod(method string) bool {
 		v1pb.AuthService_CreateUser_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
 		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
+		v1pb.ProjectService_SetIamPolicy_FullMethodName,
 		v1pb.SQLService_Export_FullMethodName,
 		v1pb.SQLService_Query_FullMethodName:
 		return true
