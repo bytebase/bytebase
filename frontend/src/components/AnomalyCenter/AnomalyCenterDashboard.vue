@@ -122,7 +122,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import {
@@ -134,7 +134,6 @@ import {
   useInstanceV1List,
 } from "@/store";
 import type { ComposedProject } from "@/types";
-import { UNKNOWN_USER_NAME } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Anomaly_AnomalySeverity } from "@/types/proto/v1/anomaly_service";
 import { databaseV1Url, sortDatabaseV1List, sortInstanceV1List } from "@/utils";
@@ -170,18 +169,6 @@ const state = reactive<LocalState>({
 });
 
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
-
-const prepareDatabaseList = () => {
-  // It will also be called when user logout
-  if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-    const filter = `instance = "instances/-"`;
-    databaseStore.searchDatabases({
-      filter,
-    });
-  }
-};
-
-watchEffect(prepareDatabaseList);
 
 const databaseList = computed(() => {
   return databaseStore.databaseListByUser(currentUserV1.value);
