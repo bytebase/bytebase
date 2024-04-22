@@ -8151,6 +8151,41 @@ components:
                          Format: projects/{project}/issues/{issue}
                 comment:
                     type: string
+        AuditLog:
+            type: object
+            properties:
+                name:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The name of the log.
+                         Format: logs/{uid}
+                createTime:
+                    readOnly: true
+                    type: string
+                    format: date-time
+                user:
+                    type: string
+                    description: 'Format: users/d@d.com'
+                method:
+                    type: string
+                    description: e.g. `/bytebase.v1.SQLService/Query`, `bb.project.repository.push`
+                severity:
+                    type: integer
+                    format: enum
+                resource:
+                    type: string
+                    description: The associated resource.
+                request:
+                    type: string
+                    description: JSON-encoded request.
+                response:
+                    type: string
+                    description: |-
+                        JSON-encoded response.
+                         Some fields are omitted because they are too large or contain sensitive information.
+                status:
+                    $ref: '#/components/schemas/Status'
         BatchCancelTaskRunsRequest:
             type: object
             properties:
@@ -11670,6 +11705,19 @@ components:
                     description: |-
                         Not used. A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
+        SearchAuditLogsResponse:
+            type: object
+            properties:
+                auditLogs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AuditLog'
+                nextPageToken:
+                    type: string
+                    description: |-
+                        A token to retrieve next page of log entities.
+                         Pass this value in the page_token field in the subsequent call
+                         to retrieve the next page of log entities.
         SearchDatabasesResponse:
             type: object
             properties:
@@ -13023,6 +13071,7 @@ components:
 tags:
     - name: ActuatorService
     - name: AnomalyService
+    - name: AuditLogService
     - name: AuthService
     - name: BranchService
     - name: CelService
