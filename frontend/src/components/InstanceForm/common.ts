@@ -75,10 +75,7 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
         availableLicenseCount > 0,
     options: instance?.options
       ? cloneDeep(instance.options)
-      : InstanceOptions.fromPartial({
-          // default to false (Manage based on database, aka CDB + non-CDB)
-          schemaTenantMode: false,
-        }),
+      : InstanceOptions.fromPartial({}),
   };
 };
 

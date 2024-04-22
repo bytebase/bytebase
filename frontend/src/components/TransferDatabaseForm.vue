@@ -66,7 +66,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { computed, onBeforeMount, reactive } from "vue";
+import { computed, reactive } from "vue";
 import { toRef } from "vue";
 import type { TransferSource } from "@/components/TransferDatabaseForm";
 import {
@@ -140,15 +140,6 @@ const state = reactive<LocalState>({
   selectedDatabaseUidList: [],
 });
 const { project } = useProjectV1ByUID(toRef(props, "projectId"));
-
-const prepare = async () => {
-  const filter = `instance = "instances/-"`;
-  databaseStore.searchDatabases({
-    filter,
-  });
-};
-
-onBeforeMount(prepare);
 
 const rawDatabaseList = computed(() => {
   if (state.transferSource === "DEFAULT") {
