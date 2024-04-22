@@ -3,10 +3,13 @@ package hive
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 type ConnPool interface {
@@ -16,54 +19,63 @@ type ConnPool interface {
 }
 
 type FixedConnPool struct {
-	RWMutex         sync.RWMutex
-	Connections     chan *gohive.Connection
-	IsActivated     bool
-	NumMaxConns     int
-	PoolConfig      ConnPoolConfig
-	HiveConnFactory func(ConnPoolConfig) (*gohive.Connection, error)
+	Host        string
+	Port        int
+	HiveConfig  *gohive.ConnectConfiguration
+	SASLConfig  db.SASLConfig
+	RWMutex     sync.RWMutex
+	Connections chan *gohive.Connection
+	IsActivated bool
+	NumMaxConns int
 }
 
 var _ ConnPool = &FixedConnPool{}
 
-type ConnPoolConfig struct {
-	Config *gohive.ConnectConfiguration
-	Host   string
-	Port   int
-}
-
-func PlainSASLConnFactory(poolConfig ConnPoolConfig) (*gohive.Connection, error) {
-	conn, err := gohive.Connect(poolConfig.Host, poolConfig.Port, "NONE", poolConfig.Config)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to establish Hive connection")
-	}
-	return conn, nil
-}
-
 func CreateHiveConnPool(
 	numMaxConn int,
-	poolConfig ConnPoolConfig,
-	hiveConnFactory func(ConnPoolConfig) (*gohive.Connection, error),
+	config *db.ConnectionConfig,
 ) (
 	*FixedConnPool, error,
 ) {
 	conns := make(chan *gohive.Connection, numMaxConn)
 
+	hiveConfig := gohive.NewConnectConfiguration()
+	hiveConfig.Database = config.Database
+
+	port, err := strconv.Atoi(config.Port)
+	if err != nil {
+		return nil, errors.Errorf("conversion failure for 'port' [string -> int]")
+	}
+
+	// SASL settings.
+	switch t := config.SASLConfig.(type) {
+	// Kerberos.
+	case *db.KerberosConfig:
+		// hiveConfig.Hostname = t.Instance
+		hiveConfig.Service = t.Primary
+
+	// Plain.
+	default:
+		hiveConfig.Username = config.Username
+	}
+
 	for i := 0; i < numMaxConn; i++ {
-		conn, err := hiveConnFactory(poolConfig)
+		conn, err := gohive.Connect(config.Host, port, config.SASLConfig.GetTypeName(), hiveConfig)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create Hive connection pool")
+			return nil, errors.Wrapf(err, "failed to create Hive connection")
 		}
 		conns <- conn
 	}
 
 	return &FixedConnPool{
-			RWMutex:         sync.RWMutex{},
-			Connections:     conns,
-			IsActivated:     true,
-			NumMaxConns:     numMaxConn,
-			HiveConnFactory: hiveConnFactory,
-			PoolConfig:      poolConfig,
+			Host:        config.Host,
+			Port:        port,
+			HiveConfig:  hiveConfig,
+			SASLConfig:  config.SASLConfig,
+			RWMutex:     sync.RWMutex{},
+			Connections: conns,
+			IsActivated: true,
+			NumMaxConns: numMaxConn,
 		},
 		nil
 }
@@ -82,9 +94,9 @@ func (pool *FixedConnPool) Get(dbName string) (*gohive.Connection, error) {
 
 	default:
 		var err error
-		conn, err = pool.HiveConnFactory(pool.PoolConfig)
+		conn, err = gohive.Connect(pool.Host, pool.Port, pool.SASLConfig.GetTypeName(), pool.HiveConfig)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create new connection")
+			return nil, errors.Wrapf(err, "failed to create Hive connection")
 		}
 	}
 
