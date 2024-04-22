@@ -40,7 +40,7 @@ jobs:
         uses: golangci/golangci-lint-action@v4
         with:
           version: v1.57.2
-          args: version
+          args: --version
           skip-cache: true
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v4
