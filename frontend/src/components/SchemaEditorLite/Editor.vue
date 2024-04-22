@@ -26,6 +26,14 @@
           :table="currentTab.metadata.table"
           :search-pattern="state.columnSearchPattern"
         />
+        <ProcedureEditor
+          v-if="currentTab.type === 'procedure'"
+          :key="currentTab.id"
+          :db="currentTab.database"
+          :database="currentTab.metadata.database"
+          :schema="currentTab.metadata.schema"
+          :procedure="currentTab.metadata.procedure"
+        />
       </div>
     </template>
     <EmptyTips v-else />
@@ -35,6 +43,7 @@
 <script lang="ts" setup>
 import { reactive, watch } from "vue";
 import DatabaseEditor from "./Panels/DatabaseEditor.vue";
+import ProcedureEditor from "./Panels/ProcedureEditor.vue";
 import TableEditor from "./Panels/TableEditor.vue";
 import TabsContainer from "./TabsContainer.vue";
 import { useSchemaEditorContext } from "./context";
