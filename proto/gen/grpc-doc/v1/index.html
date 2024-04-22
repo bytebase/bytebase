@@ -273,6 +273,37 @@
         
           
           <li>
+            <a href="#v1%2faudit_log_service.proto">v1/audit_log_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.AuditLog"><span class="badge">M</span>AuditLog</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchAuditLogsRequest"><span class="badge">M</span>SearchAuditLogsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchAuditLogsResponse"><span class="badge">M</span>SearchAuditLogsResponse</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.AuditLog.Severity"><span class="badge">E</span>AuditLog.Severity</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.AuditLogService"><span class="badge">S</span>AuditLogService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2fcommon.proto">v1/common.proto</a>
             <ul>
               
@@ -3461,6 +3492,300 @@ e.g. the database schema had been changed without bytebase migration.</p></td>
                 <td>SearchAnomalies</td>
                 <td>GET</td>
                 <td>/v1/anomalies:search</td>
+                <td></td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/audit_log_service.proto">v1/audit_log_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.AuditLog">AuditLog</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the log.
+Format: logs/{uid} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/d@d.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>method</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>e.g. `/bytebase.v1.SQLService/Query`, `bb.project.repository.push` </p></td>
+                </tr>
+              
+                <tr>
+                  <td>severity</td>
+                  <td><a href="#bytebase.v1.AuditLog.Severity">AuditLog.Severity</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The associated resource. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>request</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>JSON-encoded request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>response</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>JSON-encoded response.
+Some fields are omitted because they are too large or contain sensitive information. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#google.rpc.Status">google.rpc.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchAuditLogsRequest">SearchAuditLogsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>order_by</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The order by of the log.
+Only support order by create_time.
+For example:
+ - order_by = &#34;create_time asc&#34;
+ - order_by = &#34;create_time desc&#34; </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of logs to return.
+The service may return fewer than this value.
+If unspecified, at most 100 log entries will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `SearchLogs` call.
+Provide this to retrieve the subsequent page. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchAuditLogsResponse">SearchAuditLogsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>audit_logs</td>
+                  <td><a href="#bytebase.v1.AuditLog">AuditLog</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token to retrieve next page of log entities.
+Pass this value in the page_token field in the subsequent call
+to retrieve the next page of log entities. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.AuditLog.Severity">AuditLog.Severity</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>DEFAULT</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DEBUG</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>INFO</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NOTICE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WARNING</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CRITICAL</td>
+                <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALERT</td>
+                <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EMERGENCY</td>
+                <td>8</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.AuditLogService">AuditLogService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SearchAuditLogs</td>
+                <td><a href="#bytebase.v1.SearchAuditLogsRequest">SearchAuditLogsRequest</a></td>
+                <td><a href="#bytebase.v1.SearchAuditLogsResponse">SearchAuditLogsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>SearchAuditLogs</td>
+                <td>GET</td>
+                <td>/v1/logs:search</td>
                 <td></td>
               </tr>
               
