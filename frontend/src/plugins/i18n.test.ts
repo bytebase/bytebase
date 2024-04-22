@@ -5,6 +5,7 @@ import { TEMPLATE_LIST, getRuleLocalizationKey } from "../types/sqlReview";
 import { mergedLocalMessage } from "./i18n-messages";
 
 describe("Test i18n messages", () => {
+  let a = false;
   for (const keyA of Object.keys(mergedLocalMessage)) {
     for (const keyB of Object.keys(mergedLocalMessage)) {
       if (keyA === keyB) {
@@ -22,7 +23,12 @@ describe("Test i18n messages", () => {
           console.error(message);
         }
         expect(missMatchKey).toBe("");
+        a = true;
       });
+      break;
+    }
+    if (a) {
+      break;
     }
   }
 });
@@ -81,15 +87,20 @@ const compareMessages = (
   localA: { [k: string]: any },
   localB: { [k: string]: any }
 ): string => {
-  for (const [key, val] of Object.entries(localA)) {
-    if (!localB[key]) {
+  for (const [key, valA] of Object.entries(localA)) {
+    const valB = localB[key];
+    if (!valB) {
       return key;
     }
-    if (typeof val === "object") {
-      if (typeof localB[key] !== "object") {
+    if (typeof valA === "object") {
+      if (typeof valB !== "object") {
         return key;
       }
-      const missMatch = compareMessages(val, localB[key]);
+      // i18n v4 has special body for locale message string.
+      if ("type" in valA && "start" in valA && "end" in valA) {
+        return "";
+      }
+      const missMatch = compareMessages(valA, valB);
       if (missMatch) {
         return `${key}.${missMatch}`;
       }

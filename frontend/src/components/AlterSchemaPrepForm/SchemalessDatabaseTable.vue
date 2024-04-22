@@ -5,7 +5,7 @@
         {{ $t("database.show-schemaless-databases") }}
       </NCheckbox>
     </div>
-    <DatabaseDataTable
+    <DatabaseV1Table
       v-if="expand"
       :mode="`${mode}_SHORT`"
       :schemaless="true"
@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { NCheckbox } from "naive-ui";
 import { ref } from "vue";
-import DatabaseDataTable from "@/components/DatabaseDataTable";
+import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import type { ComposedDatabase } from "@/types";
 
 defineProps<{

@@ -24,7 +24,7 @@
         :databases="selectedDatabases"
       />
 
-      <DatabaseDataTable
+      <DatabaseV1Table
         mode="PROJECT"
         :database-list="filteredDatabaseList"
         :custom-click="true"
@@ -38,7 +38,7 @@
 <script lang="ts" setup>
 import { reactive, computed } from "vue";
 import { useRouter } from "vue-router";
-import DatabaseDataTable from "@/components/DatabaseDataTable";
+import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import { useDatabaseV1Store, useFilterStore, usePageMode } from "@/store";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { UNKNOWN_ID } from "@/types";

@@ -267,9 +267,7 @@ message SyncSlowQueriesRequest {
 
 // InstanceOptions is the option for instances.
 message InstanceOptions {
-  // The schema tenant mode is used to determine whether the instance is in schema tenant mode.
-  // For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
-  bool schema_tenant_mode = 1;
+  reserved 1;
 
   // How often the instance is synced.
   google.protobuf.Duration sync_interval = 2;
@@ -397,7 +395,15 @@ message DataSource {
 
   DataSourceExternalSecret external_secret = 21;
 
-  SASLConfig sasl_config = 22;
+  enum AuthenticationType {
+    AUTHENTICATION_UNSPECIFIED = 0;
+    PASSWORD = 1;
+    GOOGLE_CLOUD_SQL_IAM = 2;
+  }
+
+  AuthenticationType authentication_type = 22;
+
+  SASLConfig sasl_config = 23;
 }
 
 enum DataSourceType {

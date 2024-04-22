@@ -84,7 +84,15 @@ message DataSourceOptions {
 
   DataSourceExternalSecret external_secret = 11;
 
-  SASLConfig sasl_config = 12;
+  enum AuthenticationType {
+    AUTHENTICATION_UNSPECIFIED = 0;
+    PASSWORD = 1;
+    GOOGLE_CLOUD_SQL_IAM = 2;
+  }
+
+  AuthenticationType authentication_type = 12;
+
+  SASLConfig sasl_config = 13;
 }
 
 message SASLConfig {

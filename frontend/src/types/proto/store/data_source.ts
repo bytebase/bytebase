@@ -188,7 +188,47 @@ export interface DataSourceOptions {
    */
   authenticationPrivateKeyObfuscated: string;
   externalSecret: DataSourceExternalSecret | undefined;
+  authenticationType: DataSourceOptions_AuthenticationType;
   saslConfig: SASLConfig | undefined;
+}
+
+export enum DataSourceOptions_AuthenticationType {
+  AUTHENTICATION_UNSPECIFIED = 0,
+  PASSWORD = 1,
+  GOOGLE_CLOUD_SQL_IAM = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function dataSourceOptions_AuthenticationTypeFromJSON(object: any): DataSourceOptions_AuthenticationType {
+  switch (object) {
+    case 0:
+    case "AUTHENTICATION_UNSPECIFIED":
+      return DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED;
+    case 1:
+    case "PASSWORD":
+      return DataSourceOptions_AuthenticationType.PASSWORD;
+    case 2:
+    case "GOOGLE_CLOUD_SQL_IAM":
+      return DataSourceOptions_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSourceOptions_AuthenticationType.UNRECOGNIZED;
+  }
+}
+
+export function dataSourceOptions_AuthenticationTypeToJSON(object: DataSourceOptions_AuthenticationType): string {
+  switch (object) {
+    case DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED:
+      return "AUTHENTICATION_UNSPECIFIED";
+    case DataSourceOptions_AuthenticationType.PASSWORD:
+      return "PASSWORD";
+    case DataSourceOptions_AuthenticationType.GOOGLE_CLOUD_SQL_IAM:
+      return "GOOGLE_CLOUD_SQL_IAM";
+    case DataSourceOptions_AuthenticationType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface SASLConfig {
@@ -504,6 +544,7 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     sshObfuscatedPrivateKey: "",
     authenticationPrivateKeyObfuscated: "",
     externalSecret: undefined,
+    authenticationType: 0,
     saslConfig: undefined,
   };
 }
@@ -543,8 +584,11 @@ export const DataSourceOptions = {
     if (message.externalSecret !== undefined) {
       DataSourceExternalSecret.encode(message.externalSecret, writer.uint32(90).fork()).ldelim();
     }
+    if (message.authenticationType !== 0) {
+      writer.uint32(96).int32(message.authenticationType);
+    }
     if (message.saslConfig !== undefined) {
-      SASLConfig.encode(message.saslConfig, writer.uint32(98).fork()).ldelim();
+      SASLConfig.encode(message.saslConfig, writer.uint32(106).fork()).ldelim();
     }
     return writer;
   },
@@ -634,7 +678,14 @@ export const DataSourceOptions = {
           message.externalSecret = DataSourceExternalSecret.decode(reader, reader.uint32());
           continue;
         case 12:
-          if (tag !== 98) {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.authenticationType = reader.int32() as any;
+          continue;
+        case 13:
+          if (tag !== 106) {
             break;
           }
 
@@ -670,6 +721,9 @@ export const DataSourceOptions = {
       externalSecret: isSet(object.externalSecret)
         ? DataSourceExternalSecret.fromJSON(object.externalSecret)
         : undefined,
+      authenticationType: isSet(object.authenticationType)
+        ? dataSourceOptions_AuthenticationTypeFromJSON(object.authenticationType)
+        : 0,
       saslConfig: isSet(object.saslConfig) ? SASLConfig.fromJSON(object.saslConfig) : undefined,
     };
   },
@@ -709,6 +763,9 @@ export const DataSourceOptions = {
     if (message.externalSecret !== undefined) {
       obj.externalSecret = DataSourceExternalSecret.toJSON(message.externalSecret);
     }
+    if (message.authenticationType !== 0) {
+      obj.authenticationType = dataSourceOptions_AuthenticationTypeToJSON(message.authenticationType);
+    }
     if (message.saslConfig !== undefined) {
       obj.saslConfig = SASLConfig.toJSON(message.saslConfig);
     }
@@ -733,6 +790,7 @@ export const DataSourceOptions = {
     message.externalSecret = (object.externalSecret !== undefined && object.externalSecret !== null)
       ? DataSourceExternalSecret.fromPartial(object.externalSecret)
       : undefined;
+    message.authenticationType = object.authenticationType ?? 0;
     message.saslConfig = (object.saslConfig !== undefined && object.saslConfig !== null)
       ? SASLConfig.fromPartial(object.saslConfig)
       : undefined;

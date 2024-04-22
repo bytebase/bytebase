@@ -8,7 +8,9 @@
         :autofocus="true"
       />
     </div>
-    <ProjectV1Table :project-list="filteredProjectList" class="border-x-0" />
+    <div class="w-full px-4">
+      <ProjectV1Table :project-list="filteredProjectList" />
+    </div>
   </div>
 </template>
 

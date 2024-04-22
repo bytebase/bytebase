@@ -37,11 +37,10 @@ func init() {
 
 // Driver is the Oracle driver.
 type Driver struct {
-	db               *sql.DB
-	databaseName     string
-	serviceName      string
-	schemaTenantMode bool
-	connectionCtx    db.ConnectionContext
+	db            *sql.DB
+	databaseName  string
+	serviceName   string
+	connectionCtx db.ConnectionContext
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -64,7 +63,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	if err != nil {
 		return nil, err
 	}
-	if config.SchemaTenantMode && config.Database != "" {
+	if config.Database != "" {
 		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", config.Database)); err != nil {
 			return nil, errors.Wrapf(err, "failed to set current schema to %q", config.Database)
 		}
@@ -72,7 +71,6 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	driver.db = db
 	driver.databaseName = config.Database
 	driver.serviceName = config.ServiceName
-	driver.schemaTenantMode = config.SchemaTenantMode
 	driver.connectionCtx = config.ConnectionContext
 	return driver, nil
 }

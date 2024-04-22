@@ -19,7 +19,7 @@
     <div class="space-y-2">
       <DatabaseOperations :databases="selectedDatabases" />
 
-      <DatabaseDataTable
+      <DatabaseV1Table
         mode="ALL"
         :loading="state.loading"
         :bordered="false"
@@ -35,7 +35,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import DatabaseDataTable from "@/components/DatabaseDataTable";
+import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import {
   useDatabaseV1Store,
   usePageMode,

@@ -536,6 +536,10 @@
                   <a href="#bytebase.store.DataSourceExternalSecret.SecretType"><span class="badge">E</span>DataSourceExternalSecret.SecretType</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.DataSourceOptions.AuthenticationType"><span class="badge">E</span>DataSourceOptions.AuthenticationType</a>
+                </li>
+              
               
               
             </ul>
@@ -1926,6 +1930,13 @@ projects/{project} </p></td>
                   <td></td>
                   <td><p>Marshalled response.
 Some fields are omitted because they are too large or contain sensitive information. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#google.rpc.Status">google.rpc.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -4227,6 +4238,13 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
+                  <td>authentication_type</td>
+                  <td><a href="#bytebase.store.DataSourceOptions.AuthenticationType">DataSourceOptions.AuthenticationType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>sasl_config</td>
                   <td><a href="#bytebase.store.SASLConfig">SASLConfig</a></td>
                   <td></td>
@@ -4451,6 +4469,35 @@ Used for authentication when connecting to the data source. </p></td>
                 <td>GCP_SECRET_MANAGER</td>
                 <td>3</td>
                 <td><p>ref: https://cloud.google.com/secret-manager/docs</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.DataSourceOptions.AuthenticationType">DataSourceOptions.AuthenticationType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTHENTICATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PASSWORD</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GOOGLE_CLOUD_SQL_IAM</td>
+                <td>2</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>
@@ -4981,14 +5028,6 @@ It is used to determine whether the table names and database names are case sens
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>schema_tenant_mode</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>The schema tenant mode is used to determine whether the instance is in schema tenant mode.
-For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema. </p></td>
-                </tr>
               
                 <tr>
                   <td>sync_interval</td>
