@@ -241,7 +241,7 @@ export interface KerberosConfig {
   instance: string;
   realm: string;
   keytab: string;
-  kdcHosr: string;
+  kdcHost: string;
   kdcTransportProtocol: string;
 }
 
@@ -877,7 +877,7 @@ export const SASLConfig = {
 };
 
 function createBaseKerberosConfig(): KerberosConfig {
-  return { primary: "", instance: "", realm: "", keytab: "", kdcHosr: "", kdcTransportProtocol: "" };
+  return { primary: "", instance: "", realm: "", keytab: "", kdcHost: "", kdcTransportProtocol: "" };
 }
 
 export const KerberosConfig = {
@@ -894,8 +894,8 @@ export const KerberosConfig = {
     if (message.keytab !== "") {
       writer.uint32(34).string(message.keytab);
     }
-    if (message.kdcHosr !== "") {
-      writer.uint32(42).string(message.kdcHosr);
+    if (message.kdcHost !== "") {
+      writer.uint32(42).string(message.kdcHost);
     }
     if (message.kdcTransportProtocol !== "") {
       writer.uint32(50).string(message.kdcTransportProtocol);
@@ -943,7 +943,7 @@ export const KerberosConfig = {
             break;
           }
 
-          message.kdcHosr = reader.string();
+          message.kdcHost = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
@@ -967,7 +967,7 @@ export const KerberosConfig = {
       instance: isSet(object.instance) ? globalThis.String(object.instance) : "",
       realm: isSet(object.realm) ? globalThis.String(object.realm) : "",
       keytab: isSet(object.keytab) ? globalThis.String(object.keytab) : "",
-      kdcHosr: isSet(object.kdcHosr) ? globalThis.String(object.kdcHosr) : "",
+      kdcHost: isSet(object.kdcHost) ? globalThis.String(object.kdcHost) : "",
       kdcTransportProtocol: isSet(object.kdcTransportProtocol) ? globalThis.String(object.kdcTransportProtocol) : "",
     };
   },
@@ -986,8 +986,8 @@ export const KerberosConfig = {
     if (message.keytab !== "") {
       obj.keytab = message.keytab;
     }
-    if (message.kdcHosr !== "") {
-      obj.kdcHosr = message.kdcHosr;
+    if (message.kdcHost !== "") {
+      obj.kdcHost = message.kdcHost;
     }
     if (message.kdcTransportProtocol !== "") {
       obj.kdcTransportProtocol = message.kdcTransportProtocol;
@@ -1004,7 +1004,7 @@ export const KerberosConfig = {
     message.instance = object.instance ?? "";
     message.realm = object.realm ?? "";
     message.keytab = object.keytab ?? "";
-    message.kdcHosr = object.kdcHosr ?? "";
+    message.kdcHost = object.kdcHost ?? "";
     message.kdcTransportProtocol = object.kdcTransportProtocol ?? "";
     return message;
   },
