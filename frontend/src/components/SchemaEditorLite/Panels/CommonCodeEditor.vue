@@ -37,13 +37,14 @@
       </div>
     </div>
     <MonacoEditor
-      v-model:content="state.code"
+      :content="state.code"
       :readonly="!editable"
       :auto-complete-context="{
         instance: db.instance,
         database: db.name,
       }"
       class="border w-full rounded flex-1 relative"
+      @update:content="handleUpdateCode"
     />
   </div>
 </template>
@@ -98,6 +99,13 @@ const cancelEdit = () => {
 const confirmEdit = () => {
   state.unlocked = false;
   emit("update:code", state.code);
+};
+
+const handleUpdateCode = (code: string) => {
+  state.code = code;
+  if (props.status === "created") {
+    emit("update:code", code);
+  }
 };
 
 watch(
