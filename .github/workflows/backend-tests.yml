@@ -36,10 +36,16 @@ jobs:
           key: ${{ runner.OS }}-build-mysql-cache
       - name: Install dependencies
         run: go generate -tags mysql ./...
+      - name: golangci-lint1
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: v1.57.2
+          args: version
+          skip-cache: true
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
-          version: v1.55.1
+          version: v1.57.2
           args: -j 8 --verbose --timeout 20m --max-same-issues=30 --allow-parallel-runners
           skip-cache: true
       - name: Run all tests
