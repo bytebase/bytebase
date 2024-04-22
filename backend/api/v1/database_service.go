@@ -256,13 +256,6 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 }
 
 func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, user *store.UserMessage, projectID string, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
-	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
-		ProjectID: &projectID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project policy for project %q", projectID)
-	}
-
 	for _, role := range user.Roles {
 		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(role.String()))
 		if err != nil {
@@ -273,11 +266,15 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		}
 	}
 
+	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project policy for project %q", projectID)
+	}
+
 	expressionDBsFromAllRoles := make(map[string]bool)
 	for _, binding := range policy.Bindings {
-		if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
-			continue
-		}
 		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(binding.Role.String()))
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get permissions")
