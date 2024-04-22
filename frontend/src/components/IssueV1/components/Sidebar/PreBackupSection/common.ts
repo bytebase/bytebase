@@ -1,15 +1,28 @@
+import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   databaseForTask,
+  notifyNotEditableLegacyIssue,
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { rolloutServiceClient } from "@/grpcweb";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  useIssueCommentStore,
+} from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 
 export const usePreBackupContext = () => {
+  const currentUserV1 = useCurrentUserV1();
   const context = useIssueContext();
-  const { isCreating, issue, selectedTask: task } = context;
+  const { t } = useI18n();
+  const { isCreating, issue, selectedTask: task, events } = context;
+  const project = computed(() => issue.value.projectEntity);
 
   const showPreBackupSection = computed((): boolean => {
     if (task.value.type !== Task_Type.DATABASE_DATA_UPDATE) {
@@ -28,8 +41,23 @@ export const usePreBackupContext = () => {
     return true;
   });
 
-  const showPreBackupDisabled = computed((): boolean => {
-    return !isCreating.value;
+  const allowPreBackup = computed((): boolean => {
+    if (isCreating.value) {
+      return true;
+    }
+
+    const user = currentUserV1.value;
+
+    if (user.email === extractUserResourceName(issue.value.creator)) {
+      // Allowed to the issue creator.
+      return true;
+    }
+
+    if (hasProjectPermissionV2(project.value, user, "bb.plans.update")) {
+      return true;
+    }
+
+    return false;
   });
 
   const preBackupEnabled = computed((): boolean => {
@@ -62,13 +90,55 @@ export const usePreBackupContext = () => {
           spec.changeDatabaseConfig.preUpdateBackupDetail = undefined;
         }
       }
+    } else {
+      // patch plan to reconcile rollout/stages/tasks
+      const planPatch = cloneDeep(issue.value.planEntity);
+      const spec = specForTask(planPatch, task.value);
+      if (!planPatch || !spec || !spec.changeDatabaseConfig) {
+        notifyNotEditableLegacyIssue();
+        return;
+      }
+      const database = databaseForTask(issue.value, task.value);
+      if (on) {
+        spec.changeDatabaseConfig.preUpdateBackupDetail = {
+          database: database.instance + "/databases/" + archiveDatabase.value,
+        };
+      } else {
+        spec.changeDatabaseConfig.preUpdateBackupDetail = undefined;
+      }
+
+      const updatedPlan = await rolloutServiceClient.updatePlan({
+        plan: planPatch,
+        updateMask: ["steps"],
+      });
+      issue.value.planEntity = updatedPlan;
+
+      const action = on ? "Enable" : "Disable";
+      events.emit("status-changed", { eager: true });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+
+      try {
+        await useIssueCommentStore().createIssueComment({
+          issueName: issue.value.name,
+          comment: `${action} prior backup for task [${issue.value.title}].`,
+          payload: {
+            issueName: issue.value.title,
+          },
+        });
+      } catch {
+        // fail to comment won't be too bad
+      }
     }
   };
 
   return {
     showPreBackupSection,
     preBackupEnabled,
-    showPreBackupDisabled,
+    allowPreBackup,
     togglePreBackup,
   };
 };
