@@ -32,6 +32,50 @@ func NewAuditInterceptor(store *store.Store) *AuditInterceptor {
 	}
 }
 
+func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	response, rerr := handler(ctx, request)
+
+	if err := func() error {
+		if !isAuditMethod(serverInfo.FullMethod) {
+			return nil
+		}
+		requestString, err := getRequestString(request)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get request string")
+		}
+		responseString, err := getResponseString(response)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get response string")
+		}
+
+		var user string
+		if u, ok := ctx.Value(common.UserContextKey).(*store.UserMessage); ok {
+			user = common.FormatUserEmail(u.Email)
+		}
+
+		st, _ := status.FromError(rerr)
+
+		p := &storepb.AuditLog{
+			Method:   serverInfo.FullMethod,
+			Resource: getRequestResource(request),
+			Severity: storepb.AuditLog_INFO,
+			User:     user,
+			Request:  requestString,
+			Response: responseString,
+			Status:   st.Proto(),
+		}
+
+		if err := in.store.CreateAuditLog(ctx, p); err != nil {
+			return errors.Wrapf(err, "failed to create audit log")
+		}
+		return nil
+	}(); err != nil {
+		slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
+	}
+
+	return response, rerr
+}
+
 func getRequestResource(request any) string {
 	if request == nil || reflect.ValueOf(request).IsNil() {
 		return ""
@@ -144,48 +188,4 @@ func isAuditMethod(method string) bool {
 	default:
 		return false
 	}
-}
-
-func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	response, rerr := handler(ctx, request)
-
-	if err := func() error {
-		if !isAuditMethod(serverInfo.FullMethod) {
-			return nil
-		}
-		requestString, err := getRequestString(request)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get request string")
-		}
-		responseString, err := getResponseString(response)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get response string")
-		}
-
-		var user string
-		if u, ok := ctx.Value(common.UserContextKey).(*store.UserMessage); ok {
-			user = common.FormatUserEmail(u.Email)
-		}
-
-		st, _ := status.FromError(rerr)
-
-		p := &storepb.AuditLog{
-			Method:   serverInfo.FullMethod,
-			Resource: getRequestResource(request),
-			Severity: storepb.AuditLog_INFO,
-			User:     user,
-			Request:  requestString,
-			Response: responseString,
-			Status:   st.Proto(),
-		}
-
-		if err := in.store.CreateAuditLog(ctx, p); err != nil {
-			return errors.Wrapf(err, "failed to create audit log")
-		}
-		return nil
-	}(); err != nil {
-		slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
-	}
-
-	return response, rerr
 }
