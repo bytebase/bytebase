@@ -80,6 +80,15 @@
     :procedure="state.procedureNameModalContext.procedure"
     @close="state.procedureNameModalContext = undefined"
   />
+
+  <FunctionNameModal
+    v-if="state.functionNameModalContext !== undefined"
+    :database="state.functionNameModalContext.db"
+    :metadata="state.functionNameModalContext.database"
+    :schema="state.functionNameModalContext.schema"
+    :funct="state.functionNameModalContext.function"
+    @close="state.functionNameModalContext = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -98,11 +107,13 @@ import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
+  FunctionMetadata,
   ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
+import FunctionNameModal from "../Modals/FunctionNameModal.vue";
 import ProcedureNameModal from "../Modals/ProcedureNameModal.vue";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
@@ -138,6 +149,12 @@ interface LocalState {
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     procedure?: ProcedureMetadata;
+  };
+  functionNameModalContext?: {
+    db: ComposedDatabase;
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    function?: FunctionMetadata;
   };
 }
 
@@ -330,6 +347,18 @@ watch(tabWatchKey, () => {
         expandNodeRecursively(schemaNode);
       }
       const procedureKey = keyForResource(database, { schema, procedure });
+      selectedKeysRef.value = [procedureKey];
+    } else if (tab.type === "function") {
+      const {
+        database,
+        metadata: { schema, function: func },
+      } = tab;
+      const schemaKey = keyForResource(database, { schema });
+      const schemaNode = treeNodeMap.get(schemaKey);
+      if (schemaNode) {
+        expandNodeRecursively(schemaNode);
+      }
+      const procedureKey = keyForResource(database, { schema, function: func });
       selectedKeysRef.value = [procedureKey];
     }
 
@@ -764,13 +793,12 @@ useEmitteryEventListener(contextMenuEvents, "restore-procedure", (node) => {
 });
 
 useEmitteryEventListener(contextMenuEvents, "create-function", (node) => {
-  // TODO
-  // state.procedureNameModalContext = {
-  //   db: node.db,
-  //   database: node.metadata.database,
-  //   schema: node.metadata.schema,
-  //   procedure: undefined,
-  // };
+  state.functionNameModalContext = {
+    db: node.db,
+    database: node.metadata.database,
+    schema: node.metadata.schema,
+    function: undefined,
+  };
   expandNodeRecursively(node);
 });
 useEmitteryEventListener(contextMenuEvents, "drop-function", (node) => {

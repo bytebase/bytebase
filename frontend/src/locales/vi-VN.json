@@ -2329,7 +2329,9 @@
       "cannot-drop-the-last-column": "Không thể bỏ cột cuối cùng",
       "cannot-change-config": "Cấu hình cơ sở dữ liệu phải thay đổi với lược đồ",
       "duplicated-procedure-name": "Tên thủ tục trùng lặp",
-      "invalid-procedure-name": "Tên thủ tục không hợp lệ"
+      "invalid-procedure-name": "Tên thủ tục không hợp lệ",
+      "duplicated-function-name": "Tên hàm trùng lặp",
+      "invalid-function-name": "Tên hàm không hợp lệ"
     },
     "confirm-to-close": {
       "title": "Xác nhận để đóng",

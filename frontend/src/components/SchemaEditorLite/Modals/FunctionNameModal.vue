@@ -2,7 +2,7 @@
   <BBModal
     :title="
       mode === 'create'
-        ? $t('schema-editor.actions.create-procedure')
+        ? $t('schema-editor.actions.create-function')
         : $t('schema-editor.actions.rename')
     "
     class="shadow-inner outline outline-gray-200"
@@ -12,7 +12,7 @@
       <p>{{ $t("common.name") }}</p>
       <NInput
         ref="inputRef"
-        v-model:value="state.procedureName"
+        v-model:value="state.functionName"
         class="my-2"
         :autofocus="true"
       />
@@ -39,21 +39,21 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { ProcedureMetadata } from "@/types/proto/v1/database_service";
+import { FunctionMetadata } from "@/types/proto/v1/database_service";
 import { useSchemaEditorContext } from "../context";
 
-// Procedure name must start with a non-space character, end with a non-space character.
-const procedureNameFieldRegexp = /^\S\S*\S?$/;
+// Function name must start with a non-space character, end with a non-space character.
+const functionNameFieldRegexp = /^\S\S*\S?$/;
 
 interface LocalState {
-  procedureName: string;
+  functionName: string;
 }
 
 const props = defineProps<{
   database: ComposedDatabase;
   metadata: DatabaseMetadata;
   schema: SchemaMetadata;
-  procedure?: ProcedureMetadata;
+  func?: FunctionMetadata;
 }>();
 
 const emit = defineEmits<{
@@ -65,62 +65,64 @@ const { events, addTab, markEditStatus } = useSchemaEditorContext();
 const inputRef = ref<InputInst>();
 const notificationStore = useNotificationStore();
 const mode = computed(() => {
-  return props.procedure ? "edit" : "create";
+  return props.func ? "edit" : "create";
 });
 const state = reactive<LocalState>({
-  procedureName: props.procedure?.name ?? "",
+  functionName: props.func?.name ?? "",
 });
 
 const handleConfirmButtonClick = async () => {
-  if (!procedureNameFieldRegexp.test(state.procedureName)) {
+  if (!functionNameFieldRegexp.test(state.functionName)) {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: t("schema-editor.message.invalid-procedure-name"),
+      title: t("schema-editor.message.invalid-function-name"),
     });
     return;
   }
   const { schema } = props;
-  const existed = schema.procedures.find(
-    (procedure) => procedure.name === state.procedureName
+  const existed = schema.functions.find(
+    (func) => func.name === state.functionName
   );
   if (existed) {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: t("schema-editor.message.duplicated-procedure-name"),
+      title: t("schema-editor.message.duplicated-function-name"),
     });
     return;
   }
 
-  if (!props.procedure) {
-    const procedure = ProcedureMetadata.fromPartial({
-      name: state.procedureName,
+  if (!props.func) {
+    const func = FunctionMetadata.fromPartial({
+      name: state.functionName,
       definition: [
-        "CREATE PROCEDURE `" + state.procedureName + "` ( ... )",
+        "CREATE FUNCTION `" +
+          state.functionName +
+          "`( ... )` RETURNS ... DETERMINISTIC",
         "BEGIN",
         "  ...",
         "END",
       ].join("\n"),
     });
-    schema.procedures.push(procedure);
+    schema.functions.push(func);
     markEditStatus(
       props.database,
       {
         database: props.metadata,
         schema,
-        procedure,
+        function: func,
       },
       "created"
     );
 
     addTab({
-      type: "procedure",
+      type: "function",
       database: props.database,
       metadata: {
         database: props.metadata,
         schema: props.schema,
-        procedure,
+        function: func,
       },
     });
 
@@ -128,8 +130,8 @@ const handleConfirmButtonClick = async () => {
       openFirstChild: false,
     });
   } else {
-    const { procedure } = props;
-    procedure.name = state.procedureName;
+    const { func } = props;
+    func.name = state.functionName;
     events.emit("rebuild-edit-status", {
       resets: ["tree"],
     });

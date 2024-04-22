@@ -2329,7 +2329,9 @@
       "cannot-drop-the-last-column": "不能删除最后一列",
       "cannot-change-config": "数据库配置必须同 Schema 一起变更",
       "duplicated-procedure-name": "重复的存储过程名称",
-      "invalid-procedure-name": "无效的存储过程名称"
+      "invalid-procedure-name": "无效的存储过程名称",
+      "duplicated-function-name": "重复的函数名称",
+      "invalid-function-name": "无效的函数名称"
     },
     "confirm-to-close": {
       "title": "确定关闭？",

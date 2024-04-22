@@ -2329,7 +2329,9 @@
       "cannot-drop-the-last-column": "最後の列を削除することはできません",
       "cannot-change-config": "データベースの設定はスキーマと共に変更する必要があります",
       "duplicated-procedure-name": "重複したプロシージャ名",
-      "invalid-procedure-name": "無効なプロシージャ名です"
+      "invalid-procedure-name": "無効なプロシージャ名です",
+      "duplicated-function-name": "関数名が重複しています",
+      "invalid-function-name": "無効な関数名です"
     },
     "confirm-to-close": {
       "title": "閉じるを確認する",
