@@ -236,7 +236,9 @@ type AuditLog struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the log.
-	// Format: logs/{uid}
+	// Formats:
+	// - projects/{project}/auditLogs/{uid}
+	// - workspaces/{workspace}/auditLogs/{uid}
 	Name       string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	// Format: users/d@d.com

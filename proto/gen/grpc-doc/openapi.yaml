@@ -8159,7 +8159,9 @@ components:
                     type: string
                     description: |-
                         The name of the log.
-                         Format: logs/{uid}
+                         Formats:
+                         - projects/{project}/auditLogs/{uid}
+                         - workspaces/{workspace}/auditLogs/{uid}
                 createTime:
                     readOnly: true
                     type: string
