@@ -671,24 +671,11 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 
 // SearchQueryHistories lists query histories.
 func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.SearchQueryHistoriesRequest) (*v1pb.SearchQueryHistoriesResponse, error) {
-	var pageToken storepb.PageToken
-	if request.PageToken != "" {
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-	} else {
-		pageToken.Limit = request.PageSize
-	}
-
-	limit := int(pageToken.Limit)
-	if limit <= 0 {
-		limit = 10
-	}
-	if limit > 1000 {
-		limit = 1000
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	limitPlusOne := limit + 1
-	offset := int(pageToken.Offset)
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
