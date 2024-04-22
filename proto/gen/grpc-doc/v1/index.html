@@ -7387,7 +7387,16 @@ the call that provided the page token. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The filter of the change histories.
-Follow the CEL syntax.
+follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+Support filter by type, source or table.
+For example:
+table = &#34;tableExists(&#39;{database}&#39;, &#39;{schema}&#39;, &#39;{table}&#39;)&#34;
+table = &#34;tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table1&#39;) || tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table2&#39;)&#34;
+type = &#34;MIGRATE | DATA&#34;
+source = &#34;UI&#34;
+source = &#34;VCS&#34;
+
+The table filter follow the CEL syntax.
 currently, we have one function for CEL:
 - tableExists(database, schema, table): return true if the table exists in changed resources.
 
