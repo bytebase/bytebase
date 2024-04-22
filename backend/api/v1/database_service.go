@@ -127,7 +127,7 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 		return nil, err
 	}
 
-	permission := iam.PermissionDatabasesList
+	permission := iam.PermissionDatabasesGet
 	if request.GetPermission() == iam.PermissionDatabasesQuery.String() {
 		permission = iam.PermissionDatabasesQuery
 	}
