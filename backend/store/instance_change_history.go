@@ -66,6 +66,7 @@ type FindInstanceChangeHistoryMessage struct {
 	SheetID         *int
 	Source          *db.MigrationSource
 	Version         *model.Version
+	TypeList        []db.MigrationType
 	ResourcesFilter *string
 	Limit           *int
 	Offset          *int
@@ -481,6 +482,14 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		if text != "" {
 			where = append(where, text)
 		}
+	}
+
+	changeTypes := []string{}
+	for _, changeType := range find.TypeList {
+		changeTypes = append(changeTypes, fmt.Sprintf(`'%s'`, string(changeType)))
+	}
+	if len(changeTypes) > 0 {
+		where = append(where, fmt.Sprintf("instance_change_history.type IN (%s)", strings.Join(changeTypes, ",")))
 	}
 
 	statementField := "COALESCE(sheet.statement, instance_change_history.statement)"
