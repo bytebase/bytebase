@@ -86,7 +86,7 @@
     :database="state.functionNameModalContext.db"
     :metadata="state.functionNameModalContext.database"
     :schema="state.functionNameModalContext.schema"
-    :funct="state.functionNameModalContext.function"
+    :func="state.functionNameModalContext.function"
     @close="state.functionNameModalContext = undefined"
   />
 </template>
@@ -97,12 +97,9 @@ import { cloneDeep, debounce, escape, head } from "lodash-es";
 import { MoreHorizontalIcon, CopyIcon } from "lucide-vue-next";
 import type { TreeOption } from "naive-ui";
 import { NInput, NDropdown, NTree, NPerformantEllipsis } from "naive-ui";
-import type { VNodeChild } from "vue";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { DatabaseIcon, SchemaIcon, TableIcon } from "@/components/Icon";
-import { InstanceV1EngineIcon } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -120,7 +117,7 @@ import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
 import { engineSupportsMultiSchema } from "../spec";
-import NodeCheckbox from "./NodeCheckbox";
+import NodePrefix from "./NodePrefix.vue";
 import type {
   TreeNode,
   TreeNodeForInstance,
@@ -166,7 +163,6 @@ const {
   readonly,
   currentTab,
   disableDiffColoring,
-  selectionEnabled,
   addTab,
   markEditStatus,
   removeEditStatus,
@@ -430,64 +426,8 @@ onMounted(() => {
 
 // Render prefix icons before label text.
 const renderPrefix = ({ option }: { option: TreeOption }) => {
-  const treeNode = option as TreeNode;
-
-  if (treeNode.type === "instance") {
-    const { instance } = treeNode;
-    const children = [
-      h(InstanceV1EngineIcon, {
-        instance,
-      }),
-      h(
-        "span",
-        {
-          class: "text-gray-500 text-sm",
-        },
-        `(${instance.environmentEntity.title})`
-      ),
-    ];
-
-    return h("span", { class: "flex items-center gap-x-1" }, children);
-  } else if (treeNode.type === "database") {
-    return h("span", { class: "flex items-center gap-x-1" }, [
-      h(DatabaseIcon, {
-        class: "w-4 h-auto text-gray-400",
-      }),
-      h(
-        "span",
-        {
-          class: "text-gray-500 text-sm",
-        },
-        `(${treeNode.db.effectiveEnvironmentEntity.title})`
-      ),
-    ]);
-  }
-
-  const children: VNodeChild[] = [];
-  if (selectionEnabled.value) {
-    children.push(
-      h(NodeCheckbox, {
-        node: treeNode,
-      })
-    );
-  }
-  if (treeNode.type === "schema") {
-    children.push(
-      h(SchemaIcon, {
-        class: "w-4 h-auto text-gray-400",
-      })
-    );
-  } else if (treeNode.type === "table") {
-    children.push(
-      h(TableIcon, {
-        class: "w-4 h-auto text-gray-400",
-      })
-    );
-  }
-  if (children.length > 0) {
-    return h("div", { class: "flex flex-row items-center gap-x-1" }, children);
-  }
-  return null;
+  const node = option as TreeNode;
+  return h(NodePrefix, { node });
 };
 
 // Render label text.
