@@ -310,7 +310,7 @@ require (
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.19.0 // indirect
-	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
+	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect/Users/h3n4l/h3n4l/O
 	google.golang.org/appengine v1.6.8 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
@@ -335,4 +335,4 @@ replace github.com/antlr4-go/antlr/v4 => github.com/bytebase/antlr/v4 v4.0.0-202
 
 replace github.com/sourcegraph/go-lsp => github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c
 
-replace github.com/bytebase/tsql-parser => /home/h3n4l/OpenSource/tsql-parser
+replace github.com/bytebase/tsql-parser => /Users/h3n4l/OpenSource/tsql-parser

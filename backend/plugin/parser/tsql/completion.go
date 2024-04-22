@@ -144,7 +144,7 @@ func (m CompletionMap) insertBuiltinFunctions() {
 	}
 }
 
-func (m CompletionMap) insertDatabases(c *Completer, linkedServer string) {
+func (m CompletionMap) insertMetadataDatabases(c *Completer, linkedServer string) {
 	if linkedServer != "" {
 		return
 	}
@@ -171,7 +171,7 @@ func (m CompletionMap) insertDatabases(c *Completer, linkedServer string) {
 	}
 }
 
-func (m CompletionMap) insertSchemas(c *Completer, linkedServer string, database string) {
+func (m CompletionMap) insertMetadataSchemas(c *Completer, linkedServer string, database string) {
 	if linkedServer != "" {
 		return
 	}
@@ -210,7 +210,7 @@ func (m CompletionMap) insertSchemas(c *Completer, linkedServer string, database
 	}
 }
 
-func (m CompletionMap) insertTables(c *Completer, linkedServer string, database string, schema string) {
+func (m CompletionMap) insertMetadataTables(c *Completer, linkedServer string, database string, schema string) {
 	if linkedServer != "" {
 		return
 	}
@@ -259,7 +259,7 @@ func (m CompletionMap) insertCTEs(c *Completer) {
 	}
 }
 
-func (m CompletionMap) insertViews(c *Completer, linkedServer string, database string, schema string) {
+func (m CompletionMap) insertMetadataViews(c *Completer, linkedServer string, database string, schema string) {
 	if linkedServer != "" {
 		return
 	}
@@ -449,7 +449,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		})
 	}
 
-	for ruleCandidate := range candidates.Rules {
+	for ruleCandidate, ruleStack := range candidates.Rules {
 		c.scanner.PopAndRestore()
 		c.scanner.Push()
 
@@ -457,17 +457,21 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		case tsqlparser.TSqlParserRULE_built_in_functions:
 			functionEntries.insertBuiltinFunctions()
 		case tsqlparser.TSqlParserRULE_full_table_name:
+			// full_table_name also appears in the full_column_name rule, we would handle it in the full_column_name rule in this case.
+			if len(ruleStack) > 0 && ruleStack[0].ID == tsqlparser.TSqlParserRULE_full_column_name {
+				continue
+			}
 			completionContexts := c.determineFullTableNameContext()
 			for _, context := range completionContexts {
 				if context.flags&objectFlagShowDatabase != 0 {
-					databaseEntries.insertDatabases(c, context.linkedServer)
+					databaseEntries.insertMetadataDatabases(c, context.linkedServer)
 				}
 				if context.flags&objectFlagShowSchema != 0 {
-					schemaEntries.insertSchemas(c, context.linkedServer, context.database)
+					schemaEntries.insertMetadataSchemas(c, context.linkedServer, context.database)
 				}
 				if context.flags&objectFlagShowObject != 0 {
-					tableEntries.insertTables(c, context.linkedServer, context.database, context.schema)
-					viewEntries.insertViews(c, context.linkedServer, context.database, context.schema)
+					tableEntries.insertMetadataTables(c, context.linkedServer, context.database, context.schema)
+					viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
 				}
 				if context.linkedServer == "" && context.database == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
 					// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
@@ -478,14 +482,14 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			completionContexts := c.determineAsteriskContext()
 			for _, context := range completionContexts {
 				if context.flags&objectFlagShowDatabase != 0 {
-					databaseEntries.insertDatabases(c, context.linkedServer)
+					databaseEntries.insertMetadataDatabases(c, context.linkedServer)
 				}
 				if context.flags&objectFlagShowSchema != 0 {
-					schemaEntries.insertSchemas(c, context.linkedServer, context.database)
+					schemaEntries.insertMetadataSchemas(c, context.linkedServer, context.database)
 				}
 				if context.flags&objectFlagShowObject != 0 {
-					tableEntries.insertTables(c, context.linkedServer, context.database, context.schema)
-					viewEntries.insertViews(c, context.linkedServer, context.database, context.schema)
+					tableEntries.insertMetadataTables(c, context.linkedServer, context.database, context.schema)
+					viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
 				}
 				if context.linkedServer == "" && context.database == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
 					// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
@@ -496,14 +500,14 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			completionContexts := c.determineFullColumnName()
 			for _, context := range completionContexts {
 				if context.flags&objectFlagShowDatabase != 0 {
-					databaseEntries.insertDatabases(c, context.linkedServer)
+					databaseEntries.insertMetadataDatabases(c, context.linkedServer)
 				}
 				if context.flags&objectFlagShowSchema != 0 {
-					schemaEntries.insertSchemas(c, context.linkedServer, context.database)
+					schemaEntries.insertMetadataSchemas(c, context.linkedServer, context.database)
 				}
 				if context.flags&objectFlagShowObject != 0 {
-					tableEntries.insertTables(c, context.linkedServer, context.database, context.schema)
-					viewEntries.insertViews(c, context.linkedServer, context.database, context.schema)
+					tableEntries.insertMetadataTables(c, context.linkedServer, context.database, context.schema)
+					viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
 				}
 				if context.linkedServer == "" && context.database == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
 					// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
