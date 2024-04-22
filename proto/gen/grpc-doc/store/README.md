@@ -616,6 +616,7 @@ convert to the expected struct there.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The project or workspace the audit log belongs to. Formats: - projects/{project} - workspaces/{workspace} |
 | method | [string](#string) |  | e.g. /bytebase.v1.SQLService/Query |
 | resource | [string](#string) |  | resource name projects/{project} |
 | user | [string](#string) |  | Format: users/d@d.com |
