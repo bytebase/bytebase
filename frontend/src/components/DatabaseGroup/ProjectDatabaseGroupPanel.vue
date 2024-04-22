@@ -2,11 +2,13 @@
   <div class="w-full space-y-4">
     <FeatureAttention feature="bb.feature.database-grouping" />
 
-    <DatabaseGroupTable
+    <DatabaseGroupDataTable
       :database-group-list="databaseGroupList"
       :show-edit="allowEdit"
-      :row-clickable="hasDatabaseGroupFeature"
-      @edit="handleConfigureDatabaseGroup"
+      :custom-click="true"
+      :show-selection="false"
+      @row-click="handleDatabaseGroupClick"
+      @edit="handleEditDatabaseGroup"
     />
   </div>
 
@@ -28,11 +30,13 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { computed, onMounted, reactive } from "vue";
+import { useRouter } from "vue-router";
+import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
+import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { useDBGroupStore, hasFeature } from "@/store";
-import type { ComposedProject } from "@/types";
+import type { ComposedDatabaseGroup, ComposedProject } from "@/types";
 import type { DatabaseGroup } from "@/types/proto/v1/project_service";
 import DatabaseGroupPanel from "./DatabaseGroupPanel.vue";
-import DatabaseGroupTable from "./DatabaseGroupTable.vue";
 
 interface LocalState {
   showDatabaseGroupPanel: boolean;
@@ -45,6 +49,7 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
+const router = useRouter();
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
   showFeatureModal: false,
@@ -63,7 +68,24 @@ onMounted(async () => {
   await dbGroupStore.getOrFetchDBGroupListByProjectName(props.project.name);
 });
 
-const handleConfigureDatabaseGroup = (databaseGroup: DatabaseGroup) => {
+const handleDatabaseGroupClick = (
+  event: MouseEvent,
+  databaseGroup: ComposedDatabaseGroup
+) => {
+  const url = router.resolve({
+    name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+    params: {
+      databaseGroupName: databaseGroup.databaseGroupName,
+    },
+  }).fullPath;
+  if (event.ctrlKey || event.metaKey) {
+    window.open(url, "_blank");
+  } else {
+    router.push(url);
+  }
+};
+
+const handleEditDatabaseGroup = (databaseGroup: ComposedDatabaseGroup) => {
   if (!hasDatabaseGroupFeature.value) {
     state.showFeatureModal = true;
     return;
