@@ -230,6 +230,9 @@ func (m CompletionMap) insertMetadataTables(c *Completer, linkedServer string, d
 	if err != nil {
 		return
 	}
+	if databaseMetadata == nil {
+		return
+	}
 	for _, schema := range databaseMetadata.ListSchemaNames() {
 		if strings.EqualFold(schema, schemaName) {
 			schemaName = schema
@@ -238,11 +241,80 @@ func (m CompletionMap) insertMetadataTables(c *Completer, linkedServer string, d
 	}
 
 	schemaMetadata := databaseMetadata.GetSchema(schemaName)
+	if schemaMetadata == nil {
+		return
+	}
 	for _, table := range schemaMetadata.ListTableNames() {
 		if _, ok := m[table]; !ok {
 			m[table] = base.Candidate{
 				Type: base.CandidateTypeTable,
 				Text: table,
+			}
+		}
+	}
+}
+
+func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, database string, schema string, table string) {
+	if linkedServer != "" {
+		return
+	}
+	databaseName, schemaName, tableName := c.defaultDatabase, c.defaultSchema, ""
+	if database != "" {
+		databaseName = database
+	}
+	if schema != "" {
+		schemaName = schema
+	}
+	if table != "" {
+		tableName = table
+	}
+	if databaseName == "" || schemaName == "" {
+		return
+	}
+	databaseNames, err := c.databaseNamesLister(c.ctx)
+	if err != nil {
+		return
+	}
+	for _, dbName := range databaseNames {
+		if strings.EqualFold(dbName, databaseName) {
+			databaseName = dbName
+			break
+		}
+	}
+	_, databaseMetadata, err := c.metadataGetter(c.ctx, databaseName)
+	if err != nil {
+		return
+	}
+	if databaseMetadata == nil {
+		return
+	}
+	for _, schema := range databaseMetadata.ListSchemaNames() {
+		if strings.EqualFold(schema, schemaName) {
+			schemaName = schema
+			break
+		}
+	}
+	schemaMetadata := databaseMetadata.GetSchema(schemaName)
+	if schemaMetadata == nil {
+		return
+	}
+	var tableNames []string
+	for _, table := range schemaMetadata.ListTableNames() {
+		if tableName == "" {
+			tableNames = append(tableNames, table)
+		} else if strings.EqualFold(table, tableName) {
+			tableNames = append(tableNames, table)
+			break
+		}
+	}
+	for _, table := range tableNames {
+		tableMetadata := schemaMetadata.GetTable(table)
+		for _, column := range tableMetadata.GetColumns() {
+			if _, ok := m[column.Name]; !ok {
+				m[column.Name] = base.Candidate{
+					Type: base.CandidateTypeColumn,
+					Text: column.Name,
+				}
 			}
 		}
 	}
@@ -279,6 +351,9 @@ func (m CompletionMap) insertMetadataViews(c *Completer, linkedServer string, da
 	if err != nil {
 		return
 	}
+	if databaseMetadata == nil {
+		return
+	}
 	for _, schema := range databaseMetadata.ListSchemaNames() {
 		if strings.EqualFold(schema, schemaName) {
 			schemaName = schema
@@ -287,6 +362,9 @@ func (m CompletionMap) insertMetadataViews(c *Completer, linkedServer string, da
 	}
 
 	schemaMetadata := databaseMetadata.GetSchema(schemaName)
+	if schemaMetadata == nil {
+		return
+	}
 	for _, view := range schemaMetadata.ListViewNames() {
 		if _, ok := m[view]; !ok {
 			m[view] = base.Candidate{
@@ -428,6 +506,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	databaseEntries := make(CompletionMap)
 	schemaEntries := make(CompletionMap)
 	tableEntries := make(CompletionMap)
+	columEntries := make(CompletionMap)
 	viewEntries := make(CompletionMap)
 
 	for tokenCandidate, continuous := range candidates.Tokens {
@@ -508,10 +587,52 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				if context.flags&objectFlagShowObject != 0 {
 					tableEntries.insertMetadataTables(c, context.linkedServer, context.database, context.schema)
 					viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
+					for _, reference := range c.references {
+						switch reference := reference.(type) {
+						case *base.PhysicalTableReference:
+							tableName := reference.Table
+							if reference.Alias != "" {
+								tableName = reference.Alias
+							}
+							if _, ok := tableEntries[tableName]; !ok {
+								tableEntries[tableName] = base.Candidate{
+									Type: base.CandidateTypeTable,
+									Text: tableName,
+								}
+							}
+						case *base.VirtualTableReference:
+							// We only append the virtual table reference to the completion list when the linkedServer, database and schema are all empty.
+							if context.linkedServer == "" && context.database == "" && context.schema == "" {
+								tableEntries[reference.Table] = base.Candidate{
+									Type: base.CandidateTypeTable,
+									Text: reference.Table,
+								}
+							}
+						}
+					}
+					if context.linkedServer == "" && context.database == "" && context.schema == "" {
+						// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
+						tableEntries.insertCTEs(c)
+					}
 				}
-				if context.linkedServer == "" && context.database == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
-					// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
-					tableEntries.insertCTEs(c)
+				if context.flags&objectFlagShowColumn != 0 {
+					columEntries.insertMetadataColumns(c, context.linkedServer, context.database, context.schema, context.object)
+					for _, reference := range c.references {
+						if reference, ok := reference.(*base.VirtualTableReference); ok {
+							// Reference could be a physical table reference or a virtual table reference, if the reference is a virtual table reference,
+							// and users do not specify the server, database and schema, we should also insert the columns.
+							if context.linkedServer == "" && context.database == "" && context.schema == "" {
+								for _, column := range reference.Columns {
+									if _, ok := columEntries[column]; !ok {
+										columEntries[column] = base.Candidate{
+											Type: base.CandidateTypeColumn,
+											Text: column,
+										}
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 		}
@@ -799,16 +920,16 @@ func (c *Completer) determineAsteriskContext() []*objectRefContext {
 			c.scanner.Forward(true /* skipHidden */)
 		}
 		if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
-			return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, false /* includeColumn */)
+			return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */, false /* includeColumn */)
 		}
 		candidates = append(candidates, temp)
 		c.scanner.Forward(true /* skipHidden */)
-		if count > 3 {
+		if count > 2 {
 			break
 		}
 	}
 
-	return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, false /* includeColumn */)
+	return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */, false /* includeColumn */)
 }
 
 func (c *Completer) determineFullTableNameContext() []*objectRefContext {
