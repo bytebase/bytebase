@@ -1204,8 +1204,10 @@ func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExter
 	return secret, nil
 }
 
-// TODO(tommy): add field legality check.
 func convertToStoreDataSourceSaslConfig(saslConfig *v1pb.SASLConfig) *storepb.SASLConfig {
+	if saslConfig == nil {
+		return nil
+	}
 	storeSaslConfig := &storepb.SASLConfig{}
 	switch m := saslConfig.Mechanism.(type) {
 	case *v1pb.SASLConfig_KrbConfig:
