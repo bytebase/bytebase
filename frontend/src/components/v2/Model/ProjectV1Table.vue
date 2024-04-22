@@ -9,6 +9,7 @@
     :row-key="(data: ComposedProject) => data.name"
     :row-props="rowProps"
     :pagination="pagination"
+    :paginate-single-page="false"
   />
 </template>
 
