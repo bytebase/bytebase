@@ -266,10 +266,11 @@ type TaskPatch struct {
 	RollbackSQLStatus *RollbackSQLStatus
 	// RollbackSheetID sets the rollback sheet ID.
 	// When RollbackEnabled is enabled, RollbackSheetID is kept till it's set to the new sheet ID by the runner.
-	RollbackSheetID *int
-	RollbackError   *string
-	ExportFormat    *storepb.ExportFormat
-	ExportPassword  *string
+	RollbackSheetID       *int
+	RollbackError         *string
+	ExportFormat          *storepb.ExportFormat
+	ExportPassword        *string
+	PreUpdateBackupDetail *PreUpdateBackupDetail
 
 	// Flags for gh-ost.
 	Flags *map[string]string
