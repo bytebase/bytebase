@@ -41,6 +41,10 @@ func getRequestResource(request any) string {
 		return r.Name
 	case *v1pb.ExportRequest:
 		return r.Name
+	case *v1pb.UpdateDatabaseRequest:
+		return r.Database.Name
+	case *v1pb.BatchUpdateDatabasesRequest:
+		return r.Parent
 	case *v1pb.CreateUserRequest:
 		return ""
 	default:
@@ -60,6 +64,10 @@ func getRequestString(request any) (string, error) {
 			//nolint:revive
 			r = proto.Clone(r).(*v1pb.ExportRequest)
 			r.Password = ""
+			return r
+		case *v1pb.UpdateDatabaseRequest:
+			return r
+		case *v1pb.BatchUpdateDatabasesRequest:
 			return r
 		case *v1pb.CreateUserRequest:
 			return r
@@ -87,6 +95,10 @@ func getResponseString(response any) (string, error) {
 			return nil
 		case *v1pb.ExportResponse:
 			return nil
+		case *v1pb.Database:
+			return r
+		case *v1pb.BatchUpdateDatabasesResponse:
+			return r
 		case *v1pb.User:
 			return &v1pb.User{
 				Name:     r.Name,
@@ -112,6 +124,8 @@ func isAuditMethod(method string) bool {
 	switch method {
 	case
 		v1pb.AuthService_CreateUser_FullMethodName,
+		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
+		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
 		v1pb.SQLService_Export_FullMethodName,
 		v1pb.SQLService_Query_FullMethodName:
 		return true
