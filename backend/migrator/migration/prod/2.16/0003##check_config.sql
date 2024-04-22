@@ -1,4 +1,4 @@
-CREATE TABLE check_config (
+CREATE TABLE sql_review_config (
   resource_id TEXT NOT NULL PRIMARY KEY,
   creator_id INTEGER NOT NULL REFERENCES principal (id),
   created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
