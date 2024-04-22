@@ -427,6 +427,30 @@ func unmarshalPageToken(s string, pageToken *storepb.PageToken) error {
 	return nil
 }
 
+func parseLimitAndOffset(pageToken string, pageSize int) (int, int, error) {
+	var limit, offset int
+	if pageToken != "" {
+		var token storepb.PageToken
+		if err := unmarshalPageToken(pageToken, &token); err != nil {
+			return limit, offset, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
+		}
+		if token.Limit < 0 {
+			return limit, offset, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
+		}
+		limit = int(token.Limit)
+		offset = int(token.Offset)
+	} else {
+		limit = int(pageSize)
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	return limit, offset, nil
+}
+
 // isValidUUID validates that the id is the valid UUID format.
 // https://datatracker.ietf.org/doc/html/rfc4122#section-4.1
 func isValidUUID(id string) bool {
