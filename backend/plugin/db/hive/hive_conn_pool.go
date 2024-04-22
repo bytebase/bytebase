@@ -53,7 +53,6 @@ func CreateHiveConnPool(
 	case *db.KerberosConfig:
 		hiveConfig.Hostname = t.Instance
 		hiveConfig.Service = t.Primary
-
 	// Plain.
 	default:
 		hiveConfig.Username = config.Username
