@@ -98,8 +98,9 @@
             {{ $t("database-group.table-group.create") }}
           </NButton>
         </div>
-        <SchemaGroupTable
+        <SchemaGroupDataTable
           :schema-group-list="schemaGroupList"
+          @row-click="handleSchemaGroupClick"
           @edit="handleEditSchemaGroup"
         />
       </div>
@@ -127,10 +128,11 @@
 import { useDebounceFn } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { onMounted, reactive, computed, watch, ref } from "vue";
+import { useRouter } from "vue-router";
 import DatabaseGroupPrevEditorModal from "@/components/AlterSchemaPrepForm/DatabaseGroupPrevEditorModal.vue";
+import { SchemaGroupDataTable } from "@/components/DatabaseGroup";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
-import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
 import type { ResourceType } from "@/components/DatabaseGroup/utils";
 import { FactorList } from "@/components/DatabaseGroup/utils";
 import {
@@ -139,15 +141,23 @@ import {
 } from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
 import type { ConditionGroupExpr } from "@/plugins/cel";
+import { PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentUserV1,
   useDBGroupStore,
   useProjectV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
+import {
+  databaseGroupNamePrefix,
+  getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
+} from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
+import type {
+  ComposedDatabase,
+  ComposedDatabaseGroup,
+  ComposedSchemaGroup,
+} from "@/types";
 import type {
   DatabaseGroup,
   SchemaGroup,
@@ -172,6 +182,7 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
+const router = useRouter();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
 const subscriptionV1Store = useSubscriptionV1Store();
@@ -241,6 +252,25 @@ const createMigration = (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
 ) => {
   issueType.value = type;
+};
+
+const handleSchemaGroupClick = (
+  event: MouseEvent,
+  schemaGroup: ComposedSchemaGroup
+) => {
+  const [, , schemaGroupName] =
+    getProjectNameAndDatabaseGroupNameAndSchemaGroupName(schemaGroup.name);
+  const url = router.resolve({
+    name: PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
+    params: {
+      schemaGroupName: schemaGroupName,
+    },
+  }).fullPath;
+  if (event.ctrlKey || event.metaKey) {
+    window.open(url, "_blank");
+  } else {
+    router.push(url);
+  }
 };
 
 watch(
