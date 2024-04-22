@@ -174,7 +174,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if request.ValidateOnly {
 		for _, ds := range instanceMessage.DataSources {
 			err := func() error {
-				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage, ds, "", false /* datashare */, ds.Type == api.RO, false /* schemaTenantMode */, db.ConnectionContext{})
+				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage, ds, "", false /* datashare */, ds.Type == api.RO, db.ConnectionContext{})
 				if err != nil {
 					return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 				}
@@ -347,11 +347,6 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			patch.DataSources = &datasources
 		case "activation":
 			patch.Activation = &request.Instance.Activation
-		case "options.schema_tenant_mode":
-			if patch.OptionsUpsert == nil {
-				patch.OptionsUpsert = instance.Options
-			}
-			patch.OptionsUpsert.SchemaTenantMode = request.Instance.Options.GetSchemaTenantMode()
 		case "options.sync_interval":
 			if patch.OptionsUpsert == nil {
 				patch.OptionsUpsert = instance.Options
@@ -694,7 +689,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */, db.ConnectionContext{})
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.Type == api.RO, db.ConnectionContext{})
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 			}
@@ -871,7 +866,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, &dataSource, "", false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */, db.ConnectionContext{})
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, &dataSource, "", false /* datashare */, dataSource.Type == api.RO, db.ConnectionContext{})
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 			}
@@ -1283,7 +1278,6 @@ func convertToInstanceOptions(options *storepb.InstanceOptions) *v1pb.InstanceOp
 	}
 
 	return &v1pb.InstanceOptions{
-		SchemaTenantMode:   options.SchemaTenantMode,
 		SyncInterval:       options.SyncInterval,
 		MaximumConnections: options.MaximumConnections,
 	}
@@ -1295,7 +1289,6 @@ func convertInstanceOptions(options *v1pb.InstanceOptions) *storepb.InstanceOpti
 	}
 
 	return &storepb.InstanceOptions{
-		SchemaTenantMode:   options.SchemaTenantMode,
 		SyncInterval:       options.SyncInterval,
 		MaximumConnections: options.MaximumConnections,
 	}

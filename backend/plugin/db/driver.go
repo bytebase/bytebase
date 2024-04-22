@@ -173,12 +173,9 @@ type ConnectionConfig struct {
 	// AuthenticationDatabase is only supported for MongoDB now.
 	AuthenticationDatabase string
 	// SID and ServiceName are Oracle only.
-	SID         string
-	ServiceName string
-	SSHConfig   SSHConfig
-	// SchemaTenantMode is the Oracle specific mode.
-	// If true, bytebase will treat the schema as a database.
-	SchemaTenantMode         bool
+	SID                      string
+	ServiceName              string
+	SSHConfig                SSHConfig
 	AuthenticationPrivateKey string
 
 	ConnectionContext ConnectionContext
