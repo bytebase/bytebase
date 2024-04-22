@@ -272,18 +272,6 @@ const debouncedBuildDatabaseTreeData = debounce(buildDatabaseTreeData, 100);
 useEmitteryEventListener(events, "rebuild-tree", (params) => {
   debouncedBuildDatabaseTreeData(params.openFirstChild);
 });
-watchEffect(() => {
-  const rows: string[] = [];
-  const walk = (node: TreeNode, depth = 0) => {
-    const indent = " ".repeat(depth);
-    rows.push(`${indent}${node.key}`);
-    if (node.children && node.children.length > 0) {
-      node.children.forEach((child) => walk(child, depth + 1));
-    }
-  };
-  treeDataRef.value.forEach((node) => walk(node, 0));
-  console.log(rows.join("\n"));
-});
 
 const tabWatchKey = computed(() => {
   const tab = currentTab.value;
