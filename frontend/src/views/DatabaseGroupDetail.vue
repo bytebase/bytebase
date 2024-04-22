@@ -133,7 +133,6 @@ import DatabaseGroupPrevEditorModal from "@/components/AlterSchemaPrepForm/Datab
 import { SchemaGroupDataTable } from "@/components/DatabaseGroup";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
-import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
 import type { ResourceType } from "@/components/DatabaseGroup/utils";
 import { FactorList } from "@/components/DatabaseGroup/utils";
 import {
