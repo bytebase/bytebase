@@ -43,7 +43,9 @@ export interface SearchAuditLogsResponse {
 export interface AuditLog {
   /**
    * The name of the log.
-   * Format: logs/{uid}
+   * Formats:
+   * - projects/{project}/auditLogs/{uid}
+   * - workspaces/{workspace}/auditLogs/{uid}
    */
   name: string;
   createTime:
