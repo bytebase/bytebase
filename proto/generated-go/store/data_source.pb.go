@@ -384,6 +384,7 @@ type DataSourceOptions struct {
 	AuthenticationPrivateKeyObfuscated string                               `protobuf:"bytes,10,opt,name=authentication_private_key_obfuscated,json=authenticationPrivateKeyObfuscated,proto3" json:"authentication_private_key_obfuscated,omitempty"`
 	ExternalSecret                     *DataSourceExternalSecret            `protobuf:"bytes,11,opt,name=external_secret,json=externalSecret,proto3" json:"external_secret,omitempty"`
 	AuthenticationType                 DataSourceOptions_AuthenticationType `protobuf:"varint,12,opt,name=authentication_type,json=authenticationType,proto3,enum=bytebase.store.DataSourceOptions_AuthenticationType" json:"authentication_type,omitempty"`
+	SaslConfig                         *SASLConfig                          `protobuf:"bytes,13,opt,name=sasl_config,json=saslConfig,proto3" json:"sasl_config,omitempty"`
 }
 
 func (x *DataSourceOptions) Reset() {
@@ -502,6 +503,236 @@ func (x *DataSourceOptions) GetAuthenticationType() DataSourceOptions_Authentica
 	return DataSourceOptions_AUTHENTICATION_UNSPECIFIED
 }
 
+func (x *DataSourceOptions) GetSaslConfig() *SASLConfig {
+	if x != nil {
+		return x.SaslConfig
+	}
+	return nil
+}
+
+type SASLConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Mechanism:
+	//
+	//	*SASLConfig_KrbConfig
+	//	*SASLConfig_PlainConfig
+	Mechanism isSASLConfig_Mechanism `protobuf_oneof:"mechanism"`
+}
+
+func (x *SASLConfig) Reset() {
+	*x = SASLConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_data_source_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SASLConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SASLConfig) ProtoMessage() {}
+
+func (x *SASLConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_store_data_source_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SASLConfig.ProtoReflect.Descriptor instead.
+func (*SASLConfig) Descriptor() ([]byte, []int) {
+	return file_store_data_source_proto_rawDescGZIP(), []int{2}
+}
+
+func (m *SASLConfig) GetMechanism() isSASLConfig_Mechanism {
+	if m != nil {
+		return m.Mechanism
+	}
+	return nil
+}
+
+func (x *SASLConfig) GetKrbConfig() *KerberosConfig {
+	if x, ok := x.GetMechanism().(*SASLConfig_KrbConfig); ok {
+		return x.KrbConfig
+	}
+	return nil
+}
+
+func (x *SASLConfig) GetPlainConfig() *PlainSASLConfig {
+	if x, ok := x.GetMechanism().(*SASLConfig_PlainConfig); ok {
+		return x.PlainConfig
+	}
+	return nil
+}
+
+type isSASLConfig_Mechanism interface {
+	isSASLConfig_Mechanism()
+}
+
+type SASLConfig_KrbConfig struct {
+	KrbConfig *KerberosConfig `protobuf:"bytes,1,opt,name=krb_config,json=krbConfig,proto3,oneof"`
+}
+
+type SASLConfig_PlainConfig struct {
+	PlainConfig *PlainSASLConfig `protobuf:"bytes,2,opt,name=plain_config,json=plainConfig,proto3,oneof"`
+}
+
+func (*SASLConfig_KrbConfig) isSASLConfig_Mechanism() {}
+
+func (*SASLConfig_PlainConfig) isSASLConfig_Mechanism() {}
+
+type KerberosConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Primary              string `protobuf:"bytes,1,opt,name=primary,proto3" json:"primary,omitempty"`
+	Instance             string `protobuf:"bytes,2,opt,name=instance,proto3" json:"instance,omitempty"`
+	Realm                string `protobuf:"bytes,3,opt,name=realm,proto3" json:"realm,omitempty"`
+	Keytab               string `protobuf:"bytes,4,opt,name=keytab,proto3" json:"keytab,omitempty"`
+	KdcHost              string `protobuf:"bytes,5,opt,name=kdc_host,json=kdcHost,proto3" json:"kdc_host,omitempty"`
+	KdcTransportProtocol string `protobuf:"bytes,6,opt,name=kdc_transport_protocol,json=kdcTransportProtocol,proto3" json:"kdc_transport_protocol,omitempty"`
+}
+
+func (x *KerberosConfig) Reset() {
+	*x = KerberosConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_data_source_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *KerberosConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KerberosConfig) ProtoMessage() {}
+
+func (x *KerberosConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_store_data_source_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KerberosConfig.ProtoReflect.Descriptor instead.
+func (*KerberosConfig) Descriptor() ([]byte, []int) {
+	return file_store_data_source_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *KerberosConfig) GetPrimary() string {
+	if x != nil {
+		return x.Primary
+	}
+	return ""
+}
+
+func (x *KerberosConfig) GetInstance() string {
+	if x != nil {
+		return x.Instance
+	}
+	return ""
+}
+
+func (x *KerberosConfig) GetRealm() string {
+	if x != nil {
+		return x.Realm
+	}
+	return ""
+}
+
+func (x *KerberosConfig) GetKeytab() string {
+	if x != nil {
+		return x.Keytab
+	}
+	return ""
+}
+
+func (x *KerberosConfig) GetKdcHost() string {
+	if x != nil {
+		return x.KdcHost
+	}
+	return ""
+}
+
+func (x *KerberosConfig) GetKdcTransportProtocol() string {
+	if x != nil {
+		return x.KdcTransportProtocol
+	}
+	return ""
+}
+
+type PlainSASLConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+}
+
+func (x *PlainSASLConfig) Reset() {
+	*x = PlainSASLConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_data_source_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PlainSASLConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PlainSASLConfig) ProtoMessage() {}
+
+func (x *PlainSASLConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_store_data_source_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PlainSASLConfig.ProtoReflect.Descriptor instead.
+func (*PlainSASLConfig) Descriptor() ([]byte, []int) {
+	return file_store_data_source_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *PlainSASLConfig) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *PlainSASLConfig) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
 type DataSourceExternalSecret_AppRoleAuthOption struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -518,7 +749,7 @@ type DataSourceExternalSecret_AppRoleAuthOption struct {
 func (x *DataSourceExternalSecret_AppRoleAuthOption) Reset() {
 	*x = DataSourceExternalSecret_AppRoleAuthOption{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_data_source_proto_msgTypes[2]
+		mi := &file_store_data_source_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -531,7 +762,7 @@ func (x *DataSourceExternalSecret_AppRoleAuthOption) String() string {
 func (*DataSourceExternalSecret_AppRoleAuthOption) ProtoMessage() {}
 
 func (x *DataSourceExternalSecret_AppRoleAuthOption) ProtoReflect() protoreflect.Message {
-	mi := &file_store_data_source_proto_msgTypes[2]
+	mi := &file_store_data_source_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -636,7 +867,7 @@ var file_store_data_source_proto_rawDesc = []byte{
 	0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12,
 	0x09, 0x0a, 0x05, 0x54, 0x4f, 0x4b, 0x45, 0x4e, 0x10, 0x01, 0x12, 0x12, 0x0a, 0x0e, 0x56, 0x41,
 	0x55, 0x4c, 0x54, 0x5f, 0x41, 0x50, 0x50, 0x5f, 0x52, 0x4f, 0x4c, 0x45, 0x10, 0x02, 0x42, 0x0d,
-	0x0a, 0x0b, 0x61, 0x75, 0x74, 0x68, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0xc4, 0x05,
+	0x0a, 0x0b, 0x61, 0x75, 0x74, 0x68, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x81, 0x06,
 	0x0a, 0x11, 0x44, 0x61, 0x74, 0x61, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x4f, 0x70, 0x74, 0x69,
 	0x6f, 0x6e, 0x73, 0x12, 0x10, 0x0a, 0x03, 0x73, 0x72, 0x76, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08,
 	0x52, 0x03, 0x73, 0x72, 0x76, 0x12, 0x37, 0x0a, 0x17, 0x61, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74,
@@ -675,15 +906,46 @@ var file_store_data_source_proto_rawDesc = []byte{
 	0x74, 0x61, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e,
 	0x41, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x54, 0x79,
 	0x70, 0x65, 0x52, 0x12, 0x61, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74, 0x69,
-	0x6f, 0x6e, 0x54, 0x79, 0x70, 0x65, 0x22, 0x5c, 0x0a, 0x12, 0x41, 0x75, 0x74, 0x68, 0x65, 0x6e,
-	0x74, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x54, 0x79, 0x70, 0x65, 0x12, 0x1e, 0x0a, 0x1a,
-	0x41, 0x55, 0x54, 0x48, 0x45, 0x4e, 0x54, 0x49, 0x43, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x55,
-	0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0c, 0x0a, 0x08,
-	0x50, 0x41, 0x53, 0x53, 0x57, 0x4f, 0x52, 0x44, 0x10, 0x01, 0x12, 0x18, 0x0a, 0x14, 0x47, 0x4f,
-	0x4f, 0x47, 0x4c, 0x45, 0x5f, 0x43, 0x4c, 0x4f, 0x55, 0x44, 0x5f, 0x53, 0x51, 0x4c, 0x5f, 0x49,
-	0x41, 0x4d, 0x10, 0x02, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65,
-	0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x6f, 0x6e, 0x54, 0x79, 0x70, 0x65, 0x12, 0x3b, 0x0a, 0x0b, 0x73, 0x61, 0x73, 0x6c, 0x5f, 0x63,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x0d, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x53, 0x41, 0x53,
+	0x4c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x0a, 0x73, 0x61, 0x73, 0x6c, 0x43, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x22, 0x5c, 0x0a, 0x12, 0x41, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69, 0x63,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x54, 0x79, 0x70, 0x65, 0x12, 0x1e, 0x0a, 0x1a, 0x41, 0x55, 0x54,
+	0x48, 0x45, 0x4e, 0x54, 0x49, 0x43, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x55, 0x4e, 0x53, 0x50,
+	0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0c, 0x0a, 0x08, 0x50, 0x41, 0x53,
+	0x53, 0x57, 0x4f, 0x52, 0x44, 0x10, 0x01, 0x12, 0x18, 0x0a, 0x14, 0x47, 0x4f, 0x4f, 0x47, 0x4c,
+	0x45, 0x5f, 0x43, 0x4c, 0x4f, 0x55, 0x44, 0x5f, 0x53, 0x51, 0x4c, 0x5f, 0x49, 0x41, 0x4d, 0x10,
+	0x02, 0x22, 0xa0, 0x01, 0x0a, 0x0a, 0x53, 0x41, 0x53, 0x4c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
+	0x12, 0x3f, 0x0a, 0x0a, 0x6b, 0x72, 0x62, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x4b, 0x65, 0x72, 0x62, 0x65, 0x72, 0x6f, 0x73, 0x43, 0x6f,
+	0x6e, 0x66, 0x69, 0x67, 0x48, 0x00, 0x52, 0x09, 0x6b, 0x72, 0x62, 0x43, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x12, 0x44, 0x0a, 0x0c, 0x70, 0x6c, 0x61, 0x69, 0x6e, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
+	0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x6c, 0x61, 0x69, 0x6e, 0x53, 0x41,
+	0x53, 0x4c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x48, 0x00, 0x52, 0x0b, 0x70, 0x6c, 0x61, 0x69,
+	0x6e, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x42, 0x0b, 0x0a, 0x09, 0x6d, 0x65, 0x63, 0x68, 0x61,
+	0x6e, 0x69, 0x73, 0x6d, 0x22, 0xc5, 0x01, 0x0a, 0x0e, 0x4b, 0x65, 0x72, 0x62, 0x65, 0x72, 0x6f,
+	0x73, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x72, 0x69, 0x6d, 0x61,
+	0x72, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x70, 0x72, 0x69, 0x6d, 0x61, 0x72,
+	0x79, 0x12, 0x1a, 0x0a, 0x08, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x08, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x12, 0x14, 0x0a,
+	0x05, 0x72, 0x65, 0x61, 0x6c, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x72, 0x65,
+	0x61, 0x6c, 0x6d, 0x12, 0x16, 0x0a, 0x06, 0x6b, 0x65, 0x79, 0x74, 0x61, 0x62, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x06, 0x6b, 0x65, 0x79, 0x74, 0x61, 0x62, 0x12, 0x19, 0x0a, 0x08, 0x6b,
+	0x64, 0x63, 0x5f, 0x68, 0x6f, 0x73, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6b,
+	0x64, 0x63, 0x48, 0x6f, 0x73, 0x74, 0x12, 0x34, 0x0a, 0x16, 0x6b, 0x64, 0x63, 0x5f, 0x74, 0x72,
+	0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x5f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c,
+	0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x14, 0x6b, 0x64, 0x63, 0x54, 0x72, 0x61, 0x6e, 0x73,
+	0x70, 0x6f, 0x72, 0x74, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x22, 0x49, 0x0a, 0x0f,
+	0x50, 0x6c, 0x61, 0x69, 0x6e, 0x53, 0x41, 0x53, 0x4c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12,
+	0x1a, 0x0a, 0x08, 0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x08, 0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x70,
+	0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x70,
+	0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65, 0x6e, 0x65, 0x72,
+	0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -699,7 +961,7 @@ func file_store_data_source_proto_rawDescGZIP() []byte {
 }
 
 var file_store_data_source_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_store_data_source_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_store_data_source_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_store_data_source_proto_goTypes = []interface{}{
 	(DataSourceExternalSecret_SecretType)(0),                   // 0: bytebase.store.DataSourceExternalSecret.SecretType
 	(DataSourceExternalSecret_AuthType)(0),                     // 1: bytebase.store.DataSourceExternalSecret.AuthType
@@ -707,20 +969,26 @@ var file_store_data_source_proto_goTypes = []interface{}{
 	(DataSourceOptions_AuthenticationType)(0),                  // 3: bytebase.store.DataSourceOptions.AuthenticationType
 	(*DataSourceExternalSecret)(nil),                           // 4: bytebase.store.DataSourceExternalSecret
 	(*DataSourceOptions)(nil),                                  // 5: bytebase.store.DataSourceOptions
-	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 6: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
+	(*SASLConfig)(nil),                                         // 6: bytebase.store.SASLConfig
+	(*KerberosConfig)(nil),                                     // 7: bytebase.store.KerberosConfig
+	(*PlainSASLConfig)(nil),                                    // 8: bytebase.store.PlainSASLConfig
+	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 9: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
 }
 var file_store_data_source_proto_depIdxs = []int32{
 	0, // 0: bytebase.store.DataSourceExternalSecret.secret_type:type_name -> bytebase.store.DataSourceExternalSecret.SecretType
 	1, // 1: bytebase.store.DataSourceExternalSecret.auth_type:type_name -> bytebase.store.DataSourceExternalSecret.AuthType
-	6, // 2: bytebase.store.DataSourceExternalSecret.app_role:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
+	9, // 2: bytebase.store.DataSourceExternalSecret.app_role:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
 	4, // 3: bytebase.store.DataSourceOptions.external_secret:type_name -> bytebase.store.DataSourceExternalSecret
 	3, // 4: bytebase.store.DataSourceOptions.authentication_type:type_name -> bytebase.store.DataSourceOptions.AuthenticationType
-	2, // 5: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	6, // 5: bytebase.store.DataSourceOptions.sasl_config:type_name -> bytebase.store.SASLConfig
+	7, // 6: bytebase.store.SASLConfig.krb_config:type_name -> bytebase.store.KerberosConfig
+	8, // 7: bytebase.store.SASLConfig.plain_config:type_name -> bytebase.store.PlainSASLConfig
+	2, // 8: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_store_data_source_proto_init() }
@@ -754,6 +1022,42 @@ func file_store_data_source_proto_init() {
 			}
 		}
 		file_store_data_source_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SASLConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_data_source_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*KerberosConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_data_source_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PlainSASLConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_data_source_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DataSourceExternalSecret_AppRoleAuthOption); i {
 			case 0:
 				return &v.state
@@ -770,13 +1074,17 @@ func file_store_data_source_proto_init() {
 		(*DataSourceExternalSecret_AppRole)(nil),
 		(*DataSourceExternalSecret_Token)(nil),
 	}
+	file_store_data_source_proto_msgTypes[2].OneofWrappers = []interface{}{
+		(*SASLConfig_KrbConfig)(nil),
+		(*SASLConfig_PlainConfig)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_data_source_proto_rawDesc,
 			NumEnums:      4,
-			NumMessages:   3,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
