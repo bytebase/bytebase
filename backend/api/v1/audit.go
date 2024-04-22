@@ -48,7 +48,9 @@ func getRequestResource(request any) string {
 	case *v1pb.SetIamPolicyRequest:
 		return r.Project
 	case *v1pb.CreateUserRequest:
-		return ""
+		return r.GetUser().GetName()
+	case *v1pb.UpdateUserRequest:
+		return r.GetUser().GetName()
 	default:
 		return ""
 	}
@@ -74,6 +76,8 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.SetIamPolicyRequest:
 			return r
 		case *v1pb.CreateUserRequest:
+			return r
+		case *v1pb.UpdateUserRequest:
 			return r
 		default:
 			return nil
@@ -130,6 +134,7 @@ func isAuditMethod(method string) bool {
 	switch method {
 	case
 		v1pb.AuthService_CreateUser_FullMethodName,
+		v1pb.AuthService_UpdateUser_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
 		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
 		v1pb.ProjectService_SetIamPolicy_FullMethodName,
