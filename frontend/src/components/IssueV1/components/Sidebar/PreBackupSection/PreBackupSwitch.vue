@@ -3,7 +3,7 @@
     <NSwitch
       :value="preBackupEnabled"
       class="bb-pre-backup-switch"
-      :disabled="showPreBackupDisabled"
+      :disabled="!allowPreBackup"
       @update:value="togglePreBackup"
     >
       <template #checked>
@@ -20,7 +20,7 @@
 import { NSwitch } from "naive-ui";
 import { usePreBackupContext } from "./common";
 
-const { preBackupEnabled, showPreBackupDisabled, togglePreBackup } =
+const { preBackupEnabled, allowPreBackup, togglePreBackup } =
   usePreBackupContext();
 </script>
 
