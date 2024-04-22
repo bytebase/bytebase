@@ -7,26 +7,32 @@ import "google/rpc/status.proto";
 option go_package = "generated-go/store";
 
 message AuditLog {
+  // The project or workspace the audit log belongs to.
+  // Formats:
+  // - projects/{project}
+  // - workspaces/{workspace}
+  string parent = 1;
+
   // e.g. /bytebase.v1.SQLService/Query
-  string method = 1;
+  string method = 2;
 
   // resource name
   // projects/{project}
-  string resource = 2;
+  string resource = 3;
 
   // Format: users/d@d.com
-  string user = 3;
+  string user = 4;
 
-  Severity severity = 4;
+  Severity severity = 5;
 
   // Marshalled request.
-  string request = 5;
+  string request = 6;
 
   // Marshalled response.
   // Some fields are omitted because they are too large or contain sensitive information.
-  string response = 6;
+  string response = 7;
 
-  google.rpc.Status status = 7;
+  google.rpc.Status status = 8;
 
   enum Severity {
     DEFAULT = 0;

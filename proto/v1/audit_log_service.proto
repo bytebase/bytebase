@@ -47,7 +47,9 @@ message SearchAuditLogsResponse {
 
 message AuditLog {
   // The name of the log.
-  // Format: logs/{uid}
+  // Formats:
+  // - projects/{project}/auditLogs/{uid}
+  // - workspaces/{workspace}/auditLogs/{uid}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.protobuf.Timestamp create_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
