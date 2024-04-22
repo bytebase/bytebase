@@ -65,7 +65,9 @@
 import { NButton, NTooltip, NDivider } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { ProjectSelect, DrawerContent } from "@/components/v2";
+import { PROJECT_V1_ROUTE_DATABASES } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -73,6 +75,7 @@ import {
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID, PresetRoleType } from "@/types";
+import { extractProjectResourceName } from "@/utils";
 
 const props = defineProps<{
   databaseList: ComposedDatabase[];
@@ -87,6 +90,7 @@ const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const loading = ref(false);
+const router = useRouter();
 
 const selectedUidList = ref<string[]>(props.selectedDatabaseUidList ?? []);
 
@@ -149,6 +153,13 @@ const doTransfer = async () => {
         module: "bytebase",
         style: "SUCCESS",
         title: `Successfully transferred ${displayDatabaseName} to project '${target.title}'.`,
+      });
+
+      router.push({
+        name: PROJECT_V1_ROUTE_DATABASES,
+        params: {
+          projectId: extractProjectResourceName(target.name),
+        },
       });
     }
 

@@ -122,7 +122,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import {
@@ -170,18 +170,6 @@ const state = reactive<LocalState>({
 });
 
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
-
-const prepareDatabaseList = () => {
-  // It will also be called when user logout
-  if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-    const filter = `instance = "instances/-"`;
-    databaseStore.searchDatabases({
-      filter,
-    });
-  }
-};
-
-watchEffect(prepareDatabaseList);
 
 const databaseList = computed(() => {
   return databaseStore.databaseListByUser(currentUserV1.value);

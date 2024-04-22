@@ -237,10 +237,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     batchSyncInstance,
     fetchInstanceList,
     fetchProjectInstanceList,
-    fetchInstanceByName,
     getInstanceByName,
     getOrFetchInstanceByName,
-    fetchInstanceByUID,
     getInstanceByUID,
     getOrFetchInstanceByUID,
     fetchInstanceRoleByName,
@@ -251,28 +249,6 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     deleteDataSource,
   };
 });
-
-export const useInstanceV1ByUID = (uid: MaybeRef<string>) => {
-  const store = useInstanceV1Store();
-  const ready = ref(true);
-  watch(
-    () => unref(uid),
-    (uid) => {
-      if (uid !== String(UNKNOWN_ID)) {
-        ready.value = false;
-        if (store.getInstanceByUID(uid).name === UNKNOWN_INSTANCE_NAME) {
-          store.fetchInstanceByUID(uid).then(() => {
-            ready.value = true;
-          });
-        }
-      }
-    },
-    { immediate: true }
-  );
-
-  const instance = computed(() => store.getInstanceByUID(unref(uid)));
-  return { instance, ready };
-};
 
 export const useInstanceV1List = (
   showDeleted: MaybeRef<boolean> = false,

@@ -9,7 +9,10 @@
       :key="i"
       class="flex flex-col gap-y-1"
     >
-      <h1 v-if="historySectionList.length > 1">
+      <router-link v-if="section.link" :to="section.link" class="normal-link">
+        {{ section.title }}
+      </router-link>
+      <h1 v-else>
         {{ section.title }}
       </h1>
       <NDataTable

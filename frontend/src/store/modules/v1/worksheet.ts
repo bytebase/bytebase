@@ -209,7 +209,6 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     starredSheetList,
     createSheet,
     getSheetByName,
-    fetchSheetByName,
     getOrFetchSheetByName,
     fetchMySheetList,
     fetchSharedSheetList,
