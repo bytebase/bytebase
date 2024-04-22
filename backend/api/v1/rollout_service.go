@@ -97,23 +97,9 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
 	}
 
-	var limit, offset int
-	if request.PageToken != "" {
-		var pageToken storepb.PageToken
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-		if pageToken.Limit < 0 {
-			return nil, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
-		}
-		limit = int(pageToken.Limit)
-		offset = int(pageToken.Offset)
-	}
-	if limit <= 0 {
-		limit = 50
-	}
-	if limit > 1000 {
-		limit = 1000
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	limitPlusOne := limit + 1
 

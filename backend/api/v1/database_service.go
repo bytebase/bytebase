@@ -135,6 +135,7 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
 	response := &v1pb.SearchDatabasesResponse{}
 	for _, databaseMessage := range databases {
 		database, err := s.convertToDatabase(ctx, databaseMessage)
@@ -160,6 +161,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+
 	find := &store.FindDatabaseMessage{}
 	if instanceID != "-" {
 		find.InstanceID = &instanceID
@@ -184,6 +186,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to filter databases, error: %v", err)
 	}
+
 	response := &v1pb.ListDatabasesResponse{}
 	for _, databaseMessage := range databaseMessages {
 		database, err := s.convertToDatabase(ctx, databaseMessage)
@@ -270,32 +273,6 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		}
 	}
 
-	for _, binding := range policy.Bindings {
-		if binding.Role == api.ProjectQuerier || binding.Role == api.ProjectExporter {
-			continue
-		}
-		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(binding.Role.String()))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get permissions")
-		}
-		if !slices.Contains(permissions, needPermission) {
-			continue
-		}
-		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to eval binding condition")
-		}
-		if !ok {
-			continue
-		}
-		for _, member := range binding.Members {
-			if member.ID != user.ID && member.Email != api.AllUsers {
-				continue
-			}
-			return databases, nil
-		}
-	}
-
 	expressionDBsFromAllRoles := make(map[string]bool)
 	for _, binding := range policy.Bindings {
 		if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
@@ -315,23 +292,26 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if !ok {
 			continue
 		}
+
+		expressionDBs := getDatabasesFromExpression(binding.Condition.Expression)
+		if len(expressionDBs) == 0 {
+			return databases, nil
+		}
 		for _, member := range binding.Members {
 			if member.ID != user.ID && member.Email != api.AllUsers {
 				continue
 			}
-			expressionDBs := getDatabasesFromExpression(binding.Condition.Expression)
-			if len(expressionDBs) == 0 {
-				return databases, nil
-			}
 			for db := range expressionDBs {
 				expressionDBsFromAllRoles[db] = true
 			}
+			break
 		}
+		break
 	}
 
 	var filteredDatabases []*store.DatabaseMessage
 	for _, database := range databases {
-		databaseName := fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
+		databaseName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
 		if expressionDBsFromAllRoles[databaseName] {
 			filteredDatabases = append(filteredDatabases, database)
 		}
@@ -857,25 +837,9 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	var limit, offset int
-	if request.PageToken != "" {
-		var pageToken storepb.PageToken
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-		if pageToken.Limit < 0 {
-			return nil, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
-		}
-		limit = int(pageToken.Limit)
-		offset = int(pageToken.Offset)
-	} else {
-		limit = int(request.PageSize)
-	}
-	if limit <= 0 {
-		limit = 10
-	}
-	if limit > 1000 {
-		limit = 1000
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	limitPlusOne := limit + 1
 
