@@ -58,11 +58,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 		dataSource.SID = ""
 		databaseName = database.DatabaseName
 	}
-	schemaTenantMode := false
-	if instance.Options != nil && instance.Options.SchemaTenantMode {
-		schemaTenantMode = true
-	}
-	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, datashare, false /* readOnly */, schemaTenantMode, connectionContext)
+	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, datashare, false /* readOnly */, connectionContext)
 }
 
 // GetReadOnlyDatabaseDriver gets the read-only database driver using the instance's read-only data source.
@@ -73,15 +69,11 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 	if err != nil {
 		return nil, err
 	}
-	schemaTenantMode := false
-	if instance.Options != nil && instance.Options.SchemaTenantMode {
-		schemaTenantMode = true
-	}
 	dataShare := false
 	if database != nil {
 		dataShare = database.DataShare
 	}
-	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, dataShare, true /* readOnly */, schemaTenantMode, db.ConnectionContext{})
+	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, dataShare, true /* readOnly */, db.ConnectionContext{})
 }
 
 // GetReadOnlyDatabaseSource returns the read-only data source for the given instance and database.
@@ -125,7 +117,7 @@ func (*DBFactory) GetReadOnlyDatabaseSource(instance *store.InstanceMessage, dat
 }
 
 // GetDataSourceDriver returns the database driver for a data source.
-func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *store.DataSourceMessage, databaseName string, datashare, readOnly bool, schemaTenantMode bool, connectionContext db.ConnectionContext) (db.Driver, error) {
+func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *store.DataSourceMessage, databaseName string, datashare, readOnly bool, connectionContext db.ConnectionContext) (db.Driver, error) {
 	dbBinDir := ""
 	switch instance.Engine {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
@@ -211,7 +203,6 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			ServiceName:              dataSource.ServiceName,
 			SSHConfig:                sshConfig,
 			ReadOnly:                 readOnly,
-			SchemaTenantMode:         schemaTenantMode,
 			ConnectionContext:        connectionContext,
 			AuthenticationPrivateKey: authenticationPrivateKey,
 			AuthenticationType:       dataSource.AuthenticationType,

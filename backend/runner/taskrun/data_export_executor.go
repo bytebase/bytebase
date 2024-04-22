@@ -82,23 +82,10 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, err
 	}
 
+	// TODO(d): are we sure about this?
 	schemaName := ""
 	if instance.Engine == storepb.Engine_ORACLE {
-		// For Oracle, there are two modes, schema-based and database-based management.
-		// For schema-based management, also say tenant mode, we need to use the schemaName as the databaseName.
-		// So the default schemaName is the database name.
-		// For database-based management, we need to use the dataSource.Username as the schemaName.
-		// So the default schemaName is the dataSource.Username.
-		isSchemaTenantMode := (instance.Options != nil && instance.Options.GetSchemaTenantMode())
-		if isSchemaTenantMode {
-			schemaName = database.DatabaseName
-		} else {
-			dataSource, _, err := exec.dbFactory.GetReadOnlyDatabaseSource(instance, database, "" /* dataSourceID */)
-			if err != nil {
-				return true, nil, errors.Wrap(err, "failed to get read only database source")
-			}
-			schemaName = dataSource.Username
-		}
+		schemaName = database.DatabaseName
 	}
 
 	spans, err := base.GetQuerySpan(
@@ -107,7 +94,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		statement,
 		database.DatabaseName,
 		schemaName,
-		apiv1.BuildGetDatabaseMetadataFunc(exec.store, instance, database.DatabaseName),
+		apiv1.BuildGetDatabaseMetadataFunc(exec.store, instance),
 		apiv1.BuildListDatabaseNamesFunc(exec.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
