@@ -2355,7 +2355,10 @@
       "value": "Giá trị",
       "add-sub-partition": "Thêm phân vùng phụ",
       "type": "Kiểu"
-    }
+    },
+    "views": "Lượt xem",
+    "procedures": "Thủ tục",
+    "functions": "Hàm số"
   },
   "label": {
     "empty-label-value": "Trống",

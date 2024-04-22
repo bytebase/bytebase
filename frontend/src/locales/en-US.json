@@ -2355,7 +2355,10 @@
       "value": "Value",
       "add-sub-partition": "Add sub partition",
       "type": "Type"
-    }
+    },
+    "views": "Views",
+    "procedures": "Procedures",
+    "functions": "Functions"
   },
   "label": {
     "empty-label-value": "Empty",

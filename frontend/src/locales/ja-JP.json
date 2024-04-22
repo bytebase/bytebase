@@ -2355,7 +2355,10 @@
       "value": "価値",
       "add-sub-partition": "サブパーティションの追加",
       "type": "タイプ"
-    }
+    },
+    "views": "ビュー",
+    "procedures": "手順",
+    "functions": "関数"
   },
   "label": {
     "empty-label-value": "空です",

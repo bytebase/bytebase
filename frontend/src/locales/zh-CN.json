@@ -2355,7 +2355,10 @@
       "value": "值",
       "add-sub-partition": "添加子分区",
       "type": "类型"
-    }
+    },
+    "views": "视图",
+    "procedures": "存储过程",
+    "functions": "函数"
   },
   "label": {
     "empty-label-value": "空",

@@ -492,25 +492,37 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
 
 // Render label text.
 const renderLabel = ({ option }: { option: TreeOption }) => {
-  const treeNode = option as TreeNode;
+  const node = option as TreeNode;
   const additionalClassList: string[] = ["select-none"];
-  let label = treeNode.label;
+  let label = node.label;
 
-  if (treeNode.type === "schema") {
-    const { db, metadata } = treeNode;
+  if (node.type === "schema") {
+    const { db, metadata } = node;
     additionalClassList.push(getSchemaStatus(db, metadata));
     label = metadata.schema.name;
   }
-  if (treeNode.type === "group") {
-    label = `(${treeNode.group} - group)`;
+  if (node.type === "group") {
+    label = `(${node.group} - group)`;
+    if (node.group === "table") {
+      return t("schema-editor.tables");
+    }
+    if (node.group === "view") {
+      return t("schema-editor.views");
+    }
+    if (node.group === "procedure") {
+      return t("schema-editor.procedures");
+    }
+    if (node.group === "function") {
+      return t("schema-editor.functions");
+    }
   }
-  if (treeNode.type === "table") {
-    const { db, metadata } = treeNode;
+  if (node.type === "table") {
+    const { db, metadata } = node;
     additionalClassList.push(getTableStatus(db, metadata));
     label = metadata.table.name;
   }
-  if (treeNode.type === "column") {
-    const { db, metadata } = treeNode;
+  if (node.type === "column") {
+    const { db, metadata } = node;
     additionalClassList.push(getColumnStatus(db, metadata));
     const { name } = metadata.column;
     if (name) {
@@ -520,13 +532,13 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
       additionalClassList.push("text-control-placeholder italic");
     }
   }
-  if (treeNode.type === "procedure") {
-    const { db, metadata } = treeNode;
+  if (node.type === "procedure") {
+    const { db, metadata } = node;
     additionalClassList.push(getProcedureStatus(db, metadata));
     label = metadata.procedure.name;
   }
-  if (treeNode.type === "function") {
-    const { db, metadata } = treeNode;
+  if (node.type === "function") {
+    const { db, metadata } = node;
     additionalClassList.push(getFunctionStatus(db, metadata));
     label = metadata.function.name;
   }

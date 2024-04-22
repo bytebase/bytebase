@@ -2355,7 +2355,10 @@
       "value": "Valor",
       "add-sub-partition": "Agregar subpartición",
       "type": "Tipo"
-    }
+    },
+    "views": "Puntos de vista",
+    "procedures": "Trámites",
+    "functions": "Funciones"
   },
   "label": {
     "empty-label-value": "Valor",
