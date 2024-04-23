@@ -1678,8 +1678,7 @@
       "character-sets-diff-found": "Có sự khác biệt giữa các bộ ký tự.",
       "preview-issue": "Vấn đề xem trước",
       "schema-change": "Thay đổi lược đồ",
-      "generated-ddl-statement": "Câu lệnh DDL được tạo",
-      "select-database-placeholder": "Chọn cơ sở dữ liệu (chỉ MySQL, PostgreSQL, TiDB, Oracle)"
+      "generated-ddl-statement": "Câu lệnh DDL được tạo"
     },
     "sensitive": "Nhạy cảm",
     "access-denied": "Bạn không có quyền truy cập cơ sở dữ liệu này.",

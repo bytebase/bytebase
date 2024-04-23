@@ -1678,8 +1678,7 @@
       "character-sets-diff-found": "Schema 之间的字符集不同",
       "preview-issue": "预览工单",
       "schema-change": "Schema 变化",
-      "generated-ddl-statement": "生成的 DDL 语句",
-      "select-database-placeholder": "选择数据库 (仅限 MySQL, PostgreSQL, TiDB, Oracle)"
+      "generated-ddl-statement": "生成的 DDL 语句"
     },
     "sensitive": "敏感",
     "access-denied": "您没有访问该数据库的权限",

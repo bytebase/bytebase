@@ -1678,8 +1678,7 @@
       "character-sets-diff-found": "文字セットはスキーマ間で異なります",
       "preview-issue": "作業指示のプレビュー",
       "schema-change": "スキーマの変更",
-      "generated-ddl-statement": "生成されたDDLステートメント",
-      "select-database-placeholder": "データベースの選択 (MySQL、PostgreSQL、TiDB、Oracle のみ)"
+      "generated-ddl-statement": "生成されたDDLステートメント"
     },
     "sensitive": "センシティブ",
     "access-denied": "データベースにアクセスする権限がありません",

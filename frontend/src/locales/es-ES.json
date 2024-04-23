@@ -1678,8 +1678,7 @@
       "character-sets-diff-found": "Hay diferencias entre los juegos de caracteres.",
       "preview-issue": "Vista previa de incidencia",
       "schema-change": "cambio de esquema",
-      "generated-ddl-statement": "Declaración DDL generada",
-      "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB, Oracle)"
+      "generated-ddl-statement": "Declaración DDL generada"
     },
     "sensitive": "Sensible",
     "access-denied": "No tiene permiso para acceder a esta base de datos.",
