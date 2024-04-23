@@ -48,7 +48,10 @@
           >
             <template v-if="!state.isEditing">
               <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-              <NButton @click="handleGotoMergeBranch">
+              <NButton
+                v-if="showMergeBranchButton"
+                @click="handleGotoMergeBranch"
+              >
                 {{ $t("branch.merge-rebase.merge-branch") }}
               </NButton>
               <NButton @click="handleGotoRebaseBranch">
@@ -130,7 +133,7 @@
 </template>
 
 <script lang="ts" setup>
-import { asyncComputed } from "@vueuse/core";
+import { asyncComputed, computedAsync } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash-es";
 import { NButton, NCheckbox, NDivider, NInput, useDialog } from "naive-ui";
@@ -158,7 +161,11 @@ import {
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
-import type { ComposedProject, ProjectPermission } from "@/types";
+import {
+  unknownDatabase,
+  type ComposedProject,
+  type ProjectPermission,
+} from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
@@ -244,8 +251,15 @@ const parentBranch = asyncComputed(async () => {
   return undefined;
 }, undefined);
 
-const database = computed(() => {
-  return databaseStore.getDatabaseByName(props.dirtyBranch.baselineDatabase);
+const database = computedAsync(() => {
+  return databaseStore.getOrFetchDatabaseByName(
+    props.dirtyBranch.baselineDatabase
+  );
+}, unknownDatabase());
+
+const showMergeBranchButton = computed(() => {
+  // main branches (parent-less branches) cannot be merged.
+  return !!parentBranch.value;
 });
 
 // Only show apply to database button when the branch is main branch.
