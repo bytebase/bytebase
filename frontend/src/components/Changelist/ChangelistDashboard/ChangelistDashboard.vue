@@ -1,14 +1,11 @@
 <template>
   <div class="flex flex-col gap-y-4">
     <NavBar :disable-project-select="!!project" :allow-create="allowCreate" />
-
-    <ChangelistTable
+    <ChangelistDataTable
       :changelists="filteredChangelists"
-      :is-fetching="isFetching"
-      :keyword="filter.keyword"
-      :hide-project-column="!!project"
+      :loading="isFetching"
+      :show-project="!project"
     />
-
     <CreateChangelistPanel
       :project="project"
       :disable-project-select="!!project"
@@ -23,7 +20,7 @@ import { useChangelistStore, useCurrentUserV1 } from "@/store";
 import type { ComposedProject } from "@/types";
 import type { Changelist } from "@/types/proto/v1/changelist_service";
 import { hasProjectPermissionV2 } from "@/utils";
-import ChangelistTable from "./ChangelistTable.vue";
+import ChangelistDataTable from "./ChangelistDataTable.vue";
 import CreateChangelistPanel from "./CreateChangelistPanel.vue";
 import NavBar from "./NavBar.vue";
 import { provideChangelistDashboardContext } from "./context";
