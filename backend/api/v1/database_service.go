@@ -326,6 +326,17 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 
 	expressionDBsFromAllRoles := make(map[string]bool)
 	for _, binding := range policy.Bindings {
+		hasUser := false
+		for _, member := range binding.Members {
+			if member.ID == user.ID || member.Email == api.AllUsers {
+				hasUser = true
+				break
+			}
+		}
+		if !hasUser {
+			continue
+		}
+
 		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(binding.Role.String()))
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get permissions")
@@ -345,14 +356,8 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if len(expressionDBs) == 0 {
 			return databases, nil
 		}
-		for _, member := range binding.Members {
-			if member.ID != user.ID && member.Email != api.AllUsers {
-				continue
-			}
-			for db := range expressionDBs {
-				expressionDBsFromAllRoles[db] = true
-			}
-			break
+		for db := range expressionDBs {
+			expressionDBsFromAllRoles[db] = true
 		}
 	}
 
