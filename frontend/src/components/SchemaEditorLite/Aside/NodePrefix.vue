@@ -30,6 +30,14 @@
       />
     </template>
 
+    <div
+      v-if="node.type === 'column'"
+      class="w-4 h-4 inline-flex items-center justify-center"
+    >
+      <PrimaryKeyIcon v-if="isPrimaryKeyColumn" class="w-4 h-4" />
+      <IndexIcon v-if="isIndexColumn" class="!w-4 !h-4 text-gray-500" />
+    </div>
+
     <SchemaIcon
       v-if="node.type === 'schema'"
       class="w-4 h-auto text-gray-400"
@@ -47,9 +55,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import {
   DatabaseIcon,
   FunctionIcon,
+  IndexIcon,
+  PrimaryKeyIcon,
   ProcedureIcon,
   SchemaIcon,
   TableIcon,
@@ -59,9 +70,27 @@ import { useSchemaEditorContext } from "../context";
 import NodeCheckbox from "./NodeCheckbox";
 import type { TreeNode } from "./common";
 
-defineProps<{
+const props = defineProps<{
   node: TreeNode;
 }>();
 
 const { selectionEnabled } = useSchemaEditorContext();
+
+const isPrimaryKeyColumn = computed(() => {
+  const { node } = props;
+  if (node.type !== "column") return false;
+
+  const { table, column } = node.metadata;
+  const pk = table.indexes.find((idx) => idx.primary);
+  if (!pk) return false;
+  return pk.expressions.includes(column.name);
+});
+const isIndexColumn = computed(() => {
+  if (isPrimaryKeyColumn.value) return false;
+
+  const { node } = props;
+  if (node.type !== "column") return false;
+  const { table, column } = node.metadata;
+  return table.indexes.some((idx) => idx.expressions.includes(column.name));
+});
 </script>
