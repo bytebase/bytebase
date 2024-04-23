@@ -15,7 +15,7 @@ import (
 )
 
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	if connPool == nil {
+	if d.connPool == nil {
 		return nil, errors.New("connection pool not created")
 	}
 
@@ -151,7 +151,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 			continue
 		}
 
-		tabInfo, err := getTableInfo(ctx, tabName, databaseName)
+		tabInfo, err := d.getTableInfo(ctx, tabName, databaseName)
 		if err != nil {
 			return nil, nil, nil, nil, errors.Wrapf(err, "failed to describe table %s's type", tabName)
 		}
@@ -184,7 +184,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 		var tableMetadata storepb.TableMetadata
 
 		// indexes.
-		indexResults, err := getIndexesByTableName(ctx, tabName, databaseName)
+		indexResults, err := d.getIndexesByTableName(ctx, tabName, databaseName)
 		if err != nil {
 			return nil, nil, nil, nil, errors.Wrapf(err, "failed to get index info from tab %s", tabName)
 		}
@@ -199,6 +199,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 			}
 		}
 
+		tableMetadata.Engine = "HDFS"
 		tableMetadata.Comment = tabInfo.comment
 		tableMetadata.Columns = tabInfo.colMetadatas
 		tableMetadata.DataSize = int64(tabInfo.totalSize)
@@ -234,19 +235,19 @@ func (d *Driver) getRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata,
 	return roleMetadata, nil
 }
 
-func getIndexesByTableName(ctx context.Context, tableName string, databaseName string) ([]*storepb.IndexMetadata, error) {
+func (d *Driver) getIndexesByTableName(ctx context.Context, tableName string, databaseName string) ([]*storepb.IndexMetadata, error) {
 	var (
 		indexMetadata []*storepb.IndexMetadata
 	)
 
-	conn, err := connPool.Get("")
+	conn, err := d.connPool.Get("")
 	if err != nil {
 		return nil, err
 	}
 	cursor := conn.Cursor()
 	defer func() {
 		cursor.Close()
-		connPool.Put(conn)
+		d.connPool.Put(conn)
 	}()
 
 	cursor.Execute(ctx, fmt.Sprintf("use %s", databaseName), false)
@@ -298,7 +299,7 @@ type TableInfo struct {
 	comment      string
 }
 
-func getTableInfo(ctx context.Context, tabName string, databaseName string) (
+func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName string) (
 	*TableInfo,
 	error,
 ) {
@@ -311,14 +312,14 @@ func getTableInfo(ctx context.Context, tabName string, databaseName string) (
 		numRows         int
 		hasReadColumns  = false
 	)
-	conn, err := connPool.Get("")
+	conn, err := d.connPool.Get("")
 	if err != nil {
 		return nil, err
 	}
 	cursor := conn.Cursor()
 	defer func() {
 		cursor.Close()
-		connPool.Put(conn)
+		d.connPool.Put(conn)
 	}()
 
 	cursor.Exec(ctx, fmt.Sprintf("DESCRIBE FORMATTED `%s`.`%s`", databaseName, tabName))

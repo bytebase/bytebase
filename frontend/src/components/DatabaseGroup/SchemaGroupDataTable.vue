@@ -10,6 +10,7 @@
     :checked-row-keys="Array.from(state.selectedSchemaGroupNameList)"
     :row-props="rowProps"
     :pagination="{ pageSize: 20 }"
+    :paginate-single-page="false"
     @update:checked-row-keys="
         (val) => (state.selectedSchemaGroupNameList = new Set(val as string[]))
       "

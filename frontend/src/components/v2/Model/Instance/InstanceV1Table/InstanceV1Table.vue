@@ -16,6 +16,7 @@
       :checked-row-keys="Array.from(state.selectedInstance)"
       :row-props="rowProps"
       :pagination="{ pageSize: 20 }"
+      :paginate-single-page="false"
       @update:checked-row-keys="
         (val) => (state.selectedInstance = new Set(val as string[]))
       "

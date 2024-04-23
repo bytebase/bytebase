@@ -91,4 +91,27 @@ message DataSourceOptions {
   }
 
   AuthenticationType authentication_type = 12;
+
+  SASLConfig sasl_config = 13;
+}
+
+message SASLConfig {
+  oneof mechanism {
+    KerberosConfig krb_config = 1;
+    PlainSASLConfig plain_config = 2;
+  }
+}
+
+message KerberosConfig {
+  string primary = 1;
+  string instance = 2;
+  string realm = 3;
+  string keytab = 4;
+  string kdc_host = 5;
+  string kdc_transport_protocol = 6;
+}
+
+message PlainSASLConfig {
+  string username = 1;
+  string password = 2;
 }

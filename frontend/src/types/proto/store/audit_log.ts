@@ -6,6 +6,13 @@ import { Status } from "../google/rpc/status";
 export const protobufPackage = "bytebase.store";
 
 export interface AuditLog {
+  /**
+   * The project or workspace the audit log belongs to.
+   * Formats:
+   * - projects/{project}
+   * - workspaces/{workspace}
+   */
+  parent: string;
   /** e.g. /bytebase.v1.SQLService/Query */
   method: string;
   /**
@@ -102,31 +109,34 @@ export function auditLog_SeverityToJSON(object: AuditLog_Severity): string {
 }
 
 function createBaseAuditLog(): AuditLog {
-  return { method: "", resource: "", user: "", severity: 0, request: "", response: "", status: undefined };
+  return { parent: "", method: "", resource: "", user: "", severity: 0, request: "", response: "", status: undefined };
 }
 
 export const AuditLog = {
   encode(message: AuditLog, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
     if (message.method !== "") {
-      writer.uint32(10).string(message.method);
+      writer.uint32(18).string(message.method);
     }
     if (message.resource !== "") {
-      writer.uint32(18).string(message.resource);
+      writer.uint32(26).string(message.resource);
     }
     if (message.user !== "") {
-      writer.uint32(26).string(message.user);
+      writer.uint32(34).string(message.user);
     }
     if (message.severity !== 0) {
-      writer.uint32(32).int32(message.severity);
+      writer.uint32(40).int32(message.severity);
     }
     if (message.request !== "") {
-      writer.uint32(42).string(message.request);
+      writer.uint32(50).string(message.request);
     }
     if (message.response !== "") {
-      writer.uint32(50).string(message.response);
+      writer.uint32(58).string(message.response);
     }
     if (message.status !== undefined) {
-      Status.encode(message.status, writer.uint32(58).fork()).ldelim();
+      Status.encode(message.status, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -143,45 +153,52 @@ export const AuditLog = {
             break;
           }
 
-          message.method = reader.string();
+          message.parent = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.resource = reader.string();
+          message.method = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.user = reader.string();
+          message.resource = reader.string();
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.user = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
             break;
           }
 
           message.severity = reader.int32() as any;
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.request = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.response = reader.string();
+          message.request = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
+            break;
+          }
+
+          message.response = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
             break;
           }
 
@@ -198,6 +215,7 @@ export const AuditLog = {
 
   fromJSON(object: any): AuditLog {
     return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       method: isSet(object.method) ? globalThis.String(object.method) : "",
       resource: isSet(object.resource) ? globalThis.String(object.resource) : "",
       user: isSet(object.user) ? globalThis.String(object.user) : "",
@@ -210,6 +228,9 @@ export const AuditLog = {
 
   toJSON(message: AuditLog): unknown {
     const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
     if (message.method !== "") {
       obj.method = message.method;
     }
@@ -239,6 +260,7 @@ export const AuditLog = {
   },
   fromPartial(object: DeepPartial<AuditLog>): AuditLog {
     const message = createBaseAuditLog();
+    message.parent = object.parent ?? "";
     message.method = object.method ?? "";
     message.resource = object.resource ?? "";
     message.user = object.user ?? "";

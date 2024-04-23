@@ -166,6 +166,8 @@ type ConnectionConfig struct {
 	// It's only set for Redshift datashare database.
 	ConnectionDatabase string
 	TLSConfig          TLSConfig
+	// Only used for Hive.
+	SASLConfig SASLConfig
 	// ReadOnly is only supported for Postgres at the moment.
 	ReadOnly bool
 	// SRV is only supported for MongoDB now.

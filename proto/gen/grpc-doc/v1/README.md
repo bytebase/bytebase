@@ -29,6 +29,15 @@
   
     - [AnomalyService](#bytebase-v1-AnomalyService)
   
+- [v1/audit_log_service.proto](#v1_audit_log_service-proto)
+    - [AuditLog](#bytebase-v1-AuditLog)
+    - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
+    - [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse)
+  
+    - [AuditLog.Severity](#bytebase-v1-AuditLog-Severity)
+  
+    - [AuditLogService](#bytebase-v1-AuditLogService)
+  
 - [v1/common.proto](#v1_common-proto)
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
@@ -69,9 +78,12 @@
     - [Instance](#bytebase-v1-Instance)
     - [InstanceOptions](#bytebase-v1-InstanceOptions)
     - [InstanceResource](#bytebase-v1-InstanceResource)
+    - [KerberosConfig](#bytebase-v1-KerberosConfig)
     - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
+    - [PlainSASLConfig](#bytebase-v1-PlainSASLConfig)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
+    - [SASLConfig](#bytebase-v1-SASLConfig)
     - [SearchInstancesRequest](#bytebase-v1-SearchInstancesRequest)
     - [SearchInstancesResponse](#bytebase-v1-SearchInstancesResponse)
     - [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest)
@@ -982,6 +994,108 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 
 
 
+<a name="v1_audit_log_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/audit_log_service.proto
+
+
+
+<a name="bytebase-v1-AuditLog"></a>
+
+### AuditLog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the log. Formats: - projects/{project}/auditLogs/{uid} - workspaces/{workspace}/auditLogs/{uid} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| user | [string](#string) |  | Format: users/d@d.com |
+| method | [string](#string) |  | e.g. `/bytebase.v1.SQLService/Query`, `bb.project.repository.push` |
+| severity | [AuditLog.Severity](#bytebase-v1-AuditLog-Severity) |  |  |
+| resource | [string](#string) |  | The associated resource. |
+| request | [string](#string) |  | JSON-encoded request. |
+| response | [string](#string) |  | JSON-encoded response. Some fields are omitted because they are too large or contain sensitive information. |
+| status | [google.rpc.Status](#google-rpc-Status) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchAuditLogsRequest"></a>
+
+### SearchAuditLogsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| filter | [string](#string) |  |  |
+| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
+| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchLogs` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchAuditLogsResponse"></a>
+
+### SearchAuditLogsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| audit_logs | [AuditLog](#bytebase-v1-AuditLog) | repeated |  |
+| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-AuditLog-Severity"></a>
+
+### AuditLog.Severity
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DEFAULT | 0 |  |
+| DEBUG | 1 |  |
+| INFO | 2 |  |
+| NOTICE | 3 |  |
+| WARNING | 4 |  |
+| ERROR | 5 |  |
+| CRITICAL | 6 |  |
+| ALERT | 7 |  |
+| EMERGENCY | 8 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-AuditLogService"></a>
+
+### AuditLogService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) |  |
+
+ 
+
+
+
 <a name="v1_common-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1463,6 +1577,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
 | external_secret | [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType) |  |  |
+| sasl_config | [SASLConfig](#bytebase-v1-SASLConfig) |  |  |
 
 
 
@@ -1600,6 +1715,26 @@ InstanceOptions is the option for instances.
 
 
 
+<a name="bytebase-v1-KerberosConfig"></a>
+
+### KerberosConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| primary | [string](#string) |  |  |
+| instance | [string](#string) |  |  |
+| realm | [string](#string) |  |  |
+| keytab | [string](#string) |  |  |
+| kdc_host | [string](#string) |  |  |
+| kdc_transport_protocol | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-ListInstancesRequest"></a>
 
 ### ListInstancesRequest
@@ -1636,6 +1771,22 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 
 
+<a name="bytebase-v1-PlainSASLConfig"></a>
+
+### PlainSASLConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| username | [string](#string) |  |  |
+| password | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-RemoveDataSourceRequest"></a>
 
 ### RemoveDataSourceRequest
@@ -1646,6 +1797,22 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
 | data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be removed. |
+
+
+
+
+
+
+<a name="bytebase-v1-SASLConfig"></a>
+
+### SASLConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| krb_config | [KerberosConfig](#bytebase-v1-KerberosConfig) |  |  |
+| plain_config | [PlainSASLConfig](#bytebase-v1-PlainSASLConfig) |  |  |
 
 
 

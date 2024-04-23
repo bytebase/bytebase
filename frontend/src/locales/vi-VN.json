@@ -1645,13 +1645,12 @@
     "select-databases-from-same-project": "Vui lòng chọn cơ sở dữ liệu từ cùng một dự án",
     "sync-schema": {
       "title": "Lược đồ đồng bộ hóa",
-      "description": "Bytebase hỗ trợ đồng bộ hóa lược đồ với một hoặc nhiều cơ sở dữ liệu đích.",
+      "description": "Bytebase hỗ trợ đồng bộ hóa lược đồ với một hoặc nhiều cơ sở dữ liệu đích. (Chỉ MySQL, PostgreSQL, TiDB, Oracle)",
       "schema-history-version": "Phiên bản lịch sử lược đồ",
       "copy-schema": "Sao chép lược đồ",
       "select-source-schema": "Chọn lược đồ nguồn",
       "select-target-databases": "Chọn cơ sở dữ liệu đích",
       "select-project": "Chọn dự án",
-      "select-database-placeholder": "Chọn cơ sở dữ liệu (chỉ MySQL, PostgreSQL, TiDB, Oracle)",
       "source-database": "Cơ sở dữ liệu nguồn",
       "source-schema": "Lược đồ nguồn",
       "schema-version": {
