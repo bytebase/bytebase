@@ -63,8 +63,9 @@ export const useContextMenu = () => {
   const options = computed((): DropdownOption[] => {
     const { node } = menu;
     if (!node) return [];
-    if (node.type === "instance") return [];
-    const { engine } = node.db.instanceEntity;
+    if (typeof node.db === "undefined") return [];
+
+    const { engine } = (node.db as ComposedDatabase).instanceEntity;
     if (node.type === "database") {
       if (engineSupportsMultiSchema(engine)) {
         return [
