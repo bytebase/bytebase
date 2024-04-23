@@ -365,7 +365,6 @@
 </template>
 
 <script lang="ts" setup>
-import { Console } from "console";
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import { NButton, NInput, NSwitch, NRadioGroup, NRadio } from "naive-ui";
 import { Status } from "nice-grpc-common";
