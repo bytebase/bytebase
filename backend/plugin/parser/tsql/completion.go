@@ -444,10 +444,10 @@ func NewStandardCompleter(ctx context.Context, statement string, caretLine int, 
 		ignoredTokens,  /* IgnoredTokens */
 		preferredRules, /* PreferredRules */
 		&globalFellowSetsByState,
-		0, /* queryRule */
-		0, /* shadowQueryRule */
-		0, /* selectItemAliasRule */
-		0, /* cteRule */
+		-1, /* queryRule */
+		-1, /* shadowQueryRule */
+		-1, /* selectItemAliasRule */
+		-1, /* cteRule */
 	)
 
 	return &Completer{
@@ -490,7 +490,7 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 	candidates := c.core.CollectCandidates(caretIndex, context)
 
 	for ruleName := range candidates.Rules {
-		if ruleName == tsqlparser.TSqlParserRULE_asterisk || ruleName == tsqlparser.TSqlParserRULE_udt_elem || ruleName == tsqlparser.TSqlParserRULE_expression || ruleName == tsqlparser.TSqlParserRULE_expression_elem {
+		if ruleName == tsqlparser.TSqlParserRULE_asterisk || ruleName == tsqlparser.TSqlParserRULE_full_column_name {
 			c.collectLeadingTableReferences(caretIndex)
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()

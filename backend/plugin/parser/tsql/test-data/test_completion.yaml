@@ -1,8 +1,32 @@
-- description: Full column name considering CTE TODO(zp) fix this
-  input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT MyCTE_01.| FROM MyCTE_01;
-  want: []
 - description: Full column name TODO(zp) fix this
   input: SELECT | FROM Employees;
+  want:
+    - text: Company
+      type: DATABASE
+      definition: ""
+      comment: ""
+    - text: School
+      type: DATABASE
+      definition: ""
+      comment: ""
+    - text: MySchema
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: dbo
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: Address
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: Employees
+      type: TABLE
+      definition: ""
+      comment: ""
+- description: Full column name considering CTE TODO(zp) fix this
+  input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT MyCTE_01.| FROM MyCTE_01;
   want: []
 - description: Asterisk appearred in select item list
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT |.* FROM MyCTE_01 JOIN dbo.Address ON MyCTE_01.EmployeeID = dbo.Address.EmployeeID

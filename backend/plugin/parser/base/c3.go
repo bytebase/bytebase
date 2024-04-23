@@ -1,6 +1,7 @@
 package base
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -207,7 +208,7 @@ func (f *FollowSetsByState) Set(state int, holder FollowSetsHolder) {
 }
 
 // CollectFollowSets collects the follow sets if needed.
-func (f *FollowSetsByState) CollectFollowSets(parser antlr.Parser, startState antlr.ATNState, ignoredTokens map[int]bool) {
+func (f *FollowSetsByState) CollectFollowSets(parser antlr.Parser, startState antlr.ATNState, ignoredTokens, preferredRules map[int]bool) {
 	state := startState.GetStateNumber()
 	f.rw.Lock()
 	defer f.rw.Unlock()
@@ -217,7 +218,7 @@ func (f *FollowSetsByState) CollectFollowSets(parser antlr.Parser, startState an
 	}
 
 	stop := parser.GetATN().GetRuleToStopState(startState.GetRuleIndex())
-	followSets := determineFollowSets(parser, startState, stop, ignoredTokens)
+	followSets := determineFollowSets(parser, startState, stop, ignoredTokens, preferredRules)
 
 	combined := antlr.NewIntervalSet()
 	for _, set := range followSets {
@@ -231,11 +232,11 @@ func (f *FollowSetsByState) CollectFollowSets(parser antlr.Parser, startState an
 }
 
 // determineFollowSets collects tokens that can follow the given ATN state.
-func determineFollowSets(parser antlr.Parser, start, stop antlr.ATNState, ignoredTokens map[int]bool) FollowSetsList {
+func determineFollowSets(parser antlr.Parser, start, stop antlr.ATNState, ignoredTokens, preferredRules map[int]bool) FollowSetsList {
 	seen := make(map[antlr.ATNState]bool)
 	ruleStack := NewRuleList()
 	result := FollowSetsList{}
-	collectFollowSets(parser, start, stop, &result, seen, ruleStack, ignoredTokens)
+	collectFollowSets(parser, start, stop, &result, seen, ruleStack, ignoredTokens, preferredRules)
 	return result
 }
 
@@ -247,6 +248,7 @@ func collectFollowSets(
 	seen map[antlr.ATNState]bool,
 	ruleStack *RuleList,
 	ignoredTokens map[int]bool,
+	preferredRules map[int]bool,
 ) {
 	if _, exists := seen[s]; exists {
 		return
@@ -267,19 +269,29 @@ func collectFollowSets(
 
 	for _, transition := range s.GetTransitions() {
 		if ruleTransition, ok := transition.(*antlr.RuleTransition); ok {
+			ruleIndex := ruleTransition.GetTarget().GetRuleIndex()
+			if len(ruleStack.rules) > 0 && ruleStack.rules[len(ruleStack.rules)-1].ID == 456 {
+				fmt.Println("ruleIdex", ruleIndex)
+			}
+			if ruleIndex == 581 {
+				fmt.Println("581!!!!!!!!!!!!!!!!!!!!!!", ruleStack.rules)
+			}
+			if ruleIndex == 574 {
+				fmt.Println("574!!!!!!!!!!!!!!!!!!!!!!", ruleStack.rules)
+			}
 			if ruleStack.Contains(ruleTransition.GetTarget().GetRuleIndex()) {
 				continue
 			}
 
 			ruleStack.Push(&RuleContext{ID: ruleTransition.GetTarget().GetRuleIndex()})
-			collectFollowSets(parser, transition.GetTarget(), stopState, followSets, seen, ruleStack, ignoredTokens)
+			collectFollowSets(parser, transition.GetTarget(), stopState, followSets, seen, ruleStack, ignoredTokens, preferredRules)
 			ruleStack.Pop()
 		} else if predicateTransition, ok := transition.(*antlr.PredicateTransition); ok {
 			if checkPredicate(parser, predicateTransition) {
-				collectFollowSets(parser, transition.GetTarget(), stopState, followSets, seen, ruleStack, ignoredTokens)
+				collectFollowSets(parser, transition.GetTarget(), stopState, followSets, seen, ruleStack, ignoredTokens, preferredRules)
 			}
 		} else if transition.GetIsEpsilon() {
-			collectFollowSets(parser, transition.GetTarget(), stopState, followSets, seen, ruleStack, ignoredTokens)
+			collectFollowSets(parser, transition.GetTarget(), stopState, followSets, seen, ruleStack, ignoredTokens, preferredRules)
 		} else if _, ok := transition.(*antlr.WildcardTransition); ok {
 			intervals := antlr.NewIntervalSet()
 			intervals.AddRange(antlr.TokenMinUserTokenType, parser.GetATN().GetMaxTokenType())
@@ -390,9 +402,18 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 	return c.candidates
 }
 
+func pathContains(set FollowSetWithPath, ruleID int) bool {
+	for _, rule := range set.path.rules {
+		if rule.ID == ruleID {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenIndex int, indentation string) RuleEndStatus {
 	result := make(RuleEndStatus)
-	c.followSetsByState.CollectFollowSets(c.parser, startState, c.IgnoredTokens)
+	c.followSetsByState.CollectFollowSets(c.parser, startState, c.IgnoredTokens, c.PreferredRules)
 
 	followSets := c.followSetsByState.Get(startState.GetStateNumber())
 	ruleContext := &RuleContext{ID: startState.GetRuleIndex()}
@@ -418,7 +439,13 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 			// If the rule is preferred, we should add it to the candidates.
 			c.translateToRuleIndex(c.callStack)
 		} else {
-			for _, set := range followSets.sets {
+			for i, set := range followSets.sets {
+				if pathContains(set, 460) {
+					fmt.Println("pathContains", i, set.path.rules)
+				}
+				if pathContains(set, 581) {
+					fmt.Println("518!!!!!!!!!!!!!!!!!!!!!!pathContains", i, set.path.rules)
+				}
 				fullPath := c.callStack.Copy()
 				fullPath.Append(set.path)
 				// translateToRuleIndex will add the rule to the candidates if it is preferred.
