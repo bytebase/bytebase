@@ -1112,6 +1112,12 @@
       "tooltip": "Los aprobadores revisarán y aprobarán el problema en el orden especificado en el flujo. \nLa emisión solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. \nPuede configurar un flujo de aprobación personalizado para cada riesgo.",
       "pre-issue-created-tips": "Después de crear un problema, Bytebase coincidirá automáticamente con la aprobación personalizada correspondiente según el tipo y nivel de riesgo del problema."
     },
+    "risk-level": {
+      "self": "Nivel de riesgo",
+      "low": "Bajo",
+      "moderate": "Moderado",
+      "high": "Alto"
+    },
     "waiting-to-rollout": "Esperando para implementar",
     "waiting-for-review": "Esperando revisión",
     "issue-name": "Nombre de la incidencia",
