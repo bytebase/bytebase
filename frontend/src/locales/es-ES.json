@@ -1645,13 +1645,12 @@
     "select-databases-from-same-project": "Por favor seleccione bases de datos del mismo proyecto",
     "sync-schema": {
       "title": "Sincronizar esquema",
-      "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino",
+      "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, TiDB, Oracle)",
       "schema-history-version": "Versión del historial de esquema",
       "copy-schema": "Copiar esquema",
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
       "select-project": "Seleccione el proyecto",
-      "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB, Oracle)",
       "source-database": "Base de datos de origen",
       "source-schema": "Esquema de origen",
       "schema-version": {
@@ -1679,7 +1678,8 @@
       "character-sets-diff-found": "Hay diferencias entre los juegos de caracteres.",
       "preview-issue": "Vista previa de incidencia",
       "schema-change": "cambio de esquema",
-      "generated-ddl-statement": "Declaración DDL generada"
+      "generated-ddl-statement": "Declaración DDL generada",
+      "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB, Oracle)"
     },
     "sensitive": "Sensible",
     "access-denied": "No tiene permiso para acceder a esta base de datos.",

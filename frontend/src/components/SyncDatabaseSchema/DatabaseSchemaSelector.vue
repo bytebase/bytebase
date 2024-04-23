@@ -32,7 +32,8 @@
         :database="state.databaseId"
         :environment="state.environmentId"
         :project="state.projectId"
-        :placeholder="$t('database.sync-schema.select-database-placeholder')"
+        :placeholder="$t('db.select')"
+        :allowed-engine-type-list="allowedEngineTypeList"
         :fallback-option="false"
         @update:database="handleDatabaseSelect"
       />
@@ -93,6 +94,7 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   ChangeHistoryView,
@@ -160,6 +162,13 @@ const allowedMigrationTypeList: ChangeHistory_Type[] = [
   ChangeHistory_Type.BASELINE,
   ChangeHistory_Type.MIGRATE,
   ChangeHistory_Type.BRANCH,
+];
+
+const allowedEngineTypeList: Engine[] = [
+  Engine.MYSQL,
+  Engine.POSTGRES,
+  Engine.TIDB,
+  Engine.ORACLE,
 ];
 
 const isValidId = (id: any): id is string => {
