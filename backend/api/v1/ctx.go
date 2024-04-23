@@ -52,8 +52,7 @@ func (p *ContextProvider) StreamInterceptor(request any, ss grpc.ServerStream, s
 
 func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([]string, error) {
 	switch fullMethod {
-	// below are "workspace-level" permissions.
-	// we don't have to go down to the project level.
+	// skip workspace-level methods
 	case
 		v1pb.InstanceService_GetInstance_FullMethodName,
 		v1pb.InstanceRoleService_GetInstanceRole_FullMethodName,
@@ -116,6 +115,8 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		return nil, nil
 
 	case
+		v1pb.SQLService_Query_FullMethodName,
+		v1pb.SQLService_Export_FullMethodName,
 		v1pb.DatabaseService_GetDatabase_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
 		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
@@ -130,7 +131,7 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.DatabaseService_AdviseIndex_FullMethodName,
 		v1pb.DatabaseService_ListChangeHistories_FullMethodName,
 		v1pb.DatabaseService_GetChangeHistory_FullMethodName:
-		return p.getProjectIDsForDatabaseService(ctx, req)
+		return p.getProjectIDsForDatabase(ctx, req)
 
 	case
 		v1pb.VCSConnectorService_CreateVCSConnector_FullMethodName,
@@ -433,11 +434,15 @@ func (*ContextProvider) getProjectIDsForProjectService(_ context.Context, req an
 	return uniq(projectIDs), nil
 }
 
-func (p *ContextProvider) getProjectIDsForDatabaseService(ctx context.Context, req any) ([]string, error) {
+func (p *ContextProvider) getProjectIDsForDatabase(ctx context.Context, req any) ([]string, error) {
 	var projectIDs []string
 
 	var databaseNames []string
 	switch r := req.(type) {
+	case *v1pb.QueryRequest:
+		databaseNames = append(databaseNames, r.GetName())
+	case *v1pb.ExportRequest:
+		databaseNames = append(databaseNames, r.GetName())
 	case *v1pb.GetDatabaseRequest:
 		databaseNames = append(databaseNames, r.GetName())
 	case *v1pb.SyncDatabaseRequest:
