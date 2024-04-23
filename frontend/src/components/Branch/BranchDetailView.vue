@@ -252,7 +252,9 @@ const parentBranch = asyncComputed(async () => {
 }, undefined);
 
 const database = computedAsync(() => {
-  return databaseStore.getOrFetchDatabaseByName(props.dirtyBranch.baselineDatabase);
+  return databaseStore.getOrFetchDatabaseByName(
+    props.dirtyBranch.baselineDatabase
+  );
 }, unknownDatabase());
 
 const showMergeBranchButton = computed(() => {
