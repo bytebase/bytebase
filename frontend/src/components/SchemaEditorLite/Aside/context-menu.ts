@@ -15,6 +15,7 @@ import type {
   TreeNodeForSchema,
   TreeNodeForTable,
 } from "./common";
+import type { ComposedDatabase } from "@/types";
 
 interface TreeContextMenu {
   show: boolean;
