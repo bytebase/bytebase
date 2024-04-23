@@ -364,6 +364,7 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		SshObfuscatedPrivateKey:            dataSource.SSHObfuscatedPrivateKey,
 		AuthenticationPrivateKeyObfuscated: dataSource.AuthenticationPrivateKeyObfuscated,
 		ExternalSecret:                     dataSource.ExternalSecret,
+		AuthenticationType:                 dataSource.AuthenticationType,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {
