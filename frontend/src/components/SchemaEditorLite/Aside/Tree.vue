@@ -98,7 +98,6 @@ import { MoreHorizontalIcon, CopyIcon } from "lucide-vue-next";
 import type { TreeOption } from "naive-ui";
 import { NInput, NDropdown, NTree, NPerformantEllipsis } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
-import { watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import type { ComposedDatabase } from "@/types";
