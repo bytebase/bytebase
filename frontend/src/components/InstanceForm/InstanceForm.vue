@@ -100,6 +100,7 @@
                   ? undefined
                   : environment.uid
               "
+              :disabled="!allowEdit"
               @update:environment="handleSelectEnvironmentUID"
             />
           </div>
@@ -367,7 +368,6 @@
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import { NButton, NInput, NSwitch, NRadioGroup, NRadio } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import type { PropType } from "vue";
 import { computed, reactive, ref, watch, onMounted, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -428,16 +428,10 @@ import {
 import { provideInstanceFormContext } from "./context";
 import { useInstanceSpecs } from "./specs";
 
-const props = defineProps({
-  instance: {
-    type: Object as PropType<Instance>,
-    default: undefined,
-  },
-  drawer: {
-    type: Boolean,
-    default: false,
-  },
-});
+const props = defineProps<{
+  instance?: Instance;
+  drawer?: boolean;
+}>();
 
 const emit = defineEmits(["dismiss"]);
 
@@ -734,7 +728,7 @@ const validateResourceId = async (
   return [];
 };
 
-const updateEditState = async (instance: Instance) => {
+const updateEditState = (instance: Instance) => {
   basicInfo.value = extractBasicInfo(instance);
   const updatedEditState = extractDataSourceEditState(instance);
   dataSourceEditState.value.dataSources = updatedEditState.dataSources;
@@ -866,6 +860,9 @@ const doUpdate = async () => {
     ) {
       updateMask.push("options.maximum_connections");
     }
+    if (updateMask.length === 0) {
+      return;
+    }
     return await instanceV1Store.updateInstance(instancePatch, updateMask);
   };
   const updateDataSource = async (
@@ -917,7 +914,7 @@ const doUpdate = async () => {
       await maybeUpdateAdminDataSource();
       await maybeUpsertReadonlyDataSources();
       const updatedInstance = instanceV1Store.getInstanceByName(instance.name);
-      await updateEditState(updatedInstance);
+      updateEditState(updatedInstance);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

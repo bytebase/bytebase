@@ -4,6 +4,7 @@
       v-for="sshType in SshTypes"
       :key="sshType"
       :value="sshType"
+      :disabled="disabled"
       :checked="state.type === sshType"
       @update:checked="handleSelectType(sshType, $event)"
     >
@@ -23,6 +24,7 @@
           v-model:value="state.value.sshHost"
           class="mt-2 w-full"
           :placeholder="''"
+          :disabled="disabled"
         />
       </div>
 
@@ -34,6 +36,7 @@
           v-model:value="state.value.sshPort"
           class="mt-2 w-full"
           :placeholder="''"
+          :disabled="disabled"
           :allow-input="onlyAllowNumber"
         />
       </div>
@@ -50,6 +53,7 @@
           v-model:value="state.value.sshUser"
           class="mt-2 w-full"
           :placeholder="''"
+          :disabled="disabled"
         />
       </div>
       <div class="mt-2 sm:col-span-3 sm:col-start-1">
@@ -60,6 +64,7 @@
           v-model:value="state.value.sshPassword"
           class="mt-2 w-full"
           :placeholder="$t('instance.password-write-only')"
+          :disabled="disabled"
         />
       </div>
     </div>
@@ -74,6 +79,7 @@
         <DroppableTextarea
           v-model:value="state.value.sshPrivateKey"
           :resizable="false"
+          :disabled="disabled"
           class="w-full h-24 mt-2 whitespace-pre-wrap"
         />
       </div>
@@ -91,7 +97,6 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { NInput, NRadio } from "naive-ui";
-import type { PropType } from "vue";
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
@@ -118,16 +123,11 @@ type LocalState = {
   showFeatureModal: boolean;
 };
 
-const props = defineProps({
-  value: {
-    type: Object as PropType<WithSshOptions>,
-    required: true,
-  },
-  instance: {
-    type: Object as PropType<Instance>,
-    default: undefined,
-  },
-});
+const props = defineProps<{
+  value: WithSshOptions;
+  instance?: Instance;
+  disabled: boolean;
+}>();
 
 const emit = defineEmits<{
   (e: "change", value: WithSshOptions): void;
