@@ -32,7 +32,7 @@
             :project-list="tab.list"
             :current-project="currentProject"
             :pagination="false"
-            @click="$emit('dismiss')"
+            @row-click="$emit('dismiss')"
           />
         </NTabPane>
       </NTabs>
