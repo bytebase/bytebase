@@ -1,24 +1,24 @@
 <template>
   <div v-if="!isCreating" class="flex flex-col gap-y-2">
-    <NTooltip
-      :disabled="!showApprovalTooltip"
-      placement="bottom"
-      :show-arrow="false"
-    >
-      <template #trigger>
-        <div>
-          <div class="textlabel flex items-center gap-x-1">
-            {{ $t("issue.approval-flow.self") }}
-            <FeatureBadge feature="bb.feature.custom-approval" />
+    <div class="w-full flex flex-row justify-between items-center gap-2">
+      <NTooltip :disabled="!showApprovalTooltip" placement="bottom">
+        <template #trigger>
+          <div>
+            <div class="textlabel flex items-center gap-x-1">
+              {{ $t("issue.approval-flow.self") }}
+              <FeatureBadge feature="bb.feature.custom-approval" />
+            </div>
           </div>
-        </div>
-      </template>
-      <template #default>
-        <div class="max-w-[22rem]">
-          {{ $t("issue.approval-flow.tooltip") }}
-        </div>
-      </template>
-    </NTooltip>
+        </template>
+        <template #default>
+          <div class="max-w-[22rem]">
+            {{ $t("issue.approval-flow.tooltip") }}
+          </div>
+        </template>
+      </NTooltip>
+
+      <RiskLevelTag />
+    </div>
 
     <div class="flex-1" :class="showApprovalTooltip && 'min-w-[14rem]'">
       <div
@@ -85,6 +85,7 @@ import {
 } from "@/components/IssueV1";
 import { useIssueV1Store } from "@/store";
 import { isGrantRequestIssue } from "@/utils";
+import RiskLevelTag from "./RiskLevelTag.vue";
 import Timeline from "./Timeline.vue";
 
 const { issue, events, isCreating, reviewContext, selectedTask } =
