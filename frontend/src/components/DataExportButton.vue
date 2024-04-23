@@ -126,7 +126,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
-import { isNullOrUndefined } from "@/utils";
+import { defer, isNullOrUndefined } from "@/utils";
 import { ErrorTipsButton } from "./v2";
 
 interface LocalState {
@@ -254,6 +254,24 @@ const handleClickExportButton = (e: MouseEvent) => {
   state.showDrawer = true;
 };
 
+const emitExportEventAsPromise = (
+  options: ExportOption,
+  download: (content: BinaryLike | Blob, options: ExportOption) => void
+) => {
+  const d = defer<void>();
+
+  emit(
+    "export",
+    options,
+    (content: BinaryLike | Blob, options: ExportOption) => {
+      d.resolve();
+      download(content, options);
+    }
+  );
+
+  return d.promise;
+};
+
 const doExport = async () => {
   if (state.isRequesting) {
     return;
@@ -262,7 +280,7 @@ const doExport = async () => {
   state.isRequesting = true;
 
   try {
-    await emit("export", { ...formData.value }, doDownload);
+    await emitExportEventAsPromise({ ...formData.value }, doDownload);
   } catch (error) {
     pushNotification({
       module: "bytebase",
