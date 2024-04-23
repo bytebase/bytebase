@@ -1,5 +1,7 @@
 package common
 
+import "context"
+
 // ContextKey is the key type of context value.
 type ContextKey int
 
@@ -12,4 +14,14 @@ const (
 	LoopbackContextKey
 	// UserContextKey is the key name used to store user message in the context.
 	UserContextKey
+	ProjectIDsContextKey
 )
+
+func WithProjectIDs(ctx context.Context, projectIDs []string) context.Context {
+	return context.WithValue(ctx, ProjectIDsContextKey, projectIDs)
+}
+
+func GetProjectIDsFromContext(ctx context.Context) ([]string, bool) {
+	v, ok := ctx.Value(ProjectIDsContextKey).([]string)
+	return v, ok
+}
