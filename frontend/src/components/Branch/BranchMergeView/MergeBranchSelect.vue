@@ -46,7 +46,7 @@ const targetBranchFilter = (branch: Branch) => {
   if (!headBranch) {
     return true;
   }
-  // A feature only allows be merged to its parent.
+  // A feature branch is only allowed to be merged to its parent.
   return branch.name === headBranch.parentBranch;
 };
 const headBranchFilter = (branch: Branch) => {
