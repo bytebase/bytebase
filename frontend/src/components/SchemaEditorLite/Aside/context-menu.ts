@@ -2,6 +2,7 @@ import Emittery from "emittery";
 import type { DropdownOption } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { isDescendantOf } from "@/utils";
 import { useSchemaEditorContext } from "../context";
@@ -15,7 +16,6 @@ import type {
   TreeNodeForSchema,
   TreeNodeForTable,
 } from "./common";
-import type { ComposedDatabase } from "@/types";
 
 interface TreeContextMenu {
   show: boolean;
