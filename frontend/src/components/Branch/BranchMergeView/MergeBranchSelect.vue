@@ -46,7 +46,8 @@ const targetBranchFilter = (branch: Branch) => {
   if (!headBranch) {
     return true;
   }
-  return branch.engine === headBranch.engine && branch.name !== headBranch.name;
+  // A feature branch is only allowed to be merged to its parent.
+  return branch.name === headBranch.parentBranch;
 };
 const headBranchFilter = (branch: Branch) => {
   const { targetBranch } = props;
@@ -54,7 +55,10 @@ const headBranchFilter = (branch: Branch) => {
     return true;
   }
   return (
-    branch.engine === targetBranch.engine && branch.name !== targetBranch.name
+    branch.engine === targetBranch.engine &&
+    branch.name !== targetBranch.name &&
+    // Main branches are not allow be merged to any branch.
+    !!branch.parentBranch
   );
 };
 </script>
