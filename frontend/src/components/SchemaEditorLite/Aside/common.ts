@@ -62,7 +62,7 @@ export interface TreeNodeForTable extends BaseTreeNode {
     schema: SchemaMetadata;
     table: TableMetadata;
   };
-  children: TreeNodeForColumn[];
+  children: TreeNodeForColumn[] | TreeNodeForPlaceholder<"column">[];
 }
 
 export interface TreeNodeForColumn extends BaseTreeNode {
@@ -131,14 +131,30 @@ export interface TreeNodeForGroup<T extends GroupNodeType = GroupNodeType>
   parent: TreeNodeForSchema | TreeNodeForDatabase | undefined;
   isLeaf: false;
   children: T extends "table"
-    ? TreeNodeForTable[]
+    ? TreeNodeForTable[] | TreeNodeForPlaceholder<"table">[]
     : T extends "view"
-      ? TreeNodeForView[]
+      ? TreeNodeForView[] | TreeNodeForPlaceholder<"view">[]
       : T extends "procedure"
-        ? TreeNodeForProcedure[]
+        ? TreeNodeForProcedure[] | TreeNodeForPlaceholder<"procedure">[]
         : T extends "function"
-          ? TreeNodeForFunction[]
+          ? TreeNodeForFunction[] | TreeNodeForPlaceholder<"function">[]
           : undefined;
+}
+
+export type PlaceholderNodeType =
+  | "table"
+  | "column"
+  | "view"
+  | "procedure"
+  | "function";
+export interface TreeNodeForPlaceholder<
+  T extends PlaceholderNodeType = PlaceholderNodeType,
+> extends BaseTreeNode {
+  type: "placeholder";
+  placeholder: T;
+  parent: TreeNode;
+  isLeaf: true;
+  children: undefined;
 }
 
 export type TreeNode =
@@ -150,11 +166,13 @@ export type TreeNode =
   | TreeNodeForView
   | TreeNodeForProcedure
   | TreeNodeForFunction
-  | TreeNodeForGroup;
+  | TreeNodeForGroup
+  | TreeNodeForPlaceholder;
 
 export type BuildTreeOptions = {
   byInstance: boolean;
 };
+
 export const buildTree = (
   targets: EditTarget[],
   map: Map<string, TreeNode>,
@@ -262,6 +280,11 @@ const buildSchemaNodeList = (
       map,
       tableGroupNode
     );
+    if (tableGroupNode.children.length === 0) {
+      tableGroupNode.children = [
+        buildPlaceholderNode("table", tableGroupNode, map),
+      ];
+    }
     groups.push(tableGroupNode);
     map.set(tableGroupNode.key, tableGroupNode);
 
@@ -283,6 +306,11 @@ const buildSchemaNodeList = (
         map,
         procedureGroupNode
       );
+      if (procedureGroupNode.children.length === 0) {
+        procedureGroupNode.children = [
+          buildPlaceholderNode("procedure", procedureGroupNode, map),
+        ];
+      }
       groups.push(procedureGroupNode);
       map.set(procedureGroupNode.key, procedureGroupNode);
     }
@@ -304,6 +332,11 @@ const buildSchemaNodeList = (
         map,
         functionGroupNode
       );
+      if (functionGroupNode.children.length === 0) {
+        functionGroupNode.children = [
+          buildPlaceholderNode("function", functionGroupNode, map),
+        ];
+      }
       groups.push(functionGroupNode);
       map.set(functionGroupNode.key, functionGroupNode);
     }
@@ -359,6 +392,10 @@ const buildTableNodeList = (
     };
     map.set(tableNode.key, tableNode);
     tableNode.children = buildColumnNodeList(table.columns, map, tableNode);
+
+    if (tableNode.children.length === 0) {
+      tableNode.children = [buildPlaceholderNode("column", tableNode, map)];
+    }
     return tableNode;
   });
 };
@@ -439,4 +476,22 @@ const buildColumnNodeList = (
     map.set(columnNode.key, columnNode);
     return columnNode;
   });
+};
+
+const buildPlaceholderNode = <T extends PlaceholderNodeType>(
+  placeholder: T,
+  parent: TreeNode,
+  map: Map<string, TreeNode>
+) => {
+  const node: TreeNodeForPlaceholder<T> = {
+    type: "placeholder",
+    key: `${parent.key}/placeholder`,
+    placeholder,
+    parent,
+    label: "",
+    children: undefined,
+    isLeaf: true,
+  };
+  map.set(node.key, node);
+  return node;
 };

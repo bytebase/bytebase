@@ -424,6 +424,14 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
   const additionalClassList: string[] = ["select-none"];
   let label = node.label;
 
+  if (node.type === "placeholder") {
+    return h(
+      "span",
+      { class: "text-control-placeholder italic" },
+      `<${t("common.empty")}>`
+    );
+  }
+
   if (node.type === "schema") {
     const { db, metadata } = node;
     additionalClassList.push(getSchemaStatus(db, metadata));
