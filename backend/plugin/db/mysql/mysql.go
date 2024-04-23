@@ -118,7 +118,7 @@ func (driver *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, e
 	if err != nil {
 		return "", errors.Wrap(err, "sql: tls config error")
 	}
-	tlsKey := "storepb.Engine_MYSQL.tls"
+	tlsKey := "db.mysql.tls"
 	if tlsConfig != nil {
 		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
 			return "", errors.Wrap(err, "sql: failed to register tls config")
