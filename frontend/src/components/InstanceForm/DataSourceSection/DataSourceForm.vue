@@ -11,6 +11,7 @@
       <NRadioGroup
         v-model:value="dataSource.authenticationType"
         class="textlabel"
+        :disabled="!allowEdit"
       >
         <NRadio :value="DataSource_AuthenticationType.PASSWORD">
           {{ $t("instance.password-type.password") }}
@@ -53,6 +54,7 @@
         <NRadioGroup
           class="textlabel"
           :value="state.passwordType"
+          :disabled="!allowEdit"
           @update:value="changeSecretType"
         >
           <NRadio
@@ -264,6 +266,7 @@
               <NRadioGroup
                 v-model:value="dataSource.externalSecret.appRole.type"
                 class="textlabel my-1"
+                :disabled="!allowEdit"
               >
                 <NRadio
                   :value="
@@ -401,6 +404,7 @@
       <DroppableTextarea
         v-model:value="dataSource.authenticationPrivateKey"
         :resizable="false"
+        :disabled="!allowEdit"
         class="w-full h-32 mt-2 whitespace-pre-wrap"
         placeholder="-----BEGIN PRIVATE KEY-----
 MIIEvQ...
@@ -421,6 +425,7 @@ MIIEvQ...
         class="mt-2 w-full"
         :input-props="{ autocomplete: 'off' }"
         placeholder="admin"
+        :disabled="!allowEdit"
         :value="dataSource.authenticationDatabase"
         @update:value="dataSource.authenticationDatabase = $event.trim()"
       />
@@ -448,6 +453,7 @@ MIIEvQ...
         class="mt-2 w-full"
         :input-props="{ autocomplete: 'off' }"
         :value="dataSource.host"
+        :disabled="!allowEdit"
         @update:value="handleHostInput"
       />
     </div>
@@ -466,6 +472,7 @@ MIIEvQ...
         :input-props="{ autocomplete: 'off' }"
         :value="dataSource.port"
         :allow-input="onlyAllowNumber"
+        :disabled="!allowEdit"
         @update:value="handlePortInput"
       />
     </div>
@@ -499,6 +506,7 @@ MIIEvQ...
       <SslCertificateForm
         :value="dataSource"
         :engine-type="basicInfo.engine"
+        :disabled="!allowEdit"
         @change="handleSSLChange"
       />
     </template>
@@ -507,6 +515,7 @@ MIIEvQ...
         <SslCertificateForm
           :value="dataSource"
           :engine-type="basicInfo.engine"
+          :disabled="!allowEdit"
           @change="handleSSLChange"
         />
       </template>
@@ -542,6 +551,7 @@ MIIEvQ...
       <SshConnectionForm
         :value="dataSource"
         :instance="instance"
+        :disabled="!allowEdit"
         @change="handleSSHChange"
       />
     </template>
@@ -550,6 +560,7 @@ MIIEvQ...
         <SshConnectionForm
           :value="dataSource"
           :instance="instance"
+          :disabled="!allowEdit"
           @change="handleSSHChange"
         />
       </template>

@@ -1,12 +1,5 @@
-import type { ComputedRef } from "vue";
-import {
-  type InjectionKey,
-  type Ref,
-  provide,
-  inject,
-  computed,
-  ref,
-} from "vue";
+import type { ComputedRef, InjectionKey, Ref } from "vue";
+import { provide, inject, computed, ref } from "vue";
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import type { FeatureType } from "@/types";
 import { State } from "@/types/proto/v1/common";
