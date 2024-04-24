@@ -3501,30 +3501,30 @@ func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normal
 	// TODO(zp): unify here and the related code in sql_service.go
 	linkedServer := normalizedFallbackLinkedServerName
 	if server := fullTableName.GetLinkedServer(); server != nil {
-		_, linkedServer = NormalizeTSQLIdentifier(server)
+		linkedServer, _ = NormalizeTSQLIdentifier(server)
 	}
 
 	database := normalizedFallbackDatabaseName
 	if d := fullTableName.GetDatabase(); d != nil {
-		_, normalizedD := NormalizeTSQLIdentifier(d)
-		if normalizedD != "" {
-			database = normalizedD
+		originalD, _ := NormalizeTSQLIdentifier(d)
+		if originalD != "" {
+			database = originalD
 		}
 	}
 
 	schema := normalizedFallbackSchemaName
 	if s := fullTableName.GetSchema(); s != nil {
-		_, normalizedS := NormalizeTSQLIdentifier(s)
-		if normalizedS != "" {
-			schema = normalizedS
+		originalS, _ := NormalizeTSQLIdentifier(s)
+		if originalS != "" {
+			schema = originalS
 		}
 	}
 
 	var table string
 	if t := fullTableName.GetTable(); t != nil {
-		_, normalizedT := NormalizeTSQLIdentifier(t)
-		if normalizedT != "" {
-			table = normalizedT
+		originalT, _ := NormalizeTSQLIdentifier(t)
+		if originalT != "" {
+			table = originalT
 		}
 	}
 

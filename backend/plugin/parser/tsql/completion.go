@@ -18,6 +18,11 @@ func init() {
 }
 
 var (
+
+	// Check tableRefListener is implementing the TSqlParserListener interface.
+	_ tsqlparser.TSqlParserListener = &tableRefListener{}
+	_ tsqlparser.TSqlParserListener = &cteExtractor{}
+
 	globalFellowSetsByState = base.NewFollowSetsByState()
 	ignoredTokens           = map[int]bool{
 		// Common EOF
@@ -120,7 +125,7 @@ func (m CompletionMap) Insert(entry base.Candidate) {
 	m[entry.String()] = entry
 }
 
-func (m CompletionMap) toSLice() []base.Candidate {
+func (m CompletionMap) toSlice() []base.Candidate {
 	var result []base.Candidate
 	for _, candidate := range m {
 		result = append(result, candidate)
@@ -444,9 +449,9 @@ func NewStandardCompleter(ctx context.Context, statement string, caretLine int, 
 		ignoredTokens,  /* IgnoredTokens */
 		preferredRules, /* PreferredRules */
 		&globalFellowSetsByState,
-		-1, /* queryRule */
-		-1, /* shadowQueryRule */
-		-1, /* selectItemAliasRule */
+		tsqlparser.TSqlParserRULE_select_statement,            /* queryRule */
+		tsqlparser.TSqlParserRULE_select_statement_standalone, /* shadowQueryRule */
+		tsqlparser.TSqlParserRULE_as_column_alias,             /* selectItemAliasRule */
 		-1, /* cteRule */
 	)
 
@@ -495,6 +500,7 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()
 			c.takeReferencesSnapshot()
+			break
 		}
 	}
 	return c.convertCandidates(candidates)
@@ -506,7 +512,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	databaseEntries := make(CompletionMap)
 	schemaEntries := make(CompletionMap)
 	tableEntries := make(CompletionMap)
-	columEntries := make(CompletionMap)
+	columnEntries := make(CompletionMap)
 	viewEntries := make(CompletionMap)
 
 	for tokenCandidate, continuous := range candidates.Tokens {
@@ -537,7 +543,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			functionEntries.insertBuiltinFunctions()
 		case tsqlparser.TSqlParserRULE_full_table_name:
 			// full_table_name also appears in the full_column_name rule, we would handle it in the full_column_name rule in this case.
-			if len(ruleStack) > 0 && ruleStack[0].ID == tsqlparser.TSqlParserRULE_full_column_name {
+			if len(ruleStack) > 0 && ruleStack[len(ruleStack)-1].ID == tsqlparser.TSqlParserRULE_full_column_name {
 				continue
 			}
 			completionContexts := c.determineFullTableNameContext()
@@ -594,10 +600,13 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							if reference.Alias != "" {
 								tableName = reference.Alias
 							}
-							if _, ok := tableEntries[tableName]; !ok {
-								tableEntries[tableName] = base.Candidate{
-									Type: base.CandidateTypeTable,
-									Text: tableName,
+							if context.linkedServer == "" && strings.EqualFold(reference.Database, context.database) &&
+								strings.EqualFold(reference.Schema, context.schema) {
+								if _, ok := tableEntries[tableName]; !ok {
+									tableEntries[tableName] = base.Candidate{
+										Type: base.CandidateTypeTable,
+										Text: tableName,
+									}
 								}
 							}
 						case *base.VirtualTableReference:
@@ -616,15 +625,22 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					}
 				}
 				if context.flags&objectFlagShowColumn != 0 {
-					columEntries.insertMetadataColumns(c, context.linkedServer, context.database, context.schema, context.object)
+					list := c.fetchSelectItemAliases(ruleStack)
+					for _, alias := range list {
+						columnEntries.Insert(base.Candidate{
+							Type: base.CandidateTypeColumn,
+							Text: alias,
+						})
+					}
+					columnEntries.insertMetadataColumns(c, context.linkedServer, context.database, context.schema, context.object)
 					for _, reference := range c.references {
 						if reference, ok := reference.(*base.VirtualTableReference); ok {
 							// Reference could be a physical table reference or a virtual table reference, if the reference is a virtual table reference,
 							// and users do not specify the server, database and schema, we should also insert the columns.
 							if context.linkedServer == "" && context.database == "" && context.schema == "" {
 								for _, column := range reference.Columns {
-									if _, ok := columEntries[column]; !ok {
-										columEntries[column] = base.Candidate{
+									if _, ok := columnEntries[column]; !ok {
+										columnEntries[column] = base.Candidate{
 											Type: base.CandidateTypeColumn,
 											Text: column,
 										}
@@ -633,6 +649,21 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							}
 						}
 					}
+					if context.linkedServer == "" && context.database == "" && context.schema == "" {
+						for _, cte := range c.cteTables {
+							if strings.EqualFold(cte.Table, context.object) {
+								for _, column := range cte.Columns {
+									if _, ok := columnEntries[column]; !ok {
+										columnEntries[column] = base.Candidate{
+											Type: base.CandidateTypeColumn,
+											Text: column,
+										}
+									}
+								}
+							}
+						}
+					}
+
 				}
 			}
 		}
@@ -640,12 +671,13 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 
 	c.scanner.PopAndRestore()
 	var result []base.Candidate
-	result = append(result, keywordEntries.toSLice()...)
-	result = append(result, functionEntries.toSLice()...)
-	result = append(result, databaseEntries.toSLice()...)
-	result = append(result, schemaEntries.toSLice()...)
-	result = append(result, tableEntries.toSLice()...)
-	result = append(result, viewEntries.toSLice()...)
+	result = append(result, keywordEntries.toSlice()...)
+	result = append(result, functionEntries.toSlice()...)
+	result = append(result, databaseEntries.toSlice()...)
+	result = append(result, schemaEntries.toSlice()...)
+	result = append(result, tableEntries.toSlice()...)
+	result = append(result, columnEntries.toSlice()...)
+	result = append(result, viewEntries.toSlice()...)
 	return result, nil
 }
 
@@ -1273,7 +1305,7 @@ func (l *tableRefListener) ExitFull_table_name(ctx *tsqlparser.Full_table_nameCo
 	}
 }
 
-func (l *tableRefListener) ExitRowset_function(ctx *tsqlparser.Derived_tableContext) {
+func (l *tableRefListener) ExitRowset_function(ctx *tsqlparser.Rowset_functionContext) {
 	if l.done {
 		return
 	}
@@ -1464,4 +1496,66 @@ func (c *cteExtractor) EnterWith_expression(ctx *tsqlparser.With_expressionConte
 			})
 		}
 	}
+}
+
+func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
+	canUseAliases := false
+	for i := len(ruleStack) - 1; i >= 0; i-- {
+		switch ruleStack[i].ID {
+		case tsqlparser.TSqlParserRULE_select_statement, tsqlparser.TSqlParserRULE_select_statement_standalone:
+			if !canUseAliases {
+				return nil
+			}
+			aliasMap := make(map[string]bool)
+			for pos := range ruleStack[i].SelectItemAliases {
+				if aliasText := c.extractAliasText(pos); len(aliasText) > 0 {
+					aliasMap[aliasText] = true
+				}
+			}
+
+			var result []string
+			for alias := range aliasMap {
+				result = append(result, alias)
+			}
+			sort.Slice(result, func(i, j int) bool {
+				return result[i] < result[j]
+			})
+			return result
+		case tsqlparser.TSqlParserRULE_group_by_clause, tsqlparser.TSqlParserRULE_order_by_clause, tsqlparser.TSqlParserRULE_having_clause:
+			canUseAliases = true
+		}
+	}
+
+	return nil
+}
+
+func (c *Completer) extractAliasText(pos int) string {
+	followingText := c.scanner.GetFollowingTextAfter(pos)
+	if len(followingText) == 0 {
+		return ""
+	}
+
+	input := antlr.NewInputStream(followingText)
+	lexer := tsqlparser.NewTSqlLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, 0)
+	parser := tsqlparser.NewTSqlParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	tree := parser.As_column_alias()
+
+	listener := &SelectAliasListener{}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+
+	return listener.result
+}
+
+type SelectAliasListener struct {
+	*tsqlparser.BaseTSqlParserListener
+
+	result string
+}
+
+func (l *SelectAliasListener) EnterAs_column_alias(ctx *tsqlparser.As_column_aliasContext) {
+	l.result = unquote(ctx.Column_alias().GetText())
 }
