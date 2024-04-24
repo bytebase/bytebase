@@ -45,15 +45,34 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get filter, error: %v", err)
 	}
 
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := limit + 1
+
 	auditLogs, err := s.store.SearchAuditLogs(ctx, &store.AuditLogFind{
 		Filter: filter,
+		Limit:  &limitPlusOne,
+		Offset: &offset,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get audit logs, error: %v", err)
 	}
 
+	var nextPageToken string
+	if len(auditLogs) == limitPlusOne {
+		auditLogs = auditLogs[:limit]
+		token, err := getPageToken(limit, offset+limit)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+		}
+		nextPageToken = token
+	}
+
 	return &v1pb.SearchAuditLogsResponse{
-		AuditLogs: convertToAuditLogs(auditLogs),
+		AuditLogs:     convertToAuditLogs(auditLogs),
+		NextPageToken: nextPageToken,
 	}, nil
 }
 

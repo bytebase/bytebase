@@ -20,6 +20,8 @@ type AuditLog struct {
 
 type AuditLogFind struct {
 	Filter *AuditLogFilter
+	Limit  *int
+	Offset *int
 }
 
 type AuditLogFilter struct {
@@ -53,6 +55,14 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		args = append(args, v.Args...)
 	}
 
+	limitOffsetClause := ""
+	if v := find.Limit; v != nil {
+		limitOffsetClause += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		limitOffsetClause += fmt.Sprintf(" OFFSET %d", *v)
+	}
+
 	query := fmt.Sprintf(`
 		SELECT
 			id,
@@ -60,7 +70,8 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 			payload
 		FROM audit_log
 		WHERE %s
-	`, strings.Join(where, " AND "))
+		%s
+	`, strings.Join(where, " AND "), limitOffsetClause)
 
 	rows, err := s.db.db.QueryContext(ctx, query, args...)
 	if err != nil {
