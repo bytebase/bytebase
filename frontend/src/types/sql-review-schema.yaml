@@ -291,6 +291,7 @@ ruleList:
       - OCEANBASE
       - MARIADB
       - TIDB
+      - POSTGRES
     componentList:
       - key: number
         payload:
