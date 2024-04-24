@@ -1161,8 +1161,14 @@ const checkDataSource = (dataSources: DataSource[]) => {
       ds.authenticationType ===
       DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
     ) {
-      // CloudSQL instance name shoule be {project}:{region}:{cloud sql name}
+      // CloudSQL instance name should be {project}:{region}:{cloud sql name}
       return /.+:.+:.+/.test(ds.host);
+    }
+
+    if (basicInfo.value.engine === Engine.ORACLE) {
+      if (!ds.sid && !ds.serviceName) {
+        return false;
+      }
     }
 
     if (!ds.externalSecret) {
