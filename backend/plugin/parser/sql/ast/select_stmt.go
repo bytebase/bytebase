@@ -39,6 +39,7 @@ type SelectStmt struct {
 	FieldList     []ExpressionNode
 	WhereClause   ExpressionNode
 	OrderByClause []*ByItemDef
+	Limit         *int32
 
 	// TODO(rebelice): support all expression and remove them.
 	// We define them because we cannot convert all expression now.
