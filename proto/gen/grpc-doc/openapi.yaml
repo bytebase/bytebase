@@ -537,7 +537,17 @@ paths:
                 - name: policyType
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - POLICY_TYPE_UNSPECIFIED
+                        - ROLLOUT_POLICY
+                        - SQL_REVIEW
+                        - MASKING
+                        - SLOW_QUERY
+                        - DISABLE_COPY_DATA
+                        - MASKING_RULE
+                        - MASKING_EXCEPTION
+                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                    type: string
                     format: enum
                 - name: pageSize
                   in: query
@@ -591,7 +601,17 @@ paths:
                 - name: type
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - POLICY_TYPE_UNSPECIFIED
+                        - ROLLOUT_POLICY
+                        - SQL_REVIEW
+                        - MASKING
+                        - SLOW_QUERY
+                        - DISABLE_COPY_DATA
+                        - MASKING_RULE
+                        - MASKING_EXCEPTION
+                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                    type: string
                     format: enum
             requestBody:
                 content:
@@ -1327,7 +1347,11 @@ paths:
                 - name: view
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - CHANGE_HISTORY_VIEW_UNSPECIFIED
+                        - CHANGE_HISTORY_VIEW_BASIC
+                        - CHANGE_HISTORY_VIEW_FULL
+                    type: string
                     format: enum
                 - name: filter
                   in: query
@@ -1403,7 +1427,11 @@ paths:
                 - name: view
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - CHANGE_HISTORY_VIEW_UNSPECIFIED
+                        - CHANGE_HISTORY_VIEW_BASIC
+                        - CHANGE_HISTORY_VIEW_FULL
+                    type: string
                     format: enum
                 - name: sdlFormat
                   in: query
@@ -1493,7 +1521,11 @@ paths:
                   in: query
                   description: The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC.
                   schema:
-                    type: integer
+                    enum:
+                        - DATABASE_METADATA_VIEW_UNSPECIFIED
+                        - DATABASE_METADATA_VIEW_BASIC
+                        - DATABASE_METADATA_VIEW_FULL
+                    type: string
                     format: enum
                 - name: filter
                   in: query
@@ -1579,7 +1611,17 @@ paths:
                 - name: policyType
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - POLICY_TYPE_UNSPECIFIED
+                        - ROLLOUT_POLICY
+                        - SQL_REVIEW
+                        - MASKING
+                        - SLOW_QUERY
+                        - DISABLE_COPY_DATA
+                        - MASKING_RULE
+                        - MASKING_EXCEPTION
+                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                    type: string
                     format: enum
                 - name: pageSize
                   in: query
@@ -1639,7 +1681,17 @@ paths:
                 - name: type
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - POLICY_TYPE_UNSPECIFIED
+                        - ROLLOUT_POLICY
+                        - SQL_REVIEW
+                        - MASKING
+                        - SLOW_QUERY
+                        - DISABLE_COPY_DATA
+                        - MASKING_RULE
+                        - MASKING_EXCEPTION
+                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                    type: string
                     format: enum
             requestBody:
                 content:
@@ -2291,7 +2343,17 @@ paths:
                 - name: policyType
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - POLICY_TYPE_UNSPECIFIED
+                        - ROLLOUT_POLICY
+                        - SQL_REVIEW
+                        - MASKING
+                        - SLOW_QUERY
+                        - DISABLE_COPY_DATA
+                        - MASKING_RULE
+                        - MASKING_EXCEPTION
+                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                    type: string
                     format: enum
                 - name: pageSize
                   in: query
@@ -2345,7 +2407,17 @@ paths:
                 - name: type
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - POLICY_TYPE_UNSPECIFIED
+                        - ROLLOUT_POLICY
+                        - SQL_REVIEW
+                        - MASKING
+                        - SLOW_QUERY
+                        - DISABLE_COPY_DATA
+                        - MASKING_RULE
+                        - MASKING_EXCEPTION
+                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                    type: string
                     format: enum
             requestBody:
                 content:
@@ -3156,7 +3228,17 @@ paths:
                 - name: policyType
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - POLICY_TYPE_UNSPECIFIED
+                        - ROLLOUT_POLICY
+                        - SQL_REVIEW
+                        - MASKING
+                        - SLOW_QUERY
+                        - DISABLE_COPY_DATA
+                        - MASKING_RULE
+                        - MASKING_EXCEPTION
+                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                    type: string
                     format: enum
                 - name: pageSize
                   in: query
@@ -3214,7 +3296,17 @@ paths:
                 - name: type
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - POLICY_TYPE_UNSPECIFIED
+                        - ROLLOUT_POLICY
+                        - SQL_REVIEW
+                        - MASKING
+                        - SLOW_QUERY
+                        - DISABLE_COPY_DATA
+                        - MASKING_RULE
+                        - MASKING_EXCEPTION
+                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                    type: string
                     format: enum
             requestBody:
                 content:
@@ -3568,7 +3660,11 @@ paths:
                 - name: view
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - BRANCH_VIEW_UNSPECIFIED
+                        - BRANCH_VIEW_BASIC
+                        - BRANCH_VIEW_FULL
+                    type: string
                     format: enum
             responses:
                 "200":
@@ -4160,7 +4256,11 @@ paths:
                   in: query
                   description: The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
                   schema:
-                    type: integer
+                    enum:
+                        - DATABASE_GROUP_VIEW_UNSPECIFIED
+                        - DATABASE_GROUP_VIEW_BASIC
+                        - DATABASE_GROUP_VIEW_FULL
+                    type: string
                     format: enum
             responses:
                 "200":
@@ -4374,7 +4474,11 @@ paths:
                   in: query
                   description: The view to return. Defaults to SCHEMA_GROUP_VIEW_BASIC.
                   schema:
-                    type: integer
+                    enum:
+                        - SCHEMA_GROUP_VIEW_UNSPECIFIED
+                        - SCHEMA_GROUP_VIEW_BASIC
+                        - SCHEMA_GROUP_VIEW_FULL
+                    type: string
                     format: enum
             responses:
                 "200":
@@ -5448,7 +5552,17 @@ paths:
                 - name: policyType
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - POLICY_TYPE_UNSPECIFIED
+                        - ROLLOUT_POLICY
+                        - SQL_REVIEW
+                        - MASKING
+                        - SLOW_QUERY
+                        - DISABLE_COPY_DATA
+                        - MASKING_RULE
+                        - MASKING_EXCEPTION
+                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                    type: string
                     format: enum
                 - name: pageSize
                   in: query
@@ -5502,7 +5616,17 @@ paths:
                 - name: type
                   in: query
                   schema:
-                    type: integer
+                    enum:
+                        - POLICY_TYPE_UNSPECIFIED
+                        - ROLLOUT_POLICY
+                        - SQL_REVIEW
+                        - MASKING
+                        - SLOW_QUERY
+                        - DISABLE_COPY_DATA
+                        - MASKING_RULE
+                        - MASKING_EXCEPTION
+                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                    type: string
                     format: enum
             requestBody:
                 content:
@@ -7925,7 +8049,12 @@ components:
             type: object
             properties:
                 status:
-                    type: integer
+                    enum:
+                        - STATUS_UNSPECIFIED
+                        - SUCCESS
+                        - WARNING
+                        - ERROR
+                    type: string
                     description: The advice status.
                     format: enum
                 code:
@@ -7999,7 +8128,12 @@ components:
             type: object
             properties:
                 level:
-                    type: integer
+                    enum:
+                        - ALERT_LEVEL_UNSPECIFIED
+                        - ALERT_LEVEL_INFO
+                        - ALERT_LEVEL_WARNING
+                        - ALERT_LEVEL_CRITICAL
+                    type: string
                     description: The alert level of announcemnt
                     format: enum
                 text:
@@ -8021,11 +8155,22 @@ components:
                          - Instance: instnaces/{instance}
                          - Database: instnaces/{instance}/databases/{database}
                 type:
-                    type: integer
+                    enum:
+                        - ANOMALY_TYPE_UNSPECIFIED
+                        - INSTANCE_CONNECTION
+                        - MIGRATION_SCHEMA
+                        - DATABASE_CONNECTION
+                        - DATABASE_SCHEMA_DRIFT
+                    type: string
                     description: type is the type of the anomaly.
                     format: enum
                 severity:
-                    type: integer
+                    enum:
+                        - ANOMALY_SEVERITY_UNSPECIFIED
+                        - MEDIUM
+                        - HIGH
+                        - CRITICAL
+                    type: string
                     description: severity is the severity of the anomaly.
                     format: enum
                 instanceConnectionDetail:
@@ -8079,7 +8224,10 @@ components:
             type: object
             properties:
                 imType:
-                    type: integer
+                    enum:
+                        - IM_TYPE_UNSPECIFIED
+                        - FEISHU
+                    type: string
                     format: enum
                 appId:
                     type: string
@@ -8105,10 +8253,19 @@ components:
             type: object
             properties:
                 type:
-                    type: integer
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - ANY_IN_GROUP
+                    type: string
                     format: enum
                 groupValue:
-                    type: integer
+                    enum:
+                        - GROUP_VALUE_UNSPECIFILED
+                        - WORKSPACE_OWNER
+                        - WORKSPACE_DBA
+                        - PROJECT_OWNER
+                        - PROJECT_MEMBER
+                    type: string
                     format: enum
                 role:
                     type: string
@@ -8119,7 +8276,11 @@ components:
             type: object
             properties:
                 type:
-                    type: integer
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - ALL
+                        - ANY
+                    type: string
                     format: enum
                 nodes:
                     type: array
@@ -8173,7 +8334,17 @@ components:
                     type: string
                     description: e.g. `/bytebase.v1.SQLService/Query`, `bb.project.repository.push`
                 severity:
-                    type: integer
+                    enum:
+                        - DEFAULT
+                        - DEBUG
+                        - INFO
+                        - NOTICE
+                        - WARNING
+                        - ERROR
+                        - CRITICAL
+                        - ALERT
+                        - EMERGENCY
+                    type: string
                     format: enum
                 resource:
                     type: string
@@ -8351,7 +8522,12 @@ components:
                         The list of issues to update.
                          Format: projects/{project}/issues/{issue}
                 status:
-                    type: integer
+                    enum:
+                        - ISSUE_STATUS_UNSPECIFIED
+                        - OPEN
+                        - DONE
+                        - CANCELED
+                    type: string
                     description: The new status.
                     format: enum
                 reason:
@@ -8415,7 +8591,30 @@ components:
                         - $ref: '#/components/schemas/DatabaseMetadata'
                     description: The metadata of the baseline schema.
                 engine:
-                    type: integer
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
                     description: The database engine of the branch.
                     format: enum
                 baselineDatabase:
@@ -8499,13 +8698,31 @@ components:
                     type: string
                     description: release version of Bytebase
                 source:
-                    type: integer
+                    enum:
+                        - SOURCE_UNSPECIFIED
+                        - UI
+                        - VCS
+                        - LIBRARY
+                    type: string
                     format: enum
                 type:
-                    type: integer
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - BASELINE
+                        - MIGRATE
+                        - MIGRATE_SDL
+                        - MIGRATE_GHOST
+                        - BRANCH
+                        - DATA
+                    type: string
                     format: enum
                 status:
-                    type: integer
+                    enum:
+                        - STATUS_UNSPECIFIED
+                        - PENDING
+                        - DONE
+                        - FAILED
+                    type: string
                     format: enum
                 version:
                     type: string
@@ -8611,7 +8828,12 @@ components:
                         The database metadata to check against. It can be used to check against an uncommitted metadata.
                          If not provided, the database metadata will be fetched from the database.
                 changeType:
-                    type: integer
+                    enum:
+                        - CHANGE_TYPE_UNSPECIFIED
+                        - DDL
+                        - DDL_GHOST
+                        - DML
+                    type: string
                     format: enum
         CheckResponse:
             type: object
@@ -8680,7 +8902,12 @@ components:
                     type: string
                     description: The user_comment is the user comment of a column parsed from the comment.
                 effectiveMaskingLevel:
-                    type: integer
+                    enum:
+                        - MASKING_LEVEL_UNSPECIFIED
+                        - NONE
+                        - PARTIAL
+                        - FULL
+                    type: string
                     description: |-
                         The effective_masking_level is the effective masking level of the column, evaluate from the
                          column masking data and global masking rules.
@@ -8690,7 +8917,9 @@ components:
             type: object
             properties:
                 nullValue:
-                    type: integer
+                    enum:
+                        - NULL_VALUE
+                    type: string
                     description: null value.
                     format: enum
                 boolValue:
@@ -8828,7 +9057,11 @@ components:
                 id:
                     type: string
                 type:
-                    type: integer
+                    enum:
+                        - DATA_SOURCE_UNSPECIFIED
+                        - ADMIN
+                        - READ_ONLY
+                    type: string
                     format: enum
                 username:
                     type: string
@@ -8893,7 +9126,11 @@ components:
                 externalSecret:
                     $ref: '#/components/schemas/DataSourceExternalSecret'
                 authenticationType:
-                    type: integer
+                    enum:
+                        - AUTHENTICATION_UNSPECIFIED
+                        - PASSWORD
+                        - GOOGLE_CLOUD_SQL_IAM
+                    type: string
                     format: enum
                 saslConfig:
                     $ref: '#/components/schemas/SASLConfig'
@@ -8901,12 +9138,21 @@ components:
             type: object
             properties:
                 secretType:
-                    type: integer
+                    enum:
+                        - SAECRET_TYPE_UNSPECIFIED
+                        - VAULT_KV_V2
+                        - AWS_SECRETS_MANAGER
+                        - GCP_SECRET_MANAGER
+                    type: string
                     format: enum
                 url:
                     type: string
                 authType:
-                    type: integer
+                    enum:
+                        - AUTH_TYPE_UNSPECIFIED
+                        - TOKEN
+                        - VAULT_APP_ROLE
+                    type: string
                     format: enum
                 appRole:
                     $ref: '#/components/schemas/DataSourceExternalSecret_AppRoleAuthOption'
@@ -8932,7 +9178,11 @@ components:
                     type: string
                     description: the secret id for the role without ttl.
                 type:
-                    type: integer
+                    enum:
+                        - SECRET_TYPE_UNSPECIFIED
+                        - PLAIN
+                        - ENVIRONMENT
+                    type: string
                     format: enum
                 mountPath:
                     type: string
@@ -8952,7 +9202,11 @@ components:
                     description: The system-assigned, unique identifier for a resource.
                 syncState:
                     readOnly: true
-                    type: integer
+                    enum:
+                        - STATE_UNSPECIFIED
+                        - ACTIVE
+                        - DELETED
+                    type: string
                     description: The existence of a database on latest sync.
                     format: enum
                 successfulSyncTime:
@@ -9119,7 +9373,30 @@ components:
                         - $ref: '#/components/schemas/DatabaseMetadata'
                     description: The metadata of the target schema.
                 engine:
-                    type: integer
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
                     description: The database engine of the schema.
                     format: enum
         DiffMetadataResponse:
@@ -9160,7 +9437,30 @@ components:
             type: object
             properties:
                 engine:
-                    type: integer
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
                     format: enum
                 oldSchema:
                     type: string
@@ -9189,7 +9489,11 @@ components:
                     type: string
                     description: The system-assigned, unique identifier for a resource.
                 state:
-                    type: integer
+                    enum:
+                        - STATE_UNSPECIFIED
+                        - ACTIVE
+                        - DELETED
+                    type: string
                     format: enum
                 title:
                     type: string
@@ -9197,7 +9501,11 @@ components:
                     type: integer
                     format: int32
                 tier:
-                    type: integer
+                    enum:
+                        - ENVIRONMENT_TIER_UNSPECIFIED
+                        - PROTECTED
+                        - UNPROTECTED
+                    type: string
                     format: enum
         ExecuteRequest:
             type: object
@@ -9275,7 +9583,13 @@ components:
                           - order_by = "create_time asc"
                           - order_by = "create_time desc"
                 format:
-                    type: integer
+                    enum:
+                        - FORMAT_UNSPECIFIED
+                        - CSV
+                        - JSON
+                        - SQL
+                        - XLSX
+                    type: string
                     description: The export format.
                     format: enum
         ExportLogsResponse:
@@ -9304,7 +9618,13 @@ components:
                     description: The maximum number of rows to return.
                     format: int32
                 format:
-                    type: integer
+                    enum:
+                        - FORMAT_UNSPECIFIED
+                        - CSV
+                        - JSON
+                        - SQL
+                        - XLSX
+                    type: string
                     description: The export format.
                     format: enum
                 admin:
@@ -9692,14 +10012,23 @@ components:
                     type: string
                     description: The system-assigned, unique identifier for a resource.
                 state:
-                    type: integer
+                    enum:
+                        - STATE_UNSPECIFIED
+                        - ACTIVE
+                        - DELETED
+                    type: string
                     format: enum
                 title:
                     type: string
                 domain:
                     type: string
                 type:
-                    type: integer
+                    enum:
+                        - IDENTITY_PROVIDER_TYPE_UNSPECIFIED
+                        - OAUTH2
+                        - OIDC
+                        - LDAP
+                    type: string
                     format: enum
                 config:
                     $ref: '#/components/schemas/IdentityProviderConfig'
@@ -9771,12 +10100,39 @@ components:
                     type: string
                     description: The system-assigned, unique identifier for a resource.
                 state:
-                    type: integer
+                    enum:
+                        - STATE_UNSPECIFIED
+                        - ACTIVE
+                        - DELETED
+                    type: string
                     format: enum
                 title:
                     type: string
                 engine:
-                    type: integer
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
                     format: enum
                 engineVersion:
                     readOnly: true
@@ -9816,7 +10172,30 @@ components:
                 title:
                     type: string
                 engine:
-                    type: integer
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
                     format: enum
                 engineVersion:
                     readOnly: true
@@ -9874,10 +10253,20 @@ components:
                 description:
                     type: string
                 type:
-                    type: integer
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - DATABASE_CHANGE
+                        - GRANT_REQUEST
+                        - DATABASE_DATA_EXPORT
+                    type: string
                     format: enum
                 status:
-                    type: integer
+                    enum:
+                        - ISSUE_STATUS_UNSPECIFIED
+                        - OPEN
+                        - DONE
+                        - CANCELED
+                    type: string
                     format: enum
                 assignee:
                     type: string
@@ -9949,7 +10338,12 @@ components:
                          - roles/projectReleaser
                          - users/{email}
                 riskLevel:
-                    type: integer
+                    enum:
+                        - RISK_LEVEL_UNSPECIFIED
+                        - LOW
+                        - MODERATE
+                        - HIGH
+                    type: string
                     format: enum
                 taskStatusCount:
                     type: object
@@ -10005,7 +10399,12 @@ components:
             type: object
             properties:
                 status:
-                    type: integer
+                    enum:
+                        - STATUS_UNSPECIFIED
+                        - PENDING
+                        - APPROVED
+                        - REJECTED
+                    type: string
                     format: enum
         IssueComment_IssueUpdate:
             type: object
@@ -10019,10 +10418,20 @@ components:
                 toDescription:
                     type: string
                 fromStatus:
-                    type: integer
+                    enum:
+                        - ISSUE_STATUS_UNSPECIFIED
+                        - OPEN
+                        - DONE
+                        - CANCELED
+                    type: string
                     format: enum
                 toStatus:
-                    type: integer
+                    enum:
+                        - ISSUE_STATUS_UNSPECIFIED
+                        - OPEN
+                        - DONE
+                        - CANCELED
+                    type: string
                     format: enum
                 fromAssignee:
                     type: string
@@ -10069,13 +10478,26 @@ components:
                     type: string
                     format: date-time
                 toStatus:
-                    type: integer
+                    enum:
+                        - STATUS_UNSPECIFIED
+                        - PENDING
+                        - RUNNING
+                        - DONE
+                        - FAILED
+                        - SKIPPED
+                        - CANCELED
+                    type: string
                     format: enum
         Issue_Approver:
             type: object
             properties:
                 status:
-                    type: integer
+                    enum:
+                        - STATUS_UNSPECIFIED
+                        - PENDING
+                        - APPROVED
+                        - REJECTED
+                    type: string
                     description: The new status.
                     format: enum
                 principal:
@@ -10154,7 +10576,11 @@ components:
                 key:
                     type: string
                 operator:
-                    type: integer
+                    enum:
+                        - OPERATOR_TYPE_UNSPECIFIED
+                        - OPERATOR_TYPE_IN
+                        - OPERATOR_TYPE_EXISTS
+                    type: string
                     format: enum
                 values:
                     type: array
@@ -10528,10 +10954,38 @@ components:
                     type: string
                     format: date-time
                 action:
-                    type: integer
+                    enum:
+                        - ACTION_UNSPECIFIED
+                        - ACTION_MEMBER_CREATE
+                        - ACTION_MEMBER_ROLE_UPDATE
+                        - ACTION_MEMBER_ACTIVATE
+                        - ACTION_MEMBER_DEACTIVE
+                        - ACTION_ISSUE_CREATE
+                        - ACTION_ISSUE_COMMENT_CREATE
+                        - ACTION_ISSUE_FIELD_UPDATE
+                        - ACTION_ISSUE_STATUS_UPDATE
+                        - ACTION_ISSUE_APPROVAL_NOTIFY
+                        - ACTION_PIPELINE_STAGE_STATUS_UPDATE
+                        - ACTION_PIPELINE_TASK_STATUS_UPDATE
+                        - ACTION_PIPELINE_TASK_STATEMENT_UPDATE
+                        - ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE
+                        - ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE
+                        - ACTION_PIPELINE_TASK_PRIOR_BACKUP
+                        - ACTION_PROJECT_REPOSITORY_PUSH
+                        - ACTION_PROJECT_MEMBER_CREATE
+                        - ACTION_PROJECT_MEMBER_DELETE
+                        - ACTION_PROJECT_DATABASE_TRANSFER
+                        - ACTION_DATABASE_SQL_EDITOR_QUERY
+                        - ACTION_DATABASE_SQL_EXPORT
+                    type: string
                     format: enum
                 level:
-                    type: integer
+                    enum:
+                        - LEVEL_UNSPECIFIED
+                        - LEVEL_INFO
+                        - LEVEL_WARNING
+                        - LEVEL_ERROR
+                    type: string
                     format: enum
                 resource:
                     type: string
@@ -10600,7 +11054,12 @@ components:
                 column:
                     type: string
                 maskingLevel:
-                    type: integer
+                    enum:
+                        - MASKING_LEVEL_UNSPECIFIED
+                        - NONE
+                        - PARTIAL
+                        - FULL
+                    type: string
                     format: enum
                 fullMaskingAlgorithmId:
                     type: string
@@ -10651,11 +11110,20 @@ components:
             type: object
             properties:
                 action:
-                    type: integer
+                    enum:
+                        - ACTION_UNSPECIFIED
+                        - QUERY
+                        - EXPORT
+                    type: string
                     description: action is the action that the user can access sensitive data.
                     format: enum
                 maskingLevel:
-                    type: integer
+                    enum:
+                        - MASKING_LEVEL_UNSPECIFIED
+                        - NONE
+                        - PARTIAL
+                        - FULL
+                    type: string
                     description: Level is the masking level that the user can access sensitive data.
                     format: enum
                 member:
@@ -10691,7 +11159,12 @@ components:
                 condition:
                     $ref: '#/components/schemas/Expr'
                 maskingLevel:
-                    type: integer
+                    enum:
+                        - MASKING_LEVEL_UNSPECIFIED
+                        - NONE
+                        - PARTIAL
+                        - FULL
+                    type: string
                     format: enum
         OAuth2IdentityProviderConfig:
             type: object
@@ -10715,7 +11188,11 @@ components:
                 skipTlsVerify:
                     type: boolean
                 authStyle:
-                    type: integer
+                    enum:
+                        - OAUTH2_AUTH_STYLE_UNSPECIFIED
+                        - IN_PARAMS
+                        - IN_HEADER
+                    type: string
                     format: enum
             description: OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config.
         OAuth2IdentityProviderContext:
@@ -10747,7 +11224,11 @@ components:
                 skipTlsVerify:
                     type: boolean
                 authStyle:
-                    type: integer
+                    enum:
+                        - OAUTH2_AUTH_STYLE_UNSPECIFIED
+                        - IN_PARAMS
+                        - IN_HEADER
+                    type: string
                     format: enum
             description: OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
         OIDCIdentityProviderContext:
@@ -10836,10 +11317,25 @@ components:
                     type: string
                     description: The system-assigned, unique identifier for a resource.
                 type:
-                    type: integer
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - DATABASE_STATEMENT_FAKE_ADVISE
+                        - DATABASE_STATEMENT_COMPATIBILITY
+                        - DATABASE_STATEMENT_ADVISE
+                        - DATABASE_STATEMENT_TYPE
+                        - DATABASE_STATEMENT_SUMMARY_REPORT
+                        - DATABASE_CONNECT
+                        - DATABASE_GHOST_SYNC
+                    type: string
                     format: enum
                 status:
-                    type: integer
+                    enum:
+                        - STATUS_UNSPECIFIED
+                        - RUNNING
+                        - DONE
+                        - FAILED
+                        - CANCELED
+                    type: string
                     format: enum
                 target:
                     type: string
@@ -10862,7 +11358,12 @@ components:
             type: object
             properties:
                 status:
-                    type: integer
+                    enum:
+                        - STATUS_UNSPECIFIED
+                        - ERROR
+                        - WARNING
+                        - SUCCESS
+                    type: string
                     format: enum
                 title:
                     type: string
@@ -10892,7 +11393,14 @@ components:
                         The resource name of the sheet.
                          Format: projects/{project}/sheets/{sheet}
                 type:
-                    type: integer
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - BASELINE
+                        - MIGRATE
+                        - MIGRATE_SDL
+                        - MIGRATE_GHOST
+                        - DATA
+                    type: string
                     format: enum
                 schemaVersion:
                     type: string
@@ -10967,7 +11475,13 @@ components:
                         The resource name of the sheet.
                          Format: projects/{project}/sheets/{sheet}
                 format:
-                    type: integer
+                    enum:
+                        - FORMAT_UNSPECIFIED
+                        - CSV
+                        - JSON
+                        - SQL
+                        - XLSX
+                    type: string
                     description: The format of the exported file.
                     format: enum
                 password:
@@ -11012,7 +11526,13 @@ components:
             type: object
             properties:
                 vcsType:
-                    type: integer
+                    enum:
+                        - VCS_TYPE_UNSPECIFIED
+                        - GITHUB
+                        - GITLAB
+                        - BITBUCKET
+                        - AZURE_DEVOPS
+                    type: string
                     format: enum
                 vcsConnector:
                     type: string
@@ -11041,7 +11561,17 @@ components:
                 inheritFromParent:
                     type: boolean
                 type:
-                    type: integer
+                    enum:
+                        - POLICY_TYPE_UNSPECIFIED
+                        - ROLLOUT_POLICY
+                        - SQL_REVIEW
+                        - MASKING
+                        - SLOW_QUERY
+                        - DISABLE_COPY_DATA
+                        - MASKING_RULE
+                        - MASKING_EXCEPTION
+                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+                    type: string
                     format: enum
                 rolloutPolicy:
                     $ref: '#/components/schemas/RolloutPolicy'
@@ -11063,7 +11593,14 @@ components:
                     type: boolean
                 resourceType:
                     readOnly: true
-                    type: integer
+                    enum:
+                        - RESOURCE_TYPE_UNSPECIFIED
+                        - WORKSPACE
+                        - ENVIRONMENT
+                        - PROJECT
+                        - INSTANCE
+                        - DATABASE
+                    type: string
                     description: The resource type for the policy.
                     format: enum
                 resourceUid:
@@ -11074,7 +11611,30 @@ components:
             type: object
             properties:
                 engine:
-                    type: integer
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
                     format: enum
                 currentSchema:
                     type: string
@@ -11121,7 +11681,11 @@ components:
                     type: string
                     description: A unique identifier for a node in UUID format.
                 target:
-                    type: integer
+                    enum:
+                        - PROTECTION_TARGET_UNSPECIFIED
+                        - BRANCH
+                        - CHANGELIST
+                    type: string
                     format: enum
                 nameFilter:
                     type: string
@@ -11134,7 +11698,10 @@ components:
                         The roles allowed to create branches or changelists, rebase branches, delete branches.
                          Format: roles/projectOwner.
                 branchSource:
-                    type: integer
+                    enum:
+                        - BRANCH_SOURCE_UNSPECIFIED
+                        - DATABASE
+                    type: string
                     format: enum
         ProtectionRules:
             type: object
@@ -11181,7 +11748,11 @@ components:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
                 type:
-                    type: integer
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - QUERY
+                        - EXPORT
+                    type: string
                     format: enum
         QueryRequest:
             required:
@@ -11410,7 +11981,15 @@ components:
                     type: string
                     description: system-generated unique identifier.
                 source:
-                    type: integer
+                    enum:
+                        - SOURCE_UNSPECIFIED
+                        - DDL
+                        - DML
+                        - CREATE_DATABASE
+                        - REQUEST_QUERY
+                        - REQUEST_EXPORT
+                        - DATA_EXPORT
+                    type: string
                     format: enum
                 title:
                     type: string
@@ -11485,7 +12064,9 @@ components:
             type: object
             properties:
                 nullValue:
-                    type: integer
+                    enum:
+                        - NULL_VALUE
+                    type: string
                     format: enum
                 boolValue:
                     type: boolean
@@ -11545,7 +12126,12 @@ components:
                     description: The SMTP server port.
                     format: int32
                 encryption:
-                    type: integer
+                    enum:
+                        - ENCRYPTION_UNSPECIFIED
+                        - ENCRYPTION_NONE
+                        - ENCRYPTION_STARTTLS
+                        - ENCRYPTION_SSL_TLS
+                    type: string
                     description: The SMTP server encryption.
                     format: enum
                 ca:
@@ -11558,7 +12144,13 @@ components:
                 cert:
                     type: string
                 authentication:
-                    type: integer
+                    enum:
+                        - AUTHENTICATION_UNSPECIFIED
+                        - AUTHENTICATION_NONE
+                        - AUTHENTICATION_PLAIN
+                        - AUTHENTICATION_LOGIN
+                        - AUTHENTICATION_CRAM_MD5
+                    type: string
                     format: enum
                 username:
                     type: string
@@ -11586,12 +12178,40 @@ components:
                 type:
                     type: string
                 level:
-                    type: integer
+                    enum:
+                        - LEVEL_UNSPECIFIED
+                        - ERROR
+                        - WARNING
+                        - DISABLED
+                    type: string
                     format: enum
                 payload:
                     type: string
                 engine:
-                    type: integer
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
                     format: enum
                 comment:
                     type: string
@@ -11689,7 +12309,30 @@ components:
             type: object
             properties:
                 engine:
-                    type: integer
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
                     format: enum
                 enabled:
                     type: boolean
@@ -11703,7 +12346,30 @@ components:
                 id:
                     type: string
                 engine:
-                    type: integer
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
                     format: enum
                 category:
                     type: string
@@ -11717,7 +12383,30 @@ components:
                 id:
                     type: string
                 engine:
-                    type: integer
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
                     format: enum
                 category:
                     type: string
@@ -11995,7 +12684,10 @@ components:
             type: object
             properties:
                 type:
-                    type: integer
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - SCHEMA_DESIGN
+                    type: string
                     format: enum
                 databaseConfig:
                     allOf:
@@ -12197,7 +12889,30 @@ components:
                 metadata:
                     $ref: '#/components/schemas/DatabaseMetadata'
                 engine:
-                    type: integer
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
                     description: The database engine of the schema string.
                     format: enum
         StringifyMetadataResponse:
@@ -12223,7 +12938,12 @@ components:
                     format: date-time
                 plan:
                     readOnly: true
-                    type: integer
+                    enum:
+                        - PLAN_TYPE_UNSPECIFIED
+                        - FREE
+                        - TEAM
+                        - ENTERPRISE
+                    type: string
                     format: enum
                 trialing:
                     readOnly: true
@@ -12348,7 +13068,17 @@ components:
                     type: string
                     description: The name is the name of a table partition.
                 type:
-                    type: integer
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - RANGE
+                        - RANGE_COLUMNS
+                        - LIST
+                        - LIST_COLUMNS
+                        - HASH
+                        - LINEAR_HASH
+                        - KEY
+                        - LINEAR_KEY
+                    type: string
                     description: The type of a table partition.
                     format: enum
                 expression:
@@ -12399,13 +13129,33 @@ components:
                         A UUID4 string that uniquely identifies the Spec.
                          Could be empty if the rollout of the task does not have an associating plan.
                 status:
-                    type: integer
+                    enum:
+                        - STATUS_UNSPECIFIED
+                        - NOT_STARTED
+                        - PENDING
+                        - RUNNING
+                        - DONE
+                        - FAILED
+                        - CANCELED
+                        - SKIPPED
+                    type: string
                     description: Status is the status of the task.
                     format: enum
                 skippedReason:
                     type: string
                 type:
-                    type: integer
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - GENERAL
+                        - DATABASE_CREATE
+                        - DATABASE_SCHEMA_BASELINE
+                        - DATABASE_SCHEMA_UPDATE
+                        - DATABASE_SCHEMA_UPDATE_SDL
+                        - DATABASE_SCHEMA_UPDATE_GHOST_SYNC
+                        - DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER
+                        - DATABASE_DATA_UPDATE
+                        - DATABASE_DATA_EXPORT
+                    type: string
                     format: enum
                 dependsOnTasks:
                     type: array
@@ -12461,7 +13211,14 @@ components:
                 title:
                     type: string
                 status:
-                    type: integer
+                    enum:
+                        - STATUS_UNSPECIFIED
+                        - PENDING
+                        - RUNNING
+                        - DONE
+                        - FAILED
+                        - CANCELED
+                    type: string
                     format: enum
                 detail:
                     type: string
@@ -12474,7 +13231,12 @@ components:
                 schemaVersion:
                     type: string
                 executionStatus:
-                    type: integer
+                    enum:
+                        - EXECUTION_STATUS_UNSPECIFIED
+                        - PRE_EXECUTING
+                        - EXECUTING
+                        - POST_EXECUTING
+                    type: string
                     format: enum
                 executionStatusUpdateTime:
                     type: string
@@ -12487,7 +13249,11 @@ components:
                     type: string
                     format: date-time
                 exportArchiveStatus:
-                    type: integer
+                    enum:
+                        - EXPORT_ARCHIVE_STATUS_UNSPECIFIED
+                        - READY
+                        - EXPORTED
+                    type: string
                     format: enum
         TaskRun_ExecutionDetail:
             type: object
@@ -12544,7 +13310,13 @@ components:
                         The resource name of the sheet.
                          Format: projects/{project}/sheets/{sheet}
                 format:
-                    type: integer
+                    enum:
+                        - FORMAT_UNSPECIFIED
+                        - CSV
+                        - JSON
+                        - SQL
+                        - XLSX
+                    type: string
                     description: The format of the exported file.
                     format: enum
                 password:
@@ -12564,7 +13336,12 @@ components:
                     type: boolean
                     description: Build the rollback SQL if rollback_enabled.
                 rollbackSqlStatus:
-                    type: integer
+                    enum:
+                        - ROLLBACK_SQL_STATUS_UNSPECIFIED
+                        - PENDING
+                        - DONE
+                        - FAILED
+                    type: string
                     description: The status of the rollback SQL generation.
                     format: enum
                 rollbackError:
@@ -12762,14 +13539,23 @@ components:
                         The name of the user.
                          Format: users/{user}. {user} is a system-generated unique ID.
                 state:
-                    type: integer
+                    enum:
+                        - STATE_UNSPECIFIED
+                        - ACTIVE
+                        - DELETED
+                    type: string
                     format: enum
                 email:
                     type: string
                 title:
                     type: string
                 userType:
-                    type: integer
+                    enum:
+                        - USER_TYPE_UNSPECIFIED
+                        - USER
+                        - SYSTEM_BOT
+                        - SERVICE_ACCOUNT
+                    type: string
                     format: enum
                 password:
                     writeOnly: true
@@ -12857,7 +13643,13 @@ components:
                     type: string
                     description: The title of the vcs provider. It is used to display in the UI. Specified by the client.
                 type:
-                    type: integer
+                    enum:
+                        - VCS_TYPE_UNSPECIFIED
+                        - GITHUB
+                        - GITLAB
+                        - BITBUCKET
+                        - AZURE_DEVOPS
+                    type: string
                     format: enum
                 url:
                     type: string
@@ -12933,7 +13725,16 @@ components:
                         name is the name of the webhook, generated by the server.
                          format: projects/{project}/webhooks/{webhook}
                 type:
-                    type: integer
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - TYPE_SLACK
+                        - TYPE_DISCORD
+                        - TYPE_TEAMS
+                        - TYPE_DINGTALK
+                        - TYPE_FEISHU
+                        - TYPE_WECOM
+                        - TYPE_CUSTOM
+                    type: string
                     description: type is the type of the webhook.
                     format: enum
                 title:
@@ -12945,7 +13746,30 @@ components:
                 notificationTypes:
                     type: array
                     items:
-                        type: integer
+                        enum:
+                            - TYPE_UNSPECIFIED
+                            - TYPE_NOTIFY_ISSUE_APPROVED
+                            - TYPE_NOTIFY_PIPELINE_ROLLOUT
+                            - TYPE_ISSUE_CREATE
+                            - TYPE_ISSUE_COMMENT_CREATE
+                            - TYPE_ISSUE_FIELD_UPDATE
+                            - TYPE_ISSUE_STATUS_UPDATE
+                            - TYPE_ISSUE_APPROVAL_NOTIFY
+                            - TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE
+                            - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE
+                            - TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
+                            - TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE
+                            - TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE
+                            - TYPE_MEMBER_CREATE
+                            - TYPE_MEMBER_ROLE_UPDATE
+                            - TYPE_MEMBER_ACTIVATE
+                            - TYPE_MEMBER_DEACTIVATE
+                            - TYPE_PROJECT_REPOSITORY_PUSH
+                            - TYPE_PROJECT_DATABASE_TRANSFER
+                            - TYPE_PROJECT_MEMBER_CREATE
+                            - TYPE_PROJECT_MEMBER_DELETE
+                            - TYPE_SQL_EDITOR_QUERY
+                        type: string
                         format: enum
                     description: |-
                         notification_types is the list of activities types that the webhook is interested in.
@@ -13014,7 +13838,12 @@ components:
                     type: string
                     description: content_size is the full size of the content, may not match the size of the `content` field.
                 visibility:
-                    type: integer
+                    enum:
+                        - VISIBILITY_UNSPECIFIED
+                        - VISIBILITY_PROJECT_READ
+                        - VISIBILITY_PROJECT_WRITE
+                        - VISIBILITY_PRIVATE
+                    type: string
                     format: enum
                 starred:
                     readOnly: true
@@ -13099,7 +13928,12 @@ components:
                 orgName:
                     type: string
                 plan:
-                    type: integer
+                    enum:
+                        - PLAN_TYPE_UNSPECIFIED
+                        - FREE
+                        - TEAM
+                        - ENTERPRISE
+                    type: string
                     format: enum
 tags:
     - name: ActuatorService
