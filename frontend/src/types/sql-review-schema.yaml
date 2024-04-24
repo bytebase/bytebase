@@ -106,6 +106,16 @@ ruleList:
         payload:
           type: STRING_ARRAY
           default: []
+  - type: table.limit-size
+    category: TABLE
+    engineList:
+      - MYSQL
+      - HIVE
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 10000000
   - type: statement.select.no-select-all
     category: STATEMENT
     engineList:

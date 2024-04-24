@@ -73,7 +73,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 
 func (d *Driver) Close(_ context.Context) error {
 	d.connPool.Put(d.conn)
-	return nil
+	return d.connPool.Destroy()
 }
 
 func (d *Driver) Ping(ctx context.Context) error {

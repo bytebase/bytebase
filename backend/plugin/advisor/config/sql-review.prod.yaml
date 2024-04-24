@@ -31,6 +31,10 @@ ruleList:
     level: WARNING
   - type: table.disallow-dml
     level: WARNING
+  - type: table.limit-size
+    level: WARNING
+    payload:
+      number: 10000000
   - type: statement.select.no-select-all
     level: ERROR
   - type: statement.where.require

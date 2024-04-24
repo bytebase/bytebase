@@ -185,6 +185,9 @@ const (
 	// MySQLTableFieldsMaximumCount is an advisor type for MySQL table fields maximum count.
 	MySQLTableDisallowSetCharset Type = "bb.plugin.advisor.mysql.table.disallow-set-charset"
 
+	// MySQLTableFieldsMaximumCount is an advisor type for limiting MySQL table size.
+	MySQLTableLimitSize Type = "bb.plugin.advisor.mysql.table.limit-size"
+
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 

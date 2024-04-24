@@ -22,11 +22,10 @@ type Realm struct {
 	KDCTransportProtocol string
 }
 type KerberosConfig struct {
-	Primary              string
-	Instance             string
-	Realm                Realm
-	KeytabPath           string
-	KDCTransportProtocol string
+	Primary    string
+	Instance   string
+	Realm      Realm
+	KeytabPath string
 }
 
 type KerberosEnv struct {
@@ -45,8 +44,8 @@ var (
 )
 
 func (krbConfig *KerberosConfig) InitEnv() error {
-	if krbConfig.KDCTransportProtocol != "udp" && krbConfig.KDCTransportProtocol != "tcp" {
-		return errors.Errorf("invalid transport protocol for KDC connection: %s", krbConfig.KDCTransportProtocol)
+	if krbConfig.Realm.KDCTransportProtocol != "udp" && krbConfig.Realm.KDCTransportProtocol != "tcp" {
+		return errors.Errorf("invalid transport protocol for KDC connection: %s", krbConfig.Realm.KDCTransportProtocol)
 	}
 
 	singletonEnv.krbEnvMutex.Lock()
@@ -97,7 +96,7 @@ func (env *KerberosEnv) AddRealm(realm Realm) error {
 
 // check whether Kerberos is enabled and its settings are valid.
 func (krbConfig *KerberosConfig) Check() bool {
-	if krbConfig.Primary == "" || krbConfig.Instance == "" || krbConfig.Realm.Name == "" || krbConfig.KeytabPath == "" || krbConfig.KDCTransportProtocol == "" {
+	if krbConfig.Primary == "" || krbConfig.Instance == "" || krbConfig.Realm.Name == "" || krbConfig.KeytabPath == "" || krbConfig.Realm.KDCTransportProtocol == "" {
 		return false
 	}
 	return true
