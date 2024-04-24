@@ -1190,6 +1190,9 @@
       "format": "エクスポート形式",
       "encrypt": "暗号化",
       "file-downloaded": "ダウンロードされたファイル"
+    },
+    "update-rollout-time": {
+      "self": "更新のロールアウト時間"
     }
   },
   "alter-schema": {
