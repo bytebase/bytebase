@@ -32,17 +32,9 @@ func NewAuditLogService(store *store.Store) *AuditLogService {
 }
 
 func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.SearchAuditLogsRequest) (*v1pb.SearchAuditLogsResponse, error) {
-	e, err := cel.NewEnv()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create cel env")
-	}
-	ast, iss := e.Parse(request.Filter)
-	if iss != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", request.Filter, iss.String())
-	}
-	filter, err := getSearchAuditLogsFilter(ast.NativeRep().Expr())
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get filter, error: %v", err)
+	filter, serr := getSearchAuditLogsFilter(request.Filter)
+	if serr != nil {
+		return nil, serr.Err()
 	}
 
 	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
@@ -123,7 +115,20 @@ func convertToAuditLogSeverity(s storepb.AuditLog_Severity) v1pb.AuditLog_Severi
 	}
 }
 
-func getSearchAuditLogsFilter(expr celast.Expr) (*store.AuditLogFilter, error) {
+func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Status) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, status.Newf(codes.Internal, "failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, status.Newf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
 	var getFilter func(expr celast.Expr) (string, error)
 	var positionalArgs []any
 
@@ -184,9 +189,9 @@ func getSearchAuditLogsFilter(expr celast.Expr) (*store.AuditLogFilter, error) {
 		}
 	}
 
-	where, err := getFilter(expr)
+	where, err := getFilter(ast.NativeRep().Expr())
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get filter")
+		return nil, status.Newf(codes.InvalidArgument, "failed to get filter, error: %v", err)
 	}
 
 	return &store.AuditLogFilter{
