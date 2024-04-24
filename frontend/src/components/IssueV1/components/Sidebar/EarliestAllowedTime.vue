@@ -75,8 +75,8 @@ import { emitWindowEvent } from "@/plugins";
 import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
-  Plan_Spec,
-  Task,
+  type Plan_Spec,
+  type Task,
   TaskRun_Status,
   Task_Status,
   task_StatusToJSON,
