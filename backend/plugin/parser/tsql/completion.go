@@ -634,7 +634,38 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					}
 					columnEntries.insertMetadataColumns(c, context.linkedServer, context.database, context.schema, context.object)
 					for _, reference := range c.references {
-						if reference, ok := reference.(*base.VirtualTableReference); ok {
+						switch reference := reference.(type) {
+						case *base.PhysicalTableReference:
+							inputLinkedServer := context.linkedServer
+							inputDatabaseName := context.database
+							if inputDatabaseName == "" {
+								inputDatabaseName = c.defaultDatabase
+							}
+							inputSchemaName := context.schema
+							if inputSchemaName == "" {
+								inputSchemaName = c.defaultSchema
+							}
+							inputTableName := context.object
+
+							referenceDatabaseName := reference.Database
+							if referenceDatabaseName == "" {
+								referenceDatabaseName = c.defaultDatabase
+							}
+							referenceSchemaName := reference.Schema
+							if referenceSchemaName == "" {
+								referenceSchemaName = c.defaultSchema
+							}
+							referenceTableName := reference.Table
+							if reference.Alias != "" {
+								referenceTableName = reference.Alias
+							}
+
+							if inputLinkedServer == "" && strings.EqualFold(referenceDatabaseName, inputDatabaseName) &&
+								strings.EqualFold(referenceSchemaName, inputSchemaName) &&
+								strings.EqualFold(referenceTableName, inputTableName) {
+								columnEntries.insertMetadataColumns(c, "", reference.Database, reference.Schema, reference.Table)
+							}
+						case *base.VirtualTableReference:
 							// Reference could be a physical table reference or a virtual table reference, if the reference is a virtual table reference,
 							// and users do not specify the server, database and schema, we should also insert the columns.
 							if context.linkedServer == "" && context.database == "" && context.schema == "" {
@@ -1301,7 +1332,7 @@ func (l *tableRefListener) ExitFull_table_name(ctx *tsqlparser.Full_table_nameCo
 		reference.Database = database
 		reference.Schema = schema
 		reference.Table = table
-		l.context.references = append(l.context.references, reference)
+		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
 	}
 }
 
@@ -1312,6 +1343,7 @@ func (l *tableRefListener) ExitRowset_function(ctx *tsqlparser.Rowset_functionCo
 
 	if !l.fromClauseMode || l.level == 0 {
 		reference := &base.VirtualTableReference{}
+
 		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
 	}
 }

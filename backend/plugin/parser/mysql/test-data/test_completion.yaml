@@ -1,4 +1,4 @@
-- input: SELECT c1 as eid, c2 FROM t1 ORDER BY |
+- input: SELECT c1 as eid, c2 FROM t1 t3 ORDER BY |
   want:
     - text: db
       type: DATABASE

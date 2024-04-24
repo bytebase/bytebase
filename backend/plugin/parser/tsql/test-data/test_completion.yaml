@@ -45,6 +45,17 @@
       type: COLUMN
       definition: ""
       comment: ""
+- description: Table alias referenced by select item
+  input: SELECT tableAlias.| FROM Employees AS tableAlias;
+  want:
+    - text: Id
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: Name
+      type: COLUMN
+      definition: ""
+      comment: ""
 - description: Full column name considering CTE
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT MyCTE_01.| FROM MyCTE_01;
   want:
