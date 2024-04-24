@@ -1190,6 +1190,9 @@
       "format": "Định dạng",
       "encrypt": "Mã hóa",
       "file-downloaded": "Tệp đã được tải xuống"
+    },
+    "update-rollout-time": {
+      "self": "Cập nhật thời gian triển khai"
     }
   },
   "alter-schema": {
