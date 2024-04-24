@@ -1112,6 +1112,12 @@
       "tooltip": "Người phê duyệt sẽ xem xét và phê duyệt vấn đề theo thứ tự được chỉ định trong quy trình. \nVấn đề chỉ có thể được áp dụng sau khi tất cả các bước trong quy trình đã được phê duyệt. \nBạn có thể định cấu hình luồng phê duyệt tùy chỉnh cho từng rủi ro.",
       "pre-issue-created-tips": "Sau khi một vấn đề được tạo, Bytebase sẽ tự động khớp với phê duyệt tùy chỉnh tương ứng dựa trên loại và mức độ rủi ro của vấn đề."
     },
+    "risk-level": {
+      "self": "Mức độ rủi ro",
+      "low": "Thấp",
+      "moderate": "Vừa phải",
+      "high": "Cao"
+    },
     "waiting-to-rollout": "Đang chờ triển khai",
     "waiting-for-review": "Đang chờ xem xét",
     "issue-name": "Tên vấn đề",

@@ -1112,6 +1112,12 @@
       "tooltip": "The approvers will review and approve the issue in the order specified in the flow. The issue can only be applied after all steps in the flow have been approved. You can configure a custom approval flow for each risk.",
       "pre-issue-created-tips": "After an issue is created, Bytebase will automatically match the corresponding custom approval based on the type and risk level of the issue."
     },
+    "risk-level": {
+      "self": "Risk level",
+      "low": "Low",
+      "moderate": "Moderate",
+      "high": "High"
+    },
     "waiting-to-rollout": "Waiting to rollout",
     "waiting-for-review": "Waiting for review",
     "issue-name": "Issue name",
