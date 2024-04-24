@@ -585,7 +585,7 @@ func FormatSheet(projectID string, sheetUID int) string {
 }
 
 func FormatIssue(projectID string, issueUID int) string {
-	return fmt.Sprintf("%s%s/%s%s", ProjectNamePrefix, projectID, IssueNamePrefix, issueUID)
+	return fmt.Sprintf("%s%s/%s%d", ProjectNamePrefix, projectID, IssueNamePrefix, issueUID)
 }
 
 func FormatTask(projectID string, pipelineUID, stageUID, taskUID int) string {
