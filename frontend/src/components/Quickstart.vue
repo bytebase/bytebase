@@ -219,7 +219,6 @@ const introList = computed(() => {
         name: PROJECT_V1_ROUTE_DASHBOARD,
       },
       done: computed(() => uiStateStore.getIntroStateByKey("project.visit")),
-      requiredPermissions: ["bb.projects.list"],
     },
     {
       name: computed(() => t("quick-start.visit-environment")),
@@ -237,7 +236,6 @@ const introList = computed(() => {
         name: INSTANCE_ROUTE_DASHBOARD,
       },
       done: computed(() => uiStateStore.getIntroStateByKey("instance.visit")),
-      requiredPermissions: ["bb.instances.list"],
     },
     {
       name: computed(() => t("quick-start.visit-database")),
