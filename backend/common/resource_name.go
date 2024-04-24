@@ -47,6 +47,7 @@ const (
 	DeploymentConfigPrefix     = "deploymentConfigs/"
 	ChangelistsPrefix          = "changelists/"
 	VCSConnectorPrefix         = "vcsConnectors/"
+	AuditLogPrefix             = "auditLogs/"
 
 	SchemaSuffix          = "/schema"
 	MetadataSuffix        = "/metadata"
