@@ -158,6 +158,10 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.RolloutService_ListPlans_FullMethodName,
 		v1pb.ProjectService_ListSchemaGroups_FullMethodName:
 		return true
+
+	// TODO(p0ny): implement
+	case v1pb.AuditLogService_SearchAuditLogs_FullMethodName:
+		return true
 	}
 	return false
 }
