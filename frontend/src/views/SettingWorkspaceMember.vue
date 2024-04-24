@@ -168,20 +168,9 @@ const userList = computed(() => {
 });
 
 const activeUserList = computed(() => {
-  const list = userList.value.filter((user) => user.state === State.ACTIVE);
-  return orderBy(
-    filterUserListByKeyword(list, state.activeUserFilterText),
-    [
-      (user) =>
-        user.userType === UserType.SYSTEM_BOT
-          ? 0
-          : user.userType === UserType.SERVICE_ACCOUNT
-            ? 1
-            : 2,
-      (user) => user.roles.includes(PresetRoleType.WORKSPACE_ADMIN),
-      (user) => user.roles.includes(PresetRoleType.WORKSPACE_DBA),
-    ],
-    ["asc", "desc", "desc"]
+  return filterUserListByKeyword(
+    userStore.activeUserList,
+    state.activeUserFilterText
   );
 });
 
@@ -209,7 +198,9 @@ const showUpgradeInfo = computed(() => {
 
 const endUserList = computed(() => {
   return userStore.activeUserList.filter(
-    (user) => user.userType === UserType.USER
+    (user) =>
+      user.userType === UserType.USER ||
+      user.userType === UserType.SERVICE_ACCOUNT
   );
 });
 

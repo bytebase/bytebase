@@ -1,12 +1,12 @@
-import { isEqual, isUndefined } from "lodash-es";
+import { isEqual, isUndefined, orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { authServiceClient } from "@/grpcweb";
 import type { PrincipalType } from "@/types";
+import { PresetRoleType } from "@/types";
 import { ALL_USERS_USER_ID, ALL_USERS_USER_EMAIL, allUsersUser } from "@/types";
 import type { UpdateUserRequest, User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { extractUserUID } from "@/utils";
 import { userNamePrefix, getUserEmailFromIdentifier } from "./v1/common";
 
 interface UserState {
@@ -25,13 +25,20 @@ export const useUserStore = defineStore("user", {
       const list = Array.from(state.userMapByName.values()).filter(
         (user) => user.state === State.ACTIVE
       );
-      list.sort((a, b) => {
-        return (
-          parseInt(extractUserUID(a.name), 10) -
-          parseInt(extractUserUID(b.name), 10)
-        );
-      });
-      return list;
+      return orderBy(
+        list,
+        [
+          (user) =>
+            user.userType === UserType.SYSTEM_BOT
+              ? 0
+              : user.userType === UserType.SERVICE_ACCOUNT
+                ? 1
+                : 2,
+          (user) => user.roles.includes(PresetRoleType.WORKSPACE_ADMIN),
+          (user) => user.roles.includes(PresetRoleType.WORKSPACE_DBA),
+        ],
+        ["asc", "desc", "desc"]
+      );
     },
   },
   actions: {

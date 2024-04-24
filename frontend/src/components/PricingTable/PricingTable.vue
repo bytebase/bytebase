@@ -47,7 +47,12 @@
               </p>
 
               <div class="mt-2 text-gray-600 h-12">
-                {{ $t(`subscription.${plan.title}-price-intro`) }}
+                {{
+                  $t(`subscription.${plan.title}-price-intro`, {
+                    users: plan.maximumSeatCount,
+                    instances: plan.maximumInstanceCount,
+                  })
+                }}
               </div>
 
               <button
@@ -181,7 +186,12 @@
             plan.type == PlanType.TEAM ? 'font-bold' : '',
           ]"
         >
-          {{ $t(`subscription.${plan.title}-price-intro`) }}
+          {{
+            $t(`subscription.${plan.title}-price-intro`, {
+              users: plan.maximumSeatCount,
+              instances: plan.maximumInstanceCount,
+            })
+          }}
         </div>
 
         <button
