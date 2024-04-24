@@ -301,20 +301,9 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		return nil, status.Errorf(codes.Internal, "failed to get project ids and issue types filter, error: %v", err)
 	}
 
-	limit := int(request.PageSize)
-	offset := 0
-	if request.PageToken != "" {
-		var pageToken storepb.PageToken
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-		offset = int(pageToken.Offset)
-	}
-	if limit == 0 {
-		limit = 10
-	}
-	if limit > 1000 {
-		limit = 1000
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	limitPlusOne := limit + 1
 
@@ -368,20 +357,9 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		return nil, status.Errorf(codes.Internal, "failed to get project ids and issue types filter, error: %v", err)
 	}
 
-	limit := int(request.PageSize)
-	offset := 0
-	if request.PageToken != "" {
-		var pageToken storepb.PageToken
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-		offset = int(pageToken.Offset)
-	}
-	if limit == 0 {
-		limit = 10
-	}
-	if limit > 1000 {
-		limit = 1000
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	limitPlusOne := limit + 1
 
@@ -935,6 +913,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 
 	if err := func() error {
 		p := &storepb.IssueCommentPayload{
+			Comment: request.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
 				Approval: &storepb.IssueCommentPayload_Approval{
 					Status: storepb.IssueCommentPayload_Approval_APPROVED,
@@ -1199,6 +1178,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 
 	if err := func() error {
 		p := &storepb.IssueCommentPayload{
+			Comment: request.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
 				Approval: &storepb.IssueCommentPayload_Approval{
 					Status: storepb.IssueCommentPayload_Approval_REJECTED,
@@ -1315,6 +1295,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 
 	if err := func() error {
 		p := &storepb.IssueCommentPayload{
+			Comment: request.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
 				Approval: &storepb.IssueCommentPayload_Approval{
 					Status: storepb.IssueCommentPayload_Approval_PENDING,
@@ -1794,20 +1775,9 @@ func (s *IssueService) ListIssueComments(ctx context.Context, request *v1pb.List
 		return nil, err
 	}
 
-	limit := int(request.PageSize)
-	offset := 0
-	if request.PageToken != "" {
-		var pageToken storepb.PageToken
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-		offset = int(pageToken.Offset)
-	}
-	if limit == 0 {
-		limit = 10
-	}
-	if limit > 1000 {
-		limit = 1000
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	limitPlusOne := limit + 1
 
@@ -1924,13 +1894,11 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	if err != nil {
 		return nil, err
 	}
-
-	activityUID, err := strconv.Atoi(request.IssueComment.Uid)
+	issueCommentUID, err := strconv.Atoi(request.IssueComment.Uid)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid comment id %q: %v", request.IssueComment.Uid, err)
 	}
-
-	issueComment, err := s.store.GetActivityV2(ctx, activityUID)
+	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get issue comment: %v", err)
 	}
@@ -1944,7 +1912,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	}
 
 	ok, err = func() (bool, error) {
-		if issueComment.CreatorUID == user.ID {
+		if issueComment.Creator.ID == user.ID {
 			return true, nil
 		}
 		return s.iamManager.CheckPermission(ctx, iam.PermissionIssueCommentsUpdate, user, issue.Project.ResourceID)
@@ -1956,10 +1924,10 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied, user does not have permission %q", iam.PermissionIssueCommentsUpdate)
 	}
 
-	update := &store.UpdateActivityMessage{
-		UID: activityUID,
+	update := &store.UpdateIssueCommentMessage{
+		UID:       issueCommentUID,
+		UpdaterID: user.ID,
 	}
-
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "comment":
@@ -1969,21 +1937,18 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 		}
 	}
 
-	activity, err := s.store.UpdateActivityV2(ctx, update)
-	if err != nil {
+	if err := s.store.UpdateIssueComment(ctx, update); err != nil {
 		if common.ErrorCode(err) == common.NotFound {
 			return nil, status.Errorf(codes.NotFound, "cannot found the issue comment %s", request.IssueComment.Uid)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to update the issue comment with error: %v", err.Error())
 	}
+	issueComment, err = s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get issue comment: %v", err)
+	}
 
-	return &v1pb.IssueComment{
-		Uid:        fmt.Sprintf("%d", activity.UID),
-		Comment:    activity.Comment,
-		Payload:    activity.Payload,
-		CreateTime: timestamppb.New(time.Unix(activity.CreatedTs, 0)),
-		UpdateTime: timestamppb.New(time.Unix(activity.UpdatedTs, 0)),
-	}, nil
+	return convertToIssueComment(request.Parent, issueComment), nil
 }
 
 func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store.IssueMessage, error) {

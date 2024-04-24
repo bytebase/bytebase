@@ -8,11 +8,10 @@
     <DatabaseV1Table
       v-if="expand"
       :mode="`${mode}_SHORT`"
-      class="overflow-y-auto mt-2"
-      table-class="border"
       :schemaless="true"
-      :row-clickable="false"
       :database-list="databaseList"
+      :show-selection="false"
+      :show-sql-editor-button="false"
     />
   </div>
 </template>
@@ -20,8 +19,8 @@
 <script setup lang="ts">
 import { NCheckbox } from "naive-ui";
 import { ref } from "vue";
+import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import type { ComposedDatabase } from "@/types";
-import { DatabaseV1Table } from "../v2/";
 
 defineProps<{
   databaseList: ComposedDatabase[];

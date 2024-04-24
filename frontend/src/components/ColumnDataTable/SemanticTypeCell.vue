@@ -53,6 +53,7 @@ import {
   ColumnConfig,
   SchemaConfig,
   TableConfig,
+  DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 
 type LocalState = {
@@ -96,7 +97,10 @@ const semanticTypeList = computed(() => {
 });
 
 const databaseMetadata = computed(() => {
-  return dbSchemaV1Store.getDatabaseMetadata(props.database.name);
+  return dbSchemaV1Store.getDatabaseMetadata(
+    props.database.name,
+    DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
+  );
 });
 
 const schemaConfig = computed(() => {

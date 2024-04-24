@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"path"
 	"slices"
+	"strconv"
 	"strings"
 
 	"google.golang.org/grpc/codes"
@@ -24,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -301,6 +303,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
 		metadata, config := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
 		sanitizeCommentForSchemaMetadata(metadata)
+		reconcileMetadata(metadata, branch.Engine)
 		filteredMetadata := filterDatabaseMetadataByEngine(metadata, branch.Engine)
 
 		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(branch.Engine), metadata)
@@ -437,6 +440,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	mergedSchemaBytes := []byte(mergedSchema)
 
 	filteredMergedMetadata := filterDatabaseMetadataByEngine(mergedMetadata, baseBranch.Engine)
+	reconcileMetadata(filteredMergedMetadata, baseBranch.Engine)
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
 		DatabaseConfig: mergedConfig,
@@ -526,6 +530,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return nil, status.Errorf(codes.InvalidArgument, "failed to convert merged schema to metadata, %v", err)
 		}
 		newHeadConfig = baseBranch.Head.GetDatabaseConfig()
+		reconcileMetadata(newHeadMetadata, baseBranch.Engine)
 	} else {
 		newHeadMetadata, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata)
 		if err != nil {
@@ -554,6 +559,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		if newHeadMetadata == nil {
 			return nil, status.Errorf(codes.Internal, "merged metadata should not be nil if there is no error while merging (%+v, %+v, %+v)", baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata)
 		}
+		filterDatabaseMetadataByEngine(newHeadMetadata, baseBranch.Engine)
 		// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
 		// metadata in the frontend, and config would be ignored.
 		newHeadConfig = utils.MergeDatabaseConfig(baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig(), newBaseConfig)
@@ -880,9 +886,9 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	}
 
 	v1Branch.Schema = string(branch.HeadSchema)
-	v1Branch.SchemaMetadata = convertStoreDatabaseMetadata(branch.Head.Metadata, branch.Head.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
+	v1Branch.SchemaMetadata = convertStoreDatabaseMetadata(branch.Head.Metadata, branch.Head.DatabaseConfig, nil /* filter */)
 	v1Branch.BaselineSchema = string(branch.BaseSchema)
-	v1Branch.BaselineSchemaMetadata = convertStoreDatabaseMetadata(branch.Base.Metadata, branch.Base.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
+	v1Branch.BaselineSchemaMetadata = convertStoreDatabaseMetadata(branch.Base.Metadata, branch.Base.DatabaseConfig, nil /* filter */)
 	return v1Branch, nil
 }
 
@@ -974,13 +980,6 @@ func filterDatabaseMetadataByEngine(metadata *storepb.DatabaseSchemaMetadata, en
 				}
 				filteredSchema.Procedures = append(filteredSchema.Procedures, filteredProcedure)
 			}
-			for _, view := range schema.Views {
-				filteredView := &storepb.ViewMetadata{
-					Name:       view.Name,
-					Definition: view.Definition,
-				}
-				filteredSchema.Views = append(filteredSchema.Views, filteredView)
-			}
 		}
 		filteredDatabase.Schemas = append(filteredDatabase.Schemas, filteredSchema)
 	}
@@ -1008,17 +1007,6 @@ func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, target
 
 			if !equalTable(table, tt.GetProto()) {
 				trimSchema.Tables = append(trimSchema.Tables, table)
-				continue
-			}
-		}
-		for _, view := range schema.GetViews() {
-			tv := ts.GetView(view.GetName())
-			if tv == nil {
-				trimSchema.Views = append(trimSchema.Views, view)
-				continue
-			}
-			if view.GetDefinition() != tv.Definition {
-				trimSchema.Views = append(trimSchema.Views, view)
 				continue
 			}
 		}
@@ -1223,4 +1211,51 @@ func equalPartitions(s, t *storepb.TablePartitionMetadata) bool {
 		}
 	}
 	return true
+}
+
+func reconcileMetadata(metadata *storepb.DatabaseSchemaMetadata, engine storepb.Engine) {
+	for _, schema := range metadata.Schemas {
+		for _, table := range schema.Tables {
+			if engine == storepb.Engine_MYSQL {
+				reconcileMySQLPartitionMetadata(table.Partitions, "")
+			}
+		}
+	}
+}
+
+func reconcileMySQLPartitionMetadata(partitions []*storepb.TablePartitionMetadata, parentName string) {
+	if len(partitions) == 0 {
+		return
+	}
+	defaultParentGenerator := mysql.NewPartitionDefaultNameGenerator(parentName)
+	defaultParentNames := make([]string, len(partitions))
+	for i := range partitions {
+		defaultParentNames[i] = defaultParentGenerator.Next()
+	}
+
+	if len(partitions) > 0 && partitions[0].UseDefault != "" {
+		useDefault, err := strconv.Atoi(partitions[0].UseDefault)
+		if err != nil {
+			slog.Warn("failed to parse use default", err)
+			return
+		}
+		if useDefault != 0 && useDefault != len(partitions) {
+			for i := range partitions {
+				partitions[i].UseDefault = strconv.Itoa(len(partitions))
+			}
+		}
+	}
+	names := make([]string, len(partitions))
+	for i := range partitions {
+		names[i] = partitions[i].Name
+	}
+	if !slices.Equal(names, defaultParentNames) {
+		for i := range partitions {
+			partitions[i].UseDefault = ""
+		}
+	}
+
+	for _, partition := range partitions {
+		reconcileMySQLPartitionMetadata(partition.Subpartitions, partition.Name)
+	}
 }

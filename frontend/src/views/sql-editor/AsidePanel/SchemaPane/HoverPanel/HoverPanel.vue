@@ -17,6 +17,14 @@
         :schema="state.schema"
         :column="state.column"
       />
+      <TablePartitionInfo
+        v-else-if="state.table && state.partition"
+        :db="state.db"
+        :database="state.database"
+        :schema="state.schema"
+        :table="state.table"
+        :partition="state.partition"
+      />
       <TableInfo
         v-else-if="state.table"
         :db="state.db"
@@ -38,6 +46,20 @@
         :schema="state.schema"
         :view="state.view"
       />
+      <ProcedureInfo
+        v-else-if="state.procedure"
+        :db="state.db"
+        :database="state.database"
+        :schema="state.schema"
+        :procedure="state.procedure"
+      />
+      <FunctionInfo
+        v-else-if="state.function"
+        :db="state.db"
+        :database="state.database"
+        :schema="state.schema"
+        :function="state.function"
+      />
     </template>
   </div>
 </template>
@@ -50,7 +72,10 @@ import type { Position } from "@/types";
 import { minmax } from "@/utils";
 import ColumnInfo from "./ColumnInfo.vue";
 import ExternalTableInfo from "./ExternalTableInfo.vue";
+import FunctionInfo from "./FunctionInfo.vue";
+import ProcedureInfo from "./ProcedureInfo.vue";
 import TableInfo from "./TableInfo.vue";
+import TablePartitionInfo from "./TablePartitionInfo.vue";
 import ViewInfo from "./ViewInfo.vue";
 import { useHoverStateContext } from "./hover-state";
 

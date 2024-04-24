@@ -4908,7 +4908,16 @@ type ListChangeHistoriesRequest struct {
 	PageToken string            `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	View      ChangeHistoryView `protobuf:"varint,4,opt,name=view,proto3,enum=bytebase.v1.ChangeHistoryView" json:"view,omitempty"`
 	// The filter of the change histories.
-	// Follow the CEL syntax.
+	// follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+	// Support filter by type, source or table.
+	// For example:
+	// table = "tableExists('{database}', '{schema}', '{table}')"
+	// table = "tableExists('db', 'public', 'table1') || tableExists('db', 'public', 'table2')"
+	// type = "MIGRATE | DATA"
+	// source = "UI"
+	// source = "VCS"
+	//
+	// The table filter follow the CEL syntax.
 	// currently, we have one function for CEL:
 	// - tableExists(database, schema, table): return true if the table exists in changed resources.
 	//

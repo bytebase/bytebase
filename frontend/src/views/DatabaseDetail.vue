@@ -78,21 +78,16 @@
           class="flex flex-row justify-start items-center flex-wrap shrink gap-x-2 gap-y-2"
           data-label="bb-database-detail-action-buttons-container"
         >
-          <div
-            v-if="state.syncingSchema"
-            class="flex justify-center items-center space-x-2"
-          >
-            <BBSpin />
-            <span class="text-control text-sm">
-              {{ $t("instance.syncing") }}
-            </span>
-          </div>
           <NButton
             v-if="allowSyncDatabase"
-            :disabled="state.syncingSchema"
+            :loading="state.syncingSchema"
             @click.prevent="syncDatabaseSchema"
           >
-            {{ $t("common.sync-now") }}
+            {{
+              state.syncingSchema
+                ? $t("instance.syncing")
+                : $t("common.sync-now")
+            }}
           </NButton>
           <NButton
             v-if="allowTransferDatabase"
@@ -122,6 +117,7 @@
     <NTabs v-model:value="state.selectedTab">
       <NTabPane name="overview" :tab="$t('common.overview')">
         <DatabaseOverviewPanel
+          class="mt-2"
           :database="database"
           :anomaly-list="anomalyList"
         />
@@ -131,21 +127,21 @@
         name="change-history"
         :tab="$t('change-history.self')"
       >
-        <DatabaseChangeHistoryPanel :database="database" />
+        <DatabaseChangeHistoryPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
         v-if="allowToChangeDatabase && allowListSlowQueries"
         name="slow-query"
         :tab="$t('slow-query.slow-queries')"
       >
-        <DatabaseSlowQueryPanel :database="database" />
+        <DatabaseSlowQueryPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
         v-if="allowToChangeDatabase"
         name="setting"
         :tab="$t('common.settings')"
       >
-        <DatabaseSettingsPanel :database="database" />
+        <DatabaseSettingsPanel class="mt-2" :database="database" />
       </NTabPane>
     </NTabs>
 

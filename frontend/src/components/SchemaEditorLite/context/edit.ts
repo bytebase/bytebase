@@ -5,6 +5,7 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
+  TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
 import type { EditStatus } from "../types";
 import { keyForResource } from "./common";
@@ -22,6 +23,7 @@ export const useEditStatus = () => {
       schema: SchemaMetadata;
       table?: TableMetadata;
       column?: ColumnMetadata;
+      partition?: TablePartitionMetadata;
     },
     status: EditStatus
   ) => {
@@ -44,6 +46,7 @@ export const useEditStatus = () => {
       schema: SchemaMetadata;
       table?: TableMetadata;
       column?: ColumnMetadata;
+      partition?: TablePartitionMetadata;
     },
     recursive: boolean
   ) => {
@@ -121,6 +124,25 @@ export const useEditStatus = () => {
     return "normal";
   };
 
+  const getPartitionStatus = (
+    database: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      table: TableMetadata;
+      partition: TablePartitionMetadata;
+    }
+  ): EditStatus => {
+    const key = keyForResource(database, metadata);
+    if (dirtyPaths.value.has(key)) {
+      return dirtyPaths.value.get(key)!;
+    }
+    if (dirtyPathsArray.value.some((path) => path.startsWith(`${key}/`))) {
+      return "updated";
+    }
+    return "normal";
+  };
+
   const clearEditStatus = () => {
     dirtyPaths.value.clear();
   };
@@ -136,5 +158,6 @@ export const useEditStatus = () => {
     getSchemaStatus,
     getTableStatus,
     getColumnStatus,
+    getPartitionStatus,
   };
 };

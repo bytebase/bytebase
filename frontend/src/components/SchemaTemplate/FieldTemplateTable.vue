@@ -33,7 +33,10 @@
         {{ item.column?.userComment }}
       </div>
       <div class="bb-grid-cell">
-        <LabelsColumn :labels="item.config?.labels ?? {}" :show-count="2" />
+        <DatabaseLabelsCell
+          :labels="item.config?.labels ?? {}"
+          :show-count="2"
+        />
       </div>
       <div class="bb-grid-cell flex items-center justify-start gap-x-2">
         <MiniActionButton @click.stop="$emit('view', item)">
@@ -65,6 +68,7 @@ import type { BBGridColumn } from "@/bbkit";
 import { BBGrid } from "@/bbkit";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
 import { MiniActionButton } from "@/components/v2";
+import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { useSettingV1Store } from "@/store";
 import type { Engine } from "@/types/proto/v1/common";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";

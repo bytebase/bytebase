@@ -5,7 +5,6 @@
       v-model:statement="statement"
       :readonly="false"
       class="flex-1 overflow-hidden relative"
-      @upload="handleUploadEvent"
     />
   </div>
 </template>
@@ -13,7 +12,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useLocalSheetStore } from "@/store";
-import { getSheetStatement, readFileAsync, setSheetStatement } from "@/utils";
+import { getSheetStatement, setSheetStatement } from "@/utils";
 import RawSQLEditor from "../../RawSQLEditor";
 import { useAddChangeContext } from "../context";
 
@@ -31,14 +30,4 @@ const statement = computed({
     setSheetStatement(sheet.value, statement);
   },
 });
-
-const handleUploadEvent = async (e: Event) => {
-  try {
-    const { filename, content } = await readFileAsync(e, 100);
-    statement.value = content;
-    sheet.value.title = filename;
-  } finally {
-    // Nothing
-  }
-};
 </script>

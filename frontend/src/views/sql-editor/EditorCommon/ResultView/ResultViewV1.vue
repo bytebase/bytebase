@@ -36,6 +36,7 @@
             <SingleResultViewV1
               :params="executeParams"
               :sql-result-set="resultSet"
+              :database="database"
               :result="result"
               :set-index="i"
             />

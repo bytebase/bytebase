@@ -572,7 +572,7 @@
         "user-info-url-description": "Địa chỉ API để lấy thông tin người dùng bằng accessToken",
         "security-protocol": "Giao thức bảo mật",
         "connection-security": "Bảo mật kết nối",
-        "connection-security-skip-tls-verify": "Bỏ qua xác minh TLS cho chứng chỉ tự ký",
+        "connection-security-skip-tls-verify": "Bỏ qua xác minh TLS",
         "user-information-mapping": "Ánh xạ thông tin người dùng",
         "user-information-mapping-description": "Ánh xạ tên trường từ API thông tin người dùng tới người dùng Bytebase.",
         "identifier": "Email của người dùng Bytebase",
@@ -913,7 +913,8 @@
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "đã thay đổi {name}. {link}",
-      "prior-back-table": "Sao lưu dữ liệu vào cơ sở dữ liệu {database} và bảng {tables}"
+      "prior-back-table": "Sao lưu dữ liệu vào cơ sở dữ liệu {database} và bảng {tables}",
+      "prior-back-table-for-line": "Sao lưu dữ liệu vào cơ sở dữ liệu {database} và bảng {tables} cho DML tại dòng {line}"
     },
     "subject-prefix": {
       "task": "Nhiệm vụ",
@@ -1111,6 +1112,12 @@
       "tooltip": "Người phê duyệt sẽ xem xét và phê duyệt vấn đề theo thứ tự được chỉ định trong quy trình. \nVấn đề chỉ có thể được áp dụng sau khi tất cả các bước trong quy trình đã được phê duyệt. \nBạn có thể định cấu hình luồng phê duyệt tùy chỉnh cho từng rủi ro.",
       "pre-issue-created-tips": "Sau khi một vấn đề được tạo, Bytebase sẽ tự động khớp với phê duyệt tùy chỉnh tương ứng dựa trên loại và mức độ rủi ro của vấn đề."
     },
+    "risk-level": {
+      "self": "Mức độ rủi ro",
+      "low": "Thấp",
+      "moderate": "Vừa phải",
+      "high": "Cao"
+    },
     "waiting-to-rollout": "Đang chờ triển khai",
     "waiting-for-review": "Đang chờ xem xét",
     "issue-name": "Tên vấn đề",
@@ -1183,6 +1190,9 @@
       "format": "Định dạng",
       "encrypt": "Mã hóa",
       "file-downloaded": "Tệp đã được tải xuống"
+    },
+    "update-rollout-time": {
+      "self": "Cập nhật thời gian triển khai"
     }
   },
   "alter-schema": {
@@ -1250,7 +1260,9 @@
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
     "failed-to-sync-schema": "Không thể đồng bộ hóa lược đồ",
     "successfully-synced-schema": "Đã đồng bộ hóa lược đồ thành công",
-    "create": "Tạo nên cơ sở dữ liệu"
+    "create": "Tạo nên cơ sở dữ liệu",
+    "procedures": "Thủ tục",
+    "partitions": "Phân vùng"
   },
   "instance": {
     "select": "Chọn phiên bản",
@@ -1312,28 +1324,32 @@
       "create-readonly-user": "Đây là kết nối được Bytebase sử dụng để thực hiện các hoạt động chỉ đọc, chẳng hạn như truy vấn CHỌN.",
       "create-admin-user-non-sql": "Đây là người dùng kết nối được Bytebase sử dụng để thực hiện các hoạt động ghi và quản trị.",
       "create-readonly-user-non-sql": "Đây là kết nối được Bytebase sử dụng để thực hiện các hoạt động chỉ đọc.",
+      "google-cloud-sql": {
+        "instance-name": "Tên kết nối sơ thẩm",
+        "instance-name-tips": "Tên kết nối phiên bản phải như project-id:region:instance-name.",
+        "mysql": {
+          "template": "Tạo một tài khoản dịch vụ có tên {user}, sau đó thêm tài khoản đó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {user}{'@'}'%'. Cấp cho người dùng này những đặc quyền cần thiết."
+        },
+        "postgresql": {
+          "template": "Tạo một tài khoản dịch vụ có tên {user}, sau đó thêm tài khoản đó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {user}{'@'}project-id.iam. Cấp cho người dùng những đặc quyền cần thiết."
+        }
+      },
       "create-user-example": {
         "snowflake": {
-          "user": "cơ sở byte{'@'}%",
-          "password": "YOUR_DB_PWD",
-          "template": "Dưới đây là ví dụ để tạo người dùng 'bytebase' bằng mật khẩu {password} cho {warehouse} và cấp cho người dùng các đặc quyền cần thiết."
+          "template": "Dưới đây là ví dụ để tạo người dùng '{user}' bằng mật khẩu {password} cho {warehouse} và cấp cho người dùng các đặc quyền cần thiết."
         },
         "mysql": {
-          "password": "YOUR_DB_PWD",
-          "user": "cơ sở byte{'@'}%",
           "template": "Dưới đây là ví dụ để tạo người dùng {user} bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết."
         },
         "clickhouse": {
-          "template": "Dưới đây là ví dụ để tạo 'bytebase' người dùng bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết. Trước tiên, bạn cần bật quy trình làm việc dựa trên SQL ClickHouse {link}, sau đó chạy truy vấn sau để tạo người dùng.",
+          "template": "Dưới đây là ví dụ để tạo '{user}' người dùng bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết. Trước tiên, bạn cần bật quy trình làm việc dựa trên SQL ClickHouse {link}, sau đó chạy truy vấn sau để tạo người dùng.",
           "sql-driven-workflow": "Quy trình làm việc dựa trên SQL"
         },
         "postgresql": {
           "warn": "Nếu phiên bản kết nối được quản lý bởi nhà cung cấp đám mây thì SUPERUSER sẽ không khả dụng và bạn nên tạo người dùng thông qua bảng điều khiển dành cho quản trị viên của nhà cung cấp đó. Người dùng đã tạo sẽ có các đặc quyền bán SIÊU NGƯỜI DÙNG cụ thể của nhà cung cấp. Bạn nên cấp đặc quyền Bytebase với 'GRANT role_name TO bytebase;' đối với tất cả các vai trò hiện có, nếu không Bytebase có thể không truy cập được cơ sở dữ liệu hoặc bảng hiện có.",
-          "template": "Dưới đây là ví dụ để tạo 'bytebase' người dùng bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết. Nếu phiên bản kết nối được tự lưu trữ thì bạn có thể cấp quyền SUPERUSER."
+          "template": "Dưới đây là ví dụ để tạo '{user}' người dùng bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết. Nếu phiên bản kết nối được tự lưu trữ thì bạn có thể cấp quyền SUPERUSER."
         },
         "redis": {
-          "password": "YOUR_DB_PWD",
-          "user": "cơ sở byte",
           "template": "Dưới đây là ví dụ để tạo người dùng {user} bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết."
         }
       }
@@ -1345,6 +1361,7 @@
     "password-type": {
       "password": "Mật khẩu",
       "password-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
+      "google-iam": "Google CloudSQL IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
@@ -1393,7 +1410,7 @@
     "copy-grant-statement": "TẠO câu lệnh NGƯỜI DÙNG và CẤP được sao chép vào khay nhớ tạm. Dán vào ứng dụng khách {engine} của bạn để áp dụng.",
     "successfully-connected-instance": "Phiên bản được kết nối thành công.",
     "failed-to-connect-instance": "Không thể kết nối phiên bản.",
-    "failed-to-connect-instance-localhost": "Không thể kết nối phiên bản.\nNếu bạn chạy Bytebase bằng Docker, vui lòng thử \"host.docker.internal\" để biết địa chỉ máy chủ.",
+    "failed-to-connect-instance-localhost": "Nếu bạn chạy Bytebase bằng Docker, vui lòng thử \"host.docker.internal\" để biết địa chỉ máy chủ.",
     "filter-instance-name": "Lọc tên phiên bản",
     "grants": "tài trợ",
     "find-gcp-project-id-and-instance-id": "Để tìm ID dự án GCP và ID phiên bản, hãy xem",
@@ -1637,13 +1654,12 @@
     "select-databases-from-same-project": "Vui lòng chọn cơ sở dữ liệu từ cùng một dự án",
     "sync-schema": {
       "title": "Lược đồ đồng bộ hóa",
-      "description": "Bytebase hỗ trợ đồng bộ hóa lược đồ với một hoặc nhiều cơ sở dữ liệu đích.",
+      "description": "Bytebase hỗ trợ đồng bộ hóa lược đồ với một hoặc nhiều cơ sở dữ liệu đích. (Chỉ MySQL, PostgreSQL, TiDB, Oracle)",
       "schema-history-version": "Phiên bản lịch sử lược đồ",
       "copy-schema": "Sao chép lược đồ",
       "select-source-schema": "Chọn lược đồ nguồn",
       "select-target-databases": "Chọn cơ sở dữ liệu đích",
       "select-project": "Chọn dự án",
-      "select-database-placeholder": "Chọn cơ sở dữ liệu (chỉ MySQL, PostgreSQL, TiDB, Oracle)",
       "source-database": "Cơ sở dữ liệu nguồn",
       "source-schema": "Lược đồ nguồn",
       "schema-version": {
@@ -1733,7 +1749,7 @@
     "branch-observe-file-change": "Nhánh nơi Bytebase quan sát sự thay đổi tập tin.",
     "database-group-description": "Mặc định, các thay đổi sẽ được áp dụng cho tất cả các cơ sở dữ liệu trong dự án. Hoặc có thể áp dụng cho nhóm cơ sở dữ liệu.",
     "base-directory": "Thư mục cơ sở",
-    "base-directory-description": "Thư mục gốc nơi Bytebase quan sát sự thay đổi của tập tin.",
+    "base-directory-description": "Thư mục gốc nơi Bytebase quan sát sự thay đổi của tập tin. Sử dụng \"/\" nếu các tệp được lưu trữ trong thư mục gốc của kho lưu trữ.",
     "merge-request": "yêu cầu hợp nhất",
     "pull-request": "yêu cầu kéo",
     "git-provider": "Nhà cung cấp Git",
@@ -1972,7 +1988,7 @@
       "description": "Trong luồng làm việc GitOps của Bytebase, các nhà phát triển lưu trữ các tập lệnh di chuyển trong VCS. Các yêu cầu kéo gợi nhớ xem xét SQL, và các yêu cầu được hợp nhất khởi động kế hoạch di chuyển. Người quản trị cấu hình các nhà cung cấp VCS, trong khi chủ dự án thiết lập kết nối VCS trong các dự án.",
       "add-git-provider": {
         "self": "Thêm nhà cung cấp Git",
-        "description": "Trước khi bất kỳ dự án nào có thể kích hoạt quy trình làm việc GitOps, trước tiên Bytebase cần tích hợp với hệ thống kiểm soát phiên bản (VCS) tương ứng bằng cách đăng ký làm ứng dụng OAuth trong VCS đó. Dưới đây là các bước để định cấu hình tính năng này, bạn cũng có thể làm theo {guide} của chúng tôi.",
+        "description": "Trước khi bất kỳ dự án nào có thể kích hoạt quy trình làm việc GitOps, trước tiên Bytebase cần tích hợp với hệ thống kiểm soát phiên bản (VCS) tương ứng bằng cách đăng ký làm ứng dụng OAuth trong VCS đó.",
         "gitlab-self-host": "GitLab tự lưu trữ",
         "gitlab-self-host-admin-requirement": "Bạn phải là một quản trị viên của GitLab để có thể thực hiện điều này.",
         "gitlab-com-admin-requirement": "Bạn phải là quản trị viên của các dự án hoặc nhóm.",
@@ -1997,6 +2013,7 @@
         "access-token": {
           "self": "Thông tin ứng dụng OAuth",
           "personal-access-token": "mã thông báo truy cập cá nhân",
+          "github-fine-grained-token": "mã thông báo truy cập cá nhân chi tiết",
           "gitlab-personal-access-token": "Tạo người dùng dịch vụ chuyên dụng và tạo {token} với vai trò người duy trì và ít nhất tuân theo các quyền đối với nhóm hoặc dự án sẽ được quản lý. Bạn có thể tạo mã thông báo truy cập dự án để quản lý một dự án hoặc tạo mã thông báo truy cập nhóm để quản lý tất cả các dự án trong nhóm.",
           "github-personal-access-token": "Tạo người dùng dịch vụ chuyên dụng và tạo {token} với vai trò thành viên cho tổ chức hoặc tất cả các dự án sẽ được quản lý.",
           "bitbucket-app-access-token": "Tạo một người dùng dịch vụ cụ thể và tạo một {app_password} có ít nhất các quyền sau để các tổ chức, dự án hoặc kho lưu trữ có liên quan quản lý. Chèn '<tên người dùng bitbucket>:<mật khẩu ứng dụng đã tạo>' bên dưới.",
@@ -2243,7 +2260,8 @@
     "click-to-sync-now": "Bấm để đồng bộ ngay",
     "sync-in-progress": "Đang đồng bộ hóa",
     "create-a-worksheet": "Tạo một bảng tính",
-    "select-a-database-to-start": "Chọn cơ sở dữ liệu để bắt đầu"
+    "select-a-database-to-start": "Chọn cơ sở dữ liệu để bắt đầu",
+    "select-encoding": "Chọn mã hóa"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",
@@ -2335,7 +2353,15 @@
       "edit-indexes": "Chỉnh sửa chỉ mục",
       "unique": "Độc nhất"
     },
-    "generated-ddl-is-empty": "DDL được tạo trống"
+    "generated-ddl-is-empty": "DDL được tạo trống",
+    "table-partition": {
+      "partitions": "Phân vùng",
+      "edit-partitions": "Chỉnh sửa phân vùng",
+      "expression": "Sự biểu lộ",
+      "value": "Giá trị",
+      "add-sub-partition": "Thêm phân vùng phụ",
+      "type": "Kiểu"
+    }
   },
   "label": {
     "empty-label-value": "Trống",
@@ -3403,6 +3429,10 @@
     "schema-text": "Văn bản lược đồ",
     "baseline": "Đường cơ sở",
     "head": "Cái đầu",
-    "show-diff-with-branch-baseline": "Hiển thị sự khác biệt với đường cơ sở của nhánh"
+    "show-diff-with-branch-baseline": "Hiển thị sự khác biệt với đường cơ sở của nhánh",
+    "table-partition": {
+      "drop-partition-confirm": "Bỏ phân vùng bảng?",
+      "drop-partition-with-subpartitions-confirm": "Cũng sẽ bỏ tất cả các phân vùng của nó."
+    }
   }
 }

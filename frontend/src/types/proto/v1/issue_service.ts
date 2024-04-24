@@ -840,6 +840,8 @@ export function issueComment_TaskUpdate_StatusToJSON(object: IssueComment_TaskUp
 export interface IssueComment_TaskPriorBackup {
   task: string;
   tables: IssueComment_TaskPriorBackup_Table[];
+  originalLine?: number | undefined;
+  database: string;
 }
 
 export interface IssueComment_TaskPriorBackup_Table {
@@ -3866,7 +3868,7 @@ export const IssueComment_TaskUpdate = {
 };
 
 function createBaseIssueComment_TaskPriorBackup(): IssueComment_TaskPriorBackup {
-  return { task: "", tables: [] };
+  return { task: "", tables: [], originalLine: undefined, database: "" };
 }
 
 export const IssueComment_TaskPriorBackup = {
@@ -3876,6 +3878,12 @@ export const IssueComment_TaskPriorBackup = {
     }
     for (const v of message.tables) {
       IssueComment_TaskPriorBackup_Table.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.originalLine !== undefined) {
+      writer.uint32(24).int32(message.originalLine);
+    }
+    if (message.database !== "") {
+      writer.uint32(34).string(message.database);
     }
     return writer;
   },
@@ -3901,6 +3909,20 @@ export const IssueComment_TaskPriorBackup = {
 
           message.tables.push(IssueComment_TaskPriorBackup_Table.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.originalLine = reader.int32();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3916,6 +3938,8 @@ export const IssueComment_TaskPriorBackup = {
       tables: globalThis.Array.isArray(object?.tables)
         ? object.tables.map((e: any) => IssueComment_TaskPriorBackup_Table.fromJSON(e))
         : [],
+      originalLine: isSet(object.originalLine) ? globalThis.Number(object.originalLine) : undefined,
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
     };
   },
 
@@ -3927,6 +3951,12 @@ export const IssueComment_TaskPriorBackup = {
     if (message.tables?.length) {
       obj.tables = message.tables.map((e) => IssueComment_TaskPriorBackup_Table.toJSON(e));
     }
+    if (message.originalLine !== undefined) {
+      obj.originalLine = Math.round(message.originalLine);
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
     return obj;
   },
 
@@ -3937,6 +3967,8 @@ export const IssueComment_TaskPriorBackup = {
     const message = createBaseIssueComment_TaskPriorBackup();
     message.task = object.task ?? "";
     message.tables = object.tables?.map((e) => IssueComment_TaskPriorBackup_Table.fromPartial(e)) || [];
+    message.originalLine = object.originalLine ?? undefined;
+    message.database = object.database ?? "";
     return message;
   },
 };

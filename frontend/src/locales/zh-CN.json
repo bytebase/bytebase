@@ -572,7 +572,7 @@
         "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
         "security-protocol": "安全协议",
         "connection-security": "安全性选项",
-        "connection-security-skip-tls-verify": "跳过自签名证书验证",
+        "connection-security-skip-tls-verify": "跳过证书验证",
         "user-information-mapping": "用户信息映射",
         "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
         "identifier": "Bytebase 用户的邮箱",
@@ -913,7 +913,8 @@
       "verb-type-target-by-people": "{verb}{type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "修改了 {name}。{link}",
-      "prior-back-table": "已备份到数据库 {database} 中表 {tables}"
+      "prior-back-table": "已备份到数据库 {database} 中表 {tables}",
+      "prior-back-table-for-line": "数据备份到数据库 {database} 和表 {tables}，用于第 {line} 行的DML"
     },
     "subject-prefix": {
       "task": "任务",
@@ -1111,6 +1112,12 @@
       "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批。",
       "pre-issue-created-tips": "在工单创建后，系统将根据工单的类型和风险等级自动匹配相应的自定义审批。"
     },
+    "risk-level": {
+      "self": "风险等级",
+      "low": "低风险",
+      "moderate": "中风险",
+      "high": "高风险"
+    },
     "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
     "issue-name": "工单名称",
@@ -1183,6 +1190,9 @@
       "format": "导出格式",
       "encrypt": "加密",
       "file-downloaded": "文件已下载"
+    },
+    "update-rollout-time": {
+      "self": "修改指定发布时间"
     }
   },
   "alter-schema": {
@@ -1250,7 +1260,9 @@
     "start-to-sync-schema": "开始同步 schema",
     "failed-to-sync-schema": "同步 schema 失败",
     "successfully-synced-schema": "Schema 同步完成",
-    "create": "创建数据库"
+    "create": "创建数据库",
+    "procedures": "存储过程",
+    "partitions": "分区"
   },
   "instance": {
     "select": "选择实例",
@@ -1312,28 +1324,32 @@
       "create-readonly-user": "这是 Bytebase 用于连接数据库，执行诸如 SELECT 的只读操作的用户。",
       "create-admin-user-non-sql": "这是 Bytebase 用于连接数据库，执行写和管理操作的用户。",
       "create-readonly-user-non-sql": "这是 Bytebase 用于连接数据库，执行只读操作的用户。",
+      "google-cloud-sql": {
+        "instance-name": "实例连接名称",
+        "instance-name-tips": "实例连接名称应为 project-id:region:instance-name。",
+        "mysql": {
+          "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}'%' 添加到您的 Google Cloud SQL 中。授予此用户所需的权限。"
+        },
+        "postgresql": {
+          "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}project-id.iam 添加到您的 Google Cloud SQL 中。授予用户所需的权限。"
+        }
+      },
       "create-user-example": {
         "snowflake": {
-          "user": "bytebase{'@'}%",
-          "password": "YOUR_DB_PWD",
-          "template": "创建用户 bytebase，密码 {password}，warehouse 为{warehouse}，并授予必要权限的例子如下。"
+          "template": "创建用户 {user}，密码 {password}，warehouse 为{warehouse}，并授予必要权限的例子如下。"
         },
         "mysql": {
-          "password": "YOUR_DB_PWD",
-          "user": "bytebase{'@'}%",
           "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。"
         },
         "clickhouse": {
-          "template": "创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。",
+          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。",
           "sql-driven-workflow": "SQL 工作流"
         },
         "postgresql": {
           "warn": "如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER 是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。 您应该对所有 role 用 'GRANT role_name TO bytebase;' 语句赋予 Bytebase 权限，否则 Bytebase 可能没有权限操作已有的数据库或者表导致操作失败。",
-          "template": "创建用户 bytebase，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。"
+          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。"
         },
         "redis": {
-          "password": "YOUR_DB_PWD",
-          "user": "bytebase",
           "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。"
         }
       }
@@ -1345,6 +1361,7 @@
     "password-type": {
       "password": "密码",
       "password-tip": "您也可以指定外部的密码管理服务 endpoint",
+      "google-iam": "Google CloudSQL IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
@@ -1393,7 +1410,7 @@
     "copy-grant-statement": "CREATE USER and GRANT 语句已复制到剪贴板。 粘贴到您的 {engine} 客户端。",
     "successfully-connected-instance": "成功连接到实例。",
     "failed-to-connect-instance": "连接到实例失败。",
-    "failed-to-connect-instance-localhost": "连接到实例失败。\n如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
+    "failed-to-connect-instance-localhost": "如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
     "filter-instance-name": "过滤实例名称",
     "grants": "权限",
     "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
@@ -1637,13 +1654,12 @@
     "select-databases-from-same-project": "请选择同一个项目下的数据库",
     "sync-schema": {
       "title": "库表同步",
-      "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。",
+      "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL、PostgreSQL、TiDB 以及 Oracle）",
       "schema-history-version": "Schema 历史版本",
       "copy-schema": "粘贴 Schema 文本",
       "select-source-schema": "选择源 Schema",
       "select-target-databases": "选择目标数据库",
       "select-project": "选择项目",
-      "select-database-placeholder": "选择数据库 (仅限 MySQL, PostgreSQL, TiDB, Oracle)",
       "source-database": "源数据库",
       "source-schema": "源 Schema",
       "schema-version": {
@@ -1733,7 +1749,7 @@
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
     "database-group-description": "默认情况下，更改将应用于项目中的所有数据库。或者，它们可以应用于数据库组。",
     "base-directory": "根目录",
-    "base-directory-description": "Bytebase 跟踪文件变更的根目录。",
+    "base-directory-description": "Bytebase 观察文件变化的根目录。如果文件存储在存储库根目录中，请使用“/”。",
     "merge-request": "合并请求",
     "pull-request": "拉取请求",
     "git-provider": "Git 提供方",
@@ -1972,7 +1988,7 @@
       "description": "在 Bytebase GitOps 工作流程中，开发人员将迁移脚本存储在 VCS 中。拉取请求触发 SQL 审查，合并后启动迁移计划。管理员配置 VCS 提供商，而项目所有者在项目内建立 VCS 连接。",
       "add-git-provider": {
         "self": "添加 Git 提供方",
-        "description": "在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS 进行集成。以下是配置该集成的步骤，您也可以按照我们的{guide}。",
+        "description": "在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS 进行集成。",
         "gitlab-self-host": "自托管 GitLab",
         "gitlab-self-host-admin-requirement": "您必须是 GitLab 实例的管理员。",
         "gitlab-com-admin-requirement": "您必须是项目或组的管理员。",
@@ -1997,6 +2013,7 @@
         "access-token": {
           "self": "OAuth 应用信息",
           "personal-access-token": "个人访问令牌",
+          "github-fine-grained-token": "细粒度的个人访问令牌",
           "gitlab-personal-access-token": "创建专用服务用户并生成具有维护者角色的{token}，并且至少具有要管理的组或项目的以下权限。您可以生成项目访问令牌来管理单个项目，或生成组访问令牌来管理组内的所有项目。",
           "github-personal-access-token": "创建一个专用服务用户，并为组织或所有需要管理的项目生成一个具有成员角色的{token}。",
           "bitbucket-app-access-token": "生成特定服务用户并创建一个至少具有以下权限的 {app_password}，以便管理相关组织、项目或存储库。在下面插入“<bitbucket 用户名>:<生成的应用程序密码>”。",
@@ -2243,7 +2260,8 @@
     "click-to-sync-now": "点击立即同步",
     "sync-in-progress": "正在同步",
     "create-a-worksheet": "新建工作表",
-    "select-a-database-to-start": "选择数据库以开始"
+    "select-a-database-to-start": "选择数据库以开始",
+    "select-encoding": "选择编码"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2335,7 +2353,15 @@
       "edit-indexes": "编辑索引",
       "unique": "唯一"
     },
-    "generated-ddl-is-empty": "生成的 DDL 为空"
+    "generated-ddl-is-empty": "生成的 DDL 为空",
+    "table-partition": {
+      "partitions": "分区",
+      "edit-partitions": "编辑分区",
+      "expression": "表达式",
+      "value": "值",
+      "add-sub-partition": "添加子分区",
+      "type": "类型"
+    }
   },
   "label": {
     "empty-label-value": "空",
@@ -3403,6 +3429,10 @@
     "schema-text": "文本 Schema",
     "baseline": "基线",
     "head": "当前",
-    "show-diff-with-branch-baseline": "显示与分支基线之间的差异"
+    "show-diff-with-branch-baseline": "显示与分支基线之间的差异",
+    "table-partition": {
+      "drop-partition-confirm": "删除表分区？",
+      "drop-partition-with-subpartitions-confirm": "将会同时删除其所有子分区。"
+    }
   }
 }

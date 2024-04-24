@@ -14,7 +14,7 @@ export type UseRenderMarkdownOptions = {
 };
 
 const defaultOptions = (): UseRenderMarkdownOptions => ({
-  minHeight: 48 /* 3rem */,
+  minHeight: 24 /* 1 line */,
   maxHeight: 192 /* 12rem */,
   placeholder: "",
 });

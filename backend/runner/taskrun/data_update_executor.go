@@ -119,6 +119,13 @@ func (exec *DataUpdateExecutor) backupData(
 	if err != nil {
 		return err
 	}
+	defer driver.Close(driverCtx)
+
+	backupDriver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, backupDatabase, db.ConnectionContext{})
+	if err != nil {
+		return err
+	}
+	defer backupDriver.Close(driverCtx)
 
 	suffix := "_" + time.Now().Format("20060102150405")
 	statements, err := base.TransformDMLToSelect(instance.Engine, statement, database.DatabaseName, backupDatabaseName, suffix)
@@ -130,37 +137,18 @@ func (exec *DataUpdateExecutor) backupData(
 		if _, err := driver.Execute(driverCtx, statement.Statement, db.ExecuteOptions{}); err != nil {
 			return err
 		}
-		if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
-			return err
-		}
-
-		createActivityPayload := api.ActivityPipelineTaskPriorBackupPayload{
-			TaskID: task.ID,
-			BackupSchemaMetadata: []api.SchemaMetadata{
-				{
-					Table: statement.TableName,
-				},
-			},
-			IssueName: issue.Title,
-			TaskName:  task.Name,
-		}
-		bytes, err := json.Marshal(createActivityPayload)
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal ActivityIssueCreate activity")
-		}
-		activityCreate := &store.ActivityMessage{
-			CreatorUID:        api.SystemBotID,
-			ResourceContainer: issue.Project.GetName(),
-			ContainerUID:      task.PipelineID,
-			Type:              api.ActivityPipelineTaskPriorBackup,
-			Level:             api.ActivityInfo,
-			Payload:           string(bytes),
-		}
-		if _, err := exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
-			slog.Error("failed to create activity",
-				slog.Int("task", task.ID),
-				log.BBError(err),
-			)
+		var originalLine *int32
+		switch instance.Engine {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
+				return err
+			}
+		case storepb.Engine_MSSQL:
+			if _, err := backupDriver.Execute(driverCtx, fmt.Sprintf("EXEC sp_addextendedproperty 'MS_Description', 'issue %d', 'SCHEMA', 'dbo', 'TABLE', '%s'", issue.UID, statement.TableName), db.ExecuteOptions{}); err != nil {
+				return err
+			}
+			num := int32(statement.OriginalLine)
+			originalLine = &num
 		}
 
 		if err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
@@ -168,13 +156,15 @@ func (exec *DataUpdateExecutor) backupData(
 			Payload: &storepb.IssueCommentPayload{
 				Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
 					TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
-						Task: common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+						Task:     common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+						Database: backupDatabaseName,
 						Tables: []*storepb.IssueCommentPayload_TaskPriorBackup_Table{
 							{
 								Schema: "",
 								Table:  statement.TableName,
 							},
 						},
+						OriginalLine: originalLine,
 					},
 				},
 			},

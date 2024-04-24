@@ -1,6 +1,7 @@
 <template>
   <NRadioGroup
     v-model:value="state.type"
+    :disabled="disabled"
     class="!flex flex-row items-center gap-x-4 mt-2"
   >
     <NRadio
@@ -11,8 +12,17 @@
       <span class="textlabel">{{ getSslTypeLabel(type) }}</span>
     </NRadio>
   </NRadioGroup>
+
+  <DroppableTextarea
+    v-if="state.type === 'CA'"
+    v-model:value="state.value.sslCa"
+    :resizable="false"
+    :disabled="disabled"
+    class="w-full h-24 mt-4 whitespace-pre-wrap"
+    placeholder="Input or drag and drop YOUR_CA_CERTIFICATE"
+  />
   <NTabs
-    v-if="state.type === 'CA' || state.type === 'CA+KEY+CERT'"
+    v-else-if="state.type === 'CA+KEY+CERT'"
     v-model:value="state.tab"
     class="mt-2"
     pane-style="padding-top: 0.25rem"
@@ -25,6 +35,7 @@
       <DroppableTextarea
         v-model:value="state.value.sslCa"
         :resizable="false"
+        :disabled="disabled"
         class="w-full h-24 whitespace-pre-wrap"
         placeholder="Input or drag and drop YOUR_CA_CERTIFICATE"
       />
@@ -38,6 +49,7 @@
       <DroppableTextarea
         v-model:value="state.value.sslKey"
         :resizable="false"
+        :disabled="disabled"
         class="w-full h-24 whitespace-pre-wrap"
         placeholder="Input or drag and drop YOUR_CLIENT_KEY"
       />
@@ -51,6 +63,7 @@
       <DroppableTextarea
         v-model:value="state.value.sslCert"
         :resizable="false"
+        :disabled="disabled"
         class="w-full h-24 whitespace-pre-wrap"
         placeholder="Input or drag and drop YOUR_CLIENT_CERT"
       />
@@ -80,6 +93,7 @@ type LocalState = {
 const props = defineProps<{
   value: WithSslOptions;
   engineType: Engine;
+  disabled: boolean;
 }>();
 
 const emit = defineEmits<{

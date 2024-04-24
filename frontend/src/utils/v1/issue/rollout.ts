@@ -20,6 +20,12 @@ export const extractRolloutUID = (name: string) => {
   return matches?.[1] ?? "";
 };
 
+export const extractStageUID = (name: string) => {
+  const pattern = /(?:^|\/)stages\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};
+
 export const extractTaskUID = (name: string) => {
   const pattern = /(?:^|\/)tasks\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);

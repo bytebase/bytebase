@@ -14,6 +14,7 @@
       class="!w-auto"
       size="small"
       type="password"
+      :input-props="{ autocomplete: 'new-password' }"
       :placeholder="$t('common.password')"
     />
   </tempalte>

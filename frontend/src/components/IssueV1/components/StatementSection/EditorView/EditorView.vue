@@ -38,9 +38,13 @@
               v-model:value="formatOnSave"
               :language="language"
             />
-            <UploadProgressButton :upload="handleUploadFile" size="tiny">
+            <SQLUploadButton
+              size="tiny"
+              :loading="state.isUploadingFile"
+              @update:sql="handleUpdateStatement"
+            >
               {{ $t("issue.upload-sql") }}
-            </UploadProgressButton>
+            </SQLUploadButton>
           </template>
         </template>
 
@@ -60,14 +64,14 @@
                     {{ $t("common.edit") }}
                   </NButton>
                   <!-- for oversized sheets, only allow to upload and overwrite the sheet -->
-                  <UploadProgressButton
+                  <SQLUploadButton
                     v-else
-                    :upload="handleUploadAndOverwrite"
-                    :disabled="denyEditTaskReasons.length > 0"
                     size="tiny"
+                    :loading="state.isUploadingFile"
+                    @update:sql="handleUpdateStatementAndOverwrite"
                   >
                     {{ $t("issue.upload-sql") }}
-                  </UploadProgressButton>
+                  </SQLUploadButton>
                 </template>
                 <template #default>
                   <ErrorList :errors="denyEditTaskReasons" />
@@ -80,9 +84,13 @@
               v-model:value="formatOnSave"
               :language="language"
             />
-            <UploadProgressButton :upload="handleUploadFile" size="tiny">
+            <SQLUploadButton
+              size="tiny"
+              :loading="state.isUploadingFile"
+              @update:sql="handleUpdateStatement"
+            >
               {{ $t("issue.upload-sql") }}
-            </UploadProgressButton>
+            </SQLUploadButton>
             <NButton
               v-if="state.isEditing"
               size="tiny"
@@ -230,7 +238,7 @@ import {
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
-import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
+import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { rolloutServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import {
@@ -255,7 +263,6 @@ import {
   isDatabaseChangeRelatedIssue,
   isDatabaseDataExportIssue,
 } from "@/utils";
-import { readFileAsync } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import type { EditState } from "./useTempEditState";
@@ -581,36 +588,28 @@ const showOverwriteConfirmDialog = () => {
   });
 };
 
-const handleUploadAndOverwrite = async (event: Event) => {
-  if (state.isUploadingFile) {
+const handleUpdateStatementAndOverwrite = async (
+  statement: string,
+  filename: string
+) => {
+  try {
+    await showOverwriteConfirmDialog();
+  } catch (error) {
     return;
   }
-  try {
-    state.isUploadingFile = true;
-    await showOverwriteConfirmDialog();
-    const { filename, content: statement } = await readFileAsync(event, 100);
-    state.isEditing = true;
-    state.statement = statement;
-    handleStatementChange(statement);
-    if (sheet.value) {
-      sheet.value.title = filename;
-    }
 
-    resetTempEditState();
-  } finally {
-    state.isUploadingFile = false;
-  }
+  state.isEditing = true;
+  state.statement = statement;
+  await handleUpdateStatement(statement, filename);
 };
 
-const handleUploadFile = async (event: Event) => {
+const handleUpdateStatement = async (statement: string, filename: string) => {
   try {
     state.isUploadingFile = true;
-    const { filename, content: statement } = await readFileAsync(event, 100);
     handleStatementChange(statement);
     if (sheet.value) {
       sheet.value.title = filename;
     }
-
     resetTempEditState();
   } finally {
     state.isUploadingFile = false;

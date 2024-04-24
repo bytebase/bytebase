@@ -51,6 +51,12 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 	if v := find.EnvironmentID; v != nil {
 		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
+	query := `
+		SELECT
+			count(1)
+		FROM instance
+		LEFT JOIN environment ON environment.resource_id = instance.environment
+		WHERE ` + strings.Join(where, " AND ")
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -58,17 +64,8 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 	}
 	defer tx.Rollback()
 
-	query := `
-		SELECT
-			count(1)
-		FROM instance
-		WHERE ` + strings.Join(where, " AND ")
 	var count int
-	if err := tx.QueryRowContext(ctx, query,
-		args...).Scan(&count); err != nil {
-		if err == sql.ErrNoRows {
-			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
 		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -90,9 +87,9 @@ func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
 			count(1)
 		FROM principal
 		LEFT JOIN member ON principal.id = member.principal_id
-		WHERE (principal.type = $1 OR principal.type = $2) AND member.row_status = $3`
+		WHERE principal.row_status = $1 AND (principal.type = $2 OR principal.type = $3) AND member.row_status = $4`
 	var count int
-	if err := tx.QueryRowContext(ctx, query, api.EndUser, api.ServiceAccount, api.Normal).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, query, api.Normal, api.EndUser, api.ServiceAccount, api.Normal).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 		}

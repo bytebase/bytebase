@@ -26,7 +26,6 @@
             :readonly="!allowEdit"
             :is-sheet-oversize="isSheetOversize"
             class="flex-1 overflow-hidden relative"
-            @upload="handleUploadEvent"
           />
         </div>
         <div
@@ -72,7 +71,6 @@ import { pushNotification, useSheetV1Store } from "@/store";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   getSheetStatement,
-  readFileAsync,
   setSheetStatement,
   getStatementSize,
 } from "@/utils";
@@ -132,15 +130,6 @@ const reset = () => {
     statement.value = "";
   } else {
     statement.value = getSheetStatement(sheet.value);
-  }
-};
-
-const handleUploadEvent = async (e: Event) => {
-  try {
-    const { content } = await readFileAsync(e, 100);
-    statement.value = content;
-  } finally {
-    // Nothing
   }
 };
 

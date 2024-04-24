@@ -1,12 +1,18 @@
 <template>
-  <component :is="drawer ? DrawerContent : 'div'" v-bind="bindings">
-    <div class="space-y-6 divide-y divide-block-border">
+  <component
+    :is="drawer ? DrawerContent : 'div'"
+    v-bind="{
+      ...$attrs,
+      ...bindings,
+    }"
+  >
+    <div class="space-y-6">
       <div class="divide-y divide-block-border w-[850px]">
         <InstanceEngineRadioGrid
           v-if="isCreating"
           :engine="basicInfo.engine"
           :engine-list="EngineList"
-          class="w-full mt-4 mb-6 grid-cols-4 gap-2"
+          class="w-full mb-6 grid-cols-4 gap-2"
           @update:engine="changeInstanceEngine"
         >
           <template #suffix="{ engine }: { engine: Engine }">
@@ -88,23 +94,16 @@
             <span class="text-red-600 ml-0.5">*</span>
             <EnvironmentSelect
               class="mt-1 w-full"
-              :disabled="!isCreating"
               required="true"
               :environment="
                 environment.uid === String(UNKNOWN_ID)
                   ? undefined
                   : environment.uid
               "
+              :disabled="!allowEdit"
               @update:environment="handleSelectEnvironmentUID"
             />
           </div>
-
-          <OracleSyncModeInput
-            v-if="basicInfo.engine === Engine.ORACLE"
-            :schema-tenant-mode="basicInfo.options?.schemaTenantMode ?? false"
-            :allow-edit="allowEdit"
-            @update:schema-tenant-mode="changeSyncMode"
-          />
 
           <div class="sm:col-span-3 sm:col-start-1">
             <template v-if="basicInfo.engine !== Engine.SPANNER">
@@ -117,6 +116,24 @@
                     class="text-sm"
                   />
                 </template>
+                <div
+                  v-else-if="
+                    adminDataSource.authenticationType ===
+                    DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+                  "
+                >
+                  <span>
+                    {{ $t("instance.sentence.google-cloud-sql.instance-name") }}
+                    <span class="text-red-600 mr-2">*</span>
+                  </span>
+                  <div class="textinfolabel mb-1">
+                    {{
+                      $t(
+                        "instance.sentence.google-cloud-sql.instance-name-tips"
+                      )
+                    }}
+                  </div>
+                </div>
                 <template v-else>
                   {{ $t("instance.host-or-socket") }}
                   <span class="text-red-600 mr-2">*</span>
@@ -147,7 +164,13 @@
             />
           </div>
 
-          <template v-if="basicInfo.engine !== Engine.SPANNER">
+          <template
+            v-if="
+              basicInfo.engine !== Engine.SPANNER &&
+              adminDataSource.authenticationType ===
+                DataSource_AuthenticationType.PASSWORD
+            "
+          >
             <div class="sm:col-span-1">
               <label for="port" class="textlabel block">
                 {{ $t("instance.port") }}
@@ -172,18 +195,18 @@
             >
               {{ $t("data-source.connection-string-schema") }}
             </label>
-            <div class="flex flex-col gap-y-1 mt-1">
+            <NRadioGroup
+              :value="currentMongoDBConnectionSchema"
+              @update:value="handleMongodbConnectionStringSchemaChange"
+            >
               <NRadio
                 v-for="type in MongoDBConnectionStringSchemaList"
                 :key="type"
-                :checked="type === currentMongoDBConnectionSchema"
-                @update:checked="
-                  handleMongodbConnectionStringSchemaChange(type, $event)
-                "
+                :value="type"
               >
                 <span class="textlabel">{{ type }}</span>
               </NRadio>
-            </div>
+            </NRadioGroup>
           </div>
 
           <ScanIntervalInput
@@ -273,23 +296,29 @@
       </div>
 
       <!-- Action Button Group -->
-      <div v-if="!drawer" class="pt-4">
-        <div class="w-full flex justify-between items-center">
-          <InstanceArchiveRestoreButton
-            v-if="!isCreating && instance"
-            :instance="instance as ComposedInstance"
-          />
+      <template v-if="!drawer">
+        <InstanceArchiveRestoreButton
+          v-if="!isCreating && instance"
+          :instance="instance as ComposedInstance"
+        />
+
+        <div
+          v-if="valueChanged && allowEdit"
+          class="w-full mt-4 py-4 border-t border-block-border flex justify-between bg-white sticky -bottom-4 z-10"
+        >
+          <NButton @click.prevent="resetChanges">
+            <span> {{ $t("common.cancel") }}</span>
+          </NButton>
           <NButton
-            v-if="allowEdit"
             :disabled="!allowUpdate || state.isRequesting"
             :loading="state.isRequesting"
             type="primary"
             @click.prevent="doUpdate"
           >
-            {{ $t("common.update") }}
+            {{ $t("common.confirm-and-update") }}
           </NButton>
         </div>
-      </div>
+      </template>
     </div>
 
     <template v-if="drawer" #footer>
@@ -337,9 +366,8 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual, omit } from "lodash-es";
-import { NButton, NInput, NSwitch } from "naive-ui";
+import { NButton, NInput, NSwitch, NRadioGroup, NRadio } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import type { PropType } from "vue";
 import { computed, reactive, ref, watch, onMounted, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -374,6 +402,7 @@ import {
   InstanceOptions,
   DataSourceExternalSecret_SecretType,
   DataSourceExternalSecret_AuthType,
+  DataSource_AuthenticationType,
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
@@ -386,7 +415,6 @@ import {
 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
-import OracleSyncModeInput from "./OracleSyncModeInput.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
 import type { EditDataSource } from "./common";
@@ -400,16 +428,10 @@ import {
 import { provideInstanceFormContext } from "./context";
 import { useInstanceSpecs } from "./specs";
 
-const props = defineProps({
-  instance: {
-    type: Object as PropType<Instance>,
-    default: undefined,
-  },
-  drawer: {
-    type: Boolean,
-    default: false,
-  },
-});
+const props = defineProps<{
+  instance?: Instance;
+  drawer?: boolean;
+}>();
 
 const emit = defineEmits(["dismiss"]);
 
@@ -576,6 +598,12 @@ const allowCreate = computed(() => {
   );
 });
 
+const resetChanges = () => {
+  const original = getOriginalEditState();
+  basicInfo.value = cloneDeep(original.basicInfo);
+  dataSourceEditState.value.dataSources = cloneDeep(original.dataSources);
+};
+
 const valueChanged = computed(() => {
   const original = getOriginalEditState();
   const editing = {
@@ -622,6 +650,7 @@ const handleSelectEnvironmentUID = (uid: string | undefined) => {
 // The default host name is 127.0.0.1 or host.docker.internal which is not applicable to Snowflake, so we change
 // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
 const changeInstanceEngine = (engine: Engine) => {
+  context.resetDataSource();
   if (engine === Engine.SNOWFLAKE || engine === Engine.SPANNER) {
     if (
       adminDataSource.value.host === "127.0.0.1" ||
@@ -639,12 +668,6 @@ const changeInstanceEngine = (engine: Engine) => {
   basicInfo.value.engine = engine;
 };
 
-const changeSyncMode = (schemaTenantMode: boolean) => {
-  if (!basicInfo.value.options) {
-    basicInfo.value.options = InstanceOptions.fromJSON({});
-  }
-  basicInfo.value.options.schemaTenantMode = schemaTenantMode;
-};
 const changeScanInterval = (duration: Duration | undefined) => {
   if (!basicInfo.value.options) {
     basicInfo.value.options = InstanceOptions.fromPartial({});
@@ -658,11 +681,7 @@ const changeMaximumConnections = (maximumConnections: number) => {
   basicInfo.value.options.maximumConnections = maximumConnections;
 };
 
-const handleMongodbConnectionStringSchemaChange = (
-  type: string,
-  on: boolean
-) => {
-  if (!on) return;
+const handleMongodbConnectionStringSchemaChange = (type: string) => {
   const ds = editingDataSource.value;
   if (!ds) return;
   switch (type) {
@@ -709,7 +728,7 @@ const validateResourceId = async (
   return [];
 };
 
-const updateEditState = async (instance: Instance) => {
+const updateEditState = (instance: Instance) => {
   basicInfo.value = extractBasicInfo(instance);
   const updatedEditState = extractDataSourceEditState(instance);
   dataSourceEditState.value.dataSources = updatedEditState.dataSources;
@@ -826,11 +845,8 @@ const doUpdate = async () => {
     if (instancePatch.activation !== instance.activation) {
       updateMask.push("activation");
     }
-    if (
-      instancePatch.options?.schemaTenantMode !==
-      instance.options?.schemaTenantMode
-    ) {
-      updateMask.push("options.schema_tenant_mode");
+    if (instancePatch.environment !== instance.environment) {
+      updateMask.push("environment");
     }
     if (
       instancePatch.options?.syncInterval?.seconds?.toNumber() !==
@@ -843,6 +859,9 @@ const doUpdate = async () => {
       instance.options?.maximumConnections
     ) {
       updateMask.push("options.maximum_connections");
+    }
+    if (updateMask.length === 0) {
+      return;
     }
     return await instanceV1Store.updateInstance(instancePatch, updateMask);
   };
@@ -895,7 +914,7 @@ const doUpdate = async () => {
       await maybeUpdateAdminDataSource();
       await maybeUpsertReadonlyDataSources();
       const updatedInstance = instanceV1Store.getInstanceByName(instance.name);
-      await updateEditState(updatedInstance);
+      updateEditState(updatedInstance);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -929,16 +948,15 @@ const testConnection = async (
     return { success: true, message: "" };
   };
   const fail = (host: string, err: unknown) => {
-    const error = extractGrpcErrorMessage(err);
+    let error = extractGrpcErrorMessage(err);
     if (!silent) {
-      let title = t("instance.failed-to-connect-instance");
       if (host === "localhost" || host === "127.0.0.1") {
-        title = t("instance.failed-to-connect-instance-localhost");
+        error = `${error}\n\n${t("instance.failed-to-connect-instance-localhost")}`;
       }
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title,
+        title: t("instance.failed-to-connect-instance"),
         description: error,
         // Manual hide, because user may need time to inspect the error
         manualHide: true,
@@ -1139,6 +1157,20 @@ const checkExternalSecretFeature = (instance: Instance) => {
 
 const checkDataSource = (dataSources: DataSource[]) => {
   return dataSources.every((ds) => {
+    if (
+      ds.authenticationType ===
+      DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+    ) {
+      // CloudSQL instance name should be {project}:{region}:{cloud sql name}
+      return /.+:.+:.+/.test(ds.host);
+    }
+
+    if (basicInfo.value.engine === Engine.ORACLE) {
+      if (!ds.sid && !ds.serviceName) {
+        return false;
+      }
+    }
+
     if (!ds.externalSecret) {
       return true;
     }

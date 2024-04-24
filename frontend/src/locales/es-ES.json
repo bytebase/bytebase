@@ -572,7 +572,7 @@
         "user-info-url-description": "La dirección API para obtener la información del usuario mediante el token de acceso",
         "security-protocol": "Protocolo de seguridad",
         "connection-security": "Seguridad de la conexión",
-        "connection-security-skip-tls-verify": "Omitir verificación TLS para certificados autofirmados",
+        "connection-security-skip-tls-verify": "Omitir verificación TLS",
         "user-information-mapping": "Mapeo de información del usuario",
         "user-information-mapping-description": "Mapea los nombres de campo de la API de información del usuario al usuario Bytebase.",
         "identifier": "Correo electrónico de usuario de Bytebase",
@@ -913,7 +913,8 @@
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "cambiado {name}. \n{link}",
-      "prior-back-table": "Copia de seguridad de datos en la base de datos {database} y tablas {tables}"
+      "prior-back-table": "Copia de seguridad de datos en la base de datos {database} y tablas {tables}",
+      "prior-back-table-for-line": "Copia de seguridad de datos en la base de datos {database} y la tabla {tables} para DML en la línea {line}"
     },
     "subject-prefix": {
       "task": "Tarea",
@@ -1111,6 +1112,12 @@
       "tooltip": "Los aprobadores revisarán y aprobarán el problema en el orden especificado en el flujo. \nLa emisión solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. \nPuede configurar un flujo de aprobación personalizado para cada riesgo.",
       "pre-issue-created-tips": "Después de crear un problema, Bytebase coincidirá automáticamente con la aprobación personalizada correspondiente según el tipo y nivel de riesgo del problema."
     },
+    "risk-level": {
+      "self": "Nivel de riesgo",
+      "low": "Bajo",
+      "moderate": "Moderado",
+      "high": "Alto"
+    },
     "waiting-to-rollout": "Esperando para implementar",
     "waiting-for-review": "Esperando revisión",
     "issue-name": "Nombre de la incidencia",
@@ -1183,6 +1190,9 @@
       "format": "Formato",
       "encrypt": "Cifrar",
       "file-downloaded": "Archivo Descargado"
+    },
+    "update-rollout-time": {
+      "self": "Hora de implementación de la actualización"
     }
   },
   "alter-schema": {
@@ -1250,7 +1260,9 @@
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
-    "create": "Crear base de datos"
+    "create": "Crear base de datos",
+    "procedures": "Trámites",
+    "partitions": "Particiones"
   },
   "instance": {
     "select": "Seleccionar instancia",
@@ -1312,28 +1324,32 @@
       "create-readonly-user": "Esta es la conexión utilizada por Bytebase para realizar operaciones de solo lectura como la consulta SELECT.",
       "create-admin-user-non-sql": "Este es el usuario de conexión utilizado por Bytebase para realizar operaciones de escritura y administración.",
       "create-readonly-user-non-sql": "Esta es la conexión utilizada por Bytebase para realizar operaciones de solo lectura.",
+      "google-cloud-sql": {
+        "instance-name": "Nombre de conexión de instancia",
+        "instance-name-tips": "El nombre de la conexión de la instancia debería ser project-id:region:instance-name.",
+        "mysql": {
+          "template": "Cree una cuenta de servicio llamada {user} y luego agréguela en su Google Cloud SQL como usuario de IAM {user}{'@'}'%'. Otorgue a este usuario los privilegios necesarios."
+        },
+        "postgresql": {
+          "template": "Cree una cuenta de servicio llamada {user} y luego agréguela en su Google Cloud SQL como usuario de IAM {user}{'@'}project-id.iam. Otorgue al usuario los privilegios necesarios."
+        }
+      },
       "create-user-example": {
         "snowflake": {
-          "user": "bytebase{'@'}%",
-          "password": "SU_CONTRASEÑA_DE_BD",
           "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {password} para {warehouse} y otorgar al usuario los privilegios necesarios."
         },
         "mysql": {
-          "password": "SU_CONTRASEÑA_DE_BD",
-          "user": "bytebase{'@'}%",
-          "template": "A continuación se muestra un ejemplo para crear el usuario {password} con la contraseña {password} y otorgar al usuario los privilegios necesarios."
+          "template": "A continuación se muestra un ejemplo para crear el usuario {user}{'@'}% con la contraseña {password} y otorgarle al usuario los privilegios necesarios."
         },
         "clickhouse": {
-          "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {password} y otorgar al usuario los privilegios necesarios. Primero debe habilitar el flujo de trabajo impulsado por SQL de ClickHouse {link} y luego ejecutar la siguiente consulta para crear el usuario.",
+          "template": "A continuación se muestra un ejemplo para crear el usuario '{user}' con la contraseña {password} y otorgar al usuario los privilegios necesarios. Primero debe habilitar el flujo de trabajo impulsado por SQL de ClickHouse {link} y luego ejecutar la siguiente consulta para crear el usuario.",
           "sql-driven-workflow": "Flujo de trabajo impulsado por SQL"
         },
         "postgresql": {
           "warn": "Si la instancia de conexión es administrada por el proveedor de la nube, entonces SUPERUSER no está disponible y debes crear el usuario a través de la consola de administración del proveedor. El usuario creado tendrá privilegios semi-SUPERUSER específicos del proveedor. Debes otorgar privilegios de Bytebase con 'GRANT role_name TO bytebase;' para todos los roles existentes, de lo contrario Bytebase puede no tener acceso a las bases de datos o tablas existentes.",
-          "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {password} y otorgar al usuario los privilegios necesarios. Si la instancia de conexión está alojada por ti mismo, puedes otorgar SUPERUSER."
+          "template": "A continuación se muestra un ejemplo para crear el usuario '{user}' con la contraseña {password} y otorgar al usuario los privilegios necesarios. Si la instancia de conexión está alojada por ti mismo, puedes otorgar SUPERUSER."
         },
         "redis": {
-          "password": "TU_DB_PWD",
-          "user": "bytebase",
           "template": "A continuación se muestra un ejemplo para crear el usuario {user} con la contraseña {password} y otorgar al usuario los privilegios necesarios."
         }
       }
@@ -1345,6 +1361,7 @@
     "password-type": {
       "password": "Contraseña",
       "password-tip": "También puede especificar un punto final de gestión de secreto externo",
+      "google-iam": "Google CloudSQL IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
@@ -1393,7 +1410,7 @@
     "copy-grant-statement": "Se ha copiado la declaración CREATE USER y GRANT al portapapeles. Pegue en su cliente de {engine} para aplicar.",
     "successfully-connected-instance": "Instancia conectada correctamente.",
     "failed-to-connect-instance": "Error al conectar la instancia.",
-    "failed-to-connect-instance-localhost": "Error al conectar la instancia.\nSi ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
+    "failed-to-connect-instance-localhost": "Si ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
     "filter-instance-name": "Filtrar nombre de instancia",
     "grants": "Concesiones",
     "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
@@ -1637,13 +1654,12 @@
     "select-databases-from-same-project": "Por favor seleccione bases de datos del mismo proyecto",
     "sync-schema": {
       "title": "Sincronizar esquema",
-      "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino",
+      "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, TiDB, Oracle)",
       "schema-history-version": "Versión del historial de esquema",
       "copy-schema": "Copiar esquema",
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
       "select-project": "Seleccione el proyecto",
-      "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB, Oracle)",
       "source-database": "Base de datos de origen",
       "source-schema": "Esquema de origen",
       "schema-version": {
@@ -1733,7 +1749,7 @@
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
     "database-group-description": "Por defecto, los cambios se aplicarán a todas las bases de datos dentro del proyecto. Alternativamente, pueden aplicarse al grupo de bases de datos.",
     "base-directory": "Directorio base",
-    "base-directory-description": "El directorio raíz donde Bytebase observa el cambio de archivo.",
+    "base-directory-description": "El directorio raíz donde Bytebase observa el cambio del archivo. Utilice \"/\" si los archivos están almacenados en el directorio raíz del repositorio.",
     "merge-request": "solicitud de extracción",
     "pull-request": "solicitud de extracción",
     "git-provider": "Proveedor de Git",
@@ -1972,7 +1988,7 @@
       "description": "En el flujo de trabajo GitOps de Bytebase, los desarrolladores almacenan scripts de migración en VCS. Las solicitudes de extracción provocan revisiones SQL, y las fusionadas inician planes de migración. Los administradores configuran proveedores de VCS, mientras que los propietarios del proyecto establecen conexiones de VCS dentro de los proyectos.",
       "add-git-provider": {
         "self": "Agregar un proveedor de Git",
-        "description": "Antes de que cualquier proyecto pueda habilitar el flujo de trabajo de GitOps, Bytebase primero debe integrarse con el sistema de control de versiones (VCS) correspondiente registrándose como una aplicación OAuth en ese VCS. A continuación se muestran los pasos para configurar esto, también puede seguir nuestra {guide}.",
+        "description": "Antes de que cualquier proyecto pueda habilitar el flujo de trabajo de GitOps, Bytebase primero debe integrarse con el sistema de control de versiones (VCS) correspondiente registrándose como una aplicación OAuth en ese VCS.",
         "gitlab-self-host": "GitLab autohospedado",
         "gitlab-self-host-admin-requirement": "Debes ser administrador de la instancia de GitLab.",
         "gitlab-com-admin-requirement": "Debes ser administrador de los proyectos o grupos.",
@@ -1997,6 +2013,7 @@
         "access-token": {
           "self": "Información de aplicación OAuth",
           "personal-access-token": "ficha de acceso personal",
+          "github-fine-grained-token": "token de acceso personal detallado",
           "gitlab-personal-access-token": "Cree un usuario de servicio dedicado y genere un {token} con el rol de mantenedor y al menos los siguientes permisos para el grupo o proyectos que se administrarán. Puede generar un token de acceso al proyecto para administrar un solo proyecto o generar un token de acceso grupal para administrar todos los proyectos dentro del grupo.",
           "github-personal-access-token": "Cree un usuario de servicio dedicado y genere un {token} con el rol de miembro de la organización o de todos los proyectos que se administrarán.",
           "bitbucket-app-access-token": "Genere un usuario de servicio específico y cree una {app_password} con al menos los siguientes permisos para que las organizaciones, proyectos o repositorios relevantes los administren. Inserte '<nombre de usuario de bitbucket>:<contraseña de aplicación generada>' a continuación.",
@@ -2243,7 +2260,8 @@
     "click-to-sync-now": "Haga clic para sincronizar ahora",
     "sync-in-progress": "Sincronización en progreso",
     "create-a-worksheet": "Crear una hoja de trabajo",
-    "select-a-database-to-start": "Seleccione una base de datos para comenzar"
+    "select-a-database-to-start": "Seleccione una base de datos para comenzar",
+    "select-encoding": "Seleccionar codificación"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2335,7 +2353,15 @@
       "edit-indexes": "Editar índices",
       "unique": "Único"
     },
-    "generated-ddl-is-empty": "El DDL generado está vacío"
+    "generated-ddl-is-empty": "El DDL generado está vacío",
+    "table-partition": {
+      "partitions": "Particiones",
+      "edit-partitions": "Editar particiones",
+      "expression": "Expresión",
+      "value": "Valor",
+      "add-sub-partition": "Agregar subpartición",
+      "type": "Tipo"
+    }
   },
   "label": {
     "empty-label-value": "Valor",
@@ -3403,6 +3429,10 @@
     "schema-text": "Texto del esquema",
     "baseline": "Base",
     "head": "Cabeza",
-    "show-diff-with-branch-baseline": "Mostrar diferencia con la línea base de la rama"
+    "show-diff-with-branch-baseline": "Mostrar diferencia con la línea base de la rama",
+    "table-partition": {
+      "drop-partition-confirm": "¿Eliminar partición de mesa?",
+      "drop-partition-with-subpartitions-confirm": "También eliminará todas sus subparticiones."
+    }
   }
 }

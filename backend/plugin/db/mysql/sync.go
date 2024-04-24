@@ -122,6 +122,22 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}, nil
 }
 
+func (driver *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
+	db := driver.GetDB()
+	query := fmt.Sprintf("SHOW VARIABLES LIKE '%s'", varName)
+	var varNameFound, value string
+	if err := db.QueryRowContext(ctx, query).Scan(&varNameFound, &value); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	if varName != varNameFound {
+		return "", errors.Errorf("expecting variable %s, but got %s", varName, varNameFound)
+	}
+	return value, nil
+}
+
 // SyncDBSchema syncs a single database schema.
 func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
@@ -779,20 +795,15 @@ func (driver *Driver) listPartitionTables(ctx context.Context, databaseName stri
 			}
 			// For the key partition, it can take zero or more columns, the partition expression is null if taken zero columns.
 			expression := ""
-			if partitionExpression.Valid {
+			if subpartitionExpression.Valid {
 				expression = subpartitionExpression.String
-			}
-
-			value := ""
-			if partitionDescription.Valid {
-				value = partitionDescription.String
 			}
 
 			subPartition := &storepb.TablePartitionMetadata{
 				Name:          subpartitionName.String,
 				Type:          tp,
 				Expression:    expression,
-				Value:         value,
+				Value:         "",
 				Subpartitions: []*storepb.TablePartitionMetadata{},
 			}
 

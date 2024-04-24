@@ -114,7 +114,7 @@ import type { Ref } from "vue";
 import { computed, unref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RouteLocationRaw } from "vue-router";
-import { ISSUE_ROUTE_DETAIL } from "@/router/dashboard/issue";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   DATABASE_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
@@ -180,8 +180,9 @@ const introList = computed(() => {
     {
       name: computed(() => t("quick-start.view-an-issue")),
       link: {
-        name: ISSUE_ROUTE_DETAIL,
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
+          projectId: sampleProject.value?.uid,
           issueSlug: "101",
         },
       },
@@ -218,7 +219,6 @@ const introList = computed(() => {
         name: PROJECT_V1_ROUTE_DASHBOARD,
       },
       done: computed(() => uiStateStore.getIntroStateByKey("project.visit")),
-      requiredPermissions: ["bb.projects.list"],
     },
     {
       name: computed(() => t("quick-start.visit-environment")),
@@ -236,7 +236,6 @@ const introList = computed(() => {
         name: INSTANCE_ROUTE_DASHBOARD,
       },
       done: computed(() => uiStateStore.getIntroStateByKey("instance.visit")),
-      requiredPermissions: ["bb.instances.list"],
     },
     {
       name: computed(() => t("quick-start.visit-database")),

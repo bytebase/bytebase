@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -26,15 +25,41 @@ type IssueCommentMessage struct {
 }
 
 type FindIssueCommentMessage struct {
+	UID      *int
 	IssueUID *int
 
 	Limit  *int
 	Offset *int
 }
 
+type UpdateIssueCommentMessage struct {
+	UID       int
+	UpdaterID int
+
+	Comment *string
+}
+
+func (s *Store) GetIssueComment(ctx context.Context, find *FindIssueCommentMessage) (*IssueCommentMessage, error) {
+	list, err := s.ListIssueComment(ctx, find)
+	if err != nil {
+		return nil, err
+	}
+	if len(list) == 0 {
+		return nil, nil
+	}
+	if len(list) > 1 {
+		return nil, errors.Errorf("found %d issue comment, expected 1", len(list))
+	}
+	return list[0], nil
+}
+
 func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMessage) ([]*IssueCommentMessage, error) {
 	where := []string{"TRUE"}
 	args := []any{}
+	if v := find.UID; v != nil {
+		where = append(where, fmt.Sprintf("id = $%d", len(args)+1))
+		args = append(args, *v)
+	}
 	if v := find.IssueUID; v != nil {
 		where = append(where, fmt.Sprintf("issue_id = $%d", len(args)+1))
 		args = append(args, *v)
@@ -107,9 +132,6 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 }
 
 func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID int, tasks []string, status storepb.IssueCommentPayload_TaskUpdate_Status, creatorUID int) error {
-	if s.db.mode == common.ReleaseModeProd {
-		return nil
-	}
 	create := &IssueCommentMessage{
 		IssueUID: issueUID,
 		Payload: &storepb.IssueCommentPayload{
@@ -126,9 +148,6 @@ func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID
 }
 
 func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMessage, creatorUID int) error {
-	if s.db.mode == common.ReleaseModeProd {
-		return nil
-	}
 	query := `
 		INSERT INTO issue_comment (
 			creator_id,
@@ -155,19 +174,15 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 	return nil
 }
 
-func (s *Store) UpdateIssueComment(ctx context.Context, comment string, uid int, updaterUID int) error {
-	if s.db.mode == common.ReleaseModeProd {
-		return nil
+func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommentMessage) error {
+	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
+
+	if v := patch.Comment; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = payload || jsonb_build_object('comment',$%d::TEXT)", len(args)+1)), append(args, *v)
 	}
-	query := `
-		UPDATE issue_comment
-		SET 
-			updater_id = $1,
-			updated_ts = $2
-			payload = payload || jsonb_build_object('comment', $3)
-		WHERE id = $4
-	`
-	if _, err := s.db.db.ExecContext(ctx, query, updaterUID, time.Now().Unix(), comment, uid); err != nil {
+	args = append(args, patch.UID)
+	query := `UPDATE issue_comment SET ` + strings.Join(set, ", ") + fmt.Sprintf(` WHERE id = $%d`, len(args))
+	if _, err := s.db.db.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to update issue comment")
 	}
 	return nil

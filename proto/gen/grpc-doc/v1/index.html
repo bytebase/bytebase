@@ -273,6 +273,37 @@
         
           
           <li>
+            <a href="#v1%2faudit_log_service.proto">v1/audit_log_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.AuditLog"><span class="badge">M</span>AuditLog</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchAuditLogsRequest"><span class="badge">M</span>SearchAuditLogsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchAuditLogsResponse"><span class="badge">M</span>SearchAuditLogsResponse</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.AuditLog.Severity"><span class="badge">E</span>AuditLog.Severity</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.AuditLogService"><span class="badge">S</span>AuditLogService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2fcommon.proto">v1/common.proto</a>
             <ul>
               
@@ -431,6 +462,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.KerberosConfig"><span class="badge">M</span>KerberosConfig</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListInstancesRequest"><span class="badge">M</span>ListInstancesRequest</a>
                 </li>
               
@@ -439,7 +474,15 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.PlainSASLConfig"><span class="badge">M</span>PlainSASLConfig</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.RemoveDataSourceRequest"><span class="badge">M</span>RemoveDataSourceRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SASLConfig"><span class="badge">M</span>SASLConfig</a>
                 </li>
               
                 <li>
@@ -474,6 +517,10 @@
                   <a href="#bytebase.v1.UpdateInstanceRequest"><span class="badge">M</span>UpdateInstanceRequest</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.v1.DataSource.AuthenticationType"><span class="badge">E</span>DataSource.AuthenticationType</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType"><span class="badge">E</span>DataSourceExternalSecret.AppRoleAuthOption.SecretType</a>
@@ -3468,6 +3515,302 @@ e.g. the database schema had been changed without bytebase migration.</p></td>
     
       
       <div class="file-heading">
+        <h2 id="v1/audit_log_service.proto">v1/audit_log_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.AuditLog">AuditLog</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the log.
+Formats:
+- projects/{project}/auditLogs/{uid}
+- workspaces/{workspace}/auditLogs/{uid} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/d@d.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>method</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>e.g. `/bytebase.v1.SQLService/Query`, `bb.project.repository.push` </p></td>
+                </tr>
+              
+                <tr>
+                  <td>severity</td>
+                  <td><a href="#bytebase.v1.AuditLog.Severity">AuditLog.Severity</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The associated resource. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>request</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>JSON-encoded request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>response</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>JSON-encoded response.
+Some fields are omitted because they are too large or contain sensitive information. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#google.rpc.Status">google.rpc.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchAuditLogsRequest">SearchAuditLogsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>order_by</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The order by of the log.
+Only support order by create_time.
+For example:
+ - order_by = &#34;create_time asc&#34;
+ - order_by = &#34;create_time desc&#34; </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of logs to return.
+The service may return fewer than this value.
+If unspecified, at most 100 log entries will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `SearchLogs` call.
+Provide this to retrieve the subsequent page. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchAuditLogsResponse">SearchAuditLogsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>audit_logs</td>
+                  <td><a href="#bytebase.v1.AuditLog">AuditLog</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token to retrieve next page of log entities.
+Pass this value in the page_token field in the subsequent call
+to retrieve the next page of log entities. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.AuditLog.Severity">AuditLog.Severity</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>DEFAULT</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DEBUG</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>INFO</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NOTICE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WARNING</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CRITICAL</td>
+                <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALERT</td>
+                <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EMERGENCY</td>
+                <td>8</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.AuditLogService">AuditLogService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SearchAuditLogs</td>
+                <td><a href="#bytebase.v1.SearchAuditLogsRequest">SearchAuditLogsRequest</a></td>
+                <td><a href="#bytebase.v1.SearchAuditLogsResponse">SearchAuditLogsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>SearchAuditLogs</td>
+                <td>GET</td>
+                <td>/v1/logs:search</td>
+                <td></td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
         <h2 id="v1/common.proto">v1/common.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -4777,6 +5120,20 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>authentication_type</td>
+                  <td><a href="#bytebase.v1.DataSource.AuthenticationType">DataSource.AuthenticationType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sasl_config</td>
+                  <td><a href="#bytebase.v1.SASLConfig">SASLConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5066,14 +5423,6 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
             <tbody>
               
                 <tr>
-                  <td>schema_tenant_mode</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>The schema tenant mode is used to determine whether the instance is in schema tenant mode.
-For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema. </p></td>
-                </tr>
-              
-                <tr>
                   <td>sync_interval</td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
@@ -5136,6 +5485,65 @@ The default is 10 if the value is unset or zero. </p></td>
                 <tr>
                   <td>activation</td>
                   <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.KerberosConfig">KerberosConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>primary</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>instance</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>realm</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>keytab</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kdc_host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kdc_transport_protocol</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -5233,6 +5641,37 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
+        <h3 id="bytebase.v1.PlainSASLConfig">PlainSASLConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.RemoveDataSourceRequest">RemoveDataSourceRequest</h3>
         <p></p>
 
@@ -5257,6 +5696,37 @@ Format: instances/{instance} </p></td>
                   <td></td>
                   <td><p>Identified by data source ID.
 Only READ_ONLY data source can be removed. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SASLConfig">SASLConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>krb_config</td>
+                  <td><a href="#bytebase.v1.KerberosConfig">KerberosConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>plain_config</td>
+                  <td><a href="#bytebase.v1.PlainSASLConfig">PlainSASLConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -5487,6 +5957,35 @@ Format: instances/{instance} </p></td>
         
       
 
+      
+        <h3 id="bytebase.v1.DataSource.AuthenticationType">DataSource.AuthenticationType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTHENTICATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PASSWORD</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GOOGLE_CLOUD_SQL_IAM</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</h3>
         <p></p>
@@ -7355,7 +7854,16 @@ the call that provided the page token. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The filter of the change histories.
-Follow the CEL syntax.
+follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+Support filter by type, source or table.
+For example:
+table = &#34;tableExists(&#39;{database}&#39;, &#39;{schema}&#39;, &#39;{table}&#39;)&#34;
+table = &#34;tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table1&#39;) || tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table2&#39;)&#34;
+type = &#34;MIGRATE | DATA&#34;
+source = &#34;UI&#34;
+source = &#34;VCS&#34;
+
+The table filter follow the CEL syntax.
 currently, we have one function for CEL:
 - tableExists(database, schema, table): return true if the table exists in changed resources.
 
@@ -13693,6 +14201,20 @@ Keys are the following:
                   <td>tables</td>
                   <td><a href="#bytebase.v1.IssueComment.TaskPriorBackup.Table">IssueComment.TaskPriorBackup.Table</a></td>
                   <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>original_line</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
                   <td><p> </p></td>
                 </tr>
               

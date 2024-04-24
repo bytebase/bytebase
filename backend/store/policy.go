@@ -387,6 +387,7 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, crea
 			ON CONFLICT(resource_type, resource_id, type) DO UPDATE SET
 				inherit_from_parent = EXCLUDED.inherit_from_parent,
 				payload = EXCLUDED.payload,
+				updated_ts = extract(epoch from now()),
 				row_status = EXCLUDED.row_status
 			RETURNING id
 		`,

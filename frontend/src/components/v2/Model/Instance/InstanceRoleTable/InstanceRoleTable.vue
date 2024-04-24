@@ -4,6 +4,7 @@
     :column-list="columnList"
     :data-source="instanceRoleList"
     :row-clickable="false"
+    v-bind="$attrs"
   >
     <template #item="{ item: instanceRole }: { item: InstanceRole }">
       <div class="bb-grid-cell">

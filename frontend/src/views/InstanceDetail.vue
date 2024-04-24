@@ -32,15 +32,20 @@
 
     <NTabs>
       <NTabPane name="OVERVIEW" :tab="$t('common.overview')">
-        <InstanceForm :instance="instance" />
+        <InstanceForm class="-mt-2" :instance="instance" />
       </NTabPane>
       <NTabPane name="DATABASES" :tab="$t('common.databases')">
-        <DatabaseV1Table
-          mode="INSTANCE"
-          table-class="border"
-          :scroll-on-page-change="false"
-          :database-list="databaseV1List"
-        />
+        <div class="space-y-2">
+          <DatabaseOperations :databases="selectedDatabases" />
+          <DatabaseV1Table
+            mode="INSTANCE"
+            :show-selection="true"
+            :database-list="databaseV1List"
+            :custom-click="true"
+            @row-click="handleDatabaseClick"
+            @update:selected-databases="handleDatabasesSelectionChanged"
+          />
+        </div>
       </NTabPane>
       <NTabPane name="USERS" :tab="$t('instance.users')">
         <InstanceRoleTable :instance-role-list="instanceRoleList" />
@@ -53,8 +58,8 @@
     :title="$t('quick-action.create-db')"
   >
     <CreateDatabasePrepPanel
-      :environment-id="environment?.uid"
-      :instance-id="instance.uid"
+      :environment="environment?.name"
+      :instance="instance.name"
       @dismiss="state.showCreateDatabaseModal = false"
     />
   </Drawer>
@@ -64,13 +69,15 @@
 import { useTitle } from "@vueuse/core";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import type { ClientError } from "nice-grpc-web";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { EngineIcon } from "@/components/Icon";
 import InstanceForm from "@/components/InstanceForm/";
-import { InstanceRoleTable, DatabaseV1Table, Drawer } from "@/components/v2";
+import { InstanceRoleTable, Drawer } from "@/components/v2";
+import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import {
   pushNotification,
   useDBSchemaV1Store,
@@ -80,35 +87,37 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
+import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   instanceV1HasCreateDatabase,
   instanceV1Name,
   hasWorkspacePermissionV2,
   hasWorkspaceLevelProjectPermissionInAnyProject,
+  databaseV1Url,
 } from "@/utils";
 
 interface LocalState {
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
+  selectedDatabaseIds: Set<string>;
 }
 
-const props = defineProps({
-  instanceId: {
-    required: true,
-    type: String,
-  },
-});
+const props = defineProps<{
+  instanceId: string;
+}>();
 
 const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const { t } = useI18n();
+const router = useRouter();
 
 const currentUser = useCurrentUserV1();
 
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
+  selectedDatabaseIds: new Set(),
 });
 
 const instance = computed(() => {
@@ -120,13 +129,6 @@ const environment = computed(() => {
   return useEnvironmentV1Store().getEnvironmentByName(
     instance.value.environment
   );
-});
-
-watchEffect(() => {
-  const filter = `instance = "${instance.value.name}"`;
-  databaseStore.searchDatabases({
-    filter,
-  });
 });
 
 const databaseV1List = computed(() => {
@@ -159,9 +161,8 @@ const syncSchema = async () => {
   state.syncingSchema = true;
   try {
     await instanceV1Store.syncInstance(instance.value).then(() => {
-      const filter = `instance = "${instance.value.name}"`;
       databaseStore.searchDatabases({
-        filter,
+        filter: `instance = "${instance.value.name}"`,
       });
     });
     // Clear the db schema metadata cache entities.
@@ -201,4 +202,29 @@ const createDatabase = () => {
 };
 
 useTitle(instance.value.title);
+
+const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
+  const url = databaseV1Url(database);
+  if (event.ctrlKey || event.metaKey) {
+    window.open(url, "_blank");
+  } else {
+    router.push(url);
+  }
+};
+
+const handleDatabasesSelectionChanged = (
+  selectedDatabaseNameList: Set<string>
+): void => {
+  state.selectedDatabaseIds = new Set(
+    Array.from(selectedDatabaseNameList).map(
+      (name) => databaseStore.getDatabaseByName(name)?.uid
+    )
+  );
+};
+
+const selectedDatabases = computed((): ComposedDatabase[] => {
+  return databaseV1List.value.filter((db) =>
+    state.selectedDatabaseIds.has(db.uid)
+  );
+});
 </script>

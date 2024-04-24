@@ -138,6 +138,7 @@ export const instanceV1HasCreateDatabase = (
   if (engine === Engine.REDIS) return false;
   if (engine === Engine.ORACLE) return false;
   if (engine === Engine.DM) return false;
+  if (engine === Engine.ELASTICSEARCH) return false;
   return true;
 };
 
@@ -166,6 +167,7 @@ export const instanceV1HasSSL = (
     Engine.STARROCKS,
     Engine.DORIS,
     Engine.MONGODB,
+    Engine.ELASTICSEARCH,
   ].includes(engine);
 };
 
@@ -227,6 +229,13 @@ export const instanceV1SupportsConciseSchema = (
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [Engine.ORACLE].includes(engine);
+};
+
+export const instanceV1SupportsTablePartition = (
+  instanceOrEngine: Instance | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return [Engine.MYSQL, Engine.TIDB].includes(engine);
 };
 
 export const engineOfInstanceV1 = (instanceOrEngine: Instance | Engine) => {

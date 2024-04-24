@@ -2,7 +2,7 @@
 <template>
   <div class="space-y-4">
     <div>
-      <div v-if="getWebhookLink !== ''" class="mb-2">
+      <div v-if="!create && getWebhookLink !== ''" class="mb-2">
         <label class="textlabel mt-2">
           <i18n-t keypath="repository.our-webhook-link">
             <template #webhookLink>

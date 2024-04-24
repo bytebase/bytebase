@@ -640,6 +640,24 @@ CREATE INDEX idx_activity_created_ts ON activity(created_ts);
 
 ALTER SEQUENCE activity_id_seq RESTART WITH 101;
 
+CREATE TABLE audit_log (
+    id BIGSERIAL PRIMARY KEY,
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    payload JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_audit_log_created_ts ON audit_log(created_ts);
+
+CREATE INDEX idx_audit_log_payload_parent ON audit_log((payload->>'parent'));
+
+CREATE INDEX idx_audit_log_payload_method ON audit_log((payload->>'method'));
+
+CREATE INDEX idx_audit_log_payload_resource ON audit_log((payload->>'resource'));
+
+CREATE INDEX idx_audit_log_payload_user ON audit_log((payload->>'user'));
+
+ALTER SEQUENCE audit_log_id_seq RESTART WITH 101;
+
 CREATE TABLE issue_comment (
     id BIGSERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
@@ -951,4 +969,13 @@ CREATE TABLE export_archive (
   created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
   bytes BYTEA,
   payload JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE sql_lint_config (
+  id TEXT NOT NULL PRIMARY KEY,
+  creator_id INTEGER NOT NULL REFERENCES principal (id),
+  created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+  updater_id INTEGER NOT NULL REFERENCES principal (id),
+  updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+  config JSONB NOT NULL DEFAULT '{}'
 );

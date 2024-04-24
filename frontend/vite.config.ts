@@ -98,6 +98,7 @@ export default defineConfig({
       ),
       "@public": fileURLToPath(new URL("./public", import.meta.url)),
     },
+    dedupe: ["vscode"],
   },
   envPrefix: "BB_",
 });

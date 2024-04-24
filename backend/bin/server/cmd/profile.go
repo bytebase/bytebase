@@ -22,7 +22,7 @@ func getBaseProfile(dataDir string) config.Profile {
 
 	return config.Profile{
 		ExternalURL:          flags.externalURL,
-		GrpcPort:             flags.port + 1, // Using flags.port + 1 as our gRPC server port.
+		Port:                 flags.port,     // Using flags.port as our gRPC server port.
 		DatastorePort:        flags.port + 2, // Using flags.port + 2 as our datastore port.
 		SampleDatabasePort:   sampleDatabasePort,
 		Readonly:             flags.readonly,
@@ -42,5 +42,6 @@ func getBaseProfile(dataDir string) config.Profile {
 		Lsp:                  flags.lsp,
 		PreUpdateBackup:      flags.preUpdateBackup,
 		ExecuteDetail:        flags.executeDetail,
+		DevelopmentAudit:     flags.developmentAudit,
 	}
 }

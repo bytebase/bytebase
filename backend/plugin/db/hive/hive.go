@@ -29,22 +29,18 @@ func init() {
 }
 
 type Driver struct {
-	config db.ConnectionConfig
-	ctx    db.ConnectionContext
-	conn   *gohive.Connection
+	config   db.ConnectionConfig
+	ctx      db.ConnectionContext
+	connPool *FixedConnPool
+	conn     *gohive.Connection
 }
 
 var (
 	_          db.Driver = (*Driver)(nil)
-	connPool   *FixedConnPool
-	numMaxConn = 5
+	numMaxConn           = 5
 )
 
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	// field legality check.
-	if config.Username == "" {
-		return nil, errors.Errorf("user not set")
-	}
 	if config.Host == "" {
 		return nil, errors.Errorf("hostname not set")
 	}
@@ -52,29 +48,21 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	d.config = config
 	d.ctx = config.ConnectionContext
 
-	// initialize database connection.
-	configuration := gohive.NewConnectConfiguration()
-	configuration.Database = config.Database
-	port, err := strconv.Atoi(config.Port)
-	if err != nil {
-		return nil, errors.Errorf("conversion failure for 'port' [string -> int]")
-	}
-
-	// TODO(tommy): actually there are various kinds of authentication to choose among [SASL, KERBEROS, NOSASL, PLAIN SASL]
-	// "NONE" refers to PLAIN SASL that doesn't need authentication.
-	if connPool == nil {
-		pool, err := CreateHiveConnPool(numMaxConn, ConnPoolConfig{
-			Host:   config.Host,
-			Port:   port,
-			Config: configuration,
-		}, PlainSASLConnFactory)
+	if d.connPool == nil {
+		if config.SASLConfig == nil || !config.SASLConfig.Check() {
+			return nil, errors.New("SASL settings error")
+		}
+		if err := config.SASLConfig.InitEnv(); err != nil {
+			return nil, errors.Wrapf(err, "failed to init SASL environment")
+		}
+		pool, err := CreateHiveConnPool(numMaxConn, &config)
 		if err != nil {
 			return nil, err
 		}
-		connPool = pool
+		d.connPool = pool
 	}
 
-	newConn, err := connPool.Get(config.Database)
+	newConn, err := d.connPool.Get(config.Database)
 	if err != nil {
 		return nil, errors.New("failed to get connection from pool")
 	}
@@ -84,7 +72,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 }
 
 func (d *Driver) Close(_ context.Context) error {
-	connPool.Put(d.conn)
+	d.connPool.Put(d.conn)
 	return nil
 }
 
@@ -114,7 +102,7 @@ func (*Driver) GetDB() *sql.DB {
 // Even in Hive's bucketed transaction table, all the statements are committed automatically by
 // the Hive server.
 func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
-	if connPool == nil {
+	if d.connPool == nil {
 		return 0, errors.Errorf("no database connection established")
 	}
 
@@ -256,14 +244,14 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 	return nil, nil
 }
 
-func (*Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if connPool == nil {
+func (d *Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if d.connPool == nil {
 		return nil, errors.Errorf("no database connection established")
 	}
 
 	if conn == nil {
 		var err error
-		conn, err = connPool.Get("")
+		conn, err = d.connPool.Get("")
 		if err != nil {
 			return nil, err
 		}

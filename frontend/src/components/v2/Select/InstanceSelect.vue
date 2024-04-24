@@ -41,6 +41,7 @@ const props = withDefaults(
     includeAll?: boolean;
     includeArchived?: boolean;
     autoReset?: boolean;
+    useResourceId?: boolean;
     filter?: (instance: ComposedInstance, index: number) => boolean;
   }>(),
   {
@@ -50,6 +51,7 @@ const props = withDefaults(
     includeAll: false,
     includeArchived: false,
     autoReset: true,
+    useResourceId: false,
     filter: undefined,
   }
 );
@@ -80,12 +82,16 @@ const rawInstanceList = computed(() => {
   return list;
 });
 
+const getInstanceValue = (instance: ComposedInstance): string => {
+  return props.useResourceId ? instance.name : instance.uid;
+};
+
 const combinedInstanceList = computed(() => {
   let list = rawInstanceList.value.filter((instance) => {
     if (props.includeArchived) return true;
     if (instance.state === State.ACTIVE) return true;
     // ARCHIVED
-    if (instance.uid === props.instance) return true;
+    if (getInstanceValue(instance) === props.instance) return true;
     return false;
   });
 
@@ -93,7 +99,10 @@ const combinedInstanceList = computed(() => {
     list = list.filter(props.filter);
   }
 
-  if (props.instance === String(UNKNOWN_ID) || props.includeAll) {
+  if (
+    props.instance === getInstanceValue(unknownInstance()) ||
+    props.includeAll
+  ) {
     const dummyAll = {
       ...unknownInstance(),
       title: t("instance.all"),
@@ -127,7 +136,7 @@ const options = computed(() => {
   return combinedInstanceList.value.map<InstanceSelectOption>((instance) => {
     return {
       instance,
-      value: instance.uid,
+      value: getInstanceValue(instance),
       label: instance.title,
     };
   });
@@ -146,7 +155,9 @@ const resetInvalidSelection = () => {
   if (
     ready.value &&
     props.instance &&
-    !combinedInstanceList.value.find((item) => item.uid === props.instance)
+    !combinedInstanceList.value.find(
+      (item) => getInstanceValue(item) === props.instance
+    )
   ) {
     emit("update:instance", undefined);
   }

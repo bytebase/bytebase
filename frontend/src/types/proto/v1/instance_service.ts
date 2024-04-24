@@ -237,11 +237,6 @@ export interface SyncSlowQueriesRequest {
 
 /** InstanceOptions is the option for instances. */
 export interface InstanceOptions {
-  /**
-   * The schema tenant mode is used to determine whether the instance is in schema tenant mode.
-   * For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema.
-   */
-  schemaTenantMode: boolean;
   /** How often the instance is synced. */
   syncInterval:
     | Duration
@@ -476,6 +471,47 @@ export interface DataSource {
    */
   authenticationPrivateKey: string;
   externalSecret: DataSourceExternalSecret | undefined;
+  authenticationType: DataSource_AuthenticationType;
+  saslConfig: SASLConfig | undefined;
+}
+
+export enum DataSource_AuthenticationType {
+  AUTHENTICATION_UNSPECIFIED = 0,
+  PASSWORD = 1,
+  GOOGLE_CLOUD_SQL_IAM = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function dataSource_AuthenticationTypeFromJSON(object: any): DataSource_AuthenticationType {
+  switch (object) {
+    case 0:
+    case "AUTHENTICATION_UNSPECIFIED":
+      return DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED;
+    case 1:
+    case "PASSWORD":
+      return DataSource_AuthenticationType.PASSWORD;
+    case 2:
+    case "GOOGLE_CLOUD_SQL_IAM":
+      return DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSource_AuthenticationType.UNRECOGNIZED;
+  }
+}
+
+export function dataSource_AuthenticationTypeToJSON(object: DataSource_AuthenticationType): string {
+  switch (object) {
+    case DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED:
+      return "AUTHENTICATION_UNSPECIFIED";
+    case DataSource_AuthenticationType.PASSWORD:
+      return "PASSWORD";
+    case DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM:
+      return "GOOGLE_CLOUD_SQL_IAM";
+    case DataSource_AuthenticationType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface InstanceResource {
@@ -484,6 +520,25 @@ export interface InstanceResource {
   engineVersion: string;
   dataSources: DataSource[];
   activation: boolean;
+}
+
+export interface SASLConfig {
+  krbConfig?: KerberosConfig | undefined;
+  plainConfig?: PlainSASLConfig | undefined;
+}
+
+export interface KerberosConfig {
+  primary: string;
+  instance: string;
+  realm: string;
+  keytab: string;
+  kdcHost: string;
+  kdcTransportProtocol: string;
+}
+
+export interface PlainSASLConfig {
+  username: string;
+  password: string;
 }
 
 function createBaseGetInstanceRequest(): GetInstanceRequest {
@@ -1691,14 +1746,11 @@ export const SyncSlowQueriesRequest = {
 };
 
 function createBaseInstanceOptions(): InstanceOptions {
-  return { schemaTenantMode: false, syncInterval: undefined, maximumConnections: 0 };
+  return { syncInterval: undefined, maximumConnections: 0 };
 }
 
 export const InstanceOptions = {
   encode(message: InstanceOptions, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.schemaTenantMode === true) {
-      writer.uint32(8).bool(message.schemaTenantMode);
-    }
     if (message.syncInterval !== undefined) {
       Duration.encode(message.syncInterval, writer.uint32(18).fork()).ldelim();
     }
@@ -1715,13 +1767,6 @@ export const InstanceOptions = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.schemaTenantMode = reader.bool();
-          continue;
         case 2:
           if (tag !== 18) {
             break;
@@ -1747,7 +1792,6 @@ export const InstanceOptions = {
 
   fromJSON(object: any): InstanceOptions {
     return {
-      schemaTenantMode: isSet(object.schemaTenantMode) ? globalThis.Boolean(object.schemaTenantMode) : false,
       syncInterval: isSet(object.syncInterval) ? Duration.fromJSON(object.syncInterval) : undefined,
       maximumConnections: isSet(object.maximumConnections) ? globalThis.Number(object.maximumConnections) : 0,
     };
@@ -1755,9 +1799,6 @@ export const InstanceOptions = {
 
   toJSON(message: InstanceOptions): unknown {
     const obj: any = {};
-    if (message.schemaTenantMode === true) {
-      obj.schemaTenantMode = message.schemaTenantMode;
-    }
     if (message.syncInterval !== undefined) {
       obj.syncInterval = Duration.toJSON(message.syncInterval);
     }
@@ -1772,7 +1813,6 @@ export const InstanceOptions = {
   },
   fromPartial(object: DeepPartial<InstanceOptions>): InstanceOptions {
     const message = createBaseInstanceOptions();
-    message.schemaTenantMode = object.schemaTenantMode ?? false;
     message.syncInterval = (object.syncInterval !== undefined && object.syncInterval !== null)
       ? Duration.fromPartial(object.syncInterval)
       : undefined;
@@ -2310,6 +2350,8 @@ function createBaseDataSource(): DataSource {
     sshPrivateKey: "",
     authenticationPrivateKey: "",
     externalSecret: undefined,
+    authenticationType: 0,
+    saslConfig: undefined,
   };
 }
 
@@ -2377,6 +2419,12 @@ export const DataSource = {
     }
     if (message.externalSecret !== undefined) {
       DataSourceExternalSecret.encode(message.externalSecret, writer.uint32(170).fork()).ldelim();
+    }
+    if (message.authenticationType !== 0) {
+      writer.uint32(176).int32(message.authenticationType);
+    }
+    if (message.saslConfig !== undefined) {
+      SASLConfig.encode(message.saslConfig, writer.uint32(186).fork()).ldelim();
     }
     return writer;
   },
@@ -2535,6 +2583,20 @@ export const DataSource = {
 
           message.externalSecret = DataSourceExternalSecret.decode(reader, reader.uint32());
           continue;
+        case 22:
+          if (tag !== 176) {
+            break;
+          }
+
+          message.authenticationType = reader.int32() as any;
+          continue;
+        case 23:
+          if (tag !== 186) {
+            break;
+          }
+
+          message.saslConfig = SASLConfig.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2573,6 +2635,10 @@ export const DataSource = {
       externalSecret: isSet(object.externalSecret)
         ? DataSourceExternalSecret.fromJSON(object.externalSecret)
         : undefined,
+      authenticationType: isSet(object.authenticationType)
+        ? dataSource_AuthenticationTypeFromJSON(object.authenticationType)
+        : 0,
+      saslConfig: isSet(object.saslConfig) ? SASLConfig.fromJSON(object.saslConfig) : undefined,
     };
   },
 
@@ -2641,6 +2707,12 @@ export const DataSource = {
     if (message.externalSecret !== undefined) {
       obj.externalSecret = DataSourceExternalSecret.toJSON(message.externalSecret);
     }
+    if (message.authenticationType !== 0) {
+      obj.authenticationType = dataSource_AuthenticationTypeToJSON(message.authenticationType);
+    }
+    if (message.saslConfig !== undefined) {
+      obj.saslConfig = SASLConfig.toJSON(message.saslConfig);
+    }
     return obj;
   },
 
@@ -2671,6 +2743,10 @@ export const DataSource = {
     message.authenticationPrivateKey = object.authenticationPrivateKey ?? "";
     message.externalSecret = (object.externalSecret !== undefined && object.externalSecret !== null)
       ? DataSourceExternalSecret.fromPartial(object.externalSecret)
+      : undefined;
+    message.authenticationType = object.authenticationType ?? 0;
+    message.saslConfig = (object.saslConfig !== undefined && object.saslConfig !== null)
+      ? SASLConfig.fromPartial(object.saslConfig)
       : undefined;
     return message;
   },
@@ -2793,6 +2869,292 @@ export const InstanceResource = {
     message.engineVersion = object.engineVersion ?? "";
     message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
     message.activation = object.activation ?? false;
+    return message;
+  },
+};
+
+function createBaseSASLConfig(): SASLConfig {
+  return { krbConfig: undefined, plainConfig: undefined };
+}
+
+export const SASLConfig = {
+  encode(message: SASLConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.krbConfig !== undefined) {
+      KerberosConfig.encode(message.krbConfig, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.plainConfig !== undefined) {
+      PlainSASLConfig.encode(message.plainConfig, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SASLConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSASLConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.krbConfig = KerberosConfig.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.plainConfig = PlainSASLConfig.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SASLConfig {
+    return {
+      krbConfig: isSet(object.krbConfig) ? KerberosConfig.fromJSON(object.krbConfig) : undefined,
+      plainConfig: isSet(object.plainConfig) ? PlainSASLConfig.fromJSON(object.plainConfig) : undefined,
+    };
+  },
+
+  toJSON(message: SASLConfig): unknown {
+    const obj: any = {};
+    if (message.krbConfig !== undefined) {
+      obj.krbConfig = KerberosConfig.toJSON(message.krbConfig);
+    }
+    if (message.plainConfig !== undefined) {
+      obj.plainConfig = PlainSASLConfig.toJSON(message.plainConfig);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SASLConfig>): SASLConfig {
+    return SASLConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SASLConfig>): SASLConfig {
+    const message = createBaseSASLConfig();
+    message.krbConfig = (object.krbConfig !== undefined && object.krbConfig !== null)
+      ? KerberosConfig.fromPartial(object.krbConfig)
+      : undefined;
+    message.plainConfig = (object.plainConfig !== undefined && object.plainConfig !== null)
+      ? PlainSASLConfig.fromPartial(object.plainConfig)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseKerberosConfig(): KerberosConfig {
+  return { primary: "", instance: "", realm: "", keytab: "", kdcHost: "", kdcTransportProtocol: "" };
+}
+
+export const KerberosConfig = {
+  encode(message: KerberosConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.primary !== "") {
+      writer.uint32(10).string(message.primary);
+    }
+    if (message.instance !== "") {
+      writer.uint32(18).string(message.instance);
+    }
+    if (message.realm !== "") {
+      writer.uint32(26).string(message.realm);
+    }
+    if (message.keytab !== "") {
+      writer.uint32(34).string(message.keytab);
+    }
+    if (message.kdcHost !== "") {
+      writer.uint32(42).string(message.kdcHost);
+    }
+    if (message.kdcTransportProtocol !== "") {
+      writer.uint32(50).string(message.kdcTransportProtocol);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): KerberosConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseKerberosConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.primary = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.instance = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.realm = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.keytab = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.kdcHost = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.kdcTransportProtocol = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): KerberosConfig {
+    return {
+      primary: isSet(object.primary) ? globalThis.String(object.primary) : "",
+      instance: isSet(object.instance) ? globalThis.String(object.instance) : "",
+      realm: isSet(object.realm) ? globalThis.String(object.realm) : "",
+      keytab: isSet(object.keytab) ? globalThis.String(object.keytab) : "",
+      kdcHost: isSet(object.kdcHost) ? globalThis.String(object.kdcHost) : "",
+      kdcTransportProtocol: isSet(object.kdcTransportProtocol) ? globalThis.String(object.kdcTransportProtocol) : "",
+    };
+  },
+
+  toJSON(message: KerberosConfig): unknown {
+    const obj: any = {};
+    if (message.primary !== "") {
+      obj.primary = message.primary;
+    }
+    if (message.instance !== "") {
+      obj.instance = message.instance;
+    }
+    if (message.realm !== "") {
+      obj.realm = message.realm;
+    }
+    if (message.keytab !== "") {
+      obj.keytab = message.keytab;
+    }
+    if (message.kdcHost !== "") {
+      obj.kdcHost = message.kdcHost;
+    }
+    if (message.kdcTransportProtocol !== "") {
+      obj.kdcTransportProtocol = message.kdcTransportProtocol;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<KerberosConfig>): KerberosConfig {
+    return KerberosConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<KerberosConfig>): KerberosConfig {
+    const message = createBaseKerberosConfig();
+    message.primary = object.primary ?? "";
+    message.instance = object.instance ?? "";
+    message.realm = object.realm ?? "";
+    message.keytab = object.keytab ?? "";
+    message.kdcHost = object.kdcHost ?? "";
+    message.kdcTransportProtocol = object.kdcTransportProtocol ?? "";
+    return message;
+  },
+};
+
+function createBasePlainSASLConfig(): PlainSASLConfig {
+  return { username: "", password: "" };
+}
+
+export const PlainSASLConfig = {
+  encode(message: PlainSASLConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.username !== "") {
+      writer.uint32(10).string(message.username);
+    }
+    if (message.password !== "") {
+      writer.uint32(18).string(message.password);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlainSASLConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlainSASLConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlainSASLConfig {
+    return {
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+    };
+  },
+
+  toJSON(message: PlainSASLConfig): unknown {
+    const obj: any = {};
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PlainSASLConfig>): PlainSASLConfig {
+    return PlainSASLConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PlainSASLConfig>): PlainSASLConfig {
+    const message = createBasePlainSASLConfig();
+    message.username = object.username ?? "";
+    message.password = object.password ?? "";
     return message;
   },
 };

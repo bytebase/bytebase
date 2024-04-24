@@ -67,13 +67,13 @@
         </template>
         <div class="w-full flex flex-row justify-end items-center mb-3">
           <SearchBox
-            :value="state.databaseNameSearch"
+            v-model:value="state.keyword"
             :placeholder="$t('sql-editor.search-databases')"
-            @update:value="state.databaseNameSearch = $event"
           />
         </div>
         <NDataTable
           size="small"
+          class="batch-query-database-table"
           :checked-row-keys="selectedDatabaseNames"
           :columns="dataTableColumns"
           :data="filteredDatabaseList"
@@ -95,12 +95,19 @@
 
 <script lang="ts" setup>
 import type { DataTableRowKey, DataTableColumn } from "naive-ui";
-import { NPopover, NDivider, NDataTable, NTag, NButton } from "naive-ui";
+import {
+  NPopover,
+  NDivider,
+  NDataTable,
+  NTag,
+  NButton,
+  NPerformantEllipsis,
+} from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import LabelsColumn from "@/components/v2/Model/DatabaseV1Table/LabelsColumn.vue";
+import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import {
   hasFeature,
   useConnectionOfCurrentSQLEditorTab,
@@ -111,7 +118,7 @@ import {
 import type { ComposedDatabase } from "@/types";
 
 interface LocalState {
-  databaseNameSearch: string;
+  keyword: string;
   showFeatureModal: boolean;
 }
 
@@ -120,7 +127,7 @@ const databaseStore = useDatabaseV1Store();
 const tabStore = useSQLEditorTabStore();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 const state = reactive<LocalState>({
-  databaseNameSearch: "",
+  keyword: "",
   showFeatureModal: false,
 });
 // Save the stringified label key-value pairs.
@@ -149,15 +156,30 @@ const databases = computed(() => {
 });
 
 const filteredDatabaseList = computed(() => {
-  return databases.value.filter((db) =>
-    db.databaseName.includes(state.databaseNameSearch)
-  );
+  const keyword = state.keyword.trim();
+  if (!keyword) {
+    return databases.value;
+  }
+  return databases.value.filter((db) => {
+    if (db.databaseName.toLowerCase().includes(keyword)) {
+      return true;
+    }
+    for (const key in db.labels) {
+      const value = db.labels[key];
+      if (value.toLowerCase().includes(keyword)) {
+        return true;
+      }
+    }
+
+    return false;
+  });
 });
 
 const dataTableColumns = computed((): DataTableColumn<ComposedDatabase>[] => {
   return [
     {
       type: "selection",
+      width: 40,
     },
     {
       title: t("common.database"),
@@ -187,19 +209,23 @@ const dataTableColumns = computed((): DataTableColumn<ComposedDatabase>[] => {
       title: t("common.instance"),
       key: "instance",
       resizable: true,
-      width: 100,
-      ellipsis: {
-        tooltip: true,
-      },
+      width: 120,
       render(row: ComposedDatabase) {
         return h(
           "div",
-          { class: "flex flex-row justify-start items-center gap-2" },
+          {
+            class:
+              "flex flex-row justify-start items-center gap-1 whitespace-nowrap overflow-hidden",
+          },
           [
             h(InstanceV1EngineIcon, {
               instance: row.instanceEntity,
             }),
-            h("span", {}, [row.effectiveEnvironmentEntity.title]),
+            h(
+              NPerformantEllipsis,
+              { class: "overflow-hidden truncate" },
+              { default: () => row.instanceEntity.title }
+            ),
           ]
         );
       },
@@ -208,9 +234,8 @@ const dataTableColumns = computed((): DataTableColumn<ComposedDatabase>[] => {
       title: t("common.labels"),
       key: "labels",
       resizable: true,
-      width: 100,
       render(row: ComposedDatabase) {
-        return h(LabelsColumn, {
+        return h(DatabaseLabelsCell, {
           labels: row.labels,
           showCount: 1,
           placeholder: "",
@@ -254,3 +279,10 @@ watch(
   }
 );
 </script>
+
+<style lang="postcss" scoped>
+.batch-query-database-table :deep(.n-data-table-td),
+.batch-query-database-table :deep(.n-data-table-th) {
+  @apply px-0.5;
+}
+</style>

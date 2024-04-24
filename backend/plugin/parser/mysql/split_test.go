@@ -456,9 +456,9 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:       bigSQL + ";",
+						Text:       bigSQL,
 						LastLine:   0,
-						LastColumn: len(bigSQL),
+						LastColumn: len(bigSQL) - 1,
 					},
 				},
 			},
@@ -474,9 +474,9 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 						FirstStatementColumn: 4,
 					},
 					{
-						Text:                 " CREATE TABLE t1(a int);",
+						Text:                 " CREATE TABLE t1(a int)",
 						LastLine:             0,
-						LastColumn:           49,
+						LastColumn:           48,
 						FirstStatementColumn: 27,
 					},
 				},

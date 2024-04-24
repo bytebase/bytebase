@@ -67,7 +67,7 @@ func getAzurePullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvider
 		if err != nil {
 			return nil, errors.Errorf("failed read file content, merge request %q, file %q, error %v", pushEvent.Resource.Links.Web, file.path, err)
 		}
-		file.content = content
+		file.content = convertFileContentToUTF8String(content)
 	}
 
 	return prInfo, nil

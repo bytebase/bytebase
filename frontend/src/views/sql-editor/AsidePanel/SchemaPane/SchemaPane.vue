@@ -194,10 +194,19 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         type === "table" ||
         type === "external-table" ||
         type === "column" ||
-        type === "view"
+        type === "view" ||
+        type === "partition-table" ||
+        type === "procedure" ||
+        type === "function"
       ) {
         const target = node.meta.target as NodeTarget<
-          "table" | "external-table" | "column" | "view"
+          | "table"
+          | "external-table"
+          | "column"
+          | "view"
+          | "partition-table"
+          | "procedure"
+          | "function"
         >;
         if (hoverState.value) {
           updateHoverState(target, "before", 0 /* overrideDelay */);
@@ -271,10 +280,15 @@ watch(tree, () => {
   padding: 0;
 }
 .schema-tree :deep(.n-tree-node-indent) {
-  width: 1rem;
+  width: 20px;
+}
+.schema-tree :deep(.n-tree-node-switcher) {
+  width: 20px !important;
+  height: 20px !important;
+  align-self: center;
 }
 .schema-tree :deep(.n-tree-node-switcher--hide) {
-  width: 0.5rem !important;
+  width: 0 !important;
 }
 .schema-tree :deep(.n-tree-node-content__prefix) {
   @apply shrink-0 !mr-1;

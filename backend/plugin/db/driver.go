@@ -63,10 +63,6 @@ var (
 type DriverConfig struct {
 	// The directiory contains db specific utilites (e.g. mysqldump for MySQL, pg_dump for PostgreSQL, mongosh for MongoDB).
 	DbBinDir string
-
-	// NOTE, introducing db specific fields is the last resort.
-	// MySQL specific
-	BinlogDir string
 }
 
 type driverFunc func(DriverConfig) Driver
@@ -158,15 +154,20 @@ type MigrationInfo struct {
 
 // ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
-	Database string
+	Host string
+	Port string
+	// More hosts and ports are required by elasticsearch.
+	MultiHosts []string
+	MultiPorts []string
+	Username   string
+	Password   string
+	Database   string
 	// The database used to connect.
 	// It's only set for Redshift datashare database.
 	ConnectionDatabase string
 	TLSConfig          TLSConfig
+	// Only used for Hive.
+	SASLConfig SASLConfig
 	// ReadOnly is only supported for Postgres at the moment.
 	ReadOnly bool
 	// SRV is only supported for MongoDB now.
@@ -174,15 +175,15 @@ type ConnectionConfig struct {
 	// AuthenticationDatabase is only supported for MongoDB now.
 	AuthenticationDatabase string
 	// SID and ServiceName are Oracle only.
-	SID         string
-	ServiceName string
-	SSHConfig   SSHConfig
-	// SchemaTenantMode is the Oracle specific mode.
-	// If true, bytebase will treat the schema as a database.
-	SchemaTenantMode         bool
+	SID                      string
+	ServiceName              string
+	SSHConfig                SSHConfig
 	AuthenticationPrivateKey string
 
 	ConnectionContext ConnectionContext
+
+	// AuthenticationType is for the database connection, we support normal username & password or Google IAM.
+	AuthenticationType storepb.DataSourceOptions_AuthenticationType
 }
 
 // SSHConfig is the configuration for connection over SSH.

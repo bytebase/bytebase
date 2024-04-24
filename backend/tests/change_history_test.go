@@ -29,24 +29,20 @@ var (
 		wantStatements []string
 	}{
 		{
-			filter: fmt.Sprintf(`tableExists("%s", "public", "t2")`, databaseName),
+			filter: fmt.Sprintf(`table = "tableExists('%s', 'public', 't2')"`, databaseName),
 			wantStatements: []string{
 				statements[1],
 				statements[2],
 			},
 		},
 		{
-			filter: fmt.Sprintf(`tableExists("%s", "public", "t2") && tableExists("%s", "public", "t3")`, databaseName, databaseName),
+			filter: fmt.Sprintf(`table = "tableExists('%s', 'public', 't2') && tableExists('%s', 'public', 't3')"`, databaseName, databaseName),
 			wantStatements: []string{
 				statements[1],
 			},
 		},
 		{
-			filter: fmt.Sprintf(`
-				(tableExists("%s", "public", "t2") && tableExists("%s", "public", "t3"))
-				||
-				tableExists("%s", "public", "t1")
-			`, databaseName, databaseName, databaseName),
+			filter: fmt.Sprintf(`table = "(tableExists('%s', 'public', 't2') && tableExists('%s', 'public', 't3')) || tableExists('%s', 'public', 't1')"`, databaseName, databaseName, databaseName),
 			wantStatements: []string{
 				statements[0],
 				statements[1],

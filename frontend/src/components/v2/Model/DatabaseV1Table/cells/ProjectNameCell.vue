@@ -1,0 +1,62 @@
+<template>
+  <div class="flex flex-row space-x-2 items-center">
+    <ProjectV1Name :project="project" :link="false" tag="div" />
+    <NTooltip
+      v-if="
+        showTenantIcon && project.tenantMode === TenantMode.TENANT_MODE_ENABLED
+      "
+    >
+      <template #trigger>
+        <TenantIcon class="text-control" />
+      </template>
+      <span class="whitespace-nowrap">
+        {{ $t("project.mode.batch") }}
+      </span>
+    </NTooltip>
+
+    <NTooltip v-if="project.workflow === Workflow.VCS">
+      <template #trigger>
+        <GitIcon class="w-4 h-4 text-control" />
+      </template>
+      <span v-if="mode === 'ALL_SHORT'" class="w-40">
+        {{ $t("alter-schema.vcs-info") }}
+      </span>
+      <span v-else class="tooltip whitespace-nowrap">
+        {{ $t("database.gitops-enabled") }}
+      </span>
+    </NTooltip>
+
+    <NTooltip v-if="project.state === State.DELETED">
+      <template #trigger>
+        <heroicons-outline:archive class="w-4 h-4 text-control" />
+      </template>
+      <span class="whitespace-nowrap">
+        {{ $t("common.archived") }}
+      </span>
+    </NTooltip>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { NTooltip } from "naive-ui";
+import { computed } from "vue";
+import { ProjectV1Name } from "@/components/v2";
+import { State } from "@/types/proto/v1/common";
+import type { Project } from "@/types/proto/v1/project_service";
+import { TenantMode, Workflow } from "@/types/proto/v1/project_service";
+import type { Mode } from "../DatabaseV1Table.vue";
+
+const props = withDefaults(
+  defineProps<{
+    project: Project;
+    mode?: Mode;
+  }>(),
+  {
+    mode: "ALL",
+  }
+);
+
+const showTenantIcon = computed(() => {
+  return ["ALL", "ALL_SHORT", "INSTANCE"].includes(props.mode);
+});
+</script>

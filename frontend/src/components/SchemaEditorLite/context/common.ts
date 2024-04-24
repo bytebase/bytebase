@@ -3,6 +3,7 @@ import type {
   ColumnMetadata,
   SchemaMetadata,
   TableMetadata,
+  TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
 
 export const keyForResource = (
@@ -11,14 +12,16 @@ export const keyForResource = (
     schema?: SchemaMetadata;
     table?: TableMetadata;
     column?: ColumnMetadata;
+    partition?: TablePartitionMetadata;
   } = {}
 ) => {
-  const { schema, table, column } = metadata;
+  const { schema, table, column, partition } = metadata;
   return keyForResourceName(
     database.name,
     schema?.name,
     table?.name,
-    column?.name
+    column?.name,
+    partition?.name
   );
 };
 
@@ -26,7 +29,8 @@ export const keyForResourceName = (
   database: string,
   schema?: string,
   table?: string,
-  column?: string
+  column?: string,
+  partition?: string
 ) => {
   const parts = [database];
   if (schema !== undefined) {
@@ -37,6 +41,9 @@ export const keyForResourceName = (
   }
   if (column !== undefined) {
     parts.push(`columns/${column}`);
+  }
+  if (partition !== undefined) {
+    parts.push(`partitions/${partition}`);
   }
   return parts.join("/");
 };

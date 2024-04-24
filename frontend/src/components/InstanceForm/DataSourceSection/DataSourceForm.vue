@@ -1,11 +1,32 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
   <template v-if="basicInfo.engine !== Engine.SPANNER">
+    <div
+      v-if="
+        basicInfo.engine === Engine.MYSQL ||
+        basicInfo.engine === Engine.POSTGRES
+      "
+      class="mt-2"
+    >
+      <NRadioGroup
+        v-model:value="dataSource.authenticationType"
+        class="textlabel"
+        :disabled="!allowEdit"
+      >
+        <NRadio :value="DataSource_AuthenticationType.PASSWORD">
+          {{ $t("instance.password-type.password") }}
+        </NRadio>
+        <NRadio :value="DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM">
+          {{ $t("instance.password-type.google-iam") }}
+        </NRadio>
+      </NRadioGroup>
+    </div>
     <CreateDataSourceExample
       class-name="sm:col-span-3 border-none mt-2"
       :create-instance-flag="isCreating"
       :engine="basicInfo.engine"
       :data-source-type="dataSource.type"
+      :authentication-type="dataSource.authenticationType"
     />
     <div class="mt-4 sm:col-span-3 sm:col-start-1">
       <label for="username" class="textlabel block">
@@ -16,49 +37,61 @@
       thus we make it REQUIRED here.-->
       <NInput
         v-model:value="dataSource.username"
-        class="mt-1 w-full"
+        class="mt-2 w-full"
         :disabled="!allowEdit"
         :placeholder="
           basicInfo.engine === Engine.CLICKHOUSE ? $t('common.default') : ''
         "
       />
     </div>
-    <div class="mt-4 sm:col-span-3 sm:col-start-1">
-      <NRadioGroup
-        class="textlabel mb-2"
-        :value="state.passwordType"
-        @update:value="changeSecretType"
-      >
-        <NRadio
-          :value="DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED"
+    <div
+      v-if="
+        dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD
+      "
+      class="mt-4 sm:col-span-3 sm:col-start-1"
+    >
+      <div class="mb-4">
+        <NRadioGroup
+          class="textlabel"
+          :value="state.passwordType"
+          :disabled="!allowEdit"
+          @update:value="changeSecretType"
         >
-          {{ $t("instance.password-type.password") }}
-        </NRadio>
-        <NRadio :value="DataSourceExternalSecret_SecretType.VAULT_KV_V2">
-          <div class="flex items-center gap-x-1">
-            {{ $t("instance.password-type.external-secret-vault") }}
-            <FeatureBadge feature="bb.feature.external-secret-manager" />
-          </div>
-        </NRadio>
-        <NRadio
-          :value="DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER"
-        >
-          <div class="flex items-center gap-x-1">
-            {{ $t("instance.password-type.external-secret-aws") }}
-            <FeatureBadge feature="bb.feature.external-secret-manager" />
-          </div>
-        </NRadio>
-        <NRadio :value="DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER">
-          <div class="flex items-center gap-x-1">
-            {{ $t("instance.password-type.external-secret-gcp") }}
-            <FeatureBadge feature="bb.feature.external-secret-manager" />
-          </div>
-        </NRadio>
-      </NRadioGroup>
-      <LearnMoreLink
-        url="http://www.bytebase.com/docs/get-started/instance/#use-external-secret-manager"
-        class="text-sm"
-      />
+          <NRadio
+            :value="
+              DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED
+            "
+          >
+            {{ $t("instance.password-type.password") }}
+          </NRadio>
+          <NRadio :value="DataSourceExternalSecret_SecretType.VAULT_KV_V2">
+            <div class="flex items-center gap-x-1">
+              {{ $t("instance.password-type.external-secret-vault") }}
+              <FeatureBadge feature="bb.feature.external-secret-manager" />
+            </div>
+          </NRadio>
+          <NRadio
+            :value="DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER"
+          >
+            <div class="flex items-center gap-x-1">
+              {{ $t("instance.password-type.external-secret-aws") }}
+              <FeatureBadge feature="bb.feature.external-secret-manager" />
+            </div>
+          </NRadio>
+          <NRadio
+            :value="DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER"
+          >
+            <div class="flex items-center gap-x-1">
+              {{ $t("instance.password-type.external-secret-gcp") }}
+              <FeatureBadge feature="bb.feature.external-secret-manager" />
+            </div>
+          </NRadio>
+        </NRadioGroup>
+        <LearnMoreLink
+          url="http://www.bytebase.com/docs/get-started/instance/#use-external-secret-manager"
+          class="text-sm"
+        />
+      </div>
       <div
         v-if="
           state.passwordType ===
@@ -68,7 +101,7 @@
         <label class="textlabel block">
           {{ $t("common.password") }}
         </label>
-        <div class="flex space-x-2 text-sm mb-1">
+        <div class="flex space-x-2 text-sm">
           <div class="text-gray-400">
             {{ $t("instance.password-type.password-tip") }}
           </div>
@@ -78,27 +111,31 @@
           />
           <FeatureBadge feature="bb.feature.external-secret-manager" />
         </div>
-        <NCheckbox
-          v-if="!isCreating && allowUsingEmptyPassword"
-          :size="'small'"
-          :checked="dataSource.useEmptyPassword"
-          :disabled="!allowEdit"
-          @update:checked="toggleUseEmptyPassword"
-        >
-          {{ $t("instance.no-password") }}
-        </NCheckbox>
-        <NInput
-          class="w-full"
-          :input-props="{ autocomplete: 'off' }"
-          :placeholder="
-            dataSource.useEmptyPassword
-              ? $t('instance.no-password')
-              : $t('instance.password-write-only')
-          "
-          :disabled="!allowEdit || dataSource.useEmptyPassword"
-          :value="dataSource.useEmptyPassword ? '' : dataSource.updatedPassword"
-          @update:value="dataSource.updatedPassword = $event.trim()"
-        />
+        <div class="mt-2">
+          <NCheckbox
+            v-if="!isCreating && allowUsingEmptyPassword"
+            :size="'small'"
+            :checked="dataSource.useEmptyPassword"
+            :disabled="!allowEdit"
+            @update:checked="toggleUseEmptyPassword"
+          >
+            {{ $t("instance.no-password") }}
+          </NCheckbox>
+          <NInput
+            class="w-full"
+            :input-props="{ autocomplete: 'off' }"
+            :placeholder="
+              dataSource.useEmptyPassword
+                ? $t('instance.no-password')
+                : $t('instance.password-write-only')
+            "
+            :disabled="!allowEdit || dataSource.useEmptyPassword"
+            :value="
+              dataSource.useEmptyPassword ? '' : dataSource.updatedPassword
+            "
+            @update:value="dataSource.updatedPassword = $event.trim()"
+          />
+        </div>
       </div>
       <div v-else-if="dataSource.externalSecret" class="space-y-4">
         <div
@@ -116,7 +153,7 @@
             <BBTextField
               v-model:value="dataSource.externalSecret.url"
               :required="true"
-              class="mt-1 w-full"
+              class="mt-2 w-full"
               :disabled="!allowEdit"
               :placeholder="$t('instance.external-secret-vault.vault-url')"
             />
@@ -152,7 +189,7 @@
               }}
               <span class="text-red-600">*</span>
             </label>
-            <div class="flex space-x-2 text-sm mb-1">
+            <div class="flex space-x-2 text-sm">
               <div class="text-gray-400">
                 {{
                   $t(
@@ -167,7 +204,7 @@
             </div>
             <BBTextField
               :value="dataSource.externalSecret.token ?? ''"
-              class="mt-1 w-full"
+              class="mt-2 w-full"
               :disabled="!allowEdit"
               :placeholder="secretInputPlaceholder"
               :required="isCreating"
@@ -192,7 +229,7 @@
               <BBTextField
                 :value="dataSource.externalSecret.appRole.roleId"
                 :required="isCreating"
-                class="mt-1 w-full"
+                class="mt-2 w-full"
                 :disabled="!allowEdit"
                 :placeholder="`${$t(
                   'instance.external-secret-vault.vault-auth-type.approle.role-id'
@@ -217,7 +254,7 @@
               <i18n-t
                 tag="div"
                 keypath="instance.external-secret-vault.vault-auth-type.approle.secret-tips"
-                class="text-gray-400 text-sm mb-1"
+                class="text-gray-400 text-sm"
               >
                 <template #learn_more>
                   <LearnMoreLink
@@ -229,6 +266,7 @@
               <NRadioGroup
                 v-model:value="dataSource.externalSecret.appRole.type"
                 class="textlabel my-1"
+                :disabled="!allowEdit"
               >
                 <NRadio
                   :value="
@@ -255,7 +293,7 @@
               </NRadioGroup>
               <BBTextField
                 :value="dataSource.externalSecret.appRole.secretId"
-                class="mt-1 w-full"
+                class="mt-2 w-full"
                 :disabled="!allowEdit"
                 :placeholder="secretInputPlaceholder"
                 @update:value="
@@ -274,7 +312,7 @@
               }}
               <span class="text-red-600">*</span>
             </label>
-            <div class="flex space-x-2 text-sm mb-1 text-gray-400">
+            <div class="flex space-x-2 text-sm text-gray-400">
               {{
                 $t("instance.external-secret-vault.vault-secret-engine-tips")
               }}
@@ -282,7 +320,7 @@
             <BBTextField
               v-model:value="dataSource.externalSecret.engineName"
               :required="true"
-              class="mt-1 w-full"
+              class="mt-2 w-full"
               :disabled="!allowEdit"
               :placeholder="
                 $t('instance.external-secret-vault.vault-secret-engine-name')
@@ -300,14 +338,14 @@
               state.passwordType ===
               DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER
             "
-            class="flex space-x-2 text-sm mb-1 text-gray-400"
+            class="flex space-x-2 text-sm text-gray-400"
           >
             {{ $t("instance.external-secret-gcp.secret-name-tips") }}
           </div>
           <BBTextField
             v-model:value="dataSource.externalSecret.secretName"
             :required="true"
-            class="mt-1 w-full"
+            class="mt-2 w-full"
             :disabled="!allowEdit"
             :placeholder="secretNameLabel"
           />
@@ -326,7 +364,7 @@
           <BBTextField
             v-model:value="dataSource.externalSecret.passwordKeyName"
             :required="true"
-            class="mt-1 w-full"
+            class="mt-2 w-full"
             :disabled="!allowEdit"
             :placeholder="secretKeyLabel"
           />
@@ -350,11 +388,11 @@
   </template>
 
   <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
-    <div class="mt-4 sm:col-span-2 sm:col-start-1">
+    <div class="mt-4 sm:col-span-3 sm:col-start-1">
       <div class="textlabel block">
         {{ $t("data-source.ssh.private-key") }}
       </div>
-      <div class="flex space-x-2 text-sm mb-1">
+      <div class="flex space-x-2 text-sm">
         <div class="text-gray-400">
           {{ $t("data-source.snowflake-keypair-tip") }}
         </div>
@@ -363,31 +401,31 @@
           class="ml-1 text-sm"
         />
       </div>
-      <div>
-        <DroppableTextarea
-          v-model:value="dataSource.authenticationPrivateKey"
-          :resizable="false"
-          class="w-full h-32 whitespace-pre-wrap"
-          placeholder="-----BEGIN PRIVATE KEY-----
+      <DroppableTextarea
+        v-model:value="dataSource.authenticationPrivateKey"
+        :resizable="false"
+        :disabled="!allowEdit"
+        class="w-full h-32 mt-2 whitespace-pre-wrap"
+        placeholder="-----BEGIN PRIVATE KEY-----
 MIIEvQ...
 -----END PRIVATE KEY-----"
-          :allow-edit="allowEdit"
-        />
-      </div>
+        :allow-edit="allowEdit"
+      />
     </div>
   </template>
 
   <template v-if="showAuthenticationDatabase">
-    <div class="sm:col-span-2 sm:col-start-1">
+    <div class="mt-4 sm:col-span-3 sm:col-start-1">
       <div class="flex flex-row items-center space-x-2">
         <label for="authenticationDatabase" class="textlabel block">
           {{ $t("instance.authentication-database") }}
         </label>
       </div>
       <NInput
-        class="mt-1 w-full"
+        class="mt-2 w-full"
         :input-props="{ autocomplete: 'off' }"
         placeholder="admin"
+        :disabled="!allowEdit"
         :value="dataSource.authenticationDatabase"
         @update:value="dataSource.authenticationDatabase = $event.trim()"
       />
@@ -397,12 +435,14 @@ MIIEvQ...
   <template
     v-if="
       dataSource.type === DataSourceType.READ_ONLY &&
+      dataSource.authenticationType ===
+        DataSource_AuthenticationType.PASSWORD &&
       (hasReadonlyReplicaHost || hasReadonlyReplicaPort)
     "
   >
     <div
       v-if="hasReadonlyReplicaHost"
-      class="mt-4 sm:col-span-2 sm:col-start-1"
+      class="mt-4 sm:col-span-3 sm:col-start-1"
     >
       <div class="flex flex-row items-center space-x-2">
         <label for="host" class="textlabel block">
@@ -410,16 +450,17 @@ MIIEvQ...
         </label>
       </div>
       <NInput
-        class="mt-1 w-full"
+        class="mt-2 w-full"
         :input-props="{ autocomplete: 'off' }"
         :value="dataSource.host"
+        :disabled="!allowEdit"
         @update:value="handleHostInput"
       />
     </div>
 
     <div
       v-if="hasReadonlyReplicaPort"
-      class="mt-4 sm:col-span-2 sm:col-start-1"
+      class="mt-4 sm:col-span-3 sm:col-start-1"
     >
       <div class="flex flex-row items-center space-x-2">
         <label for="port" class="textlabel block">
@@ -427,28 +468,35 @@ MIIEvQ...
         </label>
       </div>
       <NInput
-        class="mt-1 w-full"
+        class="mt-2 w-full"
         :input-props="{ autocomplete: 'off' }"
         :value="dataSource.port"
         :allow-input="onlyAllowNumber"
+        :disabled="!allowEdit"
         @update:value="handlePortInput"
       />
     </div>
   </template>
 
-  <div v-if="showDatabase" class="mt-4 sm:col-span-2 sm:col-start-1">
+  <div v-if="showDatabase" class="mt-4 sm:col-span-3 sm:col-start-1">
     <label for="database" class="textlabel block">
       {{ $t("common.database") }}
     </label>
     <NInput
       v-model:value="dataSource.database"
-      class="mt-1 w-full"
+      class="mt-2 w-full"
       :disabled="!allowEdit"
       :placeholder="$t('common.database')"
     />
   </div>
 
-  <div v-if="showSSL" class="mt-4 sm:col-span-3 sm:col-start-1">
+  <div
+    v-if="
+      showSSL &&
+      dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD
+    "
+    class="mt-4 sm:col-span-3 sm:col-start-1"
+  >
     <div class="flex flex-row items-center">
       <label for="ssl" class="textlabel block">
         {{ $t("data-source.ssl-connection") }}
@@ -458,6 +506,7 @@ MIIEvQ...
       <SslCertificateForm
         :value="dataSource"
         :engine-type="basicInfo.engine"
+        :disabled="!allowEdit"
         @change="handleSSLChange"
       />
     </template>
@@ -466,12 +515,13 @@ MIIEvQ...
         <SslCertificateForm
           :value="dataSource"
           :engine-type="basicInfo.engine"
+          :disabled="!allowEdit"
           @change="handleSSLChange"
         />
       </template>
       <template v-else>
         <NButton
-          class="!mt-4"
+          class="!mt-2"
           :disabled="!allowEdit"
           @click.prevent="handleEditSSL"
         >
@@ -481,7 +531,13 @@ MIIEvQ...
     </template>
   </div>
 
-  <div v-if="showSSH" class="mt-4 sm:col-span-3 sm:col-start-1">
+  <div
+    v-if="
+      showSSH &&
+      dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD
+    "
+    class="mt-4 sm:col-span-3 sm:col-start-1"
+  >
     <div class="flex flex-row items-center gap-x-1">
       <label for="ssh" class="textlabel block">
         {{ $t("data-source.ssh-connection") }}
@@ -495,6 +551,7 @@ MIIEvQ...
       <SshConnectionForm
         :value="dataSource"
         :instance="instance"
+        :disabled="!allowEdit"
         @change="handleSSHChange"
       />
     </template>
@@ -503,12 +560,13 @@ MIIEvQ...
         <SshConnectionForm
           :value="dataSource"
           :instance="instance"
+          :disabled="!allowEdit"
           @change="handleSSHChange"
         />
       </template>
       <template v-else>
         <NButton
-          class="!mt-4"
+          class="!mt-2"
           :disabled="!allowEdit"
           @click.prevent="handleEditSSH"
         >
@@ -533,6 +591,7 @@ import {
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
+  DataSource_AuthenticationType,
 } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
@@ -596,7 +655,7 @@ const secretInputPlaceholder = computed(() => {
       switch (props.dataSource.externalSecret?.authType) {
         case DataSourceExternalSecret_AuthType.TOKEN:
           return `${t(
-            "instance.external-secret-vault.vault-auth-type.token.token"
+            "instance.external-secret-vault.vault-auth-type.token.self"
           )} - ${t("common.write-only")}`;
         case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
           switch (props.dataSource.externalSecret.appRole?.type) {

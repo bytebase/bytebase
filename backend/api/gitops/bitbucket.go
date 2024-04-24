@@ -41,7 +41,7 @@ func getBitBucketPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProv
 		if err != nil {
 			return nil, errors.Errorf("failed read file content, merge request %q, file %q, error %v", pushEvent.PullRequest.Links.HTML.Href, file.path, err)
 		}
-		file.content = content
+		file.content = convertFileContentToUTF8String(content)
 	}
 	return prInfo, nil
 }

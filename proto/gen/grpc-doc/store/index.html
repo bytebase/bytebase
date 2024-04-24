@@ -277,6 +277,25 @@
         
           
           <li>
+            <a href="#store%2faudit_log.proto">store/audit_log.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.AuditLog"><span class="badge">M</span>AuditLog</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.AuditLog.Severity"><span class="badge">E</span>AuditLog.Severity</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fdatabase.proto">store/database.proto</a>
             <ul>
               
@@ -492,6 +511,18 @@
                   <a href="#bytebase.store.DataSourceOptions"><span class="badge">M</span>DataSourceOptions</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.KerberosConfig"><span class="badge">M</span>KerberosConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlainSASLConfig"><span class="badge">M</span>PlainSASLConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SASLConfig"><span class="badge">M</span>SASLConfig</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType"><span class="badge">E</span>DataSourceExternalSecret.AppRoleAuthOption.SecretType</a>
@@ -503,6 +534,10 @@
               
                 <li>
                   <a href="#bytebase.store.DataSourceExternalSecret.SecretType"><span class="badge">E</span>DataSourceExternalSecret.SecretType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.DataSourceOptions.AuthenticationType"><span class="badge">E</span>DataSourceOptions.AuthenticationType</a>
                 </li>
               
               
@@ -1825,6 +1860,163 @@ If `true`, other fields are available. </p></td>
               <tr>
                 <td>TYPE_FEISHU</td>
                 <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/audit_log.proto">store/audit_log.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.AuditLog">AuditLog</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The project or workspace the audit log belongs to.
+Formats:
+- projects/{project}
+- workspaces/{workspace} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>method</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>e.g. /bytebase.v1.SQLService/Query </p></td>
+                </tr>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>resource name
+projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/d@d.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>severity</td>
+                  <td><a href="#bytebase.store.AuditLog.Severity">AuditLog.Severity</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>request</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Marshalled request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>response</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Marshalled response.
+Some fields are omitted because they are too large or contain sensitive information. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#google.rpc.Status">google.rpc.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.AuditLog.Severity">AuditLog.Severity</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>DEFAULT</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DEBUG</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>INFO</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NOTICE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WARNING</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CRITICAL</td>
+                <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALERT</td>
+                <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EMERGENCY</td>
+                <td>8</td>
                 <td><p></p></td>
               </tr>
             
@@ -4055,6 +4247,141 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>authentication_type</td>
+                  <td><a href="#bytebase.store.DataSourceOptions.AuthenticationType">DataSourceOptions.AuthenticationType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sasl_config</td>
+                  <td><a href="#bytebase.store.SASLConfig">SASLConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.KerberosConfig">KerberosConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>primary</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>instance</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>realm</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>keytab</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kdc_host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kdc_transport_protocol</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlainSASLConfig">PlainSASLConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SASLConfig">SASLConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>krb_config</td>
+                  <td><a href="#bytebase.store.KerberosConfig">KerberosConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>plain_config</td>
+                  <td><a href="#bytebase.store.PlainSASLConfig">PlainSASLConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -4152,6 +4479,35 @@ Used for authentication when connecting to the data source. </p></td>
                 <td>GCP_SECRET_MANAGER</td>
                 <td>3</td>
                 <td><p>ref: https://cloud.google.com/secret-manager/docs</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.DataSourceOptions.AuthenticationType">DataSourceOptions.AuthenticationType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTHENTICATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PASSWORD</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GOOGLE_CLOUD_SQL_IAM</td>
+                <td>2</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>
@@ -4684,14 +5040,6 @@ It is used to determine whether the table names and database names are case sens
             <tbody>
               
                 <tr>
-                  <td>schema_tenant_mode</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>The schema tenant mode is used to determine whether the instance is in schema tenant mode.
-For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema. </p></td>
-                </tr>
-              
-                <tr>
                   <td>sync_interval</td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
@@ -5175,6 +5523,20 @@ Format: users/{userUID}. </p></td>
                   <td>tables</td>
                   <td><a href="#bytebase.store.IssueCommentPayload.TaskPriorBackup.Table">IssueCommentPayload.TaskPriorBackup.Table</a></td>
                   <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>original_line</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
                   <td><p> </p></td>
                 </tr>
               

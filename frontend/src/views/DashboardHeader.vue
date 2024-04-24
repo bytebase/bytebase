@@ -9,11 +9,10 @@
         @click="state.showProjectModal = true"
       >
         <div class="min-w-[8rem] text-left">
-          <ProjectCol
+          <ProjectNameCell
             v-if="project.uid !== `${UNKNOWN_ID}`"
             mode="ALL_SHORT"
             :project="project"
-            :show-tenant-icon="true"
           />
           <span v-else class="text-control-placeholder text-sm">
             {{ $t("project.select") }}
@@ -101,6 +100,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
+import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   SQL_EDITOR_HOME_MODULE,

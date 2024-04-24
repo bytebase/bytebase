@@ -8,7 +8,6 @@ import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
   hasWorkspacePermissionV2,
   isDeveloperOfProjectV1,
-  isMemberOfProjectV1,
   isOwnerOfProjectV1,
   isViewerOfProjectV1,
 } from "@/utils";
@@ -151,18 +150,6 @@ export const useCurrentUserIamPolicy = () => {
     currentUser.value,
     "bb.projects.list"
   );
-
-  const isMemberOfProject = (projectName: string) => {
-    if (hasWorkspaceSuperPrivilege) {
-      return true;
-    }
-
-    const policy = iamPolicyStore.policyMap.get(projectName);
-    if (!policy) {
-      return false;
-    }
-    return isMemberOfProjectV1(policy, currentUser.value);
-  };
 
   const isProjectOwnerOrDeveloper = (projectName: string): boolean => {
     if (hasWorkspaceSuperPrivilege) {
@@ -322,7 +309,6 @@ export const useCurrentUserIamPolicy = () => {
   };
 
   return {
-    isMemberOfProject,
     isProjectOwnerOrDeveloper,
     isProjectOwnerOrDeveloperOrViewer,
     allowToChangeDatabaseOfProject,

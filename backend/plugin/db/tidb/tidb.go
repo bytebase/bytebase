@@ -47,7 +47,6 @@ type Driver struct {
 	connCfg       db.ConnectionConfig
 	dbType        storepb.Engine
 	dbBinDir      string
-	binlogDir     string
 	db            *sql.DB
 	databaseName  string
 	sshClient     *ssh.Client
@@ -55,8 +54,7 @@ type Driver struct {
 
 func newDriver(dc db.DriverConfig) db.Driver {
 	return &Driver{
-		dbBinDir:  dc.DbBinDir,
-		binlogDir: dc.BinlogDir,
+		dbBinDir: dc.DbBinDir,
 	}
 }
 
@@ -86,7 +84,7 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.
 	if err != nil {
 		return nil, errors.Wrap(err, "sql: tls config error")
 	}
-	tlsKey := "storepb.Engine_MYSQL.tls"
+	tlsKey := "db.mysql.tls"
 	if tlsConfig != nil {
 		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
 			return nil, errors.Wrap(err, "sql: failed to register tls config")

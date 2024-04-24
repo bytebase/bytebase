@@ -562,7 +562,7 @@ func getTableStmt(txn *sql.Tx, dbType storepb.Engine, dbName, tblName, tblType s
 	}
 }
 
-// getTableStmt gets the create statement of a table.
+// getViewColumns gets the create statement of a table.
 func getViewColumns(txn *sql.Tx, dbName, tblName string) ([]string, error) {
 	query := fmt.Sprintf("SHOW COLUMNS FROM `%s`.`%s`;", dbName, tblName)
 	// https://dev.mysql.com/doc/refman/8.0/en/show-columns.html
@@ -899,10 +899,8 @@ func (driver *Driver) restoreImpl(ctx context.Context, backup io.Reader, databas
 	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.dbBinDir), mysqlArgs...)
 
 	var stderr bytes.Buffer
-	countingReader := common.NewCountingReader(backup)
-	mysqlCmd.Stdin = countingReader
+	mysqlCmd.Stdin = backup
 	mysqlCmd.Stderr = &stderr
-	driver.restoredBackupBytes = countingReader
 
 	if err := mysqlCmd.Run(); err != nil {
 		return errors.Wrapf(err, "mysql command fails: %s", stderr.String())

@@ -1,12 +1,5 @@
-import type { ComputedRef } from "vue";
-import {
-  type InjectionKey,
-  type Ref,
-  provide,
-  inject,
-  computed,
-  ref,
-} from "vue";
+import type { ComputedRef, InjectionKey, Ref } from "vue";
+import { provide, inject, computed, ref } from "vue";
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import type { FeatureType } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -30,6 +23,7 @@ export type InstanceFormContext = {
   editingDataSource: ComputedRef<EditDataSource | undefined>;
   readonlyDataSourceList: ComputedRef<EditDataSource[]>;
   hasReadOnlyDataSource: ComputedRef<boolean>;
+  resetDataSource: () => void;
 };
 
 const KEY = Symbol(
@@ -79,6 +73,9 @@ export const provideInstanceFormContext = (
     );
   });
 
+  const resetDataSource = () => {
+    dataSourceEditState.value = extractDataSourceEditState(instance.value);
+  };
   const missingFeature = ref<FeatureType | undefined>(undefined);
 
   const context: InstanceFormContext = {
@@ -93,6 +90,7 @@ export const provideInstanceFormContext = (
     hasReadOnlyDataSource,
     hasReadonlyReplicaFeature,
     missingFeature,
+    resetDataSource,
   };
   provide(KEY, context);
 

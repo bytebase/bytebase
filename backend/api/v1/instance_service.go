@@ -174,9 +174,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if request.ValidateOnly {
 		for _, ds := range instanceMessage.DataSources {
 			err := func() error {
-				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage, ds, "", false /* datashare */, ds.Type == api.RO, false /* schemaTenantMode */, db.ConnectionContext{})
+				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage, ds, "", false /* datashare */, ds.Type == api.RO, db.ConnectionContext{})
 				if err != nil {
-					return err
+					return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 				}
 				defer driver.Close(ctx)
 				if err := driver.Ping(ctx); err != nil {
@@ -347,11 +347,6 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			patch.DataSources = &datasources
 		case "activation":
 			patch.Activation = &request.Instance.Activation
-		case "options.schema_tenant_mode":
-			if patch.OptionsUpsert == nil {
-				patch.OptionsUpsert = instance.Options
-			}
-			patch.OptionsUpsert.SchemaTenantMode = request.Instance.Options.GetSchemaTenantMode()
 		case "options.sync_interval":
 			if patch.OptionsUpsert == nil {
 				patch.OptionsUpsert = instance.Options
@@ -667,7 +662,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	}
 	// We only support add RO type datasouce to instance now, see more details in instance_service.proto.
 	if request.DataSource.Type != v1pb.DataSourceType_READ_ONLY {
-		return nil, status.Errorf(codes.InvalidArgument, "only support add read-only data source")
+		return nil, status.Errorf(codes.InvalidArgument, "only support adding read-only data source")
 	}
 
 	dataSource, err := s.convertToDataSourceMessage(request.DataSource)
@@ -694,9 +689,9 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */, db.ConnectionContext{})
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.Type == api.RO, db.ConnectionContext{})
 			if err != nil {
-				return err
+				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 			}
 			defer driver.Close(ctx)
 			if err := driver.Ping(ctx); err != nil {
@@ -853,6 +848,16 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.ExternalSecret = externalSecret
 			patch.ExternalSecret = externalSecret
 			patch.RemoveExternalSecret = externalSecret == nil
+
+		case "sasl_config":
+			dataSource.SASLConfig = convertToStoreDataSourceSaslConfig(request.DataSource.SaslConfig)
+			patch.SASLConfig = dataSource.SASLConfig
+
+		case "authentication_type":
+			authType := convertToAuthenticationType(request.DataSource.AuthenticationType)
+			dataSource.AuthenticationType = authType
+			patch.AuthenticationType = &authType
+
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -867,9 +872,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, &dataSource, "", false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */, db.ConnectionContext{})
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, &dataSource, "", false /* datashare */, dataSource.Type == api.RO, db.ConnectionContext{})
 			if err != nil {
-				return err
+				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 			}
 			defer driver.Close(ctx)
 			if err := driver.Ping(ctx); err != nil {
@@ -1128,6 +1133,14 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			dataSourceType = v1pb.DataSourceType_READ_ONLY
 		}
 
+		authenticationType := v1pb.DataSource_AUTHENTICATION_UNSPECIFIED
+		switch ds.AuthenticationType {
+		case storepb.DataSourceOptions_AUTHENTICATION_UNSPECIFIED, storepb.DataSourceOptions_PASSWORD:
+			authenticationType = v1pb.DataSource_PASSWORD
+		case storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM:
+			authenticationType = v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM
+		}
+
 		dataSourceList = append(dataSourceList, &v1pb.DataSource{
 			Id:       ds.ID,
 			Type:     dataSourceType,
@@ -1141,6 +1154,7 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			Sid:                    ds.SID,
 			ServiceName:            ds.ServiceName,
 			ExternalSecret:         externalSecret,
+			AuthenticationType:     authenticationType,
 		})
 	}
 
@@ -1190,6 +1204,45 @@ func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExter
 	return secret, nil
 }
 
+func convertToStoreDataSourceSaslConfig(saslConfig *v1pb.SASLConfig) *storepb.SASLConfig {
+	if saslConfig == nil {
+		return nil
+	}
+	storeSaslConfig := &storepb.SASLConfig{}
+	switch m := saslConfig.Mechanism.(type) {
+	case *v1pb.SASLConfig_KrbConfig:
+		storeSaslConfig.Mechanism = &storepb.SASLConfig_KrbConfig{
+			KrbConfig: &storepb.KerberosConfig{
+				Primary:              m.KrbConfig.Primary,
+				Instance:             m.KrbConfig.Instance,
+				Realm:                m.KrbConfig.Realm,
+				Keytab:               m.KrbConfig.Keytab,
+				KdcHost:              m.KrbConfig.KdcHost,
+				KdcTransportProtocol: m.KrbConfig.KdcTransportProtocol,
+			},
+		}
+	case *v1pb.SASLConfig_PlainConfig:
+		storeSaslConfig.Mechanism = &storepb.SASLConfig_PlainConfig{
+			PlainConfig: &storepb.PlainSASLConfig{
+				Username: m.PlainConfig.Username,
+				Password: m.PlainConfig.Password,
+			},
+		}
+	}
+	return storeSaslConfig
+}
+
+func convertToAuthenticationType(authType v1pb.DataSource_AuthenticationType) storepb.DataSourceOptions_AuthenticationType {
+	authenticationType := storepb.DataSourceOptions_AUTHENTICATION_UNSPECIFIED
+	switch authType {
+	case v1pb.DataSource_AUTHENTICATION_UNSPECIFIED, v1pb.DataSource_PASSWORD:
+		authenticationType = storepb.DataSourceOptions_PASSWORD
+	case v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM:
+		authenticationType = storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM
+	}
+	return authenticationType
+}
+
 func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource) (*store.DataSourceMessage, error) {
 	dsType, err := convertDataSourceTp(dataSource.Type)
 	if err != nil {
@@ -1199,6 +1252,7 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 	if err != nil {
 		return nil, err
 	}
+	saslConfig := convertToStoreDataSourceSaslConfig(dataSource.SaslConfig)
 
 	return &store.DataSourceMessage{
 		ID:                                 dataSource.Id,
@@ -1222,6 +1276,8 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		SSHObfuscatedPrivateKey:            common.Obfuscate(dataSource.SshPrivateKey, s.secret),
 		AuthenticationPrivateKeyObfuscated: common.Obfuscate(dataSource.AuthenticationPrivateKey, s.secret),
 		ExternalSecret:                     externalSecret,
+		SASLConfig:                         saslConfig,
+		AuthenticationType:                 convertToAuthenticationType(dataSource.AuthenticationType),
 	}, nil
 }
 
@@ -1258,7 +1314,6 @@ func convertToInstanceOptions(options *storepb.InstanceOptions) *v1pb.InstanceOp
 	}
 
 	return &v1pb.InstanceOptions{
-		SchemaTenantMode:   options.SchemaTenantMode,
 		SyncInterval:       options.SyncInterval,
 		MaximumConnections: options.MaximumConnections,
 	}
@@ -1270,7 +1325,6 @@ func convertInstanceOptions(options *v1pb.InstanceOptions) *storepb.InstanceOpti
 	}
 
 	return &storepb.InstanceOptions{
-		SchemaTenantMode:   options.SchemaTenantMode,
 		SyncInterval:       options.SyncInterval,
 		MaximumConnections: options.MaximumConnections,
 	}

@@ -4,6 +4,7 @@
       v-for="sshType in SshTypes"
       :key="sshType"
       :value="sshType"
+      :disabled="disabled"
       :checked="state.type === sshType"
       @update:checked="handleSelectType(sshType, $event)"
     >
@@ -21,8 +22,9 @@
         </label>
         <NInput
           v-model:value="state.value.sshHost"
-          class="mt-1 w-full"
+          class="mt-2 w-full"
           :placeholder="''"
+          :disabled="disabled"
         />
       </div>
 
@@ -32,8 +34,9 @@
         </label>
         <NInput
           v-model:value="state.value.sshPort"
-          class="mt-1 w-full"
+          class="mt-2 w-full"
           :placeholder="''"
+          :disabled="disabled"
           :allow-input="onlyAllowNumber"
         />
       </div>
@@ -42,24 +45,26 @@
     <div
       class="mt-2 grid grid-cols-1 gap-y-2 gap-x-4 border-none sm:grid-cols-3"
     >
-      <div class="mt-2 sm:col-span-1 sm:col-start-1">
+      <div class="mt-2 sm:col-span-3 sm:col-start-1">
         <label for="sshUser" class="textlabel block">
           {{ $t("data-source.ssh.user") }}
         </label>
         <NInput
           v-model:value="state.value.sshUser"
-          class="mt-1 w-full"
+          class="mt-2 w-full"
           :placeholder="''"
+          :disabled="disabled"
         />
       </div>
-      <div class="mt-2 sm:col-span-1 sm:col-start-1">
+      <div class="mt-2 sm:col-span-3 sm:col-start-1">
         <label for="sshPassword" class="textlabel block">
           {{ $t("data-source.ssh.password") }}
         </label>
         <NInput
           v-model:value="state.value.sshPassword"
-          class="mt-1 w-full"
+          class="mt-2 w-full"
           :placeholder="$t('instance.password-write-only')"
+          :disabled="disabled"
         />
       </div>
     </div>
@@ -67,14 +72,15 @@
       v-if="state.type === 'TUNNEL+PK'"
       class="mt-4 sm:col-span-3 sm:col-start-1"
     >
-      <div class="mt-2 sm:col-span-1 sm:col-start-1 flex flex-col gap-y-1">
+      <div class="mt-2 sm:col-span-1 sm:col-start-1 flex flex-col">
         <label for="sshPrivateKey" class="textlabel block">
           {{ $t("data-source.ssh.ssh-key") }}
         </label>
         <DroppableTextarea
           v-model:value="state.value.sshPrivateKey"
           :resizable="false"
-          class="w-full h-24 whitespace-pre-wrap"
+          :disabled="disabled"
+          class="w-full h-24 mt-2 whitespace-pre-wrap"
         />
       </div>
     </div>
@@ -91,7 +97,6 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { NInput, NRadio } from "naive-ui";
-import type { PropType } from "vue";
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
@@ -118,16 +123,11 @@ type LocalState = {
   showFeatureModal: boolean;
 };
 
-const props = defineProps({
-  value: {
-    type: Object as PropType<WithSshOptions>,
-    required: true,
-  },
-  instance: {
-    type: Object as PropType<Instance>,
-    default: undefined,
-  },
-});
+const props = defineProps<{
+  value: WithSshOptions;
+  instance?: Instance;
+  disabled: boolean;
+}>();
 
 const emit = defineEmits<{
   (e: "change", value: WithSshOptions): void;

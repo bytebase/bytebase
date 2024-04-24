@@ -1,5 +1,7 @@
 <template>
-  <BBAttention type="warning" :description="attentionText" />
+  <BBAttention type="warning">
+    {{ attentionText }}
+  </BBAttention>
   <div class="mt-4 space-y-2">
     <div class="flex justify-between items-center">
       <BBSpin v-if="state.loading" :size="20" />
@@ -42,6 +44,7 @@
 <script setup lang="ts">
 import { RefreshCwIcon, ChevronRightIcon } from "lucide-vue-next";
 import { reactive, computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import BBSpin from "@/bbkit/BBSpin.vue";
 import {
   pushNotification,
@@ -66,6 +69,7 @@ const emit = defineEmits<{
   (event: "set-repository", payload: VCSRepository): void;
 }>();
 
+const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const vcsV1Store = useVCSProviderStore();
 const state = reactive<LocalState>({
@@ -112,13 +116,13 @@ const repositoryList = computed(() => {
 
 const attentionText = computed((): string => {
   if (props.config.vcs.type === VCSType.GITLAB) {
-    return "repository.select-repository-attention-gitlab";
+    return t("repository.select-repository-attention-gitlab");
   } else if (props.config.vcs.type === VCSType.GITHUB) {
-    return "repository.select-repository-attention-github";
+    return t("repository.select-repository-attention-github");
   } else if (props.config.vcs.type === VCSType.BITBUCKET) {
-    return "repository.select-repository-attention-bitbucket";
+    return t("repository.select-repository-attention-bitbucket");
   } else if (props.config.vcs.type === VCSType.AZURE_DEVOPS) {
-    return "repository.select-repository-attention-azure-devops";
+    return t("repository.select-repository-attention-azure-devops");
   }
   return "";
 });
