@@ -98,14 +98,3 @@ func (checker *statementMaximumLimitValueChecker) Enter(in ast.Node) (ast.Node, 
 func (*statementMaximumLimitValueChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
-
-func useLimit1(node *ast.SelectStmt) bool {
-	if node.Limit != nil {
-		// var sa *ast.ValueExpr
-		ve, ok := node.Limit.Count.(*driver.ValueExpr)
-		if ok {
-			fmt.Printf("Barny1: %v\n", ve.GetInt64())
-		}
-	}
-	return false
-}
