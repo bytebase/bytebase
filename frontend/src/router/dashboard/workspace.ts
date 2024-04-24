@@ -62,7 +62,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
       getQuickActionList: () => {
         return ["quickaction.bb.project.create"];
       },
-      requiredWorkspacePermissionList: () => ["bb.projects.list"],
     },
     components: {
       content: () => import("@/views/ProjectDashboard.vue"),
@@ -78,7 +77,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
       getQuickActionList: () => {
         return ["quickaction.bb.instance.create"];
       },
-      requiredWorkspacePermissionList: () => ["bb.instances.list"],
     },
     components: {
       content: () => import("@/views/InstanceDashboard.vue"),
