@@ -1190,6 +1190,9 @@
       "format": "Formato",
       "encrypt": "Cifrar",
       "file-downloaded": "Archivo Descargado"
+    },
+    "update-rollout-time": {
+      "self": "Hora de implementación de la actualización"
     }
   },
   "alter-schema": {

@@ -1190,6 +1190,9 @@
       "format": "导出格式",
       "encrypt": "加密",
       "file-downloaded": "文件已下载"
+    },
+    "update-rollout-time": {
+      "self": "修改指定发布时间"
     }
   },
   "alter-schema": {
