@@ -67,9 +67,8 @@
         </template>
         <div class="w-full flex flex-row justify-end items-center mb-3">
           <SearchBox
-            :value="state.databaseNameSearch"
+            v-model:value="state.keyword"
             :placeholder="$t('sql-editor.search-databases')"
-            @update:value="state.databaseNameSearch = $event"
           />
         </div>
         <NDataTable
@@ -119,7 +118,7 @@ import {
 import type { ComposedDatabase } from "@/types";
 
 interface LocalState {
-  databaseNameSearch: string;
+  keyword: string;
   showFeatureModal: boolean;
 }
 
@@ -128,7 +127,7 @@ const databaseStore = useDatabaseV1Store();
 const tabStore = useSQLEditorTabStore();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 const state = reactive<LocalState>({
-  databaseNameSearch: "",
+  keyword: "",
   showFeatureModal: false,
 });
 // Save the stringified label key-value pairs.
@@ -157,9 +156,23 @@ const databases = computed(() => {
 });
 
 const filteredDatabaseList = computed(() => {
-  return databases.value.filter((db) =>
-    db.databaseName.includes(state.databaseNameSearch)
-  );
+  const keyword = state.keyword.trim();
+  if (!keyword) {
+    return databases.value;
+  }
+  return databases.value.filter((db) => {
+    if (db.databaseName.toLowerCase().includes(keyword)) {
+      return true;
+    }
+    for (const key in db.labels) {
+      const value = db.labels[key];
+      if (value.toLowerCase().includes(keyword)) {
+        return true;
+      }
+    }
+
+    return false;
+  });
 });
 
 const dataTableColumns = computed((): DataTableColumn<ComposedDatabase>[] => {
