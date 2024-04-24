@@ -436,6 +436,9 @@ const (
 	// PostgreSQLStatementPriorBackupCheck is an advisor type for PostgreSQL do prior backup check.
 	PostgreSQLStatementPriorBackupCheck Type = "bb.plugin.advisor.postgresql.statement.prior-backup-check"
 
+	// PostgreSQLStatementMaximumLimitValue is an advisor type for PostgreSQL statement maximum limit value.
+	PostgreSQLStatementMaximumLimitValue Type = "bb.plugin.advisor.postgresql.statement.maximum-limit-value"
+
 	// Oracle Advisor.
 
 	// OracleSyntax is an advisor type for Oracle syntax.
