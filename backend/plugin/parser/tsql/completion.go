@@ -1128,39 +1128,29 @@ func deriveObjectRefContextsFromCandidates(candidates []string, ignoredLinkedSer
 // skipHeadingSQLs skips the SQL statements which before the caret position.
 // caretLine is 1-based and caretOffset is 0-based.
 func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
+	newCaretLine, newCaretOffset := caretLine, caretOffset
 	list, err := SplitSQL(statement)
 	if err != nil || notEmptySQLCount(list) <= 1 {
 		return statement, caretLine, caretOffset
 	}
 
-	// The caretLine is 1-based and caretOffset is 0-based, and our splitter returns 0-based line and 0-based column,
-	// So we need to convert the caretLine to 0-based.
 	caretLine-- // Convert to 0-based.
 
-	start, newCaretLine, newCaretOffset := 0, 0, 0
+	start := 0
 	for i, sql := range list {
-		if sql.LastLine < caretLine {
-			continue
+		if sql.LastLine > caretLine || (sql.LastLine == caretLine && sql.LastColumn >= caretOffset) {
+			start = i
+			if i == 0 {
+				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
+				continue
+			}
+			newCaretLine = caretLine - list[i-1].LastLine + 1 // Convert to 1-based.
+			if caretLine == list[i-1].LastLine {
+				// The caret is in the same line as the last line of the previous SQL statement.
+				// We need to adjust the caret offset.
+				newCaretOffset = caretOffset - list[i-1].LastColumn - 1 // Convert to 0-based.
+			}
 		}
-		if sql.LastLine == caretLine && sql.LastColumn < caretOffset {
-			continue
-		}
-
-		start = i
-		if i == 0 {
-			// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
-			break
-		}
-		newCaretLine = caretLine - list[i-1].LastLine
-
-		if caretLine == list[i-1].LastLine {
-			// The caret is in the same line as the last line of the previous SQL statement.
-			// We need to adjust the caret offset.
-			newCaretOffset = caretOffset - list[i-1].LastColumn
-		}
-		// TODO(zp): here is difference from other languate, I thought we should break because we only
-		// skip the SQL statement before the caret position.
-		break
 	}
 
 	var buf strings.Builder
