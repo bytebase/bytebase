@@ -98,7 +98,6 @@ func (checker *MaximumTableSizeChecker) EnterDropTable(ctx *mysql.DropTableConte
 		_, tableName := mysqlparser.NormalizeMySQLTableRef(tabRef)
 		checker.affectedTabNames = append(checker.affectedTabNames, tableName)
 	}
-
 }
 
 func getTabSizeByName(targetTabName string, tables []*store.TableMetadata) int64 {
