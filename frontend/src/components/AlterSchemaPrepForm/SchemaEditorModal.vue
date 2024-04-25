@@ -471,6 +471,7 @@ const handlePreviewIssue = async () => {
         !!query.ghost
       );
     } else {
+      query.databaseList = databaseList.value.map((db) => db.name).join(",");
       query.sqlList = JSON.stringify(statementList);
       const databaseNameList = databaseList.value.map((db) => db.databaseName);
       query.name = generateIssueName(databaseNameList, !!query.ghost);
