@@ -1,7 +1,6 @@
 package base
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -269,16 +268,6 @@ func collectFollowSets(
 
 	for _, transition := range s.GetTransitions() {
 		if ruleTransition, ok := transition.(*antlr.RuleTransition); ok {
-			ruleIndex := ruleTransition.GetTarget().GetRuleIndex()
-			if len(ruleStack.rules) > 0 && ruleStack.rules[len(ruleStack.rules)-1].ID == 456 {
-				fmt.Println("ruleIdex", ruleIndex)
-			}
-			if ruleIndex == 581 {
-				fmt.Println("581!!!!!!!!!!!!!!!!!!!!!!", ruleStack.rules)
-			}
-			if ruleIndex == 574 {
-				fmt.Println("574!!!!!!!!!!!!!!!!!!!!!!", ruleStack.rules)
-			}
 			if ruleStack.Contains(ruleTransition.GetTarget().GetRuleIndex()) {
 				continue
 			}
@@ -439,13 +428,7 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 			// If the rule is preferred, we should add it to the candidates.
 			c.translateToRuleIndex(c.callStack)
 		} else {
-			for i, set := range followSets.sets {
-				if pathContains(set, 460) {
-					fmt.Println("pathContains", i, set.path.rules)
-				}
-				if pathContains(set, 581) {
-					fmt.Println("518!!!!!!!!!!!!!!!!!!!!!!pathContains", i, set.path.rules)
-				}
+			for _, set := range followSets.sets {
 				fullPath := c.callStack.Copy()
 				fullPath.Append(set.path)
 				// translateToRuleIndex will add the rule to the candidates if it is preferred.
