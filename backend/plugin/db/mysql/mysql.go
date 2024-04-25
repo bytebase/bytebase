@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/blang/semver/v4"
 	"github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
@@ -57,6 +58,9 @@ type Driver struct {
 	db            *sql.DB
 	databaseName  string
 	sshClient     *ssh.Client
+
+	// Called upon driver.Open() finishes.
+	openCleanUp []func()
 }
 
 func newDriver(dc db.DriverConfig) db.Driver {
@@ -67,6 +71,12 @@ func newDriver(dc db.DriverConfig) db.Driver {
 
 // Open opens a MySQL driver.
 func (driver *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
+	defer func() {
+		for _, f := range driver.openCleanUp {
+			f()
+		}
+	}()
+
 	var dsn string
 	var err error
 	switch connCfg.AuthenticationType {
@@ -123,13 +133,13 @@ func (driver *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, e
 	if err != nil {
 		return "", errors.Wrap(err, "sql: tls config error")
 	}
-	tlsKey := "db.mysql.tls"
+	tlsKey := uuid.NewString()
 	if tlsConfig != nil {
 		if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
 			return "", errors.Wrap(err, "sql: failed to register tls config")
 		}
 		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
-		defer mysql.DeregisterTLSConfig(tlsKey)
+		driver.openCleanUp = append(driver.openCleanUp, func() { mysql.DeregisterTLSConfig(tlsKey) })
 		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
 	}
 
