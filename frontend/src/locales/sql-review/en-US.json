@@ -103,8 +103,8 @@
       "title": "Limit DDL operations on tables with large data volumes",
       "description": "Configure the maximum data size of tables for which DDL can be executed. Recommended error level: warning",
       "component": {
-        "list": {
-          "title": "max data size"
+        "number": {
+          "title": "Max data size"
         }
       }
     },

@@ -103,7 +103,7 @@
       "title": "Limite las operaciones DDL en tablas con grandes volúmenes de datos",
       "description": "Configure el tamaño máximo de datos de las tablas para las que se puede ejecutar DDL. Nivel de error recomendado: advertencia",
       "component": {
-        "list": {
+        "number": {
           "title": "Tamaño máximo de datos"
         }
       }

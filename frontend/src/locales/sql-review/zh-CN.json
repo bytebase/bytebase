@@ -112,7 +112,7 @@
       "title": "限制对数据量大的表执行 DDL 操作",
       "description": "配置可执行 DDL 的表的最大数据量。建议错误级别：警告",
       "component": {
-        "list": {
+        "number": {
           "title": "最大数据量"
         }
       }
