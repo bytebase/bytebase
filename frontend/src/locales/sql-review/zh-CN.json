@@ -108,6 +108,15 @@
         }
       }
     },
+    "table-limit-size": {
+      "title": "限制对数据量大的表执行 DDL 操作",
+      "description": "配置可执行 DDL 的表的最大数据量。建议错误级别：警告",
+      "component": {
+        "number": {
+          "title": "最大数据量"
+        }
+      }
+    },
     "naming-table": {
       "title": "强制表命名格式",
       "description": "默认格式为全小写字母，单词之间以下划线分割，长度不超过 63 个字符，例如 \"abc\"，\"abc_def\"。建议错误等级：警告",

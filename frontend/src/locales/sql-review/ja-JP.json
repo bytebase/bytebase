@@ -99,6 +99,15 @@
         }
       }
     },
+    "table-limit-size": {
+      "title": "大量のデータを含むテーブルに対する DDL 操作を制限する",
+      "description": "DDL を実行できるテーブルの最大データサイズを設定します。推奨エラーレベル: 警告",
+      "component": {
+        "number": {
+          "title": "最大データサイズ"
+        }
+      }
+    },
     "table-disallow-dml": {
       "title": "DML を禁止する",
       "description": "DML の実行を禁止するテーブルを設定します。提案エラー レベル: 警告",

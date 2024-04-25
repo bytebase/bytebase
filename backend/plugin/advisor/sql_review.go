@@ -154,7 +154,8 @@ const (
 	SchemaRuleTableDisallowDDL SQLReviewRuleType = "table.disallow-ddl"
 	// SchemaRuleTableDisallowDML disallow executing DML on specific tables.
 	SchemaRuleTableDisallowDML SQLReviewRuleType = "table.disallow-dml"
-
+	// SchemaRuleTableLimitSize  restrict access to tables based on size.
+	SchemaRuleTableLimitSize SQLReviewRuleType = "table.limit-size"
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
 	// SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
@@ -1416,6 +1417,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleTableDisallowDML:
 		if engine == storepb.Engine_MSSQL {
 			return MSSQLTableDisallowDML, nil
+		}
+	case SchemaRuleTableLimitSize:
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_HIVE:
+			return MySQLTableLimitSize, nil
 		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
