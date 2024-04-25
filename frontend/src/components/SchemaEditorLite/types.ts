@@ -2,8 +2,11 @@ import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
+  FunctionMetadata,
+  ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
+  ViewMetadata,
 } from "@/types/proto/v1/database_service";
 
 export type EditTarget = {
@@ -14,7 +17,7 @@ export type EditTarget = {
 
 export type ResourceType = "branch" | "database";
 
-export type TabType = "database" | "table";
+export type TabType = "database" | "table" | "view" | "procedure" | "function";
 
 export type CommonTabContext = {
   id: string;
@@ -42,11 +45,49 @@ export type TableTabContext = CommonTabContext & {
   };
 };
 
-export type TabContext = DatabaseTabContext | TableTabContext;
+export type ViewTabContext = CommonTabContext & {
+  type: "view";
+  database: ComposedDatabase;
+  metadata: {
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    view: ViewMetadata;
+  };
+};
+
+export type ProcedureTabContext = CommonTabContext & {
+  type: "procedure";
+  database: ComposedDatabase;
+  metadata: {
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    procedure: ProcedureMetadata;
+  };
+};
+
+export type FunctionTabContext = CommonTabContext & {
+  type: "function";
+  database: ComposedDatabase;
+  metadata: {
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    function: FunctionMetadata;
+  };
+};
+
+export type TabContext =
+  | DatabaseTabContext
+  | TableTabContext
+  | ViewTabContext
+  | ProcedureTabContext
+  | FunctionTabContext;
 
 export type CoreTabContext =
   | Omit<DatabaseTabContext, "id">
-  | Omit<TableTabContext, "id">;
+  | Omit<TableTabContext, "id">
+  | Omit<ViewTabContext, "id">
+  | Omit<ProcedureTabContext, "id">
+  | Omit<FunctionTabContext, "id">;
 
 export type EditStatus = "normal" | "created" | "dropped" | "updated";
 
@@ -58,7 +99,10 @@ export type RolloutObject = {
   metadata: {
     database: DatabaseMetadata;
     schema: SchemaMetadata;
-    table: TableMetadata;
+    table?: TableMetadata;
     column?: ColumnMetadata;
+    view?: ViewMetadata;
+    procedure?: ProcedureMetadata;
+    function?: FunctionMetadata;
   };
 };

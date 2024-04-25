@@ -2293,7 +2293,10 @@
       "drop-column": "Drop column",
       "sql-preview": "SQL Preview",
       "reset": "Reset",
-      "save": "Save"
+      "save": "Save",
+      "create-procedure": "Create procedure",
+      "create-function": "Create function",
+      "drop": "Drop"
     },
     "database": {
       "name": "Name",
@@ -2346,7 +2349,11 @@
       "failed-to-fetch-database-schema": "Failed to fetch database schema",
       "invalid-schema": "Invalid schema",
       "cannot-drop-the-last-column": "Cannot drop the last column",
-      "cannot-change-config": "Database config must changed with the schema"
+      "cannot-change-config": "Database config must changed with the schema",
+      "duplicated-procedure-name": "Duplicated procedure name",
+      "invalid-procedure-name": "Invalid procedure name",
+      "duplicated-function-name": "Duplicated function name",
+      "invalid-function-name": "Invalid function name"
     },
     "confirm-to-close": {
       "title": "Confirm to close",
@@ -2370,7 +2377,10 @@
       "value": "Value",
       "add-sub-partition": "Add sub partition",
       "type": "Type"
-    }
+    },
+    "views": "Views",
+    "procedures": "Procedures",
+    "functions": "Functions"
   },
   "label": {
     "empty-label-value": "Empty",

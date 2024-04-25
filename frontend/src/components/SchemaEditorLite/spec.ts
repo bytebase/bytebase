@@ -15,3 +15,7 @@ export const engineSupportsEditProcedures = (engine: Engine) => {
 export const engineSupportsEditFunctions = (engine: Engine) => {
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
 };
+
+export const engineSupportsMultiSchema = (engine: Engine) => {
+  return [Engine.POSTGRES].includes(engine);
+};
