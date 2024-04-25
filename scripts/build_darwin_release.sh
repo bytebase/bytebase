@@ -7,7 +7,6 @@ set -eu
 tmp_dir=$(mktemp -d) || abort "cannot create temp directory"
 echo $tmp_dir
 cp ./bytebase-build/bytebase $tmp_dir
-cp ./bytebase-build/bb $tmp_dir
 cp ./LICENSE $tmp_dir
 cp ./LICENSE.enterprise $tmp_dir
 cp scripts/VERSION $tmp_dir
