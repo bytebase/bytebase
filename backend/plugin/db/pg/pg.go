@@ -174,25 +174,33 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	return connConfig, nil
 }
 
-// getRDSConnectionConfig returns connection config for AWS RDS.
-//
-// refs:
-// https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.Connecting.Go.html
-func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
+func getRDSConnectionPassword(ctx context.Context, conf db.ConnectionConfig) (string, error) {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "load aws config failed")
+		return "", errors.Wrap(err, "load aws config failed")
 	}
 
 	dbEndpoint := fmt.Sprintf("%s:%s", conf.Host, conf.Port)
 	authenticationToken, err := auth.BuildAuthToken(
 		ctx, dbEndpoint, "us-east-1", conf.Username, cfg.Credentials)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create authentication token")
+		return "", errors.Wrap(err, "failed to create authentication token")
+	}
+
+	return authenticationToken, nil
+}
+
+// getRDSConnectionConfig returns connection config for AWS RDS.
+//
+// https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.Connecting.Go.html
+func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
+	password, err := getRDSConnectionPassword(ctx, conf)
+	if err != nil {
+		return nil, err
 	}
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s",
-		conf.Host, conf.Port, conf.Username, authenticationToken, conf.Database,
+		conf.Host, conf.Port, conf.Username, password, conf.Database,
 	)
 	return pgx.ParseConfig(dsn)
 }
