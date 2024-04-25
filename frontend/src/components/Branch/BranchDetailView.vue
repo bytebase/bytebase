@@ -509,12 +509,11 @@ const handleApplyToDatabase = async (databaseIdList: string[]) => {
   );
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: props.project.uid,
     mode: "normal",
     ghost: undefined,
     branch: branch.name,
   };
-  query.databaseList = databaseIdList.join(",");
+  query.databaseList = targetDatabaseList.map((db) => db.name).join(",");
   query.sql = result.statement;
   query.name = generateIssueName(
     targetDatabaseList.map((db) => db.databaseName)

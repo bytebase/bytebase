@@ -598,10 +598,7 @@ const generateMultiDb = async () => {
       props.type,
       selectedDatabaseList.map((db) => db.databaseName)
     ),
-    project: project.uid,
-    // The server-side will sort the databases by environment.
-    // So we need not to sort them here.
-    databaseList: flattenSelectedDatabaseUidList.value.join(","),
+    databaseList: selectedDatabaseList.map((db) => db.name).join(","),
   };
   router.push({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -680,7 +677,6 @@ const generateTenant = async () => {
 
   const query: Record<string, any> = {
     template: props.type,
-    project: selectedProject.value.uid,
     batch: "1",
   };
   if (state.alterType === "TENANT") {
@@ -723,7 +719,7 @@ const generateTenant = async () => {
       databaseList.map((database) => database.databaseName),
       false
     );
-    query.databaseList = flattenSelectedDatabaseUidList.value.join(",");
+    query.databaseList = databaseList.map((db) => db.name).join(",");
   }
 
   emit("dismiss");

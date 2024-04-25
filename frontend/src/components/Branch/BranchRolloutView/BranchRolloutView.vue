@@ -353,15 +353,14 @@ const handlePreviewIssue = async () => {
   );
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: props.project.uid,
-    databaseList: db.uid,
+    databaseList: db.name,
     sheetId: extractSheetUID(createdSheet.name),
     name: generateIssueName(db.databaseName),
   };
   const routeInfo = {
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      project: extractProjectResourceName(props.project.name),
+      projectId: extractProjectResourceName(props.project.name),
       issueSlug: "create",
     },
     query,
