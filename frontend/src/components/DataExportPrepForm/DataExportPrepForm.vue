@@ -223,8 +223,7 @@ const navigateToIssuePage = async () => {
   const query: Record<string, any> = {
     template: issueType,
     name: generateIssueName(issueType, [selectedDatabase.databaseName]),
-    project: project.uid,
-    databaseList: state.selectedDatabaseUid,
+    databaseList: selectedDatabase.name,
   };
   router.push({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
