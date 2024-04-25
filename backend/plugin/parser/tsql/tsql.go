@@ -112,12 +112,12 @@ func NormalizeTSQLIdentifierText(text string) (original string, lowercase string
 	return text, s
 }
 
-// IsTSQLKeyword returns true if the given keyword is a TSQL keywords.
-func IsTSQLKeyword(keyword string, caseSensitive bool) bool {
+// IsTSQLReservedKeyword returns true if the given keyword is a TSQL keywords.
+func IsTSQLReservedKeyword(keyword string, caseSensitive bool) bool {
 	if !caseSensitive {
 		keyword = strings.ToUpper(keyword)
 	}
-	return tsqlKeywordsMap[keyword]
+	return tsqlReservedKeywordsMap[keyword]
 }
 
 // FlattenExecuteStatementArgExecuteStatementArgUnnamed returns the flattened unnamed execute statement arg.

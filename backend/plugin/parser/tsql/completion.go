@@ -157,7 +157,7 @@ func (m CompletionMap) insertMetadataDatabases(c *Completer, linkedServer string
 	if c.defaultDatabase != "" {
 		m[c.defaultDatabase] = base.Candidate{
 			Type: base.CandidateTypeDatabase,
-			Text: c.defaultDatabase,
+			Text: c.quotedIdentifierIfNeeded(c.defaultDatabase),
 		}
 	}
 
@@ -170,7 +170,7 @@ func (m CompletionMap) insertMetadataDatabases(c *Completer, linkedServer string
 		if _, ok := m[database]; !ok {
 			m[database] = base.Candidate{
 				Type: base.CandidateTypeDatabase,
-				Text: database,
+				Text: c.quotedIdentifierIfNeeded(database),
 			}
 		}
 	}
@@ -209,7 +209,7 @@ func (m CompletionMap) insertMetadataSchemas(c *Completer, linkedServer string, 
 		if _, ok := m[schema]; !ok {
 			m[schema] = base.Candidate{
 				Type: base.CandidateTypeSchema,
-				Text: schema,
+				Text: c.quotedIdentifierIfNeeded(schema),
 			}
 		}
 	}
@@ -253,7 +253,7 @@ func (m CompletionMap) insertMetadataTables(c *Completer, linkedServer string, d
 		if _, ok := m[table]; !ok {
 			m[table] = base.Candidate{
 				Type: base.CandidateTypeTable,
-				Text: table,
+				Text: c.quotedIdentifierIfNeeded(table),
 			}
 		}
 	}
@@ -318,7 +318,7 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, 
 			if _, ok := m[column.Name]; !ok {
 				m[column.Name] = base.Candidate{
 					Type: base.CandidateTypeColumn,
-					Text: column.Name,
+					Text: c.quotedIdentifierIfNeeded(column.Name),
 				}
 			}
 		}
@@ -330,7 +330,7 @@ func (m CompletionMap) insertCTEs(c *Completer) {
 		if _, ok := m[cte.Table]; !ok {
 			m[cte.Table] = base.Candidate{
 				Type: base.CandidateTypeTable,
-				Text: cte.Table,
+				Text: c.quotedIdentifierIfNeeded(cte.Table),
 			}
 		}
 	}
@@ -374,7 +374,7 @@ func (m CompletionMap) insertMetadataViews(c *Completer, linkedServer string, da
 		if _, ok := m[view]; !ok {
 			m[view] = base.Candidate{
 				Type: base.CandidateTypeView,
-				Text: view,
+				Text: c.quotedIdentifierIfNeeded(view),
 			}
 		}
 	}
@@ -382,7 +382,7 @@ func (m CompletionMap) insertMetadataViews(c *Completer, linkedServer string, da
 		if _, ok := m[materializeView]; !ok {
 			m[materializeView] = base.Candidate{
 				Type: base.CandidateTypeView,
-				Text: materializeView,
+				Text: c.quotedIdentifierIfNeeded(materializeView),
 			}
 		}
 	}
@@ -390,11 +390,21 @@ func (m CompletionMap) insertMetadataViews(c *Completer, linkedServer string, da
 		if _, ok := m[foreignTable]; !ok {
 			m[foreignTable] = base.Candidate{
 				Type: base.CandidateTypeView,
-				Text: foreignTable,
+				Text: c.quotedIdentifierIfNeeded(foreignTable),
 			}
 		}
 	}
 }
+
+// quptedType is the type of quoted token, SQL Server allows quoted identifiers by different characters.
+// https://learn.microsoft.com/en-us/sql/relational-databases/databases/database-identifiers?view=sql-server-ver16
+type quotedType int
+
+const (
+	quotedTypeNone          quotedType = iota
+	quotedTypeDoubleQuote              // ""
+	quotedTypeSquareBracket            // []
+)
 
 type Completer struct {
 	ctx     context.Context
@@ -417,7 +427,7 @@ type Completer struct {
 	references         []base.TableReference
 	cteCache           map[int][]*base.VirtualTableReference
 	cteTables          []*base.VirtualTableReference
-	caretTokenIsQuoted bool
+	caretTokenIsQuoted quotedType
 }
 
 func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc, databaseNamesLister base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
@@ -485,6 +495,11 @@ func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (
 }
 
 func (c *Completer) complete() ([]base.Candidate, error) {
+	if c.scanner.IsTokenType(tsqlparser.TSqlLexerDOUBLE_QUOTE_ID) {
+		c.caretTokenIsQuoted = quotedTypeDoubleQuote
+	} else if c.scanner.IsTokenType(tsqlparser.TSqlLexerSQUARE_BRACKET_ID) {
+		c.caretTokenIsQuoted = quotedTypeSquareBracket
+	}
 	caretIndex := c.scanner.GetIndex()
 	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(true)] {
 		caretIndex--
@@ -605,7 +620,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 								if _, ok := tableEntries[tableName]; !ok {
 									tableEntries[tableName] = base.Candidate{
 										Type: base.CandidateTypeTable,
-										Text: tableName,
+										Text: c.quotedIdentifierIfNeeded(tableName),
 									}
 								}
 							}
@@ -614,7 +629,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							if context.linkedServer == "" && context.database == "" && context.schema == "" {
 								tableEntries[reference.Table] = base.Candidate{
 									Type: base.CandidateTypeTable,
-									Text: reference.Table,
+									Text: c.quotedIdentifierIfNeeded(reference.Table),
 								}
 							}
 						}
@@ -629,7 +644,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					for _, alias := range list {
 						columnEntries.Insert(base.Candidate{
 							Type: base.CandidateTypeColumn,
-							Text: alias,
+							Text: c.quotedIdentifierIfNeeded(alias),
 						})
 					}
 					columnEntries.insertMetadataColumns(c, context.linkedServer, context.database, context.schema, context.object)
@@ -673,7 +688,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 									if _, ok := columnEntries[column]; !ok {
 										columnEntries[column] = base.Candidate{
 											Type: base.CandidateTypeColumn,
-											Text: column,
+											Text: c.quotedIdentifierIfNeeded(column),
 										}
 									}
 								}
@@ -687,7 +702,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 									if _, ok := columnEntries[column]; !ok {
 										columnEntries[column] = base.Candidate{
 											Type: base.CandidateTypeColumn,
-											Text: column,
+											Text: c.quotedIdentifierIfNeeded(column),
 										}
 									}
 								}
@@ -1580,4 +1595,56 @@ type SelectAliasListener struct {
 
 func (l *SelectAliasListener) EnterAs_column_alias(ctx *tsqlparser.As_column_aliasContext) {
 	l.result = unquote(ctx.Column_alias().GetText())
+}
+
+func (c *Completer) quotedIdentifierIfNeeded(identifier string) string {
+	if c.caretTokenIsQuoted != quotedTypeNone {
+		return identifier
+	}
+	if !isRegularIdentifier(identifier) {
+		return fmt.Sprintf("[%s]", identifier)
+	}
+	return identifier
+}
+
+func isRegularIdentifier(_ string) bool {
+	// For T-SQL, the users usually using the square brackets to quote the identifier.
+	return false
+	// // https://learn.microsoft.com/en-us/sql/relational-databases/databases/database-identifiers?view=sql-server-ver16#rules-for-regular-identifiers
+	// if len(identifier) == 0 {
+	// 	return true
+	// }
+
+	// firstChar := rune(identifier[0])
+	// isFirstCharValid := unicode.IsLetter(firstChar) || firstChar == '_' || firstChar == '@' || firstChar == '#'
+	// if !isFirstCharValid {
+	// 	return false
+	// }
+
+	// for _, r := range identifier[1:] {
+	// 	isValidChar := unicode.IsLetter(r) || unicode.IsDigit(r) || r == '@' || r == '$' || r == '#' || r == '_'
+	// 	if !isValidChar {
+	// 		return false
+	// 	}
+	// }
+
+	// // Rule 3: Check if the identifier is a reserved word
+	// // (You would need to maintain a list of reserved words for this)
+	// if IsTSQLReservedKeyword(identifier, false) {
+	// 	return false
+	// }
+
+	// // Rule 4: Check for embedded spaces or special characters
+	// for _, r := range identifier {
+	// 	if r == ' ' || !unicode.IsPrint(r) {
+	// 		return false
+	// 	}
+	// }
+
+	// // Rule 5: Check for supplementary characters
+	// if !utf8.ValidString(identifier) {
+	// 	return false
+	// }
+
+	// return true
 }

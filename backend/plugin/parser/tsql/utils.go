@@ -1,8 +1,8 @@
 package tsql
 
-// tsqlKeywordsMap is the map of all TSQL keywords.
+// tsqlReservedKeywordsMap is the map of all TSQL keywords.
 // Crawled from https://learn.microsoft.com/en-us/sql/t-sql/language-elements/reserved-keywords-transact-sql?view=sql-server-ver16.
-var tsqlKeywordsMap = map[string]bool{
+var tsqlReservedKeywordsMap = map[string]bool{
 	"OVER":                             true,
 	"END-EXEC":                         true,
 	"ESCAPE":                           true,
