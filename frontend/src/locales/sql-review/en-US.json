@@ -99,6 +99,15 @@
         }
       }
     },
+    "table-limit-size": {
+      "title": "Limit DDL operations on tables with large data volumes",
+      "description": "Configure the maximum data size of tables for which DDL can be executed. Recommended error level: warning",
+      "component": {
+        "number": {
+          "title": "Max data size"
+        }
+      }
+    },
     "table-disallow-dml": {
       "title": "Disallow DML",
       "description": "Configure which tables are prohibited from executing DML. Suggestion error level: Warning",
