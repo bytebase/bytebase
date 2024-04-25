@@ -422,7 +422,8 @@ const handlePreviewIssue = async () => {
       // So we need to provide the databaseList parameter
       query.databaseList = databaseList.value.map((db) => db.name).join(",");
     }
-  } else {
+  }
+  if (props.alterType !== "TENANT") {
     // If we are not using tenant deployment config pipeline
     // we need to pass the databaseList explicitly.
     query.databaseList = databaseList.value.map((db) => db.name).join(",");
