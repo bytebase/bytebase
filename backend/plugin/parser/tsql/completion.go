@@ -444,18 +444,41 @@ func Completion(ctx context.Context, statement string, caretLine int, caretOffse
 		return result, nil
 	}
 
-	return []base.Candidate{
-		{
-			Text:       "o.O",
-			Type:       base.CandidateTypeKeyword,
-			Definition: "This is a test completion item.",
-			Comment:    "This is item comment",
-		},
-	}, nil
+	trickyCompleter := NewTrickyCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadataGetter, databaseNamesLister)
+	trickyCompleter.fetchCommonTableExpression(statement)
+	return trickyCompleter.complete()
 }
 
 func NewStandardCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc, databaseNamesLister base.ListDatabaseNamesFunc) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
+	core := base.NewCodeCompletionCore(
+		parser,
+		ignoredTokens,  /* IgnoredTokens */
+		preferredRules, /* PreferredRules */
+		&globalFellowSetsByState,
+		tsqlparser.TSqlParserRULE_select_statement,            /* queryRule */
+		tsqlparser.TSqlParserRULE_select_statement_standalone, /* shadowQueryRule */
+		tsqlparser.TSqlParserRULE_as_column_alias,             /* selectItemAliasRule */
+		-1, /* cteRule */
+	)
+
+	return &Completer{
+		ctx:                 ctx,
+		core:                core,
+		parser:              parser,
+		lexer:               lexer,
+		scanner:             scanner,
+		defaultDatabase:     defaultDatabase,
+		defaultSchema:       "dbo",
+		metadataGetter:      metadataGetter,
+		databaseNamesLister: databaseNamesLister,
+		noSeparatorRequired: nil,
+		cteCache:            nil,
+	}
+}
+
+func NewTrickyCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadataGetter base.GetDatabaseMetadataFunc, databaseNamesLister base.ListDatabaseNamesFunc) *Completer {
+	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
 	core := base.NewCodeCompletionCore(
 		parser,
 		ignoredTokens,  /* IgnoredTokens */
@@ -494,6 +517,73 @@ func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (
 	scanner.SeekPosition(caretLine, caretOffset)
 	scanner.Push()
 	return parser, lexer, scanner
+}
+
+func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*tsqlparser.TSqlParser, *tsqlparser.TSqlLexer, *base.Scanner) {
+	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
+	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
+	input := antlr.NewInputStream(statement)
+	lexer := tsqlparser.NewTSqlLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := tsqlparser.NewTSqlParser(stream)
+	parser.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	scanner := base.NewScanner(stream, true /* fillInput */)
+	scanner.SeekPosition(caretLine, caretOffset)
+	scanner.Push()
+	return parser, lexer, scanner
+}
+
+// caretLine is 1-based and caretOffset is 0-based.
+func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
+	input := antlr.NewInputStream(statement)
+	lexer := tsqlparser.NewTSqlLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	p := tsqlparser.NewTSqlParser(stream)
+	p.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	lexerErrorListener := &base.ParseErrorListener{}
+	parserErrorListener := &base.ParseErrorListener{}
+	lexer.AddErrorListener(lexerErrorListener)
+	p.AddErrorListener(parserErrorListener)
+
+	lastLine, lastColumn, lastIndex := 0, 0, 0
+	num := 0
+	for {
+		if num > 10 {
+			// We only skip at most 10 SQL statements.
+			return statement, caretLine, caretOffset
+		}
+		tree := p.Tsql_file()
+		if lexerErrorListener.Err != nil || parserErrorListener.Err != nil {
+			if num == 0 {
+				return statement, caretLine, caretOffset
+			}
+			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
+			newCaretOffset := caretOffset
+			if caretLine == lastLine {
+				newCaretOffset = caretOffset - lastColumn - 1 // convert to 0-based.
+			}
+			return stream.GetTextFromInterval(antlr.NewInterval(lastIndex+1, stream.Size())), newCaretLine, newCaretOffset
+		}
+		if tree.GetStop().GetLine() > caretLine || (tree.GetStop().GetLine() == caretLine && tree.GetStop().GetColumn() >= caretOffset) {
+			if num == 0 {
+				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
+				return statement, caretLine, caretOffset
+			}
+
+			newCaretLine := caretLine - lastLine + 1 // convert to 1-based.
+			newCaretOffset := caretOffset
+			if caretLine == lastLine {
+				newCaretOffset = caretOffset - lastColumn - 1 // convert to 0-based.
+			}
+			return stream.GetTextFromInterval(antlr.NewInterval(tree.GetStart().GetTokenIndex(), stream.Size())), newCaretLine, newCaretOffset
+		}
+		num++
+		lastLine = tree.GetStop().GetLine()
+		lastColumn = tree.GetStop().GetColumn()
+		lastIndex = tree.GetStop().GetTokenIndex()
+	}
 }
 
 func (c *Completer) complete() ([]base.Candidate, error) {
