@@ -9130,6 +9130,7 @@ components:
                         - AUTHENTICATION_UNSPECIFIED
                         - PASSWORD
                         - GOOGLE_CLOUD_SQL_IAM
+                        - AWS_RDS_IAM
                     type: string
                     format: enum
                 saslConfig:
