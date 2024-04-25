@@ -1,6 +1,7 @@
-import { cloneDeep, groupBy, orderBy } from "lodash-es";
+import { cloneDeep, groupBy, isNaN, isNumber, orderBy } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
+import { useRoute } from "vue-router";
 import { rolloutServiceClient } from "@/grpcweb";
 import type { TemplateType } from "@/plugins";
 import {
@@ -12,6 +13,7 @@ import {
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import { emptyIssue, TaskTypeListWithStatement, UNKNOWN_ID } from "@/types";
 import { DatabaseConfig } from "@/types/proto/v1/database_service";
@@ -56,12 +58,13 @@ type CreateIssueParams = {
 };
 
 export const createIssueSkeleton = async (query: Record<string, string>) => {
-  const project = await useProjectV1Store().getOrFetchProjectByUID(
-    query.project
+  const route = useRoute();
+  const projectName = route.params.projectId as string;
+  const project = await useProjectV1Store().getOrFetchProjectByName(
+    `${projectNamePrefix}${projectName}`
   );
-  const databaseUIDList = (query.databaseList ?? "")
-    .split(",")
-    .filter((uid) => uid && uid !== String(UNKNOWN_ID));
+  const databaseIdList = (query.databaseList ?? "").split(",");
+  const databaseUIDList = await prepareDatabaseUIDList(databaseIdList);
   await prepareDatabaseList(databaseUIDList, project.uid);
 
   const params: CreateIssueParams = {
@@ -592,4 +595,29 @@ export const isValidStage = (stage: Stage): boolean => {
     }
   }
   return true;
+};
+
+const prepareDatabaseUIDList = async (
+  // databaseIdList is a list of database identifiers. Including UID and resource id.
+  // e.g. ["103", "205", "instances/mysql/databases/employee"]
+  databaseIdList: string[]
+) => {
+  const databaseStore = useDatabaseV1Store();
+  const databaseUIDList = [];
+  for (const maybeUID of databaseIdList) {
+    if (!maybeUID || maybeUID === String(UNKNOWN_ID)) {
+      continue;
+    }
+    const uid = Number(maybeUID);
+    if (isNumber(uid) && !isNaN(uid)) {
+      databaseUIDList.push(maybeUID);
+      continue;
+    }
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      maybeUID,
+      true // silent
+    );
+    databaseUIDList.push(database.uid);
+  }
+  return databaseUIDList.filter((id) => id && id !== String(UNKNOWN_ID));
 };
