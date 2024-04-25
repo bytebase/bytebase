@@ -16,7 +16,6 @@ import (
 
 func init() {
 	advisor.Register(store.Engine_MYSQL, advisor.MySQLTableLimitSize, &MaximumTableSizeAdvisor{})
-	advisor.Register(store.Engine_HIVE, advisor.MySQLTableLimitSize, &MaximumTableSizeAdvisor{})
 }
 
 type MaximumTableSizeAdvisor struct {
@@ -25,15 +24,14 @@ type MaximumTableSizeAdvisor struct {
 type MaximumTableSizeChecker struct {
 	*mysql.BaseMySQLParserListener
 	affectedTabNames []string
+	baseLine         int
 }
 
 var (
 	_ advisor.Advisor = &MaximumTableSizeAdvisor{}
-	// TODO(tommy): this should be carefully considered.
-	MaxTableSizeBytes = 1
 )
 
-// If table size > xx GB, then warning/error.
+// If table size > xx bytes, then warning/error.
 func (*MaximumTableSizeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	var adviceList []advisor.Advice
 	if ctx.ChangeType != store.PlanCheckRunConfig_DDL {
@@ -55,11 +53,18 @@ func (*MaximumTableSizeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.
 		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
+	// User defined rule level.
+	status, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, parsedResult := range statParsedResults {
 		statTypeChecker := &mysqlparser.StatementTypeChecker{}
 		antlr.ParseTreeWalkerDefault.Walk(statTypeChecker, parsedResult.Tree)
 
 		tableSizeChecker := &MaximumTableSizeChecker{}
+		statementBaseLine := parsedResult.BaseLine
 		if statTypeChecker.IsDDL {
 			// Get table name.
 			antlr.ParseTreeWalkerDefault.Walk(tableSizeChecker, parsedResult.Tree)
@@ -69,10 +74,11 @@ func (*MaximumTableSizeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.
 					dataSize := getTabSizeByName(tabName, ctx.DBSchema.Schemas[0].Tables)
 					if dataSize >= int64(payload.Number) {
 						adviceList = append(adviceList, advisor.Advice{
-							Status:  advisor.Warn,
+							Status:  status,
 							Code:    advisor.TableExceedLimitSize,
 							Title:   ctx.Rule.Type,
 							Content: fmt.Sprintf("Apply DDL on large table '%s' ( %d bytes )will lock table for a long time", tabName, dataSize),
+							Line:    statementBaseLine + tableSizeChecker.baseLine,
 						})
 					}
 				}
@@ -80,20 +86,31 @@ func (*MaximumTableSizeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.
 		}
 	}
 
+	if len(adviceList) == 0 {
+		return []advisor.Advice{{
+			Status:  advisor.Success,
+			Code:    advisor.Ok,
+			Title:   "OK",
+			Content: "",
+		}}, nil
+	}
 	return adviceList, nil
 }
 
 func (checker *MaximumTableSizeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	checker.baseLine = ctx.GetStart().GetLine()
 	checker.affectedTabNames = append(checker.affectedTabNames, tableName)
 }
 
 func (checker *MaximumTableSizeChecker) EnterTruncateTableStatement(ctx *mysql.TruncateTableStatementContext) {
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	checker.baseLine = ctx.GetStart().GetLine()
 	checker.affectedTabNames = append(checker.affectedTabNames, tableName)
 }
 
 func (checker *MaximumTableSizeChecker) EnterDropTable(ctx *mysql.DropTableContext) {
+	checker.baseLine = ctx.GetStart().GetLine()
 	for _, tabRef := range ctx.TableRefList().AllTableRef() {
 		_, tableName := mysqlparser.NormalizeMySQLTableRef(tabRef)
 		checker.affectedTabNames = append(checker.affectedTabNames, tableName)
