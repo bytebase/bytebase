@@ -5,6 +5,8 @@ import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
+  FunctionMetadata,
+  ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -86,6 +88,50 @@ export const useSelection = (
     } else {
       // de-select the column
       map.delete(keyForResource(db, metadata));
+    }
+  };
+  const updateProcedureSelectionImpl = (
+    map: Map<string, RolloutObject>,
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      procedure: ProcedureMetadata;
+    },
+    on: boolean
+  ) => {
+    const key = keyForResource(db, metadata);
+    if (on) {
+      // select the procedure
+      map.set(key, {
+        db,
+        metadata,
+      });
+    } else {
+      // de-select the procedure
+      map.delete(key);
+    }
+  };
+  const updateFunctionSelectionImpl = (
+    map: Map<string, RolloutObject>,
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      function: FunctionMetadata;
+    },
+    on: boolean
+  ) => {
+    const key = keyForResource(db, metadata);
+    if (on) {
+      // select the function
+      map.set(key, {
+        db,
+        metadata,
+      });
+    } else {
+      // de-select the function
+      map.delete(key);
     }
   };
   const emit = (map: Map<string, RolloutObject>) => {
@@ -284,6 +330,172 @@ export const useSelection = (
     emit(updatedMap);
   };
 
+  const getProcedureSelectionState = (
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      procedure: ProcedureMetadata;
+    }
+  ) => {
+    if (!selectionEnabled.value) {
+      return { checked: false, indeterminate: false };
+    }
+
+    const checked = selectedRolloutObjectMap.value.has(
+      keyForResource(db, metadata)
+    );
+    return {
+      checked,
+      indeterminate: false,
+    };
+  };
+  const updateProcedureSelection = (
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      procedure: ProcedureMetadata;
+    },
+    on: boolean
+  ) => {
+    if (!selectionEnabled.value) return;
+    const updatedMap = new Map(selectedRolloutObjectMap.value.entries());
+    updateProcedureSelectionImpl(updatedMap, db, metadata, on);
+    emit(updatedMap);
+  };
+  const getAllProceduresSelectionState = (
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+    },
+    procedures: ProcedureMetadata[]
+  ) => {
+    if (!selectionEnabled.value || procedures.length === 0) {
+      return { checked: false, indeterminate: false };
+    }
+    const selected = procedures.filter((procedure) => {
+      return selectedRolloutObjectMap.value.has(
+        keyForResource(db, {
+          ...metadata,
+          procedure,
+        })
+      );
+    });
+    return {
+      checked: selected.length === procedures.length,
+      indeterminate: selected.length > 0 && selected.length < procedures.length,
+    };
+  };
+  const updateAllProceduresSelection = (
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+    },
+    procedures: ProcedureMetadata[],
+    on: boolean
+  ) => {
+    const updatedMap = new Map(selectedRolloutObjectMap.value.entries());
+    procedures.forEach((procedure) => {
+      updateProcedureSelectionImpl(
+        updatedMap,
+        db,
+        {
+          ...metadata,
+          procedure,
+        },
+        on
+      );
+    });
+
+    emit(updatedMap);
+  };
+
+  const getFunctionSelectionState = (
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      function: FunctionMetadata;
+    }
+  ) => {
+    if (!selectionEnabled.value) {
+      return { checked: false, indeterminate: false };
+    }
+
+    const checked = selectedRolloutObjectMap.value.has(
+      keyForResource(db, metadata)
+    );
+    return {
+      checked,
+      indeterminate: false,
+    };
+  };
+  const updateFunctionSelection = (
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      function: FunctionMetadata;
+    },
+    on: boolean
+  ) => {
+    if (!selectionEnabled.value) return;
+    const updatedMap = new Map(selectedRolloutObjectMap.value.entries());
+    updateFunctionSelectionImpl(updatedMap, db, metadata, on);
+    emit(updatedMap);
+  };
+  const getAllFunctionsSelectionState = (
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+    },
+    functions: FunctionMetadata[]
+  ) => {
+    if (!selectionEnabled.value || functions.length === 0) {
+      return { checked: false, indeterminate: false };
+    }
+    const selected = functions.filter((func) => {
+      return selectedRolloutObjectMap.value.has(
+        keyForResource(db, {
+          ...metadata,
+          function: func,
+        })
+      );
+    });
+    return {
+      checked: selected.length === functions.length,
+      indeterminate: selected.length > 0 && selected.length < functions.length,
+    };
+  };
+  const updateAllFunctionsSelection = (
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+    },
+    functions: FunctionMetadata[],
+    on: boolean
+  ) => {
+    const updatedMap = new Map(selectedRolloutObjectMap.value.entries());
+    functions.forEach((func) => {
+      updateFunctionSelectionImpl(
+        updatedMap,
+        db,
+        {
+          ...metadata,
+          function: func,
+        },
+        on
+      );
+    });
+
+    emit(updatedMap);
+  };
+
   return {
     selectionEnabled,
     getTableSelectionState,
@@ -294,5 +506,13 @@ export const useSelection = (
     updateColumnSelection,
     getAllColumnsSelectionState,
     updateAllColumnsSelection,
+    getProcedureSelectionState,
+    updateProcedureSelection,
+    getAllProceduresSelectionState,
+    updateAllProceduresSelection,
+    getFunctionSelectionState,
+    updateFunctionSelection,
+    getAllFunctionsSelectionState,
+    updateAllFunctionsSelection,
   };
 };

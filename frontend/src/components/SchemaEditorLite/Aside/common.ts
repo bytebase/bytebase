@@ -3,11 +3,18 @@ import type { ComposedDatabase, ComposedInstance } from "@/types";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
+  FunctionMetadata,
+  ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
+  ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { groupBy } from "@/utils";
 import { keyForResource } from "../context/common";
+import {
+  engineSupportsEditFunctions,
+  engineSupportsEditProcedures,
+} from "../spec";
 import type { EditTarget } from "../types";
 
 export interface BaseTreeNode extends TreeOption {
@@ -30,7 +37,9 @@ export interface TreeNodeForDatabase extends BaseTreeNode {
   metadata: {
     database: DatabaseMetadata;
   };
-  children: TreeNodeForSchema[];
+  children:
+    | TreeNodeForSchema[] // for multi-schema engines
+    | TreeNodeForGroup[]; // for single-schema engines
 }
 
 export interface TreeNodeForSchema extends BaseTreeNode {
@@ -41,19 +50,19 @@ export interface TreeNodeForSchema extends BaseTreeNode {
     database: DatabaseMetadata;
     schema: SchemaMetadata;
   };
-  children: TreeNodeForTable[];
+  children: TreeNodeForGroup[];
 }
 
 export interface TreeNodeForTable extends BaseTreeNode {
   type: "table";
   db: ComposedDatabase;
-  parent: TreeNodeForSchema;
+  parent: TreeNodeForGroup<"table">;
   metadata: {
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     table: TableMetadata;
   };
-  children: TreeNodeForColumn[];
+  children: TreeNodeForColumn[] | TreeNodeForPlaceholder<"column">[];
 }
 
 export interface TreeNodeForColumn extends BaseTreeNode {
@@ -70,16 +79,100 @@ export interface TreeNodeForColumn extends BaseTreeNode {
   isLeaf: true;
 }
 
+export interface TreeNodeForView extends BaseTreeNode {
+  type: "view";
+  db: ComposedDatabase;
+  parent: TreeNodeForGroup<"view">;
+  metadata: {
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    view: ViewMetadata;
+  };
+  children: undefined;
+  isLeaf: true;
+}
+
+export interface TreeNodeForProcedure extends BaseTreeNode {
+  type: "procedure";
+  db: ComposedDatabase;
+  parent: TreeNodeForGroup<"procedure">;
+  metadata: {
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    procedure: ProcedureMetadata;
+  };
+  children: undefined;
+  isLeaf: true;
+}
+
+export interface TreeNodeForFunction extends BaseTreeNode {
+  type: "function";
+  db: ComposedDatabase;
+  parent: TreeNodeForGroup<"function">;
+  metadata: {
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    function: FunctionMetadata;
+  };
+  children: undefined;
+  isLeaf: true;
+}
+
+export type GroupNodeType = "table" | "view" | "procedure" | "function";
+export interface TreeNodeForGroup<T extends GroupNodeType = GroupNodeType>
+  extends BaseTreeNode {
+  type: "group";
+  group: T;
+  db: ComposedDatabase;
+  metadata: {
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+  };
+  parent: TreeNodeForSchema | TreeNodeForDatabase | undefined;
+  isLeaf: false;
+  children: T extends "table"
+    ? TreeNodeForTable[] | TreeNodeForPlaceholder<"table">[]
+    : T extends "view"
+      ? TreeNodeForView[] | TreeNodeForPlaceholder<"view">[]
+      : T extends "procedure"
+        ? TreeNodeForProcedure[] | TreeNodeForPlaceholder<"procedure">[]
+        : T extends "function"
+          ? TreeNodeForFunction[] | TreeNodeForPlaceholder<"function">[]
+          : undefined;
+}
+
+export type PlaceholderNodeType =
+  | "table"
+  | "column"
+  | "view"
+  | "procedure"
+  | "function";
+export interface TreeNodeForPlaceholder<
+  T extends PlaceholderNodeType = PlaceholderNodeType,
+> extends BaseTreeNode {
+  type: "placeholder";
+  placeholder: T;
+  parent: TreeNode;
+  isLeaf: true;
+  children: undefined;
+}
+
 export type TreeNode =
   | TreeNodeForInstance
   | TreeNodeForDatabase
   | TreeNodeForSchema
   | TreeNodeForTable
-  | TreeNodeForColumn;
+  | TreeNodeForColumn
+  | TreeNodeForView
+  | TreeNodeForProcedure
+  | TreeNodeForFunction
+  | TreeNodeForGroup
+  | TreeNodeForPlaceholder;
 
 export type BuildTreeOptions = {
   byInstance: boolean;
 };
+
 export const buildTree = (
   targets: EditTarget[],
   map: Map<string, TreeNode>,
@@ -161,6 +254,100 @@ const buildSchemaNodeList = (
   database: DatabaseMetadata,
   parent: TreeNodeForDatabase | undefined
 ) => {
+  const mapSchemaChildrenNodes = (
+    schema: SchemaMetadata,
+    parent: TreeNodeForSchema | TreeNodeForDatabase | undefined
+  ) => {
+    const groups: TreeNodeForGroup[] = [];
+    const metadata = {
+      database,
+      schema,
+    };
+    // Tables
+    const tableGroupNode: TreeNodeForGroup<"table"> = {
+      type: "group",
+      group: "table",
+      key: keyForResource(db, metadata, "table-group"),
+      parent,
+      db,
+      metadata,
+      label: "Tables",
+      children: [],
+      isLeaf: false,
+    };
+    tableGroupNode.children = buildTableNodeList(
+      schema.tables,
+      map,
+      tableGroupNode
+    );
+    if (tableGroupNode.children.length === 0) {
+      tableGroupNode.children = [
+        buildPlaceholderNode("table", tableGroupNode, map),
+      ];
+    }
+    groups.push(tableGroupNode);
+    map.set(tableGroupNode.key, tableGroupNode);
+
+    // Procedures
+    if (engineSupportsEditProcedures(db.instanceEntity.engine)) {
+      const procedureGroupNode: TreeNodeForGroup<"procedure"> = {
+        type: "group",
+        group: "procedure",
+        key: keyForResource(db, metadata, "procedure-group"),
+        parent,
+        db,
+        metadata,
+        label: "Procedures",
+        children: [],
+        isLeaf: false,
+      };
+      procedureGroupNode.children = buildProcedureNodeList(
+        schema.procedures,
+        map,
+        procedureGroupNode
+      );
+      if (procedureGroupNode.children.length === 0) {
+        procedureGroupNode.children = [
+          buildPlaceholderNode("procedure", procedureGroupNode, map),
+        ];
+      }
+      groups.push(procedureGroupNode);
+      map.set(procedureGroupNode.key, procedureGroupNode);
+    }
+    // Functions
+    if (engineSupportsEditFunctions(db.instanceEntity.engine)) {
+      const functionGroupNode: TreeNodeForGroup<"function"> = {
+        type: "group",
+        group: "function",
+        key: keyForResource(db, metadata, "function-group"),
+        parent,
+        db,
+        metadata,
+        label: "functions",
+        children: [],
+        isLeaf: false,
+      };
+      functionGroupNode.children = buildFunctionNodeList(
+        schema.functions,
+        map,
+        functionGroupNode
+      );
+      if (functionGroupNode.children.length === 0) {
+        functionGroupNode.children = [
+          buildPlaceholderNode("function", functionGroupNode, map),
+        ];
+      }
+      groups.push(functionGroupNode);
+      map.set(functionGroupNode.key, functionGroupNode);
+    }
+    return groups;
+  };
+
+  // MySQL, TiDB has only one "schema" with empty name
+  if (schemas.length === 1 && schemas[0].name === "") {
+    return mapSchemaChildrenNodes(schemas[0], parent);
+  }
+
   return schemas.map((schema) => {
     const metadata = {
       database,
@@ -176,8 +363,8 @@ const buildSchemaNodeList = (
       metadata,
       children: [],
     };
+    schemaNode.children = mapSchemaChildrenNodes(schema, schemaNode);
     map.set(schemaNode.key, schemaNode);
-    schemaNode.children = buildTableNodeList(schema.tables, map, schemaNode);
     return schemaNode;
   });
 };
@@ -185,7 +372,7 @@ const buildSchemaNodeList = (
 const buildTableNodeList = (
   tables: TableMetadata[],
   map: Map<string, TreeNode>,
-  parent: TreeNodeForSchema
+  parent: TreeNodeForGroup<"table">
 ) => {
   return tables.map((table) => {
     const { db } = parent;
@@ -205,7 +392,63 @@ const buildTableNodeList = (
     };
     map.set(tableNode.key, tableNode);
     tableNode.children = buildColumnNodeList(table.columns, map, tableNode);
+
+    if (tableNode.children.length === 0) {
+      tableNode.children = [buildPlaceholderNode("column", tableNode, map)];
+    }
     return tableNode;
+  });
+};
+
+const buildProcedureNodeList = (
+  procedures: ProcedureMetadata[],
+  map: Map<string, TreeNode>,
+  parent: TreeNodeForGroup<"procedure">
+) => {
+  return procedures.map((procedure) => {
+    const { db } = parent;
+    const metadata = {
+      ...parent.metadata,
+      procedure,
+    };
+    const procedureNode: TreeNodeForProcedure = {
+      type: "procedure",
+      parent,
+      key: keyForResource(db, metadata),
+      label: procedure.name,
+      isLeaf: true,
+      db,
+      metadata,
+      children: undefined,
+    };
+    map.set(procedureNode.key, procedureNode);
+    return procedureNode;
+  });
+};
+
+const buildFunctionNodeList = (
+  functions: FunctionMetadata[],
+  map: Map<string, TreeNode>,
+  parent: TreeNodeForGroup<"function">
+) => {
+  return functions.map((func) => {
+    const { db } = parent;
+    const metadata = {
+      ...parent.metadata,
+      function: func,
+    };
+    const functionNode: TreeNodeForFunction = {
+      type: "function",
+      parent,
+      key: keyForResource(db, metadata),
+      label: func.name,
+      isLeaf: true,
+      db,
+      metadata,
+      children: undefined,
+    };
+    map.set(functionNode.key, functionNode);
+    return functionNode;
   });
 };
 
@@ -233,4 +476,22 @@ const buildColumnNodeList = (
     map.set(columnNode.key, columnNode);
     return columnNode;
   });
+};
+
+const buildPlaceholderNode = <T extends PlaceholderNodeType>(
+  placeholder: T,
+  parent: TreeNode,
+  map: Map<string, TreeNode>
+) => {
+  const node: TreeNodeForPlaceholder<T> = {
+    type: "placeholder",
+    key: `${parent.key}/placeholder`,
+    placeholder,
+    parent,
+    label: "",
+    children: undefined,
+    isLeaf: true,
+  };
+  map.set(node.key, node);
+  return node;
 };

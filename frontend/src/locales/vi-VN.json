@@ -2293,7 +2293,10 @@
       "drop-column": "Cột thả",
       "sql-preview": "Xem trước SQL",
       "reset": "Cài lại",
-      "save": "Cứu"
+      "save": "Cứu",
+      "create-procedure": "Tạo thủ tục",
+      "create-function": "Tạo chức năng",
+      "drop": "Làm rơi"
     },
     "database": {
       "name": "Tên",
@@ -2346,7 +2349,11 @@
       "failed-to-fetch-database-schema": "Không tìm nạp được lược đồ cơ sở dữ liệu",
       "invalid-schema": "Lược đồ không hợp lệ",
       "cannot-drop-the-last-column": "Không thể bỏ cột cuối cùng",
-      "cannot-change-config": "Cấu hình cơ sở dữ liệu phải thay đổi với lược đồ"
+      "cannot-change-config": "Cấu hình cơ sở dữ liệu phải thay đổi với lược đồ",
+      "duplicated-procedure-name": "Tên thủ tục trùng lặp",
+      "invalid-procedure-name": "Tên thủ tục không hợp lệ",
+      "duplicated-function-name": "Tên hàm trùng lặp",
+      "invalid-function-name": "Tên hàm không hợp lệ"
     },
     "confirm-to-close": {
       "title": "Xác nhận để đóng",
@@ -2370,7 +2377,10 @@
       "value": "Giá trị",
       "add-sub-partition": "Thêm phân vùng phụ",
       "type": "Kiểu"
-    }
+    },
+    "views": "Lượt xem",
+    "procedures": "Thủ tục",
+    "functions": "Hàm số"
   },
   "label": {
     "empty-label-value": "Trống",
