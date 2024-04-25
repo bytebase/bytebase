@@ -246,17 +246,15 @@ const tryFinishSetup = async () => {
       };
     })
     .filter((item) => item.diff !== "");
-  const databaseIdList = targetDatabaseDiffList.map((item) => item.id);
   const statementList = targetDatabaseDiffList.map((item) => item.diff);
   const project = await projectStore.getOrFetchProjectByUID(projectId.value!);
 
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: project.uid,
     mode: "normal",
     ghost: undefined,
   };
-  query.databaseList = databaseIdList.join(",");
+  query.databaseList = targetDatabaseList.map((db) => db.name).join(",");
   query.sqlList = JSON.stringify(statementList);
   query.name = generateIssueName(
     targetDatabaseList.map((db) => db.databaseName)

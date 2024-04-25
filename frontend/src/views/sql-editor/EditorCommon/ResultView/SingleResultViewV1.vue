@@ -403,8 +403,7 @@ const handleRequestExport = async () => {
   const query: Record<string, any> = {
     template: issueType,
     name: generateIssueName(issueType, [database.databaseName]),
-    project: project.uid,
-    databaseList: database.uid,
+    databaseList: database.name,
     sql: props.result.statement,
   };
   const route = router.resolve({

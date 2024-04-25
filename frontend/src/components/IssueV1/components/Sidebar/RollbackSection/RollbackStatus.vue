@@ -184,8 +184,7 @@ const tryRollbackTask = async () => {
       query: {
         template: "bb.issue.database.data.update",
         name: issueName,
-        project: issue.value.projectEntity.uid,
-        databaseList: [databaseForTask(issue.value, task.value).uid].join(","),
+        databaseList: databaseForTask(issue.value, task.value).name,
         rollbackIssueId: issue.value.uid,
         rollbackTaskIdList: [task.value.uid].join(","),
         sheetId: extractSheetUID(config.value.rollbackSheet),
