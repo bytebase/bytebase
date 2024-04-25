@@ -110,7 +110,6 @@ ruleList:
     category: TABLE
     engineList:
       - MYSQL
-      - HIVE
     componentList:
       - key: number
         payload:

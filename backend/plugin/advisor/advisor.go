@@ -439,6 +439,9 @@ const (
 	// PostgreSQLStatementPriorBackupCheck is an advisor type for PostgreSQL do prior backup check.
 	PostgreSQLStatementPriorBackupCheck Type = "bb.plugin.advisor.postgresql.statement.prior-backup-check"
 
+	// PostgreSQLStatementPriorBackupCheck is an advisor type for PostgreSQL do prior backup check.
+	PostgreSQLStatementFullyQualifiedObjectName Type = "bb.plugin.advisor.postgresql.statement.fully-qualified-object-name"
+
 	// Oracle Advisor.
 
 	// OracleSyntax is an advisor type for Oracle syntax.
