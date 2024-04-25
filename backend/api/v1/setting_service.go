@@ -1070,22 +1070,38 @@ func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb
 		})
 	}
 	for _, v := range template.FieldTemplates {
-		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, &v1pb.SchemaTemplateSetting_FieldTemplate{
+		if v == nil {
+			continue
+		}
+		t := &v1pb.SchemaTemplateSetting_FieldTemplate{
 			Id:       v.Id,
 			Engine:   convertToEngine(v.Engine),
 			Category: v.Category,
-			Column:   convertStoreColumnMetadata(v.Column),
-			Config:   convertStoreColumnConfig(v.Config),
-		})
+		}
+		if v.Column != nil {
+			t.Column = convertStoreColumnMetadata(v.Column)
+		}
+		if v.Config != nil {
+			t.Config = convertStoreColumnConfig(v.Config)
+		}
+		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, t)
 	}
 	for _, v := range template.TableTemplates {
-		v1Setting.TableTemplates = append(v1Setting.TableTemplates, &v1pb.SchemaTemplateSetting_TableTemplate{
+		if v == nil {
+			continue
+		}
+		t := &v1pb.SchemaTemplateSetting_TableTemplate{
 			Id:       v.Id,
 			Engine:   convertToEngine(v.Engine),
 			Category: v.Category,
-			Table:    convertStoreTableMetadata(v.Table),
-			Config:   convertStoreTableConfig(v.Config),
-		})
+		}
+		if v.Table != nil {
+			t.Table = convertStoreTableMetadata(v.Table)
+		}
+		if v.Config != nil {
+			t.Config = convertStoreTableConfig(v.Config)
+		}
+		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}
 
 	return v1Setting
