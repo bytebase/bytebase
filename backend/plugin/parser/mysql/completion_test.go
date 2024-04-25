@@ -23,7 +23,7 @@ func TestCompletion(t *testing.T) {
 	tests := []candidatesTest{}
 
 	const (
-		record = true
+		record = false
 	)
 	var (
 		filepath = "test-data/test_completion.yaml"
