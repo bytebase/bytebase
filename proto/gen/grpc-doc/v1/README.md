@@ -1953,6 +1953,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | AUTHENTICATION_UNSPECIFIED | 0 |  |
 | PASSWORD | 1 |  |
 | GOOGLE_CLOUD_SQL_IAM | 2 |  |
+| AWS_RDS_IAM | 3 |  |
 
 
 

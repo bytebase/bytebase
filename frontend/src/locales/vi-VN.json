@@ -1334,6 +1334,14 @@
           "template": "Tạo một tài khoản dịch vụ có tên {user}, sau đó thêm tài khoản đó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {user}{'@'}project-id.iam. Cấp cho người dùng những đặc quyền cần thiết."
         }
       },
+      "aws-rds": {
+        "mysql": {
+          "template": "Dưới đây là ví dụ về cách tạo người dùng {user}{'@'}% và cấp cho người dùng những đặc quyền cần thiết."
+        },
+        "postgresql": {
+          "template": "Dưới đây là ví dụ để tạo người dùng '{user}' và cấp cho người dùng những đặc quyền cần thiết."
+        }
+      },
       "create-user-example": {
         "snowflake": {
           "template": "Dưới đây là ví dụ để tạo người dùng '{user}' bằng mật khẩu {password} cho {warehouse} và cấp cho người dùng các đặc quyền cần thiết."
@@ -1362,6 +1370,7 @@
       "password": "Mật khẩu",
       "password-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
       "google-iam": "Google CloudSQL IAM",
+      "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"

@@ -6,7 +6,7 @@
         basicInfo.engine === Engine.MYSQL ||
         basicInfo.engine === Engine.POSTGRES
       "
-      class="mt-2"
+      class="mt-2 sm:col-span-3 sm:col-start-1"
     >
       <NRadioGroup
         v-model:value="dataSource.authenticationType"
@@ -18,6 +18,9 @@
         </NRadio>
         <NRadio :value="DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM">
           {{ $t("instance.password-type.google-iam") }}
+        </NRadio>
+        <NRadio :value="DataSource_AuthenticationType.AWS_RDS_IAM">
+          {{ $t("instance.password-type.aws-iam") }}
         </NRadio>
       </NRadioGroup>
     </div>

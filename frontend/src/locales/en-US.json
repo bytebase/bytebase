@@ -1334,6 +1334,14 @@
           "template": "Create a service account named {user}, then add it in your Google Cloud SQL as IAM user {user}{'@'}project-id.iam. Grant the user with the needed privileges."
         }
       },
+      "aws-rds": {
+        "mysql": {
+          "template": "Below is an example to create user {user}{'@'}% and grant the user with the needed privileges."
+        },
+        "postgresql": {
+          "template": "Below is an example to create user '{user}' and grant the user with the needed privileges."
+        }
+      },
       "create-user-example": {
         "snowflake": {
           "template": "Below is an example to create user '{user}' with password {password} for {warehouse} and grant the user with the needed privileges."
@@ -1362,6 +1370,7 @@
       "password": "Password",
       "password-tip": "You can also specify external secret manage endpoint",
       "google-iam": "Google CloudSQL IAM",
+      "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
