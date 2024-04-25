@@ -195,9 +195,8 @@ useEmitteryEventListener(
       }
       const query = {
         template: "bb.issue.database.schema.update",
-        name: `[${database.name}] Alter schema`,
-        project: database.projectEntity.uid,
-        databaseList: databaseUID,
+        name: `[${database.databaseName}] Alter schema`,
+        databaseList: database.name,
         sql: exampleSQL.join(" "),
       };
       const route = router.resolve({
