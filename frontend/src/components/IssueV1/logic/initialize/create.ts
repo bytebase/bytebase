@@ -1,6 +1,7 @@
 import { cloneDeep, groupBy, isNaN, isNumber, orderBy } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
+import { useRoute } from "vue-router";
 import { rolloutServiceClient } from "@/grpcweb";
 import type { TemplateType } from "@/plugins";
 import {
@@ -12,6 +13,7 @@ import {
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import { emptyIssue, TaskTypeListWithStatement, UNKNOWN_ID } from "@/types";
 import { DatabaseConfig } from "@/types/proto/v1/database_service";
@@ -56,8 +58,10 @@ type CreateIssueParams = {
 };
 
 export const createIssueSkeleton = async (query: Record<string, string>) => {
-  const project = await useProjectV1Store().getOrFetchProjectByUID(
-    query.project
+  const route = useRoute();
+  const projectName = route.params.projectId as string;
+  const project = await useProjectV1Store().getOrFetchProjectByName(
+    `${projectNamePrefix}${projectName}`
   );
   const databaseIdList = (query.databaseList ?? "").split(",");
   const databaseUIDList = await prepareDatabaseUIDList(databaseIdList);
