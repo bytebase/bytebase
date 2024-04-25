@@ -164,7 +164,7 @@ func getResponseString(response any) (string, error) {
 		}
 		switch r := response.(type) {
 		case *v1pb.QueryResponse:
-			return nil
+			return redactQueryResponse(r)
 		case *v1pb.ExportResponse:
 			return nil
 		case *v1pb.Database:
@@ -192,6 +192,30 @@ func getResponseString(response any) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
+	if r == nil {
+		return nil
+	}
+	n := &v1pb.QueryResponse{
+		Results:     nil,
+		Advices:     nil,
+		AllowExport: r.AllowExport,
+	}
+	for _, result := range r.Results {
+		n.Results = append(n.Results, &v1pb.QueryResult{
+			ColumnNames:     result.ColumnNames,
+			ColumnTypeNames: result.ColumnTypeNames,
+			Rows:            nil, // Redacted
+			Masked:          result.Masked,
+			Sensitive:       result.Sensitive,
+			Error:           result.Error,
+			Latency:         result.Latency,
+			Statement:       result.Statement,
+		})
+	}
+	return n
 }
 
 func isAuditMethod(method string) bool {
