@@ -59,9 +59,7 @@ export const createIssueSkeleton = async (query: Record<string, string>) => {
   const project = await useProjectV1Store().getOrFetchProjectByUID(
     query.project
   );
-  const databaseIdList = (query.databaseList ?? "")
-    .split(",")
-    .filter((id) => id && id !== String(UNKNOWN_ID));
+  const databaseIdList = (query.databaseList ?? "").split(",");
   const databaseUIDList = await prepareDatabaseUIDList(databaseIdList);
   await prepareDatabaseList(databaseUIDList, project.uid);
 
@@ -603,14 +601,19 @@ const prepareDatabaseUIDList = async (
   const databaseStore = useDatabaseV1Store();
   const databaseUIDList = [];
   for (const maybeUID of databaseIdList) {
+    if (!maybeUID || maybeUID === String(UNKNOWN_ID)) {
+      continue;
+    }
     const uid = Number(maybeUID);
     if (isNumber(uid) && !isNaN(uid)) {
       databaseUIDList.push(maybeUID);
       continue;
     }
-
-    const database = await databaseStore.getOrFetchDatabaseByName(maybeUID);
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      maybeUID,
+      true // silent
+    );
     databaseUIDList.push(database.uid);
   }
-  return databaseUIDList;
+  return databaseUIDList.filter((id) => id && id !== String(UNKNOWN_ID));
 };
