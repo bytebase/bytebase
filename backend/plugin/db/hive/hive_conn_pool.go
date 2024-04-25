@@ -135,7 +135,7 @@ func (pool *FixedConnPool) Destroy() error {
 	}
 	pool.RWMutex.Unlock()
 
-	var errWhenClose error = nil
+	var errWhenClose error
 	for conn := range pool.Connections {
 		if err := conn.Close(); err != nil {
 			errWhenClose = err
