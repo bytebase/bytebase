@@ -38,6 +38,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 else \
   apt-get install -y gcc ;\
 fi
+RUN apt-get update && apt-get install -y libkrb5-dev
 
 WORKDIR /backend-build
 
