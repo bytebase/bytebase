@@ -94,6 +94,10 @@ func NormalizeTSQLIdentifier(part parser.IId_Context) (original string, lowercas
 		return "", ""
 	}
 	text := part.GetText()
+	return NormalizeTSQLIdentifierText(text)
+}
+
+func NormalizeTSQLIdentifierText(text string) (original string, lowercase string) {
 	if text == "" {
 		return "", ""
 	}
@@ -108,12 +112,12 @@ func NormalizeTSQLIdentifier(part parser.IId_Context) (original string, lowercas
 	return text, s
 }
 
-// IsTSQLKeyword returns true if the given keyword is a TSQL keywords.
-func IsTSQLKeyword(keyword string, caseSensitive bool) bool {
+// IsTSQLReservedKeyword returns true if the given keyword is a TSQL keywords.
+func IsTSQLReservedKeyword(keyword string, caseSensitive bool) bool {
 	if !caseSensitive {
 		keyword = strings.ToUpper(keyword)
 	}
-	return tsqlKeywordsMap[keyword]
+	return tsqlReservedKeywordsMap[keyword]
 }
 
 // FlattenExecuteStatementArgExecuteStatementArgUnnamed returns the flattened unnamed execute statement arg.

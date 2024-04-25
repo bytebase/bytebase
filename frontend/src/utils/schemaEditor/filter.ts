@@ -2,7 +2,9 @@ import {
   ColumnMetadata,
   DatabaseMetadata,
   ForeignKeyMetadata,
+  FunctionMetadata,
   IndexMetadata,
+  ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
   TablePartitionMetadata,
@@ -19,6 +21,10 @@ export const filterDatabaseMetadata = (metadata: DatabaseMetadata) => {
       return SchemaMetadata.fromPartial({
         name: schema.name,
         tables: schema.tables.map((table) => filterTableMetadata(table)),
+        procedures: schema.procedures.map((procedure) =>
+          filterProcedureMetadata(procedure)
+        ),
+        functions: schema.functions.map((func) => filterFunctionMetadata(func)),
       });
     }),
   });
@@ -91,6 +97,20 @@ export const filterTableMetadata = (table: TableMetadata) => {
     partitions: table.partitions.map((partition) =>
       filterTablePartitionMetadata(partition)
     ),
+  });
+};
+
+export const filterProcedureMetadata = (procedure: ProcedureMetadata) => {
+  return ProcedureMetadata.fromPartial({
+    name: procedure.name,
+    definition: procedure.definition,
+  });
+};
+
+export const filterFunctionMetadata = (func: FunctionMetadata) => {
+  return FunctionMetadata.fromPartial({
+    name: func.name,
+    definition: func.definition,
   });
 };
 

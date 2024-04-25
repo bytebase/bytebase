@@ -99,6 +99,15 @@
         }
       }
     },
+    "table-limit-size": {
+      "title": "Giới hạn hoạt động DDL trên các bảng có khối lượng dữ liệu lớn",
+      "description": "Định cấu hình kích thước dữ liệu tối đa của các bảng mà DDL có thể được thực thi. Mức độ lỗi đề xuất: cảnh báo",
+      "component": {
+        "number": {
+          "title": "Kích thước dữ liệu tối đa"
+        }
+      }
+    },
     "table-disallow-dml": {
       "title": "Không cho phép DML",
       "description": "Định cấu hình bảng nào bị cấm thực thi DML. Mức độ lỗi đề xuất: Cảnh báo",

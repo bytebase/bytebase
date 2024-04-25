@@ -373,8 +373,7 @@ const createMigration = async (
   const query: Record<string, any> = {
     template: type,
     name: issueNameParts.join(" "),
-    project: project.value.uid,
-    databaseList: database.value.uid,
+    databaseList: database.value.name,
   };
 
   router.push({

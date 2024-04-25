@@ -310,10 +310,7 @@ const generateMultiDb = async (
       props.databases.map((db) => db.databaseName),
       false
     ),
-    project: selectedProjectUid.value,
-    // The server-side will sort the databases by environment.
-    // So we need not to sort them here.
-    databaseList: selectedDatabaseUidList.value.join(","),
+    databaseList: props.databases.map((db) => db.name).join(","),
   };
   const project = useProjectV1Store().getProjectByUID(selectedProjectUid.value);
   router.push({

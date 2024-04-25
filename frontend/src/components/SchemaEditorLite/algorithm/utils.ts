@@ -106,12 +106,12 @@ export const buildColumnConfigMap = (
     database.schemaConfigs.flatMap((schemaConfig) => {
       return schemaConfig.tableConfigs.flatMap((tableConfig) => {
         return tableConfig.columnConfigs.map((columnConfig) => {
-          const key = keyForResourceName(
-            db.name,
-            schemaConfig.name,
-            tableConfig.name,
-            columnConfig.name
-          );
+          const key = keyForResourceName({
+            database: db.name,
+            schema: schemaConfig.name,
+            table: tableConfig.name,
+            column: columnConfig.name,
+          });
           return [key, { schemaConfig, tableConfig, columnConfig }];
         });
       });
