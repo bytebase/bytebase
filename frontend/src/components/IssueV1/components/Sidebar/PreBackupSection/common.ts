@@ -14,7 +14,7 @@ import {
   useIssueCommentStore,
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 
 export const usePreBackupContext = () => {
@@ -44,6 +44,13 @@ export const usePreBackupContext = () => {
   const allowPreBackup = computed((): boolean => {
     if (isCreating.value) {
       return true;
+    }
+    if (
+      ![Task_Status.NOT_STARTED, Task_Status.PENDING].includes(
+        task.value.status
+      )
+    ) {
+      return false;
     }
 
     const user = currentUserV1.value;
