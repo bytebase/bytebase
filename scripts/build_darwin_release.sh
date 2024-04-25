@@ -2,7 +2,6 @@
 set -eu
 
 ./scripts/build_bytebase.sh
-./scripts/build_bb.sh
 
 tmp_dir=$(mktemp -d) || abort "cannot create temp directory"
 echo $tmp_dir
