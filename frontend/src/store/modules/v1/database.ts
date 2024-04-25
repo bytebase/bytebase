@@ -64,7 +64,10 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     }
   };
   const searchDatabases = async (args: Partial<SearchDatabasesRequest>) => {
-    const { databases } = await databaseServiceClient.searchDatabases(args);
+    const { databases } = await databaseServiceClient.searchDatabases({
+      ...args,
+      pageSize: 1000,
+    });
     const composedDatabaseList = await upsertDatabaseMap(databases);
     return composedDatabaseList;
   };
