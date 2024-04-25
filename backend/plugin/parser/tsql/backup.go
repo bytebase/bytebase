@@ -218,13 +218,13 @@ func (e *suffixSelectStatementExtractor) EnterDelete_statement(ctx *parser.Delet
 			e.err = errors.Wrap(err, "failed to write buffer")
 			return
 		}
-		if ctx.Table_sources() == nil {
+		if ctx.From_table_sources() == nil {
 			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Delete_statement_from())); err != nil {
 				e.err = errors.Wrap(err, "failed to write buffer")
 				return
 			}
 		} else {
-			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Table_sources())); err != nil {
+			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.From_table_sources().Table_sources())); err != nil {
 				e.err = errors.Wrap(err, "failed to write buffer")
 				return
 			}
@@ -349,8 +349,8 @@ func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext
 		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx.Delete_statement_from())
 
 		table := extractor.table
-		if extractor.table != nil && ctx.Table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
-			table = extractPhysicalTable(ctx.Table_sources(), extractor.table)
+		if extractor.table != nil && ctx.From_table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
+			table = extractPhysicalTable(ctx.From_table_sources().Table_sources(), extractor.table)
 		}
 
 		e.dmls = append(e.dmls, statementInfo{
@@ -429,14 +429,4 @@ func extractFullTableName(ctx parser.IFull_table_nameContext, defaultDatabase st
 		databaseName = unquote(ctx.GetDatabase().GetText())
 	}
 	return databaseName, schemaName, tableName
-}
-
-func unquote(s string) string {
-	if len(s) < 2 {
-		return s
-	}
-	if s[0] == '"' && s[len(s)-1] == '"' {
-		return s[1 : len(s)-1]
-	}
-	return s
 }

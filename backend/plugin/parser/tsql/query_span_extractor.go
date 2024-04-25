@@ -310,8 +310,8 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ct
 	}
 
 	var compoundFrom []base.TableSource
-	if from := ctx.GetFrom(); from != nil {
-		fromFieldList, err := q.extractTSqlSensitiveFieldsFromTableSources(ctx.Table_sources())
+	if from := ctx.From_table_sources(); from != nil {
+		fromFieldList, err := q.extractTSqlSensitiveFieldsFromTableSources(from.GetFrom())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_sources` in `query_specification`")
 		}
@@ -3501,32 +3501,46 @@ func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normal
 	// TODO(zp): unify here and the related code in sql_service.go
 	linkedServer := normalizedFallbackLinkedServerName
 	if server := fullTableName.GetLinkedServer(); server != nil {
-		_, linkedServer = NormalizeTSQLIdentifier(server)
+		linkedServer, _ = NormalizeTSQLIdentifier(server)
 	}
 
 	database := normalizedFallbackDatabaseName
 	if d := fullTableName.GetDatabase(); d != nil {
-		_, normalizedD := NormalizeTSQLIdentifier(d)
-		if normalizedD != "" {
-			database = normalizedD
+		originalD, _ := NormalizeTSQLIdentifier(d)
+		if originalD != "" {
+			database = originalD
 		}
 	}
 
 	schema := normalizedFallbackSchemaName
 	if s := fullTableName.GetSchema(); s != nil {
-		_, normalizedS := NormalizeTSQLIdentifier(s)
-		if normalizedS != "" {
-			schema = normalizedS
+		originalS, _ := NormalizeTSQLIdentifier(s)
+		if originalS != "" {
+			schema = originalS
 		}
 	}
 
 	var table string
 	if t := fullTableName.GetTable(); t != nil {
-		_, normalizedT := NormalizeTSQLIdentifier(t)
-		if normalizedT != "" {
-			table = normalizedT
+		originalT, _ := NormalizeTSQLIdentifier(t)
+		if originalT != "" {
+			table = originalT
 		}
 	}
 
 	return linkedServer, database, schema, table
+}
+
+func unquote(name string) string {
+	if len(name) < 2 {
+		return name
+	}
+	if name[0] == '[' && name[len(name)-1] == ']' {
+		return name[1 : len(name)-1]
+	}
+
+	if len(name) > 3 && name[0] == 'N' && name[1] == '\'' && name[len(name)-1] == '\'' {
+		return name[2 : len(name)-1]
+	}
+	return name
 }
