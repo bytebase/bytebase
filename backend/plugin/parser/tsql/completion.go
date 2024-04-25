@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/antlr4-go/antlr/v4"
 	tsqlparser "github.com/bytebase/tsql-parser"
@@ -1607,44 +1609,42 @@ func (c *Completer) quotedIdentifierIfNeeded(identifier string) string {
 	return identifier
 }
 
-func isRegularIdentifier(_ string) bool {
-	// For T-SQL, the users usually using the square brackets to quote the identifier.
-	return false
-	// // https://learn.microsoft.com/en-us/sql/relational-databases/databases/database-identifiers?view=sql-server-ver16#rules-for-regular-identifiers
-	// if len(identifier) == 0 {
-	// 	return true
-	// }
+func isRegularIdentifier(identifier string) bool {
+	// https://learn.microsoft.com/en-us/sql/relational-databases/databases/database-identifiers?view=sql-server-ver16#rules-for-regular-identifiers
+	if len(identifier) == 0 {
+		return true
+	}
 
-	// firstChar := rune(identifier[0])
-	// isFirstCharValid := unicode.IsLetter(firstChar) || firstChar == '_' || firstChar == '@' || firstChar == '#'
-	// if !isFirstCharValid {
-	// 	return false
-	// }
+	firstChar := rune(identifier[0])
+	isFirstCharValid := unicode.IsLetter(firstChar) || firstChar == '_' || firstChar == '@' || firstChar == '#'
+	if !isFirstCharValid {
+		return false
+	}
 
-	// for _, r := range identifier[1:] {
-	// 	isValidChar := unicode.IsLetter(r) || unicode.IsDigit(r) || r == '@' || r == '$' || r == '#' || r == '_'
-	// 	if !isValidChar {
-	// 		return false
-	// 	}
-	// }
+	for _, r := range identifier[1:] {
+		isValidChar := unicode.IsLetter(r) || unicode.IsDigit(r) || r == '@' || r == '$' || r == '#' || r == '_'
+		if !isValidChar {
+			return false
+		}
+	}
 
-	// // Rule 3: Check if the identifier is a reserved word
-	// // (You would need to maintain a list of reserved words for this)
-	// if IsTSQLReservedKeyword(identifier, false) {
-	// 	return false
-	// }
+	// Rule 3: Check if the identifier is a reserved word
+	// (You would need to maintain a list of reserved words for this)
+	if IsTSQLReservedKeyword(identifier, false) {
+		return false
+	}
 
-	// // Rule 4: Check for embedded spaces or special characters
-	// for _, r := range identifier {
-	// 	if r == ' ' || !unicode.IsPrint(r) {
-	// 		return false
-	// 	}
-	// }
+	// Rule 4: Check for embedded spaces or special characters
+	for _, r := range identifier {
+		if r == ' ' || !unicode.IsPrint(r) {
+			return false
+		}
+	}
 
-	// // Rule 5: Check for supplementary characters
-	// if !utf8.ValidString(identifier) {
-	// 	return false
-	// }
+	// Rule 5: Check for supplementary characters
+	if !utf8.ValidString(identifier) {
+		return false
+	}
 
-	// return true
+	return true
 }
