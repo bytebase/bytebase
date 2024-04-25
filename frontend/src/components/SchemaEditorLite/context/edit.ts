@@ -3,6 +3,8 @@ import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
+  FunctionMetadata,
+  ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
   TablePartitionMetadata,
@@ -24,6 +26,8 @@ export const useEditStatus = () => {
       table?: TableMetadata;
       column?: ColumnMetadata;
       partition?: TablePartitionMetadata;
+      procedure?: ProcedureMetadata;
+      function?: FunctionMetadata;
     },
     status: EditStatus
   ) => {
@@ -47,6 +51,8 @@ export const useEditStatus = () => {
       table?: TableMetadata;
       column?: ColumnMetadata;
       partition?: TablePartitionMetadata;
+      procedure?: ProcedureMetadata;
+      function?: FunctionMetadata;
     },
     recursive: boolean
   ) => {
@@ -143,6 +149,36 @@ export const useEditStatus = () => {
     return "normal";
   };
 
+  const getProcedureStatus = (
+    database: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      procedure: ProcedureMetadata;
+    }
+  ): EditStatus => {
+    const key = keyForResource(database, metadata);
+    if (dirtyPaths.value.has(key)) {
+      return dirtyPaths.value.get(key)!;
+    }
+    return "normal";
+  };
+
+  const getFunctionStatus = (
+    database: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      function: FunctionMetadata;
+    }
+  ): EditStatus => {
+    const key = keyForResource(database, metadata);
+    if (dirtyPaths.value.has(key)) {
+      return dirtyPaths.value.get(key)!;
+    }
+    return "normal";
+  };
+
   const clearEditStatus = () => {
     dirtyPaths.value.clear();
   };
@@ -159,5 +195,7 @@ export const useEditStatus = () => {
     getTableStatus,
     getColumnStatus,
     getPartitionStatus,
+    getProcedureStatus,
+    getFunctionStatus,
   };
 };

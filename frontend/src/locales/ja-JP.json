@@ -2293,7 +2293,10 @@
       "drop-column": "列の削除",
       "sql-preview": "SQLのプレビュー",
       "reset": "リセット",
-      "save": "保存"
+      "save": "保存",
+      "create-procedure": "プロシージャの作成",
+      "create-function": "関数の作成",
+      "drop": "落とす"
     },
     "database": {
       "name": "名前",
@@ -2346,7 +2349,11 @@
       "failed-to-fetch-database-schema": "データベース スキーマの要求に失敗しました",
       "invalid-schema": "無効なスキーマ",
       "cannot-drop-the-last-column": "最後の列は削除できません",
-      "cannot-change-config": "データベース構成はスキーマとともに変更する必要があります"
+      "cannot-change-config": "データベース構成はスキーマとともに変更する必要があります",
+      "duplicated-procedure-name": "重複したプロシージャ名",
+      "invalid-procedure-name": "無効なプロシージャ名です",
+      "duplicated-function-name": "関数名が重複しています",
+      "invalid-function-name": "無効な関数名です"
     },
     "confirm-to-close": {
       "title": "閉じることを確認しますか？",
@@ -2370,7 +2377,10 @@
       "value": "価値",
       "add-sub-partition": "サブパーティションの追加",
       "type": "タイプ"
-    }
+    },
+    "views": "ビュー",
+    "procedures": "手順",
+    "functions": "関数"
   },
   "label": {
     "empty-label-value": "ヌル",
