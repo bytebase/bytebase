@@ -28,39 +28,11 @@ builds:
         goarch: amd64
         env:
           - CC=gcc
-  - id: cli
-    main: ./backend/bin/bb
-    binary: bb
-    ldflags:
-      - -w -s
-      - -X github.com/bytebase/bytebase/backend/bin/bb/cmd.version={{.Version}}
-      - -X github.com/bytebase/bytebase/backend/bin/bb/cmd.goversion=${GO_VERSION}
-      - -X github.com/bytebase/bytebase/backend/bin/bb/cmd.gitcommit={{.Commit}}
-      - -X github.com/bytebase/bytebase/backend/bin/bb/cmd.buildtime={{.Timestamp}}
-      - -X github.com/bytebase/bytebase/backend/bin/bb/cmd.builduser=goreleaser
-    tags:
-      - release
-    env:
-      - VERSION="development"
-      - GO_VERSION="1.21.6"
-      - CGO_ENABLED=1
-      - GIT_COMMIT="unknown"
-      - BUILD_TIME="unknown"
-      - BUILD_USER="unknown"
-    goos:
-      - linux
-    goarch:
-      - amd64
-    overrides:
-      - goos: linux
-        goarch: amd64
-        env:
-          - CC=gcc
 
 archives:
 - format: tar.gz
   id: bytebase
-  builds: [server,cli]
+  builds: [server]
   name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
   files:
     - LICENSE*
