@@ -25,7 +25,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	// We don't support pg_dump for CloudSQL, because pg_dump not support IAM & instance name for authentication.
 	// To dump schema for CloudSQL, you need to run the cloud-sql-proxy with IAM to get the host and port.
 	// Learn more: https://linear.app/bytebase/issue/BYT-5401/support-iam-authentication-for-gcp-and-aws
-	if driver.config.AuthenticationType != storepb.DataSourceOptions_PASSWORD {
+	if driver.config.AuthenticationType == storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM {
 		return "", nil
 	}
 	// pg_dump -d dbName --schema-only+
@@ -70,9 +70,6 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
 	var args []string
 	args = append(args, fmt.Sprintf("--username=%s", driver.config.Username))
-	if driver.config.Password == "" {
-		args = append(args, "--no-password")
-	}
 	if driver.sshClient == nil {
 		args = append(args, fmt.Sprintf("--host=%s", driver.config.Host))
 		args = append(args, fmt.Sprintf("--port=%s", driver.config.Port))
@@ -110,10 +107,24 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 
 func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writer) error {
 	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
+
+	password := driver.config.Password
+	if driver.config.AuthenticationType == storepb.DataSourceOptions_AWS_RDS_IAM {
+		rdsPassword, err := getRDSConnectionPassword(ctx, driver.config)
+		if err != nil {
+			return err
+		}
+		password = rdsPassword
+	}
+
+	if password == "" {
+		args = append(args, "--no-password")
+	}
 	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
+
 	// Unlike MySQL, PostgreSQL does not support specifying password in commands, we can do this by means of environment variables.
-	if driver.config.Password != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
+	if password != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", password))
 	}
 	sslMode := getSSLMode(driver.config.TLSConfig, driver.config.SSHConfig)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLMODE=%s", sslMode))
