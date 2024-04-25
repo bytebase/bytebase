@@ -1112,6 +1112,12 @@
       "tooltip": "The approvers will review and approve the issue in the order specified in the flow. The issue can only be applied after all steps in the flow have been approved. You can configure a custom approval flow for each risk.",
       "pre-issue-created-tips": "After an issue is created, Bytebase will automatically match the corresponding custom approval based on the type and risk level of the issue."
     },
+    "risk-level": {
+      "self": "Risk level",
+      "low": "Low",
+      "moderate": "Moderate",
+      "high": "High"
+    },
     "waiting-to-rollout": "Waiting to rollout",
     "waiting-for-review": "Waiting for review",
     "issue-name": "Issue name",
@@ -1184,6 +1190,9 @@
       "format": "Format",
       "encrypt": "Encrypt",
       "file-downloaded": "File Downloaded"
+    },
+    "update-rollout-time": {
+      "self": "Update rollout time"
     }
   },
   "alter-schema": {
@@ -1325,6 +1334,14 @@
           "template": "Create a service account named {user}, then add it in your Google Cloud SQL as IAM user {user}{'@'}project-id.iam. Grant the user with the needed privileges."
         }
       },
+      "aws-rds": {
+        "mysql": {
+          "template": "Below is an example to create user {user}{'@'}% and grant the user with the needed privileges."
+        },
+        "postgresql": {
+          "template": "Below is an example to create user '{user}' and grant the user with the needed privileges."
+        }
+      },
       "create-user-example": {
         "snowflake": {
           "template": "Below is an example to create user '{user}' with password {password} for {warehouse} and grant the user with the needed privileges."
@@ -1353,6 +1370,7 @@
       "password": "Password",
       "password-tip": "You can also specify external secret manage endpoint",
       "google-iam": "Google CloudSQL IAM",
+      "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
@@ -1645,13 +1663,12 @@
     "select-databases-from-same-project": "Please select databases from the same project",
     "sync-schema": {
       "title": "Sync Schema",
-      "description": "Bytebase supports synchronizing a schema to one or multiple target databases.",
+      "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, TiDB, Oracle only)",
       "schema-history-version": "Schema History Version",
       "copy-schema": "Copy schema",
       "select-source-schema": "Select source schema",
       "select-target-databases": "Select target databases",
       "select-project": "Select project",
-      "select-database-placeholder": "Select database (MySQL, PostgreSQL, TiDB, Oracle only)",
       "source-database": "Source database",
       "source-schema": "Source schema",
       "schema-version": {
@@ -2276,7 +2293,10 @@
       "drop-column": "Drop column",
       "sql-preview": "SQL Preview",
       "reset": "Reset",
-      "save": "Save"
+      "save": "Save",
+      "create-procedure": "Create procedure",
+      "create-function": "Create function",
+      "drop": "Drop"
     },
     "database": {
       "name": "Name",
@@ -2329,7 +2349,11 @@
       "failed-to-fetch-database-schema": "Failed to fetch database schema",
       "invalid-schema": "Invalid schema",
       "cannot-drop-the-last-column": "Cannot drop the last column",
-      "cannot-change-config": "Database config must changed with the schema"
+      "cannot-change-config": "Database config must changed with the schema",
+      "duplicated-procedure-name": "Duplicated procedure name",
+      "invalid-procedure-name": "Invalid procedure name",
+      "duplicated-function-name": "Duplicated function name",
+      "invalid-function-name": "Invalid function name"
     },
     "confirm-to-close": {
       "title": "Confirm to close",
@@ -2353,7 +2377,10 @@
       "value": "Value",
       "add-sub-partition": "Add sub partition",
       "type": "Type"
-    }
+    },
+    "views": "Views",
+    "procedures": "Procedures",
+    "functions": "Functions"
   },
   "label": {
     "empty-label-value": "Empty",

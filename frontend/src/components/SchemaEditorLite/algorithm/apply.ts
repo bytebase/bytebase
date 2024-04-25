@@ -4,7 +4,13 @@ import type { SchemaEditorContext } from "../context";
 import { cleanupUnusedConfigs } from "./utils";
 
 export const useApplyMetadataEdit = (context: SchemaEditorContext) => {
-  const { getSchemaStatus, getTableStatus, getColumnStatus } = context;
+  const {
+    getSchemaStatus,
+    getTableStatus,
+    getColumnStatus,
+    getProcedureStatus,
+    getFunctionStatus,
+  } = context;
 
   const applyMetadataEdit = (
     database: ComposedDatabase,
@@ -18,13 +24,29 @@ export const useApplyMetadataEdit = (context: SchemaEditorContext) => {
       });
       return status !== "dropped";
     });
-    // Drop tables
+    // Drop tables, procedures and functions
     metadata.schemas.forEach((schema) => {
       schema.tables = schema.tables.filter((table) => {
         const status = getTableStatus(database, {
           database: metadata,
           schema,
           table,
+        });
+        return status !== "dropped";
+      });
+      schema.procedures = schema.procedures.filter((procedure) => {
+        const status = getProcedureStatus(database, {
+          database: metadata,
+          schema,
+          procedure,
+        });
+        return status !== "dropped";
+      });
+      schema.functions = schema.functions.filter((func) => {
+        const status = getFunctionStatus(database, {
+          database: metadata,
+          schema,
+          function: func,
         });
         return status !== "dropped";
       });

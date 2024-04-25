@@ -30,6 +30,7 @@ ARG RELEASE="dev"
 
 # Need gcc for CGO_ENABLED=1
 RUN apt-get install -y gcc
+RUN apt-get update && apt-get install -y libkrb5-dev
 
 WORKDIR /backend-build
 

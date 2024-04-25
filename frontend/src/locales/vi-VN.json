@@ -1112,6 +1112,12 @@
       "tooltip": "Người phê duyệt sẽ xem xét và phê duyệt vấn đề theo thứ tự được chỉ định trong quy trình. \nVấn đề chỉ có thể được áp dụng sau khi tất cả các bước trong quy trình đã được phê duyệt. \nBạn có thể định cấu hình luồng phê duyệt tùy chỉnh cho từng rủi ro.",
       "pre-issue-created-tips": "Sau khi một vấn đề được tạo, Bytebase sẽ tự động khớp với phê duyệt tùy chỉnh tương ứng dựa trên loại và mức độ rủi ro của vấn đề."
     },
+    "risk-level": {
+      "self": "Mức độ rủi ro",
+      "low": "Thấp",
+      "moderate": "Vừa phải",
+      "high": "Cao"
+    },
     "waiting-to-rollout": "Đang chờ triển khai",
     "waiting-for-review": "Đang chờ xem xét",
     "issue-name": "Tên vấn đề",
@@ -1184,6 +1190,9 @@
       "format": "Định dạng",
       "encrypt": "Mã hóa",
       "file-downloaded": "Tệp đã được tải xuống"
+    },
+    "update-rollout-time": {
+      "self": "Cập nhật thời gian triển khai"
     }
   },
   "alter-schema": {
@@ -1325,6 +1334,14 @@
           "template": "Tạo một tài khoản dịch vụ có tên {user}, sau đó thêm tài khoản đó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {user}{'@'}project-id.iam. Cấp cho người dùng những đặc quyền cần thiết."
         }
       },
+      "aws-rds": {
+        "mysql": {
+          "template": "Dưới đây là ví dụ về cách tạo người dùng {user}{'@'}% và cấp cho người dùng những đặc quyền cần thiết."
+        },
+        "postgresql": {
+          "template": "Dưới đây là ví dụ để tạo người dùng '{user}' và cấp cho người dùng những đặc quyền cần thiết."
+        }
+      },
       "create-user-example": {
         "snowflake": {
           "template": "Dưới đây là ví dụ để tạo người dùng '{user}' bằng mật khẩu {password} cho {warehouse} và cấp cho người dùng các đặc quyền cần thiết."
@@ -1353,6 +1370,7 @@
       "password": "Mật khẩu",
       "password-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
       "google-iam": "Google CloudSQL IAM",
+      "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
@@ -1645,13 +1663,12 @@
     "select-databases-from-same-project": "Vui lòng chọn cơ sở dữ liệu từ cùng một dự án",
     "sync-schema": {
       "title": "Lược đồ đồng bộ hóa",
-      "description": "Bytebase hỗ trợ đồng bộ hóa lược đồ với một hoặc nhiều cơ sở dữ liệu đích.",
+      "description": "Bytebase hỗ trợ đồng bộ hóa lược đồ với một hoặc nhiều cơ sở dữ liệu đích. (Chỉ MySQL, PostgreSQL, TiDB, Oracle)",
       "schema-history-version": "Phiên bản lịch sử lược đồ",
       "copy-schema": "Sao chép lược đồ",
       "select-source-schema": "Chọn lược đồ nguồn",
       "select-target-databases": "Chọn cơ sở dữ liệu đích",
       "select-project": "Chọn dự án",
-      "select-database-placeholder": "Chọn cơ sở dữ liệu (chỉ MySQL, PostgreSQL, TiDB, Oracle)",
       "source-database": "Cơ sở dữ liệu nguồn",
       "source-schema": "Lược đồ nguồn",
       "schema-version": {
@@ -2276,7 +2293,10 @@
       "drop-column": "Cột thả",
       "sql-preview": "Xem trước SQL",
       "reset": "Cài lại",
-      "save": "Cứu"
+      "save": "Cứu",
+      "create-procedure": "Tạo thủ tục",
+      "create-function": "Tạo chức năng",
+      "drop": "Làm rơi"
     },
     "database": {
       "name": "Tên",
@@ -2329,7 +2349,11 @@
       "failed-to-fetch-database-schema": "Không tìm nạp được lược đồ cơ sở dữ liệu",
       "invalid-schema": "Lược đồ không hợp lệ",
       "cannot-drop-the-last-column": "Không thể bỏ cột cuối cùng",
-      "cannot-change-config": "Cấu hình cơ sở dữ liệu phải thay đổi với lược đồ"
+      "cannot-change-config": "Cấu hình cơ sở dữ liệu phải thay đổi với lược đồ",
+      "duplicated-procedure-name": "Tên thủ tục trùng lặp",
+      "invalid-procedure-name": "Tên thủ tục không hợp lệ",
+      "duplicated-function-name": "Tên hàm trùng lặp",
+      "invalid-function-name": "Tên hàm không hợp lệ"
     },
     "confirm-to-close": {
       "title": "Xác nhận để đóng",
@@ -2353,7 +2377,10 @@
       "value": "Giá trị",
       "add-sub-partition": "Thêm phân vùng phụ",
       "type": "Kiểu"
-    }
+    },
+    "views": "Lượt xem",
+    "procedures": "Thủ tục",
+    "functions": "Hàm số"
   },
   "label": {
     "empty-label-value": "Trống",

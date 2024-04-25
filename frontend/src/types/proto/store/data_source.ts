@@ -196,6 +196,7 @@ export enum DataSourceOptions_AuthenticationType {
   AUTHENTICATION_UNSPECIFIED = 0,
   PASSWORD = 1,
   GOOGLE_CLOUD_SQL_IAM = 2,
+  AWS_RDS_IAM = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -210,6 +211,9 @@ export function dataSourceOptions_AuthenticationTypeFromJSON(object: any): DataS
     case 2:
     case "GOOGLE_CLOUD_SQL_IAM":
       return DataSourceOptions_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
+    case 3:
+    case "AWS_RDS_IAM":
+      return DataSourceOptions_AuthenticationType.AWS_RDS_IAM;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -225,6 +229,8 @@ export function dataSourceOptions_AuthenticationTypeToJSON(object: DataSourceOpt
       return "PASSWORD";
     case DataSourceOptions_AuthenticationType.GOOGLE_CLOUD_SQL_IAM:
       return "GOOGLE_CLOUD_SQL_IAM";
+    case DataSourceOptions_AuthenticationType.AWS_RDS_IAM:
+      return "AWS_RDS_IAM";
     case DataSourceOptions_AuthenticationType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

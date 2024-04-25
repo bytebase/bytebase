@@ -13,6 +13,7 @@
       :placeholder="placeholder"
       type="textarea"
       v-bind="$attrs"
+      :disabled="disabled"
     />
 
     <div
@@ -21,6 +22,7 @@
     >
       Or drag and drop files here.
       <input
+        v-if="!disabled"
         type="file"
         class="absolute inset-0 opacity-0 cursor-pointer"
         title=""
@@ -69,10 +71,12 @@ const props = withDefaults(
     value: string | undefined;
     placeholder?: string;
     maxFileSize?: number; // in MB
+    disabled?: boolean;
   }>(),
   {
     placeholder: undefined,
     maxFileSize: 1,
+    disabled: false,
   }
 );
 

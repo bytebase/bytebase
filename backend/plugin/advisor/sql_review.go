@@ -1628,8 +1628,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLStatementWhereMaximumLogicalOperatorCount, nil
 		}
 	case SchemaRuleStatementMaximumLimitValue:
-		if engine == storepb.Engine_MYSQL {
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_TIDB:
 			return MySQLStatementMaximumLimitValue, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLStatementMaximumLimitValue, nil
 		}
 	case SchemaRuleStatementMaximumJoinTableCount:
 		if engine == storepb.Engine_MYSQL {

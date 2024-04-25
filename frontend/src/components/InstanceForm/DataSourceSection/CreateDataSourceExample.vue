@@ -55,6 +55,19 @@
           </template>
         </i18n-t>
         <i18n-t
+          v-else-if="
+            authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM
+          "
+          tag="span"
+          keypath="instance.sentence.aws-rds.mysql.template"
+        >
+          <template #user>
+            <span class="font-semibold">
+              {{ userName }}
+            </span>
+          </template>
+        </i18n-t>
+        <i18n-t
           v-else
           tag="span"
           keypath="instance.sentence.create-user-example.mysql.template"
@@ -110,6 +123,19 @@
           "
           tag="p"
           keypath="instance.sentence.google-cloud-sql.postgresql.template"
+        >
+          <template #user>
+            <span class="font-semibold">
+              {{ userName }}
+            </span>
+          </template>
+        </i18n-t>
+        <i18n-t
+          v-else-if="
+            authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM
+          "
+          tag="p"
+          keypath="instance.sentence.aws-rds.postgresql.template"
         >
           <template #user>
             <span class="font-semibold">
@@ -202,7 +228,7 @@ interface LocalState {
 }
 
 const ADMIN_USER_NAME = "bytebase";
-const READONLY_USER_NAME = `${ADMIN_USER_NAME}-readonly`;
+const READONLY_USER_NAME = `${ADMIN_USER_NAME}_readonly`;
 
 const props = withDefaults(
   defineProps<{
@@ -246,13 +272,17 @@ const grantStatement = computed(() => {
           DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
         ) {
           return `GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nRELOAD, LOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE \n/*!80000 , SET_USER_ID */\nON *.* to ${ADMIN_USER_NAME}@'%';`;
+        } else if (
+          props.authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM
+        ) {
+          return `CREATE USER ${ADMIN_USER_NAME}@'%' IDENTIFIED WITH AWSAuthenticationPlugin AS 'RDS';\n\nALTER USER '${ADMIN_USER_NAME}'@'%' REQUIRE SSL;\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nRELOAD, LOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE \n/*!80000 , SET_USER_ID */\nON *.* to ${ADMIN_USER_NAME}@'%';`;
         }
         // RELOAD, LOCK TABLES: enables use of explicit LOCK TABLES statements for backups.
         // REPLICATION CLIENT: enables use of the SHOW MASTER STATUS, SHOW SLAVE STATUS, and SHOW BINARY LOGS statements.
         // REPLICATION SLAVE: use of the SHOW SLAVE HOSTS, SHOW RELAYLOG EVENTS, and SHOW BINLOG EVENTS statements. This privilege is also required to use the mysqlbinlog options --read-from-remote-server (-R) and --read-from-remote-master.
         // REPLICATION_APPLIER: execute the internal-use BINLOG statements used by mysqlbinlog.
         // SESSION_VARIABLES_ADMIN: use of the SET sql_log_bin statements during PITR.
-        return `${createUserStatement}\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nRELOAD, LOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE \n/*!80000 , REPLICATION_APPLIER, SYSTEM_VARIABLES_ADMIN, SET_USER_ID */\nON *.* to ${ADMIN_USER_NAME}@'%';`;
+        return `${createUserStatement}\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nRELOAD, LOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE \n/*!80000 , SET_USER_ID */\nON *.* to ${ADMIN_USER_NAME}@'%';`;
       case Engine.TIDB:
         return `${createUserStatement}\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nLOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE \nON *.* to ${ADMIN_USER_NAME}@'%';`;
       case Engine.MARIADB:
@@ -362,6 +392,10 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
           DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
         ) {
           return `GRANT pg_write_all_data TO "${ADMIN_USER_NAME}@{project-id}.iam";`;
+        } else if (
+          props.authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM
+        ) {
+          return `CREATE USER ${ADMIN_USER_NAME};\n\nGRANT rds_iam TO ${ADMIN_USER_NAME};\n\nGRANT pg_write_all_data TO ${ADMIN_USER_NAME};`;
         }
         return `CREATE USER ${ADMIN_USER_NAME} WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER ${ADMIN_USER_NAME} WITH SUPERUSER;`;
       case Engine.REDSHIFT:
@@ -405,6 +439,10 @@ GRANT ALL PRIVILEGES TO ${ADMIN_USER_NAME};`;
           DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
         ) {
           return `GRANT SELECT, SHOW DATABASES, SHOW VIEW, USAGE ON *.* to ${READONLY_USER_NAME}@'%';`;
+        } else if (
+          props.authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM
+        ) {
+          return `CREATE USER ${READONLY_USER_NAME}@'%' IDENTIFIED WITH AWSAuthenticationPlugin AS 'RDS';\n\nALTER USER '${READONLY_USER_NAME}'@'%' REQUIRE SSL;\n\nGRANT SELECT, SHOW DATABASES, SHOW VIEW, USAGE ON *.* to ${READONLY_USER_NAME}@'%';`;
         }
         return mysqlReadonlyStatement;
       case Engine.TIDB:
@@ -513,6 +551,10 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
           DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
         ) {
           return `GRANT pg_read_all_data TO "${READONLY_USER_NAME}@{project-id}.iam";`;
+        } else if (
+          props.authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM
+        ) {
+          return `CREATE USER ${READONLY_USER_NAME};\n\nGRANT rds_iam TO ${READONLY_USER_NAME};\n\nGRANT pg_read_all_data TO ${READONLY_USER_NAME};`;
         }
         return `CREATE USER ${READONLY_USER_NAME} WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';
 ALTER USER ${READONLY_USER_NAME} WITH SUPERUSER;`;

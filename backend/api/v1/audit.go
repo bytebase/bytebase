@@ -55,19 +55,39 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 
 		st, _ := status.FromError(rerr)
 
-		p := &storepb.AuditLog{
-			Method:   serverInfo.FullMethod,
-			Resource: getRequestResource(request),
-			Severity: storepb.AuditLog_INFO,
-			User:     user,
-			Request:  requestString,
-			Response: responseString,
-			Status:   st.Proto(),
+		projectIDs, ok := common.GetProjectIDsFromContext(ctx)
+		if !ok {
+			return errors.Errorf("failed to get projects ids from context")
+		}
+		var parents []string
+		if len(projectIDs) == 0 {
+			workspaceID, err := in.store.GetWorkspaceID(ctx)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get workspace id")
+			}
+			parents = append(parents, common.FormatWorkspace(workspaceID))
+		} else {
+			for _, projectID := range projectIDs {
+				parents = append(parents, common.FormatProject(projectID))
+			}
 		}
 
-		if err := in.store.CreateAuditLog(ctx, p); err != nil {
-			return errors.Wrapf(err, "failed to create audit log")
+		for _, parent := range parents {
+			p := &storepb.AuditLog{
+				Parent:   parent,
+				Method:   serverInfo.FullMethod,
+				Resource: getRequestResource(request),
+				Severity: storepb.AuditLog_INFO,
+				User:     user,
+				Request:  requestString,
+				Response: responseString,
+				Status:   st.Proto(),
+			}
+			if err := in.store.CreateAuditLog(ctx, p); err != nil {
+				return errors.Wrapf(err, "failed to create audit log")
+			}
 		}
+
 		return nil
 	}(); err != nil {
 		slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
@@ -144,7 +164,7 @@ func getResponseString(response any) (string, error) {
 		}
 		switch r := response.(type) {
 		case *v1pb.QueryResponse:
-			return nil
+			return redactQueryResponse(r)
 		case *v1pb.ExportResponse:
 			return nil
 		case *v1pb.Database:
@@ -172,6 +192,30 @@ func getResponseString(response any) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
+	if r == nil {
+		return nil
+	}
+	n := &v1pb.QueryResponse{
+		Results:     nil,
+		Advices:     nil,
+		AllowExport: r.AllowExport,
+	}
+	for _, result := range r.Results {
+		n.Results = append(n.Results, &v1pb.QueryResult{
+			ColumnNames:     result.ColumnNames,
+			ColumnTypeNames: result.ColumnTypeNames,
+			Rows:            nil, // Redacted
+			Masked:          result.Masked,
+			Sensitive:       result.Sensitive,
+			Error:           result.Error,
+			Latency:         result.Latency,
+			Statement:       result.Statement,
+		})
+	}
+	return n
 }
 
 func isAuditMethod(method string) bool {

@@ -280,8 +280,7 @@ const doCreateBaseline = () => {
       name: t("change-history.establish-database-baseline", {
         name: props.database.databaseName,
       }),
-      project: props.database.projectEntity.uid,
-      databaseList: `${props.database.uid}`,
+      databaseList: props.database.name,
     },
   });
 };

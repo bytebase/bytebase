@@ -986,6 +986,7 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Parent)
 	}
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+		ProjectUID: &project.UID,
 		ResourceID: &databaseGroupResourceID,
 	})
 	if err != nil {

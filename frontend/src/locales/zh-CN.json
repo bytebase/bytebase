@@ -1112,6 +1112,12 @@
       "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批。",
       "pre-issue-created-tips": "在工单创建后，系统将根据工单的类型和风险等级自动匹配相应的自定义审批。"
     },
+    "risk-level": {
+      "self": "风险等级",
+      "low": "低风险",
+      "moderate": "中风险",
+      "high": "高风险"
+    },
     "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
     "issue-name": "工单名称",
@@ -1184,6 +1190,9 @@
       "format": "导出格式",
       "encrypt": "加密",
       "file-downloaded": "文件已下载"
+    },
+    "update-rollout-time": {
+      "self": "修改指定发布时间"
     }
   },
   "alter-schema": {
@@ -1325,6 +1334,14 @@
           "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}project-id.iam 添加到您的 Google Cloud SQL 中。授予用户所需的权限。"
         }
       },
+      "aws-rds": {
+        "mysql": {
+          "template": "下面是创建用户 {user}{'@'}% 并授予该用户所需权限的示例。"
+        },
+        "postgresql": {
+          "template": "下面是创建用户“{user}”并授予该用户所需权限的示例。"
+        }
+      },
       "create-user-example": {
         "snowflake": {
           "template": "创建用户 {user}，密码 {password}，warehouse 为{warehouse}，并授予必要权限的例子如下。"
@@ -1353,6 +1370,7 @@
       "password": "密码",
       "password-tip": "您也可以指定外部的密码管理服务 endpoint",
       "google-iam": "Google CloudSQL IAM",
+      "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
@@ -1645,13 +1663,12 @@
     "select-databases-from-same-project": "请选择同一个项目下的数据库",
     "sync-schema": {
       "title": "库表同步",
-      "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。",
+      "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL、PostgreSQL、TiDB 以及 Oracle）",
       "schema-history-version": "Schema 历史版本",
       "copy-schema": "粘贴 Schema 文本",
       "select-source-schema": "选择源 Schema",
       "select-target-databases": "选择目标数据库",
       "select-project": "选择项目",
-      "select-database-placeholder": "选择数据库 (仅限 MySQL, PostgreSQL, TiDB, Oracle)",
       "source-database": "源数据库",
       "source-schema": "源 Schema",
       "schema-version": {
@@ -2276,7 +2293,10 @@
       "drop-column": "删除列",
       "sql-preview": "预览 SQL",
       "reset": "重置",
-      "save": "保存"
+      "save": "保存",
+      "create-procedure": "新建存储过程",
+      "create-function": "新建函数",
+      "drop": "删除"
     },
     "database": {
       "name": "名称",
@@ -2329,7 +2349,11 @@
       "failed-to-fetch-database-schema": "请求数据库 Schema 失败",
       "invalid-schema": "无效的 Schema",
       "cannot-drop-the-last-column": "不能删除最后一列",
-      "cannot-change-config": "数据库配置必须同 Schema 一起变更"
+      "cannot-change-config": "数据库配置必须同 Schema 一起变更",
+      "duplicated-procedure-name": "重复的存储过程名称",
+      "invalid-procedure-name": "无效的存储过程名称",
+      "duplicated-function-name": "重复的函数名称",
+      "invalid-function-name": "无效的函数名称"
     },
     "confirm-to-close": {
       "title": "确定关闭？",
@@ -2353,7 +2377,10 @@
       "value": "值",
       "add-sub-partition": "添加子分区",
       "type": "类型"
-    }
+    },
+    "views": "视图",
+    "procedures": "存储过程",
+    "functions": "函数"
   },
   "label": {
     "empty-label-value": "空",
