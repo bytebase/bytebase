@@ -711,7 +711,6 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							}
 						}
 					}
-
 				}
 			}
 		}
@@ -819,79 +818,6 @@ func (o *objectRefContext) setColumn(column string) *objectRefContext {
 	o.column = column
 	o.flags &= ^objectFlagShowColumn
 	return o
-}
-
-func (c *Completer) determineTableNameContext() []*objectRefContext {
-	tokenIndex := c.scanner.GetIndex()
-	if c.scanner.GetTokenChannel() != antlr.TokenDefaultChannel {
-		// Skip to the next non-hidden token.
-		c.scanner.Forward(true /* skipHidden */)
-	}
-
-	tokenType := c.scanner.GetTokenType()
-	if c.scanner.GetTokenText() != "." && !c.lexer.IsID_(tokenType) && c.scanner.GetTokenType() != tsqlparser.TSqlParserBLOCKING_HIERARCHY {
-		// We are at the end of an incomplete identifier spec. Jump back.
-		// For example, SELECT * FROM db.| WHERE a = 1, the scanner will be seek to the token ' ', and
-		// forwards to WHERE because we skip to the next non-hidden token in the above code.
-		// Also, for SELECT * FROM |, the scanner will be backward to the token 'FROM'.
-		c.scanner.Backward(true /* skipHidden */)
-	}
-
-	if tokenIndex > 0 {
-		// Go backward until we hit a non-identifier token.
-		for {
-			curID := c.lexer.IsID_(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "."
-			curBLOCKINGHIERARCHY := c.scanner.GetTokenType() == tsqlparser.TSqlParserBLOCKING_HIERARCHY && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "."
-			curDOT := c.scanner.GetTokenText() == "." && c.lexer.IsID_(c.scanner.GetPreviousTokenType(false /* skipHidden */))
-			if curID || curDOT || curBLOCKINGHIERARCHY {
-				c.scanner.Backward(true /* skipHidden */)
-				continue
-			}
-			break
-		}
-	}
-
-	// The c.scanner is now on the leading identifier (or dot?) if there's no leading id.
-	var candidates []string
-	var temp string
-	var count int
-	for {
-		count++
-		if count < 2 {
-			if c.lexer.IsID_(c.scanner.GetTokenType()) {
-				temp, _ = NormalizeTSQLIdentifierText(c.scanner.GetTokenText())
-				c.scanner.Forward(true /* skipHidden */)
-			}
-			if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
-				return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */, false /* includeColumn */)
-			}
-			candidates = append(candidates, temp)
-			c.scanner.Forward(true /* skipHidden */)
-		}
-		if count == 2 {
-			// table_name
-			// : (database=id_ '.' schema=id_? '.' | schema=id_ '.')? (table=id_ | blocking_hierarchy=BLOCKING_HIERARCHY)
-			// The last token can be blocking hierarchy.
-			if c.lexer.IsID_(c.scanner.GetTokenType()) {
-				temp, _ = NormalizeTSQLIdentifierText(c.scanner.GetTokenText())
-				c.scanner.Forward(true /* skipHidden */)
-			} else if c.scanner.GetTokenType() == tsqlparser.TSqlParserBLOCKING_HIERARCHY {
-				temp = c.scanner.GetTokenText()
-				c.scanner.Forward(true /* skipHidden */)
-			}
-			if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
-				return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */, false /* includeColumn */)
-			}
-			candidates = append(candidates, temp)
-			c.scanner.Forward(true /* skipHidden */)
-		}
-
-		if count > 2 {
-			break
-		}
-	}
-
-	return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */, false /* includeColumn */)
 }
 
 func (c *Completer) determineFullColumnName() []*objectRefContext {
@@ -1335,7 +1261,7 @@ func (l *tableRefListener) ExitFull_table_name(ctx *tsqlparser.Full_table_nameCo
 
 	if !l.fromClauseMode || l.level == 0 {
 		reference := &base.PhysicalTableReference{}
-		_ /*Linked Server*/, database, schema, table := normalizeFullTableName(ctx, "", "", "")
+		_ /* Linked Server */, database, schema, table := normalizeFullTableName(ctx, "", "", "")
 		reference.Database = database
 		reference.Schema = schema
 		reference.Table = table
@@ -1343,7 +1269,7 @@ func (l *tableRefListener) ExitFull_table_name(ctx *tsqlparser.Full_table_nameCo
 	}
 }
 
-func (l *tableRefListener) ExitRowset_function(ctx *tsqlparser.Rowset_functionContext) {
+func (l *tableRefListener) ExitRowset_function(*tsqlparser.Rowset_functionContext) {
 	if l.done {
 		return
 	}
@@ -1390,7 +1316,7 @@ func (l *tableRefListener) ExitDerivedTable(ctx *tsqlparser.Derived_tableContext
 	l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
 }
 
-func (l *tableRefListener) ExitChange_table(ctx *tsqlparser.Change_tableContext) {
+func (l *tableRefListener) ExitChange_table(*tsqlparser.Change_tableContext) {
 	if l.done {
 		return
 	}
@@ -1401,7 +1327,7 @@ func (l *tableRefListener) ExitChange_table(ctx *tsqlparser.Change_tableContext)
 	}
 }
 
-func (l *tableRefListener) ExitNodes_method(ctx *tsqlparser.Nodes_methodContext) {
+func (l *tableRefListener) ExitNodes_method(*tsqlparser.Nodes_methodContext) {
 	if l.done {
 		return
 	}
@@ -1431,7 +1357,7 @@ func (l *tableRefListener) EnterTable_source_item(ctx *tsqlparser.Table_source_i
 	}
 }
 
-func (l *tableRefListener) EnterSubquery(ctx *tsqlparser.SubqueryContext) {
+func (l *tableRefListener) EnterSubquery(*tsqlparser.SubqueryContext) {
 	if l.done {
 		return
 	}
@@ -1443,7 +1369,7 @@ func (l *tableRefListener) EnterSubquery(ctx *tsqlparser.SubqueryContext) {
 	}
 }
 
-func (l *tableRefListener) ExitSubquery(ctx *tsqlparser.SubqueryContext) {
+func (l *tableRefListener) ExitSubquery(*tsqlparser.SubqueryContext) {
 	if l.done {
 		return
 	}
@@ -1642,9 +1568,5 @@ func isRegularIdentifier(identifier string) bool {
 	}
 
 	// Rule 5: Check for supplementary characters
-	if !utf8.ValidString(identifier) {
-		return false
-	}
-
-	return true
+	return utf8.ValidString(identifier)
 }

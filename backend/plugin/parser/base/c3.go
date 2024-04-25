@@ -391,15 +391,6 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 	return c.candidates
 }
 
-func pathContains(set FollowSetWithPath, ruleID int) bool {
-	for _, rule := range set.path.rules {
-		if rule.ID == ruleID {
-			return true
-		}
-	}
-	return false
-}
-
 func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenIndex int, indentation string) RuleEndStatus {
 	result := make(RuleEndStatus)
 	c.followSetsByState.CollectFollowSets(c.parser, startState, c.IgnoredTokens, c.PreferredRules)

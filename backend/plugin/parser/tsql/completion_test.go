@@ -166,7 +166,6 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 }
 
 func buildMockDatabaseMetadataGetterLister() (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
-
 	return func(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadatas {
