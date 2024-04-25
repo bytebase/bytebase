@@ -167,8 +167,8 @@
           <template
             v-if="
               basicInfo.engine !== Engine.SPANNER &&
-              adminDataSource.authenticationType ===
-                DataSource_AuthenticationType.PASSWORD
+              adminDataSource.authenticationType !==
+                DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
             "
           >
             <div class="sm:col-span-1">

@@ -1334,6 +1334,14 @@
           "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}project-id.iam 添加到您的 Google Cloud SQL 中。授予用户所需的权限。"
         }
       },
+      "aws-rds": {
+        "mysql": {
+          "template": "下面是创建用户 {user}{'@'}% 并授予该用户所需权限的示例。"
+        },
+        "postgresql": {
+          "template": "下面是创建用户“{user}”并授予该用户所需权限的示例。"
+        }
+      },
       "create-user-example": {
         "snowflake": {
           "template": "创建用户 {user}，密码 {password}，warehouse 为{warehouse}，并授予必要权限的例子如下。"
@@ -1362,6 +1370,7 @@
       "password": "密码",
       "password-tip": "您也可以指定外部的密码管理服务 endpoint",
       "google-iam": "Google CloudSQL IAM",
+      "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"

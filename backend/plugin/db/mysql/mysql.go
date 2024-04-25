@@ -3,15 +3,21 @@ package mysql
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/cloudsqlconn"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/blang/semver/v4"
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -62,18 +68,17 @@ func newDriver(dc db.DriverConfig) db.Driver {
 // Open opens a MySQL driver.
 func (driver *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	var dsn string
-	if connCfg.AuthenticationType == storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM {
-		connStr, err := getCloudSQLConnection(ctx, connCfg)
-		if err != nil {
-			return nil, err
-		}
-		dsn = connStr
-	} else {
-		connStr, err := driver.getMySQLConnection(connCfg)
-		if err != nil {
-			return nil, err
-		}
-		dsn = connStr
+	var err error
+	switch connCfg.AuthenticationType {
+	case storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM:
+		dsn, err = getCloudSQLConnection(ctx, connCfg)
+	case storepb.DataSourceOptions_AWS_RDS_IAM:
+		dsn, err = getRDSConnection(ctx, connCfg)
+	default:
+		dsn, err = driver.getMySQLConnection(connCfg)
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	db, err := sql.Open("mysql", dsn)
@@ -129,6 +134,68 @@ func (driver *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, e
 	}
 
 	return fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, connCfg.Port, connCfg.Database, strings.Join(params, "&")), nil
+}
+
+// AWS RDS connection with IAM require TLS connection.
+//
+// refs:
+// https://github.com/aws/aws-sdk-go/issues/1248
+// https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/mysql-ssl-connections.html
+func registerRDSMysqlCerts(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem", nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to build request for rds cert")
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	pem, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		return errors.Wrapf(err, "failed to close response")
+	}
+
+	rootCertPool := x509.NewCertPool()
+	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+		return err
+	}
+
+	return mysql.RegisterTLSConfig("rds", &tls.Config{RootCAs: rootCertPool, InsecureSkipVerify: true})
+}
+
+// getRDSConnection returns the connection string with IAM for AWS RDS.
+//
+// refs:
+// https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.Connecting.Go.html
+// https://repost.aws/knowledge-center/rds-mysql-access-denied
+func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
+	dbEndpoint := fmt.Sprintf("%s:%s", connCfg.Host, connCfg.Port)
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return "", errors.Wrap(err, "load aws config failed")
+	}
+
+	authenticationToken, err := auth.BuildAuthToken(
+		ctx, dbEndpoint, "us-east-1", connCfg.Username, cfg.Credentials)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create authentication token")
+	}
+
+	err = registerRDSMysqlCerts(ctx)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to register rds certs")
+	}
+
+	return fmt.Sprintf("%s:%s@tcp(%s)/%s?tls=rds&allowCleartextPasswords=true",
+		connCfg.Username, authenticationToken, dbEndpoint, connCfg.Database,
+	), nil
 }
 
 func getCloudSQLConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {

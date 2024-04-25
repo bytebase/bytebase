@@ -15,6 +15,8 @@ import (
 	// Import pg driver.
 	// init() in pgx/v5/stdlib will register it's pgx driver.
 	"cloud.google.com/go/cloudsqlconn"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
@@ -66,18 +68,18 @@ func newDriver(config db.DriverConfig) db.Driver {
 // Open opens a Postgres driver.
 func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	var connConfig *pgx.ConnConfig
-	if config.AuthenticationType == storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM {
-		cloudSQLConfig, err := getCloudSQLConnectionConfig(ctx, config)
-		if err != nil {
-			return nil, err
-		}
-		connConfig = cloudSQLConfig
-	} else {
-		pgConfig, err := getPGConnectionConfig(config)
-		if err != nil {
-			return nil, err
-		}
-		connConfig = pgConfig
+	var err error
+
+	switch config.AuthenticationType {
+	case storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM:
+		connConfig, err = getCloudSQLConnectionConfig(ctx, config)
+	case storepb.DataSourceOptions_AWS_RDS_IAM:
+		connConfig, err = getRDSConnectionConfig(ctx, config)
+	default:
+		connConfig, err = getPGConnectionConfig(config)
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	if config.SSHConfig.Host != "" {
@@ -170,6 +172,29 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	}
 
 	return connConfig, nil
+}
+
+// getRDSConnectionConfig returns connection config for AWS RDS.
+//
+// refs:
+// https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.Connecting.Go.html
+func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "load aws config failed")
+	}
+
+	dbEndpoint := fmt.Sprintf("%s:%s", conf.Host, conf.Port)
+	authenticationToken, err := auth.BuildAuthToken(
+		ctx, dbEndpoint, "us-east-1", conf.Username, cfg.Credentials)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create authentication token")
+	}
+
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s",
+		conf.Host, conf.Port, conf.Username, authenticationToken, conf.Database,
+	)
+	return pgx.ParseConfig(dsn)
 }
 
 // getCloudSQLConnectionConfig returns config for Cloud SQL connector.
