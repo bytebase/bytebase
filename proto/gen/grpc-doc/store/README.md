@@ -1613,6 +1613,7 @@ Used internally for obfuscating the page token.
 | AUTHENTICATION_UNSPECIFIED | 0 |  |
 | PASSWORD | 1 |  |
 | GOOGLE_CLOUD_SQL_IAM | 2 |  |
+| AWS_RDS_IAM | 3 |  |
 
 
  
