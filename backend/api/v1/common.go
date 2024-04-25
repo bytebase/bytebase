@@ -445,9 +445,6 @@ func parseLimitAndOffset(pageToken string, pageSize int) (int, int, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	if limit > 1000 {
-		limit = 1000
-	}
 	return limit, offset, nil
 }
 
