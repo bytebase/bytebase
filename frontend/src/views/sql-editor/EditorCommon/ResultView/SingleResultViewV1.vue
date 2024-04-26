@@ -22,7 +22,8 @@
         }}</span>
         <span
           v-if="
-            currentTab?.mode !== 'ADMIN' && data.length === RESULT_ROWS_LIMIT
+            currentTab?.mode !== 'ADMIN' &&
+            data.length === editorStore.resultRowsLimit
           "
           class="ml-2 whitespace-nowrap text-sm text-gray-500"
         >
@@ -164,11 +165,11 @@ import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useSQLEditorTabStore,
-  RESULT_ROWS_LIMIT,
   featureToRef,
   useCurrentUserV1,
   useActuatorV1Store,
   useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorStore,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import type {
@@ -227,6 +228,7 @@ const router = useRouter();
 const { dark, keyword } = useSQLResultViewContext();
 const actuatorStore = useActuatorV1Store();
 const tabStore = useSQLEditorTabStore();
+const editorStore = useSQLEditorStore();
 const currentUserV1 = useCurrentUserV1();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
@@ -377,7 +379,7 @@ const handleExportBtnClick = async (
       : connectedInstance.value.name;
   const statement = props.result.statement;
   const admin = tabStore.currentTab?.mode === "ADMIN";
-  const limit = options.limit ?? (admin ? 0 : RESULT_ROWS_LIMIT);
+  const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
   const content = await exportData({
     database,

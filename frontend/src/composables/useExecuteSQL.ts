@@ -9,7 +9,6 @@ import {
   useDatabaseV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
-  RESULT_ROWS_LIMIT,
   useSQLStore,
   useSQLEditorQueryHistoryStore,
 } from "@/store";
@@ -182,7 +181,7 @@ const useExecuteSQL = () => {
             connectionDatabase: database.databaseName, // deprecated field, remove me later
             dataSourceId: dataSourceId,
             statement,
-            limit: RESULT_ROWS_LIMIT,
+            limit: sqlEditorStore.resultRowsLimit,
           },
           abortController.signal
         );
