@@ -16,12 +16,14 @@ import (
 	sppb "cloud.google.com/go/spanner/apiv1/spannerpb"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
@@ -293,19 +295,30 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.Qu
 		return nil, err
 	}
 
-	data := []*v1pb.QueryRow{}
-	columnNames := getColumnNames(iter)
+	result := &v1pb.QueryResult{
+		Statement: statement,
+	}
+	result.ColumnNames = getColumnNames(iter)
 	columnTypeNames, err := getColumnTypeNames(iter)
 	if err != nil {
 		return nil, err
 	}
+	result.ColumnTypeNames = columnTypeNames
+	// spanner doesn't mask the sensitive fields.
+	// Return the all false boolean slice here as the placeholder.
+	result.Masked = make([]bool, len(result.ColumnNames))
 
 	for {
 		rowData, err := readRow2(row)
 		if err != nil {
 			return nil, err
 		}
-		data = append(data, rowData)
+		result.Rows = append(result.Rows, rowData)
+		if proto.Size(result) > common.MaximumSQLResultSize {
+			result.Error = common.MaximumSQLResultSizeExceeded
+			result.Latency = durationpb.New(time.Since(startTime))
+			return result, nil
+		}
 
 		row, err = iter.Next()
 		if err == iterator.Done {
@@ -315,19 +328,9 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.Qu
 			return nil, err
 		}
 	}
+	result.Latency = durationpb.New(time.Since(startTime))
 
-	// spanner doesn't mask the sensitive fields.
-	// Return the all false boolean slice here as the placeholder.
-	sensitiveInfo := make([]bool, len(columnNames))
-
-	return &v1pb.QueryResult{
-		ColumnNames:     columnNames,
-		ColumnTypeNames: columnTypeNames,
-		Rows:            data,
-		Masked:          sensitiveInfo,
-		Latency:         durationpb.New(time.Since(startTime)),
-		Statement:       statement,
-	}, nil
+	return result, nil
 }
 
 func readRow2(row *spanner.Row) (*v1pb.QueryRow, error) {
