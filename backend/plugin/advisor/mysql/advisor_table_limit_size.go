@@ -34,6 +34,7 @@ var (
 // If table size > xx bytes, then warning/error.
 func (*MaximumTableSizeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	var adviceList []advisor.Advice
+
 	if ctx.ChangeType != store.PlanCheckRunConfig_DDL && ctx.ChangeType != store.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
 		return []advisor.Advice{{
 			Status:  advisor.Success,

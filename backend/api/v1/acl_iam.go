@@ -146,6 +146,7 @@ func isSkippedMethod(fullMethod string) bool {
 		return true
 	// handled in the method because checking is complex.
 	case
+		v1pb.AuditLogService_SearchAuditLogs_FullMethodName,
 		v1pb.InstanceService_SearchInstances_FullMethodName,
 		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
 		v1pb.DatabaseService_ListDatabases_FullMethodName,
@@ -157,10 +158,6 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.ChangelistService_ListChangelists_FullMethodName,
 		v1pb.RolloutService_ListPlans_FullMethodName,
 		v1pb.ProjectService_ListSchemaGroups_FullMethodName:
-		return true
-
-	// TODO(p0ny): implement
-	case v1pb.AuditLogService_SearchAuditLogs_FullMethodName:
 		return true
 	}
 	return false
