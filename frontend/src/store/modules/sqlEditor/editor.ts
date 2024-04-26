@@ -6,10 +6,12 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
 import { useProjectV1Store } from "../v1";
 
-// set the limit to 1000 temporarily to avoid the query timeout and page crash
-export const RESULT_ROWS_LIMIT = 1000;
-
 export const useSQLEditorStore = defineStore("sqlEditor", () => {
+  const resultRowsLimit = useLocalStorage(
+    "bb.sql-editor.result-rows-limit",
+    1000
+  );
+
   // empty to "ALL" projects for high-privileged users
   const project = ref<string>("");
   // if `true`, won't show project selector and not allowed to switch to other projects
@@ -43,6 +45,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
   const isShowExecutingHint = ref(false);
 
   return {
+    resultRowsLimit,
     project,
     strictProject,
     projectContextReady,

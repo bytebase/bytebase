@@ -2270,7 +2270,12 @@
     "sync-in-progress": "Sync in progress",
     "create-a-worksheet": "Create a new worksheet",
     "select-a-database-to-start": "Select a database to start",
-    "select-encoding": "Select encoding"
+    "select-encoding": "Select encoding",
+    "result-limit": {
+      "n-rows": "{n} rows",
+      "rows": "rows"
+    },
+    "n-per-page": "{n} / page"
   },
   "schema-editor": {
     "self": "Schema Editor",
