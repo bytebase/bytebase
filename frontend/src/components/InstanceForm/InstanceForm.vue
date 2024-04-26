@@ -786,7 +786,7 @@ const doCreate = async () => {
   );
   instanceCreate.dataSources = [adminDataSourceCreate];
 
-  if (!checkExternalSecretFeature(instanceCreate)) {
+  if (!checkExternalSecretFeature(instanceCreate.dataSources)) {
     missingFeature.value = "bb.feature.external-secret-manager";
     return;
   }
@@ -821,10 +821,22 @@ const doUpdate = async () => {
     missingFeature.value = "bb.feature.read-replica-connection";
     return;
   }
-  if (!checkExternalSecretFeature(instance)) {
+
+  if (!checkExternalSecretFeature([adminDataSource.value])) {
     missingFeature.value = "bb.feature.external-secret-manager";
     return;
   }
+
+  if (
+    !checkExternalSecretFeature([
+      adminDataSource.value,
+      ...readonlyDataSourceList.value,
+    ])
+  ) {
+    missingFeature.value = "bb.feature.external-secret-manager";
+    return;
+  }
+
   // When clicking **Update** we may have more than one thing to do (if needed)
   // 1. Patch the instance itself.
   // 2. Update the admin datasource.
@@ -1145,12 +1157,12 @@ const extractDataSourceFromEdit = (
   return ds;
 };
 
-const checkExternalSecretFeature = (instance: Instance) => {
+const checkExternalSecretFeature = (dataSources: DataSource[]) => {
   if (hasExternalSecretFeature.value) {
     return true;
   }
 
-  return instance.dataSources.every((ds) => {
+  return dataSources.every((ds) => {
     return !ds.externalSecret && !/^{{.+}}$/.test(ds.password);
   });
 };
