@@ -200,8 +200,7 @@ const nextButtonErrors = computed(() => {
 const handleClickNext = async () => {
   state.isGenerating = true;
   try {
-    const databaseUIDList = [...flattenSelectedDatabaseUidList.value];
-    const databaseList = databaseUIDList.map((uid) =>
+    const databaseList = flattenSelectedDatabaseUidList.value.map((uid) =>
       databaseStore.getDatabaseByUID(uid)
     );
 
@@ -214,9 +213,8 @@ const handleClickNext = async () => {
         databaseList.map((db) => db.databaseName),
         changelist.value
       ),
-      project: project.value.uid,
       changelist: changelist.value.name,
-      databaseList: databaseUIDList.join(","),
+      databaseList: databaseList.map((db) => db.name),
     };
 
     router.push({

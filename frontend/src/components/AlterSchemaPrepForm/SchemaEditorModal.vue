@@ -410,7 +410,6 @@ const handlePreviewIssue = async () => {
 
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: project.value.uid,
   };
   if (isBatchMode.value) {
     if (props.databaseIdList.length > 1) {
@@ -421,13 +420,13 @@ const handlePreviewIssue = async () => {
       // A tenant pipeline with only 1 database will be downgraded to
       // a standard pipeline.
       // So we need to provide the databaseList parameter
-      query.databaseList = props.databaseIdList.join(",");
+      query.databaseList = databaseList.value.map((db) => db.name).join(",");
     }
   }
   if (props.alterType !== "TENANT") {
     // If we are not using tenant deployment config pipeline
     // we need to pass the databaseList explicitly.
-    query.databaseList = props.databaseIdList.join(",");
+    query.databaseList = databaseList.value.map((db) => db.name).join(",");
   }
 
   if (state.selectedTab === "raw-sql") {
@@ -445,8 +444,6 @@ const handlePreviewIssue = async () => {
 
     state.previewStatus = "Generating DDL";
     const statementMap = await generateDiffDDLMap(/* !silent */ false);
-
-    const databaseIdList = databaseList.value.map((db) => db.uid);
     const statementList: string[] = [];
     const emptyStatementDatabaseList: ComposedDatabase[] = [];
     for (const [database, result] of statementMap.entries()) {
@@ -474,11 +471,9 @@ const handlePreviewIssue = async () => {
         !!query.ghost
       );
     } else {
-      query.databaseList = databaseIdList.join(",");
+      query.databaseList = databaseList.value.map((db) => db.name).join(",");
       query.sqlList = JSON.stringify(statementList);
-      const databaseNameList = databaseList.value
-        .filter((database) => databaseIdList.includes(database.uid))
-        .map((db) => db.databaseName);
+      const databaseNameList = databaseList.value.map((db) => db.databaseName);
       query.name = generateIssueName(databaseNameList, !!query.ghost);
     }
   }

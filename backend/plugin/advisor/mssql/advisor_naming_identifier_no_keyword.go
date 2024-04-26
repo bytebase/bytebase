@@ -92,7 +92,7 @@ func (l *namingIdentifierNoKeywordChecker) EnterId_(ctx *parser.Id_Context) {
 	}
 
 	_, normalizedID := tsqlparser.NormalizeTSQLIdentifier(ctx)
-	if tsqlparser.IsTSQLKeyword(normalizedID, false) {
+	if tsqlparser.IsTSQLReservedKeyword(normalizedID, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.NameIsKeywordIdentifier,

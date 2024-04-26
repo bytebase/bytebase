@@ -9,6 +9,7 @@
     :row-key="(data: ComposedProject) => data.name"
     :row-props="rowProps"
     :pagination="pagination"
+    :paginate-single-page="false"
   />
 </template>
 
@@ -52,7 +53,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "click"): void;
+  (event: "row-click"): void;
 }>();
 
 const router = useRouter();
@@ -115,7 +116,7 @@ const rowProps = (project: ComposedProject) => {
       } else {
         window.location.href = route.fullPath;
       }
-      emit("click");
+      emit("row-click");
     },
   };
 };

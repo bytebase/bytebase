@@ -29,10 +29,15 @@ const (
 	MaxBinlogSizeLimit = 32 * 1024 * 1024
 	// MaxChunksCount is the maximum number of chunks for a sheet.
 	MaxSheetChunksCount = 200
+	// The maximum number of bytes for sql results in response body.
+	// 100 MB.
+	MaximumSQLResultSize = 100 * 1024 * 1024
 
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
 )
+
+var MaximumSQLResultSizeExceeded = fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", MaximumSQLResultSize/1024/1024)
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 

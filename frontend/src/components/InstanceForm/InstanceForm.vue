@@ -100,6 +100,7 @@
                   ? undefined
                   : environment.uid
               "
+              :disabled="!allowEdit"
               @update:environment="handleSelectEnvironmentUID"
             />
           </div>
@@ -166,8 +167,8 @@
           <template
             v-if="
               basicInfo.engine !== Engine.SPANNER &&
-              adminDataSource.authenticationType ===
-                DataSource_AuthenticationType.PASSWORD
+              adminDataSource.authenticationType !==
+                DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
             "
           >
             <div class="sm:col-span-1">
@@ -367,7 +368,6 @@
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import { NButton, NInput, NSwitch, NRadioGroup, NRadio } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import type { PropType } from "vue";
 import { computed, reactive, ref, watch, onMounted, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -428,16 +428,10 @@ import {
 import { provideInstanceFormContext } from "./context";
 import { useInstanceSpecs } from "./specs";
 
-const props = defineProps({
-  instance: {
-    type: Object as PropType<Instance>,
-    default: undefined,
-  },
-  drawer: {
-    type: Boolean,
-    default: false,
-  },
-});
+const props = defineProps<{
+  instance?: Instance;
+  drawer?: boolean;
+}>();
 
 const emit = defineEmits(["dismiss"]);
 
@@ -734,7 +728,7 @@ const validateResourceId = async (
   return [];
 };
 
-const updateEditState = async (instance: Instance) => {
+const updateEditState = (instance: Instance) => {
   basicInfo.value = extractBasicInfo(instance);
   const updatedEditState = extractDataSourceEditState(instance);
   dataSourceEditState.value.dataSources = updatedEditState.dataSources;
@@ -792,7 +786,7 @@ const doCreate = async () => {
   );
   instanceCreate.dataSources = [adminDataSourceCreate];
 
-  if (!checkExternalSecretFeature(instanceCreate)) {
+  if (!checkExternalSecretFeature(instanceCreate.dataSources)) {
     missingFeature.value = "bb.feature.external-secret-manager";
     return;
   }
@@ -827,10 +821,22 @@ const doUpdate = async () => {
     missingFeature.value = "bb.feature.read-replica-connection";
     return;
   }
-  if (!checkExternalSecretFeature(instance)) {
+
+  if (!checkExternalSecretFeature([adminDataSource.value])) {
     missingFeature.value = "bb.feature.external-secret-manager";
     return;
   }
+
+  if (
+    !checkExternalSecretFeature([
+      adminDataSource.value,
+      ...readonlyDataSourceList.value,
+    ])
+  ) {
+    missingFeature.value = "bb.feature.external-secret-manager";
+    return;
+  }
+
   // When clicking **Update** we may have more than one thing to do (if needed)
   // 1. Patch the instance itself.
   // 2. Update the admin datasource.
@@ -865,6 +871,9 @@ const doUpdate = async () => {
       instance.options?.maximumConnections
     ) {
       updateMask.push("options.maximum_connections");
+    }
+    if (updateMask.length === 0) {
+      return;
     }
     return await instanceV1Store.updateInstance(instancePatch, updateMask);
   };
@@ -917,7 +926,7 @@ const doUpdate = async () => {
       await maybeUpdateAdminDataSource();
       await maybeUpsertReadonlyDataSources();
       const updatedInstance = instanceV1Store.getInstanceByName(instance.name);
-      await updateEditState(updatedInstance);
+      updateEditState(updatedInstance);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -1148,12 +1157,12 @@ const extractDataSourceFromEdit = (
   return ds;
 };
 
-const checkExternalSecretFeature = (instance: Instance) => {
+const checkExternalSecretFeature = (dataSources: DataSource[]) => {
   if (hasExternalSecretFeature.value) {
     return true;
   }
 
-  return instance.dataSources.every((ds) => {
+  return dataSources.every((ds) => {
     return !ds.externalSecret && !/^{{.+}}$/.test(ds.password);
   });
 };
@@ -1164,8 +1173,14 @@ const checkDataSource = (dataSources: DataSource[]) => {
       ds.authenticationType ===
       DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
     ) {
-      // CloudSQL instance name shoule be {project}:{region}:{cloud sql name}
+      // CloudSQL instance name should be {project}:{region}:{cloud sql name}
       return /.+:.+:.+/.test(ds.host);
+    }
+
+    if (basicInfo.value.engine === Engine.ORACLE) {
+      if (!ds.sid && !ds.serviceName) {
+        return false;
+      }
     }
 
     if (!ds.externalSecret) {

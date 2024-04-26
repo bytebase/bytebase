@@ -154,7 +154,8 @@ const (
 	SchemaRuleTableDisallowDDL SQLReviewRuleType = "table.disallow-ddl"
 	// SchemaRuleTableDisallowDML disallow executing DML on specific tables.
 	SchemaRuleTableDisallowDML SQLReviewRuleType = "table.disallow-dml"
-
+	// SchemaRuleTableLimitSize  restrict access to tables based on size.
+	SchemaRuleTableLimitSize SQLReviewRuleType = "table.limit-size"
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
 	// SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
@@ -1417,6 +1418,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MSSQL {
 			return MSSQLTableDisallowDML, nil
 		}
+	case SchemaRuleTableLimitSize:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableLimitSize, nil
+		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
@@ -1622,8 +1627,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLStatementWhereMaximumLogicalOperatorCount, nil
 		}
 	case SchemaRuleStatementMaximumLimitValue:
-		if engine == storepb.Engine_MYSQL {
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_TIDB:
 			return MySQLStatementMaximumLimitValue, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLStatementMaximumLimitValue, nil
 		}
 	case SchemaRuleStatementMaximumJoinTableCount:
 		if engine == storepb.Engine_MYSQL {

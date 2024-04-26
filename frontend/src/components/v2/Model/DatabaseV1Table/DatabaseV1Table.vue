@@ -1,21 +1,20 @@
 <template>
-  <div>
-    <NDataTable
-      size="small"
-      :columns="columnList"
-      :data="data"
-      :striped="true"
-      :bordered="bordered"
-      :loading="loading"
-      :row-key="(data: ComposedDatabase) => data.name"
-      :checked-row-keys="Array.from(state.selectedDatabaseNameList)"
-      :row-props="rowProps"
-      :pagination="{ pageSize: 20 }"
-      @update:checked-row-keys="
+  <NDataTable
+    size="small"
+    :columns="columnList"
+    :data="data"
+    :striped="true"
+    :bordered="bordered"
+    :loading="loading"
+    :row-key="(data: ComposedDatabase) => data.name"
+    :checked-row-keys="Array.from(state.selectedDatabaseNameList)"
+    :row-props="rowProps"
+    :pagination="{ pageSize: 20 }"
+    :paginate-single-page="false"
+    @update:checked-row-keys="
         (val) => (state.selectedDatabaseNameList = new Set(val as string[]))
       "
-    ></NDataTable>
-  </div>
+  ></NDataTable>
 </template>
 
 <script setup lang="tsx">

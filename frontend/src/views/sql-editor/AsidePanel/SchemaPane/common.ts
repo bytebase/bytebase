@@ -186,7 +186,7 @@ export const keyForNodeTarget = <T extends NodeType>(
       `procedures/${procedure.name}`,
     ].join("/");
   }
-  if (type === "procedure") {
+  if (type === "function") {
     const { db, schema, function: func } = target as NodeTarget<"function">;
     return [db.name, `schemas/${schema.name}`, `functions/${func.name}`].join(
       "/"

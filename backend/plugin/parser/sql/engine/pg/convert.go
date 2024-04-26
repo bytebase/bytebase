@@ -1325,6 +1325,13 @@ func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
 		selectStmt.SubqueryList = append(selectStmt.SubqueryList, subqueryList...)
 	}
 
+	if in.LimitCount != nil {
+		limitConst := in.LimitCount.GetAConst()
+		if limitConst != nil && limitConst.GetIval() != nil {
+			selectStmt.Limit = &limitConst.GetIval().Ival
+		}
+	}
+
 	// Convert ORDER BY clause.
 	for _, itemNode := range in.SortClause {
 		item, ok := itemNode.Node.(*pgquery.Node_SortBy)

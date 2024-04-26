@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
+
 	"google.golang.org/protobuf/encoding/protojson"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -36,6 +38,8 @@ type DataSourceMessage struct {
 	SSHUser                 string
 	SSHObfuscatedPassword   string
 	SSHObfuscatedPrivateKey string
+	// SASL.
+	SASLConfig *storepb.SASLConfig
 	// Authentication
 	AuthenticationPrivateKeyObfuscated string
 	// (deprecated) Output only.
@@ -106,6 +110,8 @@ type UpdateDataSourceMessage struct {
 	ExternalSecret       *storepb.DataSourceExternalSecret
 	RemoveExternalSecret bool
 	AuthenticationType   *storepb.DataSourceOptions_AuthenticationType
+	// SASLConfig.
+	SASLConfig *storepb.SASLConfig
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -304,6 +310,9 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('externalSecret', $%d::JSONB)", len(args)+1)), append(args, protoBytes)
 	} else if patch.RemoveExternalSecret {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('externalSecret', $%d::JSONB)", len(args)+1)), append(args, nil)
+	}
+	if v := patch.SASLConfig; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('saslConfig', $%d::JSONB)", len(args)+1)), append(args, proto.Clone(v))
 	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))

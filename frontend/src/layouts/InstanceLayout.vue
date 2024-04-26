@@ -13,14 +13,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import ProvideInstanceContext from "@/components/ProvideInstanceContext.vue";
-import { useCurrentUserV1, useInstanceV1Store } from "@/store";
-import { instanceNamePrefix } from "@/store/modules/v1/common";
+import { useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
-const props = defineProps<{
+defineProps<{
   instanceId: string;
 }>();
 
@@ -36,12 +35,6 @@ const requiredPermissions = computed(() => {
 const hasPermission = computed(() => {
   return requiredPermissions.value.every((permission) =>
     hasWorkspacePermissionV2(currentUser.value, permission)
-  );
-});
-
-watchEffect(async () => {
-  await useInstanceV1Store().getOrFetchInstanceByName(
-    `${instanceNamePrefix}${props.instanceId}`
   );
 });
 </script>

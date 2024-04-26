@@ -17,7 +17,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -44,9 +43,6 @@ import (
 )
 
 const (
-	// The maximum number of bytes for sql results in response body.
-	// 100 MB.
-	maximumSQLResultSize = 100 * 1024 * 1024
 	// defaultTimeout is the default timeout for query and admin execution.
 	defaultTimeout = 10 * time.Minute
 )
@@ -147,14 +143,6 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			response.Results = result
 		}
 
-		if proto.Size(response) > maximumSQLResultSize {
-			response.Results = []*v1pb.QueryResult{
-				{
-					Error: fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", maximumSQLResultSize/1024/1024),
-				},
-			}
-		}
-
 		if err := server.Send(response); err != nil {
 			return status.Errorf(codes.Internal, "failed to send response: %v", err)
 		}
@@ -225,13 +213,6 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 	response := &v1pb.ExecuteResponse{
 		Results: results,
 		Advices: advices,
-	}
-	if proto.Size(response) > maximumSQLResultSize {
-		response.Results = []*v1pb.QueryResult{
-			{
-				Error: fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", maximumSQLResultSize/1024/1024),
-			},
-		}
 	}
 	return response, nil
 }
@@ -504,8 +485,8 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	if len(result) > 1 {
 		result = result[len(result)-1:]
 	}
-	if proto.Size(&v1pb.QueryResponse{Results: result}) > maximumSQLResultSize {
-		return nil, durationNs, errors.Errorf("Output of query exceeds max allowed output size of %dMB", maximumSQLResultSize/1024/1024)
+	if result[0].GetError() != "" {
+		return nil, durationNs, errors.Errorf(result[0].GetError())
 	}
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
@@ -671,24 +652,11 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 
 // SearchQueryHistories lists query histories.
 func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.SearchQueryHistoriesRequest) (*v1pb.SearchQueryHistoriesResponse, error) {
-	var pageToken storepb.PageToken
-	if request.PageToken != "" {
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-	} else {
-		pageToken.Limit = request.PageSize
-	}
-
-	limit := int(pageToken.Limit)
-	if limit <= 0 {
-		limit = 10
-	}
-	if limit > 1000 {
-		limit = 1000
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	limitPlusOne := limit + 1
-	offset := int(pageToken.Offset)
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
@@ -893,14 +861,6 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		Results:     results,
 		Advices:     advices,
 		AllowExport: allowExport,
-	}
-
-	if proto.Size(response) > maximumSQLResultSize {
-		response.Results = []*v1pb.QueryResult{
-			{
-				Error: fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", maximumSQLResultSize/1024/1024),
-			},
-		}
 	}
 
 	return response, nil

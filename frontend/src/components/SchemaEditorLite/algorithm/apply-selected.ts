@@ -4,6 +4,8 @@ import type {
   ColumnConfig,
   ColumnMetadata,
   DatabaseMetadata,
+  FunctionMetadata,
+  ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -19,7 +21,12 @@ import {
 } from "./utils";
 
 export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
-  const { getTableStatus, getColumnStatus } = context;
+  const {
+    getTableStatus,
+    getColumnStatus,
+    getProcedureStatus,
+    getFunctionStatus,
+  } = context;
 
   const applySelectedMetadataEdit = (
     db: ComposedDatabase,
@@ -41,14 +48,36 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
         });
       })
     );
+    const sourceProcedureMap = new Map(
+      source.schemas.flatMap((schema) => {
+        return schema.procedures.map((procedure) => {
+          const key = keyForResource(db, {
+            schema,
+            procedure,
+          });
+          return [key, { schema, procedure }];
+        });
+      })
+    );
+    const sourceFunctionMap = new Map(
+      source.schemas.flatMap((schema) => {
+        return schema.functions.map((func) => {
+          const key = keyForResource(db, {
+            schema,
+            function: func,
+          });
+          return [key, { schema, function: func }];
+        });
+      })
+    );
     const sourceTableConfigMap = new Map(
       source.schemaConfigs.flatMap((schemaConfig) => {
         return schemaConfig.tableConfigs.map((tableConfig) => {
-          const key = keyForResourceName(
-            db.name,
-            schemaConfig.name,
-            tableConfig.name
-          );
+          const key = keyForResourceName({
+            database: db.name,
+            schema: schemaConfig.name,
+            table: tableConfig.name,
+          });
           return [key, { schemaConfig, tableConfig }];
         });
       })
@@ -69,12 +98,12 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
       const pickedColumnConfigs: ColumnConfig[] = [];
       for (let i = 0; i < table.columns.length; i++) {
         const column = table.columns[i];
-        const key = keyForResourceName(
-          db.name,
-          schema.name,
-          table.name,
-          column.name
-        );
+        const key = keyForResourceName({
+          database: db.name,
+          schema: schema.name,
+          table: table.name,
+          column: column.name,
+        });
         const picked = selectedObjectKeys.has(key);
         if (picked) {
           const status = getColumnStatus(db, {
@@ -171,7 +200,66 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
       if (schemaConfig.tableConfigs.length > 0) {
         schemaConfigs.push(schemaConfig);
       }
+
+      const procedures: ProcedureMetadata[] = [];
+      for (let j = 0; j < schema.procedures.length; j++) {
+        const procedure = schema.procedures[j];
+        const key = keyForResource(db, { schema, procedure });
+        const picked = selectedObjectKeys.has(key);
+        if (picked) {
+          const status = getProcedureStatus(db, {
+            database: target,
+            schema,
+            procedure,
+          });
+          if (status === "dropped") {
+            // Drop procedure
+            // Don't collect the dropped procedure
+            continue;
+          } else {
+            // Collect the edited procedure
+            procedures.push(procedure);
+          }
+        } else {
+          const sourceProcedure = sourceProcedureMap.get(key);
+          if (sourceProcedure) {
+            // Collect the original procedure
+            procedures.push(cloneDeep(sourceProcedure.procedure));
+          }
+        }
+      }
+      schema.procedures = procedures;
+
+      const functions: FunctionMetadata[] = [];
+      for (let j = 0; j < schema.functions.length; j++) {
+        const func = schema.functions[j];
+        const key = keyForResource(db, { schema, function: func });
+        const picked = selectedObjectKeys.has(key);
+        if (picked) {
+          const status = getFunctionStatus(db, {
+            database: target,
+            schema,
+            function: func,
+          });
+          if (status === "dropped") {
+            // Drop function
+            // Don't collect the dropped function
+            continue;
+          } else {
+            // Collect the edited function
+            functions.push(func);
+          }
+        } else {
+          const sourceFunction = sourceFunctionMap.get(key);
+          if (sourceFunction) {
+            // Collect the original function
+            functions.push(cloneDeep(sourceFunction.function));
+          }
+        }
+      }
+      schema.functions = functions;
     }
+
     target.schemaConfigs = schemaConfigs;
 
     cleanupUnusedConfigs(target);

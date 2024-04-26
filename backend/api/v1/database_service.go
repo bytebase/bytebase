@@ -127,16 +127,44 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 		return nil, err
 	}
 
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := limit + 1
+	find.Limit = &limitPlusOne
+	find.Offset = &offset
+
 	permission := iam.PermissionDatabasesGet
 	if request.GetPermission() == iam.PermissionDatabasesQuery.String() {
 		permission = iam.PermissionDatabasesQuery
 	}
-	databases, err := searchDatabases(ctx, s.store, s.iamManager, find, permission)
+
+	databases, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	response := &v1pb.SearchDatabasesResponse{}
-	for _, databaseMessage := range databases {
+
+	nextPageToken := ""
+	if len(databases) == limitPlusOne {
+		databases = databases[:limit]
+		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
+			Limit:  int32(limit),
+			Offset: int32(limit + offset),
+		}); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
+	}
+
+	databaseMessages, err := filterDatabasesV2(ctx, s.store, s.iamManager, databases, permission)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to filter databases, error: %v", err)
+	}
+
+	response := &v1pb.SearchDatabasesResponse{
+		NextPageToken: nextPageToken,
+	}
+	for _, databaseMessage := range databaseMessages {
 		database, err := s.convertToDatabase(ctx, databaseMessage)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
@@ -160,7 +188,17 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	find := &store.FindDatabaseMessage{}
+
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := limit + 1
+
+	find := &store.FindDatabaseMessage{
+		Limit:  &limitPlusOne,
+		Offset: &offset,
+	}
 	if instanceID != "-" {
 		find.InstanceID = &instanceID
 	}
@@ -180,11 +218,26 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	nextPageToken := ""
+	if len(databaseMessages) == limitPlusOne {
+		databaseMessages = databaseMessages[:limit]
+		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
+			Limit:  int32(limit),
+			Offset: int32(limit + offset),
+		}); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
+	}
+
 	databaseMessages, err = filterDatabasesV2(ctx, s.store, s.iamManager, databaseMessages, iam.PermissionDatabasesList)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to filter databases, error: %v", err)
 	}
-	response := &v1pb.ListDatabasesResponse{}
+
+	response := &v1pb.ListDatabasesResponse{
+		NextPageToken: nextPageToken,
+	}
 	for _, databaseMessage := range databaseMessages {
 		database, err := s.convertToDatabase(ctx, databaseMessage)
 		if err != nil {
@@ -204,11 +257,11 @@ func getDatabaseFind(filter string) (*store.FindDatabaseMessage, error) {
 	find := &store.FindDatabaseMessage{}
 
 	for _, spec := range filters {
+		if spec.operator != comparatorTypeEqual {
+			return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for filter`)
+		}
 		switch spec.key {
 		case "instance":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "instance" filter`)
-			}
 			instanceID, err := common.GetInstanceID(spec.value)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -217,10 +270,6 @@ func getDatabaseFind(filter string) (*store.FindDatabaseMessage, error) {
 				find.InstanceID = &instanceID
 			}
 		case "project":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "project" filter`)
-			}
-
 			projectID, err := common.GetProjectID(spec.value)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -228,6 +277,8 @@ func getDatabaseFind(filter string) (*store.FindDatabaseMessage, error) {
 			if projectID != "-" {
 				find.ProjectID = &projectID
 			}
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", spec.key)
 		}
 	}
 
@@ -239,6 +290,17 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
+
+	for _, role := range user.Roles {
+		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(role.String()))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get permissions")
+		}
+		if slices.Contains(permissions, needPermission) {
+			return databases, nil
+		}
+	}
+
 	projectDatabases := make(map[string][]*store.DatabaseMessage)
 	for _, database := range databases {
 		projectDatabases[database.ProjectID] = append(projectDatabases[database.ProjectID], database)
@@ -262,47 +324,19 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		return nil, errors.Wrapf(err, "failed to get project policy for project %q", projectID)
 	}
 
-	for _, role := range user.Roles {
-		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(role.String()))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get permissions")
-		}
-		if slices.Contains(permissions, needPermission) {
-			return databases, nil
-		}
-	}
-
-	for _, binding := range policy.Bindings {
-		if binding.Role == api.ProjectQuerier || binding.Role == api.ProjectExporter {
-			continue
-		}
-		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(binding.Role.String()))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get permissions")
-		}
-		if !slices.Contains(permissions, needPermission) {
-			continue
-		}
-		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to eval binding condition")
-		}
-		if !ok {
-			continue
-		}
-		for _, member := range binding.Members {
-			if member.ID != user.ID && member.Email != api.AllUsers {
-				continue
-			}
-			return databases, nil
-		}
-	}
-
 	expressionDBsFromAllRoles := make(map[string]bool)
 	for _, binding := range policy.Bindings {
-		if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
+		hasUser := false
+		for _, member := range binding.Members {
+			if member.ID == user.ID || member.Email == api.AllUsers {
+				hasUser = true
+				break
+			}
+		}
+		if !hasUser {
 			continue
 		}
+
 		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(binding.Role.String()))
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get permissions")
@@ -317,23 +351,19 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if !ok {
 			continue
 		}
-		for _, member := range binding.Members {
-			if member.ID != user.ID && member.Email != api.AllUsers {
-				continue
-			}
-			expressionDBs := getDatabasesFromExpression(binding.Condition.Expression)
-			if len(expressionDBs) == 0 {
-				return databases, nil
-			}
-			for db := range expressionDBs {
-				expressionDBsFromAllRoles[db] = true
-			}
+
+		expressionDBs := getDatabasesFromExpression(binding.Condition.Expression)
+		if len(expressionDBs) == 0 {
+			return databases, nil
+		}
+		for db := range expressionDBs {
+			expressionDBsFromAllRoles[db] = true
 		}
 	}
 
 	var filteredDatabases []*store.DatabaseMessage
 	for _, database := range databases {
-		databaseName := fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
+		databaseName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
 		if expressionDBsFromAllRoles[databaseName] {
 			filteredDatabases = append(filteredDatabases, database)
 		}
@@ -859,25 +889,9 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	var limit, offset int
-	if request.PageToken != "" {
-		var pageToken storepb.PageToken
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-		if pageToken.Limit < 0 {
-			return nil, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
-		}
-		limit = int(pageToken.Limit)
-		offset = int(pageToken.Offset)
-	} else {
-		limit = int(request.PageSize)
-	}
-	if limit <= 0 {
-		limit = 10
-	}
-	if limit > 1000 {
-		limit = 1000
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	limitPlusOne := limit + 1
 
@@ -896,9 +910,31 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
 		find.ShowFull = true
 	}
-	if request.Filter != "" {
-		find.ResourcesFilter = &request.Filter
+
+	filters, err := parseFilter(request.Filter)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	for _, expr := range filters {
+		if expr.operator != comparatorTypeEqual {
+			return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for filter`)
+		}
+		switch expr.key {
+		case "source":
+			changeSource := db.MigrationSource(expr.value)
+			find.Source = &changeSource
+		case "type":
+			for _, changeType := range strings.Split(expr.value, " | ") {
+				find.TypeList = append(find.TypeList, db.MigrationType(changeType))
+			}
+		case "table":
+			resourcesFilter := expr.value
+			find.ResourcesFilter = &resourcesFilter
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", expr.key)
+		}
+	}
+
 	changeHistories, err := s.store.ListInstanceChangeHistory(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)

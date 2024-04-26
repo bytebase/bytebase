@@ -106,6 +106,15 @@ ruleList:
         payload:
           type: STRING_ARRAY
           default: []
+  - type: table.limit-size
+    category: TABLE
+    engineList:
+      - MYSQL
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 10000000
   - type: statement.select.no-select-all
     category: STATEMENT
     engineList:
@@ -288,6 +297,10 @@ ruleList:
     category: STATEMENT
     engineList:
       - MYSQL
+      - OCEANBASE
+      - MARIADB
+      - TIDB
+      - POSTGRES
     componentList:
       - key: number
         payload:

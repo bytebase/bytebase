@@ -97,23 +97,9 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
 	}
 
-	var limit, offset int
-	if request.PageToken != "" {
-		var pageToken storepb.PageToken
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-		if pageToken.Limit < 0 {
-			return nil, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
-		}
-		limit = int(pageToken.Limit)
-		offset = int(pageToken.Offset)
-	}
-	if limit <= 0 {
-		limit = 50
-	}
-	if limit > 1000 {
-		limit = 1000
+	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	limitPlusOne := limit + 1
 
@@ -1010,6 +996,42 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				}
 				if config.ChangeDatabaseConfig.RollbackEnabled != payload.RollbackEnabled {
 					taskPatch.RollbackEnabled = &config.ChangeDatabaseConfig.RollbackEnabled
+					doUpdate = true
+				}
+				return nil
+			}(); err != nil {
+				return nil, err
+			}
+
+			// PreUpdateBackupDetail
+			if err := func() error {
+				if task.Type != api.TaskDatabaseDataUpdate {
+					return nil
+				}
+				payload := &api.TaskDatabaseDataUpdatePayload{}
+				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+					return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
+				}
+				config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
+				if !ok {
+					return nil
+				}
+
+				var databaseName *string
+				if config.ChangeDatabaseConfig.PreUpdateBackupDetail == nil {
+					if payload.PreUpdateBackupDetail.Database != "" {
+						emptyValue := ""
+						databaseName = &emptyValue
+					}
+				} else {
+					if config.ChangeDatabaseConfig.PreUpdateBackupDetail.Database != payload.PreUpdateBackupDetail.Database {
+						databaseName = &config.ChangeDatabaseConfig.PreUpdateBackupDetail.Database
+					}
+				}
+				if databaseName != nil {
+					taskPatch.PreUpdateBackupDetail = &api.PreUpdateBackupDetail{
+						Database: *databaseName,
+					}
 					doUpdate = true
 				}
 				return nil

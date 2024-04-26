@@ -1112,6 +1112,12 @@
       "tooltip": "Los aprobadores revisarán y aprobarán el problema en el orden especificado en el flujo. \nLa emisión solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. \nPuede configurar un flujo de aprobación personalizado para cada riesgo.",
       "pre-issue-created-tips": "Después de crear un problema, Bytebase coincidirá automáticamente con la aprobación personalizada correspondiente según el tipo y nivel de riesgo del problema."
     },
+    "risk-level": {
+      "self": "Nivel de riesgo",
+      "low": "Bajo",
+      "moderate": "Moderado",
+      "high": "Alto"
+    },
     "waiting-to-rollout": "Esperando para implementar",
     "waiting-for-review": "Esperando revisión",
     "issue-name": "Nombre de la incidencia",
@@ -1184,6 +1190,9 @@
       "format": "Formato",
       "encrypt": "Cifrar",
       "file-downloaded": "Archivo Descargado"
+    },
+    "update-rollout-time": {
+      "self": "Hora de implementación de la actualización"
     }
   },
   "alter-schema": {
@@ -1325,6 +1334,14 @@
           "template": "Cree una cuenta de servicio llamada {user} y luego agréguela en su Google Cloud SQL como usuario de IAM {user}{'@'}project-id.iam. Otorgue al usuario los privilegios necesarios."
         }
       },
+      "aws-rds": {
+        "mysql": {
+          "template": "A continuación se muestra un ejemplo para crear el usuario {user}{'@'}% y otorgarle los privilegios necesarios."
+        },
+        "postgresql": {
+          "template": "A continuación se muestra un ejemplo para crear el usuario '{user}' y otorgarle los privilegios necesarios."
+        }
+      },
       "create-user-example": {
         "snowflake": {
           "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {password} para {warehouse} y otorgar al usuario los privilegios necesarios."
@@ -1352,7 +1369,8 @@
     "password-type": {
       "password": "Contraseña",
       "password-tip": "También puede especificar un punto final de gestión de secreto externo",
-      "google-iam": "Google CloudSQL IAM",
+      "google-iam": "Google Cloud SQL IAM",
+      "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
@@ -1645,13 +1663,12 @@
     "select-databases-from-same-project": "Por favor seleccione bases de datos del mismo proyecto",
     "sync-schema": {
       "title": "Sincronizar esquema",
-      "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino",
+      "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, TiDB, Oracle)",
       "schema-history-version": "Versión del historial de esquema",
       "copy-schema": "Copiar esquema",
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
       "select-project": "Seleccione el proyecto",
-      "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB, Oracle)",
       "source-database": "Base de datos de origen",
       "source-schema": "Esquema de origen",
       "schema-version": {
@@ -2276,7 +2293,10 @@
       "drop-column": "Eliminar columna",
       "sql-preview": "Vista previa SQL",
       "reset": "Restablecer",
-      "save": "Guardar"
+      "save": "Guardar",
+      "create-procedure": "Crear procedimiento",
+      "create-function": "Crear función",
+      "drop": "Gota"
     },
     "database": {
       "name": "Nombre",
@@ -2329,7 +2349,11 @@
       "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos",
       "invalid-schema": "Esquema no válido",
       "cannot-drop-the-last-column": "No se puede eliminar la última columna",
-      "cannot-change-config": "La configuración de la base de datos debe cambiarse con el esquema"
+      "cannot-change-config": "La configuración de la base de datos debe cambiarse con el esquema",
+      "duplicated-procedure-name": "Nombre del procedimiento duplicado",
+      "invalid-procedure-name": "Nombre de procedimiento no válido",
+      "duplicated-function-name": "Nombre de función duplicado",
+      "invalid-function-name": "Nombre de función no válido"
     },
     "confirm-to-close": {
       "title": "Confirmar para cerrar",
@@ -2353,7 +2377,10 @@
       "value": "Valor",
       "add-sub-partition": "Agregar subpartición",
       "type": "Tipo"
-    }
+    },
+    "views": "Puntos de vista",
+    "procedures": "Trámites",
+    "functions": "Funciones"
   },
   "label": {
     "empty-label-value": "Valor",
