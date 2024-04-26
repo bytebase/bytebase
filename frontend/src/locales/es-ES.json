@@ -2274,7 +2274,8 @@
     "result-limit": {
       "n-rows": "{n} filas",
       "rows": "filas"
-    }
+    },
+    "n-per-page": "{n} / página"
   },
   "schema-editor": {
     "self": "Editor de esquema",

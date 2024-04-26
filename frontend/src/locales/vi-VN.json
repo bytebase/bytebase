@@ -2274,7 +2274,8 @@
     "result-limit": {
       "n-rows": "{n} hàng",
       "rows": "hàng"
-    }
+    },
+    "n-per-page": "{n} / trang"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",

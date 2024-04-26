@@ -2274,7 +2274,8 @@
     "result-limit": {
       "n-rows": "{n} 行",
       "rows": "行"
-    }
+    },
+    "n-per-page": "{n} / ページ"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

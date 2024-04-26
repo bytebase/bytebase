@@ -2274,7 +2274,8 @@
     "result-limit": {
       "n-rows": "{n} rows",
       "rows": "rows"
-    }
+    },
+    "n-per-page": "{n} / page"
   },
   "schema-editor": {
     "self": "Schema Editor",

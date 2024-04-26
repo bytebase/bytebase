@@ -44,8 +44,21 @@
           :item-count="table.getCoreRowModel().rows.length"
           :page="pageIndex + 1"
           :page-size="pageSize"
+          class="pagination"
+          style="--n-input-width: 2.5rem"
           @update-page="handleChangePage"
-        />
+        >
+          <template #suffix>
+            <NSelect
+              v-model:value="pageSize"
+              :options="pageSizeOptions"
+              :consistent-menu-width="false"
+              :show-arrow="false"
+              class="pagesize-select"
+              size="small"
+            />
+          </template>
+        </NPagination>
         <NButton
           v-if="showVisualizeButton"
           text
@@ -152,10 +165,18 @@ import {
   getSortedRowModel,
   useVueTable,
 } from "@tanstack/vue-table";
-import { useDebounceFn } from "@vueuse/core";
+import { useDebounceFn, useLocalStorage } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
 import { ExternalLinkIcon } from "lucide-vue-next";
-import { NButton, NInput, NSwitch, NPagination, NTooltip } from "naive-ui";
+import {
+  NButton,
+  NInput,
+  NSwitch,
+  NPagination,
+  NTooltip,
+  type SelectOption,
+  NSelect,
+} from "naive-ui";
 import type { BinaryLike } from "node:crypto";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -207,8 +228,11 @@ type LocalState = {
 };
 type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
 
-const PAGE_SIZES = [20, 50, 100];
 const DEFAULT_PAGE_SIZE = 50;
+const storedPageSize = useLocalStorage<number>(
+  "bb.sql-editor.result-page-size",
+  DEFAULT_PAGE_SIZE
+);
 
 const props = defineProps<{
   params: SQLEditorQueryParams;
@@ -352,13 +376,25 @@ const table = useVueTable<QueryRow>({
   getPaginationRowModel: getPaginationRowModel(),
 });
 
-table.setPageSize(DEFAULT_PAGE_SIZE);
+table.setPageSize(storedPageSize.value);
 
 const pageIndex = computed(() => {
   return table.getState().pagination.pageIndex;
 });
-const pageSize = computed(() => {
-  return table.getState().pagination.pageSize;
+const pageSize = computed({
+  get() {
+    return table.getState().pagination.pageSize;
+  },
+  set(ps) {
+    table.setPageSize(ps);
+    storedPageSize.value = ps;
+  },
+});
+const pageSizeOptions = computed(() => {
+  return [20, 50, 100, 1000].map<SelectOption>((n) => ({
+    label: t("sql-editor.n-per-page", { n }),
+    value: n,
+  }));
 });
 
 const handleExportBtnClick = async (
@@ -444,7 +480,7 @@ const visualizeExplain = () => {
   }
 };
 
-const showPagination = computed(() => data.value.length > PAGE_SIZES[0]);
+const showPagination = computed(() => data.value.length > pageSize.value);
 
 const handleChangePage = (page: number) => {
   table.setPageIndex(page - 1);
@@ -472,3 +508,12 @@ const queryTime = computed(() => {
   return `${totalSeconds.toFixed(2)} s`;
 });
 </script>
+
+<style scoped lang="postcss">
+
+
+.pagesize-select :deep(.n-base-selection) {
+  --n-padding-single-left: 8px !important;
+  --n-padding-single-right: 8px !important;
+}
+</style>

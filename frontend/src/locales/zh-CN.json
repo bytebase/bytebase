@@ -2274,7 +2274,8 @@
     "result-limit": {
       "n-rows": "{n} 行",
       "rows": "行"
-    }
+    },
+    "n-per-page": "{n} / 页"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
