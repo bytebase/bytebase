@@ -389,7 +389,6 @@ const accessTokenPlaceholder = computed(() => {
 });
 
 const changeAccessToken = (value: string) => {
-  // eslint-disable-next-line vue/no-mutating-props
   props.config.accessToken = value;
 };
 

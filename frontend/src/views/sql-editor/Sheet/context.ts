@@ -114,7 +114,7 @@ export const provideSheetContext = () => {
     events: new Emittery(),
   };
 
-  context.events.on("refresh", ({ views }) => {
+  context.events.on("refresh", () => {
     // Nothing todo
   });
 
