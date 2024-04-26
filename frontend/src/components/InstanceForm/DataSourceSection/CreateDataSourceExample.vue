@@ -391,11 +391,21 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
           props.authenticationType ===
           DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
         ) {
-          return `GRANT pg_write_all_data TO "${ADMIN_USER_NAME}@{project-id}.iam";`;
+          return `GRANT pg_write_all_data TO "${ADMIN_USER_NAME}@{project-id}.iam";
+
+-- If you need to create databases via Bytebase
+ALTER USER "${ADMIN_USER_NAME}@{project-id}.iam" WITH CREATEDB;`;
         } else if (
           props.authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM
         ) {
-          return `CREATE USER ${ADMIN_USER_NAME};\n\nGRANT rds_iam TO ${ADMIN_USER_NAME};\n\nGRANT pg_write_all_data TO ${ADMIN_USER_NAME};`;
+          return `CREATE USER ${ADMIN_USER_NAME};
+
+GRANT rds_iam TO ${ADMIN_USER_NAME};
+
+GRANT pg_write_all_data TO ${ADMIN_USER_NAME};
+
+-- If you need to create databases via Bytebase
+ALTER USER ${ADMIN_USER_NAME} WITH CREATEDB;`;
         }
         return `CREATE USER ${ADMIN_USER_NAME} WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';\n\nALTER USER ${ADMIN_USER_NAME} WITH SUPERUSER;`;
       case Engine.REDSHIFT:
