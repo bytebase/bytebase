@@ -581,7 +581,6 @@ MIIEvQ...
 </template>
 
 <script setup lang="ts">
-/* eslint-disable vue/no-mutating-props */
 import { NButton, NRadioGroup, NRadio, NCheckbox, NInput } from "naive-ui";
 import { watch, reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
