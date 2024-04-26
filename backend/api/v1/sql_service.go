@@ -334,18 +334,12 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return nil, err
 	}
 
-	// TODO(d): are we sure about this?
-	schemaName := ""
-	if instance.Engine == storepb.Engine_ORACLE {
-		schemaName = database.DatabaseName
-	}
-
 	spans, err := base.GetQuerySpan(
 		ctx,
 		instance.Engine,
 		statement,
 		database.DatabaseName,
-		schemaName,
+		"",
 		BuildGetDatabaseMetadataFunc(s.store, instance),
 		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -778,19 +772,13 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 
-	// TODO(d): are we sure about this?
-	schemaName := ""
-	if instance.Engine == storepb.Engine_ORACLE {
-		schemaName = database.DatabaseName
-	}
-
 	// Get query span.
 	spans, err := base.GetQuerySpan(
 		ctx,
 		instance.Engine,
 		statement,
 		database.DatabaseName,
-		schemaName,
+		"",
 		BuildGetDatabaseMetadataFunc(s.store, instance),
 		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
