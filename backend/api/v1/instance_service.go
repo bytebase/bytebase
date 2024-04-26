@@ -762,9 +762,6 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
 	}
-	if err := s.checkDataSource(instance, &dataSource); err != nil {
-		return nil, err
-	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
@@ -861,6 +858,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
+	}
+
+	if err := s.checkDataSource(instance, &dataSource); err != nil {
+		return nil, err
 	}
 
 	if patch.SSHHost != nil || patch.SSHPort != nil || patch.SSHUser != nil || patch.SSHObfuscatedPassword != nil || patch.SSHObfuscatedPrivateKey != nil {
