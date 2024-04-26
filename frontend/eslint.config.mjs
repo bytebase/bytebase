@@ -18,7 +18,7 @@ export default [
   ...compat.extends("@vue/eslint-config-typescript/recommended"),
   ...compat.extends("@vue/eslint-config-prettier/skip-formatting"),
   {
-    files: ["**/*.vue", "**/*.ts", "**/*.tsx"],
+    files: ["**/*.js", "**/*.vue", "**/*.ts", "**/*.tsx"],
     languageOptions: {
       sourceType: "module",
     },
