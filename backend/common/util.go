@@ -37,6 +37,8 @@ const (
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
 )
 
+var MaximumSQLResultSizeExceeded = fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", MaximumSQLResultSize/1024/1024)
+
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 // RandomString returns a random string with length n.
