@@ -234,6 +234,7 @@ import {
   createEmptyLocalSheet,
   notifyNotEditableLegacyIssue,
   isDeploymentConfigChangeTaskV1,
+  isGroupingChangeTaskV1,
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
@@ -520,27 +521,36 @@ const chooseUpdateStatementTarget = () => {
           default: () => t("common.cancel"),
         }
       );
-      const TASK = h(
-        NButton,
-        { size: "small", onClick: () => finish("TASK") },
-        {
-          default: () => t("issue.update-statement.target.selected-task"),
-        }
-      );
-      const buttons = [CANCEL, TASK];
-      if (targets.STAGE.length > 1) {
-        // More than one editable tasks in stage
-        // Add "Selected stage" option
-        const STAGE = h(
+
+      const buttons = [CANCEL];
+      // For database group change task, don't show the option to select the task.
+      if (!isGroupingChangeTaskV1(issue.value, selectedTask.value)) {
+        const TASK = h(
           NButton,
-          { size: "small", onClick: () => finish("STAGE") },
+          { size: "small", onClick: () => finish("TASK") },
           {
-            default: () => t("issue.update-statement.target.selected-stage"),
+            default: () => t("issue.update-statement.target.selected-task"),
           }
         );
-        buttons.push(STAGE);
+        buttons.push(TASK);
+
+        if (targets.STAGE.length > 1) {
+          // More than one editable tasks in stage
+          // Add "Selected stage" option
+          const STAGE = h(
+            NButton,
+            { size: "small", onClick: () => finish("STAGE") },
+            {
+              default: () => t("issue.update-statement.target.selected-stage"),
+            }
+          );
+          buttons.push(STAGE);
+        }
       }
-      if (targets.ALL.length > targets.STAGE.length) {
+      if (
+        isGroupingChangeTaskV1(issue.value, selectedTask.value) ||
+        targets.ALL.length > targets.STAGE.length
+      ) {
         // More editable tasks in other stages
         // Add "All tasks" option
         const ALL = h(
