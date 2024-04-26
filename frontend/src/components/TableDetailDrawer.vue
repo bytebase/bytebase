@@ -298,7 +298,7 @@ const table = computedAsync(
       database: databaseName,
       schema: schemaName,
       table: tableName,
-      skipCache: false,
+      skipCache: true,
       silent: false,
     });
   },
