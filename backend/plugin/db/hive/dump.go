@@ -152,11 +152,6 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, error
 	return builder.String(), nil
 }
 
-// Restore the database from src, which is a full backup.
-func (*Driver) Restore(_ context.Context, _ io.Reader) error {
-	return errors.Errorf("Not implemented")
-}
-
 // This function shows DDLs for creating certain type of schema [VIEW, DATABASE, TABLE].
 func (d *Driver) showCreateSchemaDDL(ctx context.Context, schemaType string, schemaName string, belongTo string) (string, error) {
 	schemaName = fmt.Sprintf("`%s`", schemaName)

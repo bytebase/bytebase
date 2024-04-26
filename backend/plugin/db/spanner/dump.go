@@ -52,8 +52,3 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (stri
 
 	return "", nil
 }
-
-// Restore restores a database.
-func (*Driver) Restore(_ context.Context, _ io.Reader) error {
-	panic("not implemented")
-}

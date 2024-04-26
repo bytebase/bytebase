@@ -184,11 +184,6 @@ func (*Driver) Dump(_ context.Context, _ io.Writer, schemaOnly bool) (string, er
 	return "", nil
 }
 
-// Restore the database from src, which is a full backup.
-func (*Driver) Restore(context.Context, io.Reader) error {
-	return errors.New("redis: not supported")
-}
-
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	startTime := time.Now()
