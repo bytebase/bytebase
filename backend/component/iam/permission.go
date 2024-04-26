@@ -52,6 +52,7 @@ const (
 	PermissionSettingsSet                Permission = "bb.settings.set"
 
 	// Project-level permissions.
+	PermissionAuditLogsGet          Permission = "bb.auditLogs.get"
 	PermissionBranchesCreate        Permission = "bb.branches.create"
 	PermissionBranchesDelete        Permission = "bb.branches.delete"
 	PermissionBranchesGet           Permission = "bb.branches.get"
@@ -111,6 +112,7 @@ func PermissionExist(p Permission) bool {
 	//exhaustive:enforce
 	switch p {
 	case
+		PermissionAuditLogsGet,
 		PermissionBranchesCreate,
 		PermissionBranchesDelete,
 		PermissionBranchesGet,
@@ -283,6 +285,7 @@ func GetPermissionLevel(permission Permission) PermissionLevel {
 		PermissionSettingsSet:
 		return PermissionLevelWorkspace
 	case
+		PermissionAuditLogsGet,
 		PermissionBranchesCreate,
 		PermissionBranchesDelete,
 		PermissionBranchesGet,

@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -22,12 +23,14 @@ import (
 
 type AuditLogService struct {
 	v1pb.UnimplementedAuditLogServiceServer
-	store *store.Store
+	store      *store.Store
+	iamManager *iam.Manager
 }
 
-func NewAuditLogService(store *store.Store) *AuditLogService {
+func NewAuditLogService(store *store.Store, iamManager *iam.Manager) *AuditLogService {
 	return &AuditLogService{
-		store: store,
+		store:      store,
+		iamManager: iamManager,
 	}
 }
 
@@ -43,10 +46,20 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 	}
 	limitPlusOne := limit + 1
 
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "failed to get user")
+	}
+	permissionFilter, serr := getSearchAuditLogsPermissionFilter(ctx, s.store, user, s.iamManager)
+	if serr != nil {
+		return nil, serr.Err()
+	}
+
 	auditLogs, err := s.store.SearchAuditLogs(ctx, &store.AuditLogFind{
-		Filter: filter,
-		Limit:  &limitPlusOne,
-		Offset: &offset,
+		PermissionFilter: permissionFilter,
+		Filter:           filter,
+		Limit:            &limitPlusOne,
+		Offset:           &offset,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get audit logs, error: %v", err)
@@ -196,6 +209,24 @@ func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Sta
 
 	return &store.AuditLogFilter{
 		Args:  positionalArgs,
-		Where: where,
+		Where: "(" + where + ")",
+	}, nil
+}
+
+func getSearchAuditLogsPermissionFilter(ctx context.Context, s *store.Store, user *store.UserMessage, iamManager *iam.Manager) (*store.AuditLogPermissionFilter, *status.Status) {
+	projectIDs, err := getProjectIDsWithPermission(ctx, s, user, iamManager, iam.PermissionAuditLogsGet)
+	if err != nil {
+		return nil, status.Newf(codes.Internal, "failed to get projectIDs with permission")
+	}
+	if projectIDs == nil {
+		return nil, nil
+	}
+
+	var projects []string
+	for _, p := range *projectIDs {
+		projects = append(projects, common.FormatProject(p))
+	}
+	return &store.AuditLogPermissionFilter{
+		Projects: projects,
 	}, nil
 }
