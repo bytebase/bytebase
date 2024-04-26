@@ -43,10 +43,10 @@ func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advis
 	}
 
 	listener := &indexKeyNumberLimitListener{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		currentSchema: ctx.CurrentSchema,
-		max:           payload.Number,
+		level:           level,
+		title:           string(ctx.Rule.Type),
+		currentDatabase: ctx.CurrentDatabase,
+		max:             payload.Number,
 	}
 
 	if listener.max > 0 {
@@ -60,11 +60,11 @@ func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advis
 type indexKeyNumberLimitListener struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
-	title         string
-	currentSchema string
-	max           int
-	adviceList    []advisor.Advice
+	level           advisor.Status
+	title           string
+	currentDatabase string
+	max             int
+	adviceList      []advisor.Advice
 }
 
 func (l *indexKeyNumberLimitListener) generateAdvice() ([]advisor.Advice, error) {

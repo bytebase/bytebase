@@ -637,8 +637,6 @@ type Context struct {
 
 	// CurrentDatabase is the current database. Special for Snowflake.
 	CurrentDatabase string
-	// CurrentSchema is the current schema. Special for Oracle.
-	CurrentSchema string
 	// Statement is the original statement of AST, it is used for some PostgreSQL
 	// advisors which need to check the token stream.
 	Statements string
