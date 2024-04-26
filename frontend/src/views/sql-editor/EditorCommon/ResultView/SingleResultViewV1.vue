@@ -55,6 +55,7 @@
               :consistent-menu-width="false"
               :show-arrow="false"
               class="pagesize-select"
+              placement="bottom-end"
               size="small"
             />
           </template>
@@ -510,7 +511,13 @@ const queryTime = computed(() => {
 </script>
 
 <style scoped lang="postcss">
-
+.pagination :deep(.n-input) {
+  --n-padding-left: 6px !important;
+  --n-padding-right: 6px !important;
+}
+.pagination :deep(.n-input__input-el) {
+  text-align: right;
+}
 
 .pagesize-select :deep(.n-base-selection) {
   --n-padding-single-left: 8px !important;

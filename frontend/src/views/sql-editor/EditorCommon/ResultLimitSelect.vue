@@ -3,7 +3,7 @@
     v-model:value="resultRowsLimit"
     :options="options"
     trigger="click"
-    placement="bottom"
+    placement="bottom-start"
     scrollable
   >
     <NButton size="small">
