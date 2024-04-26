@@ -28,14 +28,18 @@ type AuditLog struct {
 }
 
 type AuditLogFind struct {
-	Filter *AuditLogFilter
-	Limit  *int
-	Offset *int
+	PermissionFilter *AuditLogPermissionFilter
+	Filter           *AuditLogFilter
+	Limit            *int
+	Offset           *int
 }
 
 type AuditLogFilter struct {
 	Args  []any
 	Where string
+}
+type AuditLogPermissionFilter struct {
+	Projects []string
 }
 
 func (s *Store) CreateAuditLog(ctx context.Context, payload *storepb.AuditLog) error {
@@ -62,6 +66,10 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 	if v := find.Filter; v != nil {
 		where = append(where, v.Where)
 		args = append(args, v.Args...)
+	}
+	if v := find.PermissionFilter; v != nil {
+		where = append(where, fmt.Sprintf("payload->>'parent' = ANY($%d)", len(args)+1))
+		args = append(args, v.Projects)
 	}
 
 	limitOffsetClause := ""
