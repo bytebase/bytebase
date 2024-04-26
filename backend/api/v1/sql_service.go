@@ -147,7 +147,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		if proto.Size(response) > common.MaximumSQLResultSize {
 			response.Results = []*v1pb.QueryResult{
 				{
-					Error: fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", common.MaximumSQLResultSize/1024/1024),
+					Error: common.MaximumSQLResultSizeExceeded,
 				},
 			}
 		}
@@ -226,7 +226,7 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 	if proto.Size(response) > common.MaximumSQLResultSize {
 		response.Results = []*v1pb.QueryResult{
 			{
-				Error: fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", common.MaximumSQLResultSize/1024/1024),
+				Error: common.MaximumSQLResultSizeExceeded,
 			},
 		}
 	}
@@ -502,7 +502,7 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 		result = result[len(result)-1:]
 	}
 	if proto.Size(&v1pb.QueryResponse{Results: result}) > common.MaximumSQLResultSize {
-		return nil, durationNs, errors.Errorf("Output of query exceeds max allowed output size of %dMB", common.MaximumSQLResultSize/1024/1024)
+		return nil, durationNs, errors.Errorf(common.MaximumSQLResultSizeExceeded)
 	}
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
@@ -882,7 +882,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if proto.Size(response) > common.MaximumSQLResultSize {
 		response.Results = []*v1pb.QueryResult{
 			{
-				Error: fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", common.MaximumSQLResultSize/1024/1024),
+				Error: common.MaximumSQLResultSizeExceeded,
 			},
 		}
 	}
