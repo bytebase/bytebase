@@ -28,7 +28,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
     featureMatrix: new Map<FeatureType, boolean[]>(),
   }),
   getters: {
-    instanceCountLimit(state): number {
+    instanceCountLimit(): number {
       const limit =
         PLANS.find((plan) => plan.type === this.currentPlan)
           ?.maximumInstanceCount ?? 0;
@@ -37,7 +37,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
       return limit;
     },
-    userCountLimit(state): number {
+    userCountLimit(): number {
       const limit =
         PLANS.find((plan) => plan.type === this.currentPlan)
           ?.maximumSeatCount ?? 0;
@@ -59,7 +59,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
       return planTypeFromJSON(state.subscription.plan);
     },
-    isFreePlan(state): boolean {
+    isFreePlan(): boolean {
       return this.currentPlan == PlanType.FREE;
     },
     expireAt(state): string {
@@ -114,7 +114,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       const total = trialEndTime.diff(state.subscription.startedTime, "day");
       return daysBeforeExpire / total < 0.5;
     },
-    existTrialLicense(state): boolean {
+    existTrialLicense(): boolean {
       const settingStore = useSettingV1Store();
       return !!settingStore.getSettingByName("bb.enterprise.trial");
     },
@@ -130,17 +130,17 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
       return this.canUpgradeTrial;
     },
-    canUpgradeTrial(state): boolean {
+    canUpgradeTrial(): boolean {
       return (
         this.isSelfHostLicense &&
         this.isTrialing &&
         this.currentPlan < PlanType.ENTERPRISE
       );
     },
-    isSelfHostLicense(state): boolean {
+    isSelfHostLicense(): boolean {
       return import.meta.env.MODE.toLowerCase() !== "release-aws";
     },
-    purchaseLicenseUrl(state): string {
+    purchaseLicenseUrl(): string {
       return import.meta.env.BB_PURCHASE_LICENSE_URL;
     },
   },
