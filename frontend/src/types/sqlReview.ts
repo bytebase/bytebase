@@ -778,6 +778,7 @@ const mergeIndividualConfigAsRule = (
     case "system.comment.length":
     case "advice.online-migration":
     case "table.text-fields-total-length":
+    case "table.limit-size":
     case "statement.where.maximum-logical-operator-count":
     case "statement.maximum-limit-value":
     case "statement.maximum-join-table-count":
