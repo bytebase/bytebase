@@ -2270,7 +2270,12 @@
     "sync-in-progress": "同期中",
     "create-a-worksheet": "新しいワークシートを作成する",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
-    "select-encoding": "エンコーディングの選択"
+    "select-encoding": "エンコーディングの選択",
+    "result-limit": {
+      "n-rows": "{n} 行",
+      "rows": "行"
+    },
+    "n-per-page": "{n} / ページ"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

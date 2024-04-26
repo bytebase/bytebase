@@ -48,6 +48,7 @@
           ({{ keyboardShortcutStr("shift+opt_or_alt+C") }})
         </span>
       </NButton>
+      <ResultLimitSelect />
     </div>
     <div
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
@@ -123,6 +124,7 @@ import { keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
+import ResultLimitSelect from "./ResultLimitSelect.vue";
 import SharePopover from "./SharePopover.vue";
 
 interface LocalState {
