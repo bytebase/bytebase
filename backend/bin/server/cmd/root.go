@@ -144,7 +144,7 @@ func init() {
 
 	rootCmd.PersistentFlags().BoolVar(&flags.executeDetail, "execute-detail", true, "expose execute details")
 
-	rootCmd.PersistentFlags().BoolVar(&flags.developmentAudit, "development-audit", false, "enable audit logs")
+	rootCmd.PersistentFlags().BoolVar(&flags.developmentAudit, "development-audit", true, "enable audit logs")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
