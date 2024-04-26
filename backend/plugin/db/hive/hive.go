@@ -9,8 +9,10 @@ import (
 
 	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
@@ -197,51 +199,48 @@ func parseValueType(value any, gohiveType string) (*v1pb.RowValue, error) {
 }
 
 func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement string) (*v1pb.QueryResult, error) {
-	var (
-		result    = v1pb.QueryResult{}
-		startTime = time.Now()
-	)
+	startTime := time.Now()
 
 	cursor := conn.Cursor()
 	defer cursor.Close()
 
 	// run query.
 	cursor.Execute(ctx, statement, false)
-
-	// Latency.
-	result.Latency = durationpb.New(time.Since(startTime))
-
-	// Statement.
-	result.Statement = statement
 	if cursor.Err != nil {
-		return &result, errors.Wrapf(cursor.Err, "failed to execute statement %s", statement)
+		return nil, errors.Wrapf(cursor.Err, "failed to execute statement %s", statement)
 	}
 
+	result := &v1pb.QueryResult{
+		Statement: statement,
+	}
 	columnNamesAndTypes := cursor.Description()
-	if cursor.Err == nil {
-		for _, row := range columnNamesAndTypes {
-			result.ColumnNames = append(result.ColumnNames, row[0])
-		}
-
-		// process query results.
-		for cursor.HasMore(ctx) {
-			var queryRow v1pb.QueryRow
-			rowMap := cursor.RowMap(ctx)
-			for idx, columnName := range result.ColumnNames {
-				gohiveTypeStr := columnNamesAndTypes[idx][1]
-				val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
-				if err != nil {
-					return &result, err
-				}
-				queryRow.Values = append(queryRow.Values, val)
-			}
-
-			// Rows.
-			result.Rows = append(result.Rows, &queryRow)
-		}
-		return &result, nil
+	for _, row := range columnNamesAndTypes {
+		result.ColumnNames = append(result.ColumnNames, row[0])
 	}
-	return nil, nil
+
+	// process query results.
+	for cursor.HasMore(ctx) {
+		var queryRow v1pb.QueryRow
+		rowMap := cursor.RowMap(ctx)
+		for idx, columnName := range result.ColumnNames {
+			gohiveTypeStr := columnNamesAndTypes[idx][1]
+			val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
+			if err != nil {
+				return result, err
+			}
+			queryRow.Values = append(queryRow.Values, val)
+		}
+
+		// Rows.
+		result.Rows = append(result.Rows, &queryRow)
+		if proto.Size(result) > common.MaximumSQLResultSize {
+			result.Error = common.MaximumSQLResultSizeExceeded
+			result.Latency = durationpb.New(time.Since(startTime))
+			return result, nil
+		}
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	return result, nil
 }
 
 func (d *Driver) QueryWithConn(ctx context.Context, conn *gohive.Connection, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {

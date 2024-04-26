@@ -26,6 +26,7 @@ type TaskRunMessage struct {
 	Code        common.Code
 	Result      string
 	ResultProto *storepb.TaskRunResult
+	SheetUID    *int
 
 	// Output only.
 	ID        int
@@ -313,15 +314,17 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 			creator_id,
 			updater_id,
 			task_id,
+			sheet_id,
 			attempt,
 			name,
 			status
-		) VALUES ($1, $2, $3, $4, $5, $6)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 	if _, err := tx.ExecContext(ctx, query,
 		creatorID,
 		creatorID,
 		create.TaskUID,
+		create.SheetUID,
 		attempt,
 		create.Name,
 		status,

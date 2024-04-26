@@ -10,8 +10,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -151,8 +153,11 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data, err := readRows(rows, columnTypeNames)
-	if err != nil {
+	result := &v1pb.QueryResult{
+		ColumnNames:     columnNames,
+		ColumnTypeNames: columnTypeNames,
+	}
+	if err := readRows(result, rows, columnTypeNames); err != nil {
 		return nil, err
 	}
 
@@ -160,19 +165,14 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		return nil, err
 	}
 
-	return &v1pb.QueryResult{
-		ColumnNames:     columnNames,
-		ColumnTypeNames: columnTypeNames,
-		Rows:            data,
-	}, nil
+	return result, nil
 }
 
-func readRows(rows *sql.Rows, columnTypeNames []string) ([]*v1pb.QueryRow, error) {
-	var data []*v1pb.QueryRow
+func readRows(result *v1pb.QueryResult, rows *sql.Rows, columnTypeNames []string) error {
 	if len(columnTypeNames) == 0 {
 		// No rows.
 		// The oracle driver will panic if there is no rows such as EXPLAIN PLAN FOR statement.
-		return data, nil
+		return nil
 	}
 	for rows.Next() {
 		// wantBytesValue want to convert StringValue to BytesValue when columnTypeName is BIT or VARBIT
@@ -198,7 +198,7 @@ func readRows(rows *sql.Rows, columnTypeNames []string) ([]*v1pb.QueryRow, error
 		}
 
 		if err := rows.Scan(scanArgs...); err != nil {
-			return nil, err
+			return err
 		}
 
 		var rowData v1pb.QueryRow
@@ -209,10 +209,14 @@ func readRows(rows *sql.Rows, columnTypeNames []string) ([]*v1pb.QueryRow, error
 			}))
 		}
 
-		data = append(data, &rowData)
+		result.Rows = append(result.Rows, &rowData)
+		if proto.Size(result) > common.MaximumSQLResultSize {
+			result.Error = common.MaximumSQLResultSizeExceeded
+			return nil
+		}
 	}
 
-	return data, nil
+	return nil
 }
 
 func getStatementWithResultLimit(stmt string, limit int) string {

@@ -208,9 +208,15 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		return nil
 	}
 
+	sheetUID, err := api.GetSheetUIDFromTaskPayload(task.Payload)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get sheet uid")
+	}
+
 	create := &store.TaskRunMessage{
 		CreatorID: api.SystemBotID,
 		TaskUID:   task.ID,
+		SheetUID:  sheetUID,
 		Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
 	}
 
