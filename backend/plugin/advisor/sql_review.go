@@ -1419,8 +1419,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MSSQLTableDisallowDML, nil
 		}
 	case SchemaRuleTableLimitSize:
-		switch engine {
-		case storepb.Engine_MYSQL, storepb.Engine_HIVE:
+		if engine == storepb.Engine_MYSQL {
 			return MySQLTableLimitSize, nil
 		}
 	case SchemaRuleMySQLEngine:
