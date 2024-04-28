@@ -171,28 +171,8 @@ type RangeMasker struct {
 
 // NewRangeMasker returns a new RangeMasker.
 func NewRangeMasker(maskRangeSlice []*MaskRangeSlice) *RangeMasker {
-	sort.SliceStable(maskRangeSlice, func(i, j int) bool {
-		return maskRangeSlice[i].Start < maskRangeSlice[j].Start
-	})
-	// Merge the overlapping ranges.
-	var mergedMaskRangeSlice []*MaskRangeSlice
-	for _, maskRange := range maskRangeSlice {
-		if maskRange.Start > maskRange.End {
-			maskRange.End = maskRange.Start + 1
-		}
-		if len(mergedMaskRangeSlice) == 0 {
-			mergedMaskRangeSlice = append(mergedMaskRangeSlice, maskRange)
-			continue
-		}
-		lastMaskRange := mergedMaskRangeSlice[len(mergedMaskRangeSlice)-1]
-		if lastMaskRange.End >= maskRange.Start {
-			mergedMaskRangeSlice[len(mergedMaskRangeSlice)-1].End = maskRange.End
-		} else {
-			mergedMaskRangeSlice = append(mergedMaskRangeSlice, maskRange)
-		}
-	}
 	return &RangeMasker{
-		MaskRangeSlice: mergedMaskRangeSlice,
+		MaskRangeSlice: maskRangeSlice,
 	}
 }
 
@@ -200,16 +180,68 @@ func (m *RangeMasker) enableMask() bool {
 	return len(m.MaskRangeSlice) > 0
 }
 
+func getValidRangeValue(length, val int32) int32 {
+	if val >= 0 {
+		return val
+	}
+	resp := length + val + 1
+	if resp < 0 {
+		return 0
+	}
+	return resp
+}
+
+func (m *RangeMasker) formatRanges(maxLength int32) []*MaskRangeSlice {
+	// Merge the overlapping ranges.
+	var mergedMaskRangeSlice []*MaskRangeSlice
+
+	for _, maskRange := range m.MaskRangeSlice {
+		start := getValidRangeValue(maxLength, maskRange.Start)
+		end := getValidRangeValue(maxLength, maskRange.End)
+
+		if start > end {
+			end = start + 1
+		}
+
+		if len(mergedMaskRangeSlice) == 0 {
+			mergedMaskRangeSlice = append(mergedMaskRangeSlice, &MaskRangeSlice{
+				Start:        start,
+				End:          end,
+				Substitution: maskRange.Substitution,
+			})
+			continue
+		}
+		lastMaskRange := mergedMaskRangeSlice[len(mergedMaskRangeSlice)-1]
+		if lastMaskRange.End >= start {
+			mergedMaskRangeSlice[len(mergedMaskRangeSlice)-1].End = end
+		} else {
+			mergedMaskRangeSlice = append(mergedMaskRangeSlice, &MaskRangeSlice{
+				Start:        start,
+				End:          end,
+				Substitution: maskRange.Substitution,
+			})
+		}
+	}
+
+	sort.SliceStable(mergedMaskRangeSlice, func(i, j int) bool {
+		return mergedMaskRangeSlice[i].Start < mergedMaskRangeSlice[j].Start
+	})
+
+	return mergedMaskRangeSlice
+}
+
 // Mask implements Masker.Mask.
 func (m *RangeMasker) Mask(data *MaskData) *v1pb.RowValue {
+	if !m.enableMask() {
+		return noneMask(data)
+	}
+
 	fRune := func(s []rune) []rune {
-		if !m.enableMask() {
-			return s
-		}
+		maskRangeSlice := m.formatRanges(int32(len(s)))
 
 		var ret []rune
 		prevEnd := 0
-		for _, maskRange := range m.MaskRangeSlice {
+		for _, maskRange := range maskRangeSlice {
 			// First, append the unmasked part.
 			begin, end := prevEnd, int(maskRange.Start)
 			if begin >= len(s) {
@@ -238,14 +270,13 @@ func (m *RangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 		}
 		return ret
 	}
+
 	fBytes := func(s []byte) []byte {
-		if !m.enableMask() {
-			return s
-		}
+		maskRangeSlice := m.formatRanges(int32(len(s)))
 
 		var ret []byte
 		prevEnd := 0
-		for _, maskRange := range m.MaskRangeSlice {
+		for _, maskRange := range maskRangeSlice {
 			// First, append the unmasked part.
 			begin, end := prevEnd, int(maskRange.Start)
 			if begin >= len(s) {
@@ -274,9 +305,7 @@ func (m *RangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 		}
 		return ret
 	}
-	if !m.enableMask() {
-		return noneMask(data)
-	}
+
 	if data.Data != nil {
 		var stringValue string
 		var valid bool

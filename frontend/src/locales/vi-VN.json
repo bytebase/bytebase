@@ -789,7 +789,7 @@
         },
         "range-mask": {
           "self": "Mặt nạ phạm vi",
-          "label": "Mặt nạ phạm vi sẽ thay thế giá trị ban đầu từ chỉ mục bắt đầu đến chỉ mục kết thúc (không bao gồm phần cuối) bằng giá trị thay thế.",
+          "label": "Mặt nạ phạm vi sẽ thay thế giá trị ban đầu từ chỉ mục bắt đầu đến chỉ mục kết thúc (không bao gồm phần cuối) bằng giá trị thay thế. Chỉ số bắt đầu từ 0.",
           "slice-start": "Bắt đầu lát cắt",
           "slice-start-label": "Bắt đầu lát cắt là chỉ số bắt đầu của giá trị ban đầu, bắt đầu từ 0 và phải nhỏ hơn điểm dừng.",
           "slice-end": "Phần cuối",
