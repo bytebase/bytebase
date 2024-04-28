@@ -40,9 +40,9 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	listener := &namingIdentifierNoKeywordListener{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		currentSchema: ctx.CurrentSchema,
+		level:           level,
+		title:           string(ctx.Rule.Type),
+		currentDatabase: ctx.CurrentDatabase,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -54,10 +54,10 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([
 type namingIdentifierNoKeywordListener struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
-	title         string
-	currentSchema string
-	adviceList    []advisor.Advice
+	level           advisor.Status
+	title           string
+	currentDatabase string
+	adviceList      []advisor.Advice
 }
 
 func (l *namingIdentifierNoKeywordListener) generateAdvice() ([]advisor.Advice, error) {

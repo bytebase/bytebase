@@ -294,8 +294,6 @@ type Driver interface {
 	// The returned string is the JSON encoded metadata for the logical dump.
 	// For MySQL, the payload contains the binlog filename and position when the dump is generated.
 	Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error)
-	// Restore the database from src, which is a full backup.
-	Restore(ctx context.Context, src io.Reader) error
 }
 
 // Register makes a database driver available by the provided type.

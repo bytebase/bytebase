@@ -39,11 +39,11 @@ func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Ad
 	}
 
 	listener := &TableRequirePKListener{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		currentSchema: ctx.CurrentSchema,
-		tableWitPK:    make(map[string]bool),
-		tableLine:     make(map[string]int),
+		level:           level,
+		title:           string(ctx.Rule.Type),
+		currentDatabase: ctx.CurrentDatabase,
+		tableWitPK:      make(map[string]bool),
+		tableLine:       make(map[string]int),
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -55,12 +55,12 @@ func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Ad
 type TableRequirePKListener struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
-	title         string
-	currentSchema string
-	tableName     string
-	tableWitPK    map[string]bool
-	tableLine     map[string]int
+	level           advisor.Status
+	title           string
+	currentDatabase string
+	tableName       string
+	tableWitPK      map[string]bool
+	tableLine       map[string]int
 }
 
 func (l *TableRequirePKListener) generateAdvice() ([]advisor.Advice, error) {
@@ -90,12 +90,12 @@ func (l *TableRequirePKListener) generateAdvice() ([]advisor.Advice, error) {
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *TableRequirePKListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	schemaName := l.currentSchema
+	schemaName := l.currentDatabase
 	if ctx.Schema_name() != nil {
-		schemaName = normalizeIdentifier(ctx.Schema_name(), l.currentSchema)
+		schemaName = normalizeIdentifier(ctx.Schema_name(), l.currentDatabase)
 	}
 
-	l.tableName = fmt.Sprintf("%s.%s", schemaName, normalizeIdentifier(ctx.Table_name(), l.currentSchema))
+	l.tableName = fmt.Sprintf("%s.%s", schemaName, normalizeIdentifier(ctx.Table_name(), l.currentDatabase))
 	l.tableWitPK[l.tableName] = false
 	l.tableLine[l.tableName] = ctx.GetStop().GetLine()
 }
@@ -134,7 +134,7 @@ func (l *TableRequirePKListener) EnterOut_of_line_constraint(ctx *parser.Out_of_
 
 // EnterAlter_table is called when production alter_table is entered.
 func (l *TableRequirePKListener) EnterAlter_table(ctx *parser.Alter_tableContext) {
-	l.tableName = normalizeIdentifier(ctx.Tableview_name(), l.currentSchema)
+	l.tableName = normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase)
 }
 
 // ExitAlter_table is called when production alter_table is exited.
@@ -144,7 +144,7 @@ func (l *TableRequirePKListener) ExitAlter_table(_ *parser.Alter_tableContext) {
 
 // EnterDrop_table is called when production drop_table is entered.
 func (l *TableRequirePKListener) EnterDrop_table(ctx *parser.Drop_tableContext) {
-	tableName := normalizeIdentifier(ctx.Tableview_name(), l.currentSchema)
+	tableName := normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase)
 	if _, exists := l.tableWitPK[tableName]; !exists {
 		return
 	}

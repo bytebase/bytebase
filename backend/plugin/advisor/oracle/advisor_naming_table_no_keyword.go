@@ -40,9 +40,9 @@ func (*NamingTableNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([]advi
 	}
 
 	listener := &namingTableNoKeywordListener{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		currentSchema: ctx.CurrentSchema,
+		level:           level,
+		title:           string(ctx.Rule.Type),
+		currentDatabase: ctx.CurrentDatabase,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -54,10 +54,10 @@ func (*NamingTableNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([]advi
 type namingTableNoKeywordListener struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
-	title         string
-	currentSchema string
-	adviceList    []advisor.Advice
+	level           advisor.Status
+	title           string
+	currentDatabase string
+	adviceList      []advisor.Advice
 }
 
 func (l *namingTableNoKeywordListener) generateAdvice() ([]advisor.Advice, error) {
@@ -74,7 +74,7 @@ func (l *namingTableNoKeywordListener) generateAdvice() ([]advisor.Advice, error
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *namingTableNoKeywordListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	tableName := normalizeIdentifier(ctx.Table_name(), l.currentSchema)
+	tableName := normalizeIdentifier(ctx.Table_name(), l.currentDatabase)
 	if plsqlparser.IsOracleKeyword(tableName) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
@@ -91,7 +91,7 @@ func (l *namingTableNoKeywordListener) EnterAlter_table_properties(ctx *parser.A
 	if ctx.Tableview_name() == nil {
 		return
 	}
-	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentSchema))
+	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase))
 	if plsqlparser.IsOracleKeyword(tableName) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,

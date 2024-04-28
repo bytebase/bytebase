@@ -37,9 +37,9 @@ func (*SelectNoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 	}
 
 	listener := &selectNoSelectAllListener{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		currentSchema: ctx.CurrentSchema,
+		level:           level,
+		title:           string(ctx.Rule.Type),
+		currentDatabase: ctx.CurrentDatabase,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -51,10 +51,10 @@ func (*SelectNoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 type selectNoSelectAllListener struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
-	title         string
-	currentSchema string
-	adviceList    []advisor.Advice
+	level           advisor.Status
+	title           string
+	currentDatabase string
+	adviceList      []advisor.Advice
 }
 
 func (l *selectNoSelectAllListener) generateAdvice() ([]advisor.Advice, error) {

@@ -82,9 +82,3 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) 
 	}
 	return err
 }
-
-// Restore restores a database.
-func (*Driver) Restore(_ context.Context, _ io.Reader) (err error) {
-	// TODO(d): implement it.
-	return nil
-}

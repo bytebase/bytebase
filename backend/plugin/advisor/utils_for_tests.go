@@ -180,7 +180,6 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			Catalog:         &testCatalog{finder: finder},
 			Driver:          nil,
 			Context:         context.Background(),
-			CurrentSchema:   "SYS",
 			CurrentDatabase: "TEST_DB",
 		}
 
@@ -268,11 +267,6 @@ func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetad
 // Dump implements the Driver interface.
 func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
 	return "", nil
-}
-
-// Restore implements the Driver interface.
-func (*MockDriver) Restore(_ context.Context, _ io.Reader) error {
-	return nil
 }
 
 // CreateRole creates the role.

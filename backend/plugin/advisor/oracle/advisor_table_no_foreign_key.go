@@ -39,11 +39,11 @@ func (*TableNoForeignKeyAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 	}
 
 	listener := &tableNoForeignKeyListener{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		currentSchema: ctx.CurrentSchema,
-		tableWithFK:   make(map[string]bool),
-		tableLine:     make(map[string]int),
+		level:           level,
+		title:           string(ctx.Rule.Type),
+		currentDatabase: ctx.CurrentDatabase,
+		tableWithFK:     make(map[string]bool),
+		tableLine:       make(map[string]int),
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -55,12 +55,12 @@ func (*TableNoForeignKeyAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 type tableNoForeignKeyListener struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
-	title         string
-	currentSchema string
-	tableName     string
-	tableWithFK   map[string]bool
-	tableLine     map[string]int
+	level           advisor.Status
+	title           string
+	currentDatabase string
+	tableName       string
+	tableWithFK     map[string]bool
+	tableLine       map[string]int
 }
 
 func (l *tableNoForeignKeyListener) generateAdvice() ([]advisor.Advice, error) {
@@ -90,12 +90,12 @@ func (l *tableNoForeignKeyListener) generateAdvice() ([]advisor.Advice, error) {
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *tableNoForeignKeyListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	schemaName := l.currentSchema
+	schemaName := l.currentDatabase
 	if ctx.Schema_name() != nil {
-		schemaName = normalizeIdentifier(ctx.Schema_name(), l.currentSchema)
+		schemaName = normalizeIdentifier(ctx.Schema_name(), l.currentDatabase)
 	}
 
-	l.tableName = fmt.Sprintf("%s.%s", schemaName, normalizeIdentifier(ctx.Table_name(), l.currentSchema))
+	l.tableName = fmt.Sprintf("%s.%s", schemaName, normalizeIdentifier(ctx.Table_name(), l.currentDatabase))
 }
 
 // ExitCreate_table is called when production create_table is exited.
@@ -111,7 +111,7 @@ func (l *tableNoForeignKeyListener) EnterReferences_clause(ctx *parser.Reference
 
 // EnterAlter_table is called when production alter_table is entered.
 func (l *tableNoForeignKeyListener) EnterAlter_table(ctx *parser.Alter_tableContext) {
-	l.tableName = normalizeIdentifier(ctx.Tableview_name(), l.currentSchema)
+	l.tableName = normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase)
 }
 
 // ExitAlter_table is called when production alter_table is exited.
