@@ -5,7 +5,7 @@ import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Duration } from "../google/protobuf/duration";
 import { Expr } from "../google/type/expr";
 import { ApprovalTemplate } from "./approval";
-import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
 import { ColumnConfig, ColumnMetadata, TableConfig, TableMetadata } from "./database";
 
 export const protobufPackage = "bytebase.store";
@@ -48,11 +48,11 @@ export interface Announcement {
 
 /** We support three levels of AlertLevel: INFO, WARNING, and ERROR. */
 export enum Announcement_AlertLevel {
-  ALERT_LEVEL_UNSPECIFIED = 0,
-  ALERT_LEVEL_INFO = 1,
-  ALERT_LEVEL_WARNING = 2,
-  ALERT_LEVEL_CRITICAL = 3,
-  UNRECOGNIZED = -1,
+  ALERT_LEVEL_UNSPECIFIED = "ALERT_LEVEL_UNSPECIFIED",
+  ALERT_LEVEL_INFO = "ALERT_LEVEL_INFO",
+  ALERT_LEVEL_WARNING = "ALERT_LEVEL_WARNING",
+  ALERT_LEVEL_CRITICAL = "ALERT_LEVEL_CRITICAL",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function announcement_AlertLevelFromJSON(object: any): Announcement_AlertLevel {
@@ -89,6 +89,22 @@ export function announcement_AlertLevelToJSON(object: Announcement_AlertLevel): 
     case Announcement_AlertLevel.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function announcement_AlertLevelToNumber(object: Announcement_AlertLevel): number {
+  switch (object) {
+    case Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED:
+      return 0;
+    case Announcement_AlertLevel.ALERT_LEVEL_INFO:
+      return 1;
+    case Announcement_AlertLevel.ALERT_LEVEL_WARNING:
+      return 2;
+    case Announcement_AlertLevel.ALERT_LEVEL_CRITICAL:
+      return 3;
+    case Announcement_AlertLevel.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -146,11 +162,11 @@ export interface SMTPMailDeliverySetting {
 
 /** We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS. */
 export enum SMTPMailDeliverySetting_Encryption {
-  ENCRYPTION_UNSPECIFIED = 0,
-  ENCRYPTION_NONE = 1,
-  ENCRYPTION_STARTTLS = 2,
-  ENCRYPTION_SSL_TLS = 3,
-  UNRECOGNIZED = -1,
+  ENCRYPTION_UNSPECIFIED = "ENCRYPTION_UNSPECIFIED",
+  ENCRYPTION_NONE = "ENCRYPTION_NONE",
+  ENCRYPTION_STARTTLS = "ENCRYPTION_STARTTLS",
+  ENCRYPTION_SSL_TLS = "ENCRYPTION_SSL_TLS",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function sMTPMailDeliverySetting_EncryptionFromJSON(object: any): SMTPMailDeliverySetting_Encryption {
@@ -190,17 +206,33 @@ export function sMTPMailDeliverySetting_EncryptionToJSON(object: SMTPMailDeliver
   }
 }
 
+export function sMTPMailDeliverySetting_EncryptionToNumber(object: SMTPMailDeliverySetting_Encryption): number {
+  switch (object) {
+    case SMTPMailDeliverySetting_Encryption.ENCRYPTION_UNSPECIFIED:
+      return 0;
+    case SMTPMailDeliverySetting_Encryption.ENCRYPTION_NONE:
+      return 1;
+    case SMTPMailDeliverySetting_Encryption.ENCRYPTION_STARTTLS:
+      return 2;
+    case SMTPMailDeliverySetting_Encryption.ENCRYPTION_SSL_TLS:
+      return 3;
+    case SMTPMailDeliverySetting_Encryption.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 /**
  * We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and
  * CRAM-MD5.
  */
 export enum SMTPMailDeliverySetting_Authentication {
-  AUTHENTICATION_UNSPECIFIED = 0,
-  AUTHENTICATION_NONE = 1,
-  AUTHENTICATION_PLAIN = 2,
-  AUTHENTICATION_LOGIN = 3,
-  AUTHENTICATION_CRAM_MD5 = 4,
-  UNRECOGNIZED = -1,
+  AUTHENTICATION_UNSPECIFIED = "AUTHENTICATION_UNSPECIFIED",
+  AUTHENTICATION_NONE = "AUTHENTICATION_NONE",
+  AUTHENTICATION_PLAIN = "AUTHENTICATION_PLAIN",
+  AUTHENTICATION_LOGIN = "AUTHENTICATION_LOGIN",
+  AUTHENTICATION_CRAM_MD5 = "AUTHENTICATION_CRAM_MD5",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function sMTPMailDeliverySetting_AuthenticationFromJSON(object: any): SMTPMailDeliverySetting_Authentication {
@@ -242,6 +274,24 @@ export function sMTPMailDeliverySetting_AuthenticationToJSON(object: SMTPMailDel
     case SMTPMailDeliverySetting_Authentication.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function sMTPMailDeliverySetting_AuthenticationToNumber(object: SMTPMailDeliverySetting_Authentication): number {
+  switch (object) {
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_UNSPECIFIED:
+      return 0;
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_NONE:
+      return 1;
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_PLAIN:
+      return 2;
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_LOGIN:
+      return 3;
+    case SMTPMailDeliverySetting_Authentication.AUTHENTICATION_CRAM_MD5:
+      return 4;
+    case SMTPMailDeliverySetting_Authentication.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -556,13 +606,13 @@ export const WorkspaceProfileSetting = {
 };
 
 function createBaseAnnouncement(): Announcement {
-  return { level: 0, text: "", link: "" };
+  return { level: Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED, text: "", link: "" };
 }
 
 export const Announcement = {
   encode(message: Announcement, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.level !== 0) {
-      writer.uint32(8).int32(message.level);
+    if (message.level !== Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED) {
+      writer.uint32(8).int32(announcement_AlertLevelToNumber(message.level));
     }
     if (message.text !== "") {
       writer.uint32(18).string(message.text);
@@ -585,7 +635,7 @@ export const Announcement = {
             break;
           }
 
-          message.level = reader.int32() as any;
+          message.level = announcement_AlertLevelFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -612,7 +662,9 @@ export const Announcement = {
 
   fromJSON(object: any): Announcement {
     return {
-      level: isSet(object.level) ? announcement_AlertLevelFromJSON(object.level) : 0,
+      level: isSet(object.level)
+        ? announcement_AlertLevelFromJSON(object.level)
+        : Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED,
       text: isSet(object.text) ? globalThis.String(object.text) : "",
       link: isSet(object.link) ? globalThis.String(object.link) : "",
     };
@@ -620,7 +672,7 @@ export const Announcement = {
 
   toJSON(message: Announcement): unknown {
     const obj: any = {};
-    if (message.level !== 0) {
+    if (message.level !== Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED) {
       obj.level = announcement_AlertLevelToJSON(message.level);
     }
     if (message.text !== "") {
@@ -637,7 +689,7 @@ export const Announcement = {
   },
   fromPartial(object: DeepPartial<Announcement>): Announcement {
     const message = createBaseAnnouncement();
-    message.level = object.level ?? 0;
+    message.level = object.level ?? Announcement_AlertLevel.ALERT_LEVEL_UNSPECIFIED;
     message.text = object.text ?? "";
     message.link = object.link ?? "";
     return message;
@@ -1028,11 +1080,11 @@ function createBaseSMTPMailDeliverySetting(): SMTPMailDeliverySetting {
   return {
     server: "",
     port: 0,
-    encryption: 0,
+    encryption: SMTPMailDeliverySetting_Encryption.ENCRYPTION_UNSPECIFIED,
     ca: "",
     key: "",
     cert: "",
-    authentication: 0,
+    authentication: SMTPMailDeliverySetting_Authentication.AUTHENTICATION_UNSPECIFIED,
     username: "",
     password: "",
     from: "",
@@ -1047,8 +1099,8 @@ export const SMTPMailDeliverySetting = {
     if (message.port !== 0) {
       writer.uint32(16).int32(message.port);
     }
-    if (message.encryption !== 0) {
-      writer.uint32(24).int32(message.encryption);
+    if (message.encryption !== SMTPMailDeliverySetting_Encryption.ENCRYPTION_UNSPECIFIED) {
+      writer.uint32(24).int32(sMTPMailDeliverySetting_EncryptionToNumber(message.encryption));
     }
     if (message.ca !== "") {
       writer.uint32(34).string(message.ca);
@@ -1059,8 +1111,8 @@ export const SMTPMailDeliverySetting = {
     if (message.cert !== "") {
       writer.uint32(50).string(message.cert);
     }
-    if (message.authentication !== 0) {
-      writer.uint32(56).int32(message.authentication);
+    if (message.authentication !== SMTPMailDeliverySetting_Authentication.AUTHENTICATION_UNSPECIFIED) {
+      writer.uint32(56).int32(sMTPMailDeliverySetting_AuthenticationToNumber(message.authentication));
     }
     if (message.username !== "") {
       writer.uint32(66).string(message.username);
@@ -1100,7 +1152,7 @@ export const SMTPMailDeliverySetting = {
             break;
           }
 
-          message.encryption = reader.int32() as any;
+          message.encryption = sMTPMailDeliverySetting_EncryptionFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -1128,7 +1180,7 @@ export const SMTPMailDeliverySetting = {
             break;
           }
 
-          message.authentication = reader.int32() as any;
+          message.authentication = sMTPMailDeliverySetting_AuthenticationFromJSON(reader.int32());
           continue;
         case 8:
           if (tag !== 66) {
@@ -1164,13 +1216,15 @@ export const SMTPMailDeliverySetting = {
     return {
       server: isSet(object.server) ? globalThis.String(object.server) : "",
       port: isSet(object.port) ? globalThis.Number(object.port) : 0,
-      encryption: isSet(object.encryption) ? sMTPMailDeliverySetting_EncryptionFromJSON(object.encryption) : 0,
+      encryption: isSet(object.encryption)
+        ? sMTPMailDeliverySetting_EncryptionFromJSON(object.encryption)
+        : SMTPMailDeliverySetting_Encryption.ENCRYPTION_UNSPECIFIED,
       ca: isSet(object.ca) ? globalThis.String(object.ca) : "",
       key: isSet(object.key) ? globalThis.String(object.key) : "",
       cert: isSet(object.cert) ? globalThis.String(object.cert) : "",
       authentication: isSet(object.authentication)
         ? sMTPMailDeliverySetting_AuthenticationFromJSON(object.authentication)
-        : 0,
+        : SMTPMailDeliverySetting_Authentication.AUTHENTICATION_UNSPECIFIED,
       username: isSet(object.username) ? globalThis.String(object.username) : "",
       password: isSet(object.password) ? globalThis.String(object.password) : "",
       from: isSet(object.from) ? globalThis.String(object.from) : "",
@@ -1185,7 +1239,7 @@ export const SMTPMailDeliverySetting = {
     if (message.port !== 0) {
       obj.port = Math.round(message.port);
     }
-    if (message.encryption !== 0) {
+    if (message.encryption !== SMTPMailDeliverySetting_Encryption.ENCRYPTION_UNSPECIFIED) {
       obj.encryption = sMTPMailDeliverySetting_EncryptionToJSON(message.encryption);
     }
     if (message.ca !== "") {
@@ -1197,7 +1251,7 @@ export const SMTPMailDeliverySetting = {
     if (message.cert !== "") {
       obj.cert = message.cert;
     }
-    if (message.authentication !== 0) {
+    if (message.authentication !== SMTPMailDeliverySetting_Authentication.AUTHENTICATION_UNSPECIFIED) {
       obj.authentication = sMTPMailDeliverySetting_AuthenticationToJSON(message.authentication);
     }
     if (message.username !== "") {
@@ -1219,11 +1273,11 @@ export const SMTPMailDeliverySetting = {
     const message = createBaseSMTPMailDeliverySetting();
     message.server = object.server ?? "";
     message.port = object.port ?? 0;
-    message.encryption = object.encryption ?? 0;
+    message.encryption = object.encryption ?? SMTPMailDeliverySetting_Encryption.ENCRYPTION_UNSPECIFIED;
     message.ca = object.ca ?? "";
     message.key = object.key ?? "";
     message.cert = object.cert ?? "";
-    message.authentication = object.authentication ?? 0;
+    message.authentication = object.authentication ?? SMTPMailDeliverySetting_Authentication.AUTHENTICATION_UNSPECIFIED;
     message.username = object.username ?? "";
     message.password = object.password ?? "";
     message.from = object.from ?? "";
@@ -1329,7 +1383,7 @@ export const SchemaTemplateSetting = {
 };
 
 function createBaseSchemaTemplateSetting_FieldTemplate(): SchemaTemplateSetting_FieldTemplate {
-  return { id: "", engine: 0, category: "", column: undefined, config: undefined };
+  return { id: "", engine: Engine.ENGINE_UNSPECIFIED, category: "", column: undefined, config: undefined };
 }
 
 export const SchemaTemplateSetting_FieldTemplate = {
@@ -1337,8 +1391,8 @@ export const SchemaTemplateSetting_FieldTemplate = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
-    if (message.engine !== 0) {
-      writer.uint32(16).int32(message.engine);
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(16).int32(engineToNumber(message.engine));
     }
     if (message.category !== "") {
       writer.uint32(26).string(message.category);
@@ -1371,7 +1425,7 @@ export const SchemaTemplateSetting_FieldTemplate = {
             break;
           }
 
-          message.engine = reader.int32() as any;
+          message.engine = engineFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -1406,7 +1460,7 @@ export const SchemaTemplateSetting_FieldTemplate = {
   fromJSON(object: any): SchemaTemplateSetting_FieldTemplate {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       category: isSet(object.category) ? globalThis.String(object.category) : "",
       column: isSet(object.column) ? ColumnMetadata.fromJSON(object.column) : undefined,
       config: isSet(object.config) ? ColumnConfig.fromJSON(object.config) : undefined,
@@ -1418,7 +1472,7 @@ export const SchemaTemplateSetting_FieldTemplate = {
     if (message.id !== "") {
       obj.id = message.id;
     }
-    if (message.engine !== 0) {
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
     }
     if (message.category !== "") {
@@ -1439,7 +1493,7 @@ export const SchemaTemplateSetting_FieldTemplate = {
   fromPartial(object: DeepPartial<SchemaTemplateSetting_FieldTemplate>): SchemaTemplateSetting_FieldTemplate {
     const message = createBaseSchemaTemplateSetting_FieldTemplate();
     message.id = object.id ?? "";
-    message.engine = object.engine ?? 0;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.category = object.category ?? "";
     message.column = (object.column !== undefined && object.column !== null)
       ? ColumnMetadata.fromPartial(object.column)
@@ -1452,13 +1506,13 @@ export const SchemaTemplateSetting_FieldTemplate = {
 };
 
 function createBaseSchemaTemplateSetting_ColumnType(): SchemaTemplateSetting_ColumnType {
-  return { engine: 0, enabled: false, types: [] };
+  return { engine: Engine.ENGINE_UNSPECIFIED, enabled: false, types: [] };
 }
 
 export const SchemaTemplateSetting_ColumnType = {
   encode(message: SchemaTemplateSetting_ColumnType, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.engine !== 0) {
-      writer.uint32(8).int32(message.engine);
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(8).int32(engineToNumber(message.engine));
     }
     if (message.enabled === true) {
       writer.uint32(16).bool(message.enabled);
@@ -1481,7 +1535,7 @@ export const SchemaTemplateSetting_ColumnType = {
             break;
           }
 
-          message.engine = reader.int32() as any;
+          message.engine = engineFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 16) {
@@ -1508,7 +1562,7 @@ export const SchemaTemplateSetting_ColumnType = {
 
   fromJSON(object: any): SchemaTemplateSetting_ColumnType {
     return {
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
       types: globalThis.Array.isArray(object?.types) ? object.types.map((e: any) => globalThis.String(e)) : [],
     };
@@ -1516,7 +1570,7 @@ export const SchemaTemplateSetting_ColumnType = {
 
   toJSON(message: SchemaTemplateSetting_ColumnType): unknown {
     const obj: any = {};
-    if (message.engine !== 0) {
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
     }
     if (message.enabled === true) {
@@ -1533,7 +1587,7 @@ export const SchemaTemplateSetting_ColumnType = {
   },
   fromPartial(object: DeepPartial<SchemaTemplateSetting_ColumnType>): SchemaTemplateSetting_ColumnType {
     const message = createBaseSchemaTemplateSetting_ColumnType();
-    message.engine = object.engine ?? 0;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.enabled = object.enabled ?? false;
     message.types = object.types?.map((e) => e) || [];
     return message;
@@ -1541,7 +1595,7 @@ export const SchemaTemplateSetting_ColumnType = {
 };
 
 function createBaseSchemaTemplateSetting_TableTemplate(): SchemaTemplateSetting_TableTemplate {
-  return { id: "", engine: 0, category: "", table: undefined, config: undefined };
+  return { id: "", engine: Engine.ENGINE_UNSPECIFIED, category: "", table: undefined, config: undefined };
 }
 
 export const SchemaTemplateSetting_TableTemplate = {
@@ -1549,8 +1603,8 @@ export const SchemaTemplateSetting_TableTemplate = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
-    if (message.engine !== 0) {
-      writer.uint32(16).int32(message.engine);
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(16).int32(engineToNumber(message.engine));
     }
     if (message.category !== "") {
       writer.uint32(26).string(message.category);
@@ -1583,7 +1637,7 @@ export const SchemaTemplateSetting_TableTemplate = {
             break;
           }
 
-          message.engine = reader.int32() as any;
+          message.engine = engineFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -1618,7 +1672,7 @@ export const SchemaTemplateSetting_TableTemplate = {
   fromJSON(object: any): SchemaTemplateSetting_TableTemplate {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       category: isSet(object.category) ? globalThis.String(object.category) : "",
       table: isSet(object.table) ? TableMetadata.fromJSON(object.table) : undefined,
       config: isSet(object.config) ? TableConfig.fromJSON(object.config) : undefined,
@@ -1630,7 +1684,7 @@ export const SchemaTemplateSetting_TableTemplate = {
     if (message.id !== "") {
       obj.id = message.id;
     }
-    if (message.engine !== 0) {
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
     }
     if (message.category !== "") {
@@ -1651,7 +1705,7 @@ export const SchemaTemplateSetting_TableTemplate = {
   fromPartial(object: DeepPartial<SchemaTemplateSetting_TableTemplate>): SchemaTemplateSetting_TableTemplate {
     const message = createBaseSchemaTemplateSetting_TableTemplate();
     message.id = object.id ?? "";
-    message.engine = object.engine ?? 0;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.category = object.category ?? "";
     message.table = (object.table !== undefined && object.table !== null)
       ? TableMetadata.fromPartial(object.table)

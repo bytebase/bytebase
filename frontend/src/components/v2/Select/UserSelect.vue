@@ -268,9 +268,11 @@ const renderLabel = (option: SelectOption) => {
     user.name === SYSTEM_BOT_USER_NAME
       ? t("settings.members.system-bot")
       : user.title;
-  const children = [h("span", { class: "max-w-[10rem] truncate" }, title)];
+  const children = [h("span", { class: "truncate" }, title)];
   if (user.name !== UNKNOWN_USER_NAME && user.name !== SYSTEM_BOT_USER_NAME) {
-    children.push(h("span", { class: "text-gray-400" }, `(${user.email})`));
+    children.push(
+      h("span", { class: "text-gray-400 truncate" }, `(${user.email})`)
+    );
   }
   if (user.userType === UserType.SERVICE_ACCOUNT) {
     children.push(h(ServiceAccountTag));
