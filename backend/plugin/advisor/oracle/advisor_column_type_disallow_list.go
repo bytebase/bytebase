@@ -44,10 +44,10 @@ func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 		return nil, err
 	}
 	listener := &columnTypeDisallowListListener{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		currentSchema: ctx.CurrentSchema,
-		disallowList:  payload.List,
+		level:           level,
+		title:           string(ctx.Rule.Type),
+		currentDatabase: ctx.CurrentDatabase,
+		disallowList:    payload.List,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -59,11 +59,11 @@ func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 type columnTypeDisallowListListener struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
-	title         string
-	currentSchema string
-	disallowList  []string
-	adviceList    []advisor.Advice
+	level           advisor.Status
+	title           string
+	currentDatabase string
+	disallowList    []string
+	adviceList      []advisor.Advice
 }
 
 func (l *columnTypeDisallowListListener) generateAdvice() ([]advisor.Advice, error) {
@@ -97,7 +97,7 @@ func (l *columnTypeDisallowListListener) EnterColumn_definition(ctx *parser.Colu
 			Status:  l.level,
 			Code:    advisor.DisabledColumnType,
 			Title:   l.title,
-			Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentSchema)),
+			Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
 			Line:    ctx.Datatype().GetStart().GetLine(),
 		})
 	}
@@ -108,7 +108,7 @@ func (l *columnTypeDisallowListListener) EnterColumn_definition(ctx *parser.Colu
 					Status:  l.level,
 					Code:    advisor.DisabledColumnType,
 					Title:   l.title,
-					Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Regular_id().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentSchema)),
+					Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Regular_id().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
 					Line:    ctx.Regular_id().GetStart().GetLine(),
 				})
 				break
@@ -124,7 +124,7 @@ func (l *columnTypeDisallowListListener) EnterModify_col_properties(ctx *parser.
 			Status:  l.level,
 			Code:    advisor.DisabledColumnType,
 			Title:   l.title,
-			Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentSchema)),
+			Content: fmt.Sprintf("Disallow column type %s but column \"%s\" is", ctx.Datatype().GetText(), normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
 			Line:    ctx.Datatype().GetStart().GetLine(),
 		})
 	}

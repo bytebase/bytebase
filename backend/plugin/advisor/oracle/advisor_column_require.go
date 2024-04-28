@@ -47,7 +47,7 @@ func (*ColumnRequireAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Adv
 	listener := &columnRequireListener{
 		level:           level,
 		title:           string(ctx.Rule.Type),
-		currentSchema:   ctx.CurrentSchema,
+		currentDatabase: ctx.CurrentDatabase,
 		requiredColumns: make(columnSet),
 	}
 
@@ -68,7 +68,7 @@ type columnRequireListener struct {
 
 	level           advisor.Status
 	title           string
-	currentSchema   string
+	currentDatabase string
 	requiredColumns columnSet
 	missingColumns  columnSet
 	adviceList      []advisor.Advice
@@ -107,7 +107,7 @@ func (l *columnRequireListener) ExitCreate_table(ctx *parser.Create_tableContext
 	}
 
 	sort.Strings(missingColumns)
-	tableName := normalizeIdentifier(ctx.Table_name(), l.currentSchema)
+	tableName := normalizeIdentifier(ctx.Table_name(), l.currentDatabase)
 	l.adviceList = append(l.adviceList, advisor.Advice{
 		Status:  l.level,
 		Code:    advisor.NoRequiredColumn,
@@ -122,7 +122,7 @@ func (l *columnRequireListener) EnterColumn_definition(ctx *parser.Column_defini
 	if ctx.Column_name() == nil || l.missingColumns == nil {
 		return
 	}
-	columnName := normalizeIdentifier(ctx.Column_name(), l.currentSchema)
+	columnName := normalizeIdentifier(ctx.Column_name(), l.currentDatabase)
 	delete(l.missingColumns, columnName)
 }
 
@@ -144,7 +144,7 @@ func (l *columnRequireListener) ExitAlter_table(ctx *parser.Alter_tableContext) 
 	}
 
 	sort.Strings(missingColumns)
-	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentSchema))
+	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase))
 	l.adviceList = append(l.adviceList, advisor.Advice{
 		Status:  l.level,
 		Code:    advisor.NoRequiredColumn,
@@ -160,7 +160,7 @@ func (l *columnRequireListener) EnterDrop_column_clause(ctx *parser.Drop_column_
 		return
 	}
 	for _, columnName := range ctx.AllColumn_name() {
-		name := normalizeIdentifier(columnName, l.currentSchema)
+		name := normalizeIdentifier(columnName, l.currentDatabase)
 		if _, exists := l.requiredColumns[name]; exists {
 			l.missingColumns[name] = true
 		}
@@ -172,8 +172,8 @@ func (l *columnRequireListener) EnterRename_column_clause(ctx *parser.Rename_col
 	if l.missingColumns == nil {
 		return
 	}
-	oldName := normalizeIdentifier(ctx.Old_column_name().Column_name(), l.currentSchema)
-	newName := normalizeIdentifier(ctx.New_column_name().Column_name(), l.currentSchema)
+	oldName := normalizeIdentifier(ctx.Old_column_name().Column_name(), l.currentDatabase)
+	newName := normalizeIdentifier(ctx.New_column_name().Column_name(), l.currentDatabase)
 	if oldName == newName {
 		return
 	}

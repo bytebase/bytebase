@@ -1,14 +1,12 @@
 package tidb
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
-	"os/exec"
 	"regexp"
 	"strings"
 	"time"
@@ -19,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -819,34 +816,4 @@ func getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
 	return fmt.Sprintf(triggerStmtFmt, triggerName, charset, charset, collation, sqlmode, stmt), nil
-}
-
-// Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, backup io.Reader) error {
-	return driver.restoreImpl(ctx, backup, driver.connCfg.Database)
-}
-
-func (driver *Driver) restoreImpl(ctx context.Context, backup io.Reader, databaseName string) error {
-	mysqlArgs := []string{
-		"--host", driver.connCfg.Host,
-		"--user", driver.connCfg.Username,
-		"--database", databaseName,
-	}
-	if driver.connCfg.Port != "" {
-		mysqlArgs = append(mysqlArgs, "--port", driver.connCfg.Port)
-	}
-	if driver.connCfg.Password != "" {
-		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", driver.connCfg.Password))
-	}
-	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.dbBinDir), mysqlArgs...)
-
-	var stderr bytes.Buffer
-	mysqlCmd.Stdin = backup
-	mysqlCmd.Stderr = &stderr
-
-	if err := mysqlCmd.Run(); err != nil {
-		return errors.Wrapf(err, "mysql command fails: %s", stderr.String())
-	}
-
-	return nil
 }

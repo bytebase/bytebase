@@ -191,8 +191,3 @@ func getTables(ctx context.Context, txn *sql.Tx, dbName string) ([]*tableSchema,
 	}
 	return tables, nil
 }
-
-// Restore restores a database.
-func (*Driver) Restore(_ context.Context, _ io.Reader) (err error) {
-	return errors.Errorf("ClickHouse restore is unsupported")
-}
