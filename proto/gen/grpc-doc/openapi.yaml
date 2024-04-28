@@ -12681,6 +12681,33 @@ components:
                     description: content_size is the full size of the content, may not match the size of the `content` field.
                 payload:
                     $ref: '#/components/schemas/SheetPayload'
+                engine:
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
+                    description: The SQL dialect.
+                    format: enum
         SheetPayload:
             type: object
             properties:
