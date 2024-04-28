@@ -21,14 +21,14 @@ export interface DataSourceExternalSecret {
 }
 
 export enum DataSourceExternalSecret_SecretType {
-  SAECRET_TYPE_UNSPECIFIED = 0,
+  SAECRET_TYPE_UNSPECIFIED = "SAECRET_TYPE_UNSPECIFIED",
   /** VAULT_KV_V2 - ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 */
-  VAULT_KV_V2 = 1,
+  VAULT_KV_V2 = "VAULT_KV_V2",
   /** AWS_SECRETS_MANAGER - ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html */
-  AWS_SECRETS_MANAGER = 2,
+  AWS_SECRETS_MANAGER = "AWS_SECRETS_MANAGER",
   /** GCP_SECRET_MANAGER - ref: https://cloud.google.com/secret-manager/docs */
-  GCP_SECRET_MANAGER = 3,
-  UNRECOGNIZED = -1,
+  GCP_SECRET_MANAGER = "GCP_SECRET_MANAGER",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function dataSourceExternalSecret_SecretTypeFromJSON(object: any): DataSourceExternalSecret_SecretType {
@@ -68,13 +68,29 @@ export function dataSourceExternalSecret_SecretTypeToJSON(object: DataSourceExte
   }
 }
 
+export function dataSourceExternalSecret_SecretTypeToNumber(object: DataSourceExternalSecret_SecretType): number {
+  switch (object) {
+    case DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED:
+      return 0;
+    case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
+      return 1;
+    case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
+      return 2;
+    case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+      return 3;
+    case DataSourceExternalSecret_SecretType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum DataSourceExternalSecret_AuthType {
-  AUTH_TYPE_UNSPECIFIED = 0,
+  AUTH_TYPE_UNSPECIFIED = "AUTH_TYPE_UNSPECIFIED",
   /** TOKEN - ref: https://developer.hashicorp.com/vault/docs/auth/token */
-  TOKEN = 1,
+  TOKEN = "TOKEN",
   /** VAULT_APP_ROLE - ref: https://developer.hashicorp.com/vault/docs/auth/approle */
-  VAULT_APP_ROLE = 2,
-  UNRECOGNIZED = -1,
+  VAULT_APP_ROLE = "VAULT_APP_ROLE",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function dataSourceExternalSecret_AuthTypeFromJSON(object: any): DataSourceExternalSecret_AuthType {
@@ -109,6 +125,20 @@ export function dataSourceExternalSecret_AuthTypeToJSON(object: DataSourceExtern
   }
 }
 
+export function dataSourceExternalSecret_AuthTypeToNumber(object: DataSourceExternalSecret_AuthType): number {
+  switch (object) {
+    case DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED:
+      return 0;
+    case DataSourceExternalSecret_AuthType.TOKEN:
+      return 1;
+    case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
+      return 2;
+    case DataSourceExternalSecret_AuthType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface DataSourceExternalSecret_AppRoleAuthOption {
   roleId: string;
   /** the secret id for the role without ttl. */
@@ -119,10 +149,10 @@ export interface DataSourceExternalSecret_AppRoleAuthOption {
 }
 
 export enum DataSourceExternalSecret_AppRoleAuthOption_SecretType {
-  SECRET_TYPE_UNSPECIFIED = 0,
-  PLAIN = 1,
-  ENVIRONMENT = 2,
-  UNRECOGNIZED = -1,
+  SECRET_TYPE_UNSPECIFIED = "SECRET_TYPE_UNSPECIFIED",
+  PLAIN = "PLAIN",
+  ENVIRONMENT = "ENVIRONMENT",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(
@@ -161,6 +191,22 @@ export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToJSON(
   }
 }
 
+export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToNumber(
+  object: DataSourceExternalSecret_AppRoleAuthOption_SecretType,
+): number {
+  switch (object) {
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED:
+      return 0;
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN:
+      return 1;
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT:
+      return 2;
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface DataSourceOptions {
   /** srv is a boolean flag that indicates whether the host is a DNS SRV record. */
   srv: boolean;
@@ -193,11 +239,11 @@ export interface DataSourceOptions {
 }
 
 export enum DataSourceOptions_AuthenticationType {
-  AUTHENTICATION_UNSPECIFIED = 0,
-  PASSWORD = 1,
-  GOOGLE_CLOUD_SQL_IAM = 2,
-  AWS_RDS_IAM = 3,
-  UNRECOGNIZED = -1,
+  AUTHENTICATION_UNSPECIFIED = "AUTHENTICATION_UNSPECIFIED",
+  PASSWORD = "PASSWORD",
+  GOOGLE_CLOUD_SQL_IAM = "GOOGLE_CLOUD_SQL_IAM",
+  AWS_RDS_IAM = "AWS_RDS_IAM",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function dataSourceOptions_AuthenticationTypeFromJSON(object: any): DataSourceOptions_AuthenticationType {
@@ -237,6 +283,22 @@ export function dataSourceOptions_AuthenticationTypeToJSON(object: DataSourceOpt
   }
 }
 
+export function dataSourceOptions_AuthenticationTypeToNumber(object: DataSourceOptions_AuthenticationType): number {
+  switch (object) {
+    case DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED:
+      return 0;
+    case DataSourceOptions_AuthenticationType.PASSWORD:
+      return 1;
+    case DataSourceOptions_AuthenticationType.GOOGLE_CLOUD_SQL_IAM:
+      return 2;
+    case DataSourceOptions_AuthenticationType.AWS_RDS_IAM:
+      return 3;
+    case DataSourceOptions_AuthenticationType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface SASLConfig {
   krbConfig?: KerberosConfig | undefined;
   plainConfig?: PlainSASLConfig | undefined;
@@ -258,9 +320,9 @@ export interface PlainSASLConfig {
 
 function createBaseDataSourceExternalSecret(): DataSourceExternalSecret {
   return {
-    secretType: 0,
+    secretType: DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
     url: "",
-    authType: 0,
+    authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
     appRole: undefined,
     token: undefined,
     engineName: "",
@@ -271,14 +333,14 @@ function createBaseDataSourceExternalSecret(): DataSourceExternalSecret {
 
 export const DataSourceExternalSecret = {
   encode(message: DataSourceExternalSecret, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.secretType !== 0) {
-      writer.uint32(8).int32(message.secretType);
+    if (message.secretType !== DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(dataSourceExternalSecret_SecretTypeToNumber(message.secretType));
     }
     if (message.url !== "") {
       writer.uint32(18).string(message.url);
     }
-    if (message.authType !== 0) {
-      writer.uint32(24).int32(message.authType);
+    if (message.authType !== DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED) {
+      writer.uint32(24).int32(dataSourceExternalSecret_AuthTypeToNumber(message.authType));
     }
     if (message.appRole !== undefined) {
       DataSourceExternalSecret_AppRoleAuthOption.encode(message.appRole, writer.uint32(34).fork()).ldelim();
@@ -310,7 +372,7 @@ export const DataSourceExternalSecret = {
             break;
           }
 
-          message.secretType = reader.int32() as any;
+          message.secretType = dataSourceExternalSecret_SecretTypeFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -324,7 +386,7 @@ export const DataSourceExternalSecret = {
             break;
           }
 
-          message.authType = reader.int32() as any;
+          message.authType = dataSourceExternalSecret_AuthTypeFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -372,9 +434,13 @@ export const DataSourceExternalSecret = {
 
   fromJSON(object: any): DataSourceExternalSecret {
     return {
-      secretType: isSet(object.secretType) ? dataSourceExternalSecret_SecretTypeFromJSON(object.secretType) : 0,
+      secretType: isSet(object.secretType)
+        ? dataSourceExternalSecret_SecretTypeFromJSON(object.secretType)
+        : DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
       url: isSet(object.url) ? globalThis.String(object.url) : "",
-      authType: isSet(object.authType) ? dataSourceExternalSecret_AuthTypeFromJSON(object.authType) : 0,
+      authType: isSet(object.authType)
+        ? dataSourceExternalSecret_AuthTypeFromJSON(object.authType)
+        : DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
       appRole: isSet(object.appRole) ? DataSourceExternalSecret_AppRoleAuthOption.fromJSON(object.appRole) : undefined,
       token: isSet(object.token) ? globalThis.String(object.token) : undefined,
       engineName: isSet(object.engineName) ? globalThis.String(object.engineName) : "",
@@ -385,13 +451,13 @@ export const DataSourceExternalSecret = {
 
   toJSON(message: DataSourceExternalSecret): unknown {
     const obj: any = {};
-    if (message.secretType !== 0) {
+    if (message.secretType !== DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED) {
       obj.secretType = dataSourceExternalSecret_SecretTypeToJSON(message.secretType);
     }
     if (message.url !== "") {
       obj.url = message.url;
     }
-    if (message.authType !== 0) {
+    if (message.authType !== DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED) {
       obj.authType = dataSourceExternalSecret_AuthTypeToJSON(message.authType);
     }
     if (message.appRole !== undefined) {
@@ -417,9 +483,9 @@ export const DataSourceExternalSecret = {
   },
   fromPartial(object: DeepPartial<DataSourceExternalSecret>): DataSourceExternalSecret {
     const message = createBaseDataSourceExternalSecret();
-    message.secretType = object.secretType ?? 0;
+    message.secretType = object.secretType ?? DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED;
     message.url = object.url ?? "";
-    message.authType = object.authType ?? 0;
+    message.authType = object.authType ?? DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED;
     message.appRole = (object.appRole !== undefined && object.appRole !== null)
       ? DataSourceExternalSecret_AppRoleAuthOption.fromPartial(object.appRole)
       : undefined;
@@ -432,7 +498,12 @@ export const DataSourceExternalSecret = {
 };
 
 function createBaseDataSourceExternalSecret_AppRoleAuthOption(): DataSourceExternalSecret_AppRoleAuthOption {
-  return { roleId: "", secretId: "", type: 0, mountPath: "" };
+  return {
+    roleId: "",
+    secretId: "",
+    type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED,
+    mountPath: "",
+  };
 }
 
 export const DataSourceExternalSecret_AppRoleAuthOption = {
@@ -443,8 +514,8 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
     if (message.secretId !== "") {
       writer.uint32(18).string(message.secretId);
     }
-    if (message.type !== 0) {
-      writer.uint32(24).int32(message.type);
+    if (message.type !== DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED) {
+      writer.uint32(24).int32(dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToNumber(message.type));
     }
     if (message.mountPath !== "") {
       writer.uint32(34).string(message.mountPath);
@@ -478,7 +549,7 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -500,7 +571,9 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
     return {
       roleId: isSet(object.roleId) ? globalThis.String(object.roleId) : "",
       secretId: isSet(object.secretId) ? globalThis.String(object.secretId) : "",
-      type: isSet(object.type) ? dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(object.type) : 0,
+      type: isSet(object.type)
+        ? dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(object.type)
+        : DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED,
       mountPath: isSet(object.mountPath) ? globalThis.String(object.mountPath) : "",
     };
   },
@@ -513,7 +586,7 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
     if (message.secretId !== "") {
       obj.secretId = message.secretId;
     }
-    if (message.type !== 0) {
+    if (message.type !== DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED) {
       obj.type = dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToJSON(message.type);
     }
     if (message.mountPath !== "") {
@@ -531,7 +604,7 @@ export const DataSourceExternalSecret_AppRoleAuthOption = {
     const message = createBaseDataSourceExternalSecret_AppRoleAuthOption();
     message.roleId = object.roleId ?? "";
     message.secretId = object.secretId ?? "";
-    message.type = object.type ?? 0;
+    message.type = object.type ?? DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED;
     message.mountPath = object.mountPath ?? "";
     return message;
   },
@@ -550,7 +623,7 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     sshObfuscatedPrivateKey: "",
     authenticationPrivateKeyObfuscated: "",
     externalSecret: undefined,
-    authenticationType: 0,
+    authenticationType: DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
     saslConfig: undefined,
   };
 }
@@ -590,8 +663,8 @@ export const DataSourceOptions = {
     if (message.externalSecret !== undefined) {
       DataSourceExternalSecret.encode(message.externalSecret, writer.uint32(90).fork()).ldelim();
     }
-    if (message.authenticationType !== 0) {
-      writer.uint32(96).int32(message.authenticationType);
+    if (message.authenticationType !== DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
+      writer.uint32(96).int32(dataSourceOptions_AuthenticationTypeToNumber(message.authenticationType));
     }
     if (message.saslConfig !== undefined) {
       SASLConfig.encode(message.saslConfig, writer.uint32(106).fork()).ldelim();
@@ -688,7 +761,7 @@ export const DataSourceOptions = {
             break;
           }
 
-          message.authenticationType = reader.int32() as any;
+          message.authenticationType = dataSourceOptions_AuthenticationTypeFromJSON(reader.int32());
           continue;
         case 13:
           if (tag !== 106) {
@@ -729,7 +802,7 @@ export const DataSourceOptions = {
         : undefined,
       authenticationType: isSet(object.authenticationType)
         ? dataSourceOptions_AuthenticationTypeFromJSON(object.authenticationType)
-        : 0,
+        : DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
       saslConfig: isSet(object.saslConfig) ? SASLConfig.fromJSON(object.saslConfig) : undefined,
     };
   },
@@ -769,7 +842,7 @@ export const DataSourceOptions = {
     if (message.externalSecret !== undefined) {
       obj.externalSecret = DataSourceExternalSecret.toJSON(message.externalSecret);
     }
-    if (message.authenticationType !== 0) {
+    if (message.authenticationType !== DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
       obj.authenticationType = dataSourceOptions_AuthenticationTypeToJSON(message.authenticationType);
     }
     if (message.saslConfig !== undefined) {
@@ -796,7 +869,8 @@ export const DataSourceOptions = {
     message.externalSecret = (object.externalSecret !== undefined && object.externalSecret !== null)
       ? DataSourceExternalSecret.fromPartial(object.externalSecret)
       : undefined;
-    message.authenticationType = object.authenticationType ?? 0;
+    message.authenticationType = object.authenticationType ??
+      DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED;
     message.saslConfig = (object.saslConfig !== undefined && object.saslConfig !== null)
       ? SASLConfig.fromPartial(object.saslConfig)
       : undefined;

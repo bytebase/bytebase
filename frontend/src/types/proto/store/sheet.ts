@@ -1,7 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
 import { DatabaseConfig } from "./database";
 
 export const protobufPackage = "bytebase.store";
@@ -20,7 +20,7 @@ export interface SheetPayload {
 }
 
 function createBaseSheetPayload(): SheetPayload {
-  return { databaseConfig: undefined, baselineDatabaseConfig: undefined, engine: 0 };
+  return { databaseConfig: undefined, baselineDatabaseConfig: undefined, engine: Engine.ENGINE_UNSPECIFIED };
 }
 
 export const SheetPayload = {
@@ -31,8 +31,8 @@ export const SheetPayload = {
     if (message.baselineDatabaseConfig !== undefined) {
       DatabaseConfig.encode(message.baselineDatabaseConfig, writer.uint32(18).fork()).ldelim();
     }
-    if (message.engine !== 0) {
-      writer.uint32(24).int32(message.engine);
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(24).int32(engineToNumber(message.engine));
     }
     return writer;
   },
@@ -63,7 +63,7 @@ export const SheetPayload = {
             break;
           }
 
-          message.engine = reader.int32() as any;
+          message.engine = engineFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -80,7 +80,7 @@ export const SheetPayload = {
       baselineDatabaseConfig: isSet(object.baselineDatabaseConfig)
         ? DatabaseConfig.fromJSON(object.baselineDatabaseConfig)
         : undefined,
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
     };
   },
 
@@ -92,7 +92,7 @@ export const SheetPayload = {
     if (message.baselineDatabaseConfig !== undefined) {
       obj.baselineDatabaseConfig = DatabaseConfig.toJSON(message.baselineDatabaseConfig);
     }
-    if (message.engine !== 0) {
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
     }
     return obj;
@@ -110,7 +110,7 @@ export const SheetPayload = {
       (object.baselineDatabaseConfig !== undefined && object.baselineDatabaseConfig !== null)
         ? DatabaseConfig.fromPartial(object.baselineDatabaseConfig)
         : undefined;
-    message.engine = object.engine ?? 0;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     return message;
   },
 };

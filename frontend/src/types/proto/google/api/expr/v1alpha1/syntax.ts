@@ -2,7 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../../../protobuf/duration";
-import { NullValue, nullValueFromJSON, nullValueToJSON } from "../../../protobuf/struct";
+import { NullValue, nullValueFromJSON, nullValueToJSON, nullValueToNumber } from "../../../protobuf/struct";
 import { Timestamp } from "../../../protobuf/timestamp";
 
 export const protobufPackage = "google.api.expr.v1alpha1";
@@ -1362,7 +1362,7 @@ function createBaseConstant(): Constant {
 export const Constant = {
   encode(message: Constant, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.nullValue !== undefined) {
-      writer.uint32(8).int32(message.nullValue);
+      writer.uint32(8).int32(nullValueToNumber(message.nullValue));
     }
     if (message.boolValue !== undefined) {
       writer.uint32(16).bool(message.boolValue);
@@ -1403,7 +1403,7 @@ export const Constant = {
             break;
           }
 
-          message.nullValue = reader.int32() as any;
+          message.nullValue = nullValueFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 16) {

@@ -45,3 +45,11 @@ export const AuditActivityTypeI18nNameMap: Map<LogEntity_Action, string> =
     ],
     [LogEntity_Action.ACTION_DATABASE_SQL_EXPORT, "audit-log.type.sql-export"],
   ]);
+
+export interface SearchAuditLogsParams {
+  resource?: string;
+  creatorEmail?: string;
+  order?: "asc" | "desc";
+  pageSize?: number;
+  pageToken?: string;
+}

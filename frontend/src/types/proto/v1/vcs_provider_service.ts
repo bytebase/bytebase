@@ -3,7 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { VCSType, vCSTypeFromJSON, vCSTypeToJSON } from "./common";
+import { VCSType, vCSTypeFromJSON, vCSTypeToJSON, vCSTypeToNumber } from "./common";
 import { VCSConnector } from "./vcs_connector_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -894,7 +894,7 @@ export const ListVCSConnectorsInProviderResponse = {
 };
 
 function createBaseVCSProvider(): VCSProvider {
-  return { name: "", title: "", type: 0, url: "", accessToken: "" };
+  return { name: "", title: "", type: VCSType.VCS_TYPE_UNSPECIFIED, url: "", accessToken: "" };
 }
 
 export const VCSProvider = {
@@ -905,8 +905,8 @@ export const VCSProvider = {
     if (message.title !== "") {
       writer.uint32(18).string(message.title);
     }
-    if (message.type !== 0) {
-      writer.uint32(24).int32(message.type);
+    if (message.type !== VCSType.VCS_TYPE_UNSPECIFIED) {
+      writer.uint32(24).int32(vCSTypeToNumber(message.type));
     }
     if (message.url !== "") {
       writer.uint32(34).string(message.url);
@@ -943,7 +943,7 @@ export const VCSProvider = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = vCSTypeFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -972,7 +972,7 @@ export const VCSProvider = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
-      type: isSet(object.type) ? vCSTypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? vCSTypeFromJSON(object.type) : VCSType.VCS_TYPE_UNSPECIFIED,
       url: isSet(object.url) ? globalThis.String(object.url) : "",
       accessToken: isSet(object.accessToken) ? globalThis.String(object.accessToken) : "",
     };
@@ -986,7 +986,7 @@ export const VCSProvider = {
     if (message.title !== "") {
       obj.title = message.title;
     }
-    if (message.type !== 0) {
+    if (message.type !== VCSType.VCS_TYPE_UNSPECIFIED) {
       obj.type = vCSTypeToJSON(message.type);
     }
     if (message.url !== "") {
@@ -1005,7 +1005,7 @@ export const VCSProvider = {
     const message = createBaseVCSProvider();
     message.name = object.name ?? "";
     message.title = object.title ?? "";
-    message.type = object.type ?? 0;
+    message.type = object.type ?? VCSType.VCS_TYPE_UNSPECIFIED;
     message.url = object.url ?? "";
     message.accessToken = object.accessToken ?? "";
     return message;

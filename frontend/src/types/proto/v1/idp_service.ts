@@ -3,16 +3,16 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { State, stateFromJSON, stateToJSON } from "./common";
+import { State, stateFromJSON, stateToJSON, stateToNumber } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
 export enum IdentityProviderType {
-  IDENTITY_PROVIDER_TYPE_UNSPECIFIED = 0,
-  OAUTH2 = 1,
-  OIDC = 2,
-  LDAP = 3,
-  UNRECOGNIZED = -1,
+  IDENTITY_PROVIDER_TYPE_UNSPECIFIED = "IDENTITY_PROVIDER_TYPE_UNSPECIFIED",
+  OAUTH2 = "OAUTH2",
+  OIDC = "OIDC",
+  LDAP = "LDAP",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function identityProviderTypeFromJSON(object: any): IdentityProviderType {
@@ -52,19 +52,35 @@ export function identityProviderTypeToJSON(object: IdentityProviderType): string
   }
 }
 
+export function identityProviderTypeToNumber(object: IdentityProviderType): number {
+  switch (object) {
+    case IdentityProviderType.IDENTITY_PROVIDER_TYPE_UNSPECIFIED:
+      return 0;
+    case IdentityProviderType.OAUTH2:
+      return 1;
+    case IdentityProviderType.OIDC:
+      return 2;
+    case IdentityProviderType.LDAP:
+      return 3;
+    case IdentityProviderType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum OAuth2AuthStyle {
-  OAUTH2_AUTH_STYLE_UNSPECIFIED = 0,
+  OAUTH2_AUTH_STYLE_UNSPECIFIED = "OAUTH2_AUTH_STYLE_UNSPECIFIED",
   /**
    * IN_PARAMS - IN_PARAMS sends the "client_id" and "client_secret" in the POST body
    * as application/x-www-form-urlencoded parameters.
    */
-  IN_PARAMS = 1,
+  IN_PARAMS = "IN_PARAMS",
   /**
    * IN_HEADER - IN_HEADER sends the client_id and client_password using HTTP Basic Authorization.
    * This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.
    */
-  IN_HEADER = 2,
-  UNRECOGNIZED = -1,
+  IN_HEADER = "IN_HEADER",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function oAuth2AuthStyleFromJSON(object: any): OAuth2AuthStyle {
@@ -96,6 +112,20 @@ export function oAuth2AuthStyleToJSON(object: OAuth2AuthStyle): string {
     case OAuth2AuthStyle.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function oAuth2AuthStyleToNumber(object: OAuth2AuthStyle): number {
+  switch (object) {
+    case OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED:
+      return 0;
+    case OAuth2AuthStyle.IN_PARAMS:
+      return 1;
+    case OAuth2AuthStyle.IN_HEADER:
+      return 2;
+    case OAuth2AuthStyle.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -966,7 +996,15 @@ export const TestIdentityProviderResponse = {
 };
 
 function createBaseIdentityProvider(): IdentityProvider {
-  return { name: "", uid: "", state: 0, title: "", domain: "", type: 0, config: undefined };
+  return {
+    name: "",
+    uid: "",
+    state: State.STATE_UNSPECIFIED,
+    title: "",
+    domain: "",
+    type: IdentityProviderType.IDENTITY_PROVIDER_TYPE_UNSPECIFIED,
+    config: undefined,
+  };
 }
 
 export const IdentityProvider = {
@@ -977,8 +1015,8 @@ export const IdentityProvider = {
     if (message.uid !== "") {
       writer.uint32(18).string(message.uid);
     }
-    if (message.state !== 0) {
-      writer.uint32(24).int32(message.state);
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      writer.uint32(24).int32(stateToNumber(message.state));
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
@@ -986,8 +1024,8 @@ export const IdentityProvider = {
     if (message.domain !== "") {
       writer.uint32(42).string(message.domain);
     }
-    if (message.type !== 0) {
-      writer.uint32(48).int32(message.type);
+    if (message.type !== IdentityProviderType.IDENTITY_PROVIDER_TYPE_UNSPECIFIED) {
+      writer.uint32(48).int32(identityProviderTypeToNumber(message.type));
     }
     if (message.config !== undefined) {
       IdentityProviderConfig.encode(message.config, writer.uint32(58).fork()).ldelim();
@@ -1021,7 +1059,7 @@ export const IdentityProvider = {
             break;
           }
 
-          message.state = reader.int32() as any;
+          message.state = stateFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -1042,7 +1080,7 @@ export const IdentityProvider = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = identityProviderTypeFromJSON(reader.int32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -1064,10 +1102,12 @@ export const IdentityProvider = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
-      state: isSet(object.state) ? stateFromJSON(object.state) : 0,
+      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       domain: isSet(object.domain) ? globalThis.String(object.domain) : "",
-      type: isSet(object.type) ? identityProviderTypeFromJSON(object.type) : 0,
+      type: isSet(object.type)
+        ? identityProviderTypeFromJSON(object.type)
+        : IdentityProviderType.IDENTITY_PROVIDER_TYPE_UNSPECIFIED,
       config: isSet(object.config) ? IdentityProviderConfig.fromJSON(object.config) : undefined,
     };
   },
@@ -1080,7 +1120,7 @@ export const IdentityProvider = {
     if (message.uid !== "") {
       obj.uid = message.uid;
     }
-    if (message.state !== 0) {
+    if (message.state !== State.STATE_UNSPECIFIED) {
       obj.state = stateToJSON(message.state);
     }
     if (message.title !== "") {
@@ -1089,7 +1129,7 @@ export const IdentityProvider = {
     if (message.domain !== "") {
       obj.domain = message.domain;
     }
-    if (message.type !== 0) {
+    if (message.type !== IdentityProviderType.IDENTITY_PROVIDER_TYPE_UNSPECIFIED) {
       obj.type = identityProviderTypeToJSON(message.type);
     }
     if (message.config !== undefined) {
@@ -1105,10 +1145,10 @@ export const IdentityProvider = {
     const message = createBaseIdentityProvider();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
-    message.state = object.state ?? 0;
+    message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.title = object.title ?? "";
     message.domain = object.domain ?? "";
-    message.type = object.type ?? 0;
+    message.type = object.type ?? IdentityProviderType.IDENTITY_PROVIDER_TYPE_UNSPECIFIED;
     message.config = (object.config !== undefined && object.config !== null)
       ? IdentityProviderConfig.fromPartial(object.config)
       : undefined;
@@ -1221,7 +1261,7 @@ function createBaseOAuth2IdentityProviderConfig(): OAuth2IdentityProviderConfig 
     scopes: [],
     fieldMapping: undefined,
     skipTlsVerify: false,
-    authStyle: 0,
+    authStyle: OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED,
   };
 }
 
@@ -1251,8 +1291,8 @@ export const OAuth2IdentityProviderConfig = {
     if (message.skipTlsVerify === true) {
       writer.uint32(64).bool(message.skipTlsVerify);
     }
-    if (message.authStyle !== 0) {
-      writer.uint32(72).int32(message.authStyle);
+    if (message.authStyle !== OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED) {
+      writer.uint32(72).int32(oAuth2AuthStyleToNumber(message.authStyle));
     }
     return writer;
   },
@@ -1325,7 +1365,7 @@ export const OAuth2IdentityProviderConfig = {
             break;
           }
 
-          message.authStyle = reader.int32() as any;
+          message.authStyle = oAuth2AuthStyleFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1346,7 +1386,9 @@ export const OAuth2IdentityProviderConfig = {
       scopes: globalThis.Array.isArray(object?.scopes) ? object.scopes.map((e: any) => globalThis.String(e)) : [],
       fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
       skipTlsVerify: isSet(object.skipTlsVerify) ? globalThis.Boolean(object.skipTlsVerify) : false,
-      authStyle: isSet(object.authStyle) ? oAuth2AuthStyleFromJSON(object.authStyle) : 0,
+      authStyle: isSet(object.authStyle)
+        ? oAuth2AuthStyleFromJSON(object.authStyle)
+        : OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED,
     };
   },
 
@@ -1376,7 +1418,7 @@ export const OAuth2IdentityProviderConfig = {
     if (message.skipTlsVerify === true) {
       obj.skipTlsVerify = message.skipTlsVerify;
     }
-    if (message.authStyle !== 0) {
+    if (message.authStyle !== OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED) {
       obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle);
     }
     return obj;
@@ -1397,7 +1439,7 @@ export const OAuth2IdentityProviderConfig = {
       ? FieldMapping.fromPartial(object.fieldMapping)
       : undefined;
     message.skipTlsVerify = object.skipTlsVerify ?? false;
-    message.authStyle = object.authStyle ?? 0;
+    message.authStyle = object.authStyle ?? OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED;
     return message;
   },
 };
@@ -1410,7 +1452,7 @@ function createBaseOIDCIdentityProviderConfig(): OIDCIdentityProviderConfig {
     scopes: [],
     fieldMapping: undefined,
     skipTlsVerify: false,
-    authStyle: 0,
+    authStyle: OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED,
   };
 }
 
@@ -1434,8 +1476,8 @@ export const OIDCIdentityProviderConfig = {
     if (message.skipTlsVerify === true) {
       writer.uint32(48).bool(message.skipTlsVerify);
     }
-    if (message.authStyle !== 0) {
-      writer.uint32(56).int32(message.authStyle);
+    if (message.authStyle !== OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED) {
+      writer.uint32(56).int32(oAuth2AuthStyleToNumber(message.authStyle));
     }
     return writer;
   },
@@ -1494,7 +1536,7 @@ export const OIDCIdentityProviderConfig = {
             break;
           }
 
-          message.authStyle = reader.int32() as any;
+          message.authStyle = oAuth2AuthStyleFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1513,7 +1555,9 @@ export const OIDCIdentityProviderConfig = {
       scopes: globalThis.Array.isArray(object?.scopes) ? object.scopes.map((e: any) => globalThis.String(e)) : [],
       fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
       skipTlsVerify: isSet(object.skipTlsVerify) ? globalThis.Boolean(object.skipTlsVerify) : false,
-      authStyle: isSet(object.authStyle) ? oAuth2AuthStyleFromJSON(object.authStyle) : 0,
+      authStyle: isSet(object.authStyle)
+        ? oAuth2AuthStyleFromJSON(object.authStyle)
+        : OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED,
     };
   },
 
@@ -1537,7 +1581,7 @@ export const OIDCIdentityProviderConfig = {
     if (message.skipTlsVerify === true) {
       obj.skipTlsVerify = message.skipTlsVerify;
     }
-    if (message.authStyle !== 0) {
+    if (message.authStyle !== OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED) {
       obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle);
     }
     return obj;
@@ -1556,7 +1600,7 @@ export const OIDCIdentityProviderConfig = {
       ? FieldMapping.fromPartial(object.fieldMapping)
       : undefined;
     message.skipTlsVerify = object.skipTlsVerify ?? false;
-    message.authStyle = object.authStyle ?? 0;
+    message.authStyle = object.authStyle ?? OAuth2AuthStyle.OAUTH2_AUTH_STYLE_UNSPECIFIED;
     return message;
   },
 };

@@ -25,3 +25,4 @@ export * from "./anomaly";
 export * from "./schemaEditor";
 export * from "./changelist";
 export * from "./issueComment";
+export * from "./auditLog";
