@@ -3,7 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
-import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
 import { DatabaseConfig } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -381,7 +381,7 @@ function createBaseSheet(): Sheet {
     content: new Uint8Array(0),
     contentSize: Long.ZERO,
     payload: undefined,
-    engine: 0,
+    engine: Engine.ENGINE_UNSPECIFIED,
   };
 }
 
@@ -414,8 +414,8 @@ export const Sheet = {
     if (message.payload !== undefined) {
       SheetPayload.encode(message.payload, writer.uint32(106).fork()).ldelim();
     }
-    if (message.engine !== 0) {
-      writer.uint32(112).int32(message.engine);
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(112).int32(engineToNumber(message.engine));
     }
     return writer;
   },
@@ -495,7 +495,7 @@ export const Sheet = {
             break;
           }
 
-          message.engine = reader.int32() as any;
+          message.engine = engineFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -517,7 +517,7 @@ export const Sheet = {
       content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
       contentSize: isSet(object.contentSize) ? Long.fromValue(object.contentSize) : Long.ZERO,
       payload: isSet(object.payload) ? SheetPayload.fromJSON(object.payload) : undefined,
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
     };
   },
 
@@ -550,7 +550,7 @@ export const Sheet = {
     if (message.payload !== undefined) {
       obj.payload = SheetPayload.toJSON(message.payload);
     }
-    if (message.engine !== 0) {
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
     }
     return obj;
@@ -574,7 +574,7 @@ export const Sheet = {
     message.payload = (object.payload !== undefined && object.payload !== null)
       ? SheetPayload.fromPartial(object.payload)
       : undefined;
-    message.engine = object.engine ?? 0;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     return message;
   },
 };

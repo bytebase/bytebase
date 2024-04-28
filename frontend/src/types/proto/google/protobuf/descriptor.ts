@@ -366,17 +366,10 @@ export function fieldDescriptorProto_TypeToNumber(object: FieldDescriptorProto_T
 
 export enum FieldDescriptorProto_Label {
   /** LABEL_OPTIONAL - 0 is reserved for errors */
-<<<<<<< HEAD
   LABEL_OPTIONAL = "LABEL_OPTIONAL",
   LABEL_REQUIRED = "LABEL_REQUIRED",
   LABEL_REPEATED = "LABEL_REPEATED",
   UNRECOGNIZED = "UNRECOGNIZED",
-=======
-  LABEL_OPTIONAL = 1,
-  LABEL_REQUIRED = 2,
-  LABEL_REPEATED = 3,
-  UNRECOGNIZED = -1,
->>>>>>> upstream/main
 }
 
 export function fieldDescriptorProto_LabelFromJSON(object: any): FieldDescriptorProto_Label {
@@ -845,17 +838,10 @@ export interface FieldOptions {
 
 export enum FieldOptions_CType {
   /** STRING - Default mode. */
-<<<<<<< HEAD
   STRING = "STRING",
   CORD = "CORD",
   STRING_PIECE = "STRING_PIECE",
   UNRECOGNIZED = "UNRECOGNIZED",
-=======
-  STRING = 0,
-  CORD = 1,
-  STRING_PIECE = 2,
-  UNRECOGNIZED = -1,
->>>>>>> upstream/main
 }
 
 export function fieldOptions_CTypeFromJSON(object: any): FieldOptions_CType {
@@ -1105,7 +1091,6 @@ export function fieldOptions_OptionTargetTypeToJSON(object: FieldOptions_OptionT
   }
 }
 
-<<<<<<< HEAD
 export function fieldOptions_OptionTargetTypeToNumber(object: FieldOptions_OptionTargetType): number {
   switch (object) {
     case FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN:
@@ -1134,8 +1119,6 @@ export function fieldOptions_OptionTargetTypeToNumber(object: FieldOptions_Optio
   }
 }
 
-=======
->>>>>>> upstream/main
 export interface OneofOptions {
   /** The parser stores options it doesn't recognize here. See above. */
   uninterpretedOption: UninterpretedOption[];
@@ -3716,13 +3699,8 @@ function createBaseFieldOptions(): FieldOptions {
     deprecated: false,
     weak: false,
     debugRedact: false,
-<<<<<<< HEAD
     retention: FieldOptions_OptionRetention.RETENTION_UNKNOWN,
     target: FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN,
-=======
-    retention: 0,
-    target: 0,
->>>>>>> upstream/main
     uninterpretedOption: [],
   };
 }
@@ -3756,13 +3734,8 @@ export const FieldOptions = {
     if (message.retention !== FieldOptions_OptionRetention.RETENTION_UNKNOWN) {
       writer.uint32(136).int32(fieldOptions_OptionRetentionToNumber(message.retention));
     }
-<<<<<<< HEAD
     if (message.target !== FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN) {
       writer.uint32(144).int32(fieldOptions_OptionTargetTypeToNumber(message.target));
-=======
-    if (message.target !== 0) {
-      writer.uint32(144).int32(message.target);
->>>>>>> upstream/main
     }
     for (const v of message.uninterpretedOption) {
       UninterpretedOption.encode(v!, writer.uint32(7994).fork()).ldelim();
@@ -3845,11 +3818,7 @@ export const FieldOptions = {
             break;
           }
 
-<<<<<<< HEAD
           message.target = fieldOptions_OptionTargetTypeFromJSON(reader.int32());
-=======
-          message.target = reader.int32() as any;
->>>>>>> upstream/main
           continue;
         case 999:
           if (tag !== 7994) {
@@ -3877,17 +3846,12 @@ export const FieldOptions = {
       deprecated: isSet(object.deprecated) ? globalThis.Boolean(object.deprecated) : false,
       weak: isSet(object.weak) ? globalThis.Boolean(object.weak) : false,
       debugRedact: isSet(object.debugRedact) ? globalThis.Boolean(object.debugRedact) : false,
-<<<<<<< HEAD
       retention: isSet(object.retention)
         ? fieldOptions_OptionRetentionFromJSON(object.retention)
         : FieldOptions_OptionRetention.RETENTION_UNKNOWN,
       target: isSet(object.target)
         ? fieldOptions_OptionTargetTypeFromJSON(object.target)
         : FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN,
-=======
-      retention: isSet(object.retention) ? fieldOptions_OptionRetentionFromJSON(object.retention) : 0,
-      target: isSet(object.target) ? fieldOptions_OptionTargetTypeFromJSON(object.target) : 0,
->>>>>>> upstream/main
       uninterpretedOption: globalThis.Array.isArray(object?.uninterpretedOption)
         ? object.uninterpretedOption.map((e: any) => UninterpretedOption.fromJSON(e))
         : [],
@@ -3923,11 +3887,7 @@ export const FieldOptions = {
     if (message.retention !== FieldOptions_OptionRetention.RETENTION_UNKNOWN) {
       obj.retention = fieldOptions_OptionRetentionToJSON(message.retention);
     }
-<<<<<<< HEAD
     if (message.target !== FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN) {
-=======
-    if (message.target !== 0) {
->>>>>>> upstream/main
       obj.target = fieldOptions_OptionTargetTypeToJSON(message.target);
     }
     if (message.uninterpretedOption?.length) {
@@ -3949,13 +3909,8 @@ export const FieldOptions = {
     message.deprecated = object.deprecated ?? false;
     message.weak = object.weak ?? false;
     message.debugRedact = object.debugRedact ?? false;
-<<<<<<< HEAD
     message.retention = object.retention ?? FieldOptions_OptionRetention.RETENTION_UNKNOWN;
     message.target = object.target ?? FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN;
-=======
-    message.retention = object.retention ?? 0;
-    message.target = object.target ?? 0;
->>>>>>> upstream/main
     message.uninterpretedOption = object.uninterpretedOption?.map((e) => UninterpretedOption.fromPartial(e)) || [];
     return message;
   },
@@ -4283,15 +4238,11 @@ export const ServiceOptions = {
 };
 
 function createBaseMethodOptions(): MethodOptions {
-<<<<<<< HEAD
   return {
     deprecated: false,
     idempotencyLevel: MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN,
     uninterpretedOption: [],
   };
-=======
-  return { deprecated: false, idempotencyLevel: 0, uninterpretedOption: [] };
->>>>>>> upstream/main
 }
 
 export const MethodOptions = {
@@ -4299,13 +4250,8 @@ export const MethodOptions = {
     if (message.deprecated === true) {
       writer.uint32(264).bool(message.deprecated);
     }
-<<<<<<< HEAD
     if (message.idempotencyLevel !== MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN) {
       writer.uint32(272).int32(methodOptions_IdempotencyLevelToNumber(message.idempotencyLevel));
-=======
-    if (message.idempotencyLevel !== 0) {
-      writer.uint32(272).int32(message.idempotencyLevel);
->>>>>>> upstream/main
     }
     for (const v of message.uninterpretedOption) {
       UninterpretedOption.encode(v!, writer.uint32(7994).fork()).ldelim();
@@ -4332,11 +4278,7 @@ export const MethodOptions = {
             break;
           }
 
-<<<<<<< HEAD
           message.idempotencyLevel = methodOptions_IdempotencyLevelFromJSON(reader.int32());
-=======
-          message.idempotencyLevel = reader.int32() as any;
->>>>>>> upstream/main
           continue;
         case 999:
           if (tag !== 7994) {
@@ -4359,11 +4301,7 @@ export const MethodOptions = {
       deprecated: isSet(object.deprecated) ? globalThis.Boolean(object.deprecated) : false,
       idempotencyLevel: isSet(object.idempotencyLevel)
         ? methodOptions_IdempotencyLevelFromJSON(object.idempotencyLevel)
-<<<<<<< HEAD
         : MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN,
-=======
-        : 0,
->>>>>>> upstream/main
       uninterpretedOption: globalThis.Array.isArray(object?.uninterpretedOption)
         ? object.uninterpretedOption.map((e: any) => UninterpretedOption.fromJSON(e))
         : [],
@@ -4390,11 +4328,7 @@ export const MethodOptions = {
   fromPartial(object: DeepPartial<MethodOptions>): MethodOptions {
     const message = createBaseMethodOptions();
     message.deprecated = object.deprecated ?? false;
-<<<<<<< HEAD
     message.idempotencyLevel = object.idempotencyLevel ?? MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN;
-=======
-    message.idempotencyLevel = object.idempotencyLevel ?? 0;
->>>>>>> upstream/main
     message.uninterpretedOption = object.uninterpretedOption?.map((e) => UninterpretedOption.fromPartial(e)) || [];
     return message;
   },
