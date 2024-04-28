@@ -83,7 +83,6 @@ const handleToggleOnlineMigration = (on: boolean, confirm: Defer<boolean>) => {
 
 const changeType = computed((): CheckRequest_ChangeType | undefined => {
   const spec = specForTask(issue.value.planEntity, selectedTask.value);
-  const config = spec?.changeDatabaseConfig;
   switch (spec?.changeDatabaseConfig?.type) {
     case Plan_ChangeDatabaseConfig_Type.MIGRATE:
       return CheckRequest_ChangeType.DDL;
