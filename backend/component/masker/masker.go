@@ -171,9 +171,6 @@ type RangeMasker struct {
 
 // NewRangeMasker returns a new RangeMasker.
 func NewRangeMasker(maskRangeSlice []*MaskRangeSlice) *RangeMasker {
-	sort.SliceStable(maskRangeSlice, func(i, j int) bool {
-		return maskRangeSlice[i].Start < maskRangeSlice[j].Start
-	})
 	return &RangeMasker{
 		MaskRangeSlice: maskRangeSlice,
 	}
@@ -225,6 +222,10 @@ func (m *RangeMasker) formatRanges(maxLength int32) []*MaskRangeSlice {
 			})
 		}
 	}
+
+	sort.SliceStable(mergedMaskRangeSlice, func(i, j int) bool {
+		return mergedMaskRangeSlice[i].Start < mergedMaskRangeSlice[j].Start
+	})
 
 	return mergedMaskRangeSlice
 }
