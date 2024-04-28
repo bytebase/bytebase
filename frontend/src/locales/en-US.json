@@ -789,7 +789,7 @@
         },
         "range-mask": {
           "self": "Range mask",
-          "label": "Range mask will replace the original value from start index to end index (end not included) with the substitution.",
+          "label": "Range mask will replace the original value from start index to end index (end not included) with the substitution. The index starts from 0.",
           "slice-start": "Slice start",
           "slice-start-label": "Slice start is the start index of the original value, start from 0 and should be less than stop.",
           "slice-end": "Slice end",
