@@ -9174,6 +9174,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
 | payload | [SheetPayload](#bytebase-v1-SheetPayload) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  | The SQL dialect. |
 
 
 
