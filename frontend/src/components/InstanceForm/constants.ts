@@ -43,7 +43,7 @@ export const EngineList = computed(() => {
   return supportedEngineV1List();
 });
 
-export const EngineIconPath: Record<number, string> = {
+export const EngineIconPath: Record<string, string> = {
   [Engine.MYSQL]: new URL("@/assets/db-mysql.png", import.meta.url).href,
   [Engine.POSTGRES]: new URL("@/assets/db-postgres.png", import.meta.url).href,
   [Engine.TIDB]: new URL("@/assets/db-tidb.png", import.meta.url).href,

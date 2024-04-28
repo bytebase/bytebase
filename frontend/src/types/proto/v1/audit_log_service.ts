@@ -69,16 +69,16 @@ export interface AuditLog {
 }
 
 export enum AuditLog_Severity {
-  DEFAULT = 0,
-  DEBUG = 1,
-  INFO = 2,
-  NOTICE = 3,
-  WARNING = 4,
-  ERROR = 5,
-  CRITICAL = 6,
-  ALERT = 7,
-  EMERGENCY = 8,
-  UNRECOGNIZED = -1,
+  DEFAULT = "DEFAULT",
+  DEBUG = "DEBUG",
+  INFO = "INFO",
+  NOTICE = "NOTICE",
+  WARNING = "WARNING",
+  ERROR = "ERROR",
+  CRITICAL = "CRITICAL",
+  ALERT = "ALERT",
+  EMERGENCY = "EMERGENCY",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function auditLog_SeverityFromJSON(object: any): AuditLog_Severity {
@@ -140,6 +140,32 @@ export function auditLog_SeverityToJSON(object: AuditLog_Severity): string {
     case AuditLog_Severity.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function auditLog_SeverityToNumber(object: AuditLog_Severity): number {
+  switch (object) {
+    case AuditLog_Severity.DEFAULT:
+      return 0;
+    case AuditLog_Severity.DEBUG:
+      return 1;
+    case AuditLog_Severity.INFO:
+      return 2;
+    case AuditLog_Severity.NOTICE:
+      return 3;
+    case AuditLog_Severity.WARNING:
+      return 4;
+    case AuditLog_Severity.ERROR:
+      return 5;
+    case AuditLog_Severity.CRITICAL:
+      return 6;
+    case AuditLog_Severity.ALERT:
+      return 7;
+    case AuditLog_Severity.EMERGENCY:
+      return 8;
+    case AuditLog_Severity.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -329,7 +355,7 @@ function createBaseAuditLog(): AuditLog {
     createTime: undefined,
     user: "",
     method: "",
-    severity: 0,
+    severity: AuditLog_Severity.DEFAULT,
     resource: "",
     request: "",
     response: "",
@@ -351,8 +377,8 @@ export const AuditLog = {
     if (message.method !== "") {
       writer.uint32(34).string(message.method);
     }
-    if (message.severity !== 0) {
-      writer.uint32(40).int32(message.severity);
+    if (message.severity !== AuditLog_Severity.DEFAULT) {
+      writer.uint32(40).int32(auditLog_SeverityToNumber(message.severity));
     }
     if (message.resource !== "") {
       writer.uint32(50).string(message.resource);
@@ -409,7 +435,7 @@ export const AuditLog = {
             break;
           }
 
-          message.severity = reader.int32() as any;
+          message.severity = auditLog_SeverityFromJSON(reader.int32());
           continue;
         case 6:
           if (tag !== 50) {
@@ -454,7 +480,7 @@ export const AuditLog = {
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       user: isSet(object.user) ? globalThis.String(object.user) : "",
       method: isSet(object.method) ? globalThis.String(object.method) : "",
-      severity: isSet(object.severity) ? auditLog_SeverityFromJSON(object.severity) : 0,
+      severity: isSet(object.severity) ? auditLog_SeverityFromJSON(object.severity) : AuditLog_Severity.DEFAULT,
       resource: isSet(object.resource) ? globalThis.String(object.resource) : "",
       request: isSet(object.request) ? globalThis.String(object.request) : "",
       response: isSet(object.response) ? globalThis.String(object.response) : "",
@@ -476,7 +502,7 @@ export const AuditLog = {
     if (message.method !== "") {
       obj.method = message.method;
     }
-    if (message.severity !== 0) {
+    if (message.severity !== AuditLog_Severity.DEFAULT) {
       obj.severity = auditLog_SeverityToJSON(message.severity);
     }
     if (message.resource !== "") {
@@ -503,7 +529,7 @@ export const AuditLog = {
     message.createTime = object.createTime ?? undefined;
     message.user = object.user ?? "";
     message.method = object.method ?? "";
-    message.severity = object.severity ?? 0;
+    message.severity = object.severity ?? AuditLog_Severity.DEFAULT;
     message.resource = object.resource ?? "";
     message.request = object.request ?? "";
     message.response = object.response ?? "";

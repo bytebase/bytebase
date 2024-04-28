@@ -4,7 +4,6 @@ import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { loggingServiceClient } from "@/grpcweb";
 import type { IdType, FindActivityMessage, ComposedIssue } from "@/types";
-import { UNKNOWN_ID, EMPTY_ID } from "@/types";
 import type { ExportFormat } from "@/types/proto/v1/common";
 import type { LogEntity } from "@/types/proto/v1/logging_service";
 import {
@@ -12,7 +11,7 @@ import {
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
 import { isDatabaseChangeRelatedIssue, extractRolloutUID } from "@/utils";
-import { userNamePrefix, getLogId, logNamePrefix } from "./common";
+import { userNamePrefix, getLogId } from "./common";
 
 dayjs.extend(utc);
 
@@ -97,16 +96,6 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
     return mergedList;
   };
 
-  const fetchActivityByUID = async (uid: IdType) => {
-    if (uid == EMPTY_ID || uid == UNKNOWN_ID) {
-      return;
-    }
-    const entity = await loggingServiceClient.getLog({
-      name: `${logNamePrefix}${uid}`,
-    });
-    return entity;
-  };
-
   const getResourceId = (activity: LogEntity): IdType => {
     return activity.resource.split("/").slice(-1)[0];
   };
@@ -129,7 +118,6 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
   return {
     fetchActivityList,
     fetchActivityListForIssueV1,
-    fetchActivityByUID,
     getActivityListByIssueV1,
     getResourceId,
     exportData,

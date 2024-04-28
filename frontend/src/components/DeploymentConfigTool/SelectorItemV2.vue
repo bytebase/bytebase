@@ -147,7 +147,7 @@ const resetValues = () => {
   props.selector.values = [];
 };
 
-const operatorToText = (op: number) => {
+const operatorToText = (op: string) => {
   if (op === OperatorType.OPERATOR_TYPE_IN) {
     return allowMultipleValues.value ? "in" : "is";
   }

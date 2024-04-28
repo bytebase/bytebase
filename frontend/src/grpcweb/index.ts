@@ -34,6 +34,7 @@ import {
   authInterceptorMiddleware,
   errorNotificationMiddleware,
 } from "./middlewares";
+import { AuditLogServiceDefinition } from "@/types/proto/v1/audit_log_service";
 
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
@@ -191,6 +192,11 @@ export const branchServiceClient = clientFactory.create(
 
 export const changelistServiceClient = clientFactory.create(
   ChangelistServiceDefinition,
+  channel
+);
+
+export const auditLogServiceClient = clientFactory.create(
+  AuditLogServiceDefinition,
   channel
 );
 

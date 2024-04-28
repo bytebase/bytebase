@@ -28,7 +28,7 @@ export default defineComponent({
       default: undefined,
     },
     tier: {
-      type: Number as PropType<EnvironmentTier>,
+      type: String as PropType<EnvironmentTier>,
       default: EnvironmentTier.UNPROTECTED,
     },
     tooltip: {
