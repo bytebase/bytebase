@@ -11,7 +11,7 @@ import type { Subscription } from "@/types/proto/v1/subscription_service";
 import {
   PlanType,
   planTypeFromJSON,
-  planTypeToJSON,
+  planTypeToNumber,
 } from "@/types/proto/v1/subscription_service";
 import { useSettingV1Store } from "./setting";
 
@@ -154,7 +154,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         return false;
       }
 
-      return !this.isExpired && matrix[this.currentPlan - 1];
+      return !this.isExpired && matrix[planTypeToNumber(this.currentPlan) - 1];
     },
     hasInstanceFeature(
       type: FeatureType,
@@ -189,7 +189,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
 
       for (let i = 0; i < matrix.length; i++) {
         if (matrix[i]) {
-          return (i + 1) as PlanType;
+          return planTypeFromJSON(i + 1) as PlanType;
         }
       }
       return PlanType.FREE;
@@ -250,7 +250,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
           stateMatrix.set(
             featureType,
             [PlanType.FREE, PlanType.TEAM, PlanType.ENTERPRISE].map((type) => {
-              return feature.matrix[planTypeToJSON(type)] ?? false;
+              return feature.matrix[type] ?? false;
             })
           );
         }

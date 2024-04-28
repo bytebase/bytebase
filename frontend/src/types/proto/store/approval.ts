@@ -21,11 +21,11 @@ export interface IssuePayloadApproval {
 }
 
 export enum IssuePayloadApproval_RiskLevel {
-  RISK_LEVEL_UNSPECIFIED = 0,
-  LOW = 1,
-  MODERATE = 2,
-  HIGH = 3,
-  UNRECOGNIZED = -1,
+  RISK_LEVEL_UNSPECIFIED = "RISK_LEVEL_UNSPECIFIED",
+  LOW = "LOW",
+  MODERATE = "MODERATE",
+  HIGH = "HIGH",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function issuePayloadApproval_RiskLevelFromJSON(object: any): IssuePayloadApproval_RiskLevel {
@@ -65,6 +65,22 @@ export function issuePayloadApproval_RiskLevelToJSON(object: IssuePayloadApprova
   }
 }
 
+export function issuePayloadApproval_RiskLevelToNumber(object: IssuePayloadApproval_RiskLevel): number {
+  switch (object) {
+    case IssuePayloadApproval_RiskLevel.RISK_LEVEL_UNSPECIFIED:
+      return 0;
+    case IssuePayloadApproval_RiskLevel.LOW:
+      return 1;
+    case IssuePayloadApproval_RiskLevel.MODERATE:
+      return 2;
+    case IssuePayloadApproval_RiskLevel.HIGH:
+      return 3;
+    case IssuePayloadApproval_RiskLevel.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface IssuePayloadApproval_Approver {
   /** The new status. */
   status: IssuePayloadApproval_Approver_Status;
@@ -73,11 +89,11 @@ export interface IssuePayloadApproval_Approver {
 }
 
 export enum IssuePayloadApproval_Approver_Status {
-  STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  APPROVED = 2,
-  REJECTED = 3,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function issuePayloadApproval_Approver_StatusFromJSON(object: any): IssuePayloadApproval_Approver_Status {
@@ -117,6 +133,22 @@ export function issuePayloadApproval_Approver_StatusToJSON(object: IssuePayloadA
   }
 }
 
+export function issuePayloadApproval_Approver_StatusToNumber(object: IssuePayloadApproval_Approver_Status): number {
+  switch (object) {
+    case IssuePayloadApproval_Approver_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case IssuePayloadApproval_Approver_Status.PENDING:
+      return 1;
+    case IssuePayloadApproval_Approver_Status.APPROVED:
+      return 2;
+    case IssuePayloadApproval_Approver_Status.REJECTED:
+      return 3;
+    case IssuePayloadApproval_Approver_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface ApprovalTemplate {
   flow: ApprovalFlow | undefined;
   title: string;
@@ -139,10 +171,10 @@ export interface ApprovalStep {
  * ANY means approving any node will proceed.
  */
 export enum ApprovalStep_Type {
-  TYPE_UNSPECIFIED = 0,
-  ALL = 1,
-  ANY = 2,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  ALL = "ALL",
+  ANY = "ANY",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function approvalStep_TypeFromJSON(object: any): ApprovalStep_Type {
@@ -177,6 +209,20 @@ export function approvalStep_TypeToJSON(object: ApprovalStep_Type): string {
   }
 }
 
+export function approvalStep_TypeToNumber(object: ApprovalStep_Type): number {
+  switch (object) {
+    case ApprovalStep_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case ApprovalStep_Type.ALL:
+      return 1;
+    case ApprovalStep_Type.ANY:
+      return 2;
+    case ApprovalStep_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface ApprovalNode {
   type: ApprovalNode_Type;
   groupValue?:
@@ -194,9 +240,9 @@ export interface ApprovalNode {
  * See GroupValue below for the predefined user groups.
  */
 export enum ApprovalNode_Type {
-  TYPE_UNSPECIFIED = 0,
-  ANY_IN_GROUP = 1,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  ANY_IN_GROUP = "ANY_IN_GROUP",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function approvalNode_TypeFromJSON(object: any): ApprovalNode_Type {
@@ -226,6 +272,18 @@ export function approvalNode_TypeToJSON(object: ApprovalNode_Type): string {
   }
 }
 
+export function approvalNode_TypeToNumber(object: ApprovalNode_Type): number {
+  switch (object) {
+    case ApprovalNode_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case ApprovalNode_Type.ANY_IN_GROUP:
+      return 1;
+    case ApprovalNode_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 /**
  * The predefined user groups are:
  * - WORKSPACE_OWNER
@@ -234,12 +292,12 @@ export function approvalNode_TypeToJSON(object: ApprovalNode_Type): string {
  * - PROJECT_MEMBER
  */
 export enum ApprovalNode_GroupValue {
-  GROUP_VALUE_UNSPECIFILED = 0,
-  WORKSPACE_OWNER = 1,
-  WORKSPACE_DBA = 2,
-  PROJECT_OWNER = 3,
-  PROJECT_MEMBER = 4,
-  UNRECOGNIZED = -1,
+  GROUP_VALUE_UNSPECIFILED = "GROUP_VALUE_UNSPECIFILED",
+  WORKSPACE_OWNER = "WORKSPACE_OWNER",
+  WORKSPACE_DBA = "WORKSPACE_DBA",
+  PROJECT_OWNER = "PROJECT_OWNER",
+  PROJECT_MEMBER = "PROJECT_MEMBER",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function approvalNode_GroupValueFromJSON(object: any): ApprovalNode_GroupValue {
@@ -284,8 +342,32 @@ export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): 
   }
 }
 
+export function approvalNode_GroupValueToNumber(object: ApprovalNode_GroupValue): number {
+  switch (object) {
+    case ApprovalNode_GroupValue.GROUP_VALUE_UNSPECIFILED:
+      return 0;
+    case ApprovalNode_GroupValue.WORKSPACE_OWNER:
+      return 1;
+    case ApprovalNode_GroupValue.WORKSPACE_DBA:
+      return 2;
+    case ApprovalNode_GroupValue.PROJECT_OWNER:
+      return 3;
+    case ApprovalNode_GroupValue.PROJECT_MEMBER:
+      return 4;
+    case ApprovalNode_GroupValue.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 function createBaseIssuePayloadApproval(): IssuePayloadApproval {
-  return { approvalTemplates: [], approvers: [], approvalFindingDone: false, approvalFindingError: "", riskLevel: 0 };
+  return {
+    approvalTemplates: [],
+    approvers: [],
+    approvalFindingDone: false,
+    approvalFindingError: "",
+    riskLevel: IssuePayloadApproval_RiskLevel.RISK_LEVEL_UNSPECIFIED,
+  };
 }
 
 export const IssuePayloadApproval = {
@@ -302,8 +384,8 @@ export const IssuePayloadApproval = {
     if (message.approvalFindingError !== "") {
       writer.uint32(34).string(message.approvalFindingError);
     }
-    if (message.riskLevel !== 0) {
-      writer.uint32(40).int32(message.riskLevel);
+    if (message.riskLevel !== IssuePayloadApproval_RiskLevel.RISK_LEVEL_UNSPECIFIED) {
+      writer.uint32(40).int32(issuePayloadApproval_RiskLevelToNumber(message.riskLevel));
     }
     return writer;
   },
@@ -348,7 +430,7 @@ export const IssuePayloadApproval = {
             break;
           }
 
-          message.riskLevel = reader.int32() as any;
+          message.riskLevel = issuePayloadApproval_RiskLevelFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -369,7 +451,9 @@ export const IssuePayloadApproval = {
         : [],
       approvalFindingDone: isSet(object.approvalFindingDone) ? globalThis.Boolean(object.approvalFindingDone) : false,
       approvalFindingError: isSet(object.approvalFindingError) ? globalThis.String(object.approvalFindingError) : "",
-      riskLevel: isSet(object.riskLevel) ? issuePayloadApproval_RiskLevelFromJSON(object.riskLevel) : 0,
+      riskLevel: isSet(object.riskLevel)
+        ? issuePayloadApproval_RiskLevelFromJSON(object.riskLevel)
+        : IssuePayloadApproval_RiskLevel.RISK_LEVEL_UNSPECIFIED,
     };
   },
 
@@ -387,7 +471,7 @@ export const IssuePayloadApproval = {
     if (message.approvalFindingError !== "") {
       obj.approvalFindingError = message.approvalFindingError;
     }
-    if (message.riskLevel !== 0) {
+    if (message.riskLevel !== IssuePayloadApproval_RiskLevel.RISK_LEVEL_UNSPECIFIED) {
       obj.riskLevel = issuePayloadApproval_RiskLevelToJSON(message.riskLevel);
     }
     return obj;
@@ -402,19 +486,19 @@ export const IssuePayloadApproval = {
     message.approvers = object.approvers?.map((e) => IssuePayloadApproval_Approver.fromPartial(e)) || [];
     message.approvalFindingDone = object.approvalFindingDone ?? false;
     message.approvalFindingError = object.approvalFindingError ?? "";
-    message.riskLevel = object.riskLevel ?? 0;
+    message.riskLevel = object.riskLevel ?? IssuePayloadApproval_RiskLevel.RISK_LEVEL_UNSPECIFIED;
     return message;
   },
 };
 
 function createBaseIssuePayloadApproval_Approver(): IssuePayloadApproval_Approver {
-  return { status: 0, principalId: 0 };
+  return { status: IssuePayloadApproval_Approver_Status.STATUS_UNSPECIFIED, principalId: 0 };
 }
 
 export const IssuePayloadApproval_Approver = {
   encode(message: IssuePayloadApproval_Approver, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.status !== 0) {
-      writer.uint32(8).int32(message.status);
+    if (message.status !== IssuePayloadApproval_Approver_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(8).int32(issuePayloadApproval_Approver_StatusToNumber(message.status));
     }
     if (message.principalId !== 0) {
       writer.uint32(16).int32(message.principalId);
@@ -434,7 +518,7 @@ export const IssuePayloadApproval_Approver = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = issuePayloadApproval_Approver_StatusFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 16) {
@@ -454,14 +538,16 @@ export const IssuePayloadApproval_Approver = {
 
   fromJSON(object: any): IssuePayloadApproval_Approver {
     return {
-      status: isSet(object.status) ? issuePayloadApproval_Approver_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status)
+        ? issuePayloadApproval_Approver_StatusFromJSON(object.status)
+        : IssuePayloadApproval_Approver_Status.STATUS_UNSPECIFIED,
       principalId: isSet(object.principalId) ? globalThis.Number(object.principalId) : 0,
     };
   },
 
   toJSON(message: IssuePayloadApproval_Approver): unknown {
     const obj: any = {};
-    if (message.status !== 0) {
+    if (message.status !== IssuePayloadApproval_Approver_Status.STATUS_UNSPECIFIED) {
       obj.status = issuePayloadApproval_Approver_StatusToJSON(message.status);
     }
     if (message.principalId !== 0) {
@@ -475,7 +561,7 @@ export const IssuePayloadApproval_Approver = {
   },
   fromPartial(object: DeepPartial<IssuePayloadApproval_Approver>): IssuePayloadApproval_Approver {
     const message = createBaseIssuePayloadApproval_Approver();
-    message.status = object.status ?? 0;
+    message.status = object.status ?? IssuePayloadApproval_Approver_Status.STATUS_UNSPECIFIED;
     message.principalId = object.principalId ?? 0;
     return message;
   },
@@ -647,13 +733,13 @@ export const ApprovalFlow = {
 };
 
 function createBaseApprovalStep(): ApprovalStep {
-  return { type: 0, nodes: [] };
+  return { type: ApprovalStep_Type.TYPE_UNSPECIFIED, nodes: [] };
 }
 
 export const ApprovalStep = {
   encode(message: ApprovalStep, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
+    if (message.type !== ApprovalStep_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(approvalStep_TypeToNumber(message.type));
     }
     for (const v of message.nodes) {
       ApprovalNode.encode(v!, writer.uint32(18).fork()).ldelim();
@@ -673,7 +759,7 @@ export const ApprovalStep = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = approvalStep_TypeFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -693,14 +779,14 @@ export const ApprovalStep = {
 
   fromJSON(object: any): ApprovalStep {
     return {
-      type: isSet(object.type) ? approvalStep_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? approvalStep_TypeFromJSON(object.type) : ApprovalStep_Type.TYPE_UNSPECIFIED,
       nodes: globalThis.Array.isArray(object?.nodes) ? object.nodes.map((e: any) => ApprovalNode.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: ApprovalStep): unknown {
     const obj: any = {};
-    if (message.type !== 0) {
+    if (message.type !== ApprovalStep_Type.TYPE_UNSPECIFIED) {
       obj.type = approvalStep_TypeToJSON(message.type);
     }
     if (message.nodes?.length) {
@@ -714,23 +800,28 @@ export const ApprovalStep = {
   },
   fromPartial(object: DeepPartial<ApprovalStep>): ApprovalStep {
     const message = createBaseApprovalStep();
-    message.type = object.type ?? 0;
+    message.type = object.type ?? ApprovalStep_Type.TYPE_UNSPECIFIED;
     message.nodes = object.nodes?.map((e) => ApprovalNode.fromPartial(e)) || [];
     return message;
   },
 };
 
 function createBaseApprovalNode(): ApprovalNode {
-  return { type: 0, groupValue: undefined, role: undefined, externalNodeId: undefined };
+  return {
+    type: ApprovalNode_Type.TYPE_UNSPECIFIED,
+    groupValue: undefined,
+    role: undefined,
+    externalNodeId: undefined,
+  };
 }
 
 export const ApprovalNode = {
   encode(message: ApprovalNode, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
+    if (message.type !== ApprovalNode_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(approvalNode_TypeToNumber(message.type));
     }
     if (message.groupValue !== undefined) {
-      writer.uint32(16).int32(message.groupValue);
+      writer.uint32(16).int32(approvalNode_GroupValueToNumber(message.groupValue));
     }
     if (message.role !== undefined) {
       writer.uint32(26).string(message.role);
@@ -753,14 +844,14 @@ export const ApprovalNode = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = approvalNode_TypeFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 16) {
             break;
           }
 
-          message.groupValue = reader.int32() as any;
+          message.groupValue = approvalNode_GroupValueFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -787,7 +878,7 @@ export const ApprovalNode = {
 
   fromJSON(object: any): ApprovalNode {
     return {
-      type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : ApprovalNode_Type.TYPE_UNSPECIFIED,
       groupValue: isSet(object.groupValue) ? approvalNode_GroupValueFromJSON(object.groupValue) : undefined,
       role: isSet(object.role) ? globalThis.String(object.role) : undefined,
       externalNodeId: isSet(object.externalNodeId) ? globalThis.String(object.externalNodeId) : undefined,
@@ -796,7 +887,7 @@ export const ApprovalNode = {
 
   toJSON(message: ApprovalNode): unknown {
     const obj: any = {};
-    if (message.type !== 0) {
+    if (message.type !== ApprovalNode_Type.TYPE_UNSPECIFIED) {
       obj.type = approvalNode_TypeToJSON(message.type);
     }
     if (message.groupValue !== undefined) {
@@ -816,7 +907,7 @@ export const ApprovalNode = {
   },
   fromPartial(object: DeepPartial<ApprovalNode>): ApprovalNode {
     const message = createBaseApprovalNode();
-    message.type = object.type ?? 0;
+    message.type = object.type ?? ApprovalNode_Type.TYPE_UNSPECIFIED;
     message.groupValue = object.groupValue ?? undefined;
     message.role = object.role ?? undefined;
     message.externalNodeId = object.externalNodeId ?? undefined;

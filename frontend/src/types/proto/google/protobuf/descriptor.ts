@@ -174,43 +174,43 @@ export enum FieldDescriptorProto_Type {
    * TYPE_DOUBLE - 0 is reserved for errors.
    * Order is weird for historical reasons.
    */
-  TYPE_DOUBLE = 1,
-  TYPE_FLOAT = 2,
+  TYPE_DOUBLE = "TYPE_DOUBLE",
+  TYPE_FLOAT = "TYPE_FLOAT",
   /**
    * TYPE_INT64 - Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT64 if
    * negative values are likely.
    */
-  TYPE_INT64 = 3,
-  TYPE_UINT64 = 4,
+  TYPE_INT64 = "TYPE_INT64",
+  TYPE_UINT64 = "TYPE_UINT64",
   /**
    * TYPE_INT32 - Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT32 if
    * negative values are likely.
    */
-  TYPE_INT32 = 5,
-  TYPE_FIXED64 = 6,
-  TYPE_FIXED32 = 7,
-  TYPE_BOOL = 8,
-  TYPE_STRING = 9,
+  TYPE_INT32 = "TYPE_INT32",
+  TYPE_FIXED64 = "TYPE_FIXED64",
+  TYPE_FIXED32 = "TYPE_FIXED32",
+  TYPE_BOOL = "TYPE_BOOL",
+  TYPE_STRING = "TYPE_STRING",
   /**
    * TYPE_GROUP - Tag-delimited aggregate.
    * Group type is deprecated and not supported in proto3. However, Proto3
    * implementations should still be able to parse the group wire format and
    * treat group fields as unknown fields.
    */
-  TYPE_GROUP = 10,
+  TYPE_GROUP = "TYPE_GROUP",
   /** TYPE_MESSAGE - Length-delimited aggregate. */
-  TYPE_MESSAGE = 11,
+  TYPE_MESSAGE = "TYPE_MESSAGE",
   /** TYPE_BYTES - New in version 2. */
-  TYPE_BYTES = 12,
-  TYPE_UINT32 = 13,
-  TYPE_ENUM = 14,
-  TYPE_SFIXED32 = 15,
-  TYPE_SFIXED64 = 16,
+  TYPE_BYTES = "TYPE_BYTES",
+  TYPE_UINT32 = "TYPE_UINT32",
+  TYPE_ENUM = "TYPE_ENUM",
+  TYPE_SFIXED32 = "TYPE_SFIXED32",
+  TYPE_SFIXED64 = "TYPE_SFIXED64",
   /** TYPE_SINT32 - Uses ZigZag encoding. */
-  TYPE_SINT32 = 17,
+  TYPE_SINT32 = "TYPE_SINT32",
   /** TYPE_SINT64 - Uses ZigZag encoding. */
-  TYPE_SINT64 = 18,
-  UNRECOGNIZED = -1,
+  TYPE_SINT64 = "TYPE_SINT64",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function fieldDescriptorProto_TypeFromJSON(object: any): FieldDescriptorProto_Type {
@@ -320,12 +320,56 @@ export function fieldDescriptorProto_TypeToJSON(object: FieldDescriptorProto_Typ
   }
 }
 
+export function fieldDescriptorProto_TypeToNumber(object: FieldDescriptorProto_Type): number {
+  switch (object) {
+    case FieldDescriptorProto_Type.TYPE_DOUBLE:
+      return 1;
+    case FieldDescriptorProto_Type.TYPE_FLOAT:
+      return 2;
+    case FieldDescriptorProto_Type.TYPE_INT64:
+      return 3;
+    case FieldDescriptorProto_Type.TYPE_UINT64:
+      return 4;
+    case FieldDescriptorProto_Type.TYPE_INT32:
+      return 5;
+    case FieldDescriptorProto_Type.TYPE_FIXED64:
+      return 6;
+    case FieldDescriptorProto_Type.TYPE_FIXED32:
+      return 7;
+    case FieldDescriptorProto_Type.TYPE_BOOL:
+      return 8;
+    case FieldDescriptorProto_Type.TYPE_STRING:
+      return 9;
+    case FieldDescriptorProto_Type.TYPE_GROUP:
+      return 10;
+    case FieldDescriptorProto_Type.TYPE_MESSAGE:
+      return 11;
+    case FieldDescriptorProto_Type.TYPE_BYTES:
+      return 12;
+    case FieldDescriptorProto_Type.TYPE_UINT32:
+      return 13;
+    case FieldDescriptorProto_Type.TYPE_ENUM:
+      return 14;
+    case FieldDescriptorProto_Type.TYPE_SFIXED32:
+      return 15;
+    case FieldDescriptorProto_Type.TYPE_SFIXED64:
+      return 16;
+    case FieldDescriptorProto_Type.TYPE_SINT32:
+      return 17;
+    case FieldDescriptorProto_Type.TYPE_SINT64:
+      return 18;
+    case FieldDescriptorProto_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum FieldDescriptorProto_Label {
   /** LABEL_OPTIONAL - 0 is reserved for errors */
-  LABEL_OPTIONAL = 1,
-  LABEL_REQUIRED = 2,
-  LABEL_REPEATED = 3,
-  UNRECOGNIZED = -1,
+  LABEL_OPTIONAL = "LABEL_OPTIONAL",
+  LABEL_REQUIRED = "LABEL_REQUIRED",
+  LABEL_REPEATED = "LABEL_REPEATED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function fieldDescriptorProto_LabelFromJSON(object: any): FieldDescriptorProto_Label {
@@ -357,6 +401,20 @@ export function fieldDescriptorProto_LabelToJSON(object: FieldDescriptorProto_La
     case FieldDescriptorProto_Label.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function fieldDescriptorProto_LabelToNumber(object: FieldDescriptorProto_Label): number {
+  switch (object) {
+    case FieldDescriptorProto_Label.LABEL_OPTIONAL:
+      return 1;
+    case FieldDescriptorProto_Label.LABEL_REQUIRED:
+      return 2;
+    case FieldDescriptorProto_Label.LABEL_REPEATED:
+      return 3;
+    case FieldDescriptorProto_Label.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -557,12 +615,12 @@ export interface FileOptions {
 /** Generated classes can be optimized for speed or code size. */
 export enum FileOptions_OptimizeMode {
   /** SPEED - Generate complete code for parsing, serialization, */
-  SPEED = 1,
+  SPEED = "SPEED",
   /** CODE_SIZE - etc. */
-  CODE_SIZE = 2,
+  CODE_SIZE = "CODE_SIZE",
   /** LITE_RUNTIME - Generate code using MessageLite and the lite runtime. */
-  LITE_RUNTIME = 3,
-  UNRECOGNIZED = -1,
+  LITE_RUNTIME = "LITE_RUNTIME",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function fileOptions_OptimizeModeFromJSON(object: any): FileOptions_OptimizeMode {
@@ -594,6 +652,20 @@ export function fileOptions_OptimizeModeToJSON(object: FileOptions_OptimizeMode)
     case FileOptions_OptimizeMode.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function fileOptions_OptimizeModeToNumber(object: FileOptions_OptimizeMode): number {
+  switch (object) {
+    case FileOptions_OptimizeMode.SPEED:
+      return 1;
+    case FileOptions_OptimizeMode.CODE_SIZE:
+      return 2;
+    case FileOptions_OptimizeMode.LITE_RUNTIME:
+      return 3;
+    case FileOptions_OptimizeMode.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -766,10 +838,10 @@ export interface FieldOptions {
 
 export enum FieldOptions_CType {
   /** STRING - Default mode. */
-  STRING = 0,
-  CORD = 1,
-  STRING_PIECE = 2,
-  UNRECOGNIZED = -1,
+  STRING = "STRING",
+  CORD = "CORD",
+  STRING_PIECE = "STRING_PIECE",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function fieldOptions_CTypeFromJSON(object: any): FieldOptions_CType {
@@ -804,14 +876,28 @@ export function fieldOptions_CTypeToJSON(object: FieldOptions_CType): string {
   }
 }
 
+export function fieldOptions_CTypeToNumber(object: FieldOptions_CType): number {
+  switch (object) {
+    case FieldOptions_CType.STRING:
+      return 0;
+    case FieldOptions_CType.CORD:
+      return 1;
+    case FieldOptions_CType.STRING_PIECE:
+      return 2;
+    case FieldOptions_CType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum FieldOptions_JSType {
   /** JS_NORMAL - Use the default type. */
-  JS_NORMAL = 0,
+  JS_NORMAL = "JS_NORMAL",
   /** JS_STRING - Use JavaScript strings. */
-  JS_STRING = 1,
+  JS_STRING = "JS_STRING",
   /** JS_NUMBER - Use JavaScript numbers. */
-  JS_NUMBER = 2,
-  UNRECOGNIZED = -1,
+  JS_NUMBER = "JS_NUMBER",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function fieldOptions_JSTypeFromJSON(object: any): FieldOptions_JSType {
@@ -846,16 +932,30 @@ export function fieldOptions_JSTypeToJSON(object: FieldOptions_JSType): string {
   }
 }
 
+export function fieldOptions_JSTypeToNumber(object: FieldOptions_JSType): number {
+  switch (object) {
+    case FieldOptions_JSType.JS_NORMAL:
+      return 0;
+    case FieldOptions_JSType.JS_STRING:
+      return 1;
+    case FieldOptions_JSType.JS_NUMBER:
+      return 2;
+    case FieldOptions_JSType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 /**
  * If set to RETENTION_SOURCE, the option will be omitted from the binary.
  * Note: as of January 2023, support for this is in progress and does not yet
  * have an effect (b/264593489).
  */
 export enum FieldOptions_OptionRetention {
-  RETENTION_UNKNOWN = 0,
-  RETENTION_RUNTIME = 1,
-  RETENTION_SOURCE = 2,
-  UNRECOGNIZED = -1,
+  RETENTION_UNKNOWN = "RETENTION_UNKNOWN",
+  RETENTION_RUNTIME = "RETENTION_RUNTIME",
+  RETENTION_SOURCE = "RETENTION_SOURCE",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function fieldOptions_OptionRetentionFromJSON(object: any): FieldOptions_OptionRetention {
@@ -890,6 +990,20 @@ export function fieldOptions_OptionRetentionToJSON(object: FieldOptions_OptionRe
   }
 }
 
+export function fieldOptions_OptionRetentionToNumber(object: FieldOptions_OptionRetention): number {
+  switch (object) {
+    case FieldOptions_OptionRetention.RETENTION_UNKNOWN:
+      return 0;
+    case FieldOptions_OptionRetention.RETENTION_RUNTIME:
+      return 1;
+    case FieldOptions_OptionRetention.RETENTION_SOURCE:
+      return 2;
+    case FieldOptions_OptionRetention.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 /**
  * This indicates the types of entities that the field may apply to when used
  * as an option. If it is unset, then the field may be freely used as an
@@ -897,17 +1011,17 @@ export function fieldOptions_OptionRetentionToJSON(object: FieldOptions_OptionRe
  * in progress and does not yet have an effect (b/264593489).
  */
 export enum FieldOptions_OptionTargetType {
-  TARGET_TYPE_UNKNOWN = 0,
-  TARGET_TYPE_FILE = 1,
-  TARGET_TYPE_EXTENSION_RANGE = 2,
-  TARGET_TYPE_MESSAGE = 3,
-  TARGET_TYPE_FIELD = 4,
-  TARGET_TYPE_ONEOF = 5,
-  TARGET_TYPE_ENUM = 6,
-  TARGET_TYPE_ENUM_ENTRY = 7,
-  TARGET_TYPE_SERVICE = 8,
-  TARGET_TYPE_METHOD = 9,
-  UNRECOGNIZED = -1,
+  TARGET_TYPE_UNKNOWN = "TARGET_TYPE_UNKNOWN",
+  TARGET_TYPE_FILE = "TARGET_TYPE_FILE",
+  TARGET_TYPE_EXTENSION_RANGE = "TARGET_TYPE_EXTENSION_RANGE",
+  TARGET_TYPE_MESSAGE = "TARGET_TYPE_MESSAGE",
+  TARGET_TYPE_FIELD = "TARGET_TYPE_FIELD",
+  TARGET_TYPE_ONEOF = "TARGET_TYPE_ONEOF",
+  TARGET_TYPE_ENUM = "TARGET_TYPE_ENUM",
+  TARGET_TYPE_ENUM_ENTRY = "TARGET_TYPE_ENUM_ENTRY",
+  TARGET_TYPE_SERVICE = "TARGET_TYPE_SERVICE",
+  TARGET_TYPE_METHOD = "TARGET_TYPE_METHOD",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function fieldOptions_OptionTargetTypeFromJSON(object: any): FieldOptions_OptionTargetType {
@@ -974,6 +1088,34 @@ export function fieldOptions_OptionTargetTypeToJSON(object: FieldOptions_OptionT
     case FieldOptions_OptionTargetType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function fieldOptions_OptionTargetTypeToNumber(object: FieldOptions_OptionTargetType): number {
+  switch (object) {
+    case FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN:
+      return 0;
+    case FieldOptions_OptionTargetType.TARGET_TYPE_FILE:
+      return 1;
+    case FieldOptions_OptionTargetType.TARGET_TYPE_EXTENSION_RANGE:
+      return 2;
+    case FieldOptions_OptionTargetType.TARGET_TYPE_MESSAGE:
+      return 3;
+    case FieldOptions_OptionTargetType.TARGET_TYPE_FIELD:
+      return 4;
+    case FieldOptions_OptionTargetType.TARGET_TYPE_ONEOF:
+      return 5;
+    case FieldOptions_OptionTargetType.TARGET_TYPE_ENUM:
+      return 6;
+    case FieldOptions_OptionTargetType.TARGET_TYPE_ENUM_ENTRY:
+      return 7;
+    case FieldOptions_OptionTargetType.TARGET_TYPE_SERVICE:
+      return 8;
+    case FieldOptions_OptionTargetType.TARGET_TYPE_METHOD:
+      return 9;
+    case FieldOptions_OptionTargetType.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -1053,12 +1195,12 @@ export interface MethodOptions {
  * methods, and PUT verb for idempotent methods instead of the default POST.
  */
 export enum MethodOptions_IdempotencyLevel {
-  IDEMPOTENCY_UNKNOWN = 0,
+  IDEMPOTENCY_UNKNOWN = "IDEMPOTENCY_UNKNOWN",
   /** NO_SIDE_EFFECTS - implies idempotent */
-  NO_SIDE_EFFECTS = 1,
+  NO_SIDE_EFFECTS = "NO_SIDE_EFFECTS",
   /** IDEMPOTENT - idempotent, but may have side effects */
-  IDEMPOTENT = 2,
-  UNRECOGNIZED = -1,
+  IDEMPOTENT = "IDEMPOTENT",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function methodOptions_IdempotencyLevelFromJSON(object: any): MethodOptions_IdempotencyLevel {
@@ -1090,6 +1232,20 @@ export function methodOptions_IdempotencyLevelToJSON(object: MethodOptions_Idemp
     case MethodOptions_IdempotencyLevel.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function methodOptions_IdempotencyLevelToNumber(object: MethodOptions_IdempotencyLevel): number {
+  switch (object) {
+    case MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN:
+      return 0;
+    case MethodOptions_IdempotencyLevel.NO_SIDE_EFFECTS:
+      return 1;
+    case MethodOptions_IdempotencyLevel.IDEMPOTENT:
+      return 2;
+    case MethodOptions_IdempotencyLevel.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -1310,12 +1466,12 @@ export interface GeneratedCodeInfo_Annotation {
  */
 export enum GeneratedCodeInfo_Annotation_Semantic {
   /** NONE - There is no effect or the effect is indescribable. */
-  NONE = 0,
+  NONE = "NONE",
   /** SET - The element is set or otherwise mutated. */
-  SET = 1,
+  SET = "SET",
   /** ALIAS - An alias to the element is returned. */
-  ALIAS = 2,
-  UNRECOGNIZED = -1,
+  ALIAS = "ALIAS",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function generatedCodeInfo_Annotation_SemanticFromJSON(object: any): GeneratedCodeInfo_Annotation_Semantic {
@@ -1347,6 +1503,20 @@ export function generatedCodeInfo_Annotation_SemanticToJSON(object: GeneratedCod
     case GeneratedCodeInfo_Annotation_Semantic.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function generatedCodeInfo_Annotation_SemanticToNumber(object: GeneratedCodeInfo_Annotation_Semantic): number {
+  switch (object) {
+    case GeneratedCodeInfo_Annotation_Semantic.NONE:
+      return 0;
+    case GeneratedCodeInfo_Annotation_Semantic.SET:
+      return 1;
+    case GeneratedCodeInfo_Annotation_Semantic.ALIAS:
+      return 2;
+    case GeneratedCodeInfo_Annotation_Semantic.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -2157,8 +2327,8 @@ function createBaseFieldDescriptorProto(): FieldDescriptorProto {
   return {
     name: "",
     number: 0,
-    label: 1,
-    type: 1,
+    label: FieldDescriptorProto_Label.LABEL_OPTIONAL,
+    type: FieldDescriptorProto_Type.TYPE_DOUBLE,
     typeName: "",
     extendee: "",
     defaultValue: "",
@@ -2177,11 +2347,11 @@ export const FieldDescriptorProto = {
     if (message.number !== 0) {
       writer.uint32(24).int32(message.number);
     }
-    if (message.label !== 1) {
-      writer.uint32(32).int32(message.label);
+    if (message.label !== FieldDescriptorProto_Label.LABEL_OPTIONAL) {
+      writer.uint32(32).int32(fieldDescriptorProto_LabelToNumber(message.label));
     }
-    if (message.type !== 1) {
-      writer.uint32(40).int32(message.type);
+    if (message.type !== FieldDescriptorProto_Type.TYPE_DOUBLE) {
+      writer.uint32(40).int32(fieldDescriptorProto_TypeToNumber(message.type));
     }
     if (message.typeName !== "") {
       writer.uint32(50).string(message.typeName);
@@ -2233,14 +2403,14 @@ export const FieldDescriptorProto = {
             break;
           }
 
-          message.label = reader.int32() as any;
+          message.label = fieldDescriptorProto_LabelFromJSON(reader.int32());
           continue;
         case 5:
           if (tag !== 40) {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = fieldDescriptorProto_TypeFromJSON(reader.int32());
           continue;
         case 6:
           if (tag !== 50) {
@@ -2304,8 +2474,10 @@ export const FieldDescriptorProto = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       number: isSet(object.number) ? globalThis.Number(object.number) : 0,
-      label: isSet(object.label) ? fieldDescriptorProto_LabelFromJSON(object.label) : 1,
-      type: isSet(object.type) ? fieldDescriptorProto_TypeFromJSON(object.type) : 1,
+      label: isSet(object.label)
+        ? fieldDescriptorProto_LabelFromJSON(object.label)
+        : FieldDescriptorProto_Label.LABEL_OPTIONAL,
+      type: isSet(object.type) ? fieldDescriptorProto_TypeFromJSON(object.type) : FieldDescriptorProto_Type.TYPE_DOUBLE,
       typeName: isSet(object.typeName) ? globalThis.String(object.typeName) : "",
       extendee: isSet(object.extendee) ? globalThis.String(object.extendee) : "",
       defaultValue: isSet(object.defaultValue) ? globalThis.String(object.defaultValue) : "",
@@ -2324,10 +2496,10 @@ export const FieldDescriptorProto = {
     if (message.number !== 0) {
       obj.number = Math.round(message.number);
     }
-    if (message.label !== 1) {
+    if (message.label !== FieldDescriptorProto_Label.LABEL_OPTIONAL) {
       obj.label = fieldDescriptorProto_LabelToJSON(message.label);
     }
-    if (message.type !== 1) {
+    if (message.type !== FieldDescriptorProto_Type.TYPE_DOUBLE) {
       obj.type = fieldDescriptorProto_TypeToJSON(message.type);
     }
     if (message.typeName !== "") {
@@ -2361,8 +2533,8 @@ export const FieldDescriptorProto = {
     const message = createBaseFieldDescriptorProto();
     message.name = object.name ?? "";
     message.number = object.number ?? 0;
-    message.label = object.label ?? 1;
-    message.type = object.type ?? 1;
+    message.label = object.label ?? FieldDescriptorProto_Label.LABEL_OPTIONAL;
+    message.type = object.type ?? FieldDescriptorProto_Type.TYPE_DOUBLE;
     message.typeName = object.typeName ?? "";
     message.extendee = object.extendee ?? "";
     message.defaultValue = object.defaultValue ?? "";
@@ -2988,7 +3160,7 @@ function createBaseFileOptions(): FileOptions {
     javaMultipleFiles: false,
     javaGenerateEqualsAndHash: false,
     javaStringCheckUtf8: false,
-    optimizeFor: 1,
+    optimizeFor: FileOptions_OptimizeMode.SPEED,
     goPackage: "",
     ccGenericServices: false,
     javaGenericServices: false,
@@ -3024,8 +3196,8 @@ export const FileOptions = {
     if (message.javaStringCheckUtf8 === true) {
       writer.uint32(216).bool(message.javaStringCheckUtf8);
     }
-    if (message.optimizeFor !== 1) {
-      writer.uint32(72).int32(message.optimizeFor);
+    if (message.optimizeFor !== FileOptions_OptimizeMode.SPEED) {
+      writer.uint32(72).int32(fileOptions_OptimizeModeToNumber(message.optimizeFor));
     }
     if (message.goPackage !== "") {
       writer.uint32(90).string(message.goPackage);
@@ -3122,7 +3294,7 @@ export const FileOptions = {
             break;
           }
 
-          message.optimizeFor = reader.int32() as any;
+          message.optimizeFor = fileOptions_OptimizeModeFromJSON(reader.int32());
           continue;
         case 11:
           if (tag !== 90) {
@@ -3247,7 +3419,9 @@ export const FileOptions = {
         ? globalThis.Boolean(object.javaGenerateEqualsAndHash)
         : false,
       javaStringCheckUtf8: isSet(object.javaStringCheckUtf8) ? globalThis.Boolean(object.javaStringCheckUtf8) : false,
-      optimizeFor: isSet(object.optimizeFor) ? fileOptions_OptimizeModeFromJSON(object.optimizeFor) : 1,
+      optimizeFor: isSet(object.optimizeFor)
+        ? fileOptions_OptimizeModeFromJSON(object.optimizeFor)
+        : FileOptions_OptimizeMode.SPEED,
       goPackage: isSet(object.goPackage) ? globalThis.String(object.goPackage) : "",
       ccGenericServices: isSet(object.ccGenericServices) ? globalThis.Boolean(object.ccGenericServices) : false,
       javaGenericServices: isSet(object.javaGenericServices) ? globalThis.Boolean(object.javaGenericServices) : false,
@@ -3285,7 +3459,7 @@ export const FileOptions = {
     if (message.javaStringCheckUtf8 === true) {
       obj.javaStringCheckUtf8 = message.javaStringCheckUtf8;
     }
-    if (message.optimizeFor !== 1) {
+    if (message.optimizeFor !== FileOptions_OptimizeMode.SPEED) {
       obj.optimizeFor = fileOptions_OptimizeModeToJSON(message.optimizeFor);
     }
     if (message.goPackage !== "") {
@@ -3346,7 +3520,7 @@ export const FileOptions = {
     message.javaMultipleFiles = object.javaMultipleFiles ?? false;
     message.javaGenerateEqualsAndHash = object.javaGenerateEqualsAndHash ?? false;
     message.javaStringCheckUtf8 = object.javaStringCheckUtf8 ?? false;
-    message.optimizeFor = object.optimizeFor ?? 1;
+    message.optimizeFor = object.optimizeFor ?? FileOptions_OptimizeMode.SPEED;
     message.goPackage = object.goPackage ?? "";
     message.ccGenericServices = object.ccGenericServices ?? false;
     message.javaGenericServices = object.javaGenericServices ?? false;
@@ -3517,30 +3691,30 @@ export const MessageOptions = {
 
 function createBaseFieldOptions(): FieldOptions {
   return {
-    ctype: 0,
+    ctype: FieldOptions_CType.STRING,
     packed: false,
-    jstype: 0,
+    jstype: FieldOptions_JSType.JS_NORMAL,
     lazy: false,
     unverifiedLazy: false,
     deprecated: false,
     weak: false,
     debugRedact: false,
-    retention: 0,
-    target: 0,
+    retention: FieldOptions_OptionRetention.RETENTION_UNKNOWN,
+    target: FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN,
     uninterpretedOption: [],
   };
 }
 
 export const FieldOptions = {
   encode(message: FieldOptions, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.ctype !== 0) {
-      writer.uint32(8).int32(message.ctype);
+    if (message.ctype !== FieldOptions_CType.STRING) {
+      writer.uint32(8).int32(fieldOptions_CTypeToNumber(message.ctype));
     }
     if (message.packed === true) {
       writer.uint32(16).bool(message.packed);
     }
-    if (message.jstype !== 0) {
-      writer.uint32(48).int32(message.jstype);
+    if (message.jstype !== FieldOptions_JSType.JS_NORMAL) {
+      writer.uint32(48).int32(fieldOptions_JSTypeToNumber(message.jstype));
     }
     if (message.lazy === true) {
       writer.uint32(40).bool(message.lazy);
@@ -3557,11 +3731,11 @@ export const FieldOptions = {
     if (message.debugRedact === true) {
       writer.uint32(128).bool(message.debugRedact);
     }
-    if (message.retention !== 0) {
-      writer.uint32(136).int32(message.retention);
+    if (message.retention !== FieldOptions_OptionRetention.RETENTION_UNKNOWN) {
+      writer.uint32(136).int32(fieldOptions_OptionRetentionToNumber(message.retention));
     }
-    if (message.target !== 0) {
-      writer.uint32(144).int32(message.target);
+    if (message.target !== FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN) {
+      writer.uint32(144).int32(fieldOptions_OptionTargetTypeToNumber(message.target));
     }
     for (const v of message.uninterpretedOption) {
       UninterpretedOption.encode(v!, writer.uint32(7994).fork()).ldelim();
@@ -3581,7 +3755,7 @@ export const FieldOptions = {
             break;
           }
 
-          message.ctype = reader.int32() as any;
+          message.ctype = fieldOptions_CTypeFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 16) {
@@ -3595,7 +3769,7 @@ export const FieldOptions = {
             break;
           }
 
-          message.jstype = reader.int32() as any;
+          message.jstype = fieldOptions_JSTypeFromJSON(reader.int32());
           continue;
         case 5:
           if (tag !== 40) {
@@ -3637,14 +3811,14 @@ export const FieldOptions = {
             break;
           }
 
-          message.retention = reader.int32() as any;
+          message.retention = fieldOptions_OptionRetentionFromJSON(reader.int32());
           continue;
         case 18:
           if (tag !== 144) {
             break;
           }
 
-          message.target = reader.int32() as any;
+          message.target = fieldOptions_OptionTargetTypeFromJSON(reader.int32());
           continue;
         case 999:
           if (tag !== 7994) {
@@ -3664,16 +3838,20 @@ export const FieldOptions = {
 
   fromJSON(object: any): FieldOptions {
     return {
-      ctype: isSet(object.ctype) ? fieldOptions_CTypeFromJSON(object.ctype) : 0,
+      ctype: isSet(object.ctype) ? fieldOptions_CTypeFromJSON(object.ctype) : FieldOptions_CType.STRING,
       packed: isSet(object.packed) ? globalThis.Boolean(object.packed) : false,
-      jstype: isSet(object.jstype) ? fieldOptions_JSTypeFromJSON(object.jstype) : 0,
+      jstype: isSet(object.jstype) ? fieldOptions_JSTypeFromJSON(object.jstype) : FieldOptions_JSType.JS_NORMAL,
       lazy: isSet(object.lazy) ? globalThis.Boolean(object.lazy) : false,
       unverifiedLazy: isSet(object.unverifiedLazy) ? globalThis.Boolean(object.unverifiedLazy) : false,
       deprecated: isSet(object.deprecated) ? globalThis.Boolean(object.deprecated) : false,
       weak: isSet(object.weak) ? globalThis.Boolean(object.weak) : false,
       debugRedact: isSet(object.debugRedact) ? globalThis.Boolean(object.debugRedact) : false,
-      retention: isSet(object.retention) ? fieldOptions_OptionRetentionFromJSON(object.retention) : 0,
-      target: isSet(object.target) ? fieldOptions_OptionTargetTypeFromJSON(object.target) : 0,
+      retention: isSet(object.retention)
+        ? fieldOptions_OptionRetentionFromJSON(object.retention)
+        : FieldOptions_OptionRetention.RETENTION_UNKNOWN,
+      target: isSet(object.target)
+        ? fieldOptions_OptionTargetTypeFromJSON(object.target)
+        : FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN,
       uninterpretedOption: globalThis.Array.isArray(object?.uninterpretedOption)
         ? object.uninterpretedOption.map((e: any) => UninterpretedOption.fromJSON(e))
         : [],
@@ -3682,13 +3860,13 @@ export const FieldOptions = {
 
   toJSON(message: FieldOptions): unknown {
     const obj: any = {};
-    if (message.ctype !== 0) {
+    if (message.ctype !== FieldOptions_CType.STRING) {
       obj.ctype = fieldOptions_CTypeToJSON(message.ctype);
     }
     if (message.packed === true) {
       obj.packed = message.packed;
     }
-    if (message.jstype !== 0) {
+    if (message.jstype !== FieldOptions_JSType.JS_NORMAL) {
       obj.jstype = fieldOptions_JSTypeToJSON(message.jstype);
     }
     if (message.lazy === true) {
@@ -3706,10 +3884,10 @@ export const FieldOptions = {
     if (message.debugRedact === true) {
       obj.debugRedact = message.debugRedact;
     }
-    if (message.retention !== 0) {
+    if (message.retention !== FieldOptions_OptionRetention.RETENTION_UNKNOWN) {
       obj.retention = fieldOptions_OptionRetentionToJSON(message.retention);
     }
-    if (message.target !== 0) {
+    if (message.target !== FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN) {
       obj.target = fieldOptions_OptionTargetTypeToJSON(message.target);
     }
     if (message.uninterpretedOption?.length) {
@@ -3723,16 +3901,16 @@ export const FieldOptions = {
   },
   fromPartial(object: DeepPartial<FieldOptions>): FieldOptions {
     const message = createBaseFieldOptions();
-    message.ctype = object.ctype ?? 0;
+    message.ctype = object.ctype ?? FieldOptions_CType.STRING;
     message.packed = object.packed ?? false;
-    message.jstype = object.jstype ?? 0;
+    message.jstype = object.jstype ?? FieldOptions_JSType.JS_NORMAL;
     message.lazy = object.lazy ?? false;
     message.unverifiedLazy = object.unverifiedLazy ?? false;
     message.deprecated = object.deprecated ?? false;
     message.weak = object.weak ?? false;
     message.debugRedact = object.debugRedact ?? false;
-    message.retention = object.retention ?? 0;
-    message.target = object.target ?? 0;
+    message.retention = object.retention ?? FieldOptions_OptionRetention.RETENTION_UNKNOWN;
+    message.target = object.target ?? FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN;
     message.uninterpretedOption = object.uninterpretedOption?.map((e) => UninterpretedOption.fromPartial(e)) || [];
     return message;
   },
@@ -4060,7 +4238,11 @@ export const ServiceOptions = {
 };
 
 function createBaseMethodOptions(): MethodOptions {
-  return { deprecated: false, idempotencyLevel: 0, uninterpretedOption: [] };
+  return {
+    deprecated: false,
+    idempotencyLevel: MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN,
+    uninterpretedOption: [],
+  };
 }
 
 export const MethodOptions = {
@@ -4068,8 +4250,8 @@ export const MethodOptions = {
     if (message.deprecated === true) {
       writer.uint32(264).bool(message.deprecated);
     }
-    if (message.idempotencyLevel !== 0) {
-      writer.uint32(272).int32(message.idempotencyLevel);
+    if (message.idempotencyLevel !== MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN) {
+      writer.uint32(272).int32(methodOptions_IdempotencyLevelToNumber(message.idempotencyLevel));
     }
     for (const v of message.uninterpretedOption) {
       UninterpretedOption.encode(v!, writer.uint32(7994).fork()).ldelim();
@@ -4096,7 +4278,7 @@ export const MethodOptions = {
             break;
           }
 
-          message.idempotencyLevel = reader.int32() as any;
+          message.idempotencyLevel = methodOptions_IdempotencyLevelFromJSON(reader.int32());
           continue;
         case 999:
           if (tag !== 7994) {
@@ -4119,7 +4301,7 @@ export const MethodOptions = {
       deprecated: isSet(object.deprecated) ? globalThis.Boolean(object.deprecated) : false,
       idempotencyLevel: isSet(object.idempotencyLevel)
         ? methodOptions_IdempotencyLevelFromJSON(object.idempotencyLevel)
-        : 0,
+        : MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN,
       uninterpretedOption: globalThis.Array.isArray(object?.uninterpretedOption)
         ? object.uninterpretedOption.map((e: any) => UninterpretedOption.fromJSON(e))
         : [],
@@ -4131,7 +4313,7 @@ export const MethodOptions = {
     if (message.deprecated === true) {
       obj.deprecated = message.deprecated;
     }
-    if (message.idempotencyLevel !== 0) {
+    if (message.idempotencyLevel !== MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN) {
       obj.idempotencyLevel = methodOptions_IdempotencyLevelToJSON(message.idempotencyLevel);
     }
     if (message.uninterpretedOption?.length) {
@@ -4146,7 +4328,7 @@ export const MethodOptions = {
   fromPartial(object: DeepPartial<MethodOptions>): MethodOptions {
     const message = createBaseMethodOptions();
     message.deprecated = object.deprecated ?? false;
-    message.idempotencyLevel = object.idempotencyLevel ?? 0;
+    message.idempotencyLevel = object.idempotencyLevel ?? MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN;
     message.uninterpretedOption = object.uninterpretedOption?.map((e) => UninterpretedOption.fromPartial(e)) || [];
     return message;
   },
@@ -4657,7 +4839,7 @@ export const GeneratedCodeInfo = {
 };
 
 function createBaseGeneratedCodeInfo_Annotation(): GeneratedCodeInfo_Annotation {
-  return { path: [], sourceFile: "", begin: 0, end: 0, semantic: 0 };
+  return { path: [], sourceFile: "", begin: 0, end: 0, semantic: GeneratedCodeInfo_Annotation_Semantic.NONE };
 }
 
 export const GeneratedCodeInfo_Annotation = {
@@ -4676,8 +4858,8 @@ export const GeneratedCodeInfo_Annotation = {
     if (message.end !== 0) {
       writer.uint32(32).int32(message.end);
     }
-    if (message.semantic !== 0) {
-      writer.uint32(40).int32(message.semantic);
+    if (message.semantic !== GeneratedCodeInfo_Annotation_Semantic.NONE) {
+      writer.uint32(40).int32(generatedCodeInfo_Annotation_SemanticToNumber(message.semantic));
     }
     return writer;
   },
@@ -4732,7 +4914,7 @@ export const GeneratedCodeInfo_Annotation = {
             break;
           }
 
-          message.semantic = reader.int32() as any;
+          message.semantic = generatedCodeInfo_Annotation_SemanticFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4749,7 +4931,9 @@ export const GeneratedCodeInfo_Annotation = {
       sourceFile: isSet(object.sourceFile) ? globalThis.String(object.sourceFile) : "",
       begin: isSet(object.begin) ? globalThis.Number(object.begin) : 0,
       end: isSet(object.end) ? globalThis.Number(object.end) : 0,
-      semantic: isSet(object.semantic) ? generatedCodeInfo_Annotation_SemanticFromJSON(object.semantic) : 0,
+      semantic: isSet(object.semantic)
+        ? generatedCodeInfo_Annotation_SemanticFromJSON(object.semantic)
+        : GeneratedCodeInfo_Annotation_Semantic.NONE,
     };
   },
 
@@ -4767,7 +4951,7 @@ export const GeneratedCodeInfo_Annotation = {
     if (message.end !== 0) {
       obj.end = Math.round(message.end);
     }
-    if (message.semantic !== 0) {
+    if (message.semantic !== GeneratedCodeInfo_Annotation_Semantic.NONE) {
       obj.semantic = generatedCodeInfo_Annotation_SemanticToJSON(message.semantic);
     }
     return obj;
@@ -4782,7 +4966,7 @@ export const GeneratedCodeInfo_Annotation = {
     message.sourceFile = object.sourceFile ?? "";
     message.begin = object.begin ?? 0;
     message.end = object.end ?? 0;
-    message.semantic = object.semantic ?? 0;
+    message.semantic = object.semantic ?? GeneratedCodeInfo_Annotation_Semantic.NONE;
     return message;
   },
 };

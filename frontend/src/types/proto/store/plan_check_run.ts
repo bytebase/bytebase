@@ -18,12 +18,12 @@ export interface PlanCheckRunConfig {
 }
 
 export enum PlanCheckRunConfig_ChangeDatabaseType {
-  CHANGE_DATABASE_TYPE_UNSPECIFIED = 0,
-  DDL = 1,
-  DML = 2,
-  SDL = 3,
-  DDL_GHOST = 4,
-  UNRECOGNIZED = -1,
+  CHANGE_DATABASE_TYPE_UNSPECIFIED = "CHANGE_DATABASE_TYPE_UNSPECIFIED",
+  DDL = "DDL",
+  DML = "DML",
+  SDL = "SDL",
+  DDL_GHOST = "DDL_GHOST",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function planCheckRunConfig_ChangeDatabaseTypeFromJSON(object: any): PlanCheckRunConfig_ChangeDatabaseType {
@@ -68,6 +68,24 @@ export function planCheckRunConfig_ChangeDatabaseTypeToJSON(object: PlanCheckRun
   }
 }
 
+export function planCheckRunConfig_ChangeDatabaseTypeToNumber(object: PlanCheckRunConfig_ChangeDatabaseType): number {
+  switch (object) {
+    case PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED:
+      return 0;
+    case PlanCheckRunConfig_ChangeDatabaseType.DDL:
+      return 1;
+    case PlanCheckRunConfig_ChangeDatabaseType.DML:
+      return 2;
+    case PlanCheckRunConfig_ChangeDatabaseType.SDL:
+      return 3;
+    case PlanCheckRunConfig_ChangeDatabaseType.DDL_GHOST:
+      return 4;
+    case PlanCheckRunConfig_ChangeDatabaseType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface PlanCheckRunConfig_GhostFlagsEntry {
   key: string;
   value: string;
@@ -96,11 +114,11 @@ export interface PlanCheckRunResult_Result {
 }
 
 export enum PlanCheckRunResult_Result_Status {
-  STATUS_UNSPECIFIED = 0,
-  ERROR = 1,
-  WARNING = 2,
-  SUCCESS = 3,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  ERROR = "ERROR",
+  WARNING = "WARNING",
+  SUCCESS = "SUCCESS",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function planCheckRunResult_Result_StatusFromJSON(object: any): PlanCheckRunResult_Result_Status {
@@ -140,6 +158,22 @@ export function planCheckRunResult_Result_StatusToJSON(object: PlanCheckRunResul
   }
 }
 
+export function planCheckRunResult_Result_StatusToNumber(object: PlanCheckRunResult_Result_Status): number {
+  switch (object) {
+    case PlanCheckRunResult_Result_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case PlanCheckRunResult_Result_Status.ERROR:
+      return 1;
+    case PlanCheckRunResult_Result_Status.WARNING:
+      return 2;
+    case PlanCheckRunResult_Result_Status.SUCCESS:
+      return 3;
+    case PlanCheckRunResult_Result_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface PlanCheckRunResult_Result_SqlSummaryReport {
   code: number;
   /** statement_types are the types of statements that are found in the sql. */
@@ -159,7 +193,7 @@ export interface PlanCheckRunResult_Result_SqlReviewReport {
 function createBasePlanCheckRunConfig(): PlanCheckRunConfig {
   return {
     sheetUid: 0,
-    changeDatabaseType: 0,
+    changeDatabaseType: PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED,
     instanceUid: 0,
     databaseName: "",
     databaseGroupUid: undefined,
@@ -173,8 +207,8 @@ export const PlanCheckRunConfig = {
     if (message.sheetUid !== 0) {
       writer.uint32(8).int32(message.sheetUid);
     }
-    if (message.changeDatabaseType !== 0) {
-      writer.uint32(16).int32(message.changeDatabaseType);
+    if (message.changeDatabaseType !== PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED) {
+      writer.uint32(16).int32(planCheckRunConfig_ChangeDatabaseTypeToNumber(message.changeDatabaseType));
     }
     if (message.instanceUid !== 0) {
       writer.uint32(24).int32(message.instanceUid);
@@ -213,7 +247,7 @@ export const PlanCheckRunConfig = {
             break;
           }
 
-          message.changeDatabaseType = reader.int32() as any;
+          message.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 24) {
@@ -267,7 +301,7 @@ export const PlanCheckRunConfig = {
       sheetUid: isSet(object.sheetUid) ? globalThis.Number(object.sheetUid) : 0,
       changeDatabaseType: isSet(object.changeDatabaseType)
         ? planCheckRunConfig_ChangeDatabaseTypeFromJSON(object.changeDatabaseType)
-        : 0,
+        : PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED,
       instanceUid: isSet(object.instanceUid) ? globalThis.Number(object.instanceUid) : 0,
       databaseName: isSet(object.databaseName) ? globalThis.String(object.databaseName) : "",
       databaseGroupUid: isSet(object.databaseGroupUid) ? Long.fromValue(object.databaseGroupUid) : undefined,
@@ -288,7 +322,7 @@ export const PlanCheckRunConfig = {
     if (message.sheetUid !== 0) {
       obj.sheetUid = Math.round(message.sheetUid);
     }
-    if (message.changeDatabaseType !== 0) {
+    if (message.changeDatabaseType !== PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED) {
       obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType);
     }
     if (message.instanceUid !== 0) {
@@ -321,7 +355,8 @@ export const PlanCheckRunConfig = {
   fromPartial(object: DeepPartial<PlanCheckRunConfig>): PlanCheckRunConfig {
     const message = createBasePlanCheckRunConfig();
     message.sheetUid = object.sheetUid ?? 0;
-    message.changeDatabaseType = object.changeDatabaseType ?? 0;
+    message.changeDatabaseType = object.changeDatabaseType ??
+      PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED;
     message.instanceUid = object.instanceUid ?? 0;
     message.databaseName = object.databaseName ?? "";
     message.databaseGroupUid = (object.databaseGroupUid !== undefined && object.databaseGroupUid !== null)
@@ -552,13 +587,20 @@ export const PlanCheckRunResult = {
 };
 
 function createBasePlanCheckRunResult_Result(): PlanCheckRunResult_Result {
-  return { status: 0, title: "", content: "", code: 0, sqlSummaryReport: undefined, sqlReviewReport: undefined };
+  return {
+    status: PlanCheckRunResult_Result_Status.STATUS_UNSPECIFIED,
+    title: "",
+    content: "",
+    code: 0,
+    sqlSummaryReport: undefined,
+    sqlReviewReport: undefined,
+  };
 }
 
 export const PlanCheckRunResult_Result = {
   encode(message: PlanCheckRunResult_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.status !== 0) {
-      writer.uint32(8).int32(message.status);
+    if (message.status !== PlanCheckRunResult_Result_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(8).int32(planCheckRunResult_Result_StatusToNumber(message.status));
     }
     if (message.title !== "") {
       writer.uint32(18).string(message.title);
@@ -590,7 +632,7 @@ export const PlanCheckRunResult_Result = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = planCheckRunResult_Result_StatusFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -638,7 +680,9 @@ export const PlanCheckRunResult_Result = {
 
   fromJSON(object: any): PlanCheckRunResult_Result {
     return {
-      status: isSet(object.status) ? planCheckRunResult_Result_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status)
+        ? planCheckRunResult_Result_StatusFromJSON(object.status)
+        : PlanCheckRunResult_Result_Status.STATUS_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       content: isSet(object.content) ? globalThis.String(object.content) : "",
       code: isSet(object.code) ? globalThis.Number(object.code) : 0,
@@ -653,7 +697,7 @@ export const PlanCheckRunResult_Result = {
 
   toJSON(message: PlanCheckRunResult_Result): unknown {
     const obj: any = {};
-    if (message.status !== 0) {
+    if (message.status !== PlanCheckRunResult_Result_Status.STATUS_UNSPECIFIED) {
       obj.status = planCheckRunResult_Result_StatusToJSON(message.status);
     }
     if (message.title !== "") {
@@ -679,7 +723,7 @@ export const PlanCheckRunResult_Result = {
   },
   fromPartial(object: DeepPartial<PlanCheckRunResult_Result>): PlanCheckRunResult_Result {
     const message = createBasePlanCheckRunResult_Result();
-    message.status = object.status ?? 0;
+    message.status = object.status ?? PlanCheckRunResult_Result_Status.STATUS_UNSPECIFIED;
     message.title = object.title ?? "";
     message.content = object.content ?? "";
     message.code = object.code ?? 0;

@@ -2,9 +2,18 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
-import { NullValue, nullValueFromJSON, nullValueToJSON, Value } from "../google/protobuf/struct";
+import { NullValue, nullValueFromJSON, nullValueToJSON, nullValueToNumber, Value } from "../google/protobuf/struct";
 import { Timestamp } from "../google/protobuf/timestamp";
-import { Engine, engineFromJSON, engineToJSON, ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
+import {
+  Engine,
+  engineFromJSON,
+  engineToJSON,
+  engineToNumber,
+  ExportFormat,
+  exportFormatFromJSON,
+  exportFormatToJSON,
+  exportFormatToNumber,
+} from "./common";
 import { DatabaseMetadata } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -149,11 +158,11 @@ export interface Advice {
 
 export enum Advice_Status {
   /** STATUS_UNSPECIFIED - Unspecified. */
-  STATUS_UNSPECIFIED = 0,
-  SUCCESS = 1,
-  WARNING = 2,
-  ERROR = 3,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  SUCCESS = "SUCCESS",
+  WARNING = "WARNING",
+  ERROR = "ERROR",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function advice_StatusFromJSON(object: any): Advice_Status {
@@ -190,6 +199,22 @@ export function advice_StatusToJSON(object: Advice_Status): string {
     case Advice_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function advice_StatusToNumber(object: Advice_Status): number {
+  switch (object) {
+    case Advice_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case Advice_Status.SUCCESS:
+      return 1;
+    case Advice_Status.WARNING:
+      return 2;
+    case Advice_Status.ERROR:
+      return 3;
+    case Advice_Status.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -265,11 +290,11 @@ export interface CheckRequest {
 }
 
 export enum CheckRequest_ChangeType {
-  CHANGE_TYPE_UNSPECIFIED = 0,
-  DDL = 1,
-  DDL_GHOST = 2,
-  DML = 3,
-  UNRECOGNIZED = -1,
+  CHANGE_TYPE_UNSPECIFIED = "CHANGE_TYPE_UNSPECIFIED",
+  DDL = "DDL",
+  DDL_GHOST = "DDL_GHOST",
+  DML = "DML",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function checkRequest_ChangeTypeFromJSON(object: any): CheckRequest_ChangeType {
@@ -306,6 +331,22 @@ export function checkRequest_ChangeTypeToJSON(object: CheckRequest_ChangeType): 
     case CheckRequest_ChangeType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function checkRequest_ChangeTypeToNumber(object: CheckRequest_ChangeType): number {
+  switch (object) {
+    case CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED:
+      return 0;
+    case CheckRequest_ChangeType.DDL:
+      return 1;
+    case CheckRequest_ChangeType.DDL_GHOST:
+      return 2;
+    case CheckRequest_ChangeType.DML:
+      return 3;
+    case CheckRequest_ChangeType.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -391,10 +432,10 @@ export interface QueryHistory {
 }
 
 export enum QueryHistory_Type {
-  TYPE_UNSPECIFIED = 0,
-  QUERY = 1,
-  EXPORT = 2,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  QUERY = "QUERY",
+  EXPORT = "EXPORT",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function queryHistory_TypeFromJSON(object: any): QueryHistory_Type {
@@ -426,6 +467,20 @@ export function queryHistory_TypeToJSON(object: QueryHistory_Type): string {
     case QueryHistory_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function queryHistory_TypeToNumber(object: QueryHistory_Type): number {
+  switch (object) {
+    case QueryHistory_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case QueryHistory_Type.QUERY:
+      return 1;
+    case QueryHistory_Type.EXPORT:
+      return 2;
+    case QueryHistory_Type.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -1297,7 +1352,7 @@ function createBaseRowValue(): RowValue {
 export const RowValue = {
   encode(message: RowValue, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.nullValue !== undefined) {
-      writer.uint32(8).int32(message.nullValue);
+      writer.uint32(8).int32(nullValueToNumber(message.nullValue));
     }
     if (message.boolValue !== undefined) {
       writer.uint32(16).bool(message.boolValue);
@@ -1344,7 +1399,7 @@ export const RowValue = {
             break;
           }
 
-          message.nullValue = reader.int32() as any;
+          message.nullValue = nullValueFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 16) {
@@ -1504,13 +1559,13 @@ export const RowValue = {
 };
 
 function createBaseAdvice(): Advice {
-  return { status: 0, code: 0, title: "", content: "", line: 0, column: 0, detail: "" };
+  return { status: Advice_Status.STATUS_UNSPECIFIED, code: 0, title: "", content: "", line: 0, column: 0, detail: "" };
 }
 
 export const Advice = {
   encode(message: Advice, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.status !== 0) {
-      writer.uint32(8).int32(message.status);
+    if (message.status !== Advice_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(8).int32(advice_StatusToNumber(message.status));
     }
     if (message.code !== 0) {
       writer.uint32(16).int32(message.code);
@@ -1545,7 +1600,7 @@ export const Advice = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = advice_StatusFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 16) {
@@ -1600,7 +1655,7 @@ export const Advice = {
 
   fromJSON(object: any): Advice {
     return {
-      status: isSet(object.status) ? advice_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? advice_StatusFromJSON(object.status) : Advice_Status.STATUS_UNSPECIFIED,
       code: isSet(object.code) ? globalThis.Number(object.code) : 0,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       content: isSet(object.content) ? globalThis.String(object.content) : "",
@@ -1612,7 +1667,7 @@ export const Advice = {
 
   toJSON(message: Advice): unknown {
     const obj: any = {};
-    if (message.status !== 0) {
+    if (message.status !== Advice_Status.STATUS_UNSPECIFIED) {
       obj.status = advice_StatusToJSON(message.status);
     }
     if (message.code !== 0) {
@@ -1641,7 +1696,7 @@ export const Advice = {
   },
   fromPartial(object: DeepPartial<Advice>): Advice {
     const message = createBaseAdvice();
-    message.status = object.status ?? 0;
+    message.status = object.status ?? Advice_Status.STATUS_UNSPECIFIED;
     message.code = object.code ?? 0;
     message.title = object.title ?? "";
     message.content = object.content ?? "";
@@ -1653,7 +1708,15 @@ export const Advice = {
 };
 
 function createBaseExportRequest(): ExportRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0, format: 0, admin: false, password: "" };
+  return {
+    name: "",
+    connectionDatabase: "",
+    statement: "",
+    limit: 0,
+    format: ExportFormat.FORMAT_UNSPECIFIED,
+    admin: false,
+    password: "",
+  };
 }
 
 export const ExportRequest = {
@@ -1670,8 +1733,8 @@ export const ExportRequest = {
     if (message.limit !== 0) {
       writer.uint32(32).int32(message.limit);
     }
-    if (message.format !== 0) {
-      writer.uint32(40).int32(message.format);
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
+      writer.uint32(40).int32(exportFormatToNumber(message.format));
     }
     if (message.admin === true) {
       writer.uint32(48).bool(message.admin);
@@ -1722,7 +1785,7 @@ export const ExportRequest = {
             break;
           }
 
-          message.format = reader.int32() as any;
+          message.format = exportFormatFromJSON(reader.int32());
           continue;
         case 6:
           if (tag !== 48) {
@@ -1753,7 +1816,7 @@ export const ExportRequest = {
       connectionDatabase: isSet(object.connectionDatabase) ? globalThis.String(object.connectionDatabase) : "",
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
       admin: isSet(object.admin) ? globalThis.Boolean(object.admin) : false,
       password: isSet(object.password) ? globalThis.String(object.password) : "",
     };
@@ -1773,7 +1836,7 @@ export const ExportRequest = {
     if (message.limit !== 0) {
       obj.limit = Math.round(message.limit);
     }
-    if (message.format !== 0) {
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
       obj.format = exportFormatToJSON(message.format);
     }
     if (message.admin === true) {
@@ -1794,7 +1857,7 @@ export const ExportRequest = {
     message.connectionDatabase = object.connectionDatabase ?? "";
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
-    message.format = object.format ?? 0;
+    message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
     message.admin = object.admin ?? false;
     message.password = object.password ?? "";
     return message;
@@ -1859,13 +1922,13 @@ export const ExportResponse = {
 };
 
 function createBaseDifferPreviewRequest(): DifferPreviewRequest {
-  return { engine: 0, oldSchema: "", newMetadata: undefined };
+  return { engine: Engine.ENGINE_UNSPECIFIED, oldSchema: "", newMetadata: undefined };
 }
 
 export const DifferPreviewRequest = {
   encode(message: DifferPreviewRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.engine !== 0) {
-      writer.uint32(8).int32(message.engine);
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(8).int32(engineToNumber(message.engine));
     }
     if (message.oldSchema !== "") {
       writer.uint32(18).string(message.oldSchema);
@@ -1888,7 +1951,7 @@ export const DifferPreviewRequest = {
             break;
           }
 
-          message.engine = reader.int32() as any;
+          message.engine = engineFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -1915,7 +1978,7 @@ export const DifferPreviewRequest = {
 
   fromJSON(object: any): DifferPreviewRequest {
     return {
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       oldSchema: isSet(object.oldSchema) ? globalThis.String(object.oldSchema) : "",
       newMetadata: isSet(object.newMetadata) ? DatabaseMetadata.fromJSON(object.newMetadata) : undefined,
     };
@@ -1923,7 +1986,7 @@ export const DifferPreviewRequest = {
 
   toJSON(message: DifferPreviewRequest): unknown {
     const obj: any = {};
-    if (message.engine !== 0) {
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
     }
     if (message.oldSchema !== "") {
@@ -1940,7 +2003,7 @@ export const DifferPreviewRequest = {
   },
   fromPartial(object: DeepPartial<DifferPreviewRequest>): DifferPreviewRequest {
     const message = createBaseDifferPreviewRequest();
-    message.engine = object.engine ?? 0;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.oldSchema = object.oldSchema ?? "";
     message.newMetadata = (object.newMetadata !== undefined && object.newMetadata !== null)
       ? DatabaseMetadata.fromPartial(object.newMetadata)
@@ -2007,13 +2070,13 @@ export const DifferPreviewResponse = {
 };
 
 function createBasePrettyRequest(): PrettyRequest {
-  return { engine: 0, currentSchema: "", expectedSchema: "" };
+  return { engine: Engine.ENGINE_UNSPECIFIED, currentSchema: "", expectedSchema: "" };
 }
 
 export const PrettyRequest = {
   encode(message: PrettyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.engine !== 0) {
-      writer.uint32(8).int32(message.engine);
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(8).int32(engineToNumber(message.engine));
     }
     if (message.currentSchema !== "") {
       writer.uint32(18).string(message.currentSchema);
@@ -2036,7 +2099,7 @@ export const PrettyRequest = {
             break;
           }
 
-          message.engine = reader.int32() as any;
+          message.engine = engineFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -2063,7 +2126,7 @@ export const PrettyRequest = {
 
   fromJSON(object: any): PrettyRequest {
     return {
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       currentSchema: isSet(object.currentSchema) ? globalThis.String(object.currentSchema) : "",
       expectedSchema: isSet(object.expectedSchema) ? globalThis.String(object.expectedSchema) : "",
     };
@@ -2071,7 +2134,7 @@ export const PrettyRequest = {
 
   toJSON(message: PrettyRequest): unknown {
     const obj: any = {};
-    if (message.engine !== 0) {
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
     }
     if (message.currentSchema !== "") {
@@ -2088,7 +2151,7 @@ export const PrettyRequest = {
   },
   fromPartial(object: DeepPartial<PrettyRequest>): PrettyRequest {
     const message = createBasePrettyRequest();
-    message.engine = object.engine ?? 0;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.currentSchema = object.currentSchema ?? "";
     message.expectedSchema = object.expectedSchema ?? "";
     return message;
@@ -2170,7 +2233,12 @@ export const PrettyResponse = {
 };
 
 function createBaseCheckRequest(): CheckRequest {
-  return { statement: "", database: "", metadata: undefined, changeType: 0 };
+  return {
+    statement: "",
+    database: "",
+    metadata: undefined,
+    changeType: CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED,
+  };
 }
 
 export const CheckRequest = {
@@ -2184,8 +2252,8 @@ export const CheckRequest = {
     if (message.metadata !== undefined) {
       DatabaseMetadata.encode(message.metadata, writer.uint32(26).fork()).ldelim();
     }
-    if (message.changeType !== 0) {
-      writer.uint32(32).int32(message.changeType);
+    if (message.changeType !== CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
+      writer.uint32(32).int32(checkRequest_ChangeTypeToNumber(message.changeType));
     }
     return writer;
   },
@@ -2223,7 +2291,7 @@ export const CheckRequest = {
             break;
           }
 
-          message.changeType = reader.int32() as any;
+          message.changeType = checkRequest_ChangeTypeFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2239,7 +2307,9 @@ export const CheckRequest = {
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       database: isSet(object.database) ? globalThis.String(object.database) : "",
       metadata: isSet(object.metadata) ? DatabaseMetadata.fromJSON(object.metadata) : undefined,
-      changeType: isSet(object.changeType) ? checkRequest_ChangeTypeFromJSON(object.changeType) : 0,
+      changeType: isSet(object.changeType)
+        ? checkRequest_ChangeTypeFromJSON(object.changeType)
+        : CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED,
     };
   },
 
@@ -2254,7 +2324,7 @@ export const CheckRequest = {
     if (message.metadata !== undefined) {
       obj.metadata = DatabaseMetadata.toJSON(message.metadata);
     }
-    if (message.changeType !== 0) {
+    if (message.changeType !== CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
       obj.changeType = checkRequest_ChangeTypeToJSON(message.changeType);
     }
     return obj;
@@ -2270,7 +2340,7 @@ export const CheckRequest = {
     message.metadata = (object.metadata !== undefined && object.metadata !== null)
       ? DatabaseMetadata.fromPartial(object.metadata)
       : undefined;
-    message.changeType = object.changeType ?? 0;
+    message.changeType = object.changeType ?? CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED;
     return message;
   },
 };
@@ -2453,7 +2523,7 @@ export const ParseMyBatisMapperResponse = {
 };
 
 function createBaseStringifyMetadataRequest(): StringifyMetadataRequest {
-  return { metadata: undefined, engine: 0 };
+  return { metadata: undefined, engine: Engine.ENGINE_UNSPECIFIED };
 }
 
 export const StringifyMetadataRequest = {
@@ -2461,8 +2531,8 @@ export const StringifyMetadataRequest = {
     if (message.metadata !== undefined) {
       DatabaseMetadata.encode(message.metadata, writer.uint32(10).fork()).ldelim();
     }
-    if (message.engine !== 0) {
-      writer.uint32(16).int32(message.engine);
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(16).int32(engineToNumber(message.engine));
     }
     return writer;
   },
@@ -2486,7 +2556,7 @@ export const StringifyMetadataRequest = {
             break;
           }
 
-          message.engine = reader.int32() as any;
+          message.engine = engineFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2500,7 +2570,7 @@ export const StringifyMetadataRequest = {
   fromJSON(object: any): StringifyMetadataRequest {
     return {
       metadata: isSet(object.metadata) ? DatabaseMetadata.fromJSON(object.metadata) : undefined,
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
     };
   },
 
@@ -2509,7 +2579,7 @@ export const StringifyMetadataRequest = {
     if (message.metadata !== undefined) {
       obj.metadata = DatabaseMetadata.toJSON(message.metadata);
     }
-    if (message.engine !== 0) {
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
     }
     return obj;
@@ -2523,7 +2593,7 @@ export const StringifyMetadataRequest = {
     message.metadata = (object.metadata !== undefined && object.metadata !== null)
       ? DatabaseMetadata.fromPartial(object.metadata)
       : undefined;
-    message.engine = object.engine ?? 0;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     return message;
   },
 };
@@ -2759,7 +2829,7 @@ function createBaseQueryHistory(): QueryHistory {
     statement: "",
     error: undefined,
     duration: undefined,
-    type: 0,
+    type: QueryHistory_Type.TYPE_UNSPECIFIED,
   };
 }
 
@@ -2786,8 +2856,8 @@ export const QueryHistory = {
     if (message.duration !== undefined) {
       Duration.encode(message.duration, writer.uint32(58).fork()).ldelim();
     }
-    if (message.type !== 0) {
-      writer.uint32(64).int32(message.type);
+    if (message.type !== QueryHistory_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(64).int32(queryHistory_TypeToNumber(message.type));
     }
     return writer;
   },
@@ -2853,7 +2923,7 @@ export const QueryHistory = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = queryHistory_TypeFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2873,7 +2943,7 @@ export const QueryHistory = {
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       error: isSet(object.error) ? globalThis.String(object.error) : undefined,
       duration: isSet(object.duration) ? Duration.fromJSON(object.duration) : undefined,
-      type: isSet(object.type) ? queryHistory_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? queryHistory_TypeFromJSON(object.type) : QueryHistory_Type.TYPE_UNSPECIFIED,
     };
   },
 
@@ -2900,7 +2970,7 @@ export const QueryHistory = {
     if (message.duration !== undefined) {
       obj.duration = Duration.toJSON(message.duration);
     }
-    if (message.type !== 0) {
+    if (message.type !== QueryHistory_Type.TYPE_UNSPECIFIED) {
       obj.type = queryHistory_TypeToJSON(message.type);
     }
     return obj;
@@ -2920,7 +2990,7 @@ export const QueryHistory = {
     message.duration = (object.duration !== undefined && object.duration !== null)
       ? Duration.fromPartial(object.duration)
       : undefined;
-    message.type = object.type ?? 0;
+    message.type = object.type ?? QueryHistory_Type.TYPE_UNSPECIFIED;
     return message;
   },
 };
