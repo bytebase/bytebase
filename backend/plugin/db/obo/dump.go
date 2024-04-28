@@ -1716,9 +1716,3 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 
 	return assembleIndexes(mergedIndexList, out)
 }
-
-// Restore restores a database.
-func (*Driver) Restore(_ context.Context, _ io.Reader) (err error) {
-	// TODO(d): implement it.
-	return nil
-}

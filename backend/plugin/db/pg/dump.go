@@ -14,7 +14,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -259,18 +258,6 @@ func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writ
 	err = cmd.Wait()
 	if err != nil {
 		return errors.Wrapf(err, "error message: %s", allMsg)
-	}
-	return nil
-}
-
-// Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
-	buf := new(strings.Builder)
-	if _, err := io.Copy(buf, sc); err != nil {
-		return err
-	}
-	if _, err := driver.Execute(ctx, buf.String(), db.ExecuteOptions{}); err != nil {
-		return err
 	}
 	return nil
 }

@@ -478,8 +478,6 @@ type SQLReviewCheckContext struct {
 
 	// Snowflake specific fields
 	CurrentDatabase string
-	// Oracle specific fields
-	CurrentSchema string
 }
 
 func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []Advice) {
@@ -811,7 +809,6 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 				Catalog:               finder,
 				Driver:                checkContext.Driver,
 				Context:               checkContext.Context,
-				CurrentSchema:         checkContext.CurrentSchema,
 				CurrentDatabase:       checkContext.CurrentDatabase,
 			},
 			statements,

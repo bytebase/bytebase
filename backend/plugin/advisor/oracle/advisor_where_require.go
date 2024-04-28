@@ -39,9 +39,9 @@ func (*WhereRequireAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advi
 	}
 
 	listener := &whereRequireListener{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		currentSchema: ctx.CurrentSchema,
+		level:           level,
+		title:           string(ctx.Rule.Type),
+		currentDatabase: ctx.CurrentDatabase,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -53,10 +53,10 @@ func (*WhereRequireAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advi
 type whereRequireListener struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
-	title         string
-	currentSchema string
-	adviceList    []advisor.Advice
+	level           advisor.Status
+	title           string
+	currentDatabase string
+	adviceList      []advisor.Advice
 }
 
 func (l *whereRequireListener) generateAdvice() ([]advisor.Advice, error) {

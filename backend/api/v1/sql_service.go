@@ -334,18 +334,12 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return nil, err
 	}
 
-	// TODO(d): are we sure about this?
-	schemaName := ""
-	if instance.Engine == storepb.Engine_ORACLE {
-		schemaName = database.DatabaseName
-	}
-
 	spans, err := base.GetQuerySpan(
 		ctx,
 		instance.Engine,
 		statement,
 		database.DatabaseName,
-		schemaName,
+		"",
 		BuildGetDatabaseMetadataFunc(s.store, instance),
 		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -778,19 +772,13 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 
-	// TODO(d): are we sure about this?
-	schemaName := ""
-	if instance.Engine == storepb.Engine_ORACLE {
-		schemaName = database.DatabaseName
-	}
-
 	// Get query span.
 	spans, err := base.GetQuerySpan(
 		ctx,
 		instance.Engine,
 		statement,
 		database.DatabaseName,
-		schemaName,
+		"",
 		BuildGetDatabaseMetadataFunc(s.store, instance),
 		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -1356,12 +1344,6 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
 	}
 
-	// TODO(d): are we sure about this?
-	currentSchema := ""
-	if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
-		currentSchema = database.DatabaseName
-	}
-
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to get database driver: %v", err)
@@ -1377,7 +1359,6 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 		changeType,
 		catalog,
 		connection,
-		currentSchema,
 		database.DatabaseName,
 	)
 	if err != nil {
@@ -1425,7 +1406,6 @@ func (s *SQLService) sqlCheck(
 	changeType v1pb.CheckRequest_ChangeType,
 	catalog catalog.Catalog,
 	driver *sql.DB,
-	currentSchema string,
 	currentDatabase string,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
@@ -1446,7 +1426,6 @@ func (s *SQLService) sqlCheck(
 		Catalog:         catalog,
 		Driver:          driver,
 		Context:         ctx,
-		CurrentSchema:   currentSchema,
 		CurrentDatabase: currentDatabase,
 	})
 	if err != nil {

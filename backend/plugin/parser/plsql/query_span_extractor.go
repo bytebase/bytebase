@@ -17,7 +17,6 @@ import (
 type querySpanExtractor struct {
 	ctx               context.Context
 	connectedDatabase string
-	defaultSchema     string
 	metaCache         map[string]*model.DatabaseMetadata
 	f                 base.GetDatabaseMetadataFunc
 
@@ -27,10 +26,9 @@ type querySpanExtractor struct {
 	tableSourcesFrom  []base.TableSource
 }
 
-func newQuerySpanExtractor(connectionDatabase string, defaultSchema string, f base.GetDatabaseMetadataFunc) *querySpanExtractor {
+func newQuerySpanExtractor(connectionDatabase string, f base.GetDatabaseMetadataFunc) *querySpanExtractor {
 	return &querySpanExtractor{
 		connectedDatabase: connectionDatabase,
-		defaultSchema:     defaultSchema,
 		metaCache:         make(map[string]*model.DatabaseMetadata),
 		f:                 f,
 	}
@@ -74,7 +72,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	if listener.err != nil {
 		return nil, errors.Wrapf(listener.err, "failed to extract query span from statement: %s", statement)
 	}
-	resources, err := ExtractResourceList(q.connectedDatabase, q.defaultSchema, statement)
+	resources, err := ExtractResourceList(q.connectedDatabase, q.connectedDatabase, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract resource list from statement: %s", statement)
 	}
@@ -104,7 +102,7 @@ func (q *querySpanExtractor) existsTableMetadata(resource base.SchemaResource) b
 		return false
 	}
 	if resource.Schema == "" {
-		resource.Schema = q.defaultSchema
+		resource.Schema = q.connectedDatabase
 	}
 	_, meta, err := q.getDatabaseMetadata(resource.Schema)
 	if err != nil {
@@ -312,7 +310,7 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 		selectListElements := selectedList.AllSelect_list_elements()
 		for _, element := range selectListElements {
 			if element.ASTERISK() != nil {
-				schemaName, tableName := NormalizeTableViewName(q.defaultSchema, element.Tableview_name())
+				schemaName, tableName := NormalizeTableViewName(q.connectedDatabase, element.Tableview_name())
 				find := false
 				for _, tableSource := range fromTableSource {
 					if (schemaName == "" || schemaName == tableSource.GetSchemaName()) &&
@@ -332,7 +330,7 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 				if !find {
 					return nil, &parsererror.ResourceNotFoundError{
 						Err:      errors.Errorf("failed to find table to calculate asterisk"),
-						Database: &q.defaultSchema,
+						Database: &q.connectedDatabase,
 						Schema:   &schemaName,
 						Table:    &tableName,
 					}
@@ -445,7 +443,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		// The reason for new q is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
-			defaultSchema:     q.defaultSchema,
+			connectedDatabase: q.connectedDatabase,
 			metaCache:         q.metaCache,
 			f:                 q.f,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
@@ -469,7 +467,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		// The reason for new q is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
-			defaultSchema:     q.defaultSchema,
+			connectedDatabase: q.connectedDatabase,
 			metaCache:         q.metaCache,
 			f:                 q.f,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
@@ -650,7 +648,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		// The reason for new q is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
-			defaultSchema:     q.defaultSchema,
+			connectedDatabase: q.connectedDatabase,
 			metaCache:         q.metaCache,
 			f:                 q.f,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
@@ -1085,7 +1083,7 @@ func (q *querySpanExtractor) mergeJoinTableSource(ctx plsql.IJoin_clauseContext,
 		usingMap := make(map[string]bool)
 		for _, part := range ctx.AllJoin_using_part() {
 			for _, column := range part.Paren_column_list().Column_list().AllColumn_name() {
-				_, _, name, err := plsqlNormalizeColumnName(q.defaultSchema, column)
+				_, _, name, err := plsqlNormalizeColumnName(q.connectedDatabase, column)
 				if err != nil {
 					return nil, err
 				}
@@ -1206,7 +1204,7 @@ func (q *querySpanExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.IDml
 
 	tableViewName := ctx.Tableview_name()
 	if tableViewName != nil {
-		schema, table := NormalizeTableViewName(q.defaultSchema, tableViewName)
+		schema, table := NormalizeTableViewName(q.connectedDatabase, tableViewName)
 		return q.plsqlFindTableSchema(schema, table)
 	}
 
@@ -1235,7 +1233,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 	//
 	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
 	// This is the reason we loop the slice in reversed order.
-	if schemaName == q.defaultSchema {
+	if schemaName == q.connectedDatabase {
 		for i := len(q.ctes) - 1; i >= 0; i-- {
 			table := q.ctes[i]
 			if table.Name == tableName {
@@ -1301,7 +1299,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 	}
 
 	if view != nil && view.Definition != "" {
-		columns, err := q.getColumnsForView(schemaName, view.Definition)
+		columns, err := q.getColumnsForView(view.Definition)
 		if err != nil {
 			return nil, err
 		}
@@ -1312,7 +1310,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 	}
 
 	if materializedView != nil && materializedView.Definition != "" {
-		columns, err := q.getColumnsForMaterializedView(schemaName, materializedView.Definition)
+		columns, err := q.getColumnsForMaterializedView(materializedView.Definition)
 		if err != nil {
 			return nil, err
 		}
@@ -1324,8 +1322,8 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 	return nil, nil
 }
 
-func (q *querySpanExtractor) getColumnsForView(schemaName, definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDatabase, schemaName, q.f)
+func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
+	newQ := newQuerySpanExtractor(q.connectedDatabase, q.f)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition: %s", definition)
@@ -1333,8 +1331,8 @@ func (q *querySpanExtractor) getColumnsForView(schemaName, definition string) ([
 	return span.Results, nil
 }
 
-func (q *querySpanExtractor) getColumnsForMaterializedView(schemaName, definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDatabase, schemaName, q.f)
+func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([]base.QuerySpanResult, error) {
+	newQ := newQuerySpanExtractor(q.connectedDatabase, q.f)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for materialized view definition: %s", definition)
