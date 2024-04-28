@@ -22,10 +22,16 @@
             />
           </div>
           <div class="w-full">
-            <h1 class="mb-2 font-semibold">
-              {{ $t("settings.sensitive-data.algorithms.self") }}
-            </h1>
-            <div class="flex flex-col space-y-2">
+            <div
+              v-if="
+                state.maskingLevel === MaskingLevel.FULL ||
+                columnMetadata?.effectiveMaskingLevel === MaskingLevel.FULL
+              "
+              class="flex flex-col space-y-2"
+            >
+              <h1 class="font-semibold">
+                {{ $t("settings.sensitive-data.algorithms.self") }}
+              </h1>
               <span class="textinfolabel">
                 {{
                   $t(
@@ -50,7 +56,16 @@
                 @change="onMaskingAlgorithmChanged"
               />
             </div>
-            <div class="flex flex-col mt-4 space-y-2">
+            <div
+              v-else-if="
+                state.maskingLevel === MaskingLevel.PARTIAL ||
+                columnMetadata?.effectiveMaskingLevel === MaskingLevel.PARTIAL
+              "
+              class="flex flex-col space-y-2"
+            >
+              <h1 class="font-semibold">
+                {{ $t("settings.sensitive-data.algorithms.self") }}
+              </h1>
               <span class="textinfolabel">
                 {{
                   $t(
