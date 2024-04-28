@@ -305,6 +305,9 @@ const (
 	// MySQLFunctionDisallowedList is an advisor type for MySQL disallowed function list.
 	MySQLFunctionDisallowedList Type = "bb.plugin.advisor.mysql.function.disallowed-list"
 
+	// MySQLDisallowOfflineDDL is an advisor type for MySQL disallow Offline DDL.
+	MySQLDisallowOfflineDDL Type = "bb.plugin.advisor.mysql.disallow-offline-ddl"
+
 	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
