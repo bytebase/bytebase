@@ -39,13 +39,12 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useTaskSheet } from "@/components/IssueV1/components/StatementSection/useTaskSheet";
-import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
+import { useIssueContext, databaseForTask ,specForTask} from "@/components/IssueV1/logic";
 import { SQLCheckButton } from "@/components/SQLCheck";
 import { TaskTypeListWithStatement } from "@/types";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Plan_ChangeDatabaseConfig_Type, Task_Type } from "@/types/proto/v1/rollout_service";
 import { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils/util";
-import { isGhostEnabledForTask } from "../Sidebar/GhostSection/common";
 import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
 
@@ -83,8 +82,14 @@ const handleToggleOnlineMigration = (on: boolean, confirm: Defer<boolean>) => {
 };
 
 const changeType = computed((): CheckRequest_ChangeType | undefined => {
-  if (isGhostEnabledForTask(issue.value, selectedTask.value)) {
-    return CheckRequest_ChangeType.DDL_GHOST;
+  const spec = specForTask(issue.value.planEntity, selectedTask.value);
+  switch (spec?.changeDatabaseConfig?.type) {
+    case Plan_ChangeDatabaseConfig_Type.MIGRATE:
+      return CheckRequest_ChangeType.DDL;
+    case Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
+      return CheckRequest_ChangeType.DDL_GHOST;
+    case Plan_ChangeDatabaseConfig_Type.DATA:
+      return CheckRequest_ChangeType.DML;
   }
   return undefined;
 });

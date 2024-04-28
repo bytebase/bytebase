@@ -1186,9 +1186,6 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 				if len(slice.Substitution) > 16 {
 					return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
 				}
-				if slice.Start >= slice.End {
-					return status.Errorf(codes.InvalidArgument, "the slice end must smaller than the start: [%d,%d)", slice.Start, slice.End)
-				}
 				for j := 0; j < i; j++ {
 					pre := m.RangeMask.Slices[j]
 					if slice.Start >= pre.End || pre.Start >= slice.End {
