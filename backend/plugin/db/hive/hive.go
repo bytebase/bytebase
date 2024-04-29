@@ -51,7 +51,10 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	d.ctx = config.ConnectionContext
 
 	if d.connPool == nil {
-		if config.SASLConfig == nil || !config.SASLConfig.Check() {
+		if config.SASLConfig == nil {
+			config.SASLConfig = &db.PlainSASLConfig{}
+		}
+		if !config.SASLConfig.Check() {
 			return nil, errors.New("SASL settings error")
 		}
 		if err := config.SASLConfig.InitEnv(); err != nil {

@@ -19,6 +19,7 @@ type SASLConfig interface {
 type Realm struct {
 	Name                 string
 	KDCHost              string
+	KDCPort              string
 	KDCTransportProtocol string
 }
 type KerberosConfig struct {
@@ -39,8 +40,14 @@ var (
 	singletonEnv            = KerberosEnv{
 		DefaultKrbConfPath: "/etc/krb5.conf",
 	}
-	KinitCmdFmt     = "kinit -kt %s %s/%s@%s"
-	KrbConfRealmFmt = "%s = {\n\tkdc = %s/%s\n}"
+	// example: 'root/admin@EXAMPLE.COM' or 'root@EXAMPLE.COM'.
+	KinitCmdFmt = "kinit -kt %s %s@%s"
+	// example:
+	// [realm]
+	//   EXAMPLE.COM = {
+	//	   kdc = tcp/192.168.31.2:88
+	// 	 }
+	KrbConfRealmFmt = "%s = {\n\tkdc = %s/%s:%s\n}"
 )
 
 func (krbConfig *KerberosConfig) InitEnv() error {
@@ -55,7 +62,15 @@ func (krbConfig *KerberosConfig) InitEnv() error {
 		return err
 	}
 
-	cmd := exec.Command(fmt.Sprintf(KinitCmdFmt, krbConfig.KeytabPath, krbConfig.Primary, krbConfig.Instance, krbConfig.Realm))
+	var cmdString string
+	if krbConfig.Instance != "" {
+		cmdString = fmt.Sprintf(KinitCmdFmt, krbConfig.KeytabPath, krbConfig.Primary, krbConfig.Realm.Name)
+	} else {
+		primaryAndInstance := fmt.Sprintf("%s/%s", krbConfig.Primary, krbConfig.Instance)
+		cmdString = fmt.Sprintf(KinitCmdFmt, krbConfig.KeytabPath, primaryAndInstance, krbConfig.Realm.Name)
+	}
+
+	cmd := exec.Command(cmdString)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "failed to execute command kinit")
 	}
@@ -81,7 +96,7 @@ func (env *KerberosEnv) AddRealm(realm Realm) error {
 			return err
 		}
 		for _, realm := range env.realms {
-			text := fmt.Sprintf(KrbConfRealmFmt, realm.Name, realm.KDCTransportProtocol, realm.KDCHost)
+			text := fmt.Sprintf(KrbConfRealmFmt, realm.Name, realm.KDCTransportProtocol, realm.KDCHost, realm.KDCPort)
 			if _, err = file.WriteString(text); err != nil {
 				return err
 			}
