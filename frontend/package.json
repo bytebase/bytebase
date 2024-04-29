@@ -30,7 +30,7 @@
     "bootstrap": "5.3.3",
     "canvas-confetti": "1.9.2",
     "d3-shape": "^3.2.0",
-    "dayjs": "1.11.10",
+    "dayjs": "1.11.11",
     "dompurify": "3.1.0",
     "downloadjs": "1.4.7",
     "elkjs": "^0.9.1",
