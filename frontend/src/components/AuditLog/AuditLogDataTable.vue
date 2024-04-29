@@ -1,0 +1,123 @@
+<template>
+  <NDataTable
+    size="small"
+    :columns="columnList"
+    :data="auditLogList"
+    :striped="true"
+    :row-key="(data: AuditLog) => data.name"
+  />
+</template>
+
+<script lang="tsx" setup>
+import dayjs from "dayjs";
+import { NDataTable, type DataTableColumn } from "naive-ui";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import BBAvatar from "@/bbkit/BBAvatar.vue";
+import { extractUserEmail, useProjectV1Store, useUserStore } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
+import type { AuditLog } from "@/types/proto/v1/audit_log_service";
+import { extractProjectResourceName } from "@/utils";
+import JSONStringView from "./JSONStringView.vue";
+
+type ProjectDataTableColumn = DataTableColumn<AuditLog> & {
+  hide?: boolean;
+};
+
+const props = withDefaults(
+  defineProps<{
+    auditLogList: AuditLog[];
+    showProject?: boolean;
+  }>(),
+  {
+    showProject: true,
+  }
+);
+
+const { t } = useI18n();
+const projectStore = useProjectV1Store();
+const userStore = useUserStore();
+
+const columnList = computed((): ProjectDataTableColumn[] => {
+  return (
+    [
+      {
+        key: "created-ts",
+        title: t("audit-log.table.created-ts"),
+        width: 240,
+        render: (auditLog) =>
+          dayjs(auditLog.createTime).format("YYYY-MM-DD HH:mm:ss Z"),
+      },
+      {
+        key: "severity",
+        width: 96,
+        title: t("audit-log.table.level"),
+        render: (auditLog) => auditLog.severity,
+      },
+      {
+        key: "project",
+        width: 96,
+        title: t("common.project"),
+        hide: !props.showProject,
+        render: (auditLog) => {
+          const projectName = extractProjectResourceName(auditLog.name);
+          if (!projectName) {
+            return <span>-</span>;
+          }
+          const project = projectStore.getProjectByName(
+            `${projectNamePrefix}${projectName}`
+          );
+          return <span>{project.title}</span>;
+        },
+      },
+      {
+        key: "method",
+        width: 256,
+        title: t("audit-log.table.method"),
+        render: (auditLog) => auditLog.method,
+      },
+      {
+        key: "actor",
+        width: 128,
+        title: t("audit-log.table.actor"),
+        render: (auditLog) => {
+          const user = userStore.getUserByEmail(
+            extractUserEmail(auditLog.user)
+          );
+          if (!user) {
+            return <span>-</span>;
+          }
+          return (
+            <div class="flex flex-row items-center overflow-hidden gap-x-1">
+              <BBAvatar size="SMALL" username={user.title} />
+              <span class="truncate">{user.title}</span>
+            </div>
+          );
+        },
+      },
+      {
+        key: "request",
+        minWidth: 256,
+        title: t("audit-log.table.request"),
+        render: (auditLog) =>
+          auditLog.request.length > 0 ? (
+            <JSONStringView jsonString={auditLog.request} />
+          ) : (
+            "-"
+          ),
+      },
+      {
+        key: "response",
+        minWidth: 256,
+        title: t("audit-log.table.response"),
+        render: (auditLog) =>
+          auditLog.response.length > 0 ? (
+            <JSONStringView jsonString={auditLog.response} />
+          ) : (
+            "-"
+          ),
+      },
+    ] as ProjectDataTableColumn[]
+  ).filter((column) => !column.hide);
+});
+</script>

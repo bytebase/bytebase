@@ -28,7 +28,6 @@
           :fallback-option="fallbackUser"
           :clearable="true"
           :auto-reset="false"
-          style="width: 100%"
           @update:user="changeAssigneeUID"
         />
       </template>

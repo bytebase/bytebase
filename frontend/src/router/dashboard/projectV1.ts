@@ -24,7 +24,7 @@ export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}
 export const PROJECT_V1_ROUTE_SYNC_SCHEMA = `${PROJECT_V1_ROUTE_DASHBOARD}.sync-schema`;
 export const PROJECT_V1_ROUTE_SLOW_QUERIES = `${PROJECT_V1_ROUTE_DASHBOARD}.slow-queries`;
 export const PROJECT_V1_ROUTE_ANOMALIES = `${PROJECT_V1_ROUTE_DASHBOARD}.anomalies`;
-export const PROJECT_V1_ROUTE_ACTIVITIES = `${PROJECT_V1_ROUTE_DASHBOARD}.activities`;
+export const PROJECT_V1_ROUTE_AUDIT_LOGS = `${PROJECT_V1_ROUTE_DASHBOARD}.audit-logs`;
 export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
 export const PROJECT_V1_ROUTE_GITOPS_CREATE = `${PROJECT_V1_ROUTE_GITOPS}.create`;
 export const PROJECT_V1_ROUTE_GITOPS_DETAIL = `${PROJECT_V1_ROUTE_GITOPS}.detail`;
@@ -296,13 +296,13 @@ const projectV1Routes: RouteRecordRaw[] = [
         props: true,
       },
       {
-        path: "activities",
-        name: PROJECT_V1_ROUTE_ACTIVITIES,
+        path: "audit-logs",
+        name: PROJECT_V1_ROUTE_AUDIT_LOGS,
         meta: {
           overrideTitle: true,
           requiredProjectPermissionList: () => ["bb.projects.get"],
         },
-        component: () => import("@/views/project/ProjectActivityDashboard.vue"),
+        component: () => import("@/views/project/ProjectAuditLogDashboard.vue"),
         props: true,
       },
       {

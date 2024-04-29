@@ -2766,12 +2766,15 @@
       "updated-time": "Updated Time",
       "actor": "Actor",
       "type": "Audit Type",
-      "level": "Audit Level",
+      "level": "Level",
       "comment": "Comment",
       "payload": "Payload",
       "empty": "<Empty>",
       "view-details": "View Details",
-      "select-type": "Select Type"
+      "select-type": "Select Type",
+      "method": "Method",
+      "request": "Request",
+      "response": "Response"
     },
     "type": {
       "workspace": {

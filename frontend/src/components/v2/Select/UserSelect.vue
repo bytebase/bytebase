@@ -11,7 +11,6 @@
     :render-label="renderLabel"
     :placeholder="$t('principal.select')"
     class="bb-user-select"
-    style="width: 12rem"
     @update:show="
       (show: boolean) => {
         showStatus = show;
@@ -21,11 +20,11 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { intersection } from "lodash-es";
 import type { SelectGroupOption, SelectOption, SelectProps } from "naive-ui";
 import { NSelect } from "naive-ui";
-import { computed, watch, watchEffect, h, ref } from "vue";
+import { computed, watch, watchEffect, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
 import UserAvatar from "@/components/User/UserAvatar.vue";
@@ -239,22 +238,15 @@ const handleValueUpdated = (value: string | string[]) => {
 
 const renderAvatar = (user: User) => {
   if (user.name === UNKNOWN_USER_NAME) {
-    return h(
-      "div",
-      {
-        class:
-          "bb-user-select--avatar w-6 h-6 rounded-full border-2 border-current flex justify-center items-center select-none bg-white",
-      },
-      h(UserIcon, {
-        class: "w-4 h-4 text-main text-current",
-      })
+    return (
+      <div class="bb-user-select--avatar w-6 h-6 rounded-full border-2 border-current flex justify-center items-center select-none bg-white">
+        <UserIcon class="w-4 h-4 text-main text-current" />
+      </div>
     );
   } else {
-    return h(UserAvatar, {
-      class: "bb-user-select--avatar",
-      user,
-      size: "SMALL",
-    });
+    return (
+      <UserAvatar class="bb-user-select--avatar" user={user} size="SMALL" />
+    );
   }
 };
 
@@ -268,30 +260,22 @@ const renderLabel = (option: SelectOption) => {
     user.name === SYSTEM_BOT_USER_NAME
       ? t("settings.members.system-bot")
       : user.title;
-  const children = [h("span", { class: "max-w-[10rem] truncate" }, title)];
+  const children = [<span class="truncate">{title}</span>];
   if (user.name !== UNKNOWN_USER_NAME && user.name !== SYSTEM_BOT_USER_NAME) {
     children.push(
-      h("span", { class: "text-gray-400 truncate" }, `(${user.email})`)
+      <span class="text-gray-400 truncate">{`(${user.email})`}</span>
     );
   }
   if (user.userType === UserType.SERVICE_ACCOUNT) {
-    children.push(h(ServiceAccountTag));
+    children.push(<ServiceAccountTag />);
   }
-  return h(
-    "div",
-    {
-      class: "w-full flex items-center gap-x-2",
-    },
-    [
-      avatar,
-      h(
-        "div",
-        {
-          class: "flex flex-row justify-start items-center gap-x-0.5 truncate",
-        },
-        children
-      ),
-    ]
+  return (
+    <div class="w-full flex items-center gap-x-2">
+      {avatar}
+      <div class="flex flex-row justify-start items-center gap-x-0.5 truncate">
+        {children}
+      </div>
+    </div>
   );
 };
 

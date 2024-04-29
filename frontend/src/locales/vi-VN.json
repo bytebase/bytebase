@@ -2771,7 +2771,10 @@
       "payload": "Khối hàng",
       "empty": "<Trống>",
       "view-details": "Xem chi tiết",
-      "select-type": "Lựa chọn đối tượng"
+      "select-type": "Lựa chọn đối tượng",
+      "method": "Phương pháp",
+      "request": "Lời yêu cầu",
+      "response": "Phản ứng"
     },
     "type": {
       "workspace": {
