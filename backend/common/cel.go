@@ -35,7 +35,7 @@ var RiskFactors = []cel.EnvOption{
 // ApprovalFactors are the variables when finding the approval template.
 var ApprovalFactors = []cel.EnvOption{
 	cel.Variable("level", cel.IntType),
-	cel.Variable("source", cel.IntType),
+	cel.Variable("source", cel.StringType),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
