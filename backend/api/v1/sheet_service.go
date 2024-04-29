@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	sc "github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -110,7 +111,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert sheet: %v", err))
 	}
-	sheet, err := s.store.CreateSheet(ctx, storeSheetCreate)
+	sheet, err := sc.CreateSheet(ctx, s.store, storeSheetCreate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to create sheet: %v", err))
 	}
@@ -376,8 +377,8 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		Statement:   string(sheet.Content),
 		Payload:     &storepb.SheetPayload{},
 	}
+	sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
 	if sheet.Payload != nil {
-		sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
 		sheetMessage.Payload.DatabaseConfig = convertV1DatabaseConfig(sheet.Payload.DatabaseConfig)
 		sheetMessage.Payload.BaselineDatabaseConfig = convertV1DatabaseConfig(sheet.Payload.BaselineDatabaseConfig)
 	}
