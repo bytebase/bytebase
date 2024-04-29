@@ -440,4 +440,3 @@ message KerberosConfig {
   string kdc_port = 6;
   string kdc_transport_protocol = 7;
 }
-
