@@ -1243,7 +1243,7 @@ func convertCreateStmt(in *pgquery.CreateStmt) (*ast.CreateTableStmt, error) {
 
 	if in.Partspec != nil {
 		table.PartitionDef = &ast.PartitionDef{
-			Strategy: in.Partspec.Strategy.String(),
+			Strategy: in.Partspec.Strategy,
 		}
 		for _, item := range in.Partspec.PartParams {
 			partElem, ok := item.Node.(*pgquery.Node_PartitionElem)
