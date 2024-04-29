@@ -845,16 +845,14 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.ExternalSecret = externalSecret
 			patch.ExternalSecret = externalSecret
 			patch.RemoveExternalSecret = externalSecret == nil
-
 		case "sasl_config":
 			dataSource.SASLConfig = convertToStoreDataSourceSaslConfig(request.DataSource.SaslConfig)
 			patch.SASLConfig = dataSource.SASLConfig
-
+			patch.RemoveSASLConfig = dataSource.SASLConfig == nil
 		case "authentication_type":
 			authType := convertToAuthenticationType(request.DataSource.AuthenticationType)
 			dataSource.AuthenticationType = authType
 			patch.AuthenticationType = &authType
-
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1158,6 +1156,7 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			ServiceName:            ds.ServiceName,
 			ExternalSecret:         externalSecret,
 			AuthenticationType:     authenticationType,
+			SaslConfig:             convertToV1DataSourceSaslConfig(ds.SASLConfig),
 		})
 	}
 
@@ -1216,6 +1215,30 @@ func convertToStoreDataSourceSaslConfig(saslConfig *v1pb.SASLConfig) *storepb.SA
 	case *v1pb.SASLConfig_KrbConfig:
 		storeSaslConfig.Mechanism = &storepb.SASLConfig_KrbConfig{
 			KrbConfig: &storepb.KerberosConfig{
+				Primary:              m.KrbConfig.Primary,
+				Instance:             m.KrbConfig.Instance,
+				Realm:                m.KrbConfig.Realm,
+				Keytab:               m.KrbConfig.Keytab,
+				KdcHost:              m.KrbConfig.KdcHost,
+				KdcPort:              m.KrbConfig.KdcPort,
+				KdcTransportProtocol: m.KrbConfig.KdcTransportProtocol,
+			},
+		}
+	default:
+		return nil
+	}
+	return storeSaslConfig
+}
+
+func convertToV1DataSourceSaslConfig(saslConfig *storepb.SASLConfig) *v1pb.SASLConfig {
+	if saslConfig == nil {
+		return nil
+	}
+	storeSaslConfig := &v1pb.SASLConfig{}
+	switch m := saslConfig.Mechanism.(type) {
+	case *storepb.SASLConfig_KrbConfig:
+		storeSaslConfig.Mechanism = &v1pb.SASLConfig_KrbConfig{
+			KrbConfig: &v1pb.KerberosConfig{
 				Primary:              m.KrbConfig.Primary,
 				Instance:             m.KrbConfig.Instance,
 				Realm:                m.KrbConfig.Realm,
