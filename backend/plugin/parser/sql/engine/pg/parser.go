@@ -4,7 +4,7 @@ package pg
 import (
 	"strings"
 
-	pgquery "github.com/pganalyze/pg_query_go/v4"
+	pgquery "github.com/pganalyze/pg_query_go/v5"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

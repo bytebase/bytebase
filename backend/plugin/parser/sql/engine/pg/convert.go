@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	pgquery "github.com/pganalyze/pg_query_go/v4"
+	pgquery "github.com/pganalyze/pg_query_go/v5"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -1243,7 +1243,7 @@ func convertCreateStmt(in *pgquery.CreateStmt) (*ast.CreateTableStmt, error) {
 
 	if in.Partspec != nil {
 		table.PartitionDef = &ast.PartitionDef{
-			Strategy: in.Partspec.Strategy,
+			Strategy: in.Partspec.Strategy.String(),
 		}
 		for _, item := range in.Partspec.PartParams {
 			partElem, ok := item.Node.(*pgquery.Node_PartitionElem)

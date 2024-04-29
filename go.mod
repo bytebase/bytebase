@@ -57,7 +57,7 @@ require (
 	github.com/microsoft/go-mssqldb v1.7.1
 	github.com/nyaruka/phonenumbers v1.3.4
 	github.com/paulmach/orb v0.11.1
-	github.com/pganalyze/pg_query_go/v4 v4.2.3
+	github.com/pganalyze/pg_query_go/v5 v5.1.0
 	github.com/pingcap/tidb v1.1.0-beta.0.20220825063022-5263a0abda61
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20221101143359-5b0be9af540e
 	github.com/pkg/errors v0.9.1
@@ -316,7 +316,7 @@ replace github.com/pingcap/tidb => github.com/bytebase/tidb2 v0.0.0-202311290022
 
 replace github.com/pingcap/tidb/pkg/parser => github.com/bytebase/tidb2/pkg/parser v0.0.0-20231129002249-5bbb6bb83940
 
-replace github.com/pganalyze/pg_query_go/v4 => github.com/bytebase/pg_query_go/v4 v4.0.0-20230802100607-2f34e68d96f5
+replace github.com/pganalyze/pg_query_go/v5 => github.com/bytebase/pg_query_go2/v5 v5.0.0-20240429070353-41837024e3d6
 
 replace github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2
 
