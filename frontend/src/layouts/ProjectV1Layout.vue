@@ -151,7 +151,7 @@ onMounted(async () => {
           style: "INFO",
           title: activityName(activity.action),
           manualHide: true,
-          link: `/${project.value.name}/activities`,
+          link: `/${project.value.name}/audit-logs`,
           linkTitle: t("common.view"),
         });
         break;
