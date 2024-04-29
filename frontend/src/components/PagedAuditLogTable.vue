@@ -29,23 +29,16 @@ import { useSessionStorage } from "@vueuse/core";
 import { stringify } from "qs";
 import type { PropType } from "vue";
 import { computed, reactive, watch } from "vue";
-import { useIsLoggedIn, useActivityV1Store } from "@/store";
-import type { FindActivityMessage } from "@/types";
-import type { LogEntity } from "@/types/proto/v1/logging_service";
+import { useIsLoggedIn, useAuditLogStore } from "@/store";
+import type { SearchAuditLogsParams } from "@/types";
+import type { AuditLog } from "@/types/proto/v1/audit_log_service";
 
 type LocalState = {
   loading: boolean;
-  auditLogList: LogEntity[];
+  auditLogList: AuditLog[];
   paginationToken: string;
 };
 
-/**
- * It's complex and dangerous to cache the activity list.
- * So we just memorize how many times the user clicks the "load more" button.
- * And load the first N pages in the first fetch.
- * E.g., the user clicked "load more" 4 times, then the first time will set limit
- *   to `pageSize * 5`.
- */
 type SessionState = {
   // How many times the user clicks the "load more" button.
   page: number;
@@ -62,8 +55,8 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  activityFind: {
-    type: Object as PropType<FindActivityMessage>,
+  searchAuditLogs: {
+    type: Object as PropType<SearchAuditLogsParams>,
     default: () => ({
       order: "desc",
     }),
@@ -79,7 +72,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (event: "list:update", list: LogEntity[]): void;
+  (event: "list:update", list: AuditLog[]): void;
 }>();
 
 const state = reactive<LocalState>({
@@ -93,7 +86,7 @@ const sessionState = useSessionStorage<SessionState>(props.sessionKey, {
   updatedTs: 0,
 });
 
-const activityV1Store = useActivityV1Store();
+const auditLogStore = useAuditLogStore();
 const isLoggedIn = useIsLoggedIn();
 
 const limit = computed(() => {
@@ -102,11 +95,11 @@ const limit = computed(() => {
 });
 
 const condition = computed(() => {
-  const activityFind = {
-    ...props.activityFind,
+  const searchAuditLogs = {
+    ...props.searchAuditLogs,
     limit: limit.value,
   };
-  return stringify(activityFind, {
+  return stringify(searchAuditLogs, {
     arrayFormat: "repeat",
   });
 });
@@ -122,19 +115,18 @@ const fetchData = async (refresh = false) => {
       limit.value;
 
   try {
-    const { nextPageToken, logEntities } =
-      await activityV1Store.fetchActivityList({
-        ...props.activityFind,
-        pageSize: expectedRowCount,
-        pageToken: state.paginationToken,
-      });
+    const { nextPageToken, auditLogs } = await auditLogStore.fetchAuditLogs({
+      ...props.searchAuditLogs,
+      pageSize: expectedRowCount,
+      pageToken: state.paginationToken,
+    });
     if (refresh) {
-      state.auditLogList = logEntities;
+      state.auditLogList = auditLogs;
     } else {
-      state.auditLogList.push(...logEntities);
+      state.auditLogList.push(...auditLogs);
     }
 
-    if (!isFirstFetch && logEntities.length === expectedRowCount) {
+    if (!isFirstFetch && auditLogs.length === expectedRowCount) {
       // If we didn't reach the end, memorize we've clicked the "load more" button.
       sessionState.value.page++;
     }

@@ -11,8 +11,8 @@ dayjs.extend(utc);
 
 const buildFilter = (search: SearchAuditLogsParams): string => {
   const filter: string[] = [];
-  if (search.resource) {
-    filter.push(`resource == "${search.resource}"`);
+  if (search.parent) {
+    filter.push(`parent == "${search.parent}"`);
   }
   if (search.creatorEmail) {
     filter.push(`user == "${userNamePrefix}${search.creatorEmail}"`);

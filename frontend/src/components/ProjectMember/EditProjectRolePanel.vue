@@ -82,7 +82,6 @@
           </p>
           <UserSelect
             v-model:users="state.userUidList"
-            style="width: 100%"
             :multiple="true"
             :include-all="false"
           />
