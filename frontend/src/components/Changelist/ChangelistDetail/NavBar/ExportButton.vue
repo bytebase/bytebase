@@ -10,7 +10,7 @@
     @click="handleExport"
   >
     <template #icon>
-      <heroicons:arrow-down-tray />
+      <DownloadIcon class="w-4 h-4" />
     </template>
   </ErrorTipsButton>
 </template>
@@ -19,6 +19,7 @@
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
+import { DownloadIcon } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ErrorTipsButton } from "@/components/v2";
