@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -75,6 +74,7 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 		AuthenticationPrivateKeyObfuscated: m.AuthenticationPrivateKeyObfuscated,
 		ExternalSecret:                     m.ExternalSecret,
 		AuthenticationType:                 m.AuthenticationType,
+		SASLConfig:                         m.SASLConfig,
 	}
 }
 
@@ -111,7 +111,8 @@ type UpdateDataSourceMessage struct {
 	RemoveExternalSecret bool
 	AuthenticationType   *storepb.DataSourceOptions_AuthenticationType
 	// SASLConfig.
-	SASLConfig *storepb.SASLConfig
+	SASLConfig       *storepb.SASLConfig
+	RemoveSASLConfig bool
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -174,6 +175,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		dataSourceMessage.SSHObfuscatedPrivateKey = dataSourceOptions.SshObfuscatedPrivateKey
 		dataSourceMessage.AuthenticationPrivateKeyObfuscated = dataSourceOptions.AuthenticationPrivateKeyObfuscated
 		dataSourceMessage.ExternalSecret = dataSourceOptions.ExternalSecret
+		dataSourceMessage.SASLConfig = dataSourceOptions.SaslConfig
 		dataSourceMessage.AuthenticationType = dataSourceOptions.AuthenticationType
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}
@@ -312,7 +314,13 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('externalSecret', $%d::JSONB)", len(args)+1)), append(args, nil)
 	}
 	if v := patch.SASLConfig; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('saslConfig', $%d::JSONB)", len(args)+1)), append(args, proto.Clone(v))
+		protoBytes, err := protojson.Marshal(v)
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal sasl config")
+		}
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('saslConfig', $%d::JSONB)", len(args)+1)), append(args, protoBytes)
+	} else if patch.RemoveSASLConfig {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('saslConfig', $%d::JSONB)", len(args)+1)), append(args, nil)
 	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
@@ -365,6 +373,7 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		AuthenticationPrivateKeyObfuscated: dataSource.AuthenticationPrivateKeyObfuscated,
 		ExternalSecret:                     dataSource.ExternalSecret,
 		AuthenticationType:                 dataSource.AuthenticationType,
+		SaslConfig:                         dataSource.SASLConfig,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {

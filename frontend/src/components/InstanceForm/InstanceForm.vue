@@ -1183,6 +1183,17 @@ const checkDataSource = (dataSources: DataSource[]) => {
       }
     }
 
+    if (ds.saslConfig?.krbConfig) {
+      if (
+        !ds.saslConfig.krbConfig.primary ||
+        !ds.saslConfig.krbConfig.realm ||
+        !ds.saslConfig.krbConfig.kdcHost ||
+        !ds.saslConfig.krbConfig.keytab
+      ) {
+        return false;
+      }
+    }
+
     if (!ds.externalSecret) {
       return true;
     }

@@ -40,8 +40,13 @@ var (
 	singletonEnv            = KerberosEnv{
 		DefaultKrbConfPath: "/etc/krb5.conf",
 	}
+	// KinitCmdFmt is the cmd for kinit, should be
+	// kinit -kt {keytab file path} {principal}
+	// The principal is in {primary}/{instance}@{realm} or {primary}@{realm} format
 	// example: 'root/admin@EXAMPLE.COM' or 'root@EXAMPLE.COM'.
 	KinitCmdFmt = "kinit -kt %s %s@%s"
+	// KrbConfRealmFmt is the config content for /etc/krb5.conf, it should like
+	// [realms] {realm} = { kdc = [service/]host[:port]
 	// example:
 	// [realm]
 	//   EXAMPLE.COM = {
