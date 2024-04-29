@@ -7,6 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	pgquery "github.com/pganalyze/pg_query_go/v5"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 )
 
@@ -941,7 +943,16 @@ func deparsePartitionDef(_ DeparseContext, in *ast.PartitionDef, buf *strings.Bu
 	if _, err := buf.WriteString("PARTITION BY "); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(strings.ToUpper(in.Strategy)); err != nil {
+	strategy := ""
+	switch in.Strategy {
+	case pgquery.PartitionStrategy_PARTITION_STRATEGY_LIST:
+		strategy = "LIST"
+	case pgquery.PartitionStrategy_PARTITION_STRATEGY_RANGE:
+		strategy = "RANGE"
+	case pgquery.PartitionStrategy_PARTITION_STRATEGY_HASH:
+		strategy = "HASH"
+	}
+	if _, err := buf.WriteString(strategy); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(" ("); err != nil {
