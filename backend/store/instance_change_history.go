@@ -65,6 +65,7 @@ type FindInstanceChangeHistoryMessage struct {
 	DatabaseID      *int
 	SheetID         *int
 	Source          *db.MigrationSource
+	Status          *db.MigrationStatus
 	Version         *model.Version
 	TypeList        []db.MigrationType
 	ResourcesFilter *string
@@ -466,6 +467,9 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	}
 	if v := find.Source; v != nil {
 		where, args = append(where, fmt.Sprintf("instance_change_history.source = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Status; v != nil {
+		where, args = append(where, fmt.Sprintf("instance_change_history.status = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Version; v != nil {
 		storedVersion, err := find.Version.Marshal()

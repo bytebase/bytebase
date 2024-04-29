@@ -27,7 +27,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
-	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -339,16 +338,6 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	}
 	setClassificationAndUserCommentFromComment(databaseMetadata)
 
-	var patchSchemaVersion *model.Version
-	if force {
-		// When there are too many databases, this might have performance issue.
-		schemaVersion, err := utils.GetLatestSchemaVersion(ctx, s.store, instance.UID, database.UID, databaseMetadata.Name)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get latest schema version for database %q", database.DatabaseName)
-		}
-		patchSchemaVersion = &schemaVersion
-	}
-
 	syncStatus := api.OK
 	ts := time.Now().Unix()
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
@@ -356,7 +345,6 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		DatabaseName:         database.DatabaseName,
 		SyncState:            &syncStatus,
 		SuccessfulSyncTimeTs: &ts,
-		SchemaVersion:        patchSchemaVersion,
 		MetadataUpsert: &storepb.DatabaseMetadata{
 			LastSyncTime: timestamppb.New(time.Unix(ts, 0)),
 		},
