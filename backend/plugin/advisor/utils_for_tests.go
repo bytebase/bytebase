@@ -316,6 +316,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 	var err error
 	switch ruleTp {
 	case SchemaRuleMySQLEngine,
+		SchemaRuleFullyQualifiedObjectName,
 		SchemaRuleStatementNoSelectAll,
 		SchemaRuleStatementRequireWhere,
 		SchemaRuleStatementNoLeadingWildcardLike,

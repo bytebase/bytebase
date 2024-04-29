@@ -117,6 +117,10 @@
         }
       }
     },
+    "naming-fully-qualified": {
+      "title": "Nombre de objeto completo",
+      "description": "Aplicar el uso de un nombre de objeto completo. Nivel de error de sugerencia: Advertencia"
+    },
     "naming-table": {
       "title": "Imponer formato de nomenclatura de tabla",
       "description": "El formato predeterminado es todo en minúsculas, separado por guiones bajos entre palabras, y no más de 63 caracteres de largo, como \"abc\" y \"abc_def\". Nivel de sugerencia de error: Advertencia",

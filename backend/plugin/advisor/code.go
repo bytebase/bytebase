@@ -75,6 +75,8 @@ const (
 	NameIsKeywordIdentifier Code = 308
 	// 309 naming case mismatch advisor error code.
 	NamingCaseMismatch Code = 309
+	// 310 not fully qualified object name error code.
+	NamingNotFullyQualifiedName = 310
 
 	// 401 ~ 499 column error code.
 	NoRequiredColumn                           Code = 401

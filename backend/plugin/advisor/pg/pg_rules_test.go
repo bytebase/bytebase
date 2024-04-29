@@ -15,6 +15,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleCommentLength,
 		advisor.SchemaRuleIndexKeyNumberLimit,
 		advisor.SchemaRuleIndexNoDuplicateColumn,
+		advisor.SchemaRuleFullyQualifiedObjectName,
 		advisor.SchemaRuleColumnNaming,
 		advisor.SchemaRuleFKNaming,
 		advisor.SchemaRuleIDXNaming,
