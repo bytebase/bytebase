@@ -50,7 +50,10 @@
       class="sm:col-span-3 sm:col-start-1"
     >
       <div class="mt-4 sm:col-span-3 sm:col-start-1">
-        <label class="textlabel block"> Principal </label>
+        <label class="textlabel block">
+          Principal
+          <span class="text-red-600">*</span>
+        </label>
         <div class="flex mt-2 items-center space-x-2">
           <NInput
             v-model:value="dataSource.saslConfig.krbConfig.primary"
@@ -72,7 +75,10 @@
         </div>
       </div>
       <div class="mt-4 sm:col-span-3 sm:col-start-1">
-        <label class="textlabel block"> KDC </label>
+        <label class="textlabel block">
+          KDC
+          <span class="text-red-600">*</span>
+        </label>
         <div class="flex mt-2 items-center space-x-2">
           <div class="w-fit">
             <NRadioGroup
@@ -101,7 +107,10 @@
         </div>
       </div>
       <div class="mt-4 sm:col-span-3 sm:col-start-1">
-        <label class="textlabel block"> Keytab File Path </label>
+        <label class="textlabel block">
+          Keytab File Path
+          <span class="text-red-600">*</span>
+        </label>
         <NInput
           v-model:value="dataSource.saslConfig.krbConfig.keytab"
           class="mt-2 w-full"
