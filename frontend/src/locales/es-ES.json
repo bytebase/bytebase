@@ -2771,7 +2771,10 @@
       "payload": "Datos",
       "empty": "<Vacío>",
       "view-details": "Ver detalles",
-      "select-type": "Seleccionar tipo"
+      "select-type": "Seleccionar tipo",
+      "method": "Método",
+      "request": "Pedido",
+      "response": "Respuesta"
     },
     "type": {
       "workspace": {

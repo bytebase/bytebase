@@ -2771,7 +2771,10 @@
       "payload": "ペイロード",
       "empty": "<空>",
       "view-details": "詳細を確認する",
-      "select-type": "タイプを選択してください"
+      "select-type": "タイプを選択してください",
+      "method": "方法",
+      "request": "リクエスト",
+      "response": "応答"
     },
     "type": {
       "workspace": {
