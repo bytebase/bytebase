@@ -1221,16 +1221,12 @@ func convertToStoreDataSourceSaslConfig(saslConfig *v1pb.SASLConfig) *storepb.SA
 				Realm:                m.KrbConfig.Realm,
 				Keytab:               m.KrbConfig.Keytab,
 				KdcHost:              m.KrbConfig.KdcHost,
+				KdcPort:              m.KrbConfig.KdcPort,
 				KdcTransportProtocol: m.KrbConfig.KdcTransportProtocol,
 			},
 		}
-	case *v1pb.SASLConfig_PlainConfig:
-		storeSaslConfig.Mechanism = &storepb.SASLConfig_PlainConfig{
-			PlainConfig: &storepb.PlainSASLConfig{
-				Username: m.PlainConfig.Username,
-				Password: m.PlainConfig.Password,
-			},
-		}
+	default:
+		return nil
 	}
 	return storeSaslConfig
 }

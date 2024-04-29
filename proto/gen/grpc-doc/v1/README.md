@@ -81,7 +81,6 @@
     - [KerberosConfig](#bytebase-v1-KerberosConfig)
     - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
-    - [PlainSASLConfig](#bytebase-v1-PlainSASLConfig)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
     - [SASLConfig](#bytebase-v1-SASLConfig)
     - [SearchInstancesRequest](#bytebase-v1-SearchInstancesRequest)
@@ -1728,6 +1727,7 @@ InstanceOptions is the option for instances.
 | realm | [string](#string) |  |  |
 | keytab | [string](#string) |  |  |
 | kdc_host | [string](#string) |  |  |
+| kdc_port | [string](#string) |  |  |
 | kdc_transport_protocol | [string](#string) |  |  |
 
 
@@ -1771,22 +1771,6 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 
 
-<a name="bytebase-v1-PlainSASLConfig"></a>
-
-### PlainSASLConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| username | [string](#string) |  |  |
-| password | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-RemoveDataSourceRequest"></a>
 
 ### RemoveDataSourceRequest
@@ -1812,7 +1796,6 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | krb_config | [KerberosConfig](#bytebase-v1-KerberosConfig) |  |  |
-| plain_config | [PlainSASLConfig](#bytebase-v1-PlainSASLConfig) |  |  |
 
 
 
