@@ -10517,6 +10517,8 @@ components:
                     type: string
                 kdcHost:
                     type: string
+                kdcPort:
+                    type: string
                 kdcTransportProtocol:
                     type: string
         LDAPIdentityProviderConfig:
@@ -11264,13 +11266,6 @@ components:
             type: object
             properties:
                 license:
-                    type: string
-        PlainSASLConfig:
-            type: object
-            properties:
-                username:
-                    type: string
-                password:
                     type: string
         Plan:
             type: object
@@ -12114,8 +12109,6 @@ components:
             properties:
                 krbConfig:
                     $ref: '#/components/schemas/KerberosConfig'
-                plainConfig:
-                    $ref: '#/components/schemas/PlainSASLConfig'
         SMTPMailDeliverySettingValue:
             type: object
             properties:

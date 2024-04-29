@@ -239,7 +239,6 @@ export function dataSourceOptions_AuthenticationTypeToJSON(object: DataSourceOpt
 
 export interface SASLConfig {
   krbConfig?: KerberosConfig | undefined;
-  plainConfig?: PlainSASLConfig | undefined;
 }
 
 export interface KerberosConfig {
@@ -248,12 +247,8 @@ export interface KerberosConfig {
   realm: string;
   keytab: string;
   kdcHost: string;
+  kdcPort: string;
   kdcTransportProtocol: string;
-}
-
-export interface PlainSASLConfig {
-  username: string;
-  password: string;
 }
 
 function createBaseDataSourceExternalSecret(): DataSourceExternalSecret {
@@ -805,16 +800,13 @@ export const DataSourceOptions = {
 };
 
 function createBaseSASLConfig(): SASLConfig {
-  return { krbConfig: undefined, plainConfig: undefined };
+  return { krbConfig: undefined };
 }
 
 export const SASLConfig = {
   encode(message: SASLConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.krbConfig !== undefined) {
       KerberosConfig.encode(message.krbConfig, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.plainConfig !== undefined) {
-      PlainSASLConfig.encode(message.plainConfig, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -833,13 +825,6 @@ export const SASLConfig = {
 
           message.krbConfig = KerberosConfig.decode(reader, reader.uint32());
           continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.plainConfig = PlainSASLConfig.decode(reader, reader.uint32());
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -850,19 +835,13 @@ export const SASLConfig = {
   },
 
   fromJSON(object: any): SASLConfig {
-    return {
-      krbConfig: isSet(object.krbConfig) ? KerberosConfig.fromJSON(object.krbConfig) : undefined,
-      plainConfig: isSet(object.plainConfig) ? PlainSASLConfig.fromJSON(object.plainConfig) : undefined,
-    };
+    return { krbConfig: isSet(object.krbConfig) ? KerberosConfig.fromJSON(object.krbConfig) : undefined };
   },
 
   toJSON(message: SASLConfig): unknown {
     const obj: any = {};
     if (message.krbConfig !== undefined) {
       obj.krbConfig = KerberosConfig.toJSON(message.krbConfig);
-    }
-    if (message.plainConfig !== undefined) {
-      obj.plainConfig = PlainSASLConfig.toJSON(message.plainConfig);
     }
     return obj;
   },
@@ -875,15 +854,12 @@ export const SASLConfig = {
     message.krbConfig = (object.krbConfig !== undefined && object.krbConfig !== null)
       ? KerberosConfig.fromPartial(object.krbConfig)
       : undefined;
-    message.plainConfig = (object.plainConfig !== undefined && object.plainConfig !== null)
-      ? PlainSASLConfig.fromPartial(object.plainConfig)
-      : undefined;
     return message;
   },
 };
 
 function createBaseKerberosConfig(): KerberosConfig {
-  return { primary: "", instance: "", realm: "", keytab: "", kdcHost: "", kdcTransportProtocol: "" };
+  return { primary: "", instance: "", realm: "", keytab: "", kdcHost: "", kdcPort: "", kdcTransportProtocol: "" };
 }
 
 export const KerberosConfig = {
@@ -903,8 +879,11 @@ export const KerberosConfig = {
     if (message.kdcHost !== "") {
       writer.uint32(42).string(message.kdcHost);
     }
+    if (message.kdcPort !== "") {
+      writer.uint32(50).string(message.kdcPort);
+    }
     if (message.kdcTransportProtocol !== "") {
-      writer.uint32(50).string(message.kdcTransportProtocol);
+      writer.uint32(58).string(message.kdcTransportProtocol);
     }
     return writer;
   },
@@ -956,6 +935,13 @@ export const KerberosConfig = {
             break;
           }
 
+          message.kdcPort = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
           message.kdcTransportProtocol = reader.string();
           continue;
       }
@@ -974,6 +960,7 @@ export const KerberosConfig = {
       realm: isSet(object.realm) ? globalThis.String(object.realm) : "",
       keytab: isSet(object.keytab) ? globalThis.String(object.keytab) : "",
       kdcHost: isSet(object.kdcHost) ? globalThis.String(object.kdcHost) : "",
+      kdcPort: isSet(object.kdcPort) ? globalThis.String(object.kdcPort) : "",
       kdcTransportProtocol: isSet(object.kdcTransportProtocol) ? globalThis.String(object.kdcTransportProtocol) : "",
     };
   },
@@ -995,6 +982,9 @@ export const KerberosConfig = {
     if (message.kdcHost !== "") {
       obj.kdcHost = message.kdcHost;
     }
+    if (message.kdcPort !== "") {
+      obj.kdcPort = message.kdcPort;
+    }
     if (message.kdcTransportProtocol !== "") {
       obj.kdcTransportProtocol = message.kdcTransportProtocol;
     }
@@ -1011,81 +1001,8 @@ export const KerberosConfig = {
     message.realm = object.realm ?? "";
     message.keytab = object.keytab ?? "";
     message.kdcHost = object.kdcHost ?? "";
+    message.kdcPort = object.kdcPort ?? "";
     message.kdcTransportProtocol = object.kdcTransportProtocol ?? "";
-    return message;
-  },
-};
-
-function createBasePlainSASLConfig(): PlainSASLConfig {
-  return { username: "", password: "" };
-}
-
-export const PlainSASLConfig = {
-  encode(message: PlainSASLConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.username !== "") {
-      writer.uint32(10).string(message.username);
-    }
-    if (message.password !== "") {
-      writer.uint32(18).string(message.password);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlainSASLConfig {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlainSASLConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.username = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.password = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlainSASLConfig {
-    return {
-      username: isSet(object.username) ? globalThis.String(object.username) : "",
-      password: isSet(object.password) ? globalThis.String(object.password) : "",
-    };
-  },
-
-  toJSON(message: PlainSASLConfig): unknown {
-    const obj: any = {};
-    if (message.username !== "") {
-      obj.username = message.username;
-    }
-    if (message.password !== "") {
-      obj.password = message.password;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlainSASLConfig>): PlainSASLConfig {
-    return PlainSASLConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<PlainSASLConfig>): PlainSASLConfig {
-    const message = createBasePlainSASLConfig();
-    message.username = object.username ?? "";
-    message.password = object.password ?? "";
     return message;
   },
 };

@@ -88,7 +88,6 @@
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
     - [KerberosConfig](#bytebase-store-KerberosConfig)
-    - [PlainSASLConfig](#bytebase-store-PlainSASLConfig)
     - [SASLConfig](#bytebase-store-SASLConfig)
   
     - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
@@ -1522,23 +1521,8 @@ Used internally for obfuscating the page token.
 | realm | [string](#string) |  |  |
 | keytab | [string](#string) |  |  |
 | kdc_host | [string](#string) |  |  |
+| kdc_port | [string](#string) |  |  |
 | kdc_transport_protocol | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlainSASLConfig"></a>
-
-### PlainSASLConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| username | [string](#string) |  |  |
-| password | [string](#string) |  |  |
 
 
 
@@ -1554,7 +1538,6 @@ Used internally for obfuscating the page token.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | krb_config | [KerberosConfig](#bytebase-store-KerberosConfig) |  |  |
-| plain_config | [PlainSASLConfig](#bytebase-store-PlainSASLConfig) |  |  |
 
 
 
