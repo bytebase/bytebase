@@ -13,7 +13,6 @@
       <UserSelect
         v-model:users="state.userUidList"
         class="mt-2"
-        style="width: 100%"
         :multiple="true"
         :include-all-users="true"
         :include-service-account="true"

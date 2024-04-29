@@ -99,21 +99,21 @@
         }
       }
     },
-    "table-disallow-dml": {
-      "title": "禁止 DML",
-      "description": "配置哪些表禁止执行 DML。建议错误级别：警告",
-      "component": {
-        "list": {
-          "title": "表名"
-        }
-      }
-    },
     "table-limit-size": {
       "title": "限制对数据量大的表执行 DDL 操作",
       "description": "配置可执行 DDL 的表的最大数据量。建议错误级别：警告",
       "component": {
         "number": {
           "title": "最大数据量"
+        }
+      }
+    },
+    "table-disallow-dml": {
+      "title": "禁止 DML",
+      "description": "配置哪些表禁止执行 DML。建议错误级别：警告",
+      "component": {
+        "list": {
+          "title": "表名"
         }
       }
     },

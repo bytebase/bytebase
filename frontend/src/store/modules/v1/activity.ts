@@ -3,15 +3,13 @@ import utc from "dayjs/plugin/utc";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { loggingServiceClient } from "@/grpcweb";
-import type { IdType, FindActivityMessage, ComposedIssue } from "@/types";
-import type { ExportFormat } from "@/types/proto/v1/common";
+import type { FindActivityMessage } from "@/types";
 import type { LogEntity } from "@/types/proto/v1/logging_service";
 import {
   logEntity_ActionToJSON,
   logEntity_LevelToJSON,
 } from "@/types/proto/v1/logging_service";
-import { isDatabaseChangeRelatedIssue, extractRolloutUID } from "@/utils";
-import { userNamePrefix, getLogId } from "./common";
+import { userNamePrefix } from "./common";
 
 dayjs.extend(utc);
 
@@ -48,6 +46,7 @@ const buildFilter = (find: FindActivityMessage): string => {
   return filter.join(" && ");
 };
 
+// TODO(steven): migrate to `useAuditLogStore`.
 export const useActivityV1Store = defineStore("activity_v1", () => {
   const activityListByIssueV1 = reactive(new Map<string, LogEntity[]>());
 
@@ -65,61 +64,9 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
   const getActivityListByIssueV1 = (uid: string): LogEntity[] => {
     return activityListByIssueV1.get(uid) || [];
   };
-  const fetchActivityListForIssueV1 = async (issue: ComposedIssue) => {
-    const requests = [
-      fetchActivityList({
-        resource: `issues/${issue.uid}`,
-        order: "asc",
-        pageSize: 1000, // Pagination is complex, and not high priority
-      }).then((resp) => resp.logEntities),
-    ];
-    if (isDatabaseChangeRelatedIssue(issue) && issue.rollout) {
-      const pipelineUID = extractRolloutUID(issue.rollout);
-      requests.push(
-        fetchActivityList({
-          resource: `pipelines/${pipelineUID}`,
-          order: "asc",
-          pageSize: 1000, // Pagination is complex, and not high priority
-        }).then((resp) => resp.logEntities)
-      );
-    } else {
-      requests.push(Promise.resolve([]));
-    }
-
-    const [listForIssue, listForPipeline] = await Promise.all(requests);
-    const mergedList = [...listForIssue, ...listForPipeline];
-    mergedList.sort((a, b) => {
-      return getLogId(a.name) - getLogId(b.name);
-    });
-
-    activityListByIssueV1.set(issue.uid, mergedList);
-    return mergedList;
-  };
-
-  const getResourceId = (activity: LogEntity): IdType => {
-    return activity.resource.split("/").slice(-1)[0];
-  };
-
-  const exportData = async ({
-    find,
-    format,
-  }: {
-    find: FindActivityMessage;
-    format: ExportFormat;
-  }) => {
-    const resp = await loggingServiceClient.exportLogs({
-      orderBy: find.order ? `create_time ${find.order}` : "",
-      filter: buildFilter(find),
-      format,
-    });
-    return resp.content;
-  };
 
   return {
     fetchActivityList,
-    fetchActivityListForIssueV1,
     getActivityListByIssueV1,
-    getResourceId,
-    exportData,
   };
 });

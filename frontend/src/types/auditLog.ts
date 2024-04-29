@@ -47,7 +47,7 @@ export const AuditActivityTypeI18nNameMap: Map<LogEntity_Action, string> =
   ]);
 
 export interface SearchAuditLogsParams {
-  resource?: string;
+  parent?: string;
   creatorEmail?: string;
   order?: "asc" | "desc";
   pageSize?: number;
