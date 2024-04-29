@@ -2,13 +2,16 @@ package pg
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 
+	pgquery "github.com/pganalyze/pg_query_go/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -20,11 +23,12 @@ func init() {
 type FullyQualifiedObjectNameAdvisor struct{}
 
 type FullyQualifiedObjectNameChecker struct {
-	_          *sql.DB
-	adviceList []advisor.Advice
-	status     advisor.Status
-	title      string
-	line       int
+	_            *sql.DB
+	adviceList   []advisor.Advice
+	status       advisor.Status
+	title        string
+	line         int
+	isSelectStmt bool
 }
 
 // Visit implements ast.Visitor.
@@ -96,6 +100,7 @@ func (checker *FullyQualifiedObjectNameChecker) Visit(in ast.Node) ast.Visitor {
 
 	// Select statement.
 	case *ast.SelectStmt:
+		checker.isSelectStmt = true
 		if node.FieldList != nil {
 			for _, field := range node.FieldList {
 				if fieldDef, ok := field.(*ast.ColumnNameDef); ok {
@@ -146,6 +151,12 @@ func (*FullyQualifiedObjectNameAdvisor) Check(ctx advisor.Context, _ string) ([]
 	for _, node := range nodes {
 		checker.line = node.LastLine()
 		ast.Walk(checker, node)
+		// Dive in again for the object names in the subquery if it's a select statement.
+		if checker.isSelectStmt {
+			for _, tableName := range findAllTables(node.Text()) {
+				checker.appendAdviceByObjName(tableName.String())
+			}
+		}
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -214,4 +225,76 @@ func getFullyQualiufiedObjectName(nodeDef ast.Node) string {
 	default:
 	}
 	return sb.String()
+}
+
+// Used for select statement.
+func findAllTables(statement string) []base.ColumnResource {
+	jsonText, err := pgquery.ParseToJSON(statement)
+	if err != nil {
+		return nil
+	}
+
+	var jsonData map[string]any
+	if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
+		return nil
+	}
+
+	resourceArray, err := getRangeVarsFromJSONRecursive(jsonData)
+	if err != nil {
+		return nil
+	}
+
+	return resourceArray
+}
+
+// get table names from Json.
+func getRangeVarsFromJSONRecursive(jsonData map[string]any) ([]base.ColumnResource, error) {
+	var result []base.ColumnResource
+	if jsonData["RangeVar"] != nil {
+		resource := base.ColumnResource{}
+
+		rangeVar, ok := jsonData["RangeVar"].(map[string]any)
+		if !ok {
+			return nil, errors.Errorf("failed to convert range var")
+		}
+		if rangeVar["schemaname"] != nil {
+			schema, ok := rangeVar["schemaname"].(string)
+			if !ok {
+				return nil, errors.Errorf("failed to convert schemaname")
+			}
+			resource.Schema = schema
+		}
+		if rangeVar["relname"] != nil {
+			table, ok := rangeVar["relname"].(string)
+			if !ok {
+				return nil, errors.Errorf("failed to convert relname")
+			}
+			resource.Table = table
+		}
+
+		result = append(result, resource)
+	}
+
+	for _, value := range jsonData {
+		switch v := value.(type) {
+		case map[string]any:
+			resources, err := getRangeVarsFromJSONRecursive(v)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, resources...)
+		case []any:
+			for _, item := range v {
+				if m, ok := item.(map[string]any); ok {
+					resources, err := getRangeVarsFromJSONRecursive(m)
+					if err != nil {
+						return nil, err
+					}
+					result = append(result, resources...)
+				}
+			}
+		}
+	}
+
+	return result, nil
 }
