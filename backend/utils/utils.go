@@ -39,24 +39,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// GetLatestSchemaVersion gets the latest schema version for a database.
-func GetLatestSchemaVersion(ctx context.Context, stores *store.Store, instanceID int, databaseID int, databaseName string) (model.Version, error) {
-	// TODO(d): support semantic versioning.
-	limit := 1
-	history, err := stores.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-		InstanceID: &instanceID,
-		DatabaseID: &databaseID,
-		Limit:      &limit,
-	})
-	if err != nil {
-		return model.Version{}, errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
-	}
-	if len(history) == 0 {
-		return model.Version{}, nil
-	}
-	return history[0].Version, nil
-}
-
 // DataSourceFromInstanceWithType gets a typed data source from an instance.
 func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceType api.DataSourceType) *store.DataSourceMessage {
 	for _, dataSource := range instance.DataSources {
