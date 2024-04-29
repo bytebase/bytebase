@@ -363,6 +363,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		Content:     []byte(sheet.Statement),
 		ContentSize: sheet.Size,
 		Payload:     v1SheetPayload,
+		Engine:      convertToEngine(sheet.Payload.GetEngine()),
 	}, nil
 }
 
@@ -373,12 +374,12 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		CreatorID:   creatorID,
 		Title:       sheet.Title,
 		Statement:   string(sheet.Content),
+		Payload:     &storepb.SheetPayload{},
 	}
 	if sheet.Payload != nil {
-		sheetMessage.Payload = &storepb.SheetPayload{
-			DatabaseConfig:         convertV1DatabaseConfig(sheet.Payload.DatabaseConfig),
-			BaselineDatabaseConfig: convertV1DatabaseConfig(sheet.Payload.BaselineDatabaseConfig),
-		}
+		sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
+		sheetMessage.Payload.DatabaseConfig = convertV1DatabaseConfig(sheet.Payload.DatabaseConfig)
+		sheetMessage.Payload.BaselineDatabaseConfig = convertV1DatabaseConfig(sheet.Payload.BaselineDatabaseConfig)
 	}
 
 	return sheetMessage, nil
