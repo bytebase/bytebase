@@ -3384,7 +3384,11 @@
     },
     "confirm-remove-change": "移除这项变更？",
     "delete-this-changelist": "删除这个变更列表",
-    "confirm-delete-changelist": "删除变更列表？"
+    "confirm-delete-changelist": "删除变更列表？",
+    "import": {
+      "no-file-to-upload": "没有可以上传的文件",
+      "upload-sql-or-zip-file": "上传 .sql 或 .zip 文件"
+    }
   },
   "export-data": {
     "export-rows": "导出行数",

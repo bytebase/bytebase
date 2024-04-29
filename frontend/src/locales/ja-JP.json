@@ -3384,7 +3384,11 @@
     },
     "confirm-remove-change": "この変更を削除しますか?",
     "delete-this-changelist": "この変更リストを削除します",
-    "confirm-delete-changelist": "変更リストを削除しますか?"
+    "confirm-delete-changelist": "変更リストを削除しますか?",
+    "import": {
+      "no-file-to-upload": "アップロードするファイルがありません",
+      "upload-sql-or-zip-file": ".sql または .zip ファイルをアップロードする"
+    }
   },
   "export-data": {
     "export-rows": "エクスポート行数",
