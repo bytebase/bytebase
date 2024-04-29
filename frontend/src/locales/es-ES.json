@@ -3384,7 +3384,11 @@
     },
     "confirm-remove-change": "¿Eliminar este cambio?",
     "delete-this-changelist": "Eliminar esta lista de cambios",
-    "confirm-delete-changelist": "¿Eliminar esta lista de cambios?"
+    "confirm-delete-changelist": "¿Eliminar esta lista de cambios?",
+    "import": {
+      "no-file-to-upload": "No hay archivos para subir",
+      "upload-sql-or-zip-file": "Cargue el archivo .sql o .zip"
+    }
   },
   "export-data": {
     "export-rows": "Exportar filas",
