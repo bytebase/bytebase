@@ -346,7 +346,7 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 
 		out, _, err := prg.Eval(map[string]any{
 			"level":  riskLevel,
-			"source": int64(convertToSource(riskSource)),
+			"source": convertToSource(riskSource).String(),
 		})
 		if err != nil {
 			return nil, err
