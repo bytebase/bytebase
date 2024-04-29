@@ -138,7 +138,7 @@ const (
 	        LEFT JOIN sys.objects co ON co.object_id = c.object_id
 	ORDER BY t.schema_name ASC, t.object_id ASC, c.object_id ASC
 	`
-	dumpIndexSQL = `
+	dumpKeySQL = `
 	SELECT
 		s.name AS schema_name,
 	    o.name AS table_name,
@@ -201,24 +201,24 @@ func (driver *Driver) dumpDatabaseTxn(ctx context.Context, txn *sql.Tx, out io.W
 		return errors.Wrap(err, "failed to dump check constraints")
 	}
 
-	indexMetaMap, err := dumpIndexTxn(ctx, txn, schemas)
+	keyMetaMap, err := dumpKeyTxn(ctx, txn, schemas)
 	if err != nil {
 		return errors.Wrap(err, "failed to dump indexes")
 	}
 
-	return assembleStatement(out, schemas, tableMetaMap, columnMetaMap, fkMetaMap, checkMetaMap, indexMetaMap)
+	return assembleStatement(out, schemas, tableMetaMap, columnMetaMap, fkMetaMap, checkMetaMap, keyMetaMap)
 }
 
-func assembleStatement(out io.Writer, schemas []string, tableMetaMap map[string][]*tableMeta, columnMetaMap map[string][]*columnMeta, fkMetaMap map[string][]*foreignKeyMeta, checkMetaMap map[string][]*checkConstraintMeta, indexMetaMap map[string][]*indexMeta) error {
+func assembleStatement(out io.Writer, schemas []string, tableMetaMap map[string][]*tableMeta, columnMetaMap map[string][]*columnMeta, fkMetaMap map[string][]*foreignKeyMeta, checkMetaMap map[string][]*checkConstraintMeta, keyMetaMap map[string][]*keyMeta) error {
 	for _, schema := range schemas {
-		if err := assembleSchema(out, schema, tableMetaMap, columnMetaMap, fkMetaMap, checkMetaMap, indexMetaMap); err != nil {
+		if err := assembleSchema(out, schema, tableMetaMap, columnMetaMap, fkMetaMap, checkMetaMap, keyMetaMap); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func assembleSchema(out io.Writer, schema string, tableMetaMap map[string][]*tableMeta, columnMetaMap map[string][]*columnMeta, fkMetaMap map[string][]*foreignKeyMeta, checkMetaMap map[string][]*checkConstraintMeta, indexMetaMap map[string][]*indexMeta) error {
+func assembleSchema(out io.Writer, schema string, tableMetaMap map[string][]*tableMeta, columnMetaMap map[string][]*columnMeta, fkMetaMap map[string][]*foreignKeyMeta, checkMetaMap map[string][]*checkConstraintMeta, keyMetaMap map[string][]*keyMeta) error {
 	if schema != defaultSchema {
 		if _, err := fmt.Fprintf(out, "CREATE SCHEMA %s;\nGO\n", schema); err != nil {
 			return err
@@ -226,24 +226,222 @@ func assembleSchema(out io.Writer, schema string, tableMetaMap map[string][]*tab
 	}
 
 	for _, tableMeta := range tableMetaMap[schema] {
-		if err := assembleTable(out, schema, tableMeta, columnMetaMap, fkMetaMap, checkMetaMap, indexMetaMap); err != nil {
+		if _, err := fmt.Fprintf(out, "\n"); err != nil {
+			return err
+		}
+		if err := assembleTable(out, schema, tableMeta, columnMetaMap, fkMetaMap, checkMetaMap, keyMetaMap); err != nil {
 			return err
 		}
 	}
+
+	// TODO: add other objects like index, view, procedure, function, etc.
+	return nil
 }
 
-func assembleTable(out io.Writer, schema string, tableMeta *tableMeta, columnMetaMap map[string][]*columnMeta, fkMetaMap map[string][]*foreignKeyMeta, checkMetaMap map[string][]*checkConstraintMeta, indexMetaMap map[string][]*indexMeta) error {
+func assembleTable(out io.Writer, schema string, tableMeta *tableMeta, columnMetaMap map[string][]*columnMeta, fkMetaMap map[string][]*foreignKeyMeta, checkMetaMap map[string][]*checkConstraintMeta, keyMetaMap map[string][]*keyMeta) error {
 	if _, err := fmt.Fprintf(out, "CREATE TABLE [%s].[%s] (\n", schema, tableMeta.name.String); err != nil {
 		return err
 	}
-	for _, columnMeta := range columnMetaMap[tableID(schema, tableMeta.name.String)] {
+	for i, columnMeta := range columnMetaMap[tableID(schema, tableMeta.name.String)] {
+		if i != 0 {
+			if _, err := fmt.Fprintf(out, ",\n"); err != nil {
+				return err
+			}
+		}
 		if err := assembleColumn(out, columnMeta); err != nil {
 			return err
 		}
 	}
-	if _, err := fmt.Fprintf(out, ");\nGO\n"); err != nil {
+	keys := mergeKeyMetaMap(keyMetaMap[tableID(schema, tableMeta.name.String)])
+	for _, keyMeta := range keys {
+		if _, err := fmt.Fprintf(out, ",\n"); err != nil {
+			return err
+		}
+		if err := assembleKey(out, keyMeta); err != nil {
+			return err
+		}
+	}
+	fks := mergeFKMetaMap(fkMetaMap[tableID(schema, tableMeta.name.String)])
+	for _, fkMeta := range fks {
+		if _, err := fmt.Fprintf(out, ",\n"); err != nil {
+			return err
+		}
+		if err := assembleForeignKey(out, fkMeta); err != nil {
+			return err
+		}
+	}
+	for _, checkMeta := range checkMetaMap[tableID(schema, tableMeta.name.String)] {
+		if _, err := fmt.Fprintf(out, ",\n"); err != nil {
+			return err
+		}
+		if err := assembleCheckConstraint(out, checkMeta); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintf(out, ");\n"); err != nil {
 		return err
 	}
+	return nil
+}
+
+func assembleCheckConstraint(out io.Writer, checkMeta *checkConstraintMeta) error {
+	if _, err := fmt.Fprintf(out, "    CONSTRAINT [%s] CHECK %s", checkMeta.constraintName.String, checkMeta.definition.String); err != nil {
+		return err
+	}
+	return nil
+}
+
+func assembleForeignKey(out io.Writer, fkMeta []*foreignKeyMeta) error {
+	if len(fkMeta) == 0 {
+		return nil
+	}
+	if _, err := fmt.Fprintf(out, "    CONSTRAINT [%s] FOREIGN KEY (", fkMeta[0].constraintName.String); err != nil {
+		return err
+	}
+	for i, fk := range fkMeta {
+		if i != 0 {
+			if _, err := fmt.Fprintf(out, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := fmt.Fprintf(out, "[%s]", fk.parentColumn.String); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintf(out, ") REFERENCES [%s].[%s] (", fkMeta[0].referencedSchema.String, fkMeta[0].referencedTable.String); err != nil {
+		return err
+	}
+	for i, fk := range fkMeta {
+		if i != 0 {
+			if _, err := fmt.Fprintf(out, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := fmt.Fprintf(out, "[%s]", fk.referencedColumn.String); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintf(out, ")"); err != nil {
+		return err
+	}
+	if fkMeta[0].deleteReferentialAction.Valid {
+		if _, err := fmt.Fprintf(out, " ON DELETE %s", referentialAction(int(fkMeta[0].deleteReferentialAction.Int32))); err != nil {
+			return err
+		}
+	}
+	if fkMeta[0].updateReferentialAction.Valid {
+		if _, err := fmt.Fprintf(out, " ON UPDATE %s", referentialAction(int(fkMeta[0].updateReferentialAction.Int32))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func referentialAction(action int) string {
+	switch action {
+	case 0:
+		return "NO ACTION"
+	case 1:
+		return "CASCADE"
+	case 2:
+		return "SET NULL"
+	case 3:
+		return "SET DEFAULT"
+	default:
+		return "NO ACTION"
+	}
+}
+
+func mergeFKMetaMap(fkMetaMap []*foreignKeyMeta) [][]*foreignKeyMeta {
+	var result [][]*foreignKeyMeta
+	lastIdx := 0
+	currentKeyID := ""
+	for i, fkMeta := range fkMetaMap {
+		if !fkMeta.schemaName.Valid || !fkMeta.tableName.Valid || !fkMeta.constraintName.Valid {
+			continue
+		}
+		keyID := keyID(fkMeta.schemaName.String, fkMeta.tableName.String, fkMeta.constraintName.String)
+		if keyID != currentKeyID && currentKeyID != "" {
+			result = append(result, fkMetaMap[lastIdx:i])
+			lastIdx = i
+			currentKeyID = keyID
+		}
+	}
+	result = append(result, fkMetaMap[lastIdx:])
+	return result
+}
+
+func mergeKeyMetaMap(keyMetaMap []*keyMeta) [][]*keyMeta {
+	var result [][]*keyMeta
+	lastIdx := 0
+	currentKeyID := ""
+	for i, keyMeta := range keyMetaMap {
+		if !keyMeta.schemaName.Valid || !keyMeta.tableName.Valid || !keyMeta.indexName.Valid {
+			continue
+		}
+		keyID := keyID(keyMeta.schemaName.String, keyMeta.tableName.String, keyMeta.indexName.String)
+		if keyID != currentKeyID && currentKeyID != "" {
+			result = append(result, keyMetaMap[lastIdx:i])
+			lastIdx = i
+			currentKeyID = keyID
+		}
+	}
+	result = append(result, keyMetaMap[lastIdx:])
+	return result
+}
+
+func keyID(schemaName, tableName, indexName string) string {
+	return fmt.Sprintf("[%s].[%s].[%s]", schemaName, tableName, indexName)
+}
+
+func assembleKey(out io.Writer, keyMeta []*keyMeta) error {
+	if len(keyMeta) == 0 {
+		return nil
+	}
+	if _, err := fmt.Fprintf(out, "    CONSTRAINT [%s]", keyMeta[0].indexName.String); err != nil {
+		return err
+	}
+	if keyMeta[0].isPrimaryKey.Valid && keyMeta[0].isPrimaryKey.Bool {
+		if _, err := fmt.Fprintf(out, " PRIMARY KEY"); err != nil {
+			return err
+		}
+	} else if keyMeta[0].isUniqueConstraint.Valid && keyMeta[0].isUniqueConstraint.Bool {
+		if _, err := fmt.Fprintf(out, " UNIQUE"); err != nil {
+			return err
+		}
+	}
+	// CLUSTERED or NONCLUSTERED
+	if keyMeta[0].typeDesc.Valid {
+		if _, err := fmt.Fprintf(out, " %s", keyMeta[0].typeDesc.String); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintf(out, " ("); err != nil {
+		return err
+	}
+	for i, key := range keyMeta {
+		if i != 0 {
+			if _, err := fmt.Fprintf(out, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := fmt.Fprintf(out, "[%s]", key.columnName.String); err != nil {
+			return err
+		}
+		if key.isDescendingKey.Valid && key.isDescendingKey.Bool {
+			if _, err := fmt.Fprintf(out, " DESC"); err != nil {
+				return err
+			}
+		} else {
+			if _, err := fmt.Fprintf(out, " ASC"); err != nil {
+				return err
+			}
+		}
+	}
+	if _, err := fmt.Fprintf(out, ")"); err != nil {
+		return err
+	}
+	// TODO: add key options.
 	return nil
 }
 
@@ -255,9 +453,75 @@ func assembleColumn(out io.Writer, columnMeta *columnMeta) error {
 	if err := assembleColumnType(out, columnMeta); err != nil {
 		return err
 	}
+
+	if err := assembleIdentity(out, columnMeta); err != nil {
+		return err
+	}
+
+	if err := assembleDefinitionElement(out, columnMeta); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func assembleDefinitionElement(out io.Writer, columnMeta *columnMeta) error {
+	if columnMeta.isFilestream.Valid && columnMeta.isFilestream.Bool {
+		if _, err := fmt.Fprintf(out, " FILESTREAM"); err != nil {
+			return err
+		}
+	}
+	if columnMeta.collationName.Valid {
+		if _, err := fmt.Fprintf(out, " COLLATE %s", columnMeta.collationName.String); err != nil {
+			return err
+		}
+	}
+	if columnMeta.isSparse.Valid && columnMeta.isSparse.Bool {
+		if _, err := fmt.Fprintf(out, " SPARSE"); err != nil {
+			return err
+		}
+	}
+	if columnMeta.defaultValue.Valid {
+		if _, err := fmt.Fprintf(out, " DEFAULT %s", columnMeta.defaultValue.String); err != nil {
+			return err
+		}
+	}
+	if columnMeta.isNullable.Valid {
+		if columnMeta.isNullable.Bool {
+			if _, err := fmt.Fprintf(out, " NULL"); err != nil {
+				return err
+			}
+		} else {
+			if _, err := fmt.Fprintf(out, " NOT NULL"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func assembleIdentity(out io.Writer, columnMeta *columnMeta) error {
+	if columnMeta.isIdentity.Valid && columnMeta.isIdentity.Bool && columnMeta.seedValue.Valid && columnMeta.incrementValue.Valid {
+		if _, err := fmt.Fprintf(out, " IDENTITY(%d,%d)", columnMeta.seedValue.Int64, columnMeta.incrementValue.Int64); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func assembleColumnType(out io.Writer, columnMeta *columnMeta) error {
+	if columnMeta.definition.Valid && columnMeta.isComputed.Valid && columnMeta.isComputed.Bool {
+		if _, err := fmt.Fprintf(out, " AS %s", columnMeta.definition.String); err != nil {
+			return err
+		}
+		if columnMeta.isPersisted.Valid && columnMeta.isPersisted.Bool {
+			if _, err := fmt.Fprintf(out, " PERSISTED"); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	if !columnMeta.typeName.Valid {
 		return errors.New("column type name is not valid")
 	}
@@ -265,9 +529,47 @@ func assembleColumnType(out io.Writer, columnMeta *columnMeta) error {
 	if _, err := fmt.Fprintf(out, " %s", columnMeta.typeName.String); err != nil {
 		return err
 	}
+
+	switch columnMeta.typeName.String {
+	case "decimal", "numeric":
+		if columnMeta.precision.Valid && columnMeta.scale.Valid {
+			if _, err := fmt.Fprintf(out, "(%d, %d)", columnMeta.precision.Int64, columnMeta.scale.Int64); err != nil {
+				return err
+			}
+		} else if columnMeta.precision.Valid {
+			if _, err := fmt.Fprintf(out, "(%d)", columnMeta.precision.Int64); err != nil {
+				return err
+			}
+		}
+	case "float", "real":
+		if columnMeta.precision.Valid {
+			if _, err := fmt.Fprintf(out, "(%d)", columnMeta.precision.Int64); err != nil {
+				return err
+			}
+		}
+	case "dateoffset", "datetime2", "time":
+		if columnMeta.scale.Valid {
+			if _, err := fmt.Fprintf(out, "(%d)", columnMeta.scale.Int64); err != nil {
+				return err
+			}
+		}
+	case "char", "nchar", "varchar", "nvarchar", "binary", "varbinary":
+		if columnMeta.maxLength.Valid {
+			if columnMeta.maxLength.Int64 == -1 {
+				if _, err := fmt.Fprintf(out, "(max)"); err != nil {
+					return err
+				}
+			} else {
+				if _, err := fmt.Fprintf(out, "(%d)", columnMeta.maxLength.Int64); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
-type indexMeta struct {
+type keyMeta struct {
 	schemaName         sql.NullString
 	tableName          sql.NullString
 	indexName          sql.NullString
@@ -291,19 +593,19 @@ type indexMeta struct {
 	noRecompute        sql.NullBool
 }
 
-func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schemas []string) (map[string][]*indexMeta, error) {
-	indexMetaMap := make(map[string][]*indexMeta)
-	slog.Debug("running dump index query", slog.String("schemas", fmt.Sprintf("%v", schemas)))
-	query := fmt.Sprintf(dumpIndexSQL, quoteList(schemas))
-	indexRows, err := txn.QueryContext(ctx, query)
+func dumpKeyTxn(ctx context.Context, txn *sql.Tx, schemas []string) (map[string][]*keyMeta, error) {
+	keyMetaMap := make(map[string][]*keyMeta)
+	slog.Debug("running dump primary key query", slog.String("schemas", fmt.Sprintf("%v", schemas)))
+	query := fmt.Sprintf(dumpKeySQL, quoteList(schemas))
+	keyRows, err := txn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
-	defer indexRows.Close()
+	defer keyRows.Close()
 
-	for indexRows.Next() {
-		meta := indexMeta{}
-		if err := indexRows.Scan(
+	for keyRows.Next() {
+		meta := keyMeta{}
+		if err := keyRows.Scan(
 			&meta.schemaName,
 			&meta.tableName,
 			&meta.indexName,
@@ -332,17 +634,17 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schemas []string) (map[strin
 			continue
 		}
 		tableID := tableID(meta.schemaName.String, meta.tableName.String)
-		if indexMetaMap[tableID] == nil {
-			indexMetaMap[tableID] = []*indexMeta{&meta}
+		if keyMetaMap[tableID] == nil {
+			keyMetaMap[tableID] = []*keyMeta{&meta}
 		} else {
-			indexMetaMap[tableID] = append(indexMetaMap[tableID], &meta)
+			keyMetaMap[tableID] = append(keyMetaMap[tableID], &meta)
 		}
 	}
-	if err := indexRows.Err(); err != nil {
+	if err := keyRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
 
-	return indexMetaMap, nil
+	return keyMetaMap, nil
 }
 
 type checkConstraintMeta struct {
@@ -413,8 +715,8 @@ type foreignKeyMeta struct {
 	isDisabled              sql.NullBool
 	isNotForReplication     sql.NullBool
 	comment                 sql.NullString
-	deleteReferentialAction sql.NullString
-	updateReferentialAction sql.NullString
+	deleteReferentialAction sql.NullInt32
+	updateReferentialAction sql.NullInt32
 	parentColumn            sql.NullString
 	referencedColumn        sql.NullString
 }
@@ -476,6 +778,7 @@ type columnMeta struct {
 	isUserDefined             sql.NullBool
 	isComputed                sql.NullBool
 	definition                sql.NullString
+	isPersisted               sql.NullBool
 	maxLength                 sql.NullInt64
 	precision                 sql.NullInt64
 	scale                     sql.NullInt64
@@ -517,6 +820,7 @@ func dumpColumnTxn(ctx context.Context, txn *sql.Tx, schemas []string) (map[stri
 			&meta.isUserDefined,
 			&meta.isComputed,
 			&meta.definition,
+			&meta.isPersisted,
 			&meta.maxLength,
 			&meta.precision,
 			&meta.scale,
