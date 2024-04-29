@@ -210,7 +210,7 @@ require (
 	github.com/aws/smithy-go v1.20.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
-	github.com/bytebase/tsql-parser v0.0.0-20240425025510-12ad9ed364fc
+	github.com/bytebase/tsql-parser v0.0.0-20240428103122-8846238ed45f
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20231128003011-0fa0005c9caa // indirect
