@@ -77,7 +77,7 @@
     "vscode-languageserver-textdocument": "1.0.11",
     "vscode-languageserver-types": "3.17.5",
     "vscode-ws-jsonrpc": "3.3.1",
-    "vue": "3.4.23",
+    "vue": "3.4.25",
     "vuedraggable": "^4.1.0",
     "vueuc": "0.4.58"
   },
@@ -112,7 +112,7 @@
     "@types/vscode": "1.88.0",
     "@vitejs/plugin-vue": "5.0.4",
     "@vitejs/plugin-vue-jsx": "3.1.0",
-    "@vue/compiler-sfc": "3.4.23",
+    "@vue/compiler-sfc": "3.4.25",
     "@vue/eslint-config-prettier": "9.0.0",
     "@vue/eslint-config-typescript": "13.0.0",
     "@vue/test-utils": "2.4.5",
