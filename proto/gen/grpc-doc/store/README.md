@@ -225,6 +225,7 @@
     - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
   
 - [store/sheet.proto](#store_sheet-proto)
+    - [SheetCommand](#bytebase-store-SheetCommand)
     - [SheetPayload](#bytebase-store-SheetPayload)
   
 - [store/slow_query.proto](#store_slow_query-proto)
@@ -3453,6 +3454,22 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
+<a name="bytebase-store-SheetCommand"></a>
+
+### SheetCommand
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  |  |
+| end | [int32](#int32) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-SheetPayload"></a>
 
 ### SheetPayload
@@ -3464,6 +3481,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
 | baseline_database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
 | engine | [Engine](#bytebase-store-Engine) |  | The SQL dialect. |
+| commands | [SheetCommand](#bytebase-store-SheetCommand) | repeated | The start and end position of each command in the sheet statement. |
 
 
 
