@@ -52,7 +52,10 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 
 	if d.connPool == nil {
 		if config.SASLConfig == nil {
-			config.SASLConfig = &db.PlainSASLConfig{}
+			config.SASLConfig = &db.PlainSASLConfig{
+				Username: config.Username,
+				Password: config.Password,
+			}
 		}
 		if !config.SASLConfig.Check() {
 			return nil, errors.New("SASL settings error")
