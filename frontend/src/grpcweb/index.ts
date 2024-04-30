@@ -7,6 +7,7 @@ import {
 } from "nice-grpc-web";
 import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
 import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
+import { AuditLogServiceDefinition } from "@/types/proto/v1/audit_log_service";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { BranchServiceDefinition } from "@/types/proto/v1/branch_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
@@ -17,7 +18,6 @@ import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service"
 import { InstanceRoleServiceDefinition } from "@/types/proto/v1/instance_role_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
-import { LoggingServiceDefinition } from "@/types/proto/v1/logging_service";
 import { OrgPolicyServiceDefinition } from "@/types/proto/v1/org_policy_service";
 import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
@@ -34,7 +34,6 @@ import {
   authInterceptorMiddleware,
   errorNotificationMiddleware,
 } from "./middlewares";
-import { AuditLogServiceDefinition } from "@/types/proto/v1/audit_log_service";
 
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
@@ -172,11 +171,6 @@ export const vcsProviderServiceClient = clientFactory.create(
 
 export const vcsConnectorServiceClient = clientFactory.create(
   VCSConnectorServiceDefinition,
-  channel
-);
-
-export const loggingServiceClient = clientFactory.create(
-  LoggingServiceDefinition,
   channel
 );
 
