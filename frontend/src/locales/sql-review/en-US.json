@@ -413,7 +413,7 @@
     },
     "statement-disallow-add-not-null": {
       "title": "Restrict adding \"NOT NULL\" constraint to existing columns",
-      "description": "Before PostgreSQL 11, adding a NOT NULL constraint need to verify the existing data. This blocks read and write, which may cause business interruption. In PostgreSQL 11 and above, this issue has been optimized and there is no need to pay attention to this specification. Suggestion error level: Warning"
+      "description": "Adding NOT NULL constraint with default value before PostgreSQL 11 or adding NOT NULL constraint without default value requires to verify the existing data. This blocks read and write, which may cause business interruption. Suggestion error level: Warning"
     },
     "statement-select-full-table-scan": {
       "title": "Check full table scan for queries",

@@ -413,7 +413,7 @@
     },
     "statement-disallow-add-not-null": {
       "title": "Hạn chế thêm ràng buộc \"NOT NULL\" vào các cột hiện có",
-      "description": "Trước PostgreSQL 11, việc thêm ràng buộc NOT NULL cần phải xác minh dữ liệu hiện có. Điều này chặn việc đọc và viết, có thể gây gián đoạn hoạt động kinh doanh. Trong PostgreSQL 11 trở lên, vấn đề này đã được tối ưu hóa và không cần phải chú ý đến thông số kỹ thuật này. Mức độ lỗi đề xuất: Cảnh báo"
+      "description": "Việc thêm ràng buộc NOT NULL với giá trị mặc định trước PostgreSQL 11 hoặc thêm ràng buộc NOT NULL không có giá trị mặc định yêu cầu xác minh dữ liệu hiện có. Điều này chặn việc đọc và viết, có thể gây gián đoạn hoạt động kinh doanh. Mức độ lỗi đề xuất: Cảnh báo"
     },
     "statement-select-full-table-scan": {
       "title": "Kiểm tra quét toàn bộ bảng cho các truy vấn",

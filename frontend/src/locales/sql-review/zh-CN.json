@@ -413,7 +413,7 @@
     },
     "statement-disallow-add-not-null": {
       "title": "限制向已有列添加 \"NOT NULL\" 约束",
-      "description": "在 PostgreSQL 11 之前的版本中，向表中添加 NOT NULL 约束将对已有数据进行校验并导致全表锁定无法读写，这可能导致业务中断。在 PostgreSQL 11 及以上版本中该问题已得到优化，无需关注此规范。建议错误等级：警告"
+      "description": "在 PostgreSQL 11 之前添加带默认值的 NOT NULL 约束或在所有 PostgreSQL 版本中添加不带默认值的 NOT NULL 约束需要验证现有数据。这会阻塞读写，可能会导致业务中断。建议错误等级：警告"
     },
     "statement-select-full-table-scan": {
       "title": "检查查询是否存在全表扫描",
