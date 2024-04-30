@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementDisallowCascade, &StatementDisallowOnDelCascadeAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementDisallowOnDelCascade, &StatementDisallowOnDelCascadeAdvisor{})
 }
 
 // StatementDisallowOnDelCascadeAdvisor is the advisor checking the disallow cascade.
@@ -53,7 +53,7 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(ctx advisor.Context, _ string
 		return nil, errors.Wrapf(err, "failed to unmarshal JSON")
 	}
 
-	cascadeLocations := cascadeNumRecursive(jsonData, 0)
+	cascadeLocations := cascadeNumRecursive(jsonData, 0, isOnDelCascade)
 	cascadePositions := convertLocationsToPositions(stmt, cascadeLocations)
 
 	var adviceList []advisor.Advice
@@ -61,7 +61,7 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(ctx advisor.Context, _ string
 		adviceList = append(adviceList, advisor.Advice{
 			Status:  level,
 			Title:   string(ctx.Rule.Type),
-			Content: "Cascade is disallowed but used in this statement",
+			Content: "The CASCADE option is not permitted for ON DELETE clauses",
 			Code:    advisor.StatementDisallowCascade,
 			Line:    p.line + 1,
 			Column:  p.column + 1,
@@ -76,4 +76,8 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(ctx advisor.Context, _ string
 		})
 	}
 	return adviceList, nil
+}
+
+func isOnDelCascade(json map[string]any) bool {
+	return json["fk_del_action"] == "c"
 }
