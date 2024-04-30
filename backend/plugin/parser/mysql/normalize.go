@@ -364,7 +364,7 @@ func GetCollationName(ctx parser.IFieldDefinitionContext) string {
 	return ""
 }
 
-// IsTypeType check if the dataType is time type.
+// IsTimeType check if the dataType is time type.
 func IsTimeType(ctx parser.IDataTypeContext) bool {
 	if ctx.GetType_() == nil {
 		return false
