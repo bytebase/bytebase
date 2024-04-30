@@ -33,7 +33,7 @@ func newCatalogService(dbType storepb.Engine) *catalogService {
 	}
 }
 
-// GetDatabase is the API message in catalog.
+// GetFinder is the API message in catalog.
 func (c *catalogService) GetFinder() *catalog.Finder {
 	return c.finder
 }
