@@ -314,7 +314,7 @@ func (s *SQLService) doExecute(ctx context.Context, instance *store.InstanceMess
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
 	// Prehandle export from issue.
-	if strings.Contains(request.Name, common.IssueNamePrefix) {
+	if strings.HasPrefix(request.Name, common.ProjectNamePrefix) {
 		return s.doExportFromIssue(ctx, request.Name)
 	}
 	// Prepare related message.

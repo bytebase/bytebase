@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -442,7 +443,16 @@ func (p *ContextProvider) getProjectIDsForDatabase(ctx context.Context, req any)
 	case *v1pb.QueryRequest:
 		databaseNames = append(databaseNames, r.GetName())
 	case *v1pb.ExportRequest:
-		databaseNames = append(databaseNames, r.GetName())
+		if strings.HasPrefix(r.GetName(), common.ProjectNamePrefix) {
+			projectID, _, err := common.GetProjectIDIssueUID(r.GetName())
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get projectID from %q", r.GetName())
+			}
+			projectIDs = append(projectIDs, projectID)
+		}
+		if strings.HasPrefix(r.GetName(), common.InstanceNamePrefix) {
+			databaseNames = append(databaseNames, r.GetName())
+		}
 	case *v1pb.GetDatabaseRequest:
 		databaseNames = append(databaseNames, r.GetName())
 	case *v1pb.SyncDatabaseRequest:
