@@ -51,8 +51,8 @@ export const useScrollLogic = () => {
     ([tab, ready]) => {
       if (!tab) return;
       if (!ready) return;
-      if (tab.sheet) {
-        const worksheet = useWorkSheetStore().getSheetByName(tab.sheet);
+      if (tab.worksheet) {
+        const worksheet = useWorkSheetStore().getWorksheetByName(tab.worksheet);
         if (!worksheet) return cleanup();
         const key = keyForWorksheet(worksheet);
         scrollItemIntoViewByKey(key);
