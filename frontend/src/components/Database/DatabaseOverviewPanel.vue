@@ -77,7 +77,7 @@
       </div>
     </dl>
 
-    <div v-if="allowGetSchema" class="pt-6">
+    <div v-if="allowGetSchema" class="py-6">
       <div
         v-if="hasSchemaProperty"
         class="flex flex-row justify-start items-center mb-4"
