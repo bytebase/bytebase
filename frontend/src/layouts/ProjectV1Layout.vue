@@ -27,9 +27,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useLocalStorage } from "@vueuse/core";
 import { computed, onMounted, watchEffect } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
@@ -40,22 +38,14 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
 } from "@/router/dashboard/projectV1";
-import {
-  useProjectV1Store,
-  useCurrentUserV1,
-  useActivityV1Store,
-  usePageMode,
-  pushNotification,
-} from "@/store";
+import { useProjectV1Store, useCurrentUserV1, usePageMode } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { QuickActionType } from "@/types";
 import {
   DEFAULT_PROJECT_V1_NAME,
-  activityName,
   QuickActionProjectPermissionMap,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
@@ -67,9 +57,7 @@ const route = useRoute();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
-const activityV1Store = useActivityV1Store();
 const pageMode = usePageMode();
-const { t } = useI18n();
 const recentProjects = useRecentProjects();
 
 const project = computed(() => {
@@ -112,51 +100,10 @@ const allowEdit = computed(() => {
   );
 });
 
-const cachedNotifiedActivities = useLocalStorage<string[]>(
-  `bb.project.${props.projectId}.activities`,
-  []
-);
-
-const maximumCachedActivities = 5;
-
 onMounted(async () => {
   await projectV1Store.getOrFetchProjectByName(
     `${projectNamePrefix}${props.projectId}`
   );
-
-  if (
-    !hasProjectPermissionV2(project.value, currentUserV1.value, "bb.issues.get")
-  ) {
-    return;
-  }
-  activityV1Store
-    .fetchActivityList({
-      pageSize: 1,
-      order: "desc",
-      action: [LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH],
-      resource: project.value.name,
-    })
-    .then((resp) => {
-      for (const activity of resp.logEntities) {
-        if (cachedNotifiedActivities.value.includes(activity.name)) {
-          continue;
-        }
-        cachedNotifiedActivities.value.push(activity.name);
-        if (cachedNotifiedActivities.value.length > maximumCachedActivities) {
-          cachedNotifiedActivities.value.shift();
-        }
-
-        pushNotification({
-          module: "bytebase",
-          style: "INFO",
-          title: activityName(activity.action),
-          manualHide: true,
-          link: `/${project.value.name}/audit-logs`,
-          linkTitle: t("common.view"),
-        });
-        break;
-      }
-    });
 });
 
 const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
