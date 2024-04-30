@@ -342,16 +342,15 @@ func (s *Service) getDatabaseEngineSample(
 				return nil, errors.Errorf("no matched databases found in database group %q", databaseGroupID)
 			}
 			return matchedDatabases[0], nil
-		} else {
-			allDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
-			}
-			if len(allDatabases) == 0 {
-				return nil, errors.Errorf("no database in the project %q", project.ResourceID)
-			}
-			return allDatabases[0], nil
 		}
+		allDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
+		}
+		if len(allDatabases) == 0 {
+			return nil, errors.Errorf("no database in the project %q", project.ResourceID)
+		}
+		return allDatabases[0], nil
 	}()
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get sample database")
