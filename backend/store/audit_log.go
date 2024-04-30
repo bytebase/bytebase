@@ -88,7 +88,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		}
 		query += fmt.Sprintf(" ORDER BY %s", strings.Join(orderBy, ", "))
 	} else {
-		query += " ORDER BY created_ts ASC"
+		query += " ORDER BY created_ts DESC"
 	}
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
