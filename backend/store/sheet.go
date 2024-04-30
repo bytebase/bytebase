@@ -193,6 +193,8 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 }
 
 // CreateSheet creates a new sheet.
+// You should not use this function directly to create sheets.
+// Use CreateSheet in component/sheet instead.
 func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMessage, error) {
 	if create.Payload == nil {
 		create.Payload = &storepb.SheetPayload{}
