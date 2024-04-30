@@ -50,16 +50,6 @@
       content: "unqualified object name: 'pokesv1'"
       line: 2
 
-- statement:
-    CREATE TABLE public.pokes (foo int); SELECT * FROM public.pokes; SELECT (foo) FROM public.pokes;
-    SELECT (pokes.foo) FROM public.pokes;
-  want:
-    - status: WARN
-      code: 310
-      title: naming.fully-qualified
-      content: "unqualified object name: 'foo'"
-      line: 1
-
 - statement: |-
     CREATE TABLE public.pokesv1 (foo int);
     INSERT INTO pokesv1(foo) VALUES (1);
@@ -86,7 +76,7 @@
 
 - statement: |-
     CREATE TABLE public.pokes (foo int); 
-    SELECT * FROM (SELECT (pokes.foo) FROM pokes) AS foo;
+    SELECT * FROM (SELECT (foo) FROM pokes) AS foo;
   want:
     - status: WARN
       code: 310
@@ -95,11 +85,10 @@
       line: 2
 
 - statement: |-
-    CREATE TABLE public.pokes (foo int); 
-    SELECT * FROM (SELECT (foo) FROM public.pokes) AS foo;
+    CREATE TABLE public.pokes (foo int);
+    WITH foo1 AS (SELECT * FROM public.pokes) 
+    SELECT * FROM foo1;
   want:
-    - status: WARN
-      code: 310
-      title: naming.fully-qualified
-      content: "unqualified object name: 'foo'"
-      line: 2
+    - status: SUCCESS
+      code: 0
+      title: OK

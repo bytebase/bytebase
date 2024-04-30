@@ -28,6 +28,6 @@ func TestMSSQLRules(t *testing.T) {
 	}
 
 	for _, rule := range snowflakeRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MSSQL, false /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MSSQL, nil, false /* record */)
 	}
 }

@@ -119,7 +119,7 @@
     },
     "naming-fully-qualified": {
       "title": "Nombre de objeto completo",
-      "description": "Aplicar el uso de un nombre de objeto completo. Nivel de error de sugerencia: Advertencia"
+      "description": "Forzar el uso de nombres de objetos completamente calificados. Por ejemplo, “schema.table”, nivel de error sugerido: Advertencia"
     },
     "naming-table": {
       "title": "Imponer formato de nomenclatura de tabla",

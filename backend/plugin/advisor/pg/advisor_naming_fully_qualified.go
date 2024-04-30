@@ -1,7 +1,6 @@
 package pg
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -23,7 +22,6 @@ func init() {
 type FullyQualifiedObjectNameAdvisor struct{}
 
 type FullyQualifiedObjectNameChecker struct {
-	_            *sql.DB
 	adviceList   []advisor.Advice
 	status       advisor.Status
 	title        string
@@ -101,17 +99,6 @@ func (checker *FullyQualifiedObjectNameChecker) Visit(in ast.Node) ast.Visitor {
 	// Select statement.
 	case *ast.SelectStmt:
 		checker.isSelectStmt = true
-		if node.FieldList != nil {
-			for _, field := range node.FieldList {
-				if fieldDef, ok := field.(*ast.ColumnNameDef); ok {
-					if fieldDef.ColumnName == "*" {
-						break
-					}
-					fullyQualifiedName := getFullyQualiufiedObjectName(fieldDef)
-					checker.appendAdviceByObjName(fullyQualifiedName)
-				}
-			}
-		}
 
 	// Update statement.
 	case *ast.UpdateStmt:
@@ -153,7 +140,10 @@ func (*FullyQualifiedObjectNameAdvisor) Check(ctx advisor.Context, _ string) ([]
 		ast.Walk(checker, node)
 		// Dive in again for the object names in the subquery if it's a select statement.
 		if checker.isSelectStmt {
-			for _, tableName := range findAllTables(node.Text()) {
+			if ctx.DBSchema == nil {
+				continue
+			}
+			for _, tableName := range findAllTables(node.Text(), ctx.DBSchema) {
 				checker.appendAdviceByObjName(tableName.String())
 			}
 		}
@@ -192,35 +182,61 @@ func getFullyQualiufiedObjectName(nodeDef ast.Node) string {
 	switch def := nodeDef.(type) {
 	case *ast.TableDef:
 		if def.Database != "" {
-			_, _ = sb.WriteString(def.Database)
-			_, _ = sb.WriteRune('.')
+			if _, err := sb.WriteString(def.Database); err != nil {
+				return ""
+			}
+			if _, err := sb.WriteRune('.'); err != nil {
+				return ""
+			}
 		}
 		if def.Schema != "" {
-			_, _ = sb.WriteString(def.Schema)
-			_, _ = sb.WriteRune('.')
+			if _, err := sb.WriteString(def.Schema); err != nil {
+				return ""
+			}
+			if _, err := sb.WriteRune('.'); err != nil {
+				return ""
+			}
 		}
-		_, _ = sb.WriteString(def.Name)
+		if _, err := sb.WriteString(def.Name); err != nil {
+			return ""
+		}
 
 	case *ast.IndexDef:
 		if def.Table != nil && def.Table.Schema != "" {
-			_, _ = sb.WriteString(def.Table.Name)
-			_, _ = sb.WriteRune('.')
+			if _, err := sb.WriteString(def.Table.Name); err != nil {
+				return ""
+			}
+			if _, err := sb.WriteRune('.'); err != nil {
+				return ""
+			}
 		}
-		_, _ = sb.WriteString(def.Name)
+		if _, err := sb.WriteString(def.Name); err != nil {
+			return ""
+		}
 
 	case *ast.SequenceNameDef:
 		if def.Schema != "" {
-			_, _ = sb.WriteString(def.Schema)
-			_, _ = sb.WriteRune('.')
+			if _, err := sb.WriteString(def.Schema); err != nil {
+				return ""
+			}
+			if _, err := sb.WriteRune('.'); err != nil {
+				return ""
+			}
 		}
-		sb.WriteString(def.Name)
+		if _, err := sb.WriteString(def.Name); err != nil {
+			return ""
+		}
 
 	case *ast.ColumnNameDef:
 		if def.Table != nil && def.Table.Name != "" {
 			_, _ = sb.WriteString(def.Table.Name)
-			sb.WriteRune('.')
+			if _, err := sb.WriteRune('.'); err != nil {
+				return ""
+			}
 		}
-		sb.WriteString(def.ColumnName)
+		if _, err := sb.WriteString(def.ColumnName); err != nil {
+			return ""
+		}
 
 	default:
 	}
@@ -228,7 +244,7 @@ func getFullyQualiufiedObjectName(nodeDef ast.Node) string {
 }
 
 // Used for select statement.
-func findAllTables(statement string) []base.ColumnResource {
+func findAllTables(statement string, schemaMetadata *store.DatabaseSchemaMetadata) []base.ColumnResource {
 	jsonText, err := pgquery.ParseToJSON(statement)
 	if err != nil {
 		return nil
@@ -239,7 +255,12 @@ func findAllTables(statement string) []base.ColumnResource {
 		return nil
 	}
 
-	resourceArray, err := getRangeVarsFromJSONRecursive(jsonData)
+	schemaNameMap := getSchemaNameMapFromPublic(schemaMetadata)
+	if schemaNameMap == nil {
+		return []base.ColumnResource{}
+	}
+
+	resourceArray, err := getRangeVarsFromJSONRecursive(jsonData, &schemaNameMap)
 	if err != nil {
 		return nil
 	}
@@ -247,8 +268,26 @@ func findAllTables(statement string) []base.ColumnResource {
 	return resourceArray
 }
 
+func getSchemaNameMapFromPublic(schemaMetadata *store.DatabaseSchemaMetadata) map[string]bool {
+	if schemaMetadata.Schemas == nil {
+		return nil
+	}
+	filterMap := map[string]bool{}
+	for _, schema := range schemaMetadata.Schemas {
+		// Tables.
+		for _, tbl := range schema.Tables {
+			filterMap[tbl.Name] = true
+		}
+		// External Tables.
+		for _, tbl := range schema.ExternalTables {
+			filterMap[tbl.Name] = true
+		}
+	}
+	return filterMap
+}
+
 // get table names from Json.
-func getRangeVarsFromJSONRecursive(jsonData map[string]any) ([]base.ColumnResource, error) {
+func getRangeVarsFromJSONRecursive(jsonData map[string]any, filterMap *map[string]bool) ([]base.ColumnResource, error) {
 	var result []base.ColumnResource
 	if jsonData["RangeVar"] != nil {
 		resource := base.ColumnResource{}
@@ -272,13 +311,15 @@ func getRangeVarsFromJSONRecursive(jsonData map[string]any) ([]base.ColumnResour
 			resource.Table = table
 		}
 
-		result = append(result, resource)
+		if _, ok := (*filterMap)[resource.Table]; ok {
+			result = append(result, resource)
+		}
 	}
 
 	for _, value := range jsonData {
 		switch v := value.(type) {
 		case map[string]any:
-			resources, err := getRangeVarsFromJSONRecursive(v)
+			resources, err := getRangeVarsFromJSONRecursive(v, filterMap)
 			if err != nil {
 				return nil, err
 			}
@@ -286,7 +327,7 @@ func getRangeVarsFromJSONRecursive(jsonData map[string]any) ([]base.ColumnResour
 		case []any:
 			for _, item := range v {
 				if m, ok := item.(map[string]any); ok {
-					resources, err := getRangeVarsFromJSONRecursive(m)
+					resources, err := getRangeVarsFromJSONRecursive(m, filterMap)
 					if err != nil {
 						return nil, err
 					}

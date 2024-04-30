@@ -31,6 +31,6 @@ func TestOracleRules(t *testing.T) {
 	}
 
 	for _, rule := range oracleRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ORACLE, false /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ORACLE, nil, false /* record */)
 	}
 }
