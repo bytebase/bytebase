@@ -1085,6 +1085,7 @@ type ExportRequest struct {
 
 	// The name is the instance name to execute the query against.
 	// Format: instances/{instance}/databases/{databaseName}
+	// Format: projects/{project}/issues/{issue} for data export issue.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Deprecated: Marked as deprecated in v1/sql_service.proto.
 	ConnectionDatabase string `protobuf:"bytes,2,opt,name=connection_database,json=connectionDatabase,proto3" json:"connection_database,omitempty"`
