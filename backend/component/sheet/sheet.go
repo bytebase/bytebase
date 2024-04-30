@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -20,6 +21,15 @@ func CreateSheet(ctx context.Context, s *store.Store, sheet *store.SheetMessage)
 }
 
 func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetCommand {
+	if len(statement) > common.MaxSheetCheckSize {
+		return []*storepb.SheetCommand{
+			{
+				Start: 0,
+				End:   int32(len(statement)),
+			},
+		}
+	}
+
 	singleSQLs, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
 		if !strings.Contains(err.Error(), "not supported") {
