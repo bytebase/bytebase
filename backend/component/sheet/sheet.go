@@ -22,12 +22,7 @@ func CreateSheet(ctx context.Context, s *store.Store, sheet *store.SheetMessage)
 
 func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetCommand {
 	if len(statement) > common.MaxSheetCheckSize {
-		return []*storepb.SheetCommand{
-			{
-				Start: 0,
-				End:   int32(len(statement)),
-			},
-		}
+		return nil
 	}
 
 	singleSQLs, err := base.SplitMultiSQL(engine, statement)
@@ -35,12 +30,7 @@ func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetC
 		if !strings.Contains(err.Error(), "not supported") {
 			slog.Warn("failed to split multi sql", "engine", engine.String(), "statement", statement)
 		}
-		return []*storepb.SheetCommand{
-			{
-				Start: 0,
-				End:   int32(len(statement)),
-			},
-		}
+		return nil
 	}
 
 	var sheetCommands []*storepb.SheetCommand
