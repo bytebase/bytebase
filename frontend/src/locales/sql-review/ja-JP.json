@@ -117,6 +117,10 @@
         }
       }
     },
+    "naming-fully-qualified": {
+      "title": "完全修飾オブジェクト名",
+      "description": "完全修飾オブジェクト名の使用を強制します。 例えば、「schema.table」、推奨エラーレベル：警告"
+    },
     "naming-table": {
       "title": "テーブルの命名形式の強制",
       "description": "デフォルトの形式はすべて小文字で、単語間にアンダースコアで区切られ、最大63文字までです。例えば「abc」や「abc_def」です。提案エラーレベル：警告",

@@ -15,6 +15,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleCommentLength,
 		advisor.SchemaRuleIndexKeyNumberLimit,
 		advisor.SchemaRuleIndexNoDuplicateColumn,
+		advisor.SchemaRuleFullyQualifiedObjectName,
 		advisor.SchemaRuleColumnNaming,
 		advisor.SchemaRuleFKNaming,
 		advisor.SchemaRuleIDXNaming,
@@ -56,6 +57,38 @@ func TestPostgreSQLRules(t *testing.T) {
 	}
 
 	for _, rule := range pgRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_POSTGRES, false /* record */)
+		var dbSchemaMetadata *storepb.DatabaseSchemaMetadata
+		if _, needMockData := advisorNeedMockData[rule]; needMockData {
+			dbSchemaMetadata = getMockDBSChemaData()
+		}
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_POSTGRES, dbSchemaMetadata, false /* record */)
+	}
+}
+
+// Add SQL review type here if you need metadata for test.
+var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
+	advisor.SchemaRuleFullyQualifiedObjectName: true,
+}
+
+func getMockDBSChemaData() *storepb.DatabaseSchemaMetadata {
+	return &storepb.DatabaseSchemaMetadata{
+		Name: "TEST_DB",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{Name: "pokes"},
+					{Name: "pokesv1"},
+					{Name: "pokesv2"},
+					{Name: "pokesv3"},
+				},
+				ExternalTables: []*storepb.ExternalTableMetadata{
+					{Name: "pokesv4"},
+					{Name: "pokesv5"},
+					{Name: "pokesv6"},
+					{Name: "pokesv7"},
+				},
+			},
+		},
 	}
 }
