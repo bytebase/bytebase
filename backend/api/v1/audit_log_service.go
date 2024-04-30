@@ -40,6 +40,11 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 		return nil, serr.Err()
 	}
 
+	orderByKeys, err := getSearchAuditLogsOrderByKeys(request.OrderBy)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get order by keys, error: %v", err)
+	}
+
 	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
 	if err != nil {
 		return nil, err
@@ -55,12 +60,14 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 		return nil, serr.Err()
 	}
 
-	auditLogs, err := s.store.SearchAuditLogs(ctx, &store.AuditLogFind{
-		PermissionFilter: permissionFilter,
-		Filter:           filter,
+	auditLogFind := &store.AuditLogFind{
 		Limit:            &limitPlusOne,
 		Offset:           &offset,
-	})
+		Filter:           filter,
+		OrderByKeys:      orderByKeys,
+		PermissionFilter: permissionFilter,
+	}
+	auditLogs, err := s.store.SearchAuditLogs(ctx, auditLogFind)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get audit logs, error: %v", err)
 	}
@@ -211,6 +218,34 @@ func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Sta
 		Args:  positionalArgs,
 		Where: "(" + where + ")",
 	}, nil
+}
+
+func getSearchAuditLogsOrderByKeys(orderBy string) ([]store.OrderByKey, error) {
+	keys, err := parseOrderBy(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	orderByKeys := []store.OrderByKey{}
+	for _, orderByKey := range keys {
+		key := ""
+		if orderByKey.key == "create_time" {
+			key = "created_ts"
+		}
+		if key == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid order by key %v", orderByKey.key)
+		}
+
+		sortOrder := store.ASC
+		if !orderByKey.isAscend {
+			sortOrder = store.DESC
+		}
+		orderByKeys = append(orderByKeys, store.OrderByKey{
+			Key:       key,
+			SortOrder: sortOrder,
+		})
+	}
+	return orderByKeys, nil
 }
 
 func getSearchAuditLogsPermissionFilter(ctx context.Context, s *store.Store, user *store.UserMessage, iamManager *iam.Manager) (*store.AuditLogPermissionFilter, *status.Status) {
