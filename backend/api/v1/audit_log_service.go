@@ -88,6 +88,54 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 	}, nil
 }
 
+func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.ExportAuditLogsRequest) (*v1pb.ExportAuditLogsResponse, error) {
+	searchAuditLogsResult, err := s.SearchAuditLogs(ctx, &v1pb.SearchAuditLogsRequest{
+		Filter:  request.Filter,
+		OrderBy: request.OrderBy,
+		// Default 1000 rows to avoid OOM for now.
+		PageSize: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := &v1pb.QueryResult{
+		ColumnNames: []string{"time", "user", "method", "severity", "resource", "request", "response", "status"},
+	}
+	for _, auditLog := range searchAuditLogsResult.AuditLogs {
+		result.Rows = append(result.Rows, &v1pb.QueryRow{Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.CreateTime.AsTime().Format(time.RFC3339)}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.User}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Method}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Severity.String()}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Resource}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Request}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Response}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Status.String()}},
+		}})
+	}
+
+	var content []byte
+	switch request.Format {
+	case v1pb.ExportFormat_CSV:
+		if content, err = exportCSV(result); err != nil {
+			return nil, err
+		}
+	case v1pb.ExportFormat_JSON:
+		if content, err = exportJSON(result); err != nil {
+			return nil, err
+		}
+	case v1pb.ExportFormat_XLSX:
+		if content, err = exportXLSX(result); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
+	}
+
+	return &v1pb.ExportAuditLogsResponse{Content: content}, nil
+}
+
 func convertToAuditLogs(auditLogs []*store.AuditLog) []*v1pb.AuditLog {
 	var ls []*v1pb.AuditLog
 	for _, log := range auditLogs {
