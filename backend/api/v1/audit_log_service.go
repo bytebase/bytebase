@@ -103,7 +103,7 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.Exp
 		ColumnNames: []string{"time", "user", "method", "severity", "resource", "request", "response", "status"},
 	}
 	for _, auditLog := range searchAuditLogsResult.AuditLogs {
-		result.Rows = append(result.Rows, &v1pb.QueryRow{Values: []*v1pb.RowValue{
+		queryRow := &v1pb.QueryRow{Values: []*v1pb.RowValue{
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.CreateTime.AsTime().Format(time.RFC3339)}},
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.User}},
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Method}},
@@ -111,8 +111,13 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.Exp
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Resource}},
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Request}},
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Response}},
-			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Status.String()}},
-		}})
+		}}
+		if auditLog.Status != nil {
+			queryRow.Values = append(queryRow.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Status.String()}})
+		} else {
+			queryRow.Values = append(queryRow.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{}})
+		}
+		result.Rows = append(result.Rows, queryRow)
 	}
 
 	var content []byte

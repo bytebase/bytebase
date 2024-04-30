@@ -1,12 +1,27 @@
 <template>
   <div class="w-full space-y-4">
     <FeatureAttention feature="bb.feature.audit-log" />
-    <div class="flex justify-end items-center space-x-2">
-      <div class="w-72">
-        <UserSelect
-          v-model:user="state.userUid"
-          :multiple="false"
-          :include-all="true"
+    <div class="flex justify-between items-center space-x-2">
+      <div>
+        <div class="w-72">
+          <UserSelect
+            v-model:user="state.userUid"
+            :multiple="false"
+            :include-all="true"
+          />
+        </div>
+      </div>
+      <div>
+        <DataExportButton
+          size="medium"
+          :file-type="'raw'"
+          :support-formats="[
+            ExportFormat.CSV,
+            ExportFormat.JSON,
+            ExportFormat.XLSX,
+          ]"
+          :disabled="!hasAuditLogFeature"
+          @export="handleExport"
         />
       </div>
     </div>
@@ -27,18 +42,23 @@
 </template>
 
 <script lang="ts" setup>
+import type { BinaryLike } from "node:crypto";
 import { reactive, computed } from "vue";
 import AuditLogDataTable from "@/components/AuditLog/AuditLogDataTable.vue";
+import type { ExportOption } from "@/components/DataExportButton.vue";
+import DataExportButton from "@/components/DataExportButton.vue";
 import PagedAuditLogTable from "@/components/PagedAuditLogTable.vue";
-import { featureToRef, useUserStore } from "@/store";
+import { featureToRef, useAuditLogStore, useUserStore } from "@/store";
 import type { SearchAuditLogsParams } from "@/types";
 import { UNKNOWN_ID } from "@/types";
+import { ExportFormat } from "@/types/proto/v1/common";
 
 const state = reactive({
   userUid: String(UNKNOWN_ID),
 });
 
 const userStore = useUserStore();
+const auditLogStore = useAuditLogStore();
 
 const hasAuditLogFeature = featureToRef("bb.feature.audit-log");
 
@@ -53,4 +73,15 @@ const searchAuditLogs = computed((): SearchAuditLogsParams => {
     order: "desc",
   };
 });
+
+const handleExport = async (
+  options: ExportOption,
+  callback: (content: BinaryLike | Blob, options: ExportOption) => void
+) => {
+  const content = await auditLogStore.exportAuditLogs(
+    searchAuditLogs.value,
+    options.format
+  );
+  callback(content, options);
+};
 </script>
