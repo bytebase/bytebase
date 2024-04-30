@@ -381,7 +381,7 @@ export const ExportAuditLogsRequest = {
       writer.uint32(18).string(message.orderBy);
     }
     if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
-      writer.uint32(40).int32(exportFormatToNumber(message.format));
+      writer.uint32(24).int32(exportFormatToNumber(message.format));
     }
     return writer;
   },
@@ -407,8 +407,8 @@ export const ExportAuditLogsRequest = {
 
           message.orderBy = reader.string();
           continue;
-        case 5:
-          if (tag !== 40) {
+        case 3:
+          if (tag !== 24) {
             break;
           }
 

@@ -63,7 +63,7 @@ message ExportAuditLogsRequest {
   string order_by = 2;
 
   // The export format.
-  ExportFormat format = 5;
+  ExportFormat format = 3;
 }
 
 message ExportAuditLogsResponse {
