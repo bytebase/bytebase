@@ -20,7 +20,6 @@ export * from "./vcs_provider";
 export * from "./vcs_connector";
 export * from "./changeHistory";
 export * from "./dbSchema";
-export * from "./activity";
 export * from "./anomaly";
 export * from "./schemaEditor";
 export * from "./changelist";
