@@ -48,6 +48,11 @@ func (checker *FullyQualifiedObjectNameChecker) Visit(in ast.Node) ast.Visitor {
 			fullyQualifiedName := getFullyQualiufiedObjectName(node.Trigger.Table)
 			checker.appendAdviceByObjName(fullyQualifiedName)
 		}
+	case *ast.CreateIndexStmt:
+		if node.Index != nil {
+			fullyQualifiedName := getFullyQualiufiedObjectName(node.Index)
+			checker.appendAdviceByObjName(fullyQualifiedName)
+		}
 
 	// Drop statement.
 	case *ast.DropSequenceStmt:
