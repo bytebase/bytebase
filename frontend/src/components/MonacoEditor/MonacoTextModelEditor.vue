@@ -169,7 +169,9 @@ onBeforeUnmount(() => {
 });
 
 defineExpose({
-  editorRef,
+  get codeEditor() {
+    return editorRef.value;
+  },
 });
 </script>
 

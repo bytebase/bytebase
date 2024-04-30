@@ -1,6 +1,6 @@
 <template>
   <Suspense>
-    <MonacoEditor v-bind="$attrs as any" />
+    <MonacoEditor ref="monacoEditorRef" v-bind="$attrs as any" />
     <template #fallback>
       <div ref="spinnerWrapperElRef" :class="classes">
         <BBSpin />
@@ -13,12 +13,14 @@
 import { useParentElement } from "@vueuse/core";
 import { defineAsyncComponent, ref } from "vue";
 import { computed } from "vue";
+import { watchEffect } from "vue";
 import { BBSpin } from "@/bbkit";
 
 const MonacoEditor = defineAsyncComponent(() => import("./MonacoEditor.vue"));
 
 const spinnerWrapperElRef = ref<HTMLElement>();
 const parentElRef = useParentElement(spinnerWrapperElRef);
+const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 
 const classes = computed(() => {
   const classes: string[] = [
@@ -42,5 +44,18 @@ const classes = computed(() => {
 
   classes.push("w-full", "h-full");
   return classes;
+});
+
+watchEffect(() => {
+  console.log(
+    "[WrappedMonacoEditor.vue]: monacoEditorRef:",
+    monacoEditorRef.value?.editor?.codeEditor?.revealLineInCenter
+  );
+});
+
+defineExpose({
+  get monacoEditor() {
+    return monacoEditorRef.value;
+  },
 });
 </script>

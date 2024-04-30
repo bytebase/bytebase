@@ -74,6 +74,16 @@
           {{ row.link.title }}
         </a>
 
+        <template v-if="row.checkResult.sqlReviewReport?.line">
+          <span class="border-r border-control-border ml-1"></span>
+          <span
+            class="ml-1 normal-link"
+            @click="console.log('should go to line')"
+          >
+            L{{ row.checkResult.sqlReviewReport.line }}
+          </span>
+        </template>
+
         <slot name="row-extra" :row="row" />
       </div>
     </div>

@@ -128,6 +128,7 @@
       :data-height="editorContainerHeight"
     >
       <MonacoEditor
+        ref="monacoEditorRef"
         class="w-full h-auto max-h-[240px] min-h-[120px] border rounded-[3px]"
         :filename="filename"
         :content="state.statement"
@@ -220,6 +221,8 @@ import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
 import { computed, h, reactive, ref, watch } from "vue";
+import { watchEffect } from "vue";
+import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
@@ -283,6 +286,7 @@ const { events, isCreating, issue, selectedTask, formatOnSave } =
 const project = computed(() => issue.value.projectEntity);
 const dialog = useDialog();
 const editorContainerElRef = ref<HTMLElement>();
+const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 const { height: editorContainerHeight } = useElementSize(editorContainerElRef);
 
 const state = reactive<LocalState>({
@@ -742,6 +746,23 @@ watch(isCreating, (curr, prev) => {
   // Reset the edit state after creating the issue.
   if (!curr && prev) {
     state.isEditing = false;
+  }
+});
+
+watchEffect(() => {
+  console.log(
+    "[EditorView.vue]: monacoEditorRef:",
+    monacoEditorRef.value?.monacoEditor?.editor?.codeEditor?.revealLineNearTop
+  );
+  if (monacoEditorRef.value) {
+    console.log("[EditorView.vue]: Revealing line 714 in near top");
+    console.log(
+      "[EditorView.vue]: LineCount:",
+      monacoEditorRef.value?.monacoEditor?.editor?.codeEditor?.getModel()
+    );
+    monacoEditorRef.value?.monacoEditor?.editor?.codeEditor?.revealLineNearTop(
+      714
+    );
   }
 });
 </script>

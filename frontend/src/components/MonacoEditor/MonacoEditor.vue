@@ -1,6 +1,7 @@
 <template>
   <MonacoTextModelEditor
     class="bb-monaco-editor"
+    ref="textModelEditorRef"
     :model="model"
     @update:content="(...args) => $emit('update:content', ...args)"
   />
@@ -9,10 +10,14 @@
 <script setup lang="ts">
 import { v4 as uuidv4 } from "uuid";
 import { computed, toRef } from "vue";
+import { ref } from "vue";
+import { watchEffect } from "vue";
 import type { Language } from "@/types";
-import MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
+import type MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
 import { useMonacoTextModel } from "./text-model";
 import { extensionNameOfLanguage } from "./utils";
+
+const textModelEditorRef = ref<InstanceType<typeof MonacoTextModelEditor>>();
 
 const props = withDefaults(
   defineProps<{
@@ -44,6 +49,19 @@ const filename = computed(() => {
   return `${uuidv4()}.${extensionNameOfLanguage(props.language)}`;
 });
 const model = useMonacoTextModel(filename, content, toRef(props, "language"));
+
+watchEffect(() => {
+  console.log(
+    "[MonacoEditor.vue]: textModelEditorRef:",
+    textModelEditorRef.value?.codeEditor?.revealLineInCenter
+  );
+});
+
+defineExpose({
+  get editor() {
+    return textModelEditorRef.value;
+  },
+});
 </script>
 
 <style lang="postcss" scoped>
