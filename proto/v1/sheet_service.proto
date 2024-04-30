@@ -107,7 +107,7 @@ message Sheet {
   SheetPayload payload = 13;
 
   // The SQL dialect.
-  Engine engine = 14;
+  Engine engine = 14 [(google.api.field_behavior) = REQUIRED];
 }
 
 message SheetPayload {
