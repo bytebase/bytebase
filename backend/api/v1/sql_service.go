@@ -314,7 +314,7 @@ func (s *SQLService) doExecute(ctx context.Context, instance *store.InstanceMess
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
 	// Prehandle export from issue.
-	if strings.Contains(request.Name, common.IssueNamePrefix) {
+	if strings.HasPrefix(request.Name, common.ProjectNamePrefix) {
 		return s.doExportFromIssue(ctx, request.Name)
 	}
 	// Prepare related message.
@@ -398,6 +398,13 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, issueName string) (*
 	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueUID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
+	}
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	if user.ID != issue.Creator.ID {
+		return nil, status.Errorf(codes.PermissionDenied, "only the issue creator can download")
 	}
 	if issue.PipelineUID == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "issue %s has no pipeline", issueName)

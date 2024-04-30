@@ -222,6 +222,7 @@ export interface ExportRequest {
   /**
    * The name is the instance name to execute the query against.
    * Format: instances/{instance}/databases/{databaseName}
+   * Format: projects/{project}/issues/{issue} for data export issue.
    */
   name: string;
   /** @deprecated */
