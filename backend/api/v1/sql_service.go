@@ -399,6 +399,13 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, issueName string) (*
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
 	}
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	if user.ID != issue.Creator.ID {
+		return nil, status.Errorf(codes.PermissionDenied, "only the issue creator can download")
+	}
 	if issue.PipelineUID == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "issue %s has no pipeline", issueName)
 	}
