@@ -29,21 +29,23 @@
   
     - [AnomalyService](#bytebase-v1-AnomalyService)
   
-- [v1/audit_log_service.proto](#v1_audit_log_service-proto)
-    - [AuditLog](#bytebase-v1-AuditLog)
-    - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
-    - [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse)
-  
-    - [AuditLog.Severity](#bytebase-v1-AuditLog-Severity)
-  
-    - [AuditLogService](#bytebase-v1-AuditLogService)
-  
 - [v1/common.proto](#v1_common-proto)
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
     - [MaskingLevel](#bytebase-v1-MaskingLevel)
     - [State](#bytebase-v1-State)
     - [VCSType](#bytebase-v1-VCSType)
+  
+- [v1/audit_log_service.proto](#v1_audit_log_service-proto)
+    - [AuditLog](#bytebase-v1-AuditLog)
+    - [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest)
+    - [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse)
+    - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
+    - [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse)
+  
+    - [AuditLog.Severity](#bytebase-v1-AuditLog-Severity)
+  
+    - [AuditLogService](#bytebase-v1-AuditLogService)
   
 - [v1/auth_service.proto](#v1_auth_service-proto)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
@@ -993,108 +995,6 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 
 
 
-<a name="v1_audit_log_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/audit_log_service.proto
-
-
-
-<a name="bytebase-v1-AuditLog"></a>
-
-### AuditLog
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the log. Formats: - projects/{project}/auditLogs/{uid} - workspaces/{workspace}/auditLogs/{uid} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| user | [string](#string) |  | Format: users/d@d.com |
-| method | [string](#string) |  | e.g. `/bytebase.v1.SQLService/Query`, `bb.project.repository.push` |
-| severity | [AuditLog.Severity](#bytebase-v1-AuditLog-Severity) |  |  |
-| resource | [string](#string) |  | The associated resource. |
-| request | [string](#string) |  | JSON-encoded request. |
-| response | [string](#string) |  | JSON-encoded response. Some fields are omitted because they are too large or contain sensitive information. |
-| status | [google.rpc.Status](#google-rpc-Status) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchAuditLogsRequest"></a>
-
-### SearchAuditLogsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| filter | [string](#string) |  |  |
-| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
-| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `SearchLogs` call. Provide this to retrieve the subsequent page. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchAuditLogsResponse"></a>
-
-### SearchAuditLogsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| audit_logs | [AuditLog](#bytebase-v1-AuditLog) | repeated |  |
-| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-AuditLog-Severity"></a>
-
-### AuditLog.Severity
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DEFAULT | 0 |  |
-| DEBUG | 1 |  |
-| INFO | 2 |  |
-| NOTICE | 3 |  |
-| WARNING | 4 |  |
-| ERROR | 5 |  |
-| CRITICAL | 6 |  |
-| ALERT | 7 |  |
-| EMERGENCY | 8 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-AuditLogService"></a>
-
-### AuditLogService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) |  |
-
- 
-
-
-
 <a name="v1_common-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1195,6 +1095,141 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
  
 
  
+
+ 
+
+
+
+<a name="v1_audit_log_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/audit_log_service.proto
+
+
+
+<a name="bytebase-v1-AuditLog"></a>
+
+### AuditLog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the log. Formats: - projects/{project}/auditLogs/{uid} - workspaces/{workspace}/auditLogs/{uid} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| user | [string](#string) |  | Format: users/d@d.com |
+| method | [string](#string) |  | e.g. `/bytebase.v1.SQLService/Query`, `bb.project.repository.push` |
+| severity | [AuditLog.Severity](#bytebase-v1-AuditLog-Severity) |  |  |
+| resource | [string](#string) |  | The associated resource. |
+| request | [string](#string) |  | JSON-encoded request. |
+| response | [string](#string) |  | JSON-encoded response. Some fields are omitted because they are too large or contain sensitive information. |
+| status | [google.rpc.Status](#google-rpc-Status) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportAuditLogsRequest"></a>
+
+### ExportAuditLogsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| filter | [string](#string) |  |  |
+| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
+| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportAuditLogsResponse"></a>
+
+### ExportAuditLogsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [bytes](#bytes) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchAuditLogsRequest"></a>
+
+### SearchAuditLogsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| filter | [string](#string) |  |  |
+| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
+| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchLogs` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchAuditLogsResponse"></a>
+
+### SearchAuditLogsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| audit_logs | [AuditLog](#bytebase-v1-AuditLog) | repeated |  |
+| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-AuditLog-Severity"></a>
+
+### AuditLog.Severity
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DEFAULT | 0 |  |
+| DEBUG | 1 |  |
+| INFO | 2 |  |
+| NOTICE | 3 |  |
+| WARNING | 4 |  |
+| ERROR | 5 |  |
+| CRITICAL | 6 |  |
+| ALERT | 7 |  |
+| EMERGENCY | 8 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-AuditLogService"></a>
+
+### AuditLogService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) |  |
+| ExportAuditLogs | [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest) | [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse) |  |
 
  
 
