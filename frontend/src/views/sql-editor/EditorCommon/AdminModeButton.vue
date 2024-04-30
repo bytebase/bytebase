@@ -62,7 +62,7 @@ const enterAdminMode = async () => {
   const target: CoreSQLEditorTab = {
     connection: { ...tab.connection },
     mode: "ADMIN",
-    sheet: "",
+    worksheet: "",
   };
   tabStore.selectOrAddSimilarNewTab(
     target,

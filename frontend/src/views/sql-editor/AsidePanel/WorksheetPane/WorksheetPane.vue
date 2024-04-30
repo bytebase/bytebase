@@ -92,12 +92,12 @@ watch(
     if (!tab) {
       return;
     }
-    if (!tab.sheet) {
+    if (!tab.worksheet) {
       maybeExpandGroup("draft");
       scrollCurrentItemIntoView(tab);
       return;
     }
-    const sheet = sheetStore.getSheetByName(tab.sheet);
+    const sheet = sheetStore.getWorksheetByName(tab.worksheet);
     if (!sheet) {
       return;
     }

@@ -86,11 +86,11 @@ const confirmEdit = () => {
 
   tab.title = title;
   tab.status = "DIRTY";
-  if (tab.sheet) {
+  if (tab.worksheet) {
     worksheetV1Store
-      .patchSheet(
+      .patchWorksheet(
         {
-          name: tab.sheet,
+          name: tab.worksheet,
           title,
         },
         ["title"]
