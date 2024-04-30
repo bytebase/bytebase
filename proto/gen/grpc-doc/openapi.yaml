@@ -12628,6 +12628,7 @@ components:
                 - name
                 - title
                 - content
+                - engine
             type: object
             properties:
                 name:
