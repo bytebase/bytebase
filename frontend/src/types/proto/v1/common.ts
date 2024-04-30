@@ -3,10 +3,10 @@
 export const protobufPackage = "bytebase.v1";
 
 export enum State {
-  STATE_UNSPECIFIED = 0,
-  ACTIVE = 1,
-  DELETED = 2,
-  UNRECOGNIZED = -1,
+  STATE_UNSPECIFIED = "STATE_UNSPECIFIED",
+  ACTIVE = "ACTIVE",
+  DELETED = "DELETED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function stateFromJSON(object: any): State {
@@ -41,30 +41,44 @@ export function stateToJSON(object: State): string {
   }
 }
 
+export function stateToNumber(object: State): number {
+  switch (object) {
+    case State.STATE_UNSPECIFIED:
+      return 0;
+    case State.ACTIVE:
+      return 1;
+    case State.DELETED:
+      return 2;
+    case State.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum Engine {
-  ENGINE_UNSPECIFIED = 0,
-  CLICKHOUSE = 1,
-  MYSQL = 2,
-  POSTGRES = 3,
-  SNOWFLAKE = 4,
-  SQLITE = 5,
-  TIDB = 6,
-  MONGODB = 7,
-  REDIS = 8,
-  ORACLE = 9,
-  SPANNER = 10,
-  MSSQL = 11,
-  REDSHIFT = 12,
-  MARIADB = 13,
-  OCEANBASE = 14,
-  DM = 15,
-  RISINGWAVE = 16,
-  OCEANBASE_ORACLE = 17,
-  STARROCKS = 18,
-  DORIS = 19,
-  HIVE = 20,
-  ELASTICSEARCH = 21,
-  UNRECOGNIZED = -1,
+  ENGINE_UNSPECIFIED = "ENGINE_UNSPECIFIED",
+  CLICKHOUSE = "CLICKHOUSE",
+  MYSQL = "MYSQL",
+  POSTGRES = "POSTGRES",
+  SNOWFLAKE = "SNOWFLAKE",
+  SQLITE = "SQLITE",
+  TIDB = "TIDB",
+  MONGODB = "MONGODB",
+  REDIS = "REDIS",
+  ORACLE = "ORACLE",
+  SPANNER = "SPANNER",
+  MSSQL = "MSSQL",
+  REDSHIFT = "REDSHIFT",
+  MARIADB = "MARIADB",
+  OCEANBASE = "OCEANBASE",
+  DM = "DM",
+  RISINGWAVE = "RISINGWAVE",
+  OCEANBASE_ORACLE = "OCEANBASE_ORACLE",
+  STARROCKS = "STARROCKS",
+  DORIS = "DORIS",
+  HIVE = "HIVE",
+  ELASTICSEARCH = "ELASTICSEARCH",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function engineFromJSON(object: any): Engine {
@@ -194,17 +208,69 @@ export function engineToJSON(object: Engine): string {
   }
 }
 
+export function engineToNumber(object: Engine): number {
+  switch (object) {
+    case Engine.ENGINE_UNSPECIFIED:
+      return 0;
+    case Engine.CLICKHOUSE:
+      return 1;
+    case Engine.MYSQL:
+      return 2;
+    case Engine.POSTGRES:
+      return 3;
+    case Engine.SNOWFLAKE:
+      return 4;
+    case Engine.SQLITE:
+      return 5;
+    case Engine.TIDB:
+      return 6;
+    case Engine.MONGODB:
+      return 7;
+    case Engine.REDIS:
+      return 8;
+    case Engine.ORACLE:
+      return 9;
+    case Engine.SPANNER:
+      return 10;
+    case Engine.MSSQL:
+      return 11;
+    case Engine.REDSHIFT:
+      return 12;
+    case Engine.MARIADB:
+      return 13;
+    case Engine.OCEANBASE:
+      return 14;
+    case Engine.DM:
+      return 15;
+    case Engine.RISINGWAVE:
+      return 16;
+    case Engine.OCEANBASE_ORACLE:
+      return 17;
+    case Engine.STARROCKS:
+      return 18;
+    case Engine.DORIS:
+      return 19;
+    case Engine.HIVE:
+      return 20;
+    case Engine.ELASTICSEARCH:
+      return 21;
+    case Engine.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum VCSType {
-  VCS_TYPE_UNSPECIFIED = 0,
+  VCS_TYPE_UNSPECIFIED = "VCS_TYPE_UNSPECIFIED",
   /** GITHUB - GitHub type. Using for GitHub community edition(ce). */
-  GITHUB = 1,
+  GITHUB = "GITHUB",
   /** GITLAB - GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). */
-  GITLAB = 2,
+  GITLAB = "GITLAB",
   /** BITBUCKET - BitBucket type. Using for BitBucket cloud or BitBucket server. */
-  BITBUCKET = 3,
+  BITBUCKET = "BITBUCKET",
   /** AZURE_DEVOPS - Azure DevOps. Using for Azure DevOps GitOps workflow. */
-  AZURE_DEVOPS = 4,
-  UNRECOGNIZED = -1,
+  AZURE_DEVOPS = "AZURE_DEVOPS",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function vCSTypeFromJSON(object: any): VCSType {
@@ -249,12 +315,30 @@ export function vCSTypeToJSON(object: VCSType): string {
   }
 }
 
+export function vCSTypeToNumber(object: VCSType): number {
+  switch (object) {
+    case VCSType.VCS_TYPE_UNSPECIFIED:
+      return 0;
+    case VCSType.GITHUB:
+      return 1;
+    case VCSType.GITLAB:
+      return 2;
+    case VCSType.BITBUCKET:
+      return 3;
+    case VCSType.AZURE_DEVOPS:
+      return 4;
+    case VCSType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum MaskingLevel {
-  MASKING_LEVEL_UNSPECIFIED = 0,
-  NONE = 1,
-  PARTIAL = 2,
-  FULL = 3,
-  UNRECOGNIZED = -1,
+  MASKING_LEVEL_UNSPECIFIED = "MASKING_LEVEL_UNSPECIFIED",
+  NONE = "NONE",
+  PARTIAL = "PARTIAL",
+  FULL = "FULL",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function maskingLevelFromJSON(object: any): MaskingLevel {
@@ -294,13 +378,29 @@ export function maskingLevelToJSON(object: MaskingLevel): string {
   }
 }
 
+export function maskingLevelToNumber(object: MaskingLevel): number {
+  switch (object) {
+    case MaskingLevel.MASKING_LEVEL_UNSPECIFIED:
+      return 0;
+    case MaskingLevel.NONE:
+      return 1;
+    case MaskingLevel.PARTIAL:
+      return 2;
+    case MaskingLevel.FULL:
+      return 3;
+    case MaskingLevel.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum ExportFormat {
-  FORMAT_UNSPECIFIED = 0,
-  CSV = 1,
-  JSON = 2,
-  SQL = 3,
-  XLSX = 4,
-  UNRECOGNIZED = -1,
+  FORMAT_UNSPECIFIED = "FORMAT_UNSPECIFIED",
+  CSV = "CSV",
+  JSON = "JSON",
+  SQL = "SQL",
+  XLSX = "XLSX",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function exportFormatFromJSON(object: any): ExportFormat {
@@ -342,5 +442,23 @@ export function exportFormatToJSON(object: ExportFormat): string {
     case ExportFormat.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function exportFormatToNumber(object: ExportFormat): number {
+  switch (object) {
+    case ExportFormat.FORMAT_UNSPECIFIED:
+      return 0;
+    case ExportFormat.CSV:
+      return 1;
+    case ExportFormat.JSON:
+      return 2;
+    case ExportFormat.SQL:
+      return 3;
+    case ExportFormat.XLSX:
+      return 4;
+    case ExportFormat.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }

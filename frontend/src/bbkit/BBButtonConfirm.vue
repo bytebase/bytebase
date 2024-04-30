@@ -2,11 +2,11 @@
   <NButton
     v-bind="$attrs"
     class="text-sm"
-    :type="type"
-    :class="[!state.hideIcon && 'btn-icon']"
+    :text="type === 'text'"
+    :class="[!hideIcon && 'btn-icon']"
     @click.prevent.stop="
       () => {
-        if (state.requireConfirm) {
+        if (requireConfirm) {
           state.showModal = true;
         } else {
           $emit('confirm');
@@ -14,42 +14,31 @@
       }
     "
   >
-    <template v-if="!state.hideIcon">
-      <heroicons-outline:trash v-if="state.style == 'DELETE'" class="w-4 h-4" />
-      <heroicons-outline:archive
-        v-if="state.style == 'ARCHIVE'"
-        class="w-4 h-4"
-      />
-      <heroicons-outline:reply
-        v-if="state.style == 'RESTORE'"
-        class="w-4 h-4"
-      />
+    <template v-if="!hideIcon">
+      <heroicons-outline:trash v-if="style == 'DELETE'" class="w-4 h-4" />
+      <heroicons-outline:archive v-if="style == 'ARCHIVE'" class="w-4 h-4" />
+      <heroicons-outline:reply v-if="style == 'RESTORE'" class="w-4 h-4" />
       <heroicons-outline:minus-circle
-        v-if="state.style == 'DISABLE'"
+        v-if="style == 'DISABLE'"
         class="w-4 h-4"
       />
-      <heroicons-outline:pencil v-if="state.style == 'EDIT'" class="w-4 h-4" />
-      <heroicons-outline:duplicate
-        v-if="state.style == 'CLONE'"
-        class="w-4 h-4"
-      />
+      <heroicons-outline:pencil v-if="style == 'EDIT'" class="w-4 h-4" />
+      <heroicons-outline:duplicate v-if="style == 'CLONE'" class="w-4 h-4" />
     </template>
-    <span v-if="state.buttonText" :class="[!state.hideIcon && 'ml-1']">
-      {{ state.buttonText }}
+    <span v-if="buttonText" :class="[!hideIcon && 'ml-1']">
+      {{ buttonText }}
     </span>
   </NButton>
   <BBAlert
     v-model:show="state.showModal"
     :type="
-      state.style == 'DELETE' ||
-      state.style == 'ARCHIVE' ||
-      state.style == 'DISABLE'
+      style == 'DELETE' || style == 'ARCHIVE' || style == 'DISABLE'
         ? 'warning'
         : 'info'
     "
-    :ok-text="state.okText"
-    :title="state.confirmTitle"
-    :description="state.confirmDescription"
+    :ok-text="okText"
+    :title="confirmTitle"
+    :description="confirmDescription"
     @ok="
       () => {
         state.showModal = false;
@@ -63,7 +52,8 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive } from "vue";
+import { NButton } from "naive-ui";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBButtonConfirmStyle } from "./types";
 
@@ -97,16 +87,16 @@ defineEmits<{
 const { t } = useI18n();
 
 const state = reactive({
-  // computed props with default i18n values.
-  style: props.style,
-  buttonText: props.buttonText,
-  requireConfirm: props.requireConfirm,
-  okText: props.okText || t("common.delete"),
-  confirmTitle: props.confirmTitle || t("bbkit.confirm-button.sure-to-delete"),
-  confirmDescription:
-    props.confirmDescription || t("bbkit.confirm-button.cannot-undo"),
-  hideIcon: props.hideIcon,
-  // local state.
   showModal: false,
+});
+
+const okText = computed(() => {
+  return props.okText || t("common.delete");
+});
+const confirmTitle = computed(() => {
+  return props.confirmTitle || t("bbkit.confirm-button.sure-to-delete");
+});
+const confirmDescription = computed(() => {
+  return props.confirmDescription || t("bbkit.confirm-button.cannot-undo");
 });
 </script>

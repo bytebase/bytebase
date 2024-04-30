@@ -2,7 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../protobuf/duration";
-import { LaunchStage, launchStageFromJSON, launchStageToJSON } from "./launch_stage";
+import { LaunchStage, launchStageFromJSON, launchStageToJSON, launchStageToNumber } from "./launch_stage";
 
 export const protobufPackage = "google.api";
 
@@ -12,22 +12,22 @@ export const protobufPackage = "google.api";
  */
 export enum ClientLibraryOrganization {
   /** CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED - Not useful. */
-  CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED = 0,
+  CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED = "CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED",
   /** CLOUD - Google Cloud Platform Org. */
-  CLOUD = 1,
+  CLOUD = "CLOUD",
   /** ADS - Ads (Advertising) Org. */
-  ADS = 2,
+  ADS = "ADS",
   /** PHOTOS - Photos Org. */
-  PHOTOS = 3,
+  PHOTOS = "PHOTOS",
   /** STREET_VIEW - Street View Org. */
-  STREET_VIEW = 4,
+  STREET_VIEW = "STREET_VIEW",
   /** SHOPPING - Shopping Org. */
-  SHOPPING = 5,
+  SHOPPING = "SHOPPING",
   /** GEO - Geo Org. */
-  GEO = 6,
+  GEO = "GEO",
   /** GENERATIVE_AI - Generative AI - https://developers.generativeai.google */
-  GENERATIVE_AI = 7,
-  UNRECOGNIZED = -1,
+  GENERATIVE_AI = "GENERATIVE_AI",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function clientLibraryOrganizationFromJSON(object: any): ClientLibraryOrganization {
@@ -87,21 +87,45 @@ export function clientLibraryOrganizationToJSON(object: ClientLibraryOrganizatio
   }
 }
 
+export function clientLibraryOrganizationToNumber(object: ClientLibraryOrganization): number {
+  switch (object) {
+    case ClientLibraryOrganization.CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED:
+      return 0;
+    case ClientLibraryOrganization.CLOUD:
+      return 1;
+    case ClientLibraryOrganization.ADS:
+      return 2;
+    case ClientLibraryOrganization.PHOTOS:
+      return 3;
+    case ClientLibraryOrganization.STREET_VIEW:
+      return 4;
+    case ClientLibraryOrganization.SHOPPING:
+      return 5;
+    case ClientLibraryOrganization.GEO:
+      return 6;
+    case ClientLibraryOrganization.GENERATIVE_AI:
+      return 7;
+    case ClientLibraryOrganization.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 /** To where should client libraries be published? */
 export enum ClientLibraryDestination {
   /**
    * CLIENT_LIBRARY_DESTINATION_UNSPECIFIED - Client libraries will neither be generated nor published to package
    * managers.
    */
-  CLIENT_LIBRARY_DESTINATION_UNSPECIFIED = 0,
+  CLIENT_LIBRARY_DESTINATION_UNSPECIFIED = "CLIENT_LIBRARY_DESTINATION_UNSPECIFIED",
   /**
    * GITHUB - Generate the client library in a repo under github.com/googleapis,
    * but don't publish it to package managers.
    */
-  GITHUB = 10,
+  GITHUB = "GITHUB",
   /** PACKAGE_MANAGER - Publish the library to package managers like nuget.org and npmjs.com. */
-  PACKAGE_MANAGER = 20,
-  UNRECOGNIZED = -1,
+  PACKAGE_MANAGER = "PACKAGE_MANAGER",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function clientLibraryDestinationFromJSON(object: any): ClientLibraryDestination {
@@ -133,6 +157,20 @@ export function clientLibraryDestinationToJSON(object: ClientLibraryDestination)
     case ClientLibraryDestination.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function clientLibraryDestinationToNumber(object: ClientLibraryDestination): number {
+  switch (object) {
+    case ClientLibraryDestination.CLIENT_LIBRARY_DESTINATION_UNSPECIFIED:
+      return 0;
+    case ClientLibraryDestination.GITHUB:
+      return 10;
+    case ClientLibraryDestination.PACKAGE_MANAGER:
+      return 20;
+    case ClientLibraryDestination.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -456,7 +494,7 @@ export const CommonLanguageSettings = {
     }
     writer.uint32(18).fork();
     for (const v of message.destinations) {
-      writer.int32(v);
+      writer.int32(clientLibraryDestinationToNumber(v));
     }
     writer.ldelim();
     return writer;
@@ -478,7 +516,7 @@ export const CommonLanguageSettings = {
           continue;
         case 2:
           if (tag === 16) {
-            message.destinations.push(reader.int32() as any);
+            message.destinations.push(clientLibraryDestinationFromJSON(reader.int32()));
 
             continue;
           }
@@ -486,7 +524,7 @@ export const CommonLanguageSettings = {
           if (tag === 18) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
-              message.destinations.push(reader.int32() as any);
+              message.destinations.push(clientLibraryDestinationFromJSON(reader.int32()));
             }
 
             continue;
@@ -536,7 +574,7 @@ export const CommonLanguageSettings = {
 function createBaseClientLibrarySettings(): ClientLibrarySettings {
   return {
     version: "",
-    launchStage: 0,
+    launchStage: LaunchStage.LAUNCH_STAGE_UNSPECIFIED,
     restNumericEnums: false,
     javaSettings: undefined,
     cppSettings: undefined,
@@ -554,8 +592,8 @@ export const ClientLibrarySettings = {
     if (message.version !== "") {
       writer.uint32(10).string(message.version);
     }
-    if (message.launchStage !== 0) {
-      writer.uint32(16).int32(message.launchStage);
+    if (message.launchStage !== LaunchStage.LAUNCH_STAGE_UNSPECIFIED) {
+      writer.uint32(16).int32(launchStageToNumber(message.launchStage));
     }
     if (message.restNumericEnums === true) {
       writer.uint32(24).bool(message.restNumericEnums);
@@ -606,7 +644,7 @@ export const ClientLibrarySettings = {
             break;
           }
 
-          message.launchStage = reader.int32() as any;
+          message.launchStage = launchStageFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 24) {
@@ -683,7 +721,9 @@ export const ClientLibrarySettings = {
   fromJSON(object: any): ClientLibrarySettings {
     return {
       version: isSet(object.version) ? globalThis.String(object.version) : "",
-      launchStage: isSet(object.launchStage) ? launchStageFromJSON(object.launchStage) : 0,
+      launchStage: isSet(object.launchStage)
+        ? launchStageFromJSON(object.launchStage)
+        : LaunchStage.LAUNCH_STAGE_UNSPECIFIED,
       restNumericEnums: isSet(object.restNumericEnums) ? globalThis.Boolean(object.restNumericEnums) : false,
       javaSettings: isSet(object.javaSettings) ? JavaSettings.fromJSON(object.javaSettings) : undefined,
       cppSettings: isSet(object.cppSettings) ? CppSettings.fromJSON(object.cppSettings) : undefined,
@@ -701,7 +741,7 @@ export const ClientLibrarySettings = {
     if (message.version !== "") {
       obj.version = message.version;
     }
-    if (message.launchStage !== 0) {
+    if (message.launchStage !== LaunchStage.LAUNCH_STAGE_UNSPECIFIED) {
       obj.launchStage = launchStageToJSON(message.launchStage);
     }
     if (message.restNumericEnums === true) {
@@ -740,7 +780,7 @@ export const ClientLibrarySettings = {
   fromPartial(object: DeepPartial<ClientLibrarySettings>): ClientLibrarySettings {
     const message = createBaseClientLibrarySettings();
     message.version = object.version ?? "";
-    message.launchStage = object.launchStage ?? 0;
+    message.launchStage = object.launchStage ?? LaunchStage.LAUNCH_STAGE_UNSPECIFIED;
     message.restNumericEnums = object.restNumericEnums ?? false;
     message.javaSettings = (object.javaSettings !== undefined && object.javaSettings !== null)
       ? JavaSettings.fromPartial(object.javaSettings)
@@ -779,7 +819,7 @@ function createBasePublishing(): Publishing {
     githubLabel: "",
     codeownerGithubTeams: [],
     docTagPrefix: "",
-    organization: 0,
+    organization: ClientLibraryOrganization.CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED,
     librarySettings: [],
     protoReferenceDocumentationUri: "",
   };
@@ -808,8 +848,8 @@ export const Publishing = {
     if (message.docTagPrefix !== "") {
       writer.uint32(850).string(message.docTagPrefix);
     }
-    if (message.organization !== 0) {
-      writer.uint32(856).int32(message.organization);
+    if (message.organization !== ClientLibraryOrganization.CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED) {
+      writer.uint32(856).int32(clientLibraryOrganizationToNumber(message.organization));
     }
     for (const v of message.librarySettings) {
       ClientLibrarySettings.encode(v!, writer.uint32(874).fork()).ldelim();
@@ -881,7 +921,7 @@ export const Publishing = {
             break;
           }
 
-          message.organization = reader.int32() as any;
+          message.organization = clientLibraryOrganizationFromJSON(reader.int32());
           continue;
         case 109:
           if (tag !== 874) {
@@ -919,7 +959,9 @@ export const Publishing = {
         ? object.codeownerGithubTeams.map((e: any) => globalThis.String(e))
         : [],
       docTagPrefix: isSet(object.docTagPrefix) ? globalThis.String(object.docTagPrefix) : "",
-      organization: isSet(object.organization) ? clientLibraryOrganizationFromJSON(object.organization) : 0,
+      organization: isSet(object.organization)
+        ? clientLibraryOrganizationFromJSON(object.organization)
+        : ClientLibraryOrganization.CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED,
       librarySettings: globalThis.Array.isArray(object?.librarySettings)
         ? object.librarySettings.map((e: any) => ClientLibrarySettings.fromJSON(e))
         : [],
@@ -952,7 +994,7 @@ export const Publishing = {
     if (message.docTagPrefix !== "") {
       obj.docTagPrefix = message.docTagPrefix;
     }
-    if (message.organization !== 0) {
+    if (message.organization !== ClientLibraryOrganization.CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED) {
       obj.organization = clientLibraryOrganizationToJSON(message.organization);
     }
     if (message.librarySettings?.length) {
@@ -976,7 +1018,7 @@ export const Publishing = {
     message.githubLabel = object.githubLabel ?? "";
     message.codeownerGithubTeams = object.codeownerGithubTeams?.map((e) => e) || [];
     message.docTagPrefix = object.docTagPrefix ?? "";
-    message.organization = object.organization ?? 0;
+    message.organization = object.organization ?? ClientLibraryOrganization.CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED;
     message.librarySettings = object.librarySettings?.map((e) => ClientLibrarySettings.fromPartial(e)) || [];
     message.protoReferenceDocumentationUri = object.protoReferenceDocumentationUri ?? "";
     return message;

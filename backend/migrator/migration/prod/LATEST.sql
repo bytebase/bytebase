@@ -374,6 +374,33 @@ CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON data_source(insta
 
 ALTER SEQUENCE data_source_id_seq RESTART WITH 101;
 
+-- sheet table stores general statements.
+CREATE TABLE sheet (
+    id SERIAL PRIMARY KEY,
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    project_id INTEGER NOT NULL REFERENCES project (id),
+    database_id INTEGER NULL REFERENCES db (id),
+    name TEXT NOT NULL,
+    statement TEXT NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_sheet_creator_id ON sheet(creator_id);
+
+CREATE INDEX idx_sheet_project_id ON sheet(project_id);
+
+CREATE INDEX idx_sheet_name ON sheet(name);
+
+CREATE INDEX idx_sheet_project_id_row_status ON sheet(project_id, row_status);
+
+CREATE INDEX idx_sheet_database_id_row_status ON sheet(database_id, row_status);
+
+ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
+
 -----------------------
 -- Pipeline related BEGIN
 -- pipeline table
@@ -460,6 +487,7 @@ CREATE TABLE task_run (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     task_id INTEGER NOT NULL REFERENCES task (id),
+    sheet_id INTEGER REFERENCES sheet (id),
     attempt INTEGER NOT NULL,
     name TEXT NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
@@ -766,33 +794,7 @@ CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON deployment_config
 
 ALTER SEQUENCE deployment_config_id_seq RESTART WITH 101;
 
--- sheet table stores general statements.
-CREATE TABLE sheet (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    project_id INTEGER NOT NULL REFERENCES project (id),
-    database_id INTEGER NULL REFERENCES db (id),
-    name TEXT NOT NULL,
-    statement TEXT NOT NULL,
-    payload JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_sheet_creator_id ON sheet(creator_id);
-
-CREATE INDEX idx_sheet_project_id ON sheet(project_id);
-
-CREATE INDEX idx_sheet_name ON sheet(name);
-
-CREATE INDEX idx_sheet_project_id_row_status ON sheet(project_id, row_status);
-
-CREATE INDEX idx_sheet_database_id_row_status ON sheet(database_id, row_status);
-
-ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
-
+-- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',

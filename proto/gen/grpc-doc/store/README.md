@@ -88,7 +88,6 @@
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
     - [KerberosConfig](#bytebase-store-KerberosConfig)
-    - [PlainSASLConfig](#bytebase-store-PlainSASLConfig)
     - [SASLConfig](#bytebase-store-SASLConfig)
   
     - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
@@ -226,6 +225,7 @@
     - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
   
 - [store/sheet.proto](#store_sheet-proto)
+    - [SheetCommand](#bytebase-store-SheetCommand)
     - [SheetPayload](#bytebase-store-SheetPayload)
   
 - [store/slow_query.proto](#store_slow_query-proto)
@@ -1522,23 +1522,8 @@ Used internally for obfuscating the page token.
 | realm | [string](#string) |  |  |
 | keytab | [string](#string) |  |  |
 | kdc_host | [string](#string) |  |  |
+| kdc_port | [string](#string) |  |  |
 | kdc_transport_protocol | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlainSASLConfig"></a>
-
-### PlainSASLConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| username | [string](#string) |  |  |
-| password | [string](#string) |  |  |
 
 
 
@@ -1554,7 +1539,6 @@ Used internally for obfuscating the page token.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | krb_config | [KerberosConfig](#bytebase-store-KerberosConfig) |  |  |
-| plain_config | [PlainSASLConfig](#bytebase-store-PlainSASLConfig) |  |  |
 
 
 
@@ -3153,7 +3137,7 @@ The type of target.
 | id | [string](#string) |  | id is the uuid for masking algorithm. |
 | title | [string](#string) |  | title is the title for masking algorithm. |
 | description | [string](#string) |  | description is the description for masking algorithm. |
-| category | [string](#string) |  | Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING. The range of accepted Payload is decided by the category. Mask: FullMask, RangeMask Hash: MD5Mask |
+| category | [string](#string) |  | Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH. The range of accepted Payload is decided by the category. MASK: FullMask, RangeMask HASH: MD5Mask |
 | full_mask | [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-FullMask) |  |  |
 | range_mask | [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask) |  |  |
 | md5_mask | [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-MD5Mask) |  |  |
@@ -3470,6 +3454,22 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
+<a name="bytebase-store-SheetCommand"></a>
+
+### SheetCommand
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  |  |
+| end | [int32](#int32) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-SheetPayload"></a>
 
 ### SheetPayload
@@ -3480,6 +3480,8 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ----- | ---- | ----- | ----------- |
 | database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
 | baseline_database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
+| engine | [Engine](#bytebase-store-Engine) |  | The SQL dialect. |
+| commands | [SheetCommand](#bytebase-store-SheetCommand) | repeated | The start and end position of each command in the sheet statement. |
 
 
 

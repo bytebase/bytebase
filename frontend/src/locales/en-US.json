@@ -789,7 +789,7 @@
         },
         "range-mask": {
           "self": "Range mask",
-          "label": "Range mask will replace the original value from start index to end index (end not included) with the substitution.",
+          "label": "Range mask will replace the original value from start index to end index (end not included) with the substitution. The index starts from 0.",
           "slice-start": "Slice start",
           "slice-start-label": "Slice start is the start index of the original value, start from 0 and should be less than stop.",
           "slice-end": "Slice end",
@@ -1369,7 +1369,7 @@
     "password-type": {
       "password": "Password",
       "password-tip": "You can also specify external secret manage endpoint",
-      "google-iam": "Google CloudSQL IAM",
+      "google-iam": "Google Cloud SQL IAM",
       "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
@@ -2270,7 +2270,12 @@
     "sync-in-progress": "Sync in progress",
     "create-a-worksheet": "Create a new worksheet",
     "select-a-database-to-start": "Select a database to start",
-    "select-encoding": "Select encoding"
+    "select-encoding": "Select encoding",
+    "result-limit": {
+      "n-rows": "{n} rows",
+      "rows": "rows"
+    },
+    "n-per-page": "{n} / page"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2761,12 +2766,15 @@
       "updated-time": "Updated Time",
       "actor": "Actor",
       "type": "Audit Type",
-      "level": "Audit Level",
+      "level": "Level",
       "comment": "Comment",
       "payload": "Payload",
       "empty": "<Empty>",
       "view-details": "View Details",
-      "select-type": "Select Type"
+      "select-type": "Select Type",
+      "method": "Method",
+      "request": "Request",
+      "response": "Response"
     },
     "type": {
       "workspace": {
@@ -3379,7 +3387,11 @@
     },
     "confirm-remove-change": "Remove this change?",
     "delete-this-changelist": "Delete this changelist",
-    "confirm-delete-changelist": "Delete this changelist?"
+    "confirm-delete-changelist": "Delete this changelist?",
+    "import": {
+      "no-file-to-upload": "No file to upload",
+      "upload-sql-or-zip-file": "Upload .sql or .zip file"
+    }
   },
   "export-data": {
     "export-rows": "Export rows",

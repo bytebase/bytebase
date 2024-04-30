@@ -22,6 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
@@ -158,11 +159,6 @@ func (*Driver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
 	return "", nil
 }
 
-// Restore restores the backup read from src.
-func (*Driver) Restore(_ context.Context, _ io.Reader) error {
-	panic("not implemented")
-}
-
 // getBasicMongoDBConnectionURI returns the MongoDB connection URI.
 // https://www.mongodb.com/docs/manual/reference/connection-string/
 func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
@@ -267,6 +263,18 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		return nil, errors.Wrapf(err, "failed to open file: %s", queryResultFileName)
 	}
 	defer f.Close()
+
+	fileInfo, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if fileInfo.Size() > common.MaximumSQLResultSize {
+		return []*v1pb.QueryResult{{
+			Latency:   durationpb.New(time.Since(startTime)),
+			Statement: statement,
+			Error:     common.MaximumSQLResultSizeExceeded,
+		}}, nil
+	}
 
 	content, err := io.ReadAll(f)
 	if err != nil {

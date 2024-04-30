@@ -99,15 +99,6 @@
         }
       }
     },
-    "table-disallow-dml": {
-      "title": "禁止 DML",
-      "description": "配置哪些表禁止执行 DML。建议错误级别：警告",
-      "component": {
-        "list": {
-          "title": "表名"
-        }
-      }
-    },
     "table-limit-size": {
       "title": "限制对数据量大的表执行 DDL 操作",
       "description": "配置可执行 DDL 的表的最大数据量。建议错误级别：警告",
@@ -120,6 +111,15 @@
     "naming-fully-qualified": {
       "title": "完全限定对象名称",
       "description": "强制使用完全限定的对象名称。例如 “schema.table”，建议错误级别：警告"
+    }
+    "table-disallow-dml": {
+      "title": "禁止 DML",
+      "description": "配置哪些表禁止执行 DML。建议错误级别：警告",
+      "component": {
+        "list": {
+          "title": "表名"
+        }
+      }
     },
     "naming-table": {
       "title": "强制表命名格式",

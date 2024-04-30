@@ -10517,6 +10517,8 @@ components:
                     type: string
                 kdcHost:
                     type: string
+                kdcPort:
+                    type: string
                 kdcTransportProtocol:
                     type: string
         LDAPIdentityProviderConfig:
@@ -11089,10 +11091,10 @@ components:
                 category:
                     type: string
                     description: |-
-                        Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING.
+                        Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH.
                          The range of accepted Payload is decided by the category.
-                         Mask: FullMask, RangeMask
-                         Hash: MD5Mask
+                         MASK: FullMask, RangeMask
+                         HASH: MD5Mask
                 fullMask:
                     $ref: '#/components/schemas/Algorithm_FullMask'
                 rangeMask:
@@ -11264,13 +11266,6 @@ components:
             type: object
             properties:
                 license:
-                    type: string
-        PlainSASLConfig:
-            type: object
-            properties:
-                username:
-                    type: string
-                password:
                     type: string
         Plan:
             type: object
@@ -12114,8 +12109,6 @@ components:
             properties:
                 krbConfig:
                     $ref: '#/components/schemas/KerberosConfig'
-                plainConfig:
-                    $ref: '#/components/schemas/PlainSASLConfig'
         SMTPMailDeliverySettingValue:
             type: object
             properties:
@@ -12681,6 +12674,33 @@ components:
                     description: content_size is the full size of the content, may not match the size of the `content` field.
                 payload:
                     $ref: '#/components/schemas/SheetPayload'
+                engine:
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
+                    description: The SQL dialect.
+                    format: enum
         SheetPayload:
             type: object
             properties:

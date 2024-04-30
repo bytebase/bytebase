@@ -289,7 +289,7 @@ const props = defineProps({
   },
   environmentTier: {
     required: true,
-    type: Number as PropType<EnvironmentTier>,
+    type: String as PropType<EnvironmentTier>,
   },
 });
 

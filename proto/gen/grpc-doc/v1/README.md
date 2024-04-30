@@ -81,7 +81,6 @@
     - [KerberosConfig](#bytebase-v1-KerberosConfig)
     - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
-    - [PlainSASLConfig](#bytebase-v1-PlainSASLConfig)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
     - [SASLConfig](#bytebase-v1-SASLConfig)
     - [SearchInstancesRequest](#bytebase-v1-SearchInstancesRequest)
@@ -1728,6 +1727,7 @@ InstanceOptions is the option for instances.
 | realm | [string](#string) |  |  |
 | keytab | [string](#string) |  |  |
 | kdc_host | [string](#string) |  |  |
+| kdc_port | [string](#string) |  |  |
 | kdc_transport_protocol | [string](#string) |  |  |
 
 
@@ -1771,22 +1771,6 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 
 
-<a name="bytebase-v1-PlainSASLConfig"></a>
-
-### PlainSASLConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| username | [string](#string) |  |  |
-| password | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-RemoveDataSourceRequest"></a>
 
 ### RemoveDataSourceRequest
@@ -1812,7 +1796,6 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | krb_config | [KerberosConfig](#bytebase-v1-KerberosConfig) |  |  |
-| plain_config | [PlainSASLConfig](#bytebase-v1-PlainSASLConfig) |  |  |
 
 
 
@@ -9174,6 +9157,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
 | payload | [SheetPayload](#bytebase-v1-SheetPayload) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  | The SQL dialect. |
 
 
 

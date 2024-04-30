@@ -17,7 +17,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -144,14 +143,6 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			response.Results = result
 		}
 
-		if proto.Size(response) > common.MaximumSQLResultSize {
-			response.Results = []*v1pb.QueryResult{
-				{
-					Error: common.MaximumSQLResultSizeExceeded,
-				},
-			}
-		}
-
 		if err := server.Send(response); err != nil {
 			return status.Errorf(codes.Internal, "failed to send response: %v", err)
 		}
@@ -222,13 +213,6 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 	response := &v1pb.ExecuteResponse{
 		Results: results,
 		Advices: advices,
-	}
-	if proto.Size(response) > common.MaximumSQLResultSize {
-		response.Results = []*v1pb.QueryResult{
-			{
-				Error: common.MaximumSQLResultSizeExceeded,
-			},
-		}
 	}
 	return response, nil
 }
@@ -350,18 +334,12 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return nil, err
 	}
 
-	// TODO(d): are we sure about this?
-	schemaName := ""
-	if instance.Engine == storepb.Engine_ORACLE {
-		schemaName = database.DatabaseName
-	}
-
 	spans, err := base.GetQuerySpan(
 		ctx,
 		instance.Engine,
 		statement,
 		database.DatabaseName,
-		schemaName,
+		"",
 		BuildGetDatabaseMetadataFunc(s.store, instance),
 		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -501,8 +479,8 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	if len(result) > 1 {
 		result = result[len(result)-1:]
 	}
-	if proto.Size(&v1pb.QueryResponse{Results: result}) > common.MaximumSQLResultSize {
-		return nil, durationNs, errors.Errorf(common.MaximumSQLResultSizeExceeded)
+	if result[0].GetError() != "" {
+		return nil, durationNs, errors.Errorf(result[0].GetError())
 	}
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
@@ -794,19 +772,13 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 
-	// TODO(d): are we sure about this?
-	schemaName := ""
-	if instance.Engine == storepb.Engine_ORACLE {
-		schemaName = database.DatabaseName
-	}
-
 	// Get query span.
 	spans, err := base.GetQuerySpan(
 		ctx,
 		instance.Engine,
 		statement,
 		database.DatabaseName,
-		schemaName,
+		"",
 		BuildGetDatabaseMetadataFunc(s.store, instance),
 		BuildListDatabaseNamesFunc(s.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -877,14 +849,6 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		Results:     results,
 		Advices:     advices,
 		AllowExport: allowExport,
-	}
-
-	if proto.Size(response) > common.MaximumSQLResultSize {
-		response.Results = []*v1pb.QueryResult{
-			{
-				Error: common.MaximumSQLResultSizeExceeded,
-			},
-		}
 	}
 
 	return response, nil
@@ -1380,12 +1344,6 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
 	}
 
-	// TODO(d): are we sure about this?
-	currentSchema := ""
-	if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
-		currentSchema = database.DatabaseName
-	}
-
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to get database driver: %v", err)
@@ -1401,7 +1359,6 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, chang
 		changeType,
 		catalog,
 		connection,
-		currentSchema,
 		database.DatabaseName,
 	)
 	if err != nil {
@@ -1449,7 +1406,6 @@ func (s *SQLService) sqlCheck(
 	changeType v1pb.CheckRequest_ChangeType,
 	catalog catalog.Catalog,
 	driver *sql.DB,
-	currentSchema string,
 	currentDatabase string,
 ) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
@@ -1470,7 +1426,6 @@ func (s *SQLService) sqlCheck(
 		Catalog:         catalog,
 		Driver:          driver,
 		Context:         ctx,
-		CurrentSchema:   currentSchema,
 		CurrentDatabase: currentDatabase,
 	})
 	if err != nil {
