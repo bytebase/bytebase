@@ -36,7 +36,7 @@ const PERSISTENT_TAB_FIELDS = [
   "connection",
   "statement",
   "mode",
-  "sheet",
+  "worksheet",
   "status",
   "batchQueryContext",
 ] as const;
@@ -209,7 +209,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
         isSimilarSQLEditorTab(tab, curr)
       ) {
         curr.connection = tab.connection;
-        curr.sheet = tab.sheet;
+        curr.worksheet = tab.worksheet;
         curr.mode = tab.mode;
         if (defaultTitle) {
           curr.title = defaultTitle;
@@ -322,7 +322,7 @@ export const isSQLEditorTabClosable = (tab: SQLEditorTab) => {
   }
   if (tabList.length === 1) {
     // It's the only one tab, and it's closable if it's a sheet tab
-    return !!tab.sheet;
+    return !!tab.worksheet;
   }
   return false;
 };

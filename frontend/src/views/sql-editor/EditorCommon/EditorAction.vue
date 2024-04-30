@@ -197,8 +197,8 @@ const allowSave = computed(() => {
     return false;
   }
 
-  if (tab.sheet) {
-    const sheet = useWorkSheetStore().getSheetByName(tab.sheet);
+  if (tab.worksheet) {
+    const sheet = useWorkSheetStore().getWorksheetByName(tab.worksheet);
     if (sheet && sheet.database !== tab.connection.database) {
       return true;
     }
