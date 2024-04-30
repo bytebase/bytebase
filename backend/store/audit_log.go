@@ -86,7 +86,6 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		for _, v := range find.OrderByKeys {
 			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 		}
-		println(`strings.Join(orderBy, ", ")`, strings.Join(orderBy, ", "))
 		query += fmt.Sprintf(" ORDER BY %s", strings.Join(orderBy, ", "))
 	} else {
 		query += " ORDER BY created_ts ASC"
