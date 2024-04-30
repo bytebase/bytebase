@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	sc "github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -145,11 +146,15 @@ func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.Task
 		rollbackStatement = statementsBuffer.String()
 	}
 
-	sheet, err := r.store.CreateSheet(ctx, &store.SheetMessage{
+	sheet, err := sc.CreateSheet(ctx, r.store, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
 		ProjectUID: project.UID,
 		Title:      fmt.Sprintf("Sheet for rolling back task %v", task.ID),
 		Statement:  rollbackStatement,
+
+		Payload: &storepb.SheetPayload{
+			Engine: instance.Engine,
+		},
 	})
 	if err != nil {
 		slog.Error("failed to create database creation sheet", log.BBError(err))
@@ -228,11 +233,15 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 		rollbackStatement = rollbackSQL
 	}
 
-	sheet, err := r.store.CreateSheet(ctx, &store.SheetMessage{
+	sheet, err := sc.CreateSheet(ctx, r.store, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
 		ProjectUID: project.UID,
 		Title:      fmt.Sprintf("Sheet for rolling back task %d", task.ID),
 		Statement:  rollbackStatement,
+
+		Payload: &storepb.SheetPayload{
+			Engine: instance.Engine,
+		},
 	})
 	if err != nil {
 		slog.Error("failed to create database creation sheet", log.BBError(err))
