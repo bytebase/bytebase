@@ -304,6 +304,9 @@ const (
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
 	PostgreSQLSyntax Type = "bb.plugin.advisor.postgresql.syntax"
 
+	// PostgreSQLNamingFullyQualifiedObjectName is an advisor type for enforing full qualified object name.
+	PostgreSQLNamingFullyQualifiedObjectName Type = "bb.plugin.advisor.postgresql.naming.fully-qualified"
+
 	// PostgreSQLNamingTableConvention is an advisor type for PostgreSQL table naming convention.
 	PostgreSQLNamingTableConvention Type = "bb.plugin.advisor.postgresql.naming.table"
 

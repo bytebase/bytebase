@@ -340,6 +340,10 @@ ruleList:
       - MYSQL
       - POSTGRES
       - TIDB
+  - type: naming.fully-qualified
+    category: NAMING
+    engineList:
+      - POSTGRES
   - type: naming.table
     category: NAMING
     engineList:

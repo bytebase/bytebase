@@ -43,6 +43,8 @@ const (
 	// SchemaRuleMySQLEngine require InnoDB as the storage engine.
 	SchemaRuleMySQLEngine SQLReviewRuleType = "engine.mysql.use-innodb"
 
+	// SchemaRuleFullyQualifiedObjectName enforces using fully qualified object name.
+	SchemaRuleFullyQualifiedObjectName SQLReviewRuleType = "naming.fully-qualified"
 	// SchemaRuleTableNaming enforce the table name format.
 	SchemaRuleTableNaming SQLReviewRuleType = "naming.table"
 	// SchemaRuleColumnNaming enforce the column name format.
@@ -1137,6 +1139,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return SnowflakeMigrationCompatibility, nil
 		case storepb.Engine_MSSQL:
 			return MSSQLMigrationCompatibility, nil
+		}
+	case SchemaRuleFullyQualifiedObjectName:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLNamingFullyQualifiedObjectName, nil
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
