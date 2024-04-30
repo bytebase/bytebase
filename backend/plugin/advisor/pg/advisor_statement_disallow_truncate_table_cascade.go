@@ -9,25 +9,23 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
-	_ advisor.Advisor = (*StatementDmlDryRunAdvisor)(nil)
-	_ ast.Visitor     = (*statementDmlDryRunChecker)(nil)
+	_ advisor.Advisor = (*StatementDisallowOnDelCascadeAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementDisallowCascade, &StatementDisallowCascadeAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementDisallowCascade, &StatementDisallowOnDelCascadeAdvisor{})
 }
 
-// StatementDisallowCascadeAdvisor is the advisor checking the disallow cascade.
-type StatementDisallowCascadeAdvisor struct {
+// StatementDisallowTruncateTblCascadeAdvisor is the advisor checking the disallow cascade.
+type StatementDisallowTruncateTblCascadeAdvisor struct {
 }
 
 // Check checks for DML dry run.
-func (*StatementDisallowCascadeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDisallowTruncateTblCascadeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmt := ctx.Statements
 	if stmt == "" {
 		return []advisor.Advice{
