@@ -108,6 +108,10 @@
         }
       }
     },
+    "naming-fully-qualified": {
+      "title": "完全限定对象名称",
+      "description": "强制使用完全限定的对象名称。例如 “schema.table”，建议错误级别：警告"
+    },     
     "table-disallow-dml": {
       "title": "禁止 DML",
       "description": "配置哪些表禁止执行 DML。建议错误级别：警告",

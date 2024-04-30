@@ -112,6 +112,8 @@ ruleList:
     level: WARNING
   - type: statement.prior-backup-check
     level: ERROR
+  - type: naming.fully-qualified
+    level: WARNING
   - type: naming.table
     level: WARNING
     payload:

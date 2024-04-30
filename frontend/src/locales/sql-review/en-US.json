@@ -117,6 +117,10 @@
         }
       }
     },
+    "naming-fully-qualified": {
+      "title": "Fully qualified object name",
+      "description": "Enforce the use of fully qualified object names. For example, “schema.table”, suggested error level: Warning"
+    },
     "naming-table": {
       "title": "Enforce table naming format",
       "description": "The default format is all lowercase letters, separated by underscores between words, and no more than 63 characters long, such as \"abc\" and \"abc_def\". Suggestion error level: Warning",

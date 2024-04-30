@@ -134,7 +134,7 @@ func (c *testCatalog) GetFinder() *catalog.Finder {
 }
 
 // RunSQLReviewRuleTest helps to test the SQL review rule.
-func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.Engine, record bool) {
+func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.Engine, schemaMetadata *storepb.DatabaseSchemaMetadata, record bool) {
 	var tests []TestCase
 
 	fileName := strings.Map(func(r rune) rune {
@@ -181,6 +181,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			Driver:          nil,
 			Context:         context.Background(),
 			CurrentDatabase: "TEST_DB",
+			DBSchema:        schemaMetadata,
 		}
 
 		adviceList, err := SQLReviewCheck(tc.Statement, ruleList, ctx)
@@ -310,6 +311,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 	var err error
 	switch ruleTp {
 	case SchemaRuleMySQLEngine,
+		SchemaRuleFullyQualifiedObjectName,
 		SchemaRuleStatementNoSelectAll,
 		SchemaRuleStatementRequireWhere,
 		SchemaRuleStatementNoLeadingWildcardLike,

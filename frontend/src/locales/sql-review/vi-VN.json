@@ -117,6 +117,10 @@
         }
       }
     },
+    "naming-fully-qualified": {
+      "title": "Tên đối tượng đủ điều kiện",
+      "description": "Bắt buộc sử dụng tên đối tượng đủ điều kiện đầy đủ. Ví dụ, “schema.table”, mức độ lỗi đề xuất: Cảnh báo"
+    },
     "naming-table": {
       "title": "Thực thi định dạng đặt tên bảng",
       "description": "Định dạng mặc định là tất cả các chữ cái viết thường, phân tách bằng dấu gạch dưới giữa các từ và không dài quá 63 ký tự, chẳng hạn như \"abc\" và \"abc_def\". Mức độ lỗi đề xuất: Cảnh báo",
