@@ -43,7 +43,7 @@ const worksheetContext = useSheetContext();
 
 const unsaved = computed(() => {
   const tab = tabStore.tabList.find(
-    (tab) => tab.sheet === props.worksheet.name
+    (tab) => tab.worksheet === props.worksheet.name
   );
 
   return tab && (tab.status === "DIRTY" || tab.status === "NEW");
@@ -52,7 +52,7 @@ const unsaved = computed(() => {
 const selected = computed(() => {
   const tab = tabStore.currentTab;
 
-  return tab?.sheet === props.worksheet.name;
+  return tab?.worksheet === props.worksheet.name;
 });
 
 const handleClick = (e: MouseEvent) => {

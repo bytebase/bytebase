@@ -51,18 +51,18 @@ const doSaveSheet = async (
   tab: SQLEditorTab,
   mask?: Array<keyof Worksheet>
 ) => {
-  const { title, statement, sheet } = tab;
+  const { title, statement, worksheet } = tab;
 
   if (title === "" || statement === "") {
     return;
   }
 
-  const sheetId = Number(extractWorksheetUID(sheet ?? ""));
+  const sheetId = Number(extractWorksheetUID(worksheet ?? ""));
 
   if (sheetId !== UNKNOWN_ID) {
-    const updatedSheet = await worksheetV1Store.patchSheet(
+    const updatedSheet = await worksheetV1Store.patchWorksheet(
       {
-        name: sheet,
+        name: worksheet,
         title: title,
         database: tab.connection.database,
         content: new TextEncoder().encode(statement),
@@ -70,7 +70,7 @@ const doSaveSheet = async (
       mask ?? ["title", "content", "database"]
     );
     if (updatedSheet) {
-      const tab = tabStore.tabList.find((t) => t.sheet === updatedSheet.name);
+      const tab = tabStore.tabList.find((t) => t.worksheet === updatedSheet.name);
       if (tab) {
         tabStore.updateTab(tab.id, {
           title,
@@ -86,7 +86,7 @@ const doSaveSheet = async (
       tab.connection.database,
       true /* silent */
     );
-    const createdSheet = await worksheetV1Store.createSheet(
+    const createdSheet = await worksheetV1Store.createWorksheet(
       Worksheet.fromPartial({
         title,
         project: database.project,
@@ -97,7 +97,7 @@ const doSaveSheet = async (
     );
     if (tabStore.currentTabId === tab.id) {
       tabStore.updateCurrentTab({
-        sheet: createdSheet.name,
+        worksheet: createdSheet.name,
         title,
         status: "CLEAN",
       });
@@ -110,7 +110,7 @@ const doSaveSheet = async (
 };
 
 const needSheetTitle = (tab: SQLEditorTab) => {
-  if (tab.sheet) {
+  if (tab.worksheet) {
     // If the sheet is saved, we don't need to show the name popup.
     return false;
   }
