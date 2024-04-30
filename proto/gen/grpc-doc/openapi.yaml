@@ -207,6 +207,80 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/auditLogs:export:
+        post:
+            tags:
+                - AuditLogService
+            operationId: AuditLogService_ExportAuditLogs
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExportAuditLogsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExportAuditLogsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/auditLogs:search:
+        get:
+            tags:
+                - AuditLogService
+            operationId: AuditLogService_SearchAuditLogs
+            parameters:
+                - name: filter
+                  in: query
+                  schema:
+                    type: string
+                - name: orderBy
+                  in: query
+                  description: |-
+                    The order by of the log.
+                     Only support order by create_time.
+                     For example:
+                      - order_by = "create_time asc"
+                      - order_by = "create_time desc"
+                  schema:
+                    type: string
+                - name: pageSize
+                  in: query
+                  description: |-
+                    The maximum number of logs to return.
+                     The service may return fewer than this value.
+                     If unspecified, at most 100 log entries will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: |-
+                    A page token, received from a previous `SearchLogs` call.
+                     Provide this to retrieve the subsequent page.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SearchAuditLogsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/auth/login:
         post:
             tags:
@@ -9551,6 +9625,35 @@ components:
                     type: integer
                     description: The column number, starting from 0.
                     format: int32
+        ExportAuditLogsRequest:
+            type: object
+            properties:
+                filter:
+                    type: string
+                orderBy:
+                    type: string
+                    description: |-
+                        The order by of the log.
+                         Only support order by create_time.
+                         For example:
+                          - order_by = "create_time asc"
+                          - order_by = "create_time desc"
+                format:
+                    enum:
+                        - FORMAT_UNSPECIFIED
+                        - CSV
+                        - JSON
+                        - SQL
+                        - XLSX
+                    type: string
+                    description: The export format.
+                    format: enum
+        ExportAuditLogsResponse:
+            type: object
+            properties:
+                content:
+                    type: string
+                    format: bytes
         ExportLogsRequest:
             type: object
             properties:
