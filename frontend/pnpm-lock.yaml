@@ -347,7 +347,7 @@ importers:
         version: 10.9.2(@types/node@20.12.7)(typescript@5.4.5)
       ts-proto:
         specifier: ^1.165.1
-        version: 1.172.0
+        version: 1.173.0
       typescript:
         specifier: 5.4.5
         version: 5.4.5
@@ -3593,14 +3593,14 @@ packages:
       '@swc/wasm':
         optional: true
 
-  ts-poet@6.8.1:
-    resolution: {integrity: sha512-uqdjJGnQQjBwUeJggUi4o8VhRjUmEdRfo+uqEL+K8w7mKPfLUFAQ1dSURyhFfbA4T/cWPh8Xa7iBgO7jJNsc1A==}
+  ts-poet@6.9.0:
+    resolution: {integrity: sha512-roe6W6MeZmCjRmppyfOURklO5tQFQ6Sg7swURKkwYJvV7dbGCrK28um5+51iW3twdPRKtwarqFAVMU6G1mvnuQ==}
 
   ts-proto-descriptors@1.15.0:
     resolution: {integrity: sha512-TYyJ7+H+7Jsqawdv+mfsEpZPTIj9siDHS6EMCzG/z3b/PZiphsX+mWtqFfFVe5/N0Th6V3elK9lQqjnrgTOfrg==}
 
-  ts-proto@1.172.0:
-    resolution: {integrity: sha512-+4myxp5H+qD4r3sQUwvewN3zpdKpApeuUI0+lxfdznvkd2TUFVaeOD0q6dHszEYKTzR7DHu96Z1pqpNSOXF8iQ==}
+  ts-proto@1.173.0:
+    resolution: {integrity: sha512-rM1QVX086EaLN4PDtm9ZVmZvnHTsAD6/zjlbS6hVP23p3QdaZhHJkDdghEdX7sx8LjKtXNJD2ZCQtq3kOQqXAA==}
     hasBin: true
 
   tslib@2.6.2:
@@ -7444,7 +7444,7 @@ snapshots:
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
 
-  ts-poet@6.8.1:
+  ts-poet@6.9.0:
     dependencies:
       dprint-node: 1.0.8
 
@@ -7453,11 +7453,11 @@ snapshots:
       long: 5.2.3
       protobufjs: 7.2.6
 
-  ts-proto@1.172.0:
+  ts-proto@1.173.0:
     dependencies:
       case-anything: 2.1.13
       protobufjs: 7.2.6
-      ts-poet: 6.8.1
+      ts-poet: 6.9.0
       ts-proto-descriptors: 1.15.0
 
   tslib@2.6.2: {}
