@@ -1,13 +1,9 @@
 <template>
-  <div v-if="loading" class="flex items-center gap-x-2 m-4">
-    <BBSpin :size="20" />
-    Loading instance...
-  </div>
-  <slot v-else />
+  <slot />
 </template>
 
 <script lang="ts" setup>
-import { watchEffect, ref, computed } from "vue";
+import { watchEffect, computed } from "vue";
 import { useInstanceV1Store } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_INSTANCE_NAME } from "@/types";
@@ -17,7 +13,6 @@ const props = defineProps<{
 }>();
 
 const instanceStore = useInstanceV1Store();
-const loading = ref(false);
 
 const instanceName = computed(() => `${instanceNamePrefix}${props.instanceId}`);
 const instance = computed(() =>
@@ -26,7 +21,8 @@ const instance = computed(() =>
 
 const prepareInstanceContext = async function () {
   const ins = await prepareInstance();
-  await useInstanceV1Store().fetchInstanceRoleListByName(ins.name);
+
+  await instanceStore.fetchInstanceRoleListByName(ins.name);
 };
 
 const prepareInstance = async () => {
@@ -34,15 +30,10 @@ const prepareInstance = async () => {
     return instance.value;
   }
 
-  loading.value = true;
-  try {
-    const ins = await useInstanceV1Store().getOrFetchInstanceByName(
-      instanceName.value
-    );
-    return ins;
-  } finally {
-    loading.value = false;
-  }
+  const ins = await useInstanceV1Store().getOrFetchInstanceByName(
+    instanceName.value
+  );
+  return ins;
 };
 
 watchEffect(prepareInstanceContext);
