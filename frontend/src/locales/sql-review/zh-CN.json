@@ -353,9 +353,13 @@
       "title": "禁止过滤条件使用左模糊匹配",
       "description": "当使用左模糊匹配，例如 \"LIKE '%ABC'\"，数据库优化器将无法进行快速索引扫描，而只能执行全表或全索引扫描，可能造成极为严重的性能问题。建议错误等级：错误"
     },
-    "statement-disallow-cascade": {
-      "title": "禁止使用 \"CASCADE\"",
-      "description": "CASCADE 操作可能导致意外的数据丢失，可能导致意外的结果。建议错误等级：错误"
+    "statement-disallow-on-del-cascade": {
+      "title": "禁止在ON DELETE子句中使用 CASCADE 选项",
+      "description": "'ON DELETE'中的'CASCADE'选项可能导致大量依赖对象被删除或修改，这可能导致意外的结果。建议的错误级别：错误"
+    },
+    "statement-disallow-rm-tbl-cascade": {
+      "title": "禁止在删除表时使用 CASCADE 选项",
+      "description": "在删除表时使用'CASCADE'选项可能导致大量依赖对象被删除或修改，这可能导致意外的结果。建议的错误级别：错误"
     },
     "statement-disallow-commit": {
       "title": "禁止显式 \"COMMIT\"",

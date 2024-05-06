@@ -9,25 +9,23 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
-	_ advisor.Advisor = (*StatementDmlDryRunAdvisor)(nil)
-	_ ast.Visitor     = (*statementDmlDryRunChecker)(nil)
+	_ advisor.Advisor = (*StatementDisallowOnDelCascadeAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementDisallowCascade, &StatementDisallowCascadeAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementDisallowRemoveTblCascade, &StatementDisallowRemoveTblCascadeAdvisor{})
 }
 
-// StatementDisallowCascadeAdvisor is the advisor checking the disallow cascade.
-type StatementDisallowCascadeAdvisor struct {
+// StatementDisallowRemoveTblCascadeAdvisor is the advisor checking the disallow cascade.
+type StatementDisallowRemoveTblCascadeAdvisor struct {
 }
 
 // Check checks for DML dry run.
-func (*StatementDisallowCascadeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDisallowRemoveTblCascadeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmt := ctx.Statements
 	if stmt == "" {
 		return []advisor.Advice{
@@ -55,7 +53,7 @@ func (*StatementDisallowCascadeAdvisor) Check(ctx advisor.Context, _ string) ([]
 		return nil, errors.Wrapf(err, "failed to unmarshal JSON")
 	}
 
-	cascadeLocations := cascadeNumRecursive(jsonData, 0)
+	cascadeLocations := cascadeNumRecursive(jsonData, 0, isDropCascade)
 	cascadePositions := convertLocationsToPositions(stmt, cascadeLocations)
 
 	var adviceList []advisor.Advice
@@ -63,7 +61,7 @@ func (*StatementDisallowCascadeAdvisor) Check(ctx advisor.Context, _ string) ([]
 		adviceList = append(adviceList, advisor.Advice{
 			Status:  level,
 			Title:   string(ctx.Rule.Type),
-			Content: "Cascade is disallowed but used in this statement",
+			Content: "The use of CASCADE is not permitted when removing a table",
 			Code:    advisor.StatementDisallowCascade,
 			Line:    p.line + 1,
 			Column:  p.column + 1,
@@ -108,7 +106,7 @@ func convertLocationsToPositions(statement string, locations []int) []pos {
 	return positions
 }
 
-func cascadeNumRecursive(jsonData map[string]any, stmtLocation int) []int {
+func cascadeNumRecursive(jsonData map[string]any, stmtLocation int, checkCondition func(map[string]any) bool) []int {
 	if l, ok := jsonData["stmt_location"]; ok {
 		if l, ok := l.(float64); ok {
 			stmtLocation = int(l)
@@ -120,21 +118,25 @@ func cascadeNumRecursive(jsonData map[string]any, stmtLocation int) []int {
 	for _, value := range jsonData {
 		switch value := value.(type) {
 		case map[string]any:
-			cascadeLocations = append(cascadeLocations, cascadeNumRecursive(value, stmtLocation)...)
+			cascadeLocations = append(cascadeLocations, cascadeNumRecursive(value, stmtLocation, checkCondition)...)
 		case []any:
 			for _, v := range value {
 				mv, ok := v.(map[string]any)
 				if !ok {
 					continue
 				}
-				cascadeLocations = append(cascadeLocations, cascadeNumRecursive(mv, stmtLocation)...)
+				cascadeLocations = append(cascadeLocations, cascadeNumRecursive(mv, stmtLocation, checkCondition)...)
 			}
 		}
 	}
 
-	if jsonData["behavior"] == "DROP_CASCADE" || jsonData["fk_del_action"] == "c" {
+	if checkCondition(jsonData) {
 		cascadeLocations = append(cascadeLocations, stmtLocation)
 	}
 
 	return cascadeLocations
+}
+
+func isDropCascade(json map[string]any) bool {
+	return json["behavior"] == "DROP_CASCADE"
 }
