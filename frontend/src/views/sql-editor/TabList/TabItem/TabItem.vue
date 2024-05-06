@@ -10,7 +10,7 @@
       tab.status.toLowerCase(),
     ]"
     :data-status="tab.status"
-    :data-sheet="tab.sheet"
+    :data-sheet="tab.worksheet"
     :data-connection="JSON.stringify(tab.connection)"
     @mousedown.left="$emit('select', tab, index)"
     @mouseenter="state.hovering = true"

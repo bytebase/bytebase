@@ -32,7 +32,7 @@ const emit = defineEmits<{
 const tabStore = useSQLEditorTabStore();
 
 const draftList = computed(() => {
-  const tabList = tabStore.tabList.filter((tab) => !tab.sheet);
+  const tabList = tabStore.tabList.filter((tab) => !tab.worksheet);
   const keyword = (props.keyword ?? "").trim().toLowerCase();
   const filteredList = keyword
     ? tabList.filter((tab) => tab.title.toLowerCase().includes(keyword))

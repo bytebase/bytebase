@@ -5,6 +5,7 @@ import { reactive } from "vue";
 import { auditLogServiceClient } from "@/grpcweb";
 import type { SearchAuditLogsParams } from "@/types";
 import type { AuditLog } from "@/types/proto/v1/audit_log_service";
+import type { ExportFormat } from "@/types/proto/v1/common";
 import { userNamePrefix } from "./common";
 
 dayjs.extend(utc);
@@ -38,7 +39,20 @@ export const useAuditLogStore = defineStore("audit_log", () => {
     return resp;
   };
 
+  const exportAuditLogs = async (
+    search: SearchAuditLogsParams,
+    format: ExportFormat
+  ) => {
+    const { content } = await auditLogServiceClient.exportAuditLogs({
+      filter: buildFilter(search),
+      orderBy: search.order ? `create_time ${search.order}` : undefined,
+      format,
+    });
+    return content;
+  };
+
   return {
     fetchAuditLogs,
+    exportAuditLogs,
   };
 });

@@ -128,7 +128,7 @@ const handleDatabaseSelect = (databaseName: string) => {
       instance: database.instance,
       database: database.name,
     },
-    sheet: "",
+    worksheet: "",
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
   };
   tryConnectToCoreSQLEditorTab(coreTab);

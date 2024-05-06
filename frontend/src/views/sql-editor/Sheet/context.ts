@@ -37,13 +37,13 @@ const useSheetListByView = (viewMode: SheetViewMode) => {
     let list = [];
     switch (viewMode) {
       case "my":
-        list = sheetStore.mySheetList;
+        list = sheetStore.myWorksheetList;
         break;
       case "shared":
-        list = sheetStore.sharedSheetList;
+        list = sheetStore.sharedWorksheetList;
         break;
       case "starred":
-        list = sheetStore.starredSheetList;
+        list = sheetStore.starredWorksheetList;
         break;
     }
     return list.filter((worksheet) => {
@@ -58,13 +58,13 @@ const useSheetListByView = (viewMode: SheetViewMode) => {
     try {
       switch (viewMode) {
         case "my":
-          await sheetStore.fetchMySheetList();
+          await sheetStore.fetchMyWorksheetList();
           break;
         case "shared":
-          await sheetStore.fetchSharedSheetList();
+          await sheetStore.fetchSharedWorksheetList();
           break;
         case "starred":
-          await sheetStore.fetchStarredSheetList();
+          await sheetStore.fetchStarredWorksheetList();
           break;
       }
 
@@ -150,13 +150,13 @@ export const openWorksheetByName = async (
   };
 
   worksheetContext.isFetching.value = true;
-  const sheet = await useWorkSheetStore().getOrFetchSheetByName(name);
-  if (!sheet) {
+  const worksheet = await useWorkSheetStore().getOrFetchWorksheetByName(name);
+  if (!worksheet) {
     cleanup();
     return false;
   }
 
-  if (!isWorksheetReadableV1(sheet)) {
+  if (!isWorksheetReadableV1(worksheet)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -168,18 +168,18 @@ export const openWorksheetByName = async (
 
   cleanup();
 
-  await editorContext.maybeSwitchProject(sheet.project);
+  await editorContext.maybeSwitchProject(worksheet.project);
   const tabStore = useSQLEditorTabStore();
   const openingSheetTab = tabStore.tabList.find(
-    (tab) => tab.sheet === sheet.name
+    (tab) => tab.worksheet === worksheet.name
   );
 
-  const statement = getSheetStatement(sheet);
+  const statement = getSheetStatement(worksheet);
 
   const newTab: Partial<SQLEditorTab> = {
-    connection: extractWorksheetConnection(sheet),
-    sheet: sheet.name,
-    title: sheet.title,
+    connection: extractWorksheetConnection(worksheet),
+    worksheet: worksheet.name,
+    title: worksheet.title,
     statement,
     status: "CLEAN",
   };

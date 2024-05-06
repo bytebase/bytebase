@@ -285,11 +285,11 @@ const runQuery = async (
       table: tableOrViewName,
     },
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-    sheet: "",
+    worksheet: "",
   };
   if (
     tabStore.currentTab &&
-    (tabStore.currentTab.status === "NEW" || !tabStore.currentTab.sheet)
+    (tabStore.currentTab.status === "NEW" || !tabStore.currentTab.worksheet)
   ) {
     // If the current tab is "fresh new" or unsaved, update its connection directly.
     tabStore.updateCurrentTab({

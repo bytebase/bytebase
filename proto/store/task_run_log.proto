@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message TaskRunLog {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    SCHEMA_DUMP_START = 1;
+    SCHEMA_DUMP_END = 2;
+    COMMAND_EXECUTE = 3;
+    COMMAND_RESPONSE = 4;
+  }
+  Type type = 1;
+  SchemaDumpStart schema_dump_start = 2;
+  SchemaDumpEnd schema_dump_end = 3;
+  CommandExecute command_execute = 4;
+  CommandResponse command_response = 5;
+
+  message SchemaDumpStart {}
+  message SchemaDumpEnd {
+    string error = 1;
+  }
+  message CommandExecute {
+    // Executed commands are in range [command_index, command_index + command_count).
+    int32 command_index = 1;
+    int32 command_count = 2;
+  }
+  message CommandResponse {
+    string error = 1;
+    int32 affected_rows = 2;
+  }
+}

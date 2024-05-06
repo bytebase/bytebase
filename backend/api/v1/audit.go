@@ -140,9 +140,9 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.SetIamPolicyRequest:
 			return r
 		case *v1pb.CreateUserRequest:
-			return r
+			return redactCreateUserRequest(r)
 		case *v1pb.UpdateUserRequest:
-			return r
+			return redactUpdateUserRequest(r)
 		default:
 			return nil
 		}
@@ -174,12 +174,7 @@ func getResponseString(response any) (string, error) {
 		case *v1pb.IamPolicy:
 			return r
 		case *v1pb.User:
-			return &v1pb.User{
-				Name:     r.Name,
-				Email:    r.Email,
-				Title:    r.Title,
-				UserType: r.UserType,
-			}
+			return redactUser(r)
 		default:
 			return nil
 		}
@@ -192,6 +187,40 @@ func getResponseString(response any) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func redactCreateUserRequest(r *v1pb.CreateUserRequest) *v1pb.CreateUserRequest {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.CreateUserRequest{
+		User: redactUser(r.User),
+	}
+}
+
+func redactUpdateUserRequest(r *v1pb.UpdateUserRequest) *v1pb.UpdateUserRequest {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.UpdateUserRequest{
+		User:                    redactUser(r.User),
+		UpdateMask:              r.UpdateMask,
+		OtpCode:                 r.OtpCode,
+		RegenerateTempMfaSecret: r.RegenerateTempMfaSecret,
+		RegenerateRecoveryCodes: r.RegenerateRecoveryCodes,
+	}
+}
+
+func redactUser(r *v1pb.User) *v1pb.User {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.User{
+		Name:     r.Name,
+		Email:    r.Email,
+		Title:    r.Title,
+		UserType: r.UserType,
+	}
 }
 
 func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {

@@ -5,7 +5,7 @@ go 1.21.6
 require (
 	cloud.google.com/go/cloudsqlconn v1.9.0
 	cloud.google.com/go/secretmanager v1.12.0
-	cloud.google.com/go/spanner v1.60.0
+	cloud.google.com/go/spanner v1.61.0
 	gitee.com/chunanyong/dm v1.8.14
 	github.com/ClickHouse/clickhouse-go/v2 v2.23.2
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
@@ -82,12 +82,12 @@ require (
 	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f
 	golang.org/x/oauth2 v0.19.0
 	golang.org/x/text v0.14.0
-	google.golang.org/api v0.176.1
-	google.golang.org/genproto v0.0.0-20240415180920-8c6c420018be
-	google.golang.org/genproto/googleapis/api v0.0.0-20240415180920-8c6c420018be
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240415180920-8c6c420018be
+	google.golang.org/api v0.177.0
+	google.golang.org/genproto v0.0.0-20240429193739-8cf5692501f6
+	google.golang.org/genproto/googleapis/api v0.0.0-20240429193739-8cf5692501f6
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240429193739-8cf5692501f6
 	google.golang.org/grpc v1.63.2
-	google.golang.org/protobuf v1.33.0
+	google.golang.org/protobuf v1.34.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -101,12 +101,13 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.1 // indirect
 	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358 // indirect
+	github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.5.0 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/apache/arrow/go/v15 v15.0.2 // indirect
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/beltran/gosasl v0.0.0-20240210185013-36d7ba6de436 // indirect
 	github.com/beltran/gssapi v0.0.0-20200324152954-d86554db4bab // indirect
-	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
+	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cloudfoundry/gosigar v1.3.6 // indirect
 	github.com/cockroachdb/errors v1.8.1 // indirect

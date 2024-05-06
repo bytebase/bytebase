@@ -304,6 +304,9 @@ const (
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
 	PostgreSQLSyntax Type = "bb.plugin.advisor.postgresql.syntax"
 
+	// PostgreSQLNamingFullyQualifiedObjectName is an advisor type for enforing full qualified object name.
+	PostgreSQLNamingFullyQualifiedObjectName Type = "bb.plugin.advisor.postgresql.naming.fully-qualified"
+
 	// PostgreSQLNamingTableConvention is an advisor type for PostgreSQL table naming convention.
 	PostgreSQLNamingTableConvention Type = "bb.plugin.advisor.postgresql.naming.table"
 
@@ -424,8 +427,11 @@ const (
 	// PostgreSQLCollationAllowlist is an advisor type for PostgreSQL collation allowlist.
 	PostgreSQLCollationAllowlist Type = "bb.plugin.advisor.postgresql.collation.allowlist"
 
-	// PostgreSQLStatementDisallowCascade is an advisor type for PostgreSQL to disallow cascade.
-	PostgreSQLStatementDisallowCascade Type = "bb.plugin.advisor.postgresql.statement.disallow-cascade"
+	// PostgreSQLStatementDisallowRemoveTblCascade is an advisor type for PostgreSQL to disallow CASCADE when removing a table.
+	PostgreSQLStatementDisallowRemoveTblCascade Type = "bb.plugin.advisor.postgresql.statement.disallow-rm-tbl-cascade"
+
+	// PostgreSQLStatementDisallowOnDelCascade is an advisor type for PostgreSQL to disallow ON DELETE CASCADE clauses.
+	PostgreSQLStatementDisallowOnDelCascade Type = "bb.plugin.advisor.postgresql.statement.disallow-on-del-cascade"
 
 	// PostgreSQLStatementCreateSpecifySchema is an advisor type for PostgreSQL to specify schema when creating.
 	PostgreSQLStatementCreateSpecifySchema Type = "bb.plugin.advisor.postgresql.statement.create-specify-schema"

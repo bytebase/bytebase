@@ -147,6 +147,7 @@ func isSkippedMethod(fullMethod string) bool {
 	// handled in the method because checking is complex.
 	case
 		v1pb.AuditLogService_SearchAuditLogs_FullMethodName,
+		v1pb.AuditLogService_ExportAuditLogs_FullMethodName,
 		v1pb.InstanceService_SearchInstances_FullMethodName,
 		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
 		v1pb.DatabaseService_ListDatabases_FullMethodName,

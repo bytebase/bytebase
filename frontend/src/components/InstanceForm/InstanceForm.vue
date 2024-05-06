@@ -390,6 +390,7 @@ import {
   useSubscriptionV1Store,
   useGracefulRequest,
   useCurrentUserV1,
+  useDatabaseV1Store,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
@@ -796,6 +797,9 @@ const doCreate = async () => {
     await useGracefulRequest(async () => {
       const createdInstance =
         await instanceV1Store.createInstance(instanceCreate);
+      useDatabaseV1Store().searchDatabases({
+        filter: `instance = "${createdInstance.name}"`,
+      });
       router.push(`/${createdInstance.name}`);
       pushNotification({
         module: "bytebase",

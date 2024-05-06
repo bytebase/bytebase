@@ -34,9 +34,9 @@ const props = defineProps({
 const sheetV1Store = useWorkSheetStore();
 
 const sheet = computed(() => {
-  const { sheet: sheetName } = props.tab;
+  const { worksheet: sheetName } = props.tab;
   if (sheetName) {
-    const sheet = sheetV1Store.getSheetByName(sheetName);
+    const sheet = sheetV1Store.getWorksheetByName(sheetName);
     if (sheet) {
       return sheet;
     }

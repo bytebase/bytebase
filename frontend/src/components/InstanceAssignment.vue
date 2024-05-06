@@ -189,7 +189,7 @@ const columnList = computed(() => {
       width: "minmax(min-content, auto)",
     },
     {
-      title: t("common.Address"),
+      title: t("common.address"),
       width: "minmax(min-content, auto)",
     },
   ];

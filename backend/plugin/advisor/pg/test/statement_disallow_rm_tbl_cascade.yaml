@@ -2,8 +2,8 @@
   want:
     - status: WARN
       code: 213
-      title: statement.disallow-cascade
-      content: Cascade is disallowed but used in this statement
+      title: statement.disallow-rm-tbl-cascade
+      content: The use of CASCADE is not permitted when removing a table
       line: 1
       column: 1
       details: ""
@@ -14,12 +14,12 @@
         PRIMARY KEY (tenant_id, user_id)
     );
   want:
-    - status: WARN
-      code: 213
-      title: statement.disallow-cascade
-      content: Cascade is disallowed but used in this statement
-      line: 1
-      column: 1
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE users (
@@ -47,22 +47,15 @@
   want:
     - status: WARN
       code: 213
-      title: statement.disallow-cascade
-      content: Cascade is disallowed but used in this statement
+      title: statement.disallow-rm-tbl-cascade
+      content: The use of CASCADE is not permitted when removing a table
       line: 1
       column: 1
       details: ""
     - status: WARN
       code: 213
-      title: statement.disallow-cascade
-      content: Cascade is disallowed but used in this statement
+      title: statement.disallow-rm-tbl-cascade
+      content: The use of CASCADE is not permitted when removing a table
       line: 2
-      column: 1
-      details: ""
-    - status: WARN
-      code: 213
-      title: statement.disallow-cascade
-      content: Cascade is disallowed but used in this statement
-      line: 3
       column: 1
       details: ""
