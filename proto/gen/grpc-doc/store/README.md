@@ -237,6 +237,15 @@
     - [TaskRunResult](#bytebase-store-TaskRunResult)
     - [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position)
   
+- [store/task_run_log.proto](#store_task_run_log-proto)
+    - [TaskRunLog](#bytebase-store-TaskRunLog)
+    - [TaskRunLog.CommandExecute](#bytebase-store-TaskRunLog-CommandExecute)
+    - [TaskRunLog.CommandResponse](#bytebase-store-TaskRunLog-CommandResponse)
+    - [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd)
+    - [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart)
+  
+    - [TaskRunLog.Type](#bytebase-store-TaskRunLog-Type)
+  
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
   
@@ -3615,6 +3624,113 @@ The following fields are used for error reporting.
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_task_run_log-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/task_run_log.proto
+
+
+
+<a name="bytebase-store-TaskRunLog"></a>
+
+### TaskRunLog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [TaskRunLog.Type](#bytebase-store-TaskRunLog-Type) |  |  |
+| schema_dump_start | [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart) |  |  |
+| schema_dump_end | [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd) |  |  |
+| command_execute | [TaskRunLog.CommandExecute](#bytebase-store-TaskRunLog-CommandExecute) |  |  |
+| command_response | [TaskRunLog.CommandResponse](#bytebase-store-TaskRunLog-CommandResponse) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-CommandExecute"></a>
+
+### TaskRunLog.CommandExecute
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| command_index | [int32](#int32) |  | Executed commands are in range [command_index, command_index &#43; command_count). |
+| command_count | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-CommandResponse"></a>
+
+### TaskRunLog.CommandResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  |  |
+| affected_rows | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-SchemaDumpEnd"></a>
+
+### TaskRunLog.SchemaDumpEnd
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-SchemaDumpStart"></a>
+
+### TaskRunLog.SchemaDumpStart
+
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-TaskRunLog-Type"></a>
+
+### TaskRunLog.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| SCHEMA_DUMP_START | 1 |  |
+| SCHEMA_DUMP_END | 2 |  |
+| COMMAND_EXECUTE | 3 |  |
+| COMMAND_RESPONSE | 4 |  |
+
 
  
 
