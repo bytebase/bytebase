@@ -134,7 +134,7 @@ const onDrop = async (files: File[] | FileList | null) => {
         description: String(error),
       });
     }
-    state.reading = true;
+    state.reading = false;
   }
 };
 
