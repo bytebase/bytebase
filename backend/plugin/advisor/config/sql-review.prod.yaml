@@ -46,9 +46,9 @@ ruleList:
   - type: statement.disallow-on-del-cascade
     level: ERROR
   - type: statement.disallow-rm-tbl-cascade
-    level: ERROR
+    level: WARNING
   - type: statement.disallow-limit
-    level: ERROR
+    level: WARNING
   - type: statement.disallow-order-by
     level: ERROR
   - type: statement.merge-alter-table

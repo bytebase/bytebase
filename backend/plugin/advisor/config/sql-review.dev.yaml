@@ -36,9 +36,9 @@ ruleList:
   - type: statement.disallow-commit
     level: WARNING
   - type: statement.disallow-on-del-cascade
-    level: ERROR
+    level: WARNING
   - type: statement.disallow-rm-tbl-cascade
-    level: ERROR
+    level: WARNING
   - type: statement.disallow-limit
     level: WARNING
   - type: statement.disallow-order-by
