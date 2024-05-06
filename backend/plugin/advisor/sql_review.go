@@ -72,9 +72,9 @@ const (
 	SchemaRuleStatementRequireWhere SQLReviewRuleType = "statement.where.require"
 	// SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
 	SchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "statement.where.no-leading-wildcard-like"
-	// SchemaRuleStatementDisallowCascade disallow using cascade in the issue.
+	// SchemaRuleStatementDisallowOnDelCascade disallows ON DELETE CASCADE clauses.
 	SchemaRuleStatementDisallowOnDelCascade SQLReviewRuleType = "statement.disallow-on-del-cascade"
-	// SchemaRuleStatementDisallowCascade disallow using cascade in the issue.
+	// SchemaRuleStatementDisallowRemoveTblCascade disallows CASCADE when removing a table.
 	SchemaRuleStatementDisallowRemoveTblCascade SQLReviewRuleType = "statement.disallow-rm-tbl-cascade"
 	// SchemaRuleStatementDisallowCommit disallow using commit in the issue.
 	SchemaRuleStatementDisallowCommit SQLReviewRuleType = "statement.disallow-commit"

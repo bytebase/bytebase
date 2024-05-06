@@ -35,8 +35,10 @@ ruleList:
     level: WARNING
   - type: statement.disallow-commit
     level: WARNING
-  - type: statement.disallow-cascade
-    level: WARNING
+  - type: statement.disallow-on-del-cascade
+    level: ERROR
+  - type: statement.disallow-rm-tbl-cascade
+    level: ERROR
   - type: statement.disallow-limit
     level: WARNING
   - type: statement.disallow-order-by
