@@ -52,7 +52,15 @@ export const databaseMetadataToText = (
     databaseMetadata.schemas.forEach((schema) => {
       schema.tables.forEach((table) => {
         const name = schema.name ? `${schema.name}.${table.name}` : table.name;
-        const columns = table.columns.map((column) => column.name).join(", ");
+        const columns = table.columns
+          .map((column) => {
+            if (column.comment) {
+              return `${column.name}(${column.comment})`;
+            } else {
+              return column.name;
+            }
+          })
+          .join(", ");
         prompts.push(`# ${name}(${columns})`);
       });
     });
