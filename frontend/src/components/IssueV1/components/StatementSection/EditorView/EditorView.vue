@@ -221,8 +221,7 @@ import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
 import { computed, h, reactive, ref, watch } from "vue";
-import { watchEffect } from "vue";
-import { onMounted } from "vue";
+import { nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
@@ -749,20 +748,9 @@ watch(isCreating, (curr, prev) => {
   }
 });
 
-watchEffect(() => {
-  console.log(
-    "[EditorView.vue]: monacoEditorRef:",
-    monacoEditorRef.value?.monacoEditor?.editor?.codeEditor?.revealLineNearTop
-  );
-  if (monacoEditorRef.value) {
-    console.log("[EditorView.vue]: Revealing line 714 in near top");
-    console.log(
-      "[EditorView.vue]: LineCount:",
-      monacoEditorRef.value?.monacoEditor?.editor?.codeEditor?.getModel()
-    );
-    monacoEditorRef.value?.monacoEditor?.editor?.codeEditor?.revealLineNearTop(
-      714
-    );
-  }
+defineExpose({
+  get editor() {
+    return monacoEditorRef.value;
+  },
 });
 </script>
