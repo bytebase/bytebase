@@ -13,7 +13,6 @@
 import { useParentElement } from "@vueuse/core";
 import { defineAsyncComponent, ref } from "vue";
 import { computed } from "vue";
-import { watchEffect } from "vue";
 import { BBSpin } from "@/bbkit";
 
 const MonacoEditor = defineAsyncComponent(() => import("./MonacoEditor.vue"));
@@ -44,13 +43,6 @@ const classes = computed(() => {
 
   classes.push("w-full", "h-full");
   return classes;
-});
-
-watchEffect(() => {
-  console.log(
-    "[WrappedMonacoEditor.vue]: monacoEditorRef:",
-    monacoEditorRef.value?.editor?.codeEditor?.revealLineInCenter
-  );
 });
 
 defineExpose({

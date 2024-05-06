@@ -1,7 +1,7 @@
 <template>
   <MonacoTextModelEditor
-    class="bb-monaco-editor"
     ref="textModelEditorRef"
+    class="bb-monaco-editor"
     :model="model"
     @update:content="(...args) => $emit('update:content', ...args)"
   />
@@ -11,7 +11,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { computed, toRef } from "vue";
 import { ref } from "vue";
-import { watchEffect } from "vue";
 import type { Language } from "@/types";
 import type MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
 import { useMonacoTextModel } from "./text-model";
@@ -49,13 +48,6 @@ const filename = computed(() => {
   return `${uuidv4()}.${extensionNameOfLanguage(props.language)}`;
 });
 const model = useMonacoTextModel(filename, content, toRef(props, "language"));
-
-watchEffect(() => {
-  console.log(
-    "[MonacoEditor.vue]: textModelEditorRef:",
-    textModelEditorRef.value?.codeEditor?.revealLineInCenter
-  );
-});
 
 defineExpose({
   get editor() {

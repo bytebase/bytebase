@@ -1,6 +1,6 @@
 <template>
   <div v-if="viewMode !== 'NONE'" class="px-4 py-2 flex flex-col gap-y-2">
-    <EditorView ref="editorViewRef" v-if="viewMode === 'EDITOR'" />
+    <EditorView v-if="viewMode === 'EDITOR'" ref="editorViewRef" />
     <SDLView v-if="viewMode === 'SDL'" />
   </div>
 </template>
@@ -46,13 +46,10 @@ router.afterEach((to) => {
 });
 
 const scrollToLineByHash = (hash: string) => {
-  console.log("scrollToLineByHash", hash);
   const match = hash.match(/^#L(\d+)$/);
   if (!match) return;
   const lineNumber = parseInt(match[1], 10);
-  console.log("scrollToLine", lineNumber);
   nextTick(() => {
-    console.log("editorViewRef", editorViewRef.value);
     editorViewRef.value?.editor?.monacoEditor?.editor?.codeEditor?.revealLineNearTop(
       lineNumber
     );
