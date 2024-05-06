@@ -4,7 +4,7 @@
 
 <script lang="ts" setup>
 import { watchEffect, computed } from "vue";
-import { useInstanceV1Store, useDatabaseV1Store } from "@/store";
+import { useInstanceV1Store } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_INSTANCE_NAME } from "@/types";
 
@@ -13,7 +13,6 @@ const props = defineProps<{
 }>();
 
 const instanceStore = useInstanceV1Store();
-const databaseStore = useDatabaseV1Store();
 
 const instanceName = computed(() => `${instanceNamePrefix}${props.instanceId}`);
 const instance = computed(() =>
