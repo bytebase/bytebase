@@ -357,7 +357,7 @@
       "title": "Prohibir el uso de la opción CASCADE en las cláusulas ON DELETE",
       "description": "La opción 'CASCADE' en 'ON DELETE' puede causar que se eliminen o modifiquen un gran número de objetos dependientes, lo que puede causar resultados inesperados. Nivel de error sugerido: Error"
     },
-    "statement-disallow-rm-rbl-cascade": {
+    "statement-disallow-rm-tbl-cascade": {
       "title": "Prohibir el uso de CASCADE al eliminar una tabla",
       "description": "Using the \"CASCADE\" option when removing a table can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error"
     },

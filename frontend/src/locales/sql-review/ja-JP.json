@@ -357,7 +357,7 @@
       "title": "ON DELETE節での CASCADE オプションの使用を禁止する",
       "description": "'ON DELETEの\"CASCADE\"オプションは、多数の依存オブジェクトが削除または変更される原因となり、予期しない結果をもたらす可能性があります。提案されるエラーレベル：エラー"
     },
-    "statement-disallow-rm-rbl-cascade": {
+    "statement-disallow-rm-tbl-cascade": {
       "title": "テーブルの削除時に\"CASCADE\"を使用することを禁止する",
       "description": "テーブルを削除する際の\"CASCADE\"オプションの使用は、多数の依存オブジェクトが削除または変更される原因となり、予期しない結果をもたらす可能性があります。提案されるエラーレベル：エラー"
     },

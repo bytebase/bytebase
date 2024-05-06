@@ -357,7 +357,7 @@
       "title": "禁止在ON DELETE子句中使用 CASCADE 选项",
       "description": "'ON DELETE'中的'CASCADE'选项可能导致大量依赖对象被删除或修改，这可能导致意外的结果。建议的错误级别：错误"
     },
-    "statement-disallow-rm-rbl-cascade": {
+    "statement-disallow-rm-tbl-cascade": {
       "title": "禁止在删除表时使用 CASCADE 选项",
       "description": "在删除表时使用'CASCADE'选项可能导致大量依赖对象被删除或修改，这可能导致意外的结果。建议的错误级别：错误"
     },
