@@ -503,6 +503,17 @@ CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run (task_id, attempt);
 
 ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 
+CREATE TABLE task_run_log (
+    id BIGSERIAL PRIMARY KEY,
+    task_run_id INTEGER NOT NULL REFERENCES task_run (id),
+    created_ts TIMESTAMP NOT NULL DEFAULT now(),
+    payload JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_task_run_log_task_run_id ON task_run_log(task_run_id);
+
+ALTER SEQUENCE task_run_log_id_seq RESTART WITH 101;
+
 -- Pipeline related END
 -----------------------
 -- Plan related BEGIN
