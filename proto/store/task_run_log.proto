@@ -23,6 +23,7 @@ message TaskRunLog {
     string error = 1;
   }
   message CommandExecute {
+    // Executed commands are in range [command_index, command_index + command_count).
     int32 command_index = 1;
     int32 command_count = 2;
   }
