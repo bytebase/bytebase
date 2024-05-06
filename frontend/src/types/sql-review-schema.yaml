@@ -149,7 +149,11 @@ ruleList:
       - OCEANBASE_ORACLE
       - OCEANBASE
       - MARIADB
-  - type: statement.disallow-cascade
+  - type: statement.disallow-on-del-cascade
+    category: STATEMENT
+    engineList:
+      - POSTGRES
+  - type: statement.disallow-rm-tbl-cascade
     category: STATEMENT
     engineList:
       - POSTGRES
