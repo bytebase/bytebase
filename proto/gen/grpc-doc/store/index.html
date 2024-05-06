@@ -1131,6 +1131,41 @@
         
           
           <li>
+            <a href="#store%2ftask_run_log.proto">store/task_run_log.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog"><span class="badge">M</span>TaskRunLog</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.CommandExecute"><span class="badge">M</span>TaskRunLog.CommandExecute</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.CommandResponse"><span class="badge">M</span>TaskRunLog.CommandResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.SchemaDumpEnd"><span class="badge">M</span>TaskRunLog.SchemaDumpEnd</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.SchemaDumpStart"><span class="badge">M</span>TaskRunLog.SchemaDumpStart</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.Type"><span class="badge">E</span>TaskRunLog.Type</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fuser.proto">store/user.proto</a>
             <ul>
               
@@ -8922,6 +8957,206 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
         
       
 
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/task_run_log.proto">store/task_run_log.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.TaskRunLog">TaskRunLog</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.TaskRunLog.Type">TaskRunLog.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema_dump_start</td>
+                  <td><a href="#bytebase.store.TaskRunLog.SchemaDumpStart">TaskRunLog.SchemaDumpStart</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema_dump_end</td>
+                  <td><a href="#bytebase.store.TaskRunLog.SchemaDumpEnd">TaskRunLog.SchemaDumpEnd</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>command_execute</td>
+                  <td><a href="#bytebase.store.TaskRunLog.CommandExecute">TaskRunLog.CommandExecute</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>command_response</td>
+                  <td><a href="#bytebase.store.TaskRunLog.CommandResponse">TaskRunLog.CommandResponse</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.CommandExecute">TaskRunLog.CommandExecute</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>command_index</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Executed commands are in range [command_index, command_index &#43; command_count). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>command_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.CommandResponse">TaskRunLog.CommandResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>affected_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.SchemaDumpEnd">TaskRunLog.SchemaDumpEnd</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.SchemaDumpStart">TaskRunLog.SchemaDumpStart</h3>
+        <p></p>
+
+        
+
+        
+      
+
+      
+        <h3 id="bytebase.store.TaskRunLog.Type">TaskRunLog.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SCHEMA_DUMP_START</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SCHEMA_DUMP_END</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COMMAND_EXECUTE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COMMAND_RESPONSE</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       
