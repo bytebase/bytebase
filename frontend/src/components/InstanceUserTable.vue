@@ -37,7 +37,7 @@ export default {
     const { t } = useI18n();
     const columnList = computed(() => [
       {
-        title: t("common.User"),
+        title: t("common.user"),
       },
       {
         title: t("instance.grants"),
