@@ -43,7 +43,7 @@
               placeholder="foo"
             />
           </NFormItem>
-          <NFormItem :label="$t('common.email')">
+          <NFormItem :label="$t('common.email')" required>
             <div
               v-if="
                 isCreating && state.user.userType === UserType.SERVICE_ACCOUNT
@@ -66,7 +66,7 @@
               placeholder="foo@example.com"
             />
           </NFormItem>
-          <NFormItem :label="$t('settings.members.table.roles')">
+          <NFormItem :label="$t('settings.members.table.roles')" required>
             <div class="w-full">
               <NSelect
                 v-model:value="state.user.roles"
@@ -82,7 +82,7 @@
               </p>
             </div>
           </NFormItem>
-          <template v-if="!isCreating && state.user.userType === UserType.USER">
+          <template v-if="state.user.userType === UserType.USER">
             <NFormItem :label="$t('settings.profile.phone')">
               <NInput
                 v-model:value="state.user.phone"
@@ -281,10 +281,6 @@ const hasWorkspaceRole = computed(() => {
 const isCreating = computed(() => !props.user);
 
 const passwordMismatch = computed(() => {
-  if (isCreating.value) {
-    return false;
-  }
-
   return (
     !isEmpty(state.user?.password) &&
     state.user?.password !== state.passwordConfirm
@@ -342,8 +338,13 @@ const extractUserTitle = (email: string): string => {
   return email;
 };
 
-const handleArchiveUser = () => {
-  userStore.archiveUser(props.user!);
+const handleArchiveUser = async () => {
+  await userStore.archiveUser(props.user!);
+  pushNotification({
+    module: "bytebase",
+    style: "INFO",
+    title: t("common.archived"),
+  });
   emit("close");
 };
 
@@ -356,7 +357,12 @@ const tryCreateOrUpdateUser = async () => {
     await userStore.createUser({
       ...state.user,
       title: state.user.title || extractUserTitle(state.user.email),
-      password: randomString(20),
+      password: state.user.password || randomString(20),
+    });
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: t("common.created"),
     });
   } else {
     // If the user is the only workspace admin, we need to make sure the user is not removing the
@@ -381,6 +387,11 @@ const tryCreateOrUpdateUser = async () => {
         updateMask: getUpdateMaskFromUsers(props.user!, state.user),
       })
     );
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: t("common.updated"),
+    });
   }
   emit("close");
 };
