@@ -162,7 +162,7 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
-	migrationID, _, err := utils.ExecuteMigrationWithFunc(ctx, ctx, stores, stateCfg, taskRunUID, driver, mi, statement, &sheetID, execFunc)
+	migrationID, _, err := utils.ExecuteMigrationWithFunc(ctx, ctx, stores, stateCfg, taskRunUID, driver, mi, statement, &sheetID, execFunc, db.ExecuteOptions{})
 	if err != nil {
 		return true, nil, err
 	}

@@ -6,11 +6,13 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -338,6 +340,69 @@ type ExecuteOptions struct {
 	// For both cases, we will use one transaction to wrap the statements.
 	ChunkedSubmission     bool
 	UpdateExecutionStatus func(*v1pb.TaskRun_ExecutionDetail)
+	CreateTaskRunLog      func(time.Time, *storepb.TaskRunLog) error
+}
+
+func (o *ExecuteOptions) LogSchemaDumpStart() {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type:            storepb.TaskRunLog_SCHEMA_DUMP_START,
+		SchemaDumpStart: &storepb.TaskRunLog_SchemaDumpStart{},
+	})
+	if err != nil {
+		slog.Warn("failed to log schema dump start", log.BBError(err))
+	}
+}
+
+func (o *ExecuteOptions) LogSchemaDumpEnd(derr string) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_SCHEMA_DUMP_END,
+		SchemaDumpEnd: &storepb.TaskRunLog_SchemaDumpEnd{
+			Error: derr,
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log schema dump end", log.BBError(err))
+	}
+}
+
+func (o *ExecuteOptions) LogCommandExecute(commandIndex int32, commandCount int32) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_COMMAND_EXECUTE,
+		CommandExecute: &storepb.TaskRunLog_CommandExecute{
+			CommandIndex: commandIndex,
+			CommandCount: commandCount,
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log command execute", log.BBError(err))
+	}
+}
+
+func (o *ExecuteOptions) LogCommandResponse(commandIndex, commandCount, affectedRows int32, rerr string) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_COMMAND_RESPONSE,
+		CommandResponse: &storepb.TaskRunLog_CommandResponse{
+			CommandIndex: commandIndex,
+			CommandCount: commandCount,
+			AffectedRows: affectedRows,
+			Error:        rerr,
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log command response", log.BBError(err))
+	}
 }
 
 // ErrorWithPosition is the error with the position information.
