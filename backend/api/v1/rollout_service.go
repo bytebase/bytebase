@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	sc "github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -552,8 +553,14 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 			continue
 		}
 		tasksToRun = append(tasksToRun, task)
+
+		sheetUID, err := api.GetSheetUIDFromTaskPayload(task.Payload)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get sheet uid from task payload, error: %v", err)
+		}
 		create := &store.TaskRunMessage{
 			TaskUID:   task.ID,
+			SheetUID:  sheetUID,
 			Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
 			CreatorID: user.ID,
 		}
@@ -1572,11 +1579,22 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 			// HACK: statement is present because the task came from a database group target plan spec.
 			// we need to create the sheet and update payload.SheetID.
 			if c.Statement != "" {
-				sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
+				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &c.InstanceID})
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get instance %v", c.InstanceID)
+				}
+				if instance == nil {
+					return nil, errors.Errorf("instance not found, id %v", c.InstanceID)
+				}
+				sheet, err := sc.CreateSheet(ctx, s.store, &store.SheetMessage{
 					CreatorID:  api.SystemBotID,
 					ProjectUID: project.UID,
 					Title:      fmt.Sprintf("Sheet for task %v", c.Name),
 					Statement:  c.Statement,
+
+					Payload: &storepb.SheetPayload{
+						Engine: instance.Engine,
+					},
 				})
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to create sheet for task %v", c.Name)

@@ -141,8 +141,7 @@
     "connecting": "Đang kết nối...",
     "creating": "Đang tạo...",
     "updating": "Đang cập nhật...",
-    "Address": "Địa chỉ",
-    "User": "Người dùng",
+    "address": "Địa chỉ",
     "assigned": "Giao",
     "subscribed": "Đã đăng ký",
     "created": "Tạo",
@@ -789,7 +788,7 @@
         },
         "range-mask": {
           "self": "Mặt nạ phạm vi",
-          "label": "Mặt nạ phạm vi sẽ thay thế giá trị ban đầu từ chỉ mục bắt đầu đến chỉ mục kết thúc (không bao gồm phần cuối) bằng giá trị thay thế.",
+          "label": "Mặt nạ phạm vi sẽ thay thế giá trị ban đầu từ chỉ mục bắt đầu đến chỉ mục kết thúc (không bao gồm phần cuối) bằng giá trị thay thế. Chỉ số bắt đầu từ 0.",
           "slice-start": "Bắt đầu lát cắt",
           "slice-start-label": "Bắt đầu lát cắt là chỉ số bắt đầu của giá trị ban đầu, bắt đầu từ 0 và phải nhỏ hơn điểm dừng.",
           "slice-end": "Phần cuối",
@@ -2270,7 +2269,12 @@
     "sync-in-progress": "Đang đồng bộ hóa",
     "create-a-worksheet": "Tạo một bảng tính",
     "select-a-database-to-start": "Chọn cơ sở dữ liệu để bắt đầu",
-    "select-encoding": "Chọn mã hóa"
+    "select-encoding": "Chọn mã hóa",
+    "result-limit": {
+      "n-rows": "{n} hàng",
+      "rows": "hàng"
+    },
+    "n-per-page": "{n} / trang"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",
@@ -2766,7 +2770,10 @@
       "payload": "Khối hàng",
       "empty": "<Trống>",
       "view-details": "Xem chi tiết",
-      "select-type": "Lựa chọn đối tượng"
+      "select-type": "Lựa chọn đối tượng",
+      "method": "Phương pháp",
+      "request": "Lời yêu cầu",
+      "response": "Phản ứng"
     },
     "type": {
       "workspace": {
@@ -3379,7 +3386,11 @@
     },
     "confirm-remove-change": "Xóa thay đổi này?",
     "delete-this-changelist": "Xóa danh sách thay đổi này",
-    "confirm-delete-changelist": "Xóa danh sách thay đổi này?"
+    "confirm-delete-changelist": "Xóa danh sách thay đổi này?",
+    "import": {
+      "no-file-to-upload": "Không có tập tin để tải lên",
+      "upload-sql-or-zip-file": "Tải lên tệp .sql hoặc .zip"
+    }
   },
   "export-data": {
     "export-rows": "Xuất hàng",

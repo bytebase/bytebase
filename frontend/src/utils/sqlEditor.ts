@@ -26,7 +26,7 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
     selectedStatement: "",
     status: "NEW",
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-    sheet: "",
+    worksheet: "",
     editMode: "SQL-EDITOR",
   };
 };
@@ -76,7 +76,7 @@ export const isSimilarSQLEditorTab = (
 ): boolean => {
   return (
     isSameSQLEditorConnection(a.connection, b.connection) &&
-    a.sheet === b.sheet &&
+    a.worksheet === b.worksheet &&
     a.mode === b.mode
   );
 };

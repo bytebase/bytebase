@@ -257,6 +257,7 @@ message Advice {
 message ExportRequest {
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}/databases/{databaseName}
+  // Format: projects/{project}/issues/{issue} for data export issue.
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
   string connection_database = 2 [deprecated = true];

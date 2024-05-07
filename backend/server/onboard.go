@@ -10,6 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	sc "github.com/bytebase/bytebase/backend/component/sheet"
+
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -184,7 +186,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	}
 
 	// Create a schema update issue and start with creating the sheet for the schema update.
-	testSheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
+	testSheet, err := sc.CreateSheet(ctx, s.store, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
 
 		ProjectUID:  project.UID,
@@ -192,12 +194,16 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 		Title:     "Alter table to test sample instance for sample issue",
 		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
+
+		Payload: &storepb.SheetPayload{
+			Engine: testInstance.Engine,
+		},
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create test sheet for sample project")
 	}
 
-	prodSheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
+	prodSheet, err := sc.CreateSheet(ctx, s.store, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
 
 		ProjectUID:  project.UID,
@@ -205,6 +211,10 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 		Title:     "Alter table to prod sample instance for sample issue",
 		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
+
+		Payload: &storepb.SheetPayload{
+			Engine: prodInstance.Engine,
+		},
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create prod sheet for sample project")

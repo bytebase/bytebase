@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	pgquery "github.com/pganalyze/pg_query_go/v4"
+	pgquery "github.com/pganalyze/pg_query_go/v5"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"

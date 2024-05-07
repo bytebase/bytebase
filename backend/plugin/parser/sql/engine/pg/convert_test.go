@@ -7,8 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+
+	pgquery "github.com/pganalyze/pg_query_go/v5"
 )
 
 type testData struct {
@@ -100,7 +101,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 					},
 					PartitionDef: &ast.PartitionDef{
-						Strategy: "range",
+						Strategy: pgquery.PartitionStrategy_PARTITION_STRATEGY_RANGE,
 						KeyList: []*ast.PartitionKeyDef{
 							{
 								Type: ast.PartitionKeyTypeColumn,

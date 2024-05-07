@@ -212,7 +212,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         // And ignore the fold/unfold arrow.
         if (type === "database") {
           setConnection(node, {
-            sheet: tabStore.currentTab?.sheet ?? "",
+            worksheet: tabStore.currentTab?.worksheet ?? "",
             mode: DEFAULT_SQL_EDITOR_TAB_MODE,
           });
           showConnectionPanel.value = false;

@@ -235,9 +235,3 @@ export const ghostViewTypeForTask = (
   }
   return "NONE";
 };
-
-export const isGhostEnabledForTask = (issue: ComposedIssue, task: Task) => {
-  const spec = specForTask(issue.planEntity, task);
-  const config = spec?.changeDatabaseConfig;
-  return config?.type === Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST;
-};

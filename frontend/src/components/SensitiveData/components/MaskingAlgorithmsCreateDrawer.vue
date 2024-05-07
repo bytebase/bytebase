@@ -94,7 +94,6 @@
                 </label>
                 <NInputNumber
                   :value="slice.start"
-                  :min="0"
                   :placeholder="
                     t(
                       'settings.sensitive-data.algorithms.range-mask.slice-start'
@@ -116,7 +115,6 @@
                 </label>
                 <NInputNumber
                   :value="slice.end"
-                  :min="1"
                   :placeholder="
                     t('settings.sensitive-data.algorithms.range-mask.slice-end')
                   "
@@ -348,16 +346,8 @@ const rangeMaskErrorMessage = computed(() => {
   }
   for (let i = 0; i < state.rangeMask.slices.length; i++) {
     const slice = state.rangeMask.slices[i];
-    if (
-      Number.isNaN(slice.start) ||
-      Number.isNaN(slice.end) ||
-      slice.start < 0 ||
-      slice.end <= 0
-    ) {
+    if (Number.isNaN(slice.start) || Number.isNaN(slice.end)) {
       return t("settings.sensitive-data.algorithms.error.slice-invalid-number");
-    }
-    if (slice.start >= slice.end) {
-      return t("settings.sensitive-data.algorithms.error.slice-number-range");
     }
 
     for (let j = 0; j < i; j++) {
@@ -493,7 +483,7 @@ const onSliceStartChange = (index: number, val: number | null) => {
     return;
   }
   const slice = state.rangeMask.slices[index];
-  slice.start = Math.max(0, val);
+  slice.start = val;
   if (slice.end <= slice.start) {
     slice.end = slice.start + 1;
   }
@@ -504,9 +494,6 @@ const onSliceEndChange = (index: number, val: number | null) => {
     return;
   }
   const slice = state.rangeMask.slices[index];
-  slice.end = Math.max(1, val);
-  if (slice.start >= slice.end) {
-    slice.start = slice.end - 1;
-  }
+  slice.end = val;
 };
 </script>

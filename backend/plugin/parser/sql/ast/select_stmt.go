@@ -1,7 +1,7 @@
 package ast
 
 import (
-	pgquery "github.com/pganalyze/pg_query_go/v4"
+	pgquery "github.com/pganalyze/pg_query_go/v5"
 )
 
 // SetOperationType is the type for set operations.

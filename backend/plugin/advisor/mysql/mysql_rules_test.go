@@ -160,6 +160,6 @@ func TestMySQLRules(t *testing.T) {
 	}
 
 	for _, rule := range mysqlRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MYSQL, false /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MYSQL, nil, false /* record */)
 	}
 }

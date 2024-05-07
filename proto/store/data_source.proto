@@ -99,7 +99,6 @@ message DataSourceOptions {
 message SASLConfig {
   oneof mechanism {
     KerberosConfig krb_config = 1;
-    PlainSASLConfig plain_config = 2;
   }
 }
 
@@ -109,10 +108,6 @@ message KerberosConfig {
   string realm = 3;
   string keytab = 4;
   string kdc_host = 5;
-  string kdc_transport_protocol = 6;
-}
-
-message PlainSASLConfig {
-  string username = 1;
-  string password = 2;
+  string kdc_port = 6;
+  string kdc_transport_protocol = 7;
 }

@@ -9,11 +9,11 @@ import { Expr } from "../google/type/expr";
 export const protobufPackage = "bytebase.v1";
 
 export enum IssueStatus {
-  ISSUE_STATUS_UNSPECIFIED = 0,
-  OPEN = 1,
-  DONE = 2,
-  CANCELED = 3,
-  UNRECOGNIZED = -1,
+  ISSUE_STATUS_UNSPECIFIED = "ISSUE_STATUS_UNSPECIFIED",
+  OPEN = "OPEN",
+  DONE = "DONE",
+  CANCELED = "CANCELED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function issueStatusFromJSON(object: any): IssueStatus {
@@ -50,6 +50,22 @@ export function issueStatusToJSON(object: IssueStatus): string {
     case IssueStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function issueStatusToNumber(object: IssueStatus): number {
+  switch (object) {
+    case IssueStatus.ISSUE_STATUS_UNSPECIFIED:
+      return 0;
+    case IssueStatus.OPEN:
+      return 1;
+    case IssueStatus.DONE:
+      return 2;
+    case IssueStatus.CANCELED:
+      return 3;
+    case IssueStatus.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -288,11 +304,11 @@ export interface Issue {
 }
 
 export enum Issue_Type {
-  TYPE_UNSPECIFIED = 0,
-  DATABASE_CHANGE = 1,
-  GRANT_REQUEST = 2,
-  DATABASE_DATA_EXPORT = 3,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  DATABASE_CHANGE = "DATABASE_CHANGE",
+  GRANT_REQUEST = "GRANT_REQUEST",
+  DATABASE_DATA_EXPORT = "DATABASE_DATA_EXPORT",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function issue_TypeFromJSON(object: any): Issue_Type {
@@ -332,12 +348,28 @@ export function issue_TypeToJSON(object: Issue_Type): string {
   }
 }
 
+export function issue_TypeToNumber(object: Issue_Type): number {
+  switch (object) {
+    case Issue_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case Issue_Type.DATABASE_CHANGE:
+      return 1;
+    case Issue_Type.GRANT_REQUEST:
+      return 2;
+    case Issue_Type.DATABASE_DATA_EXPORT:
+      return 3;
+    case Issue_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum Issue_RiskLevel {
-  RISK_LEVEL_UNSPECIFIED = 0,
-  LOW = 1,
-  MODERATE = 2,
-  HIGH = 3,
-  UNRECOGNIZED = -1,
+  RISK_LEVEL_UNSPECIFIED = "RISK_LEVEL_UNSPECIFIED",
+  LOW = "LOW",
+  MODERATE = "MODERATE",
+  HIGH = "HIGH",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function issue_RiskLevelFromJSON(object: any): Issue_RiskLevel {
@@ -377,6 +409,22 @@ export function issue_RiskLevelToJSON(object: Issue_RiskLevel): string {
   }
 }
 
+export function issue_RiskLevelToNumber(object: Issue_RiskLevel): number {
+  switch (object) {
+    case Issue_RiskLevel.RISK_LEVEL_UNSPECIFIED:
+      return 0;
+    case Issue_RiskLevel.LOW:
+      return 1;
+    case Issue_RiskLevel.MODERATE:
+      return 2;
+    case Issue_RiskLevel.HIGH:
+      return 3;
+    case Issue_RiskLevel.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface Issue_Approver {
   /** The new status. */
   status: Issue_Approver_Status;
@@ -385,11 +433,11 @@ export interface Issue_Approver {
 }
 
 export enum Issue_Approver_Status {
-  STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  APPROVED = 2,
-  REJECTED = 3,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function issue_Approver_StatusFromJSON(object: any): Issue_Approver_Status {
@@ -426,6 +474,22 @@ export function issue_Approver_StatusToJSON(object: Issue_Approver_Status): stri
     case Issue_Approver_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function issue_Approver_StatusToNumber(object: Issue_Approver_Status): number {
+  switch (object) {
+    case Issue_Approver_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case Issue_Approver_Status.PENDING:
+      return 1;
+    case Issue_Approver_Status.APPROVED:
+      return 2;
+    case Issue_Approver_Status.REJECTED:
+      return 3;
+    case Issue_Approver_Status.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -475,10 +539,10 @@ export interface ApprovalStep {
  * ANY means approving any node will proceed.
  */
 export enum ApprovalStep_Type {
-  TYPE_UNSPECIFIED = 0,
-  ALL = 1,
-  ANY = 2,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  ALL = "ALL",
+  ANY = "ANY",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function approvalStep_TypeFromJSON(object: any): ApprovalStep_Type {
@@ -513,6 +577,20 @@ export function approvalStep_TypeToJSON(object: ApprovalStep_Type): string {
   }
 }
 
+export function approvalStep_TypeToNumber(object: ApprovalStep_Type): number {
+  switch (object) {
+    case ApprovalStep_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case ApprovalStep_Type.ALL:
+      return 1;
+    case ApprovalStep_Type.ANY:
+      return 2;
+    case ApprovalStep_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface ApprovalNode {
   type: ApprovalNode_Type;
   groupValue?:
@@ -530,9 +608,9 @@ export interface ApprovalNode {
  * See GroupValue below for the predefined user groups.
  */
 export enum ApprovalNode_Type {
-  TYPE_UNSPECIFIED = 0,
-  ANY_IN_GROUP = 1,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  ANY_IN_GROUP = "ANY_IN_GROUP",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function approvalNode_TypeFromJSON(object: any): ApprovalNode_Type {
@@ -562,6 +640,18 @@ export function approvalNode_TypeToJSON(object: ApprovalNode_Type): string {
   }
 }
 
+export function approvalNode_TypeToNumber(object: ApprovalNode_Type): number {
+  switch (object) {
+    case ApprovalNode_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case ApprovalNode_Type.ANY_IN_GROUP:
+      return 1;
+    case ApprovalNode_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 /**
  * The predefined user groups are:
  * - WORKSPACE_OWNER
@@ -570,12 +660,12 @@ export function approvalNode_TypeToJSON(object: ApprovalNode_Type): string {
  * - PROJECT_MEMBER
  */
 export enum ApprovalNode_GroupValue {
-  GROUP_VALUE_UNSPECIFILED = 0,
-  WORKSPACE_OWNER = 1,
-  WORKSPACE_DBA = 2,
-  PROJECT_OWNER = 3,
-  PROJECT_MEMBER = 4,
-  UNRECOGNIZED = -1,
+  GROUP_VALUE_UNSPECIFILED = "GROUP_VALUE_UNSPECIFILED",
+  WORKSPACE_OWNER = "WORKSPACE_OWNER",
+  WORKSPACE_DBA = "WORKSPACE_DBA",
+  PROJECT_OWNER = "PROJECT_OWNER",
+  PROJECT_MEMBER = "PROJECT_MEMBER",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function approvalNode_GroupValueFromJSON(object: any): ApprovalNode_GroupValue {
@@ -617,6 +707,24 @@ export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): 
     case ApprovalNode_GroupValue.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function approvalNode_GroupValueToNumber(object: ApprovalNode_GroupValue): number {
+  switch (object) {
+    case ApprovalNode_GroupValue.GROUP_VALUE_UNSPECIFILED:
+      return 0;
+    case ApprovalNode_GroupValue.WORKSPACE_OWNER:
+      return 1;
+    case ApprovalNode_GroupValue.WORKSPACE_DBA:
+      return 2;
+    case ApprovalNode_GroupValue.PROJECT_OWNER:
+      return 3;
+    case ApprovalNode_GroupValue.PROJECT_MEMBER:
+      return 4;
+    case ApprovalNode_GroupValue.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -696,11 +804,11 @@ export interface IssueComment_Approval {
 }
 
 export enum IssueComment_Approval_Status {
-  STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  APPROVED = 2,
-  REJECTED = 3,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function issueComment_Approval_StatusFromJSON(object: any): IssueComment_Approval_Status {
@@ -740,6 +848,22 @@ export function issueComment_Approval_StatusToJSON(object: IssueComment_Approval
   }
 }
 
+export function issueComment_Approval_StatusToNumber(object: IssueComment_Approval_Status): number {
+  switch (object) {
+    case IssueComment_Approval_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case IssueComment_Approval_Status.PENDING:
+      return 1;
+    case IssueComment_Approval_Status.APPROVED:
+      return 2;
+    case IssueComment_Approval_Status.REJECTED:
+      return 3;
+    case IssueComment_Approval_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface IssueComment_IssueUpdate {
   fromTitle?: string | undefined;
   toTitle?: string | undefined;
@@ -775,14 +899,14 @@ export interface IssueComment_TaskUpdate {
 }
 
 export enum IssueComment_TaskUpdate_Status {
-  STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  RUNNING = 2,
-  DONE = 3,
-  FAILED = 4,
-  SKIPPED = 5,
-  CANCELED = 6,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  PENDING = "PENDING",
+  RUNNING = "RUNNING",
+  DONE = "DONE",
+  FAILED = "FAILED",
+  SKIPPED = "SKIPPED",
+  CANCELED = "CANCELED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function issueComment_TaskUpdate_StatusFromJSON(object: any): IssueComment_TaskUpdate_Status {
@@ -834,6 +958,28 @@ export function issueComment_TaskUpdate_StatusToJSON(object: IssueComment_TaskUp
     case IssueComment_TaskUpdate_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function issueComment_TaskUpdate_StatusToNumber(object: IssueComment_TaskUpdate_Status): number {
+  switch (object) {
+    case IssueComment_TaskUpdate_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case IssueComment_TaskUpdate_Status.PENDING:
+      return 1;
+    case IssueComment_TaskUpdate_Status.RUNNING:
+      return 2;
+    case IssueComment_TaskUpdate_Status.DONE:
+      return 3;
+    case IssueComment_TaskUpdate_Status.FAILED:
+      return 4;
+    case IssueComment_TaskUpdate_Status.SKIPPED:
+      return 5;
+    case IssueComment_TaskUpdate_Status.CANCELED:
+      return 6;
+    case IssueComment_TaskUpdate_Status.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -1458,7 +1604,7 @@ export const UpdateIssueRequest = {
 };
 
 function createBaseBatchUpdateIssuesStatusRequest(): BatchUpdateIssuesStatusRequest {
-  return { parent: "", issues: [], status: 0, reason: "" };
+  return { parent: "", issues: [], status: IssueStatus.ISSUE_STATUS_UNSPECIFIED, reason: "" };
 }
 
 export const BatchUpdateIssuesStatusRequest = {
@@ -1469,8 +1615,8 @@ export const BatchUpdateIssuesStatusRequest = {
     for (const v of message.issues) {
       writer.uint32(18).string(v!);
     }
-    if (message.status !== 0) {
-      writer.uint32(24).int32(message.status);
+    if (message.status !== IssueStatus.ISSUE_STATUS_UNSPECIFIED) {
+      writer.uint32(24).int32(issueStatusToNumber(message.status));
     }
     if (message.reason !== "") {
       writer.uint32(34).string(message.reason);
@@ -1504,7 +1650,7 @@ export const BatchUpdateIssuesStatusRequest = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = issueStatusFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -1526,7 +1672,7 @@ export const BatchUpdateIssuesStatusRequest = {
     return {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       issues: globalThis.Array.isArray(object?.issues) ? object.issues.map((e: any) => globalThis.String(e)) : [],
-      status: isSet(object.status) ? issueStatusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? issueStatusFromJSON(object.status) : IssueStatus.ISSUE_STATUS_UNSPECIFIED,
       reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
     };
   },
@@ -1539,7 +1685,7 @@ export const BatchUpdateIssuesStatusRequest = {
     if (message.issues?.length) {
       obj.issues = message.issues;
     }
-    if (message.status !== 0) {
+    if (message.status !== IssueStatus.ISSUE_STATUS_UNSPECIFIED) {
       obj.status = issueStatusToJSON(message.status);
     }
     if (message.reason !== "") {
@@ -1555,7 +1701,7 @@ export const BatchUpdateIssuesStatusRequest = {
     const message = createBaseBatchUpdateIssuesStatusRequest();
     message.parent = object.parent ?? "";
     message.issues = object.issues?.map((e) => e) || [];
-    message.status = object.status ?? 0;
+    message.status = object.status ?? IssueStatus.ISSUE_STATUS_UNSPECIFIED;
     message.reason = object.reason ?? "";
     return message;
   },
@@ -1832,8 +1978,8 @@ function createBaseIssue(): Issue {
     uid: "",
     title: "",
     description: "",
-    type: 0,
-    status: 0,
+    type: Issue_Type.TYPE_UNSPECIFIED,
+    status: IssueStatus.ISSUE_STATUS_UNSPECIFIED,
     assignee: "",
     assigneeAttention: false,
     approvers: [],
@@ -1848,7 +1994,7 @@ function createBaseIssue(): Issue {
     rollout: "",
     grantRequest: undefined,
     releasers: [],
-    riskLevel: 0,
+    riskLevel: Issue_RiskLevel.RISK_LEVEL_UNSPECIFIED,
     taskStatusCount: {},
   };
 }
@@ -1867,11 +2013,11 @@ export const Issue = {
     if (message.description !== "") {
       writer.uint32(34).string(message.description);
     }
-    if (message.type !== 0) {
-      writer.uint32(40).int32(message.type);
+    if (message.type !== Issue_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(40).int32(issue_TypeToNumber(message.type));
     }
-    if (message.status !== 0) {
-      writer.uint32(48).int32(message.status);
+    if (message.status !== IssueStatus.ISSUE_STATUS_UNSPECIFIED) {
+      writer.uint32(48).int32(issueStatusToNumber(message.status));
     }
     if (message.assignee !== "") {
       writer.uint32(58).string(message.assignee);
@@ -1915,8 +2061,8 @@ export const Issue = {
     for (const v of message.releasers) {
       writer.uint32(162).string(v!);
     }
-    if (message.riskLevel !== 0) {
-      writer.uint32(168).int32(message.riskLevel);
+    if (message.riskLevel !== Issue_RiskLevel.RISK_LEVEL_UNSPECIFIED) {
+      writer.uint32(168).int32(issue_RiskLevelToNumber(message.riskLevel));
     }
     Object.entries(message.taskStatusCount).forEach(([key, value]) => {
       Issue_TaskStatusCountEntry.encode({ key: key as any, value }, writer.uint32(178).fork()).ldelim();
@@ -1964,14 +2110,14 @@ export const Issue = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = issue_TypeFromJSON(reader.int32());
           continue;
         case 6:
           if (tag !== 48) {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = issueStatusFromJSON(reader.int32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -2076,7 +2222,7 @@ export const Issue = {
             break;
           }
 
-          message.riskLevel = reader.int32() as any;
+          message.riskLevel = issue_RiskLevelFromJSON(reader.int32());
           continue;
         case 22:
           if (tag !== 178) {
@@ -2103,8 +2249,8 @@ export const Issue = {
       uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
-      type: isSet(object.type) ? issue_TypeFromJSON(object.type) : 0,
-      status: isSet(object.status) ? issueStatusFromJSON(object.status) : 0,
+      type: isSet(object.type) ? issue_TypeFromJSON(object.type) : Issue_Type.TYPE_UNSPECIFIED,
+      status: isSet(object.status) ? issueStatusFromJSON(object.status) : IssueStatus.ISSUE_STATUS_UNSPECIFIED,
       assignee: isSet(object.assignee) ? globalThis.String(object.assignee) : "",
       assigneeAttention: isSet(object.assigneeAttention) ? globalThis.Boolean(object.assigneeAttention) : false,
       approvers: globalThis.Array.isArray(object?.approvers)
@@ -2127,7 +2273,9 @@ export const Issue = {
       releasers: globalThis.Array.isArray(object?.releasers)
         ? object.releasers.map((e: any) => globalThis.String(e))
         : [],
-      riskLevel: isSet(object.riskLevel) ? issue_RiskLevelFromJSON(object.riskLevel) : 0,
+      riskLevel: isSet(object.riskLevel)
+        ? issue_RiskLevelFromJSON(object.riskLevel)
+        : Issue_RiskLevel.RISK_LEVEL_UNSPECIFIED,
       taskStatusCount: isObject(object.taskStatusCount)
         ? Object.entries(object.taskStatusCount).reduce<{ [key: string]: number }>((acc, [key, value]) => {
           acc[key] = Number(value);
@@ -2151,10 +2299,10 @@ export const Issue = {
     if (message.description !== "") {
       obj.description = message.description;
     }
-    if (message.type !== 0) {
+    if (message.type !== Issue_Type.TYPE_UNSPECIFIED) {
       obj.type = issue_TypeToJSON(message.type);
     }
-    if (message.status !== 0) {
+    if (message.status !== IssueStatus.ISSUE_STATUS_UNSPECIFIED) {
       obj.status = issueStatusToJSON(message.status);
     }
     if (message.assignee !== "") {
@@ -2199,7 +2347,7 @@ export const Issue = {
     if (message.releasers?.length) {
       obj.releasers = message.releasers;
     }
-    if (message.riskLevel !== 0) {
+    if (message.riskLevel !== Issue_RiskLevel.RISK_LEVEL_UNSPECIFIED) {
       obj.riskLevel = issue_RiskLevelToJSON(message.riskLevel);
     }
     if (message.taskStatusCount) {
@@ -2223,8 +2371,8 @@ export const Issue = {
     message.uid = object.uid ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
-    message.type = object.type ?? 0;
-    message.status = object.status ?? 0;
+    message.type = object.type ?? Issue_Type.TYPE_UNSPECIFIED;
+    message.status = object.status ?? IssueStatus.ISSUE_STATUS_UNSPECIFIED;
     message.assignee = object.assignee ?? "";
     message.assigneeAttention = object.assigneeAttention ?? false;
     message.approvers = object.approvers?.map((e) => Issue_Approver.fromPartial(e)) || [];
@@ -2241,7 +2389,7 @@ export const Issue = {
       ? GrantRequest.fromPartial(object.grantRequest)
       : undefined;
     message.releasers = object.releasers?.map((e) => e) || [];
-    message.riskLevel = object.riskLevel ?? 0;
+    message.riskLevel = object.riskLevel ?? Issue_RiskLevel.RISK_LEVEL_UNSPECIFIED;
     message.taskStatusCount = Object.entries(object.taskStatusCount ?? {}).reduce<{ [key: string]: number }>(
       (acc, [key, value]) => {
         if (value !== undefined) {
@@ -2256,13 +2404,13 @@ export const Issue = {
 };
 
 function createBaseIssue_Approver(): Issue_Approver {
-  return { status: 0, principal: "" };
+  return { status: Issue_Approver_Status.STATUS_UNSPECIFIED, principal: "" };
 }
 
 export const Issue_Approver = {
   encode(message: Issue_Approver, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.status !== 0) {
-      writer.uint32(8).int32(message.status);
+    if (message.status !== Issue_Approver_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(8).int32(issue_Approver_StatusToNumber(message.status));
     }
     if (message.principal !== "") {
       writer.uint32(18).string(message.principal);
@@ -2282,7 +2430,7 @@ export const Issue_Approver = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = issue_Approver_StatusFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -2302,14 +2450,16 @@ export const Issue_Approver = {
 
   fromJSON(object: any): Issue_Approver {
     return {
-      status: isSet(object.status) ? issue_Approver_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status)
+        ? issue_Approver_StatusFromJSON(object.status)
+        : Issue_Approver_Status.STATUS_UNSPECIFIED,
       principal: isSet(object.principal) ? globalThis.String(object.principal) : "",
     };
   },
 
   toJSON(message: Issue_Approver): unknown {
     const obj: any = {};
-    if (message.status !== 0) {
+    if (message.status !== Issue_Approver_Status.STATUS_UNSPECIFIED) {
       obj.status = issue_Approver_StatusToJSON(message.status);
     }
     if (message.principal !== "") {
@@ -2323,7 +2473,7 @@ export const Issue_Approver = {
   },
   fromPartial(object: DeepPartial<Issue_Approver>): Issue_Approver {
     const message = createBaseIssue_Approver();
-    message.status = object.status ?? 0;
+    message.status = object.status ?? Issue_Approver_Status.STATUS_UNSPECIFIED;
     message.principal = object.principal ?? "";
     return message;
   },
@@ -2677,13 +2827,13 @@ export const ApprovalFlow = {
 };
 
 function createBaseApprovalStep(): ApprovalStep {
-  return { type: 0, nodes: [] };
+  return { type: ApprovalStep_Type.TYPE_UNSPECIFIED, nodes: [] };
 }
 
 export const ApprovalStep = {
   encode(message: ApprovalStep, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
+    if (message.type !== ApprovalStep_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(approvalStep_TypeToNumber(message.type));
     }
     for (const v of message.nodes) {
       ApprovalNode.encode(v!, writer.uint32(18).fork()).ldelim();
@@ -2703,7 +2853,7 @@ export const ApprovalStep = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = approvalStep_TypeFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -2723,14 +2873,14 @@ export const ApprovalStep = {
 
   fromJSON(object: any): ApprovalStep {
     return {
-      type: isSet(object.type) ? approvalStep_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? approvalStep_TypeFromJSON(object.type) : ApprovalStep_Type.TYPE_UNSPECIFIED,
       nodes: globalThis.Array.isArray(object?.nodes) ? object.nodes.map((e: any) => ApprovalNode.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: ApprovalStep): unknown {
     const obj: any = {};
-    if (message.type !== 0) {
+    if (message.type !== ApprovalStep_Type.TYPE_UNSPECIFIED) {
       obj.type = approvalStep_TypeToJSON(message.type);
     }
     if (message.nodes?.length) {
@@ -2744,23 +2894,28 @@ export const ApprovalStep = {
   },
   fromPartial(object: DeepPartial<ApprovalStep>): ApprovalStep {
     const message = createBaseApprovalStep();
-    message.type = object.type ?? 0;
+    message.type = object.type ?? ApprovalStep_Type.TYPE_UNSPECIFIED;
     message.nodes = object.nodes?.map((e) => ApprovalNode.fromPartial(e)) || [];
     return message;
   },
 };
 
 function createBaseApprovalNode(): ApprovalNode {
-  return { type: 0, groupValue: undefined, role: undefined, externalNodeId: undefined };
+  return {
+    type: ApprovalNode_Type.TYPE_UNSPECIFIED,
+    groupValue: undefined,
+    role: undefined,
+    externalNodeId: undefined,
+  };
 }
 
 export const ApprovalNode = {
   encode(message: ApprovalNode, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
+    if (message.type !== ApprovalNode_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(approvalNode_TypeToNumber(message.type));
     }
     if (message.groupValue !== undefined) {
-      writer.uint32(16).int32(message.groupValue);
+      writer.uint32(16).int32(approvalNode_GroupValueToNumber(message.groupValue));
     }
     if (message.role !== undefined) {
       writer.uint32(26).string(message.role);
@@ -2783,14 +2938,14 @@ export const ApprovalNode = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = approvalNode_TypeFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 16) {
             break;
           }
 
-          message.groupValue = reader.int32() as any;
+          message.groupValue = approvalNode_GroupValueFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -2817,7 +2972,7 @@ export const ApprovalNode = {
 
   fromJSON(object: any): ApprovalNode {
     return {
-      type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : ApprovalNode_Type.TYPE_UNSPECIFIED,
       groupValue: isSet(object.groupValue) ? approvalNode_GroupValueFromJSON(object.groupValue) : undefined,
       role: isSet(object.role) ? globalThis.String(object.role) : undefined,
       externalNodeId: isSet(object.externalNodeId) ? globalThis.String(object.externalNodeId) : undefined,
@@ -2826,7 +2981,7 @@ export const ApprovalNode = {
 
   toJSON(message: ApprovalNode): unknown {
     const obj: any = {};
-    if (message.type !== 0) {
+    if (message.type !== ApprovalNode_Type.TYPE_UNSPECIFIED) {
       obj.type = approvalNode_TypeToJSON(message.type);
     }
     if (message.groupValue !== undefined) {
@@ -2846,7 +3001,7 @@ export const ApprovalNode = {
   },
   fromPartial(object: DeepPartial<ApprovalNode>): ApprovalNode {
     const message = createBaseApprovalNode();
-    message.type = object.type ?? 0;
+    message.type = object.type ?? ApprovalNode_Type.TYPE_UNSPECIFIED;
     message.groupValue = object.groupValue ?? undefined;
     message.role = object.role ?? undefined;
     message.externalNodeId = object.externalNodeId ?? undefined;
@@ -3436,13 +3591,13 @@ export const IssueComment = {
 };
 
 function createBaseIssueComment_Approval(): IssueComment_Approval {
-  return { status: 0 };
+  return { status: IssueComment_Approval_Status.STATUS_UNSPECIFIED };
 }
 
 export const IssueComment_Approval = {
   encode(message: IssueComment_Approval, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.status !== 0) {
-      writer.uint32(8).int32(message.status);
+    if (message.status !== IssueComment_Approval_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(8).int32(issueComment_Approval_StatusToNumber(message.status));
     }
     return writer;
   },
@@ -3459,7 +3614,7 @@ export const IssueComment_Approval = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = issueComment_Approval_StatusFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3471,12 +3626,16 @@ export const IssueComment_Approval = {
   },
 
   fromJSON(object: any): IssueComment_Approval {
-    return { status: isSet(object.status) ? issueComment_Approval_StatusFromJSON(object.status) : 0 };
+    return {
+      status: isSet(object.status)
+        ? issueComment_Approval_StatusFromJSON(object.status)
+        : IssueComment_Approval_Status.STATUS_UNSPECIFIED,
+    };
   },
 
   toJSON(message: IssueComment_Approval): unknown {
     const obj: any = {};
-    if (message.status !== 0) {
+    if (message.status !== IssueComment_Approval_Status.STATUS_UNSPECIFIED) {
       obj.status = issueComment_Approval_StatusToJSON(message.status);
     }
     return obj;
@@ -3487,7 +3646,7 @@ export const IssueComment_Approval = {
   },
   fromPartial(object: DeepPartial<IssueComment_Approval>): IssueComment_Approval {
     const message = createBaseIssueComment_Approval();
-    message.status = object.status ?? 0;
+    message.status = object.status ?? IssueComment_Approval_Status.STATUS_UNSPECIFIED;
     return message;
   },
 };
@@ -3520,10 +3679,10 @@ export const IssueComment_IssueUpdate = {
       writer.uint32(34).string(message.toDescription);
     }
     if (message.fromStatus !== undefined) {
-      writer.uint32(40).int32(message.fromStatus);
+      writer.uint32(40).int32(issueStatusToNumber(message.fromStatus));
     }
     if (message.toStatus !== undefined) {
-      writer.uint32(48).int32(message.toStatus);
+      writer.uint32(48).int32(issueStatusToNumber(message.toStatus));
     }
     if (message.fromAssignee !== undefined) {
       writer.uint32(58).string(message.fromAssignee);
@@ -3574,14 +3733,14 @@ export const IssueComment_IssueUpdate = {
             break;
           }
 
-          message.fromStatus = reader.int32() as any;
+          message.fromStatus = issueStatusFromJSON(reader.int32());
           continue;
         case 6:
           if (tag !== 48) {
             break;
           }
 
-          message.toStatus = reader.int32() as any;
+          message.toStatus = issueStatusFromJSON(reader.int32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -3751,7 +3910,7 @@ export const IssueComment_TaskUpdate = {
       Timestamp.encode(toTimestamp(message.toEarliestAllowedTime), writer.uint32(42).fork()).ldelim();
     }
     if (message.toStatus !== undefined) {
-      writer.uint32(48).int32(message.toStatus);
+      writer.uint32(48).int32(issueComment_TaskUpdate_StatusToNumber(message.toStatus));
     }
     return writer;
   },
@@ -3803,7 +3962,7 @@ export const IssueComment_TaskUpdate = {
             break;
           }
 
-          message.toStatus = reader.int32() as any;
+          message.toStatus = issueComment_TaskUpdate_StatusFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {

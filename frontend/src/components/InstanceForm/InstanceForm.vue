@@ -390,6 +390,7 @@ import {
   useSubscriptionV1Store,
   useGracefulRequest,
   useCurrentUserV1,
+  useDatabaseV1Store,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
@@ -796,6 +797,9 @@ const doCreate = async () => {
     await useGracefulRequest(async () => {
       const createdInstance =
         await instanceV1Store.createInstance(instanceCreate);
+      useDatabaseV1Store().searchDatabases({
+        filter: `instance = "${createdInstance.name}"`,
+      });
       router.push(`/${createdInstance.name}`);
       pushNotification({
         module: "bytebase",
@@ -1179,6 +1183,17 @@ const checkDataSource = (dataSources: DataSource[]) => {
 
     if (basicInfo.value.engine === Engine.ORACLE) {
       if (!ds.sid && !ds.serviceName) {
+        return false;
+      }
+    }
+
+    if (ds.saslConfig?.krbConfig) {
+      if (
+        !ds.saslConfig.krbConfig.primary ||
+        !ds.saslConfig.krbConfig.realm ||
+        !ds.saslConfig.krbConfig.kdcHost ||
+        !ds.saslConfig.krbConfig.keytab
+      ) {
         return false;
       }
     }

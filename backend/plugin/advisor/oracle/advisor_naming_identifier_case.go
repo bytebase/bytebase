@@ -44,10 +44,10 @@ func (*NamingIdentifierCaseAdvisor) Check(ctx advisor.Context, _ string) ([]advi
 	}
 
 	listener := &namingIdentifierCaseListener{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		currentSchema: ctx.CurrentSchema,
-		upper:         payload.Upper,
+		level:           level,
+		title:           string(ctx.Rule.Type),
+		currentDatabase: ctx.CurrentDatabase,
+		upper:           payload.Upper,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -59,11 +59,11 @@ func (*NamingIdentifierCaseAdvisor) Check(ctx advisor.Context, _ string) ([]advi
 type namingIdentifierCaseListener struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
-	title         string
-	currentSchema string
-	adviceList    []advisor.Advice
-	upper         bool
+	level           advisor.Status
+	title           string
+	currentDatabase string
+	adviceList      []advisor.Advice
+	upper           bool
 }
 
 func (l *namingIdentifierCaseListener) generateAdvice() ([]advisor.Advice, error) {

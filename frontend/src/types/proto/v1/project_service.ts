@@ -4,16 +4,16 @@ import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
-import { State, stateFromJSON, stateToJSON } from "./common";
+import { State, stateFromJSON, stateToJSON, stateToNumber } from "./common";
 import { IamPolicy } from "./iam_policy";
 
 export const protobufPackage = "bytebase.v1";
 
 export enum Workflow {
-  WORKFLOW_UNSPECIFIED = 0,
-  UI = 1,
-  VCS = 2,
-  UNRECOGNIZED = -1,
+  WORKFLOW_UNSPECIFIED = "WORKFLOW_UNSPECIFIED",
+  UI = "UI",
+  VCS = "VCS",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function workflowFromJSON(object: any): Workflow {
@@ -48,11 +48,25 @@ export function workflowToJSON(object: Workflow): string {
   }
 }
 
+export function workflowToNumber(object: Workflow): number {
+  switch (object) {
+    case Workflow.WORKFLOW_UNSPECIFIED:
+      return 0;
+    case Workflow.UI:
+      return 1;
+    case Workflow.VCS:
+      return 2;
+    case Workflow.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum TenantMode {
-  TENANT_MODE_UNSPECIFIED = 0,
-  TENANT_MODE_DISABLED = 1,
-  TENANT_MODE_ENABLED = 2,
-  UNRECOGNIZED = -1,
+  TENANT_MODE_UNSPECIFIED = "TENANT_MODE_UNSPECIFIED",
+  TENANT_MODE_DISABLED = "TENANT_MODE_DISABLED",
+  TENANT_MODE_ENABLED = "TENANT_MODE_ENABLED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function tenantModeFromJSON(object: any): TenantMode {
@@ -87,14 +101,28 @@ export function tenantModeToJSON(object: TenantMode): string {
   }
 }
 
+export function tenantModeToNumber(object: TenantMode): number {
+  switch (object) {
+    case TenantMode.TENANT_MODE_UNSPECIFIED:
+      return 0;
+    case TenantMode.TENANT_MODE_DISABLED:
+      return 1;
+    case TenantMode.TENANT_MODE_ENABLED:
+      return 2;
+    case TenantMode.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum OperatorType {
   /** OPERATOR_TYPE_UNSPECIFIED - The operator is not specified. */
-  OPERATOR_TYPE_UNSPECIFIED = 0,
+  OPERATOR_TYPE_UNSPECIFIED = "OPERATOR_TYPE_UNSPECIFIED",
   /** OPERATOR_TYPE_IN - The operator is "In". */
-  OPERATOR_TYPE_IN = 1,
+  OPERATOR_TYPE_IN = "OPERATOR_TYPE_IN",
   /** OPERATOR_TYPE_EXISTS - The operator is "Exists". */
-  OPERATOR_TYPE_EXISTS = 2,
-  UNRECOGNIZED = -1,
+  OPERATOR_TYPE_EXISTS = "OPERATOR_TYPE_EXISTS",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function operatorTypeFromJSON(object: any): OperatorType {
@@ -129,17 +157,31 @@ export function operatorTypeToJSON(object: OperatorType): string {
   }
 }
 
+export function operatorTypeToNumber(object: OperatorType): number {
+  switch (object) {
+    case OperatorType.OPERATOR_TYPE_UNSPECIFIED:
+      return 0;
+    case OperatorType.OPERATOR_TYPE_IN:
+      return 1;
+    case OperatorType.OPERATOR_TYPE_EXISTS:
+      return 2;
+    case OperatorType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum DatabaseGroupView {
   /**
    * DATABASE_GROUP_VIEW_UNSPECIFIED - The default / unset value.
    * The API will default to the BASIC view.
    */
-  DATABASE_GROUP_VIEW_UNSPECIFIED = 0,
+  DATABASE_GROUP_VIEW_UNSPECIFIED = "DATABASE_GROUP_VIEW_UNSPECIFIED",
   /** DATABASE_GROUP_VIEW_BASIC - Include basic information about the database group, but exclude the list of matched databases and unmatched databases. */
-  DATABASE_GROUP_VIEW_BASIC = 1,
+  DATABASE_GROUP_VIEW_BASIC = "DATABASE_GROUP_VIEW_BASIC",
   /** DATABASE_GROUP_VIEW_FULL - Include everything. */
-  DATABASE_GROUP_VIEW_FULL = 2,
-  UNRECOGNIZED = -1,
+  DATABASE_GROUP_VIEW_FULL = "DATABASE_GROUP_VIEW_FULL",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function databaseGroupViewFromJSON(object: any): DatabaseGroupView {
@@ -174,17 +216,31 @@ export function databaseGroupViewToJSON(object: DatabaseGroupView): string {
   }
 }
 
+export function databaseGroupViewToNumber(object: DatabaseGroupView): number {
+  switch (object) {
+    case DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED:
+      return 0;
+    case DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC:
+      return 1;
+    case DatabaseGroupView.DATABASE_GROUP_VIEW_FULL:
+      return 2;
+    case DatabaseGroupView.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum SchemaGroupView {
   /**
    * SCHEMA_GROUP_VIEW_UNSPECIFIED - The default / unset value.
    * The API will default to the BASIC view.
    */
-  SCHEMA_GROUP_VIEW_UNSPECIFIED = 0,
+  SCHEMA_GROUP_VIEW_UNSPECIFIED = "SCHEMA_GROUP_VIEW_UNSPECIFIED",
   /** SCHEMA_GROUP_VIEW_BASIC - Include basic information about the schema group, but exclude the list of matched tables and unmatched tables. */
-  SCHEMA_GROUP_VIEW_BASIC = 1,
+  SCHEMA_GROUP_VIEW_BASIC = "SCHEMA_GROUP_VIEW_BASIC",
   /** SCHEMA_GROUP_VIEW_FULL - Include everything. */
-  SCHEMA_GROUP_VIEW_FULL = 2,
-  UNRECOGNIZED = -1,
+  SCHEMA_GROUP_VIEW_FULL = "SCHEMA_GROUP_VIEW_FULL",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function schemaGroupViewFromJSON(object: any): SchemaGroupView {
@@ -216,6 +272,20 @@ export function schemaGroupViewToJSON(object: SchemaGroupView): string {
     case SchemaGroupView.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function schemaGroupViewToNumber(object: SchemaGroupView): number {
+  switch (object) {
+    case SchemaGroupView.SCHEMA_GROUP_VIEW_UNSPECIFIED:
+      return 0;
+    case SchemaGroupView.SCHEMA_GROUP_VIEW_BASIC:
+      return 1;
+    case SchemaGroupView.SCHEMA_GROUP_VIEW_FULL:
+      return 2;
+    case SchemaGroupView.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -443,15 +513,15 @@ export interface Webhook {
 }
 
 export enum Webhook_Type {
-  TYPE_UNSPECIFIED = 0,
-  TYPE_SLACK = 1,
-  TYPE_DISCORD = 2,
-  TYPE_TEAMS = 3,
-  TYPE_DINGTALK = 4,
-  TYPE_FEISHU = 5,
-  TYPE_WECOM = 6,
-  TYPE_CUSTOM = 7,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  TYPE_SLACK = "TYPE_SLACK",
+  TYPE_DISCORD = "TYPE_DISCORD",
+  TYPE_TEAMS = "TYPE_TEAMS",
+  TYPE_DINGTALK = "TYPE_DINGTALK",
+  TYPE_FEISHU = "TYPE_FEISHU",
+  TYPE_WECOM = "TYPE_WECOM",
+  TYPE_CUSTOM = "TYPE_CUSTOM",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function webhook_TypeFromJSON(object: any): Webhook_Type {
@@ -511,6 +581,30 @@ export function webhook_TypeToJSON(object: Webhook_Type): string {
   }
 }
 
+export function webhook_TypeToNumber(object: Webhook_Type): number {
+  switch (object) {
+    case Webhook_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case Webhook_Type.TYPE_SLACK:
+      return 1;
+    case Webhook_Type.TYPE_DISCORD:
+      return 2;
+    case Webhook_Type.TYPE_TEAMS:
+      return 3;
+    case Webhook_Type.TYPE_DINGTALK:
+      return 4;
+    case Webhook_Type.TYPE_FEISHU:
+      return 5;
+    case Webhook_Type.TYPE_WECOM:
+      return 6;
+    case Webhook_Type.TYPE_CUSTOM:
+      return 7;
+    case Webhook_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface DeploymentConfig {
   /**
    * The name of the resource.
@@ -551,69 +645,69 @@ export interface Activity {
 }
 
 export enum Activity_Type {
-  TYPE_UNSPECIFIED = 0,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
   /**
    * TYPE_NOTIFY_ISSUE_APPROVED - Notifications via webhooks.
    *
    * TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification.
    */
-  TYPE_NOTIFY_ISSUE_APPROVED = 23,
+  TYPE_NOTIFY_ISSUE_APPROVED = "TYPE_NOTIFY_ISSUE_APPROVED",
   /** TYPE_NOTIFY_PIPELINE_ROLLOUT - TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. */
-  TYPE_NOTIFY_PIPELINE_ROLLOUT = 24,
+  TYPE_NOTIFY_PIPELINE_ROLLOUT = "TYPE_NOTIFY_PIPELINE_ROLLOUT",
   /**
    * TYPE_ISSUE_CREATE - Issue related activity types.
    *
    * TYPE_ISSUE_CREATE represents creating an issue.
    */
-  TYPE_ISSUE_CREATE = 1,
+  TYPE_ISSUE_CREATE = "TYPE_ISSUE_CREATE",
   /** TYPE_ISSUE_COMMENT_CREATE - TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue. */
-  TYPE_ISSUE_COMMENT_CREATE = 2,
+  TYPE_ISSUE_COMMENT_CREATE = "TYPE_ISSUE_COMMENT_CREATE",
   /** TYPE_ISSUE_FIELD_UPDATE - TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, assignee, etc. */
-  TYPE_ISSUE_FIELD_UPDATE = 3,
+  TYPE_ISSUE_FIELD_UPDATE = "TYPE_ISSUE_FIELD_UPDATE",
   /** TYPE_ISSUE_STATUS_UPDATE - TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. */
-  TYPE_ISSUE_STATUS_UPDATE = 4,
+  TYPE_ISSUE_STATUS_UPDATE = "TYPE_ISSUE_STATUS_UPDATE",
   /** TYPE_ISSUE_APPROVAL_NOTIFY - TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. */
-  TYPE_ISSUE_APPROVAL_NOTIFY = 21,
+  TYPE_ISSUE_APPROVAL_NOTIFY = "TYPE_ISSUE_APPROVAL_NOTIFY",
   /** TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. */
-  TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5,
+  TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE = "TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE",
   /** TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. */
-  TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE = 6,
+  TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE = "TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE",
   /** TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE - TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. */
-  TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 22,
+  TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = "TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE",
   /** TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE - TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. */
-  TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE = 8,
+  TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE = "TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE",
   /** TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE - TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. */
-  TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = 9,
+  TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = "TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE",
   /**
    * TYPE_MEMBER_CREATE - Member related activity types.
    *
    * TYPE_MEMBER_CREATE represents creating a members.
    */
-  TYPE_MEMBER_CREATE = 10,
+  TYPE_MEMBER_CREATE = "TYPE_MEMBER_CREATE",
   /** TYPE_MEMBER_ROLE_UPDATE - TYPE_MEMBER_ROLE_UPDATE represents updating the member role, for example, from ADMIN to MEMBER. */
-  TYPE_MEMBER_ROLE_UPDATE = 11,
+  TYPE_MEMBER_ROLE_UPDATE = "TYPE_MEMBER_ROLE_UPDATE",
   /** TYPE_MEMBER_ACTIVATE - TYPE_MEMBER_ACTIVATE represents activating a deactivated member. */
-  TYPE_MEMBER_ACTIVATE = 12,
+  TYPE_MEMBER_ACTIVATE = "TYPE_MEMBER_ACTIVATE",
   /** TYPE_MEMBER_DEACTIVATE - TYPE_MEMBER_DEACTIVATE represents deactivating an active member. */
-  TYPE_MEMBER_DEACTIVATE = 13,
+  TYPE_MEMBER_DEACTIVATE = "TYPE_MEMBER_DEACTIVATE",
   /**
    * TYPE_PROJECT_REPOSITORY_PUSH - Project related activity types.
    *
    * TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository.
    */
-  TYPE_PROJECT_REPOSITORY_PUSH = 14,
+  TYPE_PROJECT_REPOSITORY_PUSH = "TYPE_PROJECT_REPOSITORY_PUSH",
   /** TYPE_PROJECT_DATABASE_TRANSFER - TYPE_PROJECT_DATABASE_TRANFER represents transfering the database from one project to another. */
-  TYPE_PROJECT_DATABASE_TRANSFER = 15,
+  TYPE_PROJECT_DATABASE_TRANSFER = "TYPE_PROJECT_DATABASE_TRANSFER",
   /** TYPE_PROJECT_MEMBER_CREATE - TYPE_PROJECT_MEMBER_CREATE represents adding a member to the project. */
-  TYPE_PROJECT_MEMBER_CREATE = 16,
+  TYPE_PROJECT_MEMBER_CREATE = "TYPE_PROJECT_MEMBER_CREATE",
   /** TYPE_PROJECT_MEMBER_DELETE - TYPE_PROJECT_MEMBER_DELETE represents removing a member from the project. */
-  TYPE_PROJECT_MEMBER_DELETE = 17,
+  TYPE_PROJECT_MEMBER_DELETE = "TYPE_PROJECT_MEMBER_DELETE",
   /**
    * TYPE_SQL_EDITOR_QUERY - SQL Editor related activity types.
    * TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
    */
-  TYPE_SQL_EDITOR_QUERY = 19,
-  UNRECOGNIZED = -1,
+  TYPE_SQL_EDITOR_QUERY = "TYPE_SQL_EDITOR_QUERY",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function activity_TypeFromJSON(object: any): Activity_Type {
@@ -740,6 +834,58 @@ export function activity_TypeToJSON(object: Activity_Type): string {
     case Activity_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function activity_TypeToNumber(object: Activity_Type): number {
+  switch (object) {
+    case Activity_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case Activity_Type.TYPE_NOTIFY_ISSUE_APPROVED:
+      return 23;
+    case Activity_Type.TYPE_NOTIFY_PIPELINE_ROLLOUT:
+      return 24;
+    case Activity_Type.TYPE_ISSUE_CREATE:
+      return 1;
+    case Activity_Type.TYPE_ISSUE_COMMENT_CREATE:
+      return 2;
+    case Activity_Type.TYPE_ISSUE_FIELD_UPDATE:
+      return 3;
+    case Activity_Type.TYPE_ISSUE_STATUS_UPDATE:
+      return 4;
+    case Activity_Type.TYPE_ISSUE_APPROVAL_NOTIFY:
+      return 21;
+    case Activity_Type.TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
+      return 5;
+    case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATUS_UPDATE:
+      return 6;
+    case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
+      return 22;
+    case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_STATEMENT_UPDATE:
+      return 8;
+    case Activity_Type.TYPE_ISSUE_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
+      return 9;
+    case Activity_Type.TYPE_MEMBER_CREATE:
+      return 10;
+    case Activity_Type.TYPE_MEMBER_ROLE_UPDATE:
+      return 11;
+    case Activity_Type.TYPE_MEMBER_ACTIVATE:
+      return 12;
+    case Activity_Type.TYPE_MEMBER_DEACTIVATE:
+      return 13;
+    case Activity_Type.TYPE_PROJECT_REPOSITORY_PUSH:
+      return 14;
+    case Activity_Type.TYPE_PROJECT_DATABASE_TRANSFER:
+      return 15;
+    case Activity_Type.TYPE_PROJECT_MEMBER_CREATE:
+      return 16;
+    case Activity_Type.TYPE_PROJECT_MEMBER_DELETE:
+      return 17;
+    case Activity_Type.TYPE_SQL_EDITOR_QUERY:
+      return 19;
+    case Activity_Type.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -1023,10 +1169,10 @@ export interface ProtectionRule {
 
 /** The type of target. */
 export enum ProtectionRule_Target {
-  PROTECTION_TARGET_UNSPECIFIED = 0,
-  BRANCH = 1,
-  CHANGELIST = 2,
-  UNRECOGNIZED = -1,
+  PROTECTION_TARGET_UNSPECIFIED = "PROTECTION_TARGET_UNSPECIFIED",
+  BRANCH = "BRANCH",
+  CHANGELIST = "CHANGELIST",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function protectionRule_TargetFromJSON(object: any): ProtectionRule_Target {
@@ -1061,10 +1207,24 @@ export function protectionRule_TargetToJSON(object: ProtectionRule_Target): stri
   }
 }
 
+export function protectionRule_TargetToNumber(object: ProtectionRule_Target): number {
+  switch (object) {
+    case ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED:
+      return 0;
+    case ProtectionRule_Target.BRANCH:
+      return 1;
+    case ProtectionRule_Target.CHANGELIST:
+      return 2;
+    case ProtectionRule_Target.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum ProtectionRule_BranchSource {
-  BRANCH_SOURCE_UNSPECIFIED = 0,
-  DATABASE = 1,
-  UNRECOGNIZED = -1,
+  BRANCH_SOURCE_UNSPECIFIED = "BRANCH_SOURCE_UNSPECIFIED",
+  DATABASE = "DATABASE",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function protectionRule_BranchSourceFromJSON(object: any): ProtectionRule_BranchSource {
@@ -1091,6 +1251,18 @@ export function protectionRule_BranchSourceToJSON(object: ProtectionRule_BranchS
     case ProtectionRule_BranchSource.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function protectionRule_BranchSourceToNumber(object: ProtectionRule_BranchSource): number {
+  switch (object) {
+    case ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED:
+      return 0;
+    case ProtectionRule_BranchSource.DATABASE:
+      return 1;
+    case ProtectionRule_BranchSource.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -2178,11 +2350,11 @@ function createBaseProject(): Project {
   return {
     name: "",
     uid: "",
-    state: 0,
+    state: State.STATE_UNSPECIFIED,
     title: "",
     key: "",
-    workflow: 0,
-    tenantMode: 0,
+    workflow: Workflow.WORKFLOW_UNSPECIFIED,
+    tenantMode: TenantMode.TENANT_MODE_UNSPECIFIED,
     webhooks: [],
     dataClassificationConfigId: "",
   };
@@ -2196,8 +2368,8 @@ export const Project = {
     if (message.uid !== "") {
       writer.uint32(18).string(message.uid);
     }
-    if (message.state !== 0) {
-      writer.uint32(24).int32(message.state);
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      writer.uint32(24).int32(stateToNumber(message.state));
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
@@ -2205,11 +2377,11 @@ export const Project = {
     if (message.key !== "") {
       writer.uint32(42).string(message.key);
     }
-    if (message.workflow !== 0) {
-      writer.uint32(48).int32(message.workflow);
+    if (message.workflow !== Workflow.WORKFLOW_UNSPECIFIED) {
+      writer.uint32(48).int32(workflowToNumber(message.workflow));
     }
-    if (message.tenantMode !== 0) {
-      writer.uint32(64).int32(message.tenantMode);
+    if (message.tenantMode !== TenantMode.TENANT_MODE_UNSPECIFIED) {
+      writer.uint32(64).int32(tenantModeToNumber(message.tenantMode));
     }
     for (const v of message.webhooks) {
       Webhook.encode(v!, writer.uint32(90).fork()).ldelim();
@@ -2246,7 +2418,7 @@ export const Project = {
             break;
           }
 
-          message.state = reader.int32() as any;
+          message.state = stateFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -2267,14 +2439,14 @@ export const Project = {
             break;
           }
 
-          message.workflow = reader.int32() as any;
+          message.workflow = workflowFromJSON(reader.int32());
           continue;
         case 8:
           if (tag !== 64) {
             break;
           }
 
-          message.tenantMode = reader.int32() as any;
+          message.tenantMode = tenantModeFromJSON(reader.int32());
           continue;
         case 11:
           if (tag !== 90) {
@@ -2303,11 +2475,11 @@ export const Project = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
-      state: isSet(object.state) ? stateFromJSON(object.state) : 0,
+      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       key: isSet(object.key) ? globalThis.String(object.key) : "",
-      workflow: isSet(object.workflow) ? workflowFromJSON(object.workflow) : 0,
-      tenantMode: isSet(object.tenantMode) ? tenantModeFromJSON(object.tenantMode) : 0,
+      workflow: isSet(object.workflow) ? workflowFromJSON(object.workflow) : Workflow.WORKFLOW_UNSPECIFIED,
+      tenantMode: isSet(object.tenantMode) ? tenantModeFromJSON(object.tenantMode) : TenantMode.TENANT_MODE_UNSPECIFIED,
       webhooks: globalThis.Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
       dataClassificationConfigId: isSet(object.dataClassificationConfigId)
         ? globalThis.String(object.dataClassificationConfigId)
@@ -2323,7 +2495,7 @@ export const Project = {
     if (message.uid !== "") {
       obj.uid = message.uid;
     }
-    if (message.state !== 0) {
+    if (message.state !== State.STATE_UNSPECIFIED) {
       obj.state = stateToJSON(message.state);
     }
     if (message.title !== "") {
@@ -2332,10 +2504,10 @@ export const Project = {
     if (message.key !== "") {
       obj.key = message.key;
     }
-    if (message.workflow !== 0) {
+    if (message.workflow !== Workflow.WORKFLOW_UNSPECIFIED) {
       obj.workflow = workflowToJSON(message.workflow);
     }
-    if (message.tenantMode !== 0) {
+    if (message.tenantMode !== TenantMode.TENANT_MODE_UNSPECIFIED) {
       obj.tenantMode = tenantModeToJSON(message.tenantMode);
     }
     if (message.webhooks?.length) {
@@ -2354,11 +2526,11 @@ export const Project = {
     const message = createBaseProject();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
-    message.state = object.state ?? 0;
+    message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.title = object.title ?? "";
     message.key = object.key ?? "";
-    message.workflow = object.workflow ?? 0;
-    message.tenantMode = object.tenantMode ?? 0;
+    message.workflow = object.workflow ?? Workflow.WORKFLOW_UNSPECIFIED;
+    message.tenantMode = object.tenantMode ?? TenantMode.TENANT_MODE_UNSPECIFIED;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
     message.dataClassificationConfigId = object.dataClassificationConfigId ?? "";
     return message;
@@ -2710,7 +2882,7 @@ export const TestWebhookResponse = {
 };
 
 function createBaseWebhook(): Webhook {
-  return { name: "", type: 0, title: "", url: "", notificationTypes: [] };
+  return { name: "", type: Webhook_Type.TYPE_UNSPECIFIED, title: "", url: "", notificationTypes: [] };
 }
 
 export const Webhook = {
@@ -2718,8 +2890,8 @@ export const Webhook = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.type !== 0) {
-      writer.uint32(16).int32(message.type);
+    if (message.type !== Webhook_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(16).int32(webhook_TypeToNumber(message.type));
     }
     if (message.title !== "") {
       writer.uint32(26).string(message.title);
@@ -2729,7 +2901,7 @@ export const Webhook = {
     }
     writer.uint32(42).fork();
     for (const v of message.notificationTypes) {
-      writer.int32(v);
+      writer.int32(activity_TypeToNumber(v));
     }
     writer.ldelim();
     return writer;
@@ -2754,7 +2926,7 @@ export const Webhook = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = webhook_TypeFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -2772,7 +2944,7 @@ export const Webhook = {
           continue;
         case 5:
           if (tag === 40) {
-            message.notificationTypes.push(reader.int32() as any);
+            message.notificationTypes.push(activity_TypeFromJSON(reader.int32()));
 
             continue;
           }
@@ -2780,7 +2952,7 @@ export const Webhook = {
           if (tag === 42) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
-              message.notificationTypes.push(reader.int32() as any);
+              message.notificationTypes.push(activity_TypeFromJSON(reader.int32()));
             }
 
             continue;
@@ -2799,7 +2971,7 @@ export const Webhook = {
   fromJSON(object: any): Webhook {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      type: isSet(object.type) ? webhook_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? webhook_TypeFromJSON(object.type) : Webhook_Type.TYPE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       url: isSet(object.url) ? globalThis.String(object.url) : "",
       notificationTypes: globalThis.Array.isArray(object?.notificationTypes)
@@ -2813,7 +2985,7 @@ export const Webhook = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.type !== 0) {
+    if (message.type !== Webhook_Type.TYPE_UNSPECIFIED) {
       obj.type = webhook_TypeToJSON(message.type);
     }
     if (message.title !== "") {
@@ -2834,7 +3006,7 @@ export const Webhook = {
   fromPartial(object: DeepPartial<Webhook>): Webhook {
     const message = createBaseWebhook();
     message.name = object.name ?? "";
-    message.type = object.type ?? 0;
+    message.type = object.type ?? Webhook_Type.TYPE_UNSPECIFIED;
     message.title = object.title ?? "";
     message.url = object.url ?? "";
     message.notificationTypes = object.notificationTypes?.map((e) => e) || [];
@@ -3191,7 +3363,7 @@ export const LabelSelector = {
 };
 
 function createBaseLabelSelectorRequirement(): LabelSelectorRequirement {
-  return { key: "", operator: 0, values: [] };
+  return { key: "", operator: OperatorType.OPERATOR_TYPE_UNSPECIFIED, values: [] };
 }
 
 export const LabelSelectorRequirement = {
@@ -3199,8 +3371,8 @@ export const LabelSelectorRequirement = {
     if (message.key !== "") {
       writer.uint32(10).string(message.key);
     }
-    if (message.operator !== 0) {
-      writer.uint32(16).int32(message.operator);
+    if (message.operator !== OperatorType.OPERATOR_TYPE_UNSPECIFIED) {
+      writer.uint32(16).int32(operatorTypeToNumber(message.operator));
     }
     for (const v of message.values) {
       writer.uint32(26).string(v!);
@@ -3227,7 +3399,7 @@ export const LabelSelectorRequirement = {
             break;
           }
 
-          message.operator = reader.int32() as any;
+          message.operator = operatorTypeFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -3248,7 +3420,7 @@ export const LabelSelectorRequirement = {
   fromJSON(object: any): LabelSelectorRequirement {
     return {
       key: isSet(object.key) ? globalThis.String(object.key) : "",
-      operator: isSet(object.operator) ? operatorTypeFromJSON(object.operator) : 0,
+      operator: isSet(object.operator) ? operatorTypeFromJSON(object.operator) : OperatorType.OPERATOR_TYPE_UNSPECIFIED,
       values: globalThis.Array.isArray(object?.values) ? object.values.map((e: any) => globalThis.String(e)) : [],
     };
   },
@@ -3258,7 +3430,7 @@ export const LabelSelectorRequirement = {
     if (message.key !== "") {
       obj.key = message.key;
     }
-    if (message.operator !== 0) {
+    if (message.operator !== OperatorType.OPERATOR_TYPE_UNSPECIFIED) {
       obj.operator = operatorTypeToJSON(message.operator);
     }
     if (message.values?.length) {
@@ -3273,7 +3445,7 @@ export const LabelSelectorRequirement = {
   fromPartial(object: DeepPartial<LabelSelectorRequirement>): LabelSelectorRequirement {
     const message = createBaseLabelSelectorRequirement();
     message.key = object.key ?? "";
-    message.operator = object.operator ?? 0;
+    message.operator = object.operator ?? OperatorType.OPERATOR_TYPE_UNSPECIFIED;
     message.values = object.values?.map((e) => e) || [];
     return message;
   },
@@ -3488,7 +3660,7 @@ export const ListDatabaseGroupsResponse = {
 };
 
 function createBaseGetDatabaseGroupRequest(): GetDatabaseGroupRequest {
-  return { name: "", view: 0 };
+  return { name: "", view: DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED };
 }
 
 export const GetDatabaseGroupRequest = {
@@ -3496,8 +3668,8 @@ export const GetDatabaseGroupRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.view !== 0) {
-      writer.uint32(16).int32(message.view);
+    if (message.view !== DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED) {
+      writer.uint32(16).int32(databaseGroupViewToNumber(message.view));
     }
     return writer;
   },
@@ -3521,7 +3693,7 @@ export const GetDatabaseGroupRequest = {
             break;
           }
 
-          message.view = reader.int32() as any;
+          message.view = databaseGroupViewFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3535,7 +3707,9 @@ export const GetDatabaseGroupRequest = {
   fromJSON(object: any): GetDatabaseGroupRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      view: isSet(object.view) ? databaseGroupViewFromJSON(object.view) : 0,
+      view: isSet(object.view)
+        ? databaseGroupViewFromJSON(object.view)
+        : DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED,
     };
   },
 
@@ -3544,7 +3718,7 @@ export const GetDatabaseGroupRequest = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.view !== 0) {
+    if (message.view !== DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED) {
       obj.view = databaseGroupViewToJSON(message.view);
     }
     return obj;
@@ -3556,7 +3730,7 @@ export const GetDatabaseGroupRequest = {
   fromPartial(object: DeepPartial<GetDatabaseGroupRequest>): GetDatabaseGroupRequest {
     const message = createBaseGetDatabaseGroupRequest();
     message.name = object.name ?? "";
-    message.view = object.view ?? 0;
+    message.view = object.view ?? DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED;
     return message;
   },
 };
@@ -4387,7 +4561,7 @@ export const ListSchemaGroupsResponse = {
 };
 
 function createBaseGetSchemaGroupRequest(): GetSchemaGroupRequest {
-  return { name: "", view: 0 };
+  return { name: "", view: SchemaGroupView.SCHEMA_GROUP_VIEW_UNSPECIFIED };
 }
 
 export const GetSchemaGroupRequest = {
@@ -4395,8 +4569,8 @@ export const GetSchemaGroupRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.view !== 0) {
-      writer.uint32(16).int32(message.view);
+    if (message.view !== SchemaGroupView.SCHEMA_GROUP_VIEW_UNSPECIFIED) {
+      writer.uint32(16).int32(schemaGroupViewToNumber(message.view));
     }
     return writer;
   },
@@ -4420,7 +4594,7 @@ export const GetSchemaGroupRequest = {
             break;
           }
 
-          message.view = reader.int32() as any;
+          message.view = schemaGroupViewFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4434,7 +4608,7 @@ export const GetSchemaGroupRequest = {
   fromJSON(object: any): GetSchemaGroupRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      view: isSet(object.view) ? schemaGroupViewFromJSON(object.view) : 0,
+      view: isSet(object.view) ? schemaGroupViewFromJSON(object.view) : SchemaGroupView.SCHEMA_GROUP_VIEW_UNSPECIFIED,
     };
   },
 
@@ -4443,7 +4617,7 @@ export const GetSchemaGroupRequest = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.view !== 0) {
+    if (message.view !== SchemaGroupView.SCHEMA_GROUP_VIEW_UNSPECIFIED) {
       obj.view = schemaGroupViewToJSON(message.view);
     }
     return obj;
@@ -4455,7 +4629,7 @@ export const GetSchemaGroupRequest = {
   fromPartial(object: DeepPartial<GetSchemaGroupRequest>): GetSchemaGroupRequest {
     const message = createBaseGetSchemaGroupRequest();
     message.name = object.name ?? "";
-    message.view = object.view ?? 0;
+    message.view = object.view ?? SchemaGroupView.SCHEMA_GROUP_VIEW_UNSPECIFIED;
     return message;
   },
 };
@@ -4867,7 +5041,13 @@ export const ProtectionRules = {
 };
 
 function createBaseProtectionRule(): ProtectionRule {
-  return { id: "", target: 0, nameFilter: "", allowedRoles: [], branchSource: 0 };
+  return {
+    id: "",
+    target: ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED,
+    nameFilter: "",
+    allowedRoles: [],
+    branchSource: ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED,
+  };
 }
 
 export const ProtectionRule = {
@@ -4875,8 +5055,8 @@ export const ProtectionRule = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
-    if (message.target !== 0) {
-      writer.uint32(16).int32(message.target);
+    if (message.target !== ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED) {
+      writer.uint32(16).int32(protectionRule_TargetToNumber(message.target));
     }
     if (message.nameFilter !== "") {
       writer.uint32(26).string(message.nameFilter);
@@ -4884,8 +5064,8 @@ export const ProtectionRule = {
     for (const v of message.allowedRoles) {
       writer.uint32(34).string(v!);
     }
-    if (message.branchSource !== 0) {
-      writer.uint32(40).int32(message.branchSource);
+    if (message.branchSource !== ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED) {
+      writer.uint32(40).int32(protectionRule_BranchSourceToNumber(message.branchSource));
     }
     return writer;
   },
@@ -4909,7 +5089,7 @@ export const ProtectionRule = {
             break;
           }
 
-          message.target = reader.int32() as any;
+          message.target = protectionRule_TargetFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -4930,7 +5110,7 @@ export const ProtectionRule = {
             break;
           }
 
-          message.branchSource = reader.int32() as any;
+          message.branchSource = protectionRule_BranchSourceFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4944,12 +5124,16 @@ export const ProtectionRule = {
   fromJSON(object: any): ProtectionRule {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      target: isSet(object.target) ? protectionRule_TargetFromJSON(object.target) : 0,
+      target: isSet(object.target)
+        ? protectionRule_TargetFromJSON(object.target)
+        : ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED,
       nameFilter: isSet(object.nameFilter) ? globalThis.String(object.nameFilter) : "",
       allowedRoles: globalThis.Array.isArray(object?.allowedRoles)
         ? object.allowedRoles.map((e: any) => globalThis.String(e))
         : [],
-      branchSource: isSet(object.branchSource) ? protectionRule_BranchSourceFromJSON(object.branchSource) : 0,
+      branchSource: isSet(object.branchSource)
+        ? protectionRule_BranchSourceFromJSON(object.branchSource)
+        : ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED,
     };
   },
 
@@ -4958,7 +5142,7 @@ export const ProtectionRule = {
     if (message.id !== "") {
       obj.id = message.id;
     }
-    if (message.target !== 0) {
+    if (message.target !== ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED) {
       obj.target = protectionRule_TargetToJSON(message.target);
     }
     if (message.nameFilter !== "") {
@@ -4967,7 +5151,7 @@ export const ProtectionRule = {
     if (message.allowedRoles?.length) {
       obj.allowedRoles = message.allowedRoles;
     }
-    if (message.branchSource !== 0) {
+    if (message.branchSource !== ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED) {
       obj.branchSource = protectionRule_BranchSourceToJSON(message.branchSource);
     }
     return obj;
@@ -4979,10 +5163,10 @@ export const ProtectionRule = {
   fromPartial(object: DeepPartial<ProtectionRule>): ProtectionRule {
     const message = createBaseProtectionRule();
     message.id = object.id ?? "";
-    message.target = object.target ?? 0;
+    message.target = object.target ?? ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED;
     message.nameFilter = object.nameFilter ?? "";
     message.allowedRoles = object.allowedRoles?.map((e) => e) || [];
-    message.branchSource = object.branchSource ?? 0;
+    message.branchSource = object.branchSource ?? ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED;
     return message;
   },
 };

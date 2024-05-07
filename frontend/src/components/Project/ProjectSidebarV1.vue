@@ -33,7 +33,6 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
   PROJECT_V1_ROUTE_SLOW_QUERIES,
   PROJECT_V1_ROUTE_ANOMALIES,
-  PROJECT_V1_ROUTE_ACTIVITIES,
   PROJECT_V1_ROUTE_GITOPS,
   PROJECT_V1_ROUTE_MEMBERS,
   PROJECT_V1_ROUTE_SETTINGS,
@@ -43,6 +42,7 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
   PROJECT_V1_ROUTE_EXPORT_CENTER,
+  PROJECT_V1_ROUTE_AUDIT_LOGS,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -261,8 +261,8 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
           type: "div",
         },
         {
-          title: t("common.activities"),
-          path: PROJECT_V1_ROUTE_ACTIVITIES,
+          title: t("settings.sidebar.audit-log"),
+          path: PROJECT_V1_ROUTE_AUDIT_LOGS,
           type: "div",
         },
       ],

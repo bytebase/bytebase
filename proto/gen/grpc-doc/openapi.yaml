@@ -207,6 +207,80 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/auditLogs:export:
+        post:
+            tags:
+                - AuditLogService
+            operationId: AuditLogService_ExportAuditLogs
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExportAuditLogsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExportAuditLogsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/auditLogs:search:
+        get:
+            tags:
+                - AuditLogService
+            operationId: AuditLogService_SearchAuditLogs
+            parameters:
+                - name: filter
+                  in: query
+                  schema:
+                    type: string
+                - name: orderBy
+                  in: query
+                  description: |-
+                    The order by of the log.
+                     Only support order by create_time.
+                     For example:
+                      - order_by = "create_time asc"
+                      - order_by = "create_time desc"
+                  schema:
+                    type: string
+                - name: pageSize
+                  in: query
+                  description: |-
+                    The maximum number of logs to return.
+                     The service may return fewer than this value.
+                     If unspecified, at most 100 log entries will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: |-
+                    A page token, received from a previous `SearchLogs` call.
+                     Provide this to retrieve the subsequent page.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SearchAuditLogsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/auth/login:
         post:
             tags:
@@ -9551,6 +9625,35 @@ components:
                     type: integer
                     description: The column number, starting from 0.
                     format: int32
+        ExportAuditLogsRequest:
+            type: object
+            properties:
+                filter:
+                    type: string
+                orderBy:
+                    type: string
+                    description: |-
+                        The order by of the log.
+                         Only support order by create_time.
+                         For example:
+                          - order_by = "create_time asc"
+                          - order_by = "create_time desc"
+                format:
+                    enum:
+                        - FORMAT_UNSPECIFIED
+                        - CSV
+                        - JSON
+                        - SQL
+                        - XLSX
+                    type: string
+                    description: The export format.
+                    format: enum
+        ExportAuditLogsResponse:
+            type: object
+            properties:
+                content:
+                    type: string
+                    format: bytes
         ExportLogsRequest:
             type: object
             properties:
@@ -9609,6 +9712,7 @@ components:
                     description: |-
                         The name is the instance name to execute the query against.
                          Format: instances/{instance}/databases/{databaseName}
+                         Format: projects/{project}/issues/{issue} for data export issue.
                 connectionDatabase:
                     type: string
                 statement:
@@ -10517,6 +10621,8 @@ components:
                     type: string
                 kdcHost:
                     type: string
+                kdcPort:
+                    type: string
                 kdcTransportProtocol:
                     type: string
         LDAPIdentityProviderConfig:
@@ -11089,10 +11195,10 @@ components:
                 category:
                     type: string
                     description: |-
-                        Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING.
+                        Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH.
                          The range of accepted Payload is decided by the category.
-                         Mask: FullMask, RangeMask
-                         Hash: MD5Mask
+                         MASK: FullMask, RangeMask
+                         HASH: MD5Mask
                 fullMask:
                     $ref: '#/components/schemas/Algorithm_FullMask'
                 rangeMask:
@@ -11264,13 +11370,6 @@ components:
             type: object
             properties:
                 license:
-                    type: string
-        PlainSASLConfig:
-            type: object
-            properties:
-                username:
-                    type: string
-                password:
                     type: string
         Plan:
             type: object
@@ -12114,8 +12213,6 @@ components:
             properties:
                 krbConfig:
                     $ref: '#/components/schemas/KerberosConfig'
-                plainConfig:
-                    $ref: '#/components/schemas/PlainSASLConfig'
         SMTPMailDeliverySettingValue:
             type: object
             properties:
@@ -12635,6 +12732,7 @@ components:
                 - name
                 - title
                 - content
+                - engine
             type: object
             properties:
                 name:
@@ -12681,6 +12779,33 @@ components:
                     description: content_size is the full size of the content, may not match the size of the `content` field.
                 payload:
                     $ref: '#/components/schemas/SheetPayload'
+                engine:
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                    type: string
+                    description: The SQL dialect.
+                    format: enum
         SheetPayload:
             type: object
             properties:

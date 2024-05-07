@@ -64,27 +64,27 @@ export interface Anomaly {
 /** AnomalyType is the type of the anomaly. */
 export enum Anomaly_AnomalyType {
   /** ANOMALY_TYPE_UNSPECIFIED - Unspecified anomaly type. */
-  ANOMALY_TYPE_UNSPECIFIED = 0,
+  ANOMALY_TYPE_UNSPECIFIED = "ANOMALY_TYPE_UNSPECIFIED",
   /**
    * INSTANCE_CONNECTION - Instance level anomaly.
    *
    * INSTANCE_CONNECTION is the anomaly type for instance connection, e.g. the instance is down.
    */
-  INSTANCE_CONNECTION = 1,
+  INSTANCE_CONNECTION = "INSTANCE_CONNECTION",
   /** MIGRATION_SCHEMA - MIGRATION_SCHEMA is the anomaly type for migration schema, e.g. the migration schema in the instance is missing. */
-  MIGRATION_SCHEMA = 2,
+  MIGRATION_SCHEMA = "MIGRATION_SCHEMA",
   /**
    * DATABASE_CONNECTION - Database level anomaly.
    *
    * DATABASE_CONNECTION is the anomaly type for database connection, e.g. the database had been deleted.
    */
-  DATABASE_CONNECTION = 5,
+  DATABASE_CONNECTION = "DATABASE_CONNECTION",
   /**
    * DATABASE_SCHEMA_DRIFT - DATABASE_SCHEMA_DRIFT is the anomaly type for database schema drift,
    * e.g. the database schema had been changed without bytebase migration.
    */
-  DATABASE_SCHEMA_DRIFT = 6,
-  UNRECOGNIZED = -1,
+  DATABASE_SCHEMA_DRIFT = "DATABASE_SCHEMA_DRIFT",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function anomaly_AnomalyTypeFromJSON(object: any): Anomaly_AnomalyType {
@@ -129,17 +129,35 @@ export function anomaly_AnomalyTypeToJSON(object: Anomaly_AnomalyType): string {
   }
 }
 
+export function anomaly_AnomalyTypeToNumber(object: Anomaly_AnomalyType): number {
+  switch (object) {
+    case Anomaly_AnomalyType.ANOMALY_TYPE_UNSPECIFIED:
+      return 0;
+    case Anomaly_AnomalyType.INSTANCE_CONNECTION:
+      return 1;
+    case Anomaly_AnomalyType.MIGRATION_SCHEMA:
+      return 2;
+    case Anomaly_AnomalyType.DATABASE_CONNECTION:
+      return 5;
+    case Anomaly_AnomalyType.DATABASE_SCHEMA_DRIFT:
+      return 6;
+    case Anomaly_AnomalyType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 /** AnomalySeverity is the severity of the anomaly. */
 export enum Anomaly_AnomalySeverity {
   /** ANOMALY_SEVERITY_UNSPECIFIED - Unspecified anomaly severity. */
-  ANOMALY_SEVERITY_UNSPECIFIED = 0,
+  ANOMALY_SEVERITY_UNSPECIFIED = "ANOMALY_SEVERITY_UNSPECIFIED",
   /** MEDIUM - MEDIUM is the info level anomaly severity. */
-  MEDIUM = 1,
+  MEDIUM = "MEDIUM",
   /** HIGH - HIGH is the warning level anomaly severity. */
-  HIGH = 2,
+  HIGH = "HIGH",
   /** CRITICAL - CRITICAL is the critical level anomaly severity. */
-  CRITICAL = 3,
-  UNRECOGNIZED = -1,
+  CRITICAL = "CRITICAL",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function anomaly_AnomalySeverityFromJSON(object: any): Anomaly_AnomalySeverity {
@@ -176,6 +194,22 @@ export function anomaly_AnomalySeverityToJSON(object: Anomaly_AnomalySeverity): 
     case Anomaly_AnomalySeverity.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function anomaly_AnomalySeverityToNumber(object: Anomaly_AnomalySeverity): number {
+  switch (object) {
+    case Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED:
+      return 0;
+    case Anomaly_AnomalySeverity.MEDIUM:
+      return 1;
+    case Anomaly_AnomalySeverity.HIGH:
+      return 2;
+    case Anomaly_AnomalySeverity.CRITICAL:
+      return 3;
+    case Anomaly_AnomalySeverity.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -377,8 +411,8 @@ export const SearchAnomaliesResponse = {
 function createBaseAnomaly(): Anomaly {
   return {
     resource: "",
-    type: 0,
-    severity: 0,
+    type: Anomaly_AnomalyType.ANOMALY_TYPE_UNSPECIFIED,
+    severity: Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED,
     instanceConnectionDetail: undefined,
     databaseConnectionDetail: undefined,
     databaseSchemaDriftDetail: undefined,
@@ -392,11 +426,11 @@ export const Anomaly = {
     if (message.resource !== "") {
       writer.uint32(10).string(message.resource);
     }
-    if (message.type !== 0) {
-      writer.uint32(16).int32(message.type);
+    if (message.type !== Anomaly_AnomalyType.ANOMALY_TYPE_UNSPECIFIED) {
+      writer.uint32(16).int32(anomaly_AnomalyTypeToNumber(message.type));
     }
-    if (message.severity !== 0) {
-      writer.uint32(24).int32(message.severity);
+    if (message.severity !== Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED) {
+      writer.uint32(24).int32(anomaly_AnomalySeverityToNumber(message.severity));
     }
     if (message.instanceConnectionDetail !== undefined) {
       Anomaly_InstanceConnectionDetail.encode(message.instanceConnectionDetail, writer.uint32(34).fork()).ldelim();
@@ -435,14 +469,14 @@ export const Anomaly = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = anomaly_AnomalyTypeFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 24) {
             break;
           }
 
-          message.severity = reader.int32() as any;
+          message.severity = anomaly_AnomalySeverityFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -491,8 +525,12 @@ export const Anomaly = {
   fromJSON(object: any): Anomaly {
     return {
       resource: isSet(object.resource) ? globalThis.String(object.resource) : "",
-      type: isSet(object.type) ? anomaly_AnomalyTypeFromJSON(object.type) : 0,
-      severity: isSet(object.severity) ? anomaly_AnomalySeverityFromJSON(object.severity) : 0,
+      type: isSet(object.type)
+        ? anomaly_AnomalyTypeFromJSON(object.type)
+        : Anomaly_AnomalyType.ANOMALY_TYPE_UNSPECIFIED,
+      severity: isSet(object.severity)
+        ? anomaly_AnomalySeverityFromJSON(object.severity)
+        : Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED,
       instanceConnectionDetail: isSet(object.instanceConnectionDetail)
         ? Anomaly_InstanceConnectionDetail.fromJSON(object.instanceConnectionDetail)
         : undefined,
@@ -512,10 +550,10 @@ export const Anomaly = {
     if (message.resource !== "") {
       obj.resource = message.resource;
     }
-    if (message.type !== 0) {
+    if (message.type !== Anomaly_AnomalyType.ANOMALY_TYPE_UNSPECIFIED) {
       obj.type = anomaly_AnomalyTypeToJSON(message.type);
     }
-    if (message.severity !== 0) {
+    if (message.severity !== Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED) {
       obj.severity = anomaly_AnomalySeverityToJSON(message.severity);
     }
     if (message.instanceConnectionDetail !== undefined) {
@@ -542,8 +580,8 @@ export const Anomaly = {
   fromPartial(object: DeepPartial<Anomaly>): Anomaly {
     const message = createBaseAnomaly();
     message.resource = object.resource ?? "";
-    message.type = object.type ?? 0;
-    message.severity = object.severity ?? 0;
+    message.type = object.type ?? Anomaly_AnomalyType.ANOMALY_TYPE_UNSPECIFIED;
+    message.severity = object.severity ?? Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED;
     message.instanceConnectionDetail =
       (object.instanceConnectionDetail !== undefined && object.instanceConnectionDetail !== null)
         ? Anomaly_InstanceConnectionDetail.fromPartial(object.instanceConnectionDetail)

@@ -498,7 +498,7 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 		return nil, model.Version{}, "", err
 	}
 	defer driver.Close(ctx)
-	schemaVersion, err := utils.GetLatestSchemaVersion(ctx, stores, similarDBInstance.UID, similarDB.UID, similarDB.DatabaseName)
+	schemaVersion, err := getLatestDoneSchemaVersion(ctx, stores, similarDBInstance.UID, similarDB.UID, similarDB.DatabaseName)
 	if err != nil {
 		return nil, model.Version{}, "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.DatabaseName)
 	}
@@ -508,6 +508,26 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 		return nil, model.Version{}, "", err
 	}
 	return similarDB, schemaVersion, schemaBuf.String(), nil
+}
+
+// GetLatestDoneSchemaVersion gets the latest schema version for a database.
+func getLatestDoneSchemaVersion(ctx context.Context, stores *store.Store, instanceID int, databaseID int, databaseName string) (model.Version, error) {
+	// TODO(d): support semantic versioning.
+	limit := 1
+	done := db.Done
+	history, err := stores.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+		InstanceID: &instanceID,
+		DatabaseID: &databaseID,
+		Status:     &done,
+		Limit:      &limit,
+	})
+	if err != nil {
+		return model.Version{}, errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
+	}
+	if len(history) == 0 {
+		return model.Version{}, nil
+	}
+	return history[0].Version, nil
 }
 
 func getPeerTenantDatabase(databaseMatrix [][]*store.DatabaseMessage, environmentID string) *store.DatabaseMessage {

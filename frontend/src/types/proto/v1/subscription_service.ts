@@ -6,11 +6,11 @@ import { Timestamp } from "../google/protobuf/timestamp";
 export const protobufPackage = "bytebase.v1";
 
 export enum PlanType {
-  PLAN_TYPE_UNSPECIFIED = 0,
-  FREE = 1,
-  TEAM = 2,
-  ENTERPRISE = 3,
-  UNRECOGNIZED = -1,
+  PLAN_TYPE_UNSPECIFIED = "PLAN_TYPE_UNSPECIFIED",
+  FREE = "FREE",
+  TEAM = "TEAM",
+  ENTERPRISE = "ENTERPRISE",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function planTypeFromJSON(object: any): PlanType {
@@ -47,6 +47,22 @@ export function planTypeToJSON(object: PlanType): string {
     case PlanType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function planTypeToNumber(object: PlanType): number {
+  switch (object) {
+    case PlanType.PLAN_TYPE_UNSPECIFIED:
+      return 0;
+    case PlanType.FREE:
+      return 1;
+    case PlanType.TEAM:
+      return 2;
+    case PlanType.ENTERPRISE:
+      return 3;
+    case PlanType.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -297,7 +313,7 @@ function createBaseSubscription(): Subscription {
     instanceCount: 0,
     expiresTime: undefined,
     startedTime: undefined,
-    plan: 0,
+    plan: PlanType.PLAN_TYPE_UNSPECIFIED,
     trialing: false,
     orgId: "",
     orgName: "",
@@ -315,8 +331,8 @@ export const Subscription = {
     if (message.startedTime !== undefined) {
       Timestamp.encode(toTimestamp(message.startedTime), writer.uint32(34).fork()).ldelim();
     }
-    if (message.plan !== 0) {
-      writer.uint32(40).int32(message.plan);
+    if (message.plan !== PlanType.PLAN_TYPE_UNSPECIFIED) {
+      writer.uint32(40).int32(planTypeToNumber(message.plan));
     }
     if (message.trialing === true) {
       writer.uint32(48).bool(message.trialing);
@@ -363,7 +379,7 @@ export const Subscription = {
             break;
           }
 
-          message.plan = reader.int32() as any;
+          message.plan = planTypeFromJSON(reader.int32());
           continue;
         case 6:
           if (tag !== 48) {
@@ -400,7 +416,7 @@ export const Subscription = {
       instanceCount: isSet(object.instanceCount) ? globalThis.Number(object.instanceCount) : 0,
       expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
       startedTime: isSet(object.startedTime) ? fromJsonTimestamp(object.startedTime) : undefined,
-      plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : 0,
+      plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : PlanType.PLAN_TYPE_UNSPECIFIED,
       trialing: isSet(object.trialing) ? globalThis.Boolean(object.trialing) : false,
       orgId: isSet(object.orgId) ? globalThis.String(object.orgId) : "",
       orgName: isSet(object.orgName) ? globalThis.String(object.orgName) : "",
@@ -418,7 +434,7 @@ export const Subscription = {
     if (message.startedTime !== undefined) {
       obj.startedTime = message.startedTime.toISOString();
     }
-    if (message.plan !== 0) {
+    if (message.plan !== PlanType.PLAN_TYPE_UNSPECIFIED) {
       obj.plan = planTypeToJSON(message.plan);
     }
     if (message.trialing === true) {
@@ -441,7 +457,7 @@ export const Subscription = {
     message.instanceCount = object.instanceCount ?? 0;
     message.expiresTime = object.expiresTime ?? undefined;
     message.startedTime = object.startedTime ?? undefined;
-    message.plan = object.plan ?? 0;
+    message.plan = object.plan ?? PlanType.PLAN_TYPE_UNSPECIFIED;
     message.trialing = object.trialing ?? false;
     message.orgId = object.orgId ?? "";
     message.orgName = object.orgName ?? "";

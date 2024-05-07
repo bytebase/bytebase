@@ -239,7 +239,7 @@ export const instanceV1SupportsTablePartition = (
 };
 
 export const engineOfInstanceV1 = (instanceOrEngine: Instance | Engine) => {
-  if (typeof instanceOrEngine === "number") {
+  if (typeof instanceOrEngine === "string") {
     return instanceOrEngine;
   }
   return instanceOrEngine.engine;

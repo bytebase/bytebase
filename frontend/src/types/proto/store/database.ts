@@ -89,10 +89,10 @@ export interface TaskMetadata {
 }
 
 export enum TaskMetadata_State {
-  STATE_UNSPECIFIED = 0,
-  STATE_STARTED = 1,
-  STATE_SUSPENDED = 2,
-  UNRECOGNIZED = -1,
+  STATE_UNSPECIFIED = "STATE_UNSPECIFIED",
+  STATE_STARTED = "STATE_STARTED",
+  STATE_SUSPENDED = "STATE_SUSPENDED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function taskMetadata_StateFromJSON(object: any): TaskMetadata_State {
@@ -127,6 +127,20 @@ export function taskMetadata_StateToJSON(object: TaskMetadata_State): string {
   }
 }
 
+export function taskMetadata_StateToNumber(object: TaskMetadata_State): number {
+  switch (object) {
+    case TaskMetadata_State.STATE_UNSPECIFIED:
+      return 0;
+    case TaskMetadata_State.STATE_STARTED:
+      return 1;
+    case TaskMetadata_State.STATE_SUSPENDED:
+      return 2;
+    case TaskMetadata_State.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface StreamMetadata {
   /** The name is the name of a stream. */
   name: string;
@@ -147,9 +161,9 @@ export interface StreamMetadata {
 }
 
 export enum StreamMetadata_Type {
-  TYPE_UNSPECIFIED = 0,
-  TYPE_DELTA = 1,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  TYPE_DELTA = "TYPE_DELTA",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function streamMetadata_TypeFromJSON(object: any): StreamMetadata_Type {
@@ -179,12 +193,24 @@ export function streamMetadata_TypeToJSON(object: StreamMetadata_Type): string {
   }
 }
 
+export function streamMetadata_TypeToNumber(object: StreamMetadata_Type): number {
+  switch (object) {
+    case StreamMetadata_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case StreamMetadata_Type.TYPE_DELTA:
+      return 1;
+    case StreamMetadata_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum StreamMetadata_Mode {
-  MODE_UNSPECIFIED = 0,
-  MODE_DEFAULT = 1,
-  MODE_APPEND_ONLY = 2,
-  MODE_INSERT_ONLY = 3,
-  UNRECOGNIZED = -1,
+  MODE_UNSPECIFIED = "MODE_UNSPECIFIED",
+  MODE_DEFAULT = "MODE_DEFAULT",
+  MODE_APPEND_ONLY = "MODE_APPEND_ONLY",
+  MODE_INSERT_ONLY = "MODE_INSERT_ONLY",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function streamMetadata_ModeFromJSON(object: any): StreamMetadata_Mode {
@@ -221,6 +247,22 @@ export function streamMetadata_ModeToJSON(object: StreamMetadata_Mode): string {
     case StreamMetadata_Mode.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function streamMetadata_ModeToNumber(object: StreamMetadata_Mode): number {
+  switch (object) {
+    case StreamMetadata_Mode.MODE_UNSPECIFIED:
+      return 0;
+    case StreamMetadata_Mode.MODE_DEFAULT:
+      return 1;
+    case StreamMetadata_Mode.MODE_APPEND_ONLY:
+      return 2;
+    case StreamMetadata_Mode.MODE_INSERT_ONLY:
+      return 3;
+    case StreamMetadata_Mode.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -314,16 +356,16 @@ export interface TablePartitionMetadata {
  * PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
  */
 export enum TablePartitionMetadata_Type {
-  TYPE_UNSPECIFIED = 0,
-  RANGE = 1,
-  RANGE_COLUMNS = 2,
-  LIST = 3,
-  LIST_COLUMNS = 4,
-  HASH = 5,
-  LINEAR_HASH = 6,
-  KEY = 7,
-  LINEAR_KEY = 8,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  RANGE = "RANGE",
+  RANGE_COLUMNS = "RANGE_COLUMNS",
+  LIST = "LIST",
+  LIST_COLUMNS = "LIST_COLUMNS",
+  HASH = "HASH",
+  LINEAR_HASH = "LINEAR_HASH",
+  KEY = "KEY",
+  LINEAR_KEY = "LINEAR_KEY",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function tablePartitionMetadata_TypeFromJSON(object: any): TablePartitionMetadata_Type {
@@ -385,6 +427,32 @@ export function tablePartitionMetadata_TypeToJSON(object: TablePartitionMetadata
     case TablePartitionMetadata_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function tablePartitionMetadata_TypeToNumber(object: TablePartitionMetadata_Type): number {
+  switch (object) {
+    case TablePartitionMetadata_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case TablePartitionMetadata_Type.RANGE:
+      return 1;
+    case TablePartitionMetadata_Type.RANGE_COLUMNS:
+      return 2;
+    case TablePartitionMetadata_Type.LIST:
+      return 3;
+    case TablePartitionMetadata_Type.LIST_COLUMNS:
+      return 4;
+    case TablePartitionMetadata_Type.HASH:
+      return 5;
+    case TablePartitionMetadata_Type.LINEAR_HASH:
+      return 6;
+    case TablePartitionMetadata_Type.KEY:
+      return 7;
+    case TablePartitionMetadata_Type.LINEAR_KEY:
+      return 8;
+    case TablePartitionMetadata_Type.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -1127,7 +1195,7 @@ function createBaseTaskMetadata(): TaskMetadata {
     warehouse: "",
     schedule: "",
     predecessors: [],
-    state: 0,
+    state: TaskMetadata_State.STATE_UNSPECIFIED,
     condition: "",
     definition: "",
   };
@@ -1156,8 +1224,8 @@ export const TaskMetadata = {
     for (const v of message.predecessors) {
       writer.uint32(58).string(v!);
     }
-    if (message.state !== 0) {
-      writer.uint32(64).int32(message.state);
+    if (message.state !== TaskMetadata_State.STATE_UNSPECIFIED) {
+      writer.uint32(64).int32(taskMetadata_StateToNumber(message.state));
     }
     if (message.condition !== "") {
       writer.uint32(74).string(message.condition);
@@ -1229,7 +1297,7 @@ export const TaskMetadata = {
             break;
           }
 
-          message.state = reader.int32() as any;
+          message.state = taskMetadata_StateFromJSON(reader.int32());
           continue;
         case 9:
           if (tag !== 74) {
@@ -1265,7 +1333,7 @@ export const TaskMetadata = {
       predecessors: globalThis.Array.isArray(object?.predecessors)
         ? object.predecessors.map((e: any) => globalThis.String(e))
         : [],
-      state: isSet(object.state) ? taskMetadata_StateFromJSON(object.state) : 0,
+      state: isSet(object.state) ? taskMetadata_StateFromJSON(object.state) : TaskMetadata_State.STATE_UNSPECIFIED,
       condition: isSet(object.condition) ? globalThis.String(object.condition) : "",
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
     };
@@ -1294,7 +1362,7 @@ export const TaskMetadata = {
     if (message.predecessors?.length) {
       obj.predecessors = message.predecessors;
     }
-    if (message.state !== 0) {
+    if (message.state !== TaskMetadata_State.STATE_UNSPECIFIED) {
       obj.state = taskMetadata_StateToJSON(message.state);
     }
     if (message.condition !== "") {
@@ -1318,7 +1386,7 @@ export const TaskMetadata = {
     message.warehouse = object.warehouse ?? "";
     message.schedule = object.schedule ?? "";
     message.predecessors = object.predecessors?.map((e) => e) || [];
-    message.state = object.state ?? 0;
+    message.state = object.state ?? TaskMetadata_State.STATE_UNSPECIFIED;
     message.condition = object.condition ?? "";
     message.definition = object.definition ?? "";
     return message;
@@ -1326,7 +1394,16 @@ export const TaskMetadata = {
 };
 
 function createBaseStreamMetadata(): StreamMetadata {
-  return { name: "", tableName: "", owner: "", comment: "", type: 0, stale: false, mode: 0, definition: "" };
+  return {
+    name: "",
+    tableName: "",
+    owner: "",
+    comment: "",
+    type: StreamMetadata_Type.TYPE_UNSPECIFIED,
+    stale: false,
+    mode: StreamMetadata_Mode.MODE_UNSPECIFIED,
+    definition: "",
+  };
 }
 
 export const StreamMetadata = {
@@ -1343,14 +1420,14 @@ export const StreamMetadata = {
     if (message.comment !== "") {
       writer.uint32(34).string(message.comment);
     }
-    if (message.type !== 0) {
-      writer.uint32(40).int32(message.type);
+    if (message.type !== StreamMetadata_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(40).int32(streamMetadata_TypeToNumber(message.type));
     }
     if (message.stale === true) {
       writer.uint32(48).bool(message.stale);
     }
-    if (message.mode !== 0) {
-      writer.uint32(56).int32(message.mode);
+    if (message.mode !== StreamMetadata_Mode.MODE_UNSPECIFIED) {
+      writer.uint32(56).int32(streamMetadata_ModeToNumber(message.mode));
     }
     if (message.definition !== "") {
       writer.uint32(66).string(message.definition);
@@ -1398,7 +1475,7 @@ export const StreamMetadata = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = streamMetadata_TypeFromJSON(reader.int32());
           continue;
         case 6:
           if (tag !== 48) {
@@ -1412,7 +1489,7 @@ export const StreamMetadata = {
             break;
           }
 
-          message.mode = reader.int32() as any;
+          message.mode = streamMetadata_ModeFromJSON(reader.int32());
           continue;
         case 8:
           if (tag !== 66) {
@@ -1436,9 +1513,9 @@ export const StreamMetadata = {
       tableName: isSet(object.tableName) ? globalThis.String(object.tableName) : "",
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      type: isSet(object.type) ? streamMetadata_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? streamMetadata_TypeFromJSON(object.type) : StreamMetadata_Type.TYPE_UNSPECIFIED,
       stale: isSet(object.stale) ? globalThis.Boolean(object.stale) : false,
-      mode: isSet(object.mode) ? streamMetadata_ModeFromJSON(object.mode) : 0,
+      mode: isSet(object.mode) ? streamMetadata_ModeFromJSON(object.mode) : StreamMetadata_Mode.MODE_UNSPECIFIED,
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
     };
   },
@@ -1457,13 +1534,13 @@ export const StreamMetadata = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
-    if (message.type !== 0) {
+    if (message.type !== StreamMetadata_Type.TYPE_UNSPECIFIED) {
       obj.type = streamMetadata_TypeToJSON(message.type);
     }
     if (message.stale === true) {
       obj.stale = message.stale;
     }
-    if (message.mode !== 0) {
+    if (message.mode !== StreamMetadata_Mode.MODE_UNSPECIFIED) {
       obj.mode = streamMetadata_ModeToJSON(message.mode);
     }
     if (message.definition !== "") {
@@ -1481,9 +1558,9 @@ export const StreamMetadata = {
     message.tableName = object.tableName ?? "";
     message.owner = object.owner ?? "";
     message.comment = object.comment ?? "";
-    message.type = object.type ?? 0;
+    message.type = object.type ?? StreamMetadata_Type.TYPE_UNSPECIFIED;
     message.stale = object.stale ?? false;
-    message.mode = object.mode ?? 0;
+    message.mode = object.mode ?? StreamMetadata_Mode.MODE_UNSPECIFIED;
     message.definition = object.definition ?? "";
     return message;
   },
@@ -1897,7 +1974,14 @@ export const ExternalTableMetadata = {
 };
 
 function createBaseTablePartitionMetadata(): TablePartitionMetadata {
-  return { name: "", type: 0, expression: "", value: "", useDefault: "", subpartitions: [] };
+  return {
+    name: "",
+    type: TablePartitionMetadata_Type.TYPE_UNSPECIFIED,
+    expression: "",
+    value: "",
+    useDefault: "",
+    subpartitions: [],
+  };
 }
 
 export const TablePartitionMetadata = {
@@ -1905,8 +1989,8 @@ export const TablePartitionMetadata = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.type !== 0) {
-      writer.uint32(16).int32(message.type);
+    if (message.type !== TablePartitionMetadata_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(16).int32(tablePartitionMetadata_TypeToNumber(message.type));
     }
     if (message.expression !== "") {
       writer.uint32(26).string(message.expression);
@@ -1942,7 +2026,7 @@ export const TablePartitionMetadata = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = tablePartitionMetadata_TypeFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -1984,7 +2068,9 @@ export const TablePartitionMetadata = {
   fromJSON(object: any): TablePartitionMetadata {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      type: isSet(object.type) ? tablePartitionMetadata_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type)
+        ? tablePartitionMetadata_TypeFromJSON(object.type)
+        : TablePartitionMetadata_Type.TYPE_UNSPECIFIED,
       expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
       value: isSet(object.value) ? globalThis.String(object.value) : "",
       useDefault: isSet(object.useDefault) ? globalThis.String(object.useDefault) : "",
@@ -1999,7 +2085,7 @@ export const TablePartitionMetadata = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.type !== 0) {
+    if (message.type !== TablePartitionMetadata_Type.TYPE_UNSPECIFIED) {
       obj.type = tablePartitionMetadata_TypeToJSON(message.type);
     }
     if (message.expression !== "") {
@@ -2023,7 +2109,7 @@ export const TablePartitionMetadata = {
   fromPartial(object: DeepPartial<TablePartitionMetadata>): TablePartitionMetadata {
     const message = createBaseTablePartitionMetadata();
     message.name = object.name ?? "";
-    message.type = object.type ?? 0;
+    message.type = object.type ?? TablePartitionMetadata_Type.TYPE_UNSPECIFIED;
     message.expression = object.expression ?? "";
     message.value = object.value ?? "";
     message.useDefault = object.useDefault ?? "";

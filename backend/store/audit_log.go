@@ -32,6 +32,7 @@ type AuditLogFind struct {
 	Filter           *AuditLogFilter
 	Limit            *int
 	Offset           *int
+	OrderByKeys      []OrderByKey
 }
 
 type AuditLogFilter struct {
@@ -72,23 +73,29 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		args = append(args, v.Projects)
 	}
 
-	limitOffsetClause := ""
-	if v := find.Limit; v != nil {
-		limitOffsetClause += fmt.Sprintf(" LIMIT %d", *v)
-	}
-	if v := find.Offset; v != nil {
-		limitOffsetClause += fmt.Sprintf(" OFFSET %d", *v)
-	}
-
 	query := fmt.Sprintf(`
 		SELECT
 			id,
 			created_ts,
 			payload
 		FROM audit_log
-		WHERE %s
-		%s
-	`, strings.Join(where, " AND "), limitOffsetClause)
+		WHERE %s`, strings.Join(where, " AND "))
+
+	if len(find.OrderByKeys) > 0 {
+		orderBy := []string{}
+		for _, v := range find.OrderByKeys {
+			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
+		}
+		query += fmt.Sprintf(" ORDER BY %s", strings.Join(orderBy, ", "))
+	} else {
+		query += " ORDER BY created_ts DESC"
+	}
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
 
 	rows, err := s.db.db.QueryContext(ctx, query, args...)
 	if err != nil {

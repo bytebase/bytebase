@@ -159,11 +159,6 @@ func (*Driver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
 	return "", nil
 }
 
-// Restore restores the backup read from src.
-func (*Driver) Restore(_ context.Context, _ io.Reader) error {
-	panic("not implemented")
-}
-
 // getBasicMongoDBConnectionURI returns the MongoDB connection URI.
 // https://www.mongodb.com/docs/manual/reference/connection-string/
 func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {

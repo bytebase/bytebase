@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
+	sc "github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -347,11 +348,15 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, err
 		}
-		sheet, err := s.CreateSheet(ctx, &store.SheetMessage{
+		sheet, err := sc.CreateSheet(ctx, s, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: project.UID,
 			Title:      fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement:  statement,
+
+			Payload: &storepb.SheetPayload{
+				Engine: instance.Engine,
+			},
 		})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create database creation sheet")

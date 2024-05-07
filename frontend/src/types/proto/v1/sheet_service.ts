@@ -3,6 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
+import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
 import { DatabaseConfig } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -84,7 +85,11 @@ export interface Sheet {
   content: Uint8Array;
   /** content_size is the full size of the content, may not match the size of the `content` field. */
   contentSize: Long;
-  payload: SheetPayload | undefined;
+  payload:
+    | SheetPayload
+    | undefined;
+  /** The SQL dialect. */
+  engine: Engine;
 }
 
 export interface SheetPayload {
@@ -99,9 +104,9 @@ export interface SheetPayload {
 
 /** Type of the SheetPayload. */
 export enum SheetPayload_Type {
-  TYPE_UNSPECIFIED = 0,
-  SCHEMA_DESIGN = 1,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  SCHEMA_DESIGN = "SCHEMA_DESIGN",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function sheetPayload_TypeFromJSON(object: any): SheetPayload_Type {
@@ -128,6 +133,18 @@ export function sheetPayload_TypeToJSON(object: SheetPayload_Type): string {
     case SheetPayload_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function sheetPayload_TypeToNumber(object: SheetPayload_Type): number {
+  switch (object) {
+    case SheetPayload_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case SheetPayload_Type.SCHEMA_DESIGN:
+      return 1;
+    case SheetPayload_Type.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -364,6 +381,7 @@ function createBaseSheet(): Sheet {
     content: new Uint8Array(0),
     contentSize: Long.ZERO,
     payload: undefined,
+    engine: Engine.ENGINE_UNSPECIFIED,
   };
 }
 
@@ -395,6 +413,9 @@ export const Sheet = {
     }
     if (message.payload !== undefined) {
       SheetPayload.encode(message.payload, writer.uint32(106).fork()).ldelim();
+    }
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(112).int32(engineToNumber(message.engine));
     }
     return writer;
   },
@@ -469,6 +490,13 @@ export const Sheet = {
 
           message.payload = SheetPayload.decode(reader, reader.uint32());
           continue;
+        case 14:
+          if (tag !== 112) {
+            break;
+          }
+
+          message.engine = engineFromJSON(reader.int32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -489,6 +517,7 @@ export const Sheet = {
       content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
       contentSize: isSet(object.contentSize) ? Long.fromValue(object.contentSize) : Long.ZERO,
       payload: isSet(object.payload) ? SheetPayload.fromJSON(object.payload) : undefined,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
     };
   },
 
@@ -521,6 +550,9 @@ export const Sheet = {
     if (message.payload !== undefined) {
       obj.payload = SheetPayload.toJSON(message.payload);
     }
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      obj.engine = engineToJSON(message.engine);
+    }
     return obj;
   },
 
@@ -542,18 +574,19 @@ export const Sheet = {
     message.payload = (object.payload !== undefined && object.payload !== null)
       ? SheetPayload.fromPartial(object.payload)
       : undefined;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     return message;
   },
 };
 
 function createBaseSheetPayload(): SheetPayload {
-  return { type: 0, databaseConfig: undefined, baselineDatabaseConfig: undefined };
+  return { type: SheetPayload_Type.TYPE_UNSPECIFIED, databaseConfig: undefined, baselineDatabaseConfig: undefined };
 }
 
 export const SheetPayload = {
   encode(message: SheetPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
+    if (message.type !== SheetPayload_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(sheetPayload_TypeToNumber(message.type));
     }
     if (message.databaseConfig !== undefined) {
       DatabaseConfig.encode(message.databaseConfig, writer.uint32(18).fork()).ldelim();
@@ -576,7 +609,7 @@ export const SheetPayload = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = sheetPayload_TypeFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -603,7 +636,7 @@ export const SheetPayload = {
 
   fromJSON(object: any): SheetPayload {
     return {
-      type: isSet(object.type) ? sheetPayload_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? sheetPayload_TypeFromJSON(object.type) : SheetPayload_Type.TYPE_UNSPECIFIED,
       databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
       baselineDatabaseConfig: isSet(object.baselineDatabaseConfig)
         ? DatabaseConfig.fromJSON(object.baselineDatabaseConfig)
@@ -613,7 +646,7 @@ export const SheetPayload = {
 
   toJSON(message: SheetPayload): unknown {
     const obj: any = {};
-    if (message.type !== 0) {
+    if (message.type !== SheetPayload_Type.TYPE_UNSPECIFIED) {
       obj.type = sheetPayload_TypeToJSON(message.type);
     }
     if (message.databaseConfig !== undefined) {
@@ -630,7 +663,7 @@ export const SheetPayload = {
   },
   fromPartial(object: DeepPartial<SheetPayload>): SheetPayload {
     const message = createBaseSheetPayload();
-    message.type = object.type ?? 0;
+    message.type = object.type ?? SheetPayload_Type.TYPE_UNSPECIFIED;
     message.databaseConfig = (object.databaseConfig !== undefined && object.databaseConfig !== null)
       ? DatabaseConfig.fromPartial(object.databaseConfig)
       : undefined;

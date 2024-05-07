@@ -40,6 +40,11 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 		return nil, serr.Err()
 	}
 
+	orderByKeys, err := getSearchAuditLogsOrderByKeys(request.OrderBy)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get order by keys, error: %v", err)
+	}
+
 	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
 	if err != nil {
 		return nil, err
@@ -55,12 +60,14 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 		return nil, serr.Err()
 	}
 
-	auditLogs, err := s.store.SearchAuditLogs(ctx, &store.AuditLogFind{
-		PermissionFilter: permissionFilter,
-		Filter:           filter,
+	auditLogFind := &store.AuditLogFind{
 		Limit:            &limitPlusOne,
 		Offset:           &offset,
-	})
+		Filter:           filter,
+		OrderByKeys:      orderByKeys,
+		PermissionFilter: permissionFilter,
+	}
+	auditLogs, err := s.store.SearchAuditLogs(ctx, auditLogFind)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get audit logs, error: %v", err)
 	}
@@ -79,6 +86,59 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 		AuditLogs:     convertToAuditLogs(auditLogs),
 		NextPageToken: nextPageToken,
 	}, nil
+}
+
+func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.ExportAuditLogsRequest) (*v1pb.ExportAuditLogsResponse, error) {
+	searchAuditLogsResult, err := s.SearchAuditLogs(ctx, &v1pb.SearchAuditLogsRequest{
+		Filter:  request.Filter,
+		OrderBy: request.OrderBy,
+		// Default 1000 rows to avoid OOM for now.
+		PageSize: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := &v1pb.QueryResult{
+		ColumnNames: []string{"time", "user", "method", "severity", "resource", "request", "response", "status"},
+	}
+	for _, auditLog := range searchAuditLogsResult.AuditLogs {
+		queryRow := &v1pb.QueryRow{Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.CreateTime.AsTime().Format(time.RFC3339)}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.User}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Method}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Severity.String()}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Resource}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Request}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Response}},
+		}}
+		if auditLog.Status != nil {
+			queryRow.Values = append(queryRow.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Status.String()}})
+		} else {
+			queryRow.Values = append(queryRow.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{}})
+		}
+		result.Rows = append(result.Rows, queryRow)
+	}
+
+	var content []byte
+	switch request.Format {
+	case v1pb.ExportFormat_CSV:
+		if content, err = exportCSV(result); err != nil {
+			return nil, err
+		}
+	case v1pb.ExportFormat_JSON:
+		if content, err = exportJSON(result); err != nil {
+			return nil, err
+		}
+	case v1pb.ExportFormat_XLSX:
+		if content, err = exportXLSX(result); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
+	}
+
+	return &v1pb.ExportAuditLogsResponse{Content: content}, nil
 }
 
 func convertToAuditLogs(auditLogs []*store.AuditLog) []*v1pb.AuditLog {
@@ -211,6 +271,34 @@ func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Sta
 		Args:  positionalArgs,
 		Where: "(" + where + ")",
 	}, nil
+}
+
+func getSearchAuditLogsOrderByKeys(orderBy string) ([]store.OrderByKey, error) {
+	keys, err := parseOrderBy(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	orderByKeys := []store.OrderByKey{}
+	for _, orderByKey := range keys {
+		key := ""
+		if orderByKey.key == "create_time" {
+			key = "created_ts"
+		}
+		if key == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid order by key %v", orderByKey.key)
+		}
+
+		sortOrder := store.ASC
+		if !orderByKey.isAscend {
+			sortOrder = store.DESC
+		}
+		orderByKeys = append(orderByKeys, store.OrderByKey{
+			Key:       key,
+			SortOrder: sortOrder,
+		})
+	}
+	return orderByKeys, nil
 }
 
 func getSearchAuditLogsPermissionFilter(ctx context.Context, s *store.Store, user *store.UserMessage, iamManager *iam.Manager) (*store.AuditLogPermissionFilter, *status.Status) {

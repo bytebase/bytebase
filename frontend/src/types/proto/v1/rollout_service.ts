@@ -7,9 +7,11 @@ import {
   ExportFormat,
   exportFormatFromJSON,
   exportFormatToJSON,
+  exportFormatToNumber,
   VCSType,
   vCSTypeFromJSON,
   vCSTypeToJSON,
+  vCSTypeToNumber,
 } from "./common";
 import { ChangedResources } from "./database_service";
 
@@ -194,22 +196,22 @@ export interface Plan_ChangeDatabaseConfig {
 
 /** Type is the database change type. */
 export enum Plan_ChangeDatabaseConfig_Type {
-  TYPE_UNSPECIFIED = 0,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
   /**
    * BASELINE - Used for establishing schema baseline, this is used when
    * 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
    * 2. Had schema drift and need to re-establish the baseline.
    */
-  BASELINE = 1,
+  BASELINE = "BASELINE",
   /** MIGRATE - Used for DDL changes including CREATE DATABASE. */
-  MIGRATE = 2,
+  MIGRATE = "MIGRATE",
   /** MIGRATE_SDL - Used for schema changes via state-based schema migration including CREATE DATABASE. */
-  MIGRATE_SDL = 3,
+  MIGRATE_SDL = "MIGRATE_SDL",
   /** MIGRATE_GHOST - Used for DDL changes using gh-ost. */
-  MIGRATE_GHOST = 4,
+  MIGRATE_GHOST = "MIGRATE_GHOST",
   /** DATA - Used for DML change. */
-  DATA = 6,
-  UNRECOGNIZED = -1,
+  DATA = "DATA",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function plan_ChangeDatabaseConfig_TypeFromJSON(object: any): Plan_ChangeDatabaseConfig_Type {
@@ -256,6 +258,26 @@ export function plan_ChangeDatabaseConfig_TypeToJSON(object: Plan_ChangeDatabase
     case Plan_ChangeDatabaseConfig_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function plan_ChangeDatabaseConfig_TypeToNumber(object: Plan_ChangeDatabaseConfig_Type): number {
+  switch (object) {
+    case Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case Plan_ChangeDatabaseConfig_Type.BASELINE:
+      return 1;
+    case Plan_ChangeDatabaseConfig_Type.MIGRATE:
+      return 2;
+    case Plan_ChangeDatabaseConfig_Type.MIGRATE_SDL:
+      return 3;
+    case Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
+      return 4;
+    case Plan_ChangeDatabaseConfig_Type.DATA:
+      return 6;
+    case Plan_ChangeDatabaseConfig_Type.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -430,15 +452,15 @@ export interface PlanCheckRun {
 }
 
 export enum PlanCheckRun_Type {
-  TYPE_UNSPECIFIED = 0,
-  DATABASE_STATEMENT_FAKE_ADVISE = 1,
-  DATABASE_STATEMENT_COMPATIBILITY = 2,
-  DATABASE_STATEMENT_ADVISE = 3,
-  DATABASE_STATEMENT_TYPE = 4,
-  DATABASE_STATEMENT_SUMMARY_REPORT = 5,
-  DATABASE_CONNECT = 6,
-  DATABASE_GHOST_SYNC = 7,
-  UNRECOGNIZED = -1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  DATABASE_STATEMENT_FAKE_ADVISE = "DATABASE_STATEMENT_FAKE_ADVISE",
+  DATABASE_STATEMENT_COMPATIBILITY = "DATABASE_STATEMENT_COMPATIBILITY",
+  DATABASE_STATEMENT_ADVISE = "DATABASE_STATEMENT_ADVISE",
+  DATABASE_STATEMENT_TYPE = "DATABASE_STATEMENT_TYPE",
+  DATABASE_STATEMENT_SUMMARY_REPORT = "DATABASE_STATEMENT_SUMMARY_REPORT",
+  DATABASE_CONNECT = "DATABASE_CONNECT",
+  DATABASE_GHOST_SYNC = "DATABASE_GHOST_SYNC",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function planCheckRun_TypeFromJSON(object: any): PlanCheckRun_Type {
@@ -498,13 +520,37 @@ export function planCheckRun_TypeToJSON(object: PlanCheckRun_Type): string {
   }
 }
 
+export function planCheckRun_TypeToNumber(object: PlanCheckRun_Type): number {
+  switch (object) {
+    case PlanCheckRun_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case PlanCheckRun_Type.DATABASE_STATEMENT_FAKE_ADVISE:
+      return 1;
+    case PlanCheckRun_Type.DATABASE_STATEMENT_COMPATIBILITY:
+      return 2;
+    case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:
+      return 3;
+    case PlanCheckRun_Type.DATABASE_STATEMENT_TYPE:
+      return 4;
+    case PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT:
+      return 5;
+    case PlanCheckRun_Type.DATABASE_CONNECT:
+      return 6;
+    case PlanCheckRun_Type.DATABASE_GHOST_SYNC:
+      return 7;
+    case PlanCheckRun_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum PlanCheckRun_Status {
-  STATUS_UNSPECIFIED = 0,
-  RUNNING = 1,
-  DONE = 2,
-  FAILED = 3,
-  CANCELED = 4,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  RUNNING = "RUNNING",
+  DONE = "DONE",
+  FAILED = "FAILED",
+  CANCELED = "CANCELED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function planCheckRun_StatusFromJSON(object: any): PlanCheckRun_Status {
@@ -549,6 +595,24 @@ export function planCheckRun_StatusToJSON(object: PlanCheckRun_Status): string {
   }
 }
 
+export function planCheckRun_StatusToNumber(object: PlanCheckRun_Status): number {
+  switch (object) {
+    case PlanCheckRun_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case PlanCheckRun_Status.RUNNING:
+      return 1;
+    case PlanCheckRun_Status.DONE:
+      return 2;
+    case PlanCheckRun_Status.FAILED:
+      return 3;
+    case PlanCheckRun_Status.CANCELED:
+      return 4;
+    case PlanCheckRun_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface PlanCheckRun_Result {
   status: PlanCheckRun_Result_Status;
   title: string;
@@ -559,11 +623,11 @@ export interface PlanCheckRun_Result {
 }
 
 export enum PlanCheckRun_Result_Status {
-  STATUS_UNSPECIFIED = 0,
-  ERROR = 1,
-  WARNING = 2,
-  SUCCESS = 3,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  ERROR = "ERROR",
+  WARNING = "WARNING",
+  SUCCESS = "SUCCESS",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function planCheckRun_Result_StatusFromJSON(object: any): PlanCheckRun_Result_Status {
@@ -600,6 +664,22 @@ export function planCheckRun_Result_StatusToJSON(object: PlanCheckRun_Result_Sta
     case PlanCheckRun_Result_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function planCheckRun_Result_StatusToNumber(object: PlanCheckRun_Result_Status): number {
+  switch (object) {
+    case PlanCheckRun_Result_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case PlanCheckRun_Result_Status.ERROR:
+      return 1;
+    case PlanCheckRun_Result_Status.WARNING:
+      return 2;
+    case PlanCheckRun_Result_Status.SUCCESS:
+      return 3;
+    case PlanCheckRun_Result_Status.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -738,15 +818,15 @@ export interface Task {
 }
 
 export enum Task_Status {
-  STATUS_UNSPECIFIED = 0,
-  NOT_STARTED = 1,
-  PENDING = 2,
-  RUNNING = 3,
-  DONE = 4,
-  FAILED = 5,
-  CANCELED = 6,
-  SKIPPED = 7,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  NOT_STARTED = "NOT_STARTED",
+  PENDING = "PENDING",
+  RUNNING = "RUNNING",
+  DONE = "DONE",
+  FAILED = "FAILED",
+  CANCELED = "CANCELED",
+  SKIPPED = "SKIPPED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function task_StatusFromJSON(object: any): Task_Status {
@@ -806,26 +886,50 @@ export function task_StatusToJSON(object: Task_Status): string {
   }
 }
 
+export function task_StatusToNumber(object: Task_Status): number {
+  switch (object) {
+    case Task_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case Task_Status.NOT_STARTED:
+      return 1;
+    case Task_Status.PENDING:
+      return 2;
+    case Task_Status.RUNNING:
+      return 3;
+    case Task_Status.DONE:
+      return 4;
+    case Task_Status.FAILED:
+      return 5;
+    case Task_Status.CANCELED:
+      return 6;
+    case Task_Status.SKIPPED:
+      return 7;
+    case Task_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum Task_Type {
-  TYPE_UNSPECIFIED = 0,
-  GENERAL = 1,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  GENERAL = "GENERAL",
   /** DATABASE_CREATE - use payload DatabaseCreate */
-  DATABASE_CREATE = 2,
+  DATABASE_CREATE = "DATABASE_CREATE",
   /** DATABASE_SCHEMA_BASELINE - use payload DatabaseSchemaBaseline */
-  DATABASE_SCHEMA_BASELINE = 3,
+  DATABASE_SCHEMA_BASELINE = "DATABASE_SCHEMA_BASELINE",
   /** DATABASE_SCHEMA_UPDATE - use payload DatabaseSchemaUpdate */
-  DATABASE_SCHEMA_UPDATE = 4,
+  DATABASE_SCHEMA_UPDATE = "DATABASE_SCHEMA_UPDATE",
   /** DATABASE_SCHEMA_UPDATE_SDL - use payload DatabaseSchemaUpdate */
-  DATABASE_SCHEMA_UPDATE_SDL = 5,
+  DATABASE_SCHEMA_UPDATE_SDL = "DATABASE_SCHEMA_UPDATE_SDL",
   /** DATABASE_SCHEMA_UPDATE_GHOST_SYNC - use payload DatabaseSchemaUpdate */
-  DATABASE_SCHEMA_UPDATE_GHOST_SYNC = 6,
+  DATABASE_SCHEMA_UPDATE_GHOST_SYNC = "DATABASE_SCHEMA_UPDATE_GHOST_SYNC",
   /** DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER - use payload nil */
-  DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER = 7,
+  DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER = "DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER",
   /** DATABASE_DATA_UPDATE - use payload DatabaseDataUpdate */
-  DATABASE_DATA_UPDATE = 8,
+  DATABASE_DATA_UPDATE = "DATABASE_DATA_UPDATE",
   /** DATABASE_DATA_EXPORT - use payload DatabaseDataExport */
-  DATABASE_DATA_EXPORT = 12,
-  UNRECOGNIZED = -1,
+  DATABASE_DATA_EXPORT = "DATABASE_DATA_EXPORT",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function task_TypeFromJSON(object: any): Task_Type {
@@ -895,6 +999,34 @@ export function task_TypeToJSON(object: Task_Type): string {
   }
 }
 
+export function task_TypeToNumber(object: Task_Type): number {
+  switch (object) {
+    case Task_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case Task_Type.GENERAL:
+      return 1;
+    case Task_Type.DATABASE_CREATE:
+      return 2;
+    case Task_Type.DATABASE_SCHEMA_BASELINE:
+      return 3;
+    case Task_Type.DATABASE_SCHEMA_UPDATE:
+      return 4;
+    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
+      return 5;
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
+      return 6;
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER:
+      return 7;
+    case Task_Type.DATABASE_DATA_UPDATE:
+      return 8;
+    case Task_Type.DATABASE_DATA_EXPORT:
+      return 12;
+    case Task_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface Task_DatabaseCreate {
   /**
    * The project owning the database.
@@ -958,11 +1090,11 @@ export interface Task_DatabaseDataUpdate {
 }
 
 export enum Task_DatabaseDataUpdate_RollbackSqlStatus {
-  ROLLBACK_SQL_STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  DONE = 2,
-  FAILED = 3,
-  UNRECOGNIZED = -1,
+  ROLLBACK_SQL_STATUS_UNSPECIFIED = "ROLLBACK_SQL_STATUS_UNSPECIFIED",
+  PENDING = "PENDING",
+  DONE = "DONE",
+  FAILED = "FAILED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function task_DatabaseDataUpdate_RollbackSqlStatusFromJSON(
@@ -1003,6 +1135,24 @@ export function task_DatabaseDataUpdate_RollbackSqlStatusToJSON(
     case Task_DatabaseDataUpdate_RollbackSqlStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function task_DatabaseDataUpdate_RollbackSqlStatusToNumber(
+  object: Task_DatabaseDataUpdate_RollbackSqlStatus,
+): number {
+  switch (object) {
+    case Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED:
+      return 0;
+    case Task_DatabaseDataUpdate_RollbackSqlStatus.PENDING:
+      return 1;
+    case Task_DatabaseDataUpdate_RollbackSqlStatus.DONE:
+      return 2;
+    case Task_DatabaseDataUpdate_RollbackSqlStatus.FAILED:
+      return 3;
+    case Task_DatabaseDataUpdate_RollbackSqlStatus.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -1056,13 +1206,13 @@ export interface TaskRun {
 }
 
 export enum TaskRun_Status {
-  STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  RUNNING = 2,
-  DONE = 3,
-  FAILED = 4,
-  CANCELED = 5,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  PENDING = "PENDING",
+  RUNNING = "RUNNING",
+  DONE = "DONE",
+  FAILED = "FAILED",
+  CANCELED = "CANCELED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function taskRun_StatusFromJSON(object: any): TaskRun_Status {
@@ -1112,12 +1262,32 @@ export function taskRun_StatusToJSON(object: TaskRun_Status): string {
   }
 }
 
+export function taskRun_StatusToNumber(object: TaskRun_Status): number {
+  switch (object) {
+    case TaskRun_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case TaskRun_Status.PENDING:
+      return 1;
+    case TaskRun_Status.RUNNING:
+      return 2;
+    case TaskRun_Status.DONE:
+      return 3;
+    case TaskRun_Status.FAILED:
+      return 4;
+    case TaskRun_Status.CANCELED:
+      return 5;
+    case TaskRun_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum TaskRun_ExecutionStatus {
-  EXECUTION_STATUS_UNSPECIFIED = 0,
-  PRE_EXECUTING = 1,
-  EXECUTING = 2,
-  POST_EXECUTING = 3,
-  UNRECOGNIZED = -1,
+  EXECUTION_STATUS_UNSPECIFIED = "EXECUTION_STATUS_UNSPECIFIED",
+  PRE_EXECUTING = "PRE_EXECUTING",
+  EXECUTING = "EXECUTING",
+  POST_EXECUTING = "POST_EXECUTING",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function taskRun_ExecutionStatusFromJSON(object: any): TaskRun_ExecutionStatus {
@@ -1157,11 +1327,27 @@ export function taskRun_ExecutionStatusToJSON(object: TaskRun_ExecutionStatus): 
   }
 }
 
+export function taskRun_ExecutionStatusToNumber(object: TaskRun_ExecutionStatus): number {
+  switch (object) {
+    case TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED:
+      return 0;
+    case TaskRun_ExecutionStatus.PRE_EXECUTING:
+      return 1;
+    case TaskRun_ExecutionStatus.EXECUTING:
+      return 2;
+    case TaskRun_ExecutionStatus.POST_EXECUTING:
+      return 3;
+    case TaskRun_ExecutionStatus.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum TaskRun_ExportArchiveStatus {
-  EXPORT_ARCHIVE_STATUS_UNSPECIFIED = 0,
-  READY = 1,
-  EXPORTED = 2,
-  UNRECOGNIZED = -1,
+  EXPORT_ARCHIVE_STATUS_UNSPECIFIED = "EXPORT_ARCHIVE_STATUS_UNSPECIFIED",
+  READY = "READY",
+  EXPORTED = "EXPORTED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function taskRun_ExportArchiveStatusFromJSON(object: any): TaskRun_ExportArchiveStatus {
@@ -1193,6 +1379,20 @@ export function taskRun_ExportArchiveStatusToJSON(object: TaskRun_ExportArchiveS
     case TaskRun_ExportArchiveStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function taskRun_ExportArchiveStatusToNumber(object: TaskRun_ExportArchiveStatus): number {
+  switch (object) {
+    case TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED:
+      return 0;
+    case TaskRun_ExportArchiveStatus.READY:
+      return 1;
+    case TaskRun_ExportArchiveStatus.EXPORTED:
+      return 2;
+    case TaskRun_ExportArchiveStatus.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -2287,7 +2487,7 @@ function createBasePlan_ChangeDatabaseConfig(): Plan_ChangeDatabaseConfig {
   return {
     target: "",
     sheet: "",
-    type: 0,
+    type: Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED,
     schemaVersion: "",
     rollbackEnabled: false,
     rollbackDetail: undefined,
@@ -2304,8 +2504,8 @@ export const Plan_ChangeDatabaseConfig = {
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
     }
-    if (message.type !== 0) {
-      writer.uint32(24).int32(message.type);
+    if (message.type !== Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(24).int32(plan_ChangeDatabaseConfig_TypeToNumber(message.type));
     }
     if (message.schemaVersion !== "") {
       writer.uint32(34).string(message.schemaVersion);
@@ -2352,7 +2552,7 @@ export const Plan_ChangeDatabaseConfig = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = plan_ChangeDatabaseConfig_TypeFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -2408,7 +2608,9 @@ export const Plan_ChangeDatabaseConfig = {
     return {
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      type: isSet(object.type) ? plan_ChangeDatabaseConfig_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type)
+        ? plan_ChangeDatabaseConfig_TypeFromJSON(object.type)
+        : Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED,
       schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
       rollbackEnabled: isSet(object.rollbackEnabled) ? globalThis.Boolean(object.rollbackEnabled) : false,
       rollbackDetail: isSet(object.rollbackDetail)
@@ -2434,7 +2636,7 @@ export const Plan_ChangeDatabaseConfig = {
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
-    if (message.type !== 0) {
+    if (message.type !== Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED) {
       obj.type = plan_ChangeDatabaseConfig_TypeToJSON(message.type);
     }
     if (message.schemaVersion !== "") {
@@ -2468,7 +2670,7 @@ export const Plan_ChangeDatabaseConfig = {
     const message = createBasePlan_ChangeDatabaseConfig();
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
-    message.type = object.type ?? 0;
+    message.type = object.type ?? Plan_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED;
     message.schemaVersion = object.schemaVersion ?? "";
     message.rollbackEnabled = object.rollbackEnabled ?? false;
     message.rollbackDetail = (object.rollbackDetail !== undefined && object.rollbackDetail !== null)
@@ -2706,7 +2908,7 @@ export const Plan_ChangeDatabaseConfig_PreUpdateBackupDetail = {
 };
 
 function createBasePlan_ExportDataConfig(): Plan_ExportDataConfig {
-  return { target: "", sheet: "", format: 0, password: undefined };
+  return { target: "", sheet: "", format: ExportFormat.FORMAT_UNSPECIFIED, password: undefined };
 }
 
 export const Plan_ExportDataConfig = {
@@ -2717,8 +2919,8 @@ export const Plan_ExportDataConfig = {
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
     }
-    if (message.format !== 0) {
-      writer.uint32(24).int32(message.format);
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
+      writer.uint32(24).int32(exportFormatToNumber(message.format));
     }
     if (message.password !== undefined) {
       writer.uint32(34).string(message.password);
@@ -2752,7 +2954,7 @@ export const Plan_ExportDataConfig = {
             break;
           }
 
-          message.format = reader.int32() as any;
+          message.format = exportFormatFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -2774,7 +2976,7 @@ export const Plan_ExportDataConfig = {
     return {
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
       password: isSet(object.password) ? globalThis.String(object.password) : undefined,
     };
   },
@@ -2787,7 +2989,7 @@ export const Plan_ExportDataConfig = {
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
-    if (message.format !== 0) {
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
       obj.format = exportFormatToJSON(message.format);
     }
     if (message.password !== undefined) {
@@ -2803,20 +3005,20 @@ export const Plan_ExportDataConfig = {
     const message = createBasePlan_ExportDataConfig();
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
-    message.format = object.format ?? 0;
+    message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
     message.password = object.password ?? undefined;
     return message;
   },
 };
 
 function createBasePlan_VCSSource(): Plan_VCSSource {
-  return { vcsType: 0, vcsConnector: "", pullRequestUrl: "" };
+  return { vcsType: VCSType.VCS_TYPE_UNSPECIFIED, vcsConnector: "", pullRequestUrl: "" };
 }
 
 export const Plan_VCSSource = {
   encode(message: Plan_VCSSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.vcsType !== 0) {
-      writer.uint32(8).int32(message.vcsType);
+    if (message.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(vCSTypeToNumber(message.vcsType));
     }
     if (message.vcsConnector !== "") {
       writer.uint32(18).string(message.vcsConnector);
@@ -2839,7 +3041,7 @@ export const Plan_VCSSource = {
             break;
           }
 
-          message.vcsType = reader.int32() as any;
+          message.vcsType = vCSTypeFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -2866,7 +3068,7 @@ export const Plan_VCSSource = {
 
   fromJSON(object: any): Plan_VCSSource {
     return {
-      vcsType: isSet(object.vcsType) ? vCSTypeFromJSON(object.vcsType) : 0,
+      vcsType: isSet(object.vcsType) ? vCSTypeFromJSON(object.vcsType) : VCSType.VCS_TYPE_UNSPECIFIED,
       vcsConnector: isSet(object.vcsConnector) ? globalThis.String(object.vcsConnector) : "",
       pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
     };
@@ -2874,7 +3076,7 @@ export const Plan_VCSSource = {
 
   toJSON(message: Plan_VCSSource): unknown {
     const obj: any = {};
-    if (message.vcsType !== 0) {
+    if (message.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED) {
       obj.vcsType = vCSTypeToJSON(message.vcsType);
     }
     if (message.vcsConnector !== "") {
@@ -2891,7 +3093,7 @@ export const Plan_VCSSource = {
   },
   fromPartial(object: DeepPartial<Plan_VCSSource>): Plan_VCSSource {
     const message = createBasePlan_VCSSource();
-    message.vcsType = object.vcsType ?? 0;
+    message.vcsType = object.vcsType ?? VCSType.VCS_TYPE_UNSPECIFIED;
     message.vcsConnector = object.vcsConnector ?? "";
     message.pullRequestUrl = object.pullRequestUrl ?? "";
     return message;
@@ -3563,8 +3765,8 @@ function createBasePlanCheckRun(): PlanCheckRun {
   return {
     name: "",
     uid: "",
-    type: 0,
-    status: 0,
+    type: PlanCheckRun_Type.TYPE_UNSPECIFIED,
+    status: PlanCheckRun_Status.STATUS_UNSPECIFIED,
     target: "",
     sheet: "",
     results: [],
@@ -3581,11 +3783,11 @@ export const PlanCheckRun = {
     if (message.uid !== "") {
       writer.uint32(18).string(message.uid);
     }
-    if (message.type !== 0) {
-      writer.uint32(24).int32(message.type);
+    if (message.type !== PlanCheckRun_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(24).int32(planCheckRun_TypeToNumber(message.type));
     }
-    if (message.status !== 0) {
-      writer.uint32(32).int32(message.status);
+    if (message.status !== PlanCheckRun_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(32).int32(planCheckRun_StatusToNumber(message.status));
     }
     if (message.target !== "") {
       writer.uint32(42).string(message.target);
@@ -3631,14 +3833,14 @@ export const PlanCheckRun = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = planCheckRun_TypeFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 32) {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = planCheckRun_StatusFromJSON(reader.int32());
           continue;
         case 5:
           if (tag !== 42) {
@@ -3688,8 +3890,10 @@ export const PlanCheckRun = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
-      type: isSet(object.type) ? planCheckRun_TypeFromJSON(object.type) : 0,
-      status: isSet(object.status) ? planCheckRun_StatusFromJSON(object.status) : 0,
+      type: isSet(object.type) ? planCheckRun_TypeFromJSON(object.type) : PlanCheckRun_Type.TYPE_UNSPECIFIED,
+      status: isSet(object.status)
+        ? planCheckRun_StatusFromJSON(object.status)
+        : PlanCheckRun_Status.STATUS_UNSPECIFIED,
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       results: globalThis.Array.isArray(object?.results)
@@ -3708,10 +3912,10 @@ export const PlanCheckRun = {
     if (message.uid !== "") {
       obj.uid = message.uid;
     }
-    if (message.type !== 0) {
+    if (message.type !== PlanCheckRun_Type.TYPE_UNSPECIFIED) {
       obj.type = planCheckRun_TypeToJSON(message.type);
     }
-    if (message.status !== 0) {
+    if (message.status !== PlanCheckRun_Status.STATUS_UNSPECIFIED) {
       obj.status = planCheckRun_StatusToJSON(message.status);
     }
     if (message.target !== "") {
@@ -3739,8 +3943,8 @@ export const PlanCheckRun = {
     const message = createBasePlanCheckRun();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
-    message.type = object.type ?? 0;
-    message.status = object.status ?? 0;
+    message.type = object.type ?? PlanCheckRun_Type.TYPE_UNSPECIFIED;
+    message.status = object.status ?? PlanCheckRun_Status.STATUS_UNSPECIFIED;
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
     message.results = object.results?.map((e) => PlanCheckRun_Result.fromPartial(e)) || [];
@@ -3751,13 +3955,20 @@ export const PlanCheckRun = {
 };
 
 function createBasePlanCheckRun_Result(): PlanCheckRun_Result {
-  return { status: 0, title: "", content: "", code: 0, sqlSummaryReport: undefined, sqlReviewReport: undefined };
+  return {
+    status: PlanCheckRun_Result_Status.STATUS_UNSPECIFIED,
+    title: "",
+    content: "",
+    code: 0,
+    sqlSummaryReport: undefined,
+    sqlReviewReport: undefined,
+  };
 }
 
 export const PlanCheckRun_Result = {
   encode(message: PlanCheckRun_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.status !== 0) {
-      writer.uint32(8).int32(message.status);
+    if (message.status !== PlanCheckRun_Result_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(8).int32(planCheckRun_Result_StatusToNumber(message.status));
     }
     if (message.title !== "") {
       writer.uint32(18).string(message.title);
@@ -3789,7 +4000,7 @@ export const PlanCheckRun_Result = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = planCheckRun_Result_StatusFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -3837,7 +4048,9 @@ export const PlanCheckRun_Result = {
 
   fromJSON(object: any): PlanCheckRun_Result {
     return {
-      status: isSet(object.status) ? planCheckRun_Result_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status)
+        ? planCheckRun_Result_StatusFromJSON(object.status)
+        : PlanCheckRun_Result_Status.STATUS_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       content: isSet(object.content) ? globalThis.String(object.content) : "",
       code: isSet(object.code) ? globalThis.Number(object.code) : 0,
@@ -3852,7 +4065,7 @@ export const PlanCheckRun_Result = {
 
   toJSON(message: PlanCheckRun_Result): unknown {
     const obj: any = {};
-    if (message.status !== 0) {
+    if (message.status !== PlanCheckRun_Result_Status.STATUS_UNSPECIFIED) {
       obj.status = planCheckRun_Result_StatusToJSON(message.status);
     }
     if (message.title !== "") {
@@ -3878,7 +4091,7 @@ export const PlanCheckRun_Result = {
   },
   fromPartial(object: DeepPartial<PlanCheckRun_Result>): PlanCheckRun_Result {
     const message = createBasePlanCheckRun_Result();
-    message.status = object.status ?? 0;
+    message.status = object.status ?? PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
     message.title = object.title ?? "";
     message.content = object.content ?? "";
     message.code = object.code ?? 0;
@@ -4703,9 +4916,9 @@ function createBaseTask(): Task {
     uid: "",
     title: "",
     specId: "",
-    status: 0,
+    status: Task_Status.STATUS_UNSPECIFIED,
     skippedReason: "",
-    type: 0,
+    type: Task_Type.TYPE_UNSPECIFIED,
     dependsOnTasks: [],
     target: "",
     databaseCreate: undefined,
@@ -4730,14 +4943,14 @@ export const Task = {
     if (message.specId !== "") {
       writer.uint32(34).string(message.specId);
     }
-    if (message.status !== 0) {
-      writer.uint32(40).int32(message.status);
+    if (message.status !== Task_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(40).int32(task_StatusToNumber(message.status));
     }
     if (message.skippedReason !== "") {
       writer.uint32(122).string(message.skippedReason);
     }
-    if (message.type !== 0) {
-      writer.uint32(48).int32(message.type);
+    if (message.type !== Task_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(48).int32(task_TypeToNumber(message.type));
     }
     for (const v of message.dependsOnTasks) {
       writer.uint32(58).string(v!);
@@ -4803,7 +5016,7 @@ export const Task = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = task_StatusFromJSON(reader.int32());
           continue;
         case 15:
           if (tag !== 122) {
@@ -4817,7 +5030,7 @@ export const Task = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = task_TypeFromJSON(reader.int32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -4883,9 +5096,9 @@ export const Task = {
       uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       specId: isSet(object.specId) ? globalThis.String(object.specId) : "",
-      status: isSet(object.status) ? task_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? task_StatusFromJSON(object.status) : Task_Status.STATUS_UNSPECIFIED,
       skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
-      type: isSet(object.type) ? task_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? task_TypeFromJSON(object.type) : Task_Type.TYPE_UNSPECIFIED,
       dependsOnTasks: globalThis.Array.isArray(object?.dependsOnTasks)
         ? object.dependsOnTasks.map((e: any) => globalThis.String(e))
         : [],
@@ -4920,13 +5133,13 @@ export const Task = {
     if (message.specId !== "") {
       obj.specId = message.specId;
     }
-    if (message.status !== 0) {
+    if (message.status !== Task_Status.STATUS_UNSPECIFIED) {
       obj.status = task_StatusToJSON(message.status);
     }
     if (message.skippedReason !== "") {
       obj.skippedReason = message.skippedReason;
     }
-    if (message.type !== 0) {
+    if (message.type !== Task_Type.TYPE_UNSPECIFIED) {
       obj.type = task_TypeToJSON(message.type);
     }
     if (message.dependsOnTasks?.length) {
@@ -4962,9 +5175,9 @@ export const Task = {
     message.uid = object.uid ?? "";
     message.title = object.title ?? "";
     message.specId = object.specId ?? "";
-    message.status = object.status ?? 0;
+    message.status = object.status ?? Task_Status.STATUS_UNSPECIFIED;
     message.skippedReason = object.skippedReason ?? "";
-    message.type = object.type ?? 0;
+    message.type = object.type ?? Task_Type.TYPE_UNSPECIFIED;
     message.dependsOnTasks = object.dependsOnTasks?.map((e) => e) || [];
     message.target = object.target ?? "";
     message.databaseCreate = (object.databaseCreate !== undefined && object.databaseCreate !== null)
@@ -5389,7 +5602,7 @@ function createBaseTask_DatabaseDataUpdate(): Task_DatabaseDataUpdate {
     sheet: "",
     schemaVersion: "",
     rollbackEnabled: false,
-    rollbackSqlStatus: 0,
+    rollbackSqlStatus: Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED,
     rollbackError: "",
     rollbackSheet: "",
     rollbackFromIssue: "",
@@ -5408,8 +5621,8 @@ export const Task_DatabaseDataUpdate = {
     if (message.rollbackEnabled === true) {
       writer.uint32(24).bool(message.rollbackEnabled);
     }
-    if (message.rollbackSqlStatus !== 0) {
-      writer.uint32(32).int32(message.rollbackSqlStatus);
+    if (message.rollbackSqlStatus !== Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED) {
+      writer.uint32(32).int32(task_DatabaseDataUpdate_RollbackSqlStatusToNumber(message.rollbackSqlStatus));
     }
     if (message.rollbackError !== "") {
       writer.uint32(42).string(message.rollbackError);
@@ -5459,7 +5672,7 @@ export const Task_DatabaseDataUpdate = {
             break;
           }
 
-          message.rollbackSqlStatus = reader.int32() as any;
+          message.rollbackSqlStatus = task_DatabaseDataUpdate_RollbackSqlStatusFromJSON(reader.int32());
           continue;
         case 5:
           if (tag !== 42) {
@@ -5505,7 +5718,7 @@ export const Task_DatabaseDataUpdate = {
       rollbackEnabled: isSet(object.rollbackEnabled) ? globalThis.Boolean(object.rollbackEnabled) : false,
       rollbackSqlStatus: isSet(object.rollbackSqlStatus)
         ? task_DatabaseDataUpdate_RollbackSqlStatusFromJSON(object.rollbackSqlStatus)
-        : 0,
+        : Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED,
       rollbackError: isSet(object.rollbackError) ? globalThis.String(object.rollbackError) : "",
       rollbackSheet: isSet(object.rollbackSheet) ? globalThis.String(object.rollbackSheet) : "",
       rollbackFromIssue: isSet(object.rollbackFromIssue) ? globalThis.String(object.rollbackFromIssue) : "",
@@ -5524,7 +5737,7 @@ export const Task_DatabaseDataUpdate = {
     if (message.rollbackEnabled === true) {
       obj.rollbackEnabled = message.rollbackEnabled;
     }
-    if (message.rollbackSqlStatus !== 0) {
+    if (message.rollbackSqlStatus !== Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED) {
       obj.rollbackSqlStatus = task_DatabaseDataUpdate_RollbackSqlStatusToJSON(message.rollbackSqlStatus);
     }
     if (message.rollbackError !== "") {
@@ -5550,7 +5763,8 @@ export const Task_DatabaseDataUpdate = {
     message.sheet = object.sheet ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
     message.rollbackEnabled = object.rollbackEnabled ?? false;
-    message.rollbackSqlStatus = object.rollbackSqlStatus ?? 0;
+    message.rollbackSqlStatus = object.rollbackSqlStatus ??
+      Task_DatabaseDataUpdate_RollbackSqlStatus.ROLLBACK_SQL_STATUS_UNSPECIFIED;
     message.rollbackError = object.rollbackError ?? "";
     message.rollbackSheet = object.rollbackSheet ?? "";
     message.rollbackFromIssue = object.rollbackFromIssue ?? "";
@@ -5560,7 +5774,7 @@ export const Task_DatabaseDataUpdate = {
 };
 
 function createBaseTask_DatabaseDataExport(): Task_DatabaseDataExport {
-  return { target: "", sheet: "", format: 0, password: undefined };
+  return { target: "", sheet: "", format: ExportFormat.FORMAT_UNSPECIFIED, password: undefined };
 }
 
 export const Task_DatabaseDataExport = {
@@ -5571,8 +5785,8 @@ export const Task_DatabaseDataExport = {
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
     }
-    if (message.format !== 0) {
-      writer.uint32(24).int32(message.format);
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
+      writer.uint32(24).int32(exportFormatToNumber(message.format));
     }
     if (message.password !== undefined) {
       writer.uint32(34).string(message.password);
@@ -5606,7 +5820,7 @@ export const Task_DatabaseDataExport = {
             break;
           }
 
-          message.format = reader.int32() as any;
+          message.format = exportFormatFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -5628,7 +5842,7 @@ export const Task_DatabaseDataExport = {
     return {
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
       password: isSet(object.password) ? globalThis.String(object.password) : undefined,
     };
   },
@@ -5641,7 +5855,7 @@ export const Task_DatabaseDataExport = {
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
-    if (message.format !== 0) {
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
       obj.format = exportFormatToJSON(message.format);
     }
     if (message.password !== undefined) {
@@ -5657,7 +5871,7 @@ export const Task_DatabaseDataExport = {
     const message = createBaseTask_DatabaseDataExport();
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
-    message.format = object.format ?? 0;
+    message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
     message.password = object.password ?? undefined;
     return message;
   },
@@ -5672,15 +5886,15 @@ function createBaseTaskRun(): TaskRun {
     createTime: undefined,
     updateTime: undefined,
     title: "",
-    status: 0,
+    status: TaskRun_Status.STATUS_UNSPECIFIED,
     detail: "",
     changeHistory: "",
     schemaVersion: "",
-    executionStatus: 0,
+    executionStatus: TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED,
     executionStatusUpdateTime: undefined,
     executionDetail: undefined,
     startTime: undefined,
-    exportArchiveStatus: 0,
+    exportArchiveStatus: TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED,
   };
 }
 
@@ -5707,8 +5921,8 @@ export const TaskRun = {
     if (message.title !== "") {
       writer.uint32(58).string(message.title);
     }
-    if (message.status !== 0) {
-      writer.uint32(64).int32(message.status);
+    if (message.status !== TaskRun_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(64).int32(taskRun_StatusToNumber(message.status));
     }
     if (message.detail !== "") {
       writer.uint32(74).string(message.detail);
@@ -5719,8 +5933,8 @@ export const TaskRun = {
     if (message.schemaVersion !== "") {
       writer.uint32(90).string(message.schemaVersion);
     }
-    if (message.executionStatus !== 0) {
-      writer.uint32(96).int32(message.executionStatus);
+    if (message.executionStatus !== TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED) {
+      writer.uint32(96).int32(taskRun_ExecutionStatusToNumber(message.executionStatus));
     }
     if (message.executionStatusUpdateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.executionStatusUpdateTime), writer.uint32(106).fork()).ldelim();
@@ -5731,8 +5945,8 @@ export const TaskRun = {
     if (message.startTime !== undefined) {
       Timestamp.encode(toTimestamp(message.startTime), writer.uint32(114).fork()).ldelim();
     }
-    if (message.exportArchiveStatus !== 0) {
-      writer.uint32(128).int32(message.exportArchiveStatus);
+    if (message.exportArchiveStatus !== TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED) {
+      writer.uint32(128).int32(taskRun_ExportArchiveStatusToNumber(message.exportArchiveStatus));
     }
     return writer;
   },
@@ -5798,7 +6012,7 @@ export const TaskRun = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = taskRun_StatusFromJSON(reader.int32());
           continue;
         case 9:
           if (tag !== 74) {
@@ -5826,7 +6040,7 @@ export const TaskRun = {
             break;
           }
 
-          message.executionStatus = reader.int32() as any;
+          message.executionStatus = taskRun_ExecutionStatusFromJSON(reader.int32());
           continue;
         case 13:
           if (tag !== 106) {
@@ -5854,7 +6068,7 @@ export const TaskRun = {
             break;
           }
 
-          message.exportArchiveStatus = reader.int32() as any;
+          message.exportArchiveStatus = taskRun_ExportArchiveStatusFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -5874,11 +6088,13 @@ export const TaskRun = {
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
-      status: isSet(object.status) ? taskRun_StatusFromJSON(object.status) : 0,
+      status: isSet(object.status) ? taskRun_StatusFromJSON(object.status) : TaskRun_Status.STATUS_UNSPECIFIED,
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
       changeHistory: isSet(object.changeHistory) ? globalThis.String(object.changeHistory) : "",
       schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
-      executionStatus: isSet(object.executionStatus) ? taskRun_ExecutionStatusFromJSON(object.executionStatus) : 0,
+      executionStatus: isSet(object.executionStatus)
+        ? taskRun_ExecutionStatusFromJSON(object.executionStatus)
+        : TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED,
       executionStatusUpdateTime: isSet(object.executionStatusUpdateTime)
         ? fromJsonTimestamp(object.executionStatusUpdateTime)
         : undefined,
@@ -5888,7 +6104,7 @@ export const TaskRun = {
       startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
       exportArchiveStatus: isSet(object.exportArchiveStatus)
         ? taskRun_ExportArchiveStatusFromJSON(object.exportArchiveStatus)
-        : 0,
+        : TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED,
     };
   },
 
@@ -5915,7 +6131,7 @@ export const TaskRun = {
     if (message.title !== "") {
       obj.title = message.title;
     }
-    if (message.status !== 0) {
+    if (message.status !== TaskRun_Status.STATUS_UNSPECIFIED) {
       obj.status = taskRun_StatusToJSON(message.status);
     }
     if (message.detail !== "") {
@@ -5927,7 +6143,7 @@ export const TaskRun = {
     if (message.schemaVersion !== "") {
       obj.schemaVersion = message.schemaVersion;
     }
-    if (message.executionStatus !== 0) {
+    if (message.executionStatus !== TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED) {
       obj.executionStatus = taskRun_ExecutionStatusToJSON(message.executionStatus);
     }
     if (message.executionStatusUpdateTime !== undefined) {
@@ -5939,7 +6155,7 @@ export const TaskRun = {
     if (message.startTime !== undefined) {
       obj.startTime = message.startTime.toISOString();
     }
-    if (message.exportArchiveStatus !== 0) {
+    if (message.exportArchiveStatus !== TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED) {
       obj.exportArchiveStatus = taskRun_ExportArchiveStatusToJSON(message.exportArchiveStatus);
     }
     return obj;
@@ -5957,17 +6173,18 @@ export const TaskRun = {
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
     message.title = object.title ?? "";
-    message.status = object.status ?? 0;
+    message.status = object.status ?? TaskRun_Status.STATUS_UNSPECIFIED;
     message.detail = object.detail ?? "";
     message.changeHistory = object.changeHistory ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
-    message.executionStatus = object.executionStatus ?? 0;
+    message.executionStatus = object.executionStatus ?? TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED;
     message.executionStatusUpdateTime = object.executionStatusUpdateTime ?? undefined;
     message.executionDetail = (object.executionDetail !== undefined && object.executionDetail !== null)
       ? TaskRun_ExecutionDetail.fromPartial(object.executionDetail)
       : undefined;
     message.startTime = object.startTime ?? undefined;
-    message.exportArchiveStatus = object.exportArchiveStatus ?? 0;
+    message.exportArchiveStatus = object.exportArchiveStatus ??
+      TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED;
     return message;
   },
 };

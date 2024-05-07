@@ -82,18 +82,12 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, err
 	}
 
-	// TODO(d): are we sure about this?
-	schemaName := ""
-	if instance.Engine == storepb.Engine_ORACLE {
-		schemaName = database.DatabaseName
-	}
-
 	spans, err := base.GetQuerySpan(
 		ctx,
 		instance.Engine,
 		statement,
 		database.DatabaseName,
-		schemaName,
+		"",
 		apiv1.BuildGetDatabaseMetadataFunc(exec.store, instance),
 		apiv1.BuildListDatabaseNamesFunc(exec.store, instance),
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),

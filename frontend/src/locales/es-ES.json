@@ -141,8 +141,7 @@
     "connecting": "Conectando...",
     "creating": "Creando...",
     "updating": "Actualizando...",
-    "Address": "Dirección",
-    "User": "Usuario",
+    "address": "Dirección",
     "assigned": "Asignado",
     "subscribed": "Subscrito",
     "created": "Creado",
@@ -789,7 +788,7 @@
         },
         "range-mask": {
           "self": "Máscara de rango",
-          "label": "La máscara de rango reemplazará el valor original desde el índice inicial hasta el índice final (final no incluido) con la sustitución.",
+          "label": "La máscara de rango reemplazará el valor original desde el índice inicial hasta el índice final (final no incluido) con la sustitución. El índice comienza desde 0.",
           "slice-start": "Inicio de corte",
           "slice-start-label": "El inicio del segmento es el índice de inicio del valor original, comienza desde 0 y debe ser menor que detener.",
           "slice-end": "Fin del corte",
@@ -2270,7 +2269,12 @@
     "sync-in-progress": "Sincronización en progreso",
     "create-a-worksheet": "Crear una hoja de trabajo",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
-    "select-encoding": "Seleccionar codificación"
+    "select-encoding": "Seleccionar codificación",
+    "result-limit": {
+      "n-rows": "{n} filas",
+      "rows": "filas"
+    },
+    "n-per-page": "{n} / página"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2766,7 +2770,10 @@
       "payload": "Datos",
       "empty": "<Vacío>",
       "view-details": "Ver detalles",
-      "select-type": "Seleccionar tipo"
+      "select-type": "Seleccionar tipo",
+      "method": "Método",
+      "request": "Pedido",
+      "response": "Respuesta"
     },
     "type": {
       "workspace": {
@@ -3379,7 +3386,11 @@
     },
     "confirm-remove-change": "¿Eliminar este cambio?",
     "delete-this-changelist": "Eliminar esta lista de cambios",
-    "confirm-delete-changelist": "¿Eliminar esta lista de cambios?"
+    "confirm-delete-changelist": "¿Eliminar esta lista de cambios?",
+    "import": {
+      "no-file-to-upload": "No hay archivos para subir",
+      "upload-sql-or-zip-file": "Cargue el archivo .sql o .zip"
+    }
   },
   "export-data": {
     "export-rows": "Exportar filas",

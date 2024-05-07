@@ -117,7 +117,7 @@ const options = computed(() => {
 });
 
 const handleAction = async (key: string) => {
-  const { sheet } = props;
+  const { sheet: worksheet } = props;
   if (key === "delete") {
     const dialogInstance = dialog.create({
       title: t("sheet.hint-tips.confirm-to-delete-this-sheet"),
@@ -129,9 +129,9 @@ const handleAction = async (key: string) => {
       async onPositiveClick() {
         try {
           dialogInstance.loading = true;
-          await worksheetV1Store.deleteSheetByName(sheet.name);
+          await worksheetV1Store.deleteWorksheetByName(worksheet.name);
           events.emit("refresh", { views: ["my", "shared", "starred"] });
-          turnSheetToUnsavedTab(sheet);
+          turnSheetToUnsavedTab(worksheet);
         } finally {
           dialogInstance.destroy();
           dialogInstance.loading = false;
@@ -145,8 +145,8 @@ const handleAction = async (key: string) => {
       showIcon: true,
     });
   } else if (key === "star" || key === "unstar") {
-    await worksheetV1Store.upsertSheetOrganizer({
-      worksheet: sheet.name,
+    await worksheetV1Store.upsertWorksheetOrganizer({
+      worksheet: worksheet.name,
       starred: key === "star",
     });
     events.emit("refresh", { views: ["starred"] });
@@ -159,12 +159,12 @@ const handleAction = async (key: string) => {
       maskClosable: false,
       closeOnEsc: false,
       async onPositiveClick() {
-        await worksheetV1Store.createSheet(
+        await worksheetV1Store.createWorksheet(
           Worksheet.fromPartial({
-            title: sheet.title,
-            project: sheet.project,
-            content: sheet.content,
-            database: sheet.database,
+            title: worksheet.title,
+            project: worksheet.project,
+            content: worksheet.content,
+            database: worksheet.database,
             visibility: Worksheet_Visibility.VISIBILITY_PRIVATE,
           })
         );
@@ -186,9 +186,9 @@ const handleAction = async (key: string) => {
     editorEvents.emit("save-sheet", {
       tab: {
         ...defaultSQLEditorTab(),
-        sheet: sheet.name,
-        title: sheet.title,
-        statement: getSheetStatement(sheet),
+        worksheet: worksheet.name,
+        title: worksheet.title,
+        statement: getSheetStatement(worksheet),
       },
       editTitle: true,
       mask: ["title"],
@@ -200,7 +200,7 @@ const handleAction = async (key: string) => {
 
 const turnSheetToUnsavedTab = (sheet: Worksheet) => {
   const tabStore = useSQLEditorTabStore();
-  const tab = tabStore.tabList.find((tab) => tab.sheet === sheet.name);
+  const tab = tabStore.tabList.find((tab) => tab.worksheet === sheet.name);
   if (tab) {
     tabStore.removeTab(tab);
   }

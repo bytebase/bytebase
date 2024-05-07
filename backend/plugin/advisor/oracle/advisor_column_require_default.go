@@ -42,7 +42,7 @@ func (*ColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _ string) ([]advi
 	listener := &columnRequireDefaultListener{
 		level:            level,
 		title:            string(ctx.Rule.Type),
-		currentSchema:    ctx.CurrentSchema,
+		currentDatabase:  ctx.CurrentDatabase,
 		noDefaultColumns: make(columnMap),
 	}
 
@@ -57,7 +57,7 @@ type columnRequireDefaultListener struct {
 
 	level            advisor.Status
 	title            string
-	currentSchema    string
+	currentDatabase  string
 	noDefaultColumns columnMap
 	tableName        string
 }
@@ -94,9 +94,9 @@ func (l *columnRequireDefaultListener) generateAdvice() ([]advisor.Advice, error
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *columnRequireDefaultListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	schemaName := l.currentSchema
+	schemaName := l.currentDatabase
 	if ctx.Schema_name() != nil {
-		schemaName = normalizeIdentifier(ctx.Schema_name(), l.currentSchema)
+		schemaName = normalizeIdentifier(ctx.Schema_name(), l.currentDatabase)
 	}
 	l.tableName = fmt.Sprintf("%s.%s", schemaName, normalizeIdentifier(ctx.Table_name(), schemaName))
 }
@@ -111,7 +111,7 @@ func (l *columnRequireDefaultListener) EnterColumn_definition(ctx *parser.Column
 	if l.tableName == "" {
 		return
 	}
-	columnName := normalizeIdentifier(ctx.Column_name(), l.currentSchema)
+	columnName := normalizeIdentifier(ctx.Column_name(), l.currentDatabase)
 	columnID := fmt.Sprintf(`%s.%s`, l.tableName, columnName)
 	if ctx.DEFAULT() == nil {
 		l.noDefaultColumns[columnID] = ctx.GetStart().GetLine()
@@ -122,7 +122,7 @@ func (l *columnRequireDefaultListener) EnterColumn_definition(ctx *parser.Column
 
 // EnterAlter_table is called when production alter_table is entered.
 func (l *columnRequireDefaultListener) EnterAlter_table(ctx *parser.Alter_tableContext) {
-	l.tableName = normalizeIdentifier(ctx.Tableview_name(), l.currentSchema)
+	l.tableName = normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase)
 }
 
 // ExitAlter_table is called when production alter_table is exited.
@@ -135,7 +135,7 @@ func (l *columnRequireDefaultListener) EnterModify_col_properties(ctx *parser.Mo
 	if l.tableName == "" {
 		return
 	}
-	columnName := normalizeIdentifier(ctx.Column_name(), l.currentSchema)
+	columnName := normalizeIdentifier(ctx.Column_name(), l.currentDatabase)
 	if ctx.DEFAULT() != nil {
 		columnID := fmt.Sprintf(`%s.%s`, l.tableName, columnName)
 		delete(l.noDefaultColumns, columnID)

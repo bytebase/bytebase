@@ -24,10 +24,10 @@ export interface ProtectionRule {
 
 /** The type of target. */
 export enum ProtectionRule_Target {
-  PROTECTION_TARGET_UNSPECIFIED = 0,
-  BRANCH = 1,
-  CHANGELIST = 2,
-  UNRECOGNIZED = -1,
+  PROTECTION_TARGET_UNSPECIFIED = "PROTECTION_TARGET_UNSPECIFIED",
+  BRANCH = "BRANCH",
+  CHANGELIST = "CHANGELIST",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function protectionRule_TargetFromJSON(object: any): ProtectionRule_Target {
@@ -62,10 +62,24 @@ export function protectionRule_TargetToJSON(object: ProtectionRule_Target): stri
   }
 }
 
+export function protectionRule_TargetToNumber(object: ProtectionRule_Target): number {
+  switch (object) {
+    case ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED:
+      return 0;
+    case ProtectionRule_Target.BRANCH:
+      return 1;
+    case ProtectionRule_Target.CHANGELIST:
+      return 2;
+    case ProtectionRule_Target.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum ProtectionRule_BranchSource {
-  BRANCH_SOURCE_UNSPECIFIED = 0,
-  DATABASE = 1,
-  UNRECOGNIZED = -1,
+  BRANCH_SOURCE_UNSPECIFIED = "BRANCH_SOURCE_UNSPECIFIED",
+  DATABASE = "DATABASE",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function protectionRule_BranchSourceFromJSON(object: any): ProtectionRule_BranchSource {
@@ -92,6 +106,18 @@ export function protectionRule_BranchSourceToJSON(object: ProtectionRule_BranchS
     case ProtectionRule_BranchSource.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function protectionRule_BranchSourceToNumber(object: ProtectionRule_BranchSource): number {
+  switch (object) {
+    case ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED:
+      return 0;
+    case ProtectionRule_BranchSource.DATABASE:
+      return 1;
+    case ProtectionRule_BranchSource.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -157,7 +183,13 @@ export const Project = {
 };
 
 function createBaseProtectionRule(): ProtectionRule {
-  return { id: "", target: 0, nameFilter: "", allowedRoles: [], branchSource: 0 };
+  return {
+    id: "",
+    target: ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED,
+    nameFilter: "",
+    allowedRoles: [],
+    branchSource: ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED,
+  };
 }
 
 export const ProtectionRule = {
@@ -165,8 +197,8 @@ export const ProtectionRule = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
-    if (message.target !== 0) {
-      writer.uint32(16).int32(message.target);
+    if (message.target !== ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED) {
+      writer.uint32(16).int32(protectionRule_TargetToNumber(message.target));
     }
     if (message.nameFilter !== "") {
       writer.uint32(26).string(message.nameFilter);
@@ -174,8 +206,8 @@ export const ProtectionRule = {
     for (const v of message.allowedRoles) {
       writer.uint32(34).string(v!);
     }
-    if (message.branchSource !== 0) {
-      writer.uint32(40).int32(message.branchSource);
+    if (message.branchSource !== ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED) {
+      writer.uint32(40).int32(protectionRule_BranchSourceToNumber(message.branchSource));
     }
     return writer;
   },
@@ -199,7 +231,7 @@ export const ProtectionRule = {
             break;
           }
 
-          message.target = reader.int32() as any;
+          message.target = protectionRule_TargetFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -220,7 +252,7 @@ export const ProtectionRule = {
             break;
           }
 
-          message.branchSource = reader.int32() as any;
+          message.branchSource = protectionRule_BranchSourceFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -234,12 +266,16 @@ export const ProtectionRule = {
   fromJSON(object: any): ProtectionRule {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      target: isSet(object.target) ? protectionRule_TargetFromJSON(object.target) : 0,
+      target: isSet(object.target)
+        ? protectionRule_TargetFromJSON(object.target)
+        : ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED,
       nameFilter: isSet(object.nameFilter) ? globalThis.String(object.nameFilter) : "",
       allowedRoles: globalThis.Array.isArray(object?.allowedRoles)
         ? object.allowedRoles.map((e: any) => globalThis.String(e))
         : [],
-      branchSource: isSet(object.branchSource) ? protectionRule_BranchSourceFromJSON(object.branchSource) : 0,
+      branchSource: isSet(object.branchSource)
+        ? protectionRule_BranchSourceFromJSON(object.branchSource)
+        : ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED,
     };
   },
 
@@ -248,7 +284,7 @@ export const ProtectionRule = {
     if (message.id !== "") {
       obj.id = message.id;
     }
-    if (message.target !== 0) {
+    if (message.target !== ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED) {
       obj.target = protectionRule_TargetToJSON(message.target);
     }
     if (message.nameFilter !== "") {
@@ -257,7 +293,7 @@ export const ProtectionRule = {
     if (message.allowedRoles?.length) {
       obj.allowedRoles = message.allowedRoles;
     }
-    if (message.branchSource !== 0) {
+    if (message.branchSource !== ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED) {
       obj.branchSource = protectionRule_BranchSourceToJSON(message.branchSource);
     }
     return obj;
@@ -269,10 +305,10 @@ export const ProtectionRule = {
   fromPartial(object: DeepPartial<ProtectionRule>): ProtectionRule {
     const message = createBaseProtectionRule();
     message.id = object.id ?? "";
-    message.target = object.target ?? 0;
+    message.target = object.target ?? ProtectionRule_Target.PROTECTION_TARGET_UNSPECIFIED;
     message.nameFilter = object.nameFilter ?? "";
     message.allowedRoles = object.allowedRoles?.map((e) => e) || [];
-    message.branchSource = object.branchSource ?? 0;
+    message.branchSource = object.branchSource ?? ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED;
     return message;
   },
 };

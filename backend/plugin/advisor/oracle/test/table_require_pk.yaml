@@ -14,12 +14,12 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE "SYS".t(id INT)
+- statement: CREATE TABLE "TEST_DB".t(id INT)
   want:
     - status: WARN
       code: 601
       title: table.require-pk
-      content: Table "SYS"."T" requires PRIMARY KEY.
+      content: Table "TEST_DB"."T" requires PRIMARY KEY.
       line: 1
       details: ""
 - statement: |-
@@ -49,6 +49,6 @@
     - status: WARN
       code: 601
       title: table.require-pk
-      content: Table "SYS"."T" requires PRIMARY KEY.
+      content: Table "TEST_DB"."T" requires PRIMARY KEY.
       line: 2
       details: ""

@@ -79,6 +79,42 @@ func TestRangeMask(t *testing.T) {
 			},
 		},
 		{
+			description: "Single slice - only keep 1st raw value",
+			input: &MaskData{
+				Data: &sql.NullString{String: "012345678", Valid: true},
+			},
+			slices: []*MaskRangeSlice{
+				{
+					Start:        1,
+					End:          -1,
+					Substitution: "***",
+				},
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: "0***",
+				},
+			},
+		},
+		{
+			description: "Single slice - mask last 3 value",
+			input: &MaskData{
+				Data: &sql.NullString{String: "012345678", Valid: true},
+			},
+			slices: []*MaskRangeSlice{
+				{
+					Start:        -4,
+					End:          -1,
+					Substitution: "***",
+				},
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: "012345***",
+				},
+			},
+		},
+		{
 			description: "Multiple slices",
 			input: &MaskData{
 				Data: &sql.NullString{String: "012345678", Valid: true},
@@ -98,6 +134,29 @@ func TestRangeMask(t *testing.T) {
 			want: &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
 					StringValue: "0###34***78",
+				},
+			},
+		},
+		{
+			description: "Multiple slices",
+			input: &MaskData{
+				Data: &sql.NullString{String: "012345678", Valid: true},
+			},
+			slices: []*MaskRangeSlice{
+				{
+					Start:        0,
+					End:          2,
+					Substitution: "###",
+				},
+				{
+					Start:        -2,
+					End:          -1,
+					Substitution: "***",
+				},
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: "###234567***",
 				},
 			},
 		},

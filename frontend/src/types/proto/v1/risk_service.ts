@@ -74,14 +74,14 @@ export interface Risk {
 }
 
 export enum Risk_Source {
-  SOURCE_UNSPECIFIED = 0,
-  DDL = 1,
-  DML = 2,
-  CREATE_DATABASE = 3,
-  REQUEST_QUERY = 4,
-  REQUEST_EXPORT = 5,
-  DATA_EXPORT = 6,
-  UNRECOGNIZED = -1,
+  SOURCE_UNSPECIFIED = "SOURCE_UNSPECIFIED",
+  DDL = "DDL",
+  DML = "DML",
+  CREATE_DATABASE = "CREATE_DATABASE",
+  REQUEST_QUERY = "REQUEST_QUERY",
+  REQUEST_EXPORT = "REQUEST_EXPORT",
+  DATA_EXPORT = "DATA_EXPORT",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function risk_SourceFromJSON(object: any): Risk_Source {
@@ -133,6 +133,28 @@ export function risk_SourceToJSON(object: Risk_Source): string {
     case Risk_Source.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function risk_SourceToNumber(object: Risk_Source): number {
+  switch (object) {
+    case Risk_Source.SOURCE_UNSPECIFIED:
+      return 0;
+    case Risk_Source.DDL:
+      return 1;
+    case Risk_Source.DML:
+      return 2;
+    case Risk_Source.CREATE_DATABASE:
+      return 3;
+    case Risk_Source.REQUEST_QUERY:
+      return 4;
+    case Risk_Source.REQUEST_EXPORT:
+      return 5;
+    case Risk_Source.DATA_EXPORT:
+      return 6;
+    case Risk_Source.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -473,7 +495,15 @@ export const DeleteRiskRequest = {
 };
 
 function createBaseRisk(): Risk {
-  return { name: "", uid: "", source: 0, title: "", level: 0, active: false, condition: undefined };
+  return {
+    name: "",
+    uid: "",
+    source: Risk_Source.SOURCE_UNSPECIFIED,
+    title: "",
+    level: 0,
+    active: false,
+    condition: undefined,
+  };
 }
 
 export const Risk = {
@@ -484,8 +514,8 @@ export const Risk = {
     if (message.uid !== "") {
       writer.uint32(18).string(message.uid);
     }
-    if (message.source !== 0) {
-      writer.uint32(24).int32(message.source);
+    if (message.source !== Risk_Source.SOURCE_UNSPECIFIED) {
+      writer.uint32(24).int32(risk_SourceToNumber(message.source));
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
@@ -528,7 +558,7 @@ export const Risk = {
             break;
           }
 
-          message.source = reader.int32() as any;
+          message.source = risk_SourceFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -571,7 +601,7 @@ export const Risk = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
-      source: isSet(object.source) ? risk_SourceFromJSON(object.source) : 0,
+      source: isSet(object.source) ? risk_SourceFromJSON(object.source) : Risk_Source.SOURCE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       level: isSet(object.level) ? globalThis.Number(object.level) : 0,
       active: isSet(object.active) ? globalThis.Boolean(object.active) : false,
@@ -587,7 +617,7 @@ export const Risk = {
     if (message.uid !== "") {
       obj.uid = message.uid;
     }
-    if (message.source !== 0) {
+    if (message.source !== Risk_Source.SOURCE_UNSPECIFIED) {
       obj.source = risk_SourceToJSON(message.source);
     }
     if (message.title !== "") {
@@ -612,7 +642,7 @@ export const Risk = {
     const message = createBaseRisk();
     message.name = object.name ?? "";
     message.uid = object.uid ?? "";
-    message.source = object.source ?? 0;
+    message.source = object.source ?? Risk_Source.SOURCE_UNSPECIFIED;
     message.title = object.title ?? "";
     message.level = object.level ?? 0;
     message.active = object.active ?? false;
