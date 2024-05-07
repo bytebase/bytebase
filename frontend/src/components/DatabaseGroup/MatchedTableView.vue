@@ -22,20 +22,27 @@
         <heroicons-outline:chevron-down v-else class="w-5 h-auto" />
       </button>
     </div>
-    <div v-show="state.showMatchedTableList" class="w-full my-1">
-      <div
-        v-for="table in matchedTableList"
-        :key="table.database"
-        class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
+    <div v-show="state.showMatchedTableList" class="w-full">
+      <NVirtualList
+        class="w-full py-1 max-h-[12rem]"
+        :item-size="28"
+        :items="matchedTableList"
       >
-        <span class="text-sm">{{ table.table }}</span>
-        <div class="flex flex-row justify-end items-center">
-          <DatabaseView :database="table.databaseEntity" />
-        </div>
-      </div>
+        <template #default="{ item: table }">
+          <div
+            :key="table.table"
+            class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
+          >
+            <span class="text-sm">{{ table.table }}</span>
+            <div class="flex flex-row justify-end items-center">
+              <DatabaseView :database="table.databaseEntity" />
+            </div>
+          </div>
+        </template>
+      </NVirtualList>
     </div>
     <div
-      class="sticky top-8 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-y cursor-pointer"
+      class="sticky top-7 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-y cursor-pointer"
       @click="state.showUnmatchedTableList = !state.showUnmatchedTableList"
     >
       <div class="text-sm font-medium">
@@ -52,22 +59,30 @@
         <heroicons-outline:chevron-down v-else class="w-5 h-auto" />
       </button>
     </div>
-    <div v-show="state.showUnmatchedTableList" class="w-full py-1">
-      <div
-        v-for="table in unmatchedTableList"
-        :key="table.database"
-        class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
+    <div v-show="state.showUnmatchedTableList" class="w-full">
+      <NVirtualList
+        class="w-full py-1 max-h-[12rem]"
+        :item-size="28"
+        :items="unmatchedTableList"
       >
-        <span class="text-sm">{{ table.table }}</span>
-        <div class="flex flex-row justify-end items-center">
-          <DatabaseView :database="table.databaseEntity" />
-        </div>
-      </div>
+        <template #default="{ item: table }">
+          <div
+            :key="table.table"
+            class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
+          >
+            <span class="text-sm">{{ table.table }}</span>
+            <div class="flex flex-row justify-end items-center">
+              <DatabaseView :database="table.databaseEntity" />
+            </div>
+          </div>
+        </template>
+      </NVirtualList>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { NVirtualList } from "naive-ui";
 import { reactive } from "vue";
 import type { ComposedSchemaGroupTable } from "@/types";
 import { DatabaseView } from "../v2";
