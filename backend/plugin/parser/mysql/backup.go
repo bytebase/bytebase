@@ -9,6 +9,7 @@ import (
 
 	parser "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -17,126 +18,119 @@ func init() {
 	base.RegisterTransformDMLToSelect(store.Engine_MYSQL, TransformDMLToSelect)
 }
 
-func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]base.BackupStatement, error) {
-	tableStatementMap, err := prepareTransformation(sourceDatabase, statement)
+const (
+	maxTableNameLength = 64
+)
+
+func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+	statementInfoList, err := prepareTransformation(sourceDatabase, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
 	}
 
-	return generateSQL(tableStatementMap, targetDatabase, tableSuffix)
+	return generateSQL(statementInfoList, targetDatabase, tablePrefix)
 }
 
-func prepareTransformation(databaseName, statement string) (map[string][]*tableStatement, error) {
+type StatementType int
+
+const (
+	StatementTypeUnknown StatementType = iota
+	StatementTypeUpdate
+	StatementTypeInsert
+	StatementTypeDelete
+)
+
+type TableReference struct {
+	Table         string
+	Alias         string
+	StatementType StatementType
+}
+
+type statementInfo struct {
+	offset    int
+	statement string
+	tree      antlr.Tree
+	table     *TableReference
+	line      int
+}
+
+func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
 	list, err := SplitSQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to split sql")
 	}
 
-	result := make(map[string][]*tableStatement)
-	tableStatementTypeMap := make(map[string]StatementType)
+	var result []statementInfo
 
-	for _, sql := range list {
+	for i, sql := range list {
 		if len(sql.Text) == 0 || sql.Empty {
 			continue
 		}
-		parseResult, isDML, isDDL, err := getSQLType(sql.Text)
+		parseResult, err := ParseMySQL(sql.Text)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get sql type")
-		}
-		if isDDL {
-			return nil, errors.New("cannot transform mixed DDL and DML statements")
-		}
-		if !isDML {
-			continue
+			return nil, errors.Wrap(err, "failed to parse sql")
 		}
 
-		tables, err := extractTables(databaseName, parseResult)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to extract tables")
-		}
-		for _, table := range tables {
-			if table.StatementType == StatementTypeUnknown {
-				return nil, errors.Errorf("unknown statement type for table %q", table.Table)
+		for _, sql := range parseResult {
+			// After splitting the SQL, we should have only one statement in the list.
+			// The FOR loop is just for safety.
+			// So we can use the i as the offset.
+			tables, err := extractTables(databaseName, sql, i)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to extract tables")
 			}
-
-			tp, exists := tableStatementTypeMap[table.Table]
-			if exists && tp != table.StatementType {
-				return nil, errors.Errorf("cannot transform mixed DML statements for table %q", table.Table)
-			}
-
-			if !exists {
-				tableStatementTypeMap[table.Table] = table.StatementType
-			}
-
-			result[table.Table] = append(result[table.Table], &tableStatement{
-				tree:  parseResult,
-				table: &TableReference{Table: table.Table, Alias: table.Alias},
-			})
+			result = append(result, tables...)
 		}
 	}
 
 	return result, nil
 }
 
-func getSQLType(statement string) (*ParseResult, bool, bool, error) {
-	listener := &StatementTypeChecker{}
-
-	stmts, err := ParseMySQL(statement)
-	if err != nil {
-		return nil, false, false, errors.Wrap(err, "failed to parse sql")
-	}
-
-	if len(stmts) != 1 {
-		return nil, false, false, errors.New("statement is not single sql")
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(listener, stmts[0].Tree)
-	return stmts[0], listener.IsDML, listener.IsDDL, nil
-}
-
-func generateSQL(tableStatementMap map[string][]*tableStatement, databaseName string, tableSuffix string) ([]base.BackupStatement, error) {
+func generateSQL(statementInfoList []statementInfo, databaseName string, tablePrefix string) ([]base.BackupStatement, error) {
 	var result []base.BackupStatement
-	for tableName, tableStatements := range tableStatementMap {
-		targetTable := fmt.Sprintf("%s%s", tableName, tableSuffix)
+	offsetLength := 1
+	if len(statementInfoList) > 1 {
+		offsetLength = base.GetOffsetLength(statementInfoList[len(statementInfoList)-1].offset)
+	}
+
+	for _, statementInfo := range statementInfoList {
+		table := statementInfo.table
+		targetTable := fmt.Sprintf("%s_%0*d_%s", tablePrefix, offsetLength, statementInfo.offset, table.Table)
+		targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
+		// If enforce_gtid_consistency = true on MySQL 5.6+, we cannot run CREATE TABLE .. AS SELECT.
+		// So we need to create the table first and then run INSERT INTO .. SELECT.
 		var buf strings.Builder
-		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` AS ", databaseName, targetTable)); err != nil {
+		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`;\n", databaseName, targetTable, table.Table)); err != nil {
 			return nil, errors.Wrap(err, "failed to write create table statement")
 		}
-		for i, tableStatement := range tableStatements {
-			if i > 0 {
-				if _, err := buf.WriteString(" UNION "); err != nil {
-					return nil, errors.Wrap(err, "failed to write union all statement")
-				}
-			}
-			tableName := tableStatement.table.Table
-			if len(tableStatement.table.Alias) > 0 {
-				tableName = tableStatement.table.Alias
-			}
-			if _, err := buf.WriteString(fmt.Sprintf("SELECT `%s`.* FROM ", tableName)); err != nil {
-				return nil, errors.Wrap(err, "failed to write select statement")
-			}
-
-			if err := extractSuffixSelectStatement(tableStatement.tree, &buf); err != nil {
-				return nil, errors.Wrap(err, "failed to extract suffix select statement")
-			}
+		tableNameOrAlias := table.Table
+		if len(table.Alias) > 0 {
+			tableNameOrAlias = table.Alias
+		}
+		if _, err := buf.WriteString(fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT `%s`.* FROM ", databaseName, targetTable, tableNameOrAlias)); err != nil {
+			return nil, errors.Wrap(err, "failed to write insert into statement")
+		}
+		if err := extractSuffixSelectStatement(statementInfo.tree, &buf); err != nil {
+			return nil, errors.Wrap(err, "failed to extract suffix select statement")
 		}
 		if err := buf.WriteByte(';'); err != nil {
 			return nil, errors.Wrap(err, "failed to write semicolon")
 		}
 		result = append(result, base.BackupStatement{
-			Statement: buf.String(),
-			TableName: targetTable,
+			Statement:    buf.String(),
+			TableName:    targetTable,
+			OriginalLine: statementInfo.line,
 		})
 	}
 	return result, nil
 }
 
-func extractSuffixSelectStatement(parseResult *ParseResult, buf *strings.Builder) error {
+func extractSuffixSelectStatement(tree antlr.Tree, buf *strings.Builder) error {
 	listener := &suffixSelectStatementListener{
 		buf: buf,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
 	return listener.err
 }
 
@@ -148,6 +142,9 @@ type suffixSelectStatementListener struct {
 }
 
 func (l *suffixSelectStatementListener) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
+	if !isTopLevel(ctx.GetParent()) {
+		return
+	}
 	if ctx.TableRef() != nil {
 		// Single table delete statement.
 		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromTokens(
@@ -172,6 +169,9 @@ func (l *suffixSelectStatementListener) EnterDeleteStatement(ctx *parser.DeleteS
 }
 
 func (l *suffixSelectStatementListener) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
+	if !isTopLevel(ctx.GetParent()) {
+		return
+	}
 	if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.TableReferenceList())); err != nil {
 		l.err = errors.Wrap(err, "failed to write suffix select statement")
 		return
@@ -211,29 +211,10 @@ func (l *suffixSelectStatementListener) EnterUpdateStatement(ctx *parser.UpdateS
 	}
 }
 
-type tableStatement struct {
-	tree  *ParseResult
-	table *TableReference
-}
-
-type StatementType int
-
-const (
-	StatementTypeUnknown StatementType = iota
-	StatementTypeUpdate
-	StatementTypeInsert
-	StatementTypeDelete
-)
-
-type TableReference struct {
-	Table         string
-	Alias         string
-	StatementType StatementType
-}
-
-func extractTables(databaseName string, parseResult *ParseResult) ([]*TableReference, error) {
+func extractTables(databaseName string, parseResult *ParseResult, offset int) ([]statementInfo, error) {
 	listener := &tableReferenceListener{
 		databaseName: databaseName,
+		offset:       offset,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
@@ -245,12 +226,27 @@ type tableReferenceListener struct {
 	*parser.BaseMySQLParserListener
 
 	databaseName string
-	tables       []*TableReference
+	offset       int
+	tables       []statementInfo
 	err          error
 }
 
+func isTopLevel(ctx antlr.Tree) bool {
+	if ctx == nil {
+		return true
+	}
+	switch ctx := ctx.(type) {
+	case *parser.SimpleStatementContext:
+		return isTopLevel(ctx.GetParent())
+	case *parser.QueryContext, *parser.ScriptContext:
+		return true
+	default:
+		return false
+	}
+}
+
 func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
-	if _, ok := ctx.GetParent().(*parser.SimpleStatementContext); !ok {
+	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
@@ -268,10 +264,16 @@ func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatemen
 			alias = NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
 		}
 
-		l.tables = append(l.tables, &TableReference{
-			Table:         table,
-			Alias:         alias,
-			StatementType: StatementTypeDelete,
+		l.tables = append(l.tables, statementInfo{
+			offset:    l.offset,
+			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+			tree:      ctx,
+			table: &TableReference{
+				Table:         table,
+				Alias:         alias,
+				StatementType: StatementTypeDelete,
+			},
+			line: ctx.GetStart().GetLine(),
 		})
 		return
 	}
@@ -299,13 +301,19 @@ func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatemen
 			}
 
 			singleTable.StatementType = StatementTypeDelete
-			l.tables = append(l.tables, singleTable)
+			l.tables = append(l.tables, statementInfo{
+				offset:    l.offset,
+				statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+				tree:      ctx,
+				table:     singleTable,
+				line:      ctx.GetStart().GetLine(),
+			})
 		}
 	}
 }
 
 func (l *tableReferenceListener) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
-	if _, ok := ctx.GetParent().(*parser.SimpleStatementContext); !ok {
+	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
 
@@ -341,7 +349,13 @@ func (l *tableReferenceListener) EnterUpdateStatement(ctx *parser.UpdateStatemen
 		}
 
 		singleTable.StatementType = StatementTypeUpdate
-		l.tables = append(l.tables, singleTable)
+		l.tables = append(l.tables, statementInfo{
+			offset:    l.offset,
+			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+			tree:      ctx,
+			table:     singleTable,
+			line:      ctx.GetStart().GetLine(),
+		})
 	}
 }
 

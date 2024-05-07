@@ -127,8 +127,8 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 	defer backupDriver.Close(driverCtx)
 
-	suffix := "_" + time.Now().Format("20060102150405")
-	statements, err := base.TransformDMLToSelect(instance.Engine, statement, database.DatabaseName, backupDatabaseName, suffix)
+	prefix := "_" + time.Now().Format("20060102150405")
+	statements, err := base.TransformDMLToSelect(instance.Engine, statement, database.DatabaseName, backupDatabaseName, prefix)
 	if err != nil {
 		return errors.Wrap(err, "failed to transform DML to select")
 	}
