@@ -63,6 +63,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		Releasers:            releasers,
 		RiskLevel:            v1pb.Issue_RISK_LEVEL_UNSPECIFIED,
 		TaskStatusCount:      issue.TaskStatusCount,
+		Labels:               issuePayload.Labels,
 	}
 
 	if issue.PlanUID != nil {

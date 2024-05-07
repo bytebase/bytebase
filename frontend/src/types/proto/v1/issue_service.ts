@@ -301,6 +301,7 @@ export interface Issue {
    * - CANCELED
    */
   taskStatusCount: { [key: string]: number };
+  labels: string[];
 }
 
 export enum Issue_Type {
@@ -1996,6 +1997,7 @@ function createBaseIssue(): Issue {
     releasers: [],
     riskLevel: Issue_RiskLevel.RISK_LEVEL_UNSPECIFIED,
     taskStatusCount: {},
+    labels: [],
   };
 }
 
@@ -2067,6 +2069,9 @@ export const Issue = {
     Object.entries(message.taskStatusCount).forEach(([key, value]) => {
       Issue_TaskStatusCountEntry.encode({ key: key as any, value }, writer.uint32(178).fork()).ldelim();
     });
+    for (const v of message.labels) {
+      writer.uint32(186).string(v!);
+    }
     return writer;
   },
 
@@ -2234,6 +2239,13 @@ export const Issue = {
             message.taskStatusCount[entry22.key] = entry22.value;
           }
           continue;
+        case 23:
+          if (tag !== 186) {
+            break;
+          }
+
+          message.labels.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2282,6 +2294,9 @@ export const Issue = {
           return acc;
         }, {})
         : {},
+      labels: globalThis.Array.isArray(object?.labels)
+        ? object.labels.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -2359,6 +2374,9 @@ export const Issue = {
         });
       }
     }
+    if (message.labels?.length) {
+      obj.labels = message.labels;
+    }
     return obj;
   },
 
@@ -2399,6 +2417,7 @@ export const Issue = {
       },
       {},
     );
+    message.labels = object.labels?.map((e) => e) || [];
     return message;
   },
 };

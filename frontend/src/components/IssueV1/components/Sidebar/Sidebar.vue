@@ -4,6 +4,7 @@
     <RollbackFromTips ref="rollbackFromTipsRef" />
     <ReviewSection ref="reviewSectionRef" />
     <Assignee ref="assigneeRef" />
+    <IssueLabels />
 
     <div v-if="isFirstSectionShown" class="border-t -mx-3" />
 
@@ -19,6 +20,7 @@ import { computed, ref } from "vue";
 import Assignee from "./Assignee";
 import EarliestAllowedTime from "./EarliestAllowedTime.vue";
 import GhostSection from "./GhostSection";
+import IssueLabels from "./IssueLabels.vue";
 import PreBackupSection from "./PreBackupSection";
 import ReviewSection from "./ReviewSection";
 import RollbackFromTips from "./RollbackFromTips.vue";

@@ -538,6 +538,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 			ApprovalTemplates:   nil,
 			Approvers:           nil,
 		},
+		Labels: request.Issue.Labels,
 	}
 
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
@@ -634,6 +635,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 			ApprovalTemplates:   nil,
 			Approvers:           nil,
 		},
+		Labels: request.Issue.Labels,
 	}
 
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
@@ -764,6 +766,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 			ApprovalTemplates:   nil,
 			Approvers:           nil,
 		},
+		Labels: request.Issue.Labels,
 	}
 
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
@@ -1580,6 +1583,11 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 					},
 				},
 			})
+		case "labels":
+			if patch.PayloadUpsert == nil {
+				patch.PayloadUpsert = &storepb.IssuePayload{}
+			}
+			patch.PayloadUpsert.Labels = request.Issue.Labels
 		}
 	}
 

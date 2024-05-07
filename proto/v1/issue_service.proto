@@ -334,6 +334,8 @@ message Issue {
   // - FAILED
   // - CANCELED
   map<string, int32> task_status_count = 22;
+
+  repeated string labels = 23;
 }
 
 message GrantRequest {

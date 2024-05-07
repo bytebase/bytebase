@@ -307,6 +307,12 @@ message UpdateDeploymentConfigRequest {
   DeploymentConfig config = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
+message Label {
+  string value = 1;
+  string color = 2;
+  string group = 3;
+}
+
 message Project {
   // The name of the project.
   // Format: projects/{project}
@@ -330,6 +336,8 @@ message Project {
   repeated Webhook webhooks = 11;
 
   string data_classification_config_id = 12;
+
+  repeated Label issue_labels = 13;
 }
 
 enum Workflow {
