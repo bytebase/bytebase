@@ -128,6 +128,7 @@
       :data-height="editorContainerHeight"
     >
       <MonacoEditor
+        ref="monacoEditorRef"
         class="w-full h-auto max-h-[240px] min-h-[120px] border rounded-[3px]"
         :filename="filename"
         :content="state.statement"
@@ -283,6 +284,7 @@ const { events, isCreating, issue, selectedTask, formatOnSave } =
 const project = computed(() => issue.value.projectEntity);
 const dialog = useDialog();
 const editorContainerElRef = ref<HTMLElement>();
+const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 const { height: editorContainerHeight } = useElementSize(editorContainerElRef);
 
 const state = reactive<LocalState>({
@@ -743,5 +745,11 @@ watch(isCreating, (curr, prev) => {
   if (!curr && prev) {
     state.isEditing = false;
   }
+});
+
+defineExpose({
+  get editor() {
+    return monacoEditorRef.value;
+  },
 });
 </script>
