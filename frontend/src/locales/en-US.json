@@ -1934,7 +1934,8 @@
         "only-allow-specified-roles-to-create-branch": "Only allow specified roles to create branch",
         "no-protection-rule-configured": "No protection rule configured.",
         "only-apply-to-main-branches": "Only apply to main branches"
-      }
+      },
+      "issue-labels": "Issue Labels"
     },
     "members": {
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",

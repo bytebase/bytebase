@@ -1614,6 +1614,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Label"><span class="badge">M</span>Label</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.LabelSelector"><span class="badge">M</span>LabelSelector</a>
                 </li>
               
@@ -13951,6 +13955,13 @@ Keys are the following:
 - CANCELED </p></td>
                 </tr>
               
+                <tr>
+                  <td>labels</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -17802,6 +17813,44 @@ Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGr
 
         
       
+        <h3 id="bytebase.v1.Label">Label</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>color</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>group</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.LabelSelector">LabelSelector</h3>
         <p></p>
 
@@ -18169,6 +18218,13 @@ Format: projects/{project} </p></td>
                   <td>data_classification_config_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>issue_labels</td>
+                  <td><a href="#bytebase.v1.Label">Label</a></td>
+                  <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
               

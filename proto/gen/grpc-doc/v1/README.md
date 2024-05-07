@@ -376,6 +376,7 @@
     - [GetProjectProtectionRulesRequest](#bytebase-v1-GetProjectProtectionRulesRequest)
     - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
     - [GetSchemaGroupRequest](#bytebase-v1-GetSchemaGroupRequest)
+    - [Label](#bytebase-v1-Label)
     - [LabelSelector](#bytebase-v1-LabelSelector)
     - [LabelSelectorRequirement](#bytebase-v1-LabelSelectorRequirement)
     - [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest)
@@ -4833,6 +4834,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | releasers | [string](#string) | repeated | The releasers of the pending stage of the issue rollout, judging from the rollout policy. If the policy is auto rollout, the releasers are the project owners and the issue creator. Format: - roles/workspaceOwner - roles/workspaceDBA - roles/projectOwner - roles/projectReleaser - users/{email} |
 | risk_level | [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel) |  |  |
 | task_status_count | [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry) | repeated | The status count of the issue. Keys are the following: - NOT_STARTED - SKIPPED - PENDING - RUNNING - DONE - FAILED - CANCELED |
+| labels | [string](#string) | repeated |  |
 
 
 
@@ -6297,6 +6299,23 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
+<a name="bytebase-v1-Label"></a>
+
+### Label
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| value | [string](#string) |  |  |
+| color | [string](#string) |  |  |
+| group | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-LabelSelector"></a>
 
 ### LabelSelector
@@ -6451,6 +6470,7 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | tenant_mode | [TenantMode](#bytebase-v1-TenantMode) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 | data_classification_config_id | [string](#string) |  |  |
+| issue_labels | [Label](#bytebase-v1-Label) | repeated |  |
 
 
 

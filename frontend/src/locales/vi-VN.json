@@ -1934,7 +1934,8 @@
         "only-allow-specified-roles-to-create-branch": "Chỉ cho phép các vai trò được chỉ định để tạo chi nhánh",
         "no-protection-rule-configured": "Không có quy tắc bảo vệ nào được cấu hình.",
         "only-apply-to-main-branches": "Chỉ áp dụng cho chi nhánh chính"
-      }
+      },
+      "issue-labels": "Nhãn phát hành"
     },
     "members": {
       "description": "Các thành viên dự án xác định quyền vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ dự án, Quản trị viên Workspace và DBA Workspace đều có đầy đủ quyền đối với dự án.",

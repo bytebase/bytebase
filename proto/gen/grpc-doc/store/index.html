@@ -894,6 +894,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.Label"><span class="badge">M</span>Label</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.Project"><span class="badge">M</span>Project</a>
                 </li>
               
@@ -5311,6 +5315,13 @@ Format: users/{userUID}. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>labels</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7238,6 +7249,44 @@ roles/CREATOR </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.store.Label">Label</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>color</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>group</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.Project">Project</h3>
         <p></p>
 
@@ -7251,6 +7300,13 @@ roles/CREATOR </p></td>
                 <tr>
                   <td>protection_rules</td>
                   <td><a href="#bytebase.store.ProtectionRule">ProtectionRule</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>issue_labels</td>
+                  <td><a href="#bytebase.store.Label">Label</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>

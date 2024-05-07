@@ -1934,7 +1934,8 @@
         "only-allow-specified-roles-to-create-branch": "Sólo permitir roles especificados para crear rama",
         "no-protection-rule-configured": "No hay regla de protección configurada",
         "only-apply-to-main-branches": "Sólo aplica en sucursales principales"
-      }
+      },
+      "issue-labels": "Etiquetas de problemas"
     },
     "members": {
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",

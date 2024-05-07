@@ -6,6 +6,10 @@
         :project="project"
         :allow-edit="allowEdit"
       />
+      <ProjectIssueLabelsSettingPanel
+        :project="project"
+        :allow-edit="allowEdit"
+      />
       <div class="pt-4">
         <ProjectArchiveRestoreButton :project="project" />
       </div>

@@ -11,6 +11,7 @@ option go_package = "generated-go/store";
 message IssuePayload {
   IssuePayloadApproval approval = 1;
   GrantRequest grant_request = 2;
+  repeated string labels = 3;
 }
 
 message GrantRequest {
