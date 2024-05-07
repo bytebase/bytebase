@@ -1031,6 +1031,10 @@
             "yes": "yes",
             "no": "no"
           }
+        },
+        "label": {
+          "title": "Etiqueta",
+          "description": "Filtrar por etiqueta de problema"
         }
       },
       "hide": "Ocultar búsqueda avanzada"

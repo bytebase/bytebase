@@ -111,6 +111,8 @@ type FindIssueMessage struct {
 	Query *string
 
 	PermissionFilter *FindIssueMessagePermissionFilter
+
+	LabelList []string
 }
 
 // GetIssueV2 gets issue by issue UID.
@@ -453,6 +455,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.Offset; v != nil {
 		limitOffsetClause += fmt.Sprintf(" OFFSET %d", *v)
+	}
+	if len(find.LabelList) != 0 {
+		where = append(where, fmt.Sprintf("payload->'labels' ?& $%d::TEXT[]", len(args)+1))
+		args = append(args, find.LabelList)
 	}
 
 	var issues []*IssueMessage

@@ -23,7 +23,7 @@ import {
 } from "@/store";
 import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
-import { Workflow } from "@/types/proto/v1/project_service";
+import { Workflow, Label } from "@/types/proto/v1/project_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
   environmentV1Name,
@@ -44,6 +44,25 @@ export type ValueOption = {
   keywords: string[];
   custom?: boolean;
   render: RenderFunction;
+};
+
+const useProjectLabels = (params: Ref<SearchParams>) => {
+  const { projectList } = useProjectV1List();
+  const projectName = params.value.scopes.find(
+    (scope) => scope.id === "project"
+  )?.value;
+
+  const labels = new Map<string, Label>();
+  for (const project of projectList.value) {
+    if (projectName && project.name !== `projects/${projectName}`) {
+      continue;
+    }
+    for (const label of project.issueLabels) {
+      const key = `${label.value}-${label.color}`;
+      labels.set(key, label);
+    }
+  }
+  return [...labels.values()];
 };
 
 export const useSearchScopeOptions = (
@@ -294,6 +313,25 @@ export const useSearchScopeOptions = (
               ),
           },
         ],
+      },
+      {
+        id: "label",
+        title: t("issue.advanced-search.scope.label.title"),
+        description: t("issue.advanced-search.scope.label.description"),
+        options: useProjectLabels(params).map((label) => {
+          return {
+            value: label.value,
+            keywords: [label.value],
+            render: () =>
+              h("div", { class: "flex items-center gap-x-2" }, [
+                h("div", {
+                  class: "w-4 h-4 rounded",
+                  style: `background-color: ${label.color};`,
+                }),
+                label.value,
+              ]),
+          };
+        }),
       },
     ];
     const supportOptionIdSet = new Set(supportOptionIdList.value);

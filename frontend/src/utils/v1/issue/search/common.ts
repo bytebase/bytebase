@@ -24,6 +24,7 @@ export const SearchScopeIdList = [
   "subscriber",
   "status",
   "created",
+  "label",
 ] as const;
 
 export type SearchScopeId =

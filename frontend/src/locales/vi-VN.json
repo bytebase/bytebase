@@ -1031,6 +1031,10 @@
             "yes": "Đúng",
             "no": "KHÔNG"
           }
+        },
+        "label": {
+          "title": "Nhãn",
+          "description": "Lọc theo nhãn vấn đề"
         }
       },
       "hide": "Ẩn tìm kiếm nâng cao"
