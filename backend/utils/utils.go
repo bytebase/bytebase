@@ -201,18 +201,21 @@ func ExecuteMigrationDefault(ctx context.Context, driverCtx context.Context, sto
 		}
 		return nil
 	}
-	return ExecuteMigrationWithFunc(ctx, driverCtx, store, stateCfg, taskRunUID, driver, mi, statement, sheetID, execFunc)
+	return ExecuteMigrationWithFunc(ctx, driverCtx, store, stateCfg, taskRunUID, driver, mi, statement, sheetID, execFunc, opts)
 }
 
 // ExecuteMigrationWithFunc executes the migration with custom migration function.
-func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, stateCfg *state.State, taskRunUID int, driver db.Driver, m *db.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, stateCfg *state.State, taskRunUID int, driver db.Driver, m *db.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+	opts.LogSchemaDumpStart()
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
 	// For baseline migration, we also record the live schema to detect the schema drift.
 	// See https://bytebase.com/blog/what-is-database-schema-drift
 	if _, err := driver.Dump(ctx, &prevSchemaBuf, true /* schemaOnly */); err != nil {
+		opts.LogSchemaDumpEnd(err.Error())
 		return "", "", err
 	}
+	opts.LogSchemaDumpEnd("")
 
 	insertedID, err := BeginMigration(ctx, s, m, prevSchemaBuf.String(), statement, sheetID)
 	if err != nil {
@@ -277,6 +280,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 			})
 	}
 
+	opts.LogSchemaDumpStart()
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
 	if _, err := driver.Dump(ctx, &afterSchemaBuf, true /* schemaOnly */); err != nil {
@@ -284,8 +288,10 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 		if strings.Contains(err.Error(), "not found") {
 			return insertedID, "", nil
 		}
+		opts.LogSchemaDumpEnd(err.Error())
 		return "", "", err
 	}
+	opts.LogSchemaDumpEnd("")
 
 	return insertedID, afterSchemaBuf.String(), nil
 }

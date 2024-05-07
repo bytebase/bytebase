@@ -168,6 +168,12 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 	return mi, nil
 }
 
+func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store) func(t time.Time, e *storepb.TaskRunLog) error {
+	return func(t time.Time, e *storepb.TaskRunLog) error {
+		return s.CreateTaskRunLog(ctx, taskRunUID, t, e)
+	}
+}
+
 func executeMigration(
 	ctx context.Context,
 	driverCtx context.Context,
@@ -179,7 +185,8 @@ func executeMigration(
 	taskRunUID int,
 	statement string,
 	sheetID *int,
-	mi *db.MigrationInfo) (string, string, error) {
+	mi *db.MigrationInfo,
+) (string, string, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", "", err
@@ -235,6 +242,7 @@ func executeMigration(
 							UpdateTime:      time.Now(),
 						})
 				}
+				opts.CreateTaskRunLog = getCreateTaskRunLog(ctx, taskRunUID, stores)
 			default:
 				// do nothing
 			}
