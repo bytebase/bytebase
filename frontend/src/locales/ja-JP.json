@@ -141,8 +141,7 @@
     "connecting": "接続中...",
     "creating": "作成...",
     "updating": "更新中...",
-    "Address": "住所",
-    "User": "ユーザー",
+    "address": "住所",
     "assigned": "割り当てられた",
     "subscribed": "購読しました",
     "created": "作成した",
@@ -3391,7 +3390,8 @@
     "confirm-delete-changelist": "変更リストを削除しますか?",
     "import": {
       "no-file-to-upload": "アップロードするファイルがありません",
-      "upload-sql-or-zip-file": ".sql または .zip ファイルをアップロードする"
+      "upload-sql-or-zip-file": ".sql または .zip ファイルをアップロードする",
+      "optional-upload-sql-or-zip-file": "(オプション) .sql または .zip ファイルをアップロードします"
     }
   },
   "export-data": {

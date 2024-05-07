@@ -24,34 +24,41 @@
         <heroicons-outline:chevron-down v-else class="w-5 h-auto" />
       </button>
     </div>
-    <div v-show="state.showMatchedDatabaseList" class="w-full py-1">
-      <div
-        v-for="database in matchedDatabaseList"
-        :key="database.name"
-        class="w-full flex flex-row justify-start items-center px-2 py-1 gap-x-2"
+    <div v-show="state.showMatchedDatabaseList" class="w-full">
+      <NVirtualList
+        class="w-full py-1 max-h-[12rem]"
+        :item-size="28"
+        :items="matchedDatabaseList"
       >
-        <NEllipsis class="text-sm" line-clamp="1">
-          {{ database.databaseName }}
-        </NEllipsis>
-        <div class="flex-1 flex flex-row justify-end items-center shrink-0">
-          <FeatureBadge
-            feature="bb.feature.database-grouping"
-            custom-class="mr-2"
-            :instance="database.instanceEntity"
-          />
-          <InstanceV1EngineIcon :instance="database.instanceEntity" />
-          <NEllipsis
-            class="ml-1 text-sm text-gray-400 max-w-[124px]"
-            line-clamp="1"
+        <template #default="{ item: database }">
+          <div
+            :key="database.name"
+            class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
           >
-            ({{ database.effectiveEnvironmentEntity.title }})
-            {{ database.instanceEntity.title }}
-          </NEllipsis>
-        </div>
-      </div>
+            <NEllipsis class="text-sm" line-clamp="1">
+              {{ database.databaseName }}
+            </NEllipsis>
+            <div class="flex-1 flex flex-row justify-end items-center shrink-0">
+              <FeatureBadge
+                feature="bb.feature.database-grouping"
+                custom-class="mr-2"
+                :instance="database.instanceEntity"
+              />
+              <InstanceV1EngineIcon :instance="database.instanceEntity" />
+              <NEllipsis
+                class="ml-1 text-sm text-gray-400 max-w-[124px]"
+                line-clamp="1"
+              >
+                ({{ database.effectiveEnvironmentEntity.title }})
+                {{ database.instanceEntity.title }}
+              </NEllipsis>
+            </div>
+          </div>
+        </template>
+      </NVirtualList>
     </div>
     <div
-      class="sticky top-8 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-y cursor-pointer"
+      class="sticky top-7 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-y cursor-pointer"
       @click="
         state.showUnmatchedDatabaseList = !state.showUnmatchedDatabaseList
       "
@@ -70,37 +77,44 @@
         <heroicons-outline:chevron-down v-else class="w-5 h-auto" />
       </button>
     </div>
-    <div v-show="state.showUnmatchedDatabaseList" class="w-full py-1">
-      <div
-        v-for="database in unmatchedDatabaseList"
-        :key="database.name"
-        class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
+    <div v-show="state.showUnmatchedDatabaseList" class="w-full">
+      <NVirtualList
+        class="w-full py-1 max-h-[12rem]"
+        :item-size="28"
+        :items="unmatchedDatabaseList"
       >
-        <NEllipsis class="text-sm" line-clamp="1">
-          {{ database.databaseName }}
-        </NEllipsis>
-        <div class="flex-1 flex flex-row justify-end items-center shrink-0">
-          <FeatureBadge
-            feature="bb.feature.database-grouping"
-            custom-class="mr-2"
-            :instance="database.instanceEntity"
-          />
-          <InstanceV1EngineIcon :instance="database.instanceEntity" />
-          <NEllipsis
-            class="ml-1 text-sm text-gray-400 max-w-[124px]"
-            line-clamp="1"
+        <template #default="{ item: database }">
+          <div
+            :key="database.name"
+            class="w-full flex flex-row justify-between items-center px-2 py-1 gap-x-2"
           >
-            ({{ database.effectiveEnvironmentEntity.title }})
-            {{ database.instanceEntity.title }}
-          </NEllipsis>
-        </div>
-      </div>
+            <NEllipsis class="text-sm" line-clamp="1">
+              {{ database.databaseName }}
+            </NEllipsis>
+            <div class="flex-1 flex flex-row justify-end items-center shrink-0">
+              <FeatureBadge
+                feature="bb.feature.database-grouping"
+                custom-class="mr-2"
+                :instance="database.instanceEntity"
+              />
+              <InstanceV1EngineIcon :instance="database.instanceEntity" />
+              <NEllipsis
+                class="ml-1 text-sm text-gray-400 max-w-[124px]"
+                line-clamp="1"
+              >
+                ({{ database.effectiveEnvironmentEntity.title }})
+                {{ database.instanceEntity.title }}
+              </NEllipsis>
+            </div>
+          </div>
+        </template>
+      </NVirtualList>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { NEllipsis } from "naive-ui";
+import { NEllipsis, NVirtualList } from "naive-ui";
 import { reactive } from "vue";
 import type { ComposedDatabase } from "@/types";
 import { InstanceV1EngineIcon } from "../v2";

@@ -141,8 +141,7 @@
     "connecting": "Connecting...",
     "creating": "Creating...",
     "updating": "Updating...",
-    "Address": "Address",
-    "User": "User",
+    "address": "Address",
     "assigned": "Assigned",
     "subscribed": "Subscribed",
     "created": "Created",
@@ -3391,7 +3390,8 @@
     "confirm-delete-changelist": "Delete this changelist?",
     "import": {
       "no-file-to-upload": "No file to upload",
-      "upload-sql-or-zip-file": "Upload .sql or .zip file"
+      "upload-sql-or-zip-file": "Upload .sql or .zip file",
+      "optional-upload-sql-or-zip-file": "(Optional) Upload .sql or .zip file"
     }
   },
   "export-data": {

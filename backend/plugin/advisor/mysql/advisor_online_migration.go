@@ -70,7 +70,10 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.A
 
 	dbSchema := model.NewDBSchema(ctx.DBSchema, nil, nil)
 	for _, resource := range checker.changedResources {
-		tableRows := dbSchema.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table).GetRowCount()
+		var tableRows int64
+		if table := dbSchema.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table); table != nil {
+			tableRows = table.GetRowCount()
+		}
 		if tableRows >= minRows {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,

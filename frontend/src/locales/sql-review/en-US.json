@@ -353,9 +353,13 @@
       "title": "Prohibit using leading wildcard in filter conditions",
       "description": "When using leading wildcard, such as \"LIKE '%ABC'\", the database optimizer cannot use fast index scan, and fallback to full table scan or full index scan, which may cause serious performance impact. Suggestion error level: Error"
     },
-    "statement-disallow-cascade": {
-      "title": "Prohibit using \"CASCADE\" option in DDL statements",
-      "description": "The \"CASCADE\" option can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error"
+    "statement-disallow-on-del-cascade": {
+      "title": "Prohibit using CASCADE option for ON DELETE clauses",
+      "description": "The \"CASCADE\" option in 'ON DELETE' can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error"
+    },
+    "statement-disallow-rm-tbl-cascade": {
+      "title": "Prohibit using CASCADE when removing a table",
+      "description": "Using the \"CASCADE\" option when removing a table can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error"
     },
     "statement-disallow-commit": {
       "title": "Prohibit explicit \"COMMIT\" statement",
