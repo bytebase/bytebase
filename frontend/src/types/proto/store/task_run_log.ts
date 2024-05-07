@@ -95,6 +95,9 @@ export interface TaskRunLog_CommandExecute {
 }
 
 export interface TaskRunLog_CommandResponse {
+  /** Executed commands are in range [command_index, command_index + command_count). */
+  commandIndex: number;
+  commandCount: number;
   error: string;
   affectedRows: number;
 }
@@ -413,16 +416,22 @@ export const TaskRunLog_CommandExecute = {
 };
 
 function createBaseTaskRunLog_CommandResponse(): TaskRunLog_CommandResponse {
-  return { error: "", affectedRows: 0 };
+  return { commandIndex: 0, commandCount: 0, error: "", affectedRows: 0 };
 }
 
 export const TaskRunLog_CommandResponse = {
   encode(message: TaskRunLog_CommandResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.commandIndex !== 0) {
+      writer.uint32(8).int32(message.commandIndex);
+    }
+    if (message.commandCount !== 0) {
+      writer.uint32(16).int32(message.commandCount);
+    }
     if (message.error !== "") {
-      writer.uint32(10).string(message.error);
+      writer.uint32(26).string(message.error);
     }
     if (message.affectedRows !== 0) {
-      writer.uint32(16).int32(message.affectedRows);
+      writer.uint32(32).int32(message.affectedRows);
     }
     return writer;
   },
@@ -435,14 +444,28 @@ export const TaskRunLog_CommandResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.commandIndex = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.commandCount = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
           message.error = reader.string();
           continue;
-        case 2:
-          if (tag !== 16) {
+        case 4:
+          if (tag !== 32) {
             break;
           }
 
@@ -459,6 +482,8 @@ export const TaskRunLog_CommandResponse = {
 
   fromJSON(object: any): TaskRunLog_CommandResponse {
     return {
+      commandIndex: isSet(object.commandIndex) ? globalThis.Number(object.commandIndex) : 0,
+      commandCount: isSet(object.commandCount) ? globalThis.Number(object.commandCount) : 0,
       error: isSet(object.error) ? globalThis.String(object.error) : "",
       affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
     };
@@ -466,6 +491,12 @@ export const TaskRunLog_CommandResponse = {
 
   toJSON(message: TaskRunLog_CommandResponse): unknown {
     const obj: any = {};
+    if (message.commandIndex !== 0) {
+      obj.commandIndex = Math.round(message.commandIndex);
+    }
+    if (message.commandCount !== 0) {
+      obj.commandCount = Math.round(message.commandCount);
+    }
     if (message.error !== "") {
       obj.error = message.error;
     }
@@ -480,6 +511,8 @@ export const TaskRunLog_CommandResponse = {
   },
   fromPartial(object: DeepPartial<TaskRunLog_CommandResponse>): TaskRunLog_CommandResponse {
     const message = createBaseTaskRunLog_CommandResponse();
+    message.commandIndex = object.commandIndex ?? 0;
+    message.commandCount = object.commandCount ?? 0;
     message.error = object.error ?? "";
     message.affectedRows = object.affectedRows ?? 0;
     return message;
