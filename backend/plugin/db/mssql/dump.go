@@ -55,7 +55,7 @@ const (
 	    LEFT JOIN sys.extended_properties ep ON (o.object_id = ep.major_id AND ep.class = 1 AND ep.minor_id = 0 AND ep.name = 'MS_Description')
 	    LEFT JOIN (SELECT object_id, SUM(ROWS) row_count FROM sys.partitions WHERE index_id < 2 GROUP BY object_id) st ON o.object_id = st.object_id
 	    LEFT JOIN sys.change_tracking_tables ct ON ct.object_id = o.object_id
-	WHERE o.type = 'S' AND s.name in (%s)
+	WHERE o.type = 'U' AND s.name in (%s)
 	ORDER BY s.name ASC, o.name ASC
 	`
 	dumpColumnSQL = `
@@ -175,7 +175,7 @@ const (
 	`
 )
 
-func (driver *Driver) dumpDatabaseTxn(ctx context.Context, txn *sql.Tx, out io.Writer) error {
+func (*Driver) dumpDatabaseTxn(ctx context.Context, txn *sql.Tx, out io.Writer) error {
 	schemas, err := getSchemas(txn)
 	if err != nil {
 		return errors.Wrap(err, "failed to get schemas")
@@ -278,7 +278,7 @@ func assembleTable(out io.Writer, schema string, tableMeta *tableMeta, columnMet
 			return err
 		}
 	}
-	if _, err := fmt.Fprintf(out, ");\n"); err != nil {
+	if _, err := fmt.Fprintf(out, "\n);\n"); err != nil {
 		return err
 	}
 	return nil
@@ -368,6 +368,9 @@ func mergeFKMetaMap(fkMetaMap []*foreignKeyMeta) [][]*foreignKeyMeta {
 		}
 	}
 	result = append(result, fkMetaMap[lastIdx:])
+	if len(result) == 1 && len(result[0]) == 0 {
+		return nil
+	}
 	return result
 }
 
@@ -387,6 +390,9 @@ func mergeKeyMetaMap(keyMetaMap []*keyMeta) [][]*keyMeta {
 		}
 	}
 	result = append(result, keyMetaMap[lastIdx:])
+	if len(result) == 1 && len(result[0]) == 0 {
+		return nil
+	}
 	return result
 }
 
@@ -458,11 +464,7 @@ func assembleColumn(out io.Writer, columnMeta *columnMeta) error {
 		return err
 	}
 
-	if err := assembleDefinitionElement(out, columnMeta); err != nil {
-		return err
-	}
-
-	return nil
+	return assembleDefinitionElement(out, columnMeta)
 }
 
 func assembleDefinitionElement(out io.Writer, columnMeta *columnMeta) error {
