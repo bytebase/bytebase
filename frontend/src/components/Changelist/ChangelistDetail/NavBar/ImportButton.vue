@@ -58,7 +58,7 @@ const handleFileChange = async (options: { file: UploadFileInfo }) => {
 
   try {
     isUpdating.value = true;
-    const files = await readUpload(options);
+    const files = await readUpload(options.file);
 
     if (files.length === 0) {
       pushNotification({

@@ -43,8 +43,7 @@ const readFile = (file: File) => {
   return d.promise;
 };
 
-export const readUpload = async (options: { file: UploadFileInfo }) => {
-  const fileInfo = options.file;
+export const readUpload = async (fileInfo: UploadFileInfo) => {
   if (!fileInfo.file) {
     return [];
   }
