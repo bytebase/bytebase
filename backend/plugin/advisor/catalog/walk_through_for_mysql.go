@@ -297,9 +297,12 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 					return
 				}
 			}
-		// drop column.
+		// drop column or key.
 		case item.DROP_SYMBOL() != nil && item.ALTER_SYMBOL() == nil:
 			switch {
+			// drop foreign key.
+			// we do not deal with DROP FOREIGN KEY statements.
+			case item.FOREIGN_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
 			// drop column.
 			case item.ColumnInternalRef() != nil:
 				columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
@@ -320,9 +323,6 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 					l.err = err
 					return
 				}
-				// drop foreign key.
-			case item.FOREIGN_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
-				// we do not deal with DROP FOREIGN KEY statements.
 			}
 		// modify column.
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
