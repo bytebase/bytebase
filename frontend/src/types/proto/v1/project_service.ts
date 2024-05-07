@@ -431,6 +431,7 @@ export interface UpdateDeploymentConfigRequest {
 export interface Label {
   value: string;
   color: string;
+  group: string;
 }
 
 export interface Project {
@@ -2353,7 +2354,7 @@ export const UpdateDeploymentConfigRequest = {
 };
 
 function createBaseLabel(): Label {
-  return { value: "", color: "" };
+  return { value: "", color: "", group: "" };
 }
 
 export const Label = {
@@ -2363,6 +2364,9 @@ export const Label = {
     }
     if (message.color !== "") {
       writer.uint32(18).string(message.color);
+    }
+    if (message.group !== "") {
+      writer.uint32(26).string(message.group);
     }
     return writer;
   },
@@ -2388,6 +2392,13 @@ export const Label = {
 
           message.color = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.group = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2401,6 +2412,7 @@ export const Label = {
     return {
       value: isSet(object.value) ? globalThis.String(object.value) : "",
       color: isSet(object.color) ? globalThis.String(object.color) : "",
+      group: isSet(object.group) ? globalThis.String(object.group) : "",
     };
   },
 
@@ -2412,6 +2424,9 @@ export const Label = {
     if (message.color !== "") {
       obj.color = message.color;
     }
+    if (message.group !== "") {
+      obj.group = message.group;
+    }
     return obj;
   },
 
@@ -2422,6 +2437,7 @@ export const Label = {
     const message = createBaseLabel();
     message.value = object.value ?? "";
     message.color = object.color ?? "";
+    message.group = object.group ?? "";
     return message;
   },
 };

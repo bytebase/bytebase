@@ -310,6 +310,7 @@ message UpdateDeploymentConfigRequest {
 message Label {
   string value = 1;
   string color = 2;
+  string group = 3;
 }
 
 message Project {

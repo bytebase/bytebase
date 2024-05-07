@@ -10681,6 +10681,8 @@ components:
                     type: string
                 color:
                     type: string
+                group:
+                    type: string
         LabelSelector:
             type: object
             properties:

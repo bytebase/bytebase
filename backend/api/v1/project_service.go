@@ -192,6 +192,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 				issueLabels = append(issueLabels, &storepb.Label{
 					Value: label.Value,
 					Color: label.Color,
+					Group: label.Group,
 				})
 			}
 			projectSettings.IssueLabels = issueLabels
@@ -1842,6 +1843,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		issueLabels = append(issueLabels, &v1pb.Label{
 			Value: label.Value,
 			Color: label.Color,
+			Group: label.Group,
 		})
 	}
 

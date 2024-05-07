@@ -100,6 +100,7 @@ const onLabelsUpdate = (values: string[]) => {
   state.labels.push({
     color: defaultColor,
     value: newValue,
+    group: "",
   });
 };
 

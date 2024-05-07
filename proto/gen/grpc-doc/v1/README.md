@@ -6309,6 +6309,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ----- | ---- | ----- | ----------- |
 | value | [string](#string) |  |  |
 | color | [string](#string) |  |  |
+| group | [string](#string) |  |  |
 
 
 
