@@ -22,6 +22,7 @@ export const buildIssueFilterBySearchParams = (params: SearchParams) => {
 
   const createdTsRange = getTsRangeFromSearchParams(params, "created");
   const status = getSemanticIssueStatusFromSearchParams(params);
+  const label = getValueFromSearchParams(params, "label");
 
   const filter: IssueFilter = {
     query,
@@ -40,6 +41,7 @@ export const buildIssueFilterBySearchParams = (params: SearchParams) => {
         : status === "CLOSED"
           ? [IssueStatus.DONE, IssueStatus.CANCELED]
           : undefined,
+    labels: label ? [label] : [],
   };
   return filter;
 };

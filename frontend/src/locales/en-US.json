@@ -1031,6 +1031,10 @@
             "yes": "yes",
             "no": "no"
           }
+        },
+        "label": {
+          "title": "Label",
+          "description": "Filter by issue label"
         }
       },
       "hide": "Hide advanced search"
