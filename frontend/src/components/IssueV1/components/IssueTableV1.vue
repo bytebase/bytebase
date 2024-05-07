@@ -40,7 +40,7 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import type { DataTableColumn } from "naive-ui";
-import { NPerformantEllipsis, NDataTable } from "naive-ui";
+import { NPerformantEllipsis, NDataTable, NDynamicTags, NTag } from "naive-ui";
 import { reactive, computed, watch, ref, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -54,6 +54,7 @@ import { useCurrentUserV1 } from "@/store";
 import { type ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Workflow } from "@/types/proto/v1/project_service";
+import { Label } from "@/types/proto/v1/project_service";
 import {
   getHighlightHTMLByRegExp,
   issueSlug,
@@ -122,6 +123,40 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
             }
           ),
         ]),
+    },
+    {
+      key: "labels",
+      title: t("common.labels"),
+      resizable: true,
+      render: (issue) => {
+        const labelMap: Map<string, Label> =
+          issue.projectEntity.issueLabels.reduce((map, label) => {
+            map.set(label.value, label);
+            return map;
+          }, new Map<string, Label>());
+
+        return h(NDynamicTags, {
+          size: "small",
+          disabled: true,
+          class: "issue-row-dynamic-tags",
+          value: issue.labels.filter((label) => labelMap.has(label)),
+          renderTag: (value: string) =>
+            h(
+              NTag,
+              { closable: false, size: "small" },
+              {
+                default: () =>
+                  h("div", { class: "flex items-center gap-x-2" }, [
+                    h("div", {
+                      class: "w-4 h-4 rounded cursor-pointer relative",
+                      style: `background-color: ${labelMap.get(value)?.color};`,
+                    }),
+                    value,
+                  ]),
+              }
+            ),
+        });
+      },
     },
     {
       key: "updateTime",
@@ -371,3 +406,9 @@ const isIssueExpanded = (issue: ComposedIssue): boolean => {
   return sections.some((item) => item.highlight);
 };
 </script>
+
+<style scoped lang="postcss">
+:deep(.issue-row-dynamic-tags) > :last-child {
+  @apply !hidden;
+}
+</style>

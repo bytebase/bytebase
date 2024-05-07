@@ -67,6 +67,9 @@ export const buildIssueFilter = (find: IssueFilter): string => {
   if (find.database) {
     filter.push(`database = "${find.database}"`);
   }
+  if (find.labels && find.labels.length > 0) {
+    filter.push(`labels = "${find.labels.join(" & ")}"`);
+  }
   return filter.join(" && ");
 };
 

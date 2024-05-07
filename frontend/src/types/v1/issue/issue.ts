@@ -90,4 +90,6 @@ export interface IssueFilter {
   createdTsAfter?: number;
   createdTsBefore?: number;
   type?: string;
+  // filter by labels, for example: labels = "feature & bug"
+  labels?: string[];
 }
