@@ -274,6 +274,14 @@ func (s *IssueService) getIssueFind(ctx context.Context, permissionFilter *store
 				return nil, status.Errorf(codes.InvalidArgument, `database "%q" not found`, spec.value)
 			}
 			issueFind.DatabaseUID = &database.UID
+		case "labels":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%s" filter`, spec.key)
+			}
+			for _, label := range strings.Split(spec.value, " & ") {
+				issueLabel := label
+				issueFind.LabelList = append(issueFind.LabelList, issueLabel)
+			}
 		}
 	}
 
