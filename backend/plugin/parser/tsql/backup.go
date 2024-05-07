@@ -63,7 +63,7 @@ func generateSQL(statementInfoList []statementInfo, targetDatabase string, table
 	var result []base.BackupStatement
 	offsetLength := 1
 	if len(statementInfoList) > 1 {
-		offsetLength = getOffsetLength(statementInfoList[len(statementInfoList)-1].offset)
+		offsetLength = base.GetOffsetLength(statementInfoList[len(statementInfoList)-1].offset)
 	}
 	for _, statementInfo := range statementInfoList {
 		table := statementInfo.table
@@ -257,17 +257,6 @@ func (e *suffixSelectStatementExtractor) EnterDelete_statement(ctx *parser.Delet
 			return
 		}
 		e.fromClause = buf.String()
-	}
-}
-
-func getOffsetLength(total int) int {
-	length := 1
-	for {
-		if total < 10 {
-			return length
-		}
-		total /= 10
-		length++
 	}
 }
 
