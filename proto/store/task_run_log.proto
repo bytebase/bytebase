@@ -28,7 +28,11 @@ message TaskRunLog {
     int32 command_count = 2;
   }
   message CommandResponse {
-    string error = 1;
-    int32 affected_rows = 2;
+    // Executed commands are in range [command_index, command_index + command_count).
+    int32 command_index = 1;
+    int32 command_count = 2;
+
+    string error = 3;
+    int32 affected_rows = 4;
   }
 }

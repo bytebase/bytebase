@@ -3703,6 +3703,8 @@ The following fields are used for error reporting.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| command_index | [int32](#int32) |  | Executed commands are in range [command_index, command_index &#43; command_count). |
+| command_count | [int32](#int32) |  |  |
 | error | [string](#string) |  |  |
 | affected_rows | [int32](#int32) |  |  |
 

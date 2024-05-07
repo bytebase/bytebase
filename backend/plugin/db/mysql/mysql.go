@@ -372,6 +372,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			return 0, err
 		}
 
+		opts.LogCommandExecute(int32(currentIndex), int32(len(chunk)))
+
 		sqlResult, err := tx.ExecContext(ctx, chunkText)
 		if err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
@@ -380,6 +382,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
 				}
 			}
+
+			opts.LogCommandResponse(int32(currentIndex), int32(len(chunk)), 0, err.Error())
 
 			return 0, &db.ErrorWithPosition{
 				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
@@ -398,6 +402,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 			slog.Debug("rowsAffected returns error", log.BBError(err))
 		}
+		opts.LogCommandResponse(int32(currentIndex), int32(len(chunk)), int32(rowsAffected), "")
 		totalRowsAffected += rowsAffected
 		currentIndex += len(chunk)
 	}
