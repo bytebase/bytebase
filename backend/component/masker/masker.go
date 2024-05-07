@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 
+	mssqldb "github.com/microsoft/go-mssqldb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -54,6 +55,20 @@ func (*NoneMasker) Mask(data *MaskData) *v1pb.RowValue {
 func noneMask(data *MaskData) *v1pb.RowValue {
 	if data.Data != nil {
 		switch raw := data.Data.(type) {
+		case *mssqldb.NullUniqueIdentifier:
+			if raw.Valid {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: raw.UUID.String(),
+					},
+				}
+			}
+		case *mssqldb.UniqueIdentifier:
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: raw.String(),
+				},
+			}
 		case *sql.NullBool:
 			if raw.Valid {
 				return &v1pb.RowValue{
