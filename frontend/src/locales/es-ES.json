@@ -3389,7 +3389,8 @@
     "confirm-delete-changelist": "¿Eliminar esta lista de cambios?",
     "import": {
       "no-file-to-upload": "No hay archivos para subir",
-      "upload-sql-or-zip-file": "Cargue el archivo .sql o .zip"
+      "upload-sql-or-zip-file": "Cargue el archivo .sql o .zip",
+      "optional-upload-sql-or-zip-file": "(Opcional) Cargue el archivo .sql o .zip"
     }
   },
   "export-data": {
