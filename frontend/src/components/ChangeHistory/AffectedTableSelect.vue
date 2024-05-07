@@ -2,20 +2,25 @@
   <NSelect
     :value="selectedKey"
     :options="affectedTableOptions"
+    :filter="filterByTitle"
+    filterable
+    :render-label="renderLabel"
     @update:value="updateSelectedKey"
   />
 </template>
 
-<script setup lang="ts">
-import { orderBy, uniqBy } from "lodash-es";
+<script setup lang="tsx">
+import { isEqual, orderBy, uniqBy } from "lodash-es";
+import { NSelect } from "naive-ui";
 import type { SelectOption } from "naive-ui";
-import { computed, h } from "vue";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type { AffectedTable } from "@/types";
 import { EmptyAffectedTable } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
-  getAffectedTableDisplayName,
   getAffectedTablesOfChangeHistory,
+  stringifyAffectedTable,
 } from "@/utils";
 
 type AffectedTableSelectOption = SelectOption & {
@@ -30,6 +35,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: "update:affected-table", affectedTable: AffectedTable): void;
 }>();
+
+const { t } = useI18n();
 
 const affectedTables = computed(() => {
   return [
@@ -48,24 +55,38 @@ const affectedTables = computed(() => {
   ];
 });
 
+const filterByTitle = (pattern: string, option: SelectOption) => {
+  const { affectedTable } = option as AffectedTableSelectOption;
+  pattern = pattern.toLowerCase();
+  return affectedTable.table.toLowerCase().includes(pattern);
+};
+
 const affectedTableOptions = computed(() => {
   return affectedTables.value.map<AffectedTableSelectOption>((item) => {
     const key = JSON.stringify(item);
-    const name = getAffectedTableDisplayName(item);
     return {
-      label: name,
       value: key,
       affectedTable: item,
-      renderLabel() {
-        const classes = ["truncate"];
-        if (item.dropped) {
-          classes.push("text-gray-400");
-        }
-        return h("span", { class: classes, "data-key": key }, name);
-      },
     };
   });
 });
+
+const renderLabel = (option: SelectOption) => {
+  const { affectedTable } = option as AffectedTableSelectOption;
+  if (isEqual(affectedTable, EmptyAffectedTable)) {
+    return t("change-history.all-tables");
+  }
+  const name = stringifyAffectedTable(affectedTable);
+  if (affectedTable.dropped) {
+    return (
+      <div class="w-full flex flex-row justify-between items-center gap-1">
+        <span class="truncate">{name}</span>
+        <span class="shrink-0">(Dropped)</span>
+      </div>
+    );
+  }
+  return <span class="truncate">{name}</span>;
+};
 
 const selectedKey = computed(() => {
   return JSON.stringify(props.affectedTable);
