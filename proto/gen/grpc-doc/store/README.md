@@ -181,6 +181,7 @@
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
+    - [Label](#bytebase-store-Label)
     - [Project](#bytebase-store-Project)
     - [ProtectionRule](#bytebase-store-ProtectionRule)
   
@@ -1985,6 +1986,7 @@ InstanceOptions is the option for instances.
 | ----- | ---- | ----- | ----------- |
 | approval | [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval) |  |  |
 | grant_request | [GrantRequest](#bytebase-store-GrantRequest) |  |  |
+| labels | [string](#string) | repeated |  |
 
 
 
@@ -2824,6 +2826,22 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 
 
+<a name="bytebase-store-Label"></a>
+
+### Label
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| value | [string](#string) |  |  |
+| color | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-Project"></a>
 
 ### Project
@@ -2833,6 +2851,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | protection_rules | [ProtectionRule](#bytebase-store-ProtectionRule) | repeated |  |
+| issue_labels | [Label](#bytebase-store-Label) | repeated |  |
 
 
 

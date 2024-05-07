@@ -538,6 +538,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 			ApprovalTemplates:   nil,
 			Approvers:           nil,
 		},
+		Labels: request.Issue.Labels,
 	}
 
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
@@ -634,6 +635,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 			ApprovalTemplates:   nil,
 			Approvers:           nil,
 		},
+		Labels: request.Issue.Labels,
 	}
 
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
@@ -764,6 +766,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 			ApprovalTemplates:   nil,
 			Approvers:           nil,
 		},
+		Labels: request.Issue.Labels,
 	}
 
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
@@ -877,9 +880,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: &storepb.IssuePayload{
-			Approval: payload.Approval,
-		},
+		PayloadUpsert: payload,
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
@@ -1168,9 +1169,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 	})
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: &storepb.IssuePayload{
-			Approval: payload.Approval,
-		},
+		PayloadUpsert: payload,
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
@@ -1285,9 +1284,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: &storepb.IssuePayload{
-			Approval: payload.Approval,
-		},
+		PayloadUpsert: payload,
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
@@ -1397,11 +1394,9 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			}
 
 			if patch.PayloadUpsert == nil {
-				patch.PayloadUpsert = &storepb.IssuePayload{}
+				patch.PayloadUpsert = payload
 			}
-			patch.PayloadUpsert.Approval = &storepb.IssuePayloadApproval{
-				ApprovalFindingDone: false,
-			}
+			patch.PayloadUpsert.Approval.ApprovalFindingDone = request.Issue.ApprovalFindingDone
 
 			if issue.PlanUID != nil {
 				plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
@@ -1580,6 +1575,11 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 					},
 				},
 			})
+		case "labels":
+			if patch.PayloadUpsert == nil {
+				patch.PayloadUpsert = issue.Payload
+			}
+			patch.PayloadUpsert.Labels = request.Issue.Labels
 		}
 	}
 

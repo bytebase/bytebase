@@ -185,6 +185,17 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 				return nil, status.Errorf(codes.InvalidArgument, "data classification %s not exists", request.Project.DataClassificationConfigId)
 			}
 			patch.DataClassificationConfigID = &request.Project.DataClassificationConfigId
+		case "issue_labels":
+			projectSettings := project.Setting
+			var issueLabels []*storepb.Label
+			for _, label := range request.Project.IssueLabels {
+				issueLabels = append(issueLabels, &storepb.Label{
+					Value: label.Value,
+					Color: label.Color,
+				})
+			}
+			projectSettings.IssueLabels = issueLabels
+			patch.Setting = projectSettings
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1826,6 +1837,14 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		})
 	}
 
+	var issueLabels []*v1pb.Label
+	for _, label := range projectMessage.Setting.IssueLabels {
+		issueLabels = append(issueLabels, &v1pb.Label{
+			Value: label.Value,
+			Color: label.Color,
+		})
+	}
+
 	return &v1pb.Project{
 		Name:                       fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectMessage.ResourceID),
 		Uid:                        fmt.Sprintf("%d", projectMessage.UID),
@@ -1836,6 +1855,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		TenantMode:                 tenantMode,
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
+		IssueLabels:                issueLabels,
 	}
 }
 
