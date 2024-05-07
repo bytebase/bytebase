@@ -3,7 +3,7 @@
     ref="textModelEditorRef"
     class="bb-monaco-editor"
     :model="model"
-    @update:content="(...args) => $emit('update:content', ...args)"
+    @update:content="handleChange"
   />
 </template>
 
@@ -48,6 +48,10 @@ const filename = computed(() => {
   return `${uuidv4()}.${extensionNameOfLanguage(props.language)}`;
 });
 const model = useMonacoTextModel(filename, content, toRef(props, "language"));
+
+const handleChange = (value: string) => {
+  emit('update:content', value)
+};
 
 defineExpose({
   get editor() {
