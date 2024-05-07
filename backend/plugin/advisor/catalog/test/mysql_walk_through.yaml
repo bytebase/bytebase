@@ -833,3 +833,71 @@
       ]
     }
   err: null
+- statement: |-
+    CREATE TABLE t1(
+      id int,
+      name varchar(255),
+      key idx_name(name)
+    );
+    create table t2 (
+      id int,
+      t1_name varchar(255),
+      constraint fk_t1_name foreign key (t1_name) references t1 (name)
+    );
+    alter table t2 drop foreign key fk_t1_name;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t1",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "idx_name",
+                  "expressions": [
+                    "name"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ]
+            },
+            {
+              "name": "t2",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "t1_name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
