@@ -13,6 +13,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	mssqldb "github.com/microsoft/go-mssqldb"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/masker"
@@ -50,7 +52,7 @@ func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement
 	}
 	defer rows.Close()
 
-	result, err := rowsToQueryResult(rows)
+	result, err := rowsToQueryResult(dbType, rows)
 	if err != nil {
 		// nolint
 		return &v1pb.QueryResult{
@@ -108,13 +110,13 @@ func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn
 			})
 			continue
 		}
-		results = append(results, adminQuery(ctx, conn, singleSQL.Text))
+		results = append(results, adminQuery(ctx, engineType, conn, singleSQL.Text))
 	}
 
 	return results, nil
 }
 
-func adminQuery(ctx context.Context, conn *sql.Conn, statement string) *v1pb.QueryResult {
+func adminQuery(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string) *v1pb.QueryResult {
 	startTime := time.Now()
 	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
@@ -124,7 +126,7 @@ func adminQuery(ctx context.Context, conn *sql.Conn, statement string) *v1pb.Que
 	}
 	defer rows.Close()
 
-	result, err := rowsToQueryResult(rows)
+	result, err := rowsToQueryResult(dbType, rows)
 	if err != nil {
 		return &v1pb.QueryResult{
 			Error: err.Error(),
@@ -135,7 +137,7 @@ func adminQuery(ctx context.Context, conn *sql.Conn, statement string) *v1pb.Que
 	return result
 }
 
-func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
+func rowsToQueryResult(dbType storepb.Engine, rows *sql.Rows) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -157,7 +159,7 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		ColumnNames:     columnNames,
 		ColumnTypeNames: columnTypeNames,
 	}
-	if err := readRows(result, rows, columnTypeNames); err != nil {
+	if err := readRows(result, dbType, rows, columnTypeNames); err != nil {
 		return nil, err
 	}
 
@@ -168,7 +170,7 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	return result, nil
 }
 
-func readRows(result *v1pb.QueryResult, rows *sql.Rows, columnTypeNames []string) error {
+func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, columnTypeNames []string) error {
 	if len(columnTypeNames) == 0 {
 		// No rows.
 		// The oracle driver will panic if there is no rows such as EXPLAIN PLAN FOR statement.
@@ -180,6 +182,16 @@ func readRows(result *v1pb.QueryResult, rows *sql.Rows, columnTypeNames []string
 		scanArgs := make([]any, len(columnTypeNames))
 		for i, v := range columnTypeNames {
 			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
+			if dbType == storepb.Engine_MSSQL {
+				switch v {
+				case "UNIQUEIDENTIFIER":
+					scanArgs[i] = new(mssqldb.UniqueIdentifier)
+					continue
+				case "NULLUNIQUEIDENTIFIER":
+					scanArgs[i] = new(mssqldb.NullUniqueIdentifier)
+					continue
+				}
+			}
 			switch v {
 			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
 				scanArgs[i] = new(sql.NullString)
