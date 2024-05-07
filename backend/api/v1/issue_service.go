@@ -279,7 +279,8 @@ func (s *IssueService) getIssueFind(ctx context.Context, permissionFilter *store
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%s" filter`, spec.key)
 			}
 			for _, label := range strings.Split(spec.value, " & ") {
-				issueFind.LabelList = append(issueFind.LabelList, label)
+				issueLabel := label
+				issueFind.LabelList = append(issueFind.LabelList, issueLabel)
 			}
 		}
 	}
