@@ -65,14 +65,16 @@
           {{ row.checkResult.sqlSummaryReport.affectedRows }}
         </template>
 
-        <a
-          v-if="row.link"
-          class="ml-1 normal-link"
-          :href="row.link.url"
-          :target="row.link.target"
-        >
-          {{ row.link.title }}
-        </a>
+        <HideInStandaloneMode>
+          <a
+            v-if="row.link"
+            class="ml-1 normal-link"
+            :href="row.link.url"
+            :target="row.link.target"
+          >
+            {{ row.link.title }}
+          </a>
+        </HideInStandaloneMode>
 
         <template v-if="row.checkResult.sqlReviewReport?.line">
           <span class="border-r border-control-border ml-1"></span>
