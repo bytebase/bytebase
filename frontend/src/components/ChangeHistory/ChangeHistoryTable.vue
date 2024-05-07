@@ -47,7 +47,6 @@ import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import type { AffectedTable } from "@/types/changeHistory";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   ChangeHistory_Status,
@@ -63,6 +62,7 @@ import {
   extractProjectResourceName,
   humanizeDurationV1,
   isDescendantOf,
+  getAffectedTableDisplayName,
 } from "@/utils";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
@@ -262,18 +262,6 @@ const rowProps = (history: ChangeHistory) => {
 const creatorOfChangeHistory = (history: ChangeHistory) => {
   const email = extractUserResourceName(history.creator);
   return useUserStore().getUserByEmail(email);
-};
-
-const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
-  const { schema, table, dropped } = affectedTable;
-  let name = table;
-  if (schema !== "") {
-    name = `${schema}.${table}`;
-  }
-  if (dropped) {
-    name = `${name} (deleted)`;
-  }
-  return name;
 };
 
 const allowToSelectChangeHistory = (history: ChangeHistory) => {
