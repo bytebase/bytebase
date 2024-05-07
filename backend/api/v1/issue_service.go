@@ -880,7 +880,9 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: payload,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
@@ -1169,7 +1171,9 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 	})
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: payload,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
@@ -1284,7 +1288,9 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 	payload.Approval.Approvers = append(payload.Approval.Approvers, newApprovers...)
 
 	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: payload,
+		PayloadUpsert: &storepb.IssuePayload{
+			Approval: payload.Approval,
+		},
 	}, api.SystemBotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
@@ -1394,9 +1400,11 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			}
 
 			if patch.PayloadUpsert == nil {
-				patch.PayloadUpsert = payload
+				patch.PayloadUpsert = &storepb.IssuePayload{}
 			}
-			patch.PayloadUpsert.Approval.ApprovalFindingDone = request.Issue.ApprovalFindingDone
+			patch.PayloadUpsert.Approval = &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+			}
 
 			if issue.PlanUID != nil {
 				plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
@@ -1577,7 +1585,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			})
 		case "labels":
 			if patch.PayloadUpsert == nil {
-				patch.PayloadUpsert = issue.Payload
+				patch.PayloadUpsert = &storepb.IssuePayload{}
 			}
 			patch.PayloadUpsert.Labels = request.Issue.Labels
 		}
