@@ -3389,7 +3389,8 @@
     "confirm-delete-changelist": "Xóa danh sách thay đổi này?",
     "import": {
       "no-file-to-upload": "Không có tập tin để tải lên",
-      "upload-sql-or-zip-file": "Tải lên tệp .sql hoặc .zip"
+      "upload-sql-or-zip-file": "Tải lên tệp .sql hoặc .zip",
+      "optional-upload-sql-or-zip-file": "(Tùy chọn) Tải lên tệp .sql hoặc .zip"
     }
   },
   "export-data": {

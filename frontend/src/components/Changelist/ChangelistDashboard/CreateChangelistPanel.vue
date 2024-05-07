@@ -43,6 +43,40 @@
               />
             </div>
           </div>
+          <div class="contents file-upload">
+            <div class="col-span-2 flex flex-col gap-1">
+              <NUpload
+                v-model:file-list="uploadFileList"
+                abstract
+                accept="application/x-zip,.zip,application/sql,.sql"
+                :multiple="false"
+                @change="uploadFileList = [$event.file]"
+              >
+                <NUploadTrigger #="{ handleClick }" abstract>
+                  <NButton
+                    icon
+                    style="--n-padding: 0 10px"
+                    class="self-start"
+                    :loading="isParsingUploadFile"
+                    @click="handleClick"
+                  >
+                    <template #icon>
+                      <UploadIcon class="w-4 h-4" />
+                    </template>
+                    {{ $t("changelist.import.optional-upload-sql-or-zip-file") }}
+                  </NButton>
+                </NUploadTrigger>
+                <div class="flex flex-col gap-1">
+                  <NUploadFileList />
+                </div>
+              </NUpload>
+              <div class="flex flex-col gap-1 pl-7 text-xs">
+                <div v-for="(file, i) in files" :key="`${file.name}-${i}`">
+                  {{ file.name }}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div
@@ -82,7 +116,16 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
-import { NButton, NInput, NTooltip } from "naive-ui";
+import { UploadIcon } from "lucide-vue-next";
+import {
+  NButton,
+  NInput,
+  NTooltip,
+  NUpload,
+  NUploadFileList,
+  NUploadTrigger,
+  type UploadFileInfo,
+} from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { zindexable as vZindexable } from "vdirs";
 import { ref, watch } from "vue";
@@ -99,13 +142,19 @@ import {
   pushNotification,
   useChangelistStore,
   useProjectV1Store,
+  useSheetV1Store,
 } from "@/store";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import type { ComposedProject } from "@/types";
-import { Changelist } from "@/types/proto/v1/changelist_service";
-import { extractChangelistResourceName } from "@/utils";
+import {
+  Changelist,
+  Changelist_Change as Change,
+} from "@/types/proto/v1/changelist_service";
+import { Sheet } from "@/types/proto/v1/sheet_service";
+import { extractChangelistResourceName, setSheetStatement } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
+import { readUpload, type ParsedFile } from "../import";
 import { useChangelistDashboardContext } from "./context";
 
 const props = defineProps<{
@@ -173,6 +222,42 @@ const validateResourceId = async (
   return [];
 };
 
+const uploadFileList = ref<UploadFileInfo[]>([]);
+const files = ref<ParsedFile[]>([]);
+const isParsingUploadFile = ref(false);
+
+watch(uploadFileList, async (fileList) => {
+  const file = fileList[0];
+  if (!file) {
+    files.value = [];
+    return;
+  }
+  const cleanup = () => {
+    isParsingUploadFile.value = false;
+  };
+
+  try {
+    files.value = [];
+    isParsingUploadFile.value = true;
+    files.value = await readUpload(file);
+
+    if (files.value.length === 0) {
+      pushNotification({
+        module: "bytebase",
+        style: "WARN",
+        title: t("changelist.import.no-file-to-upload"),
+      });
+      return cleanup();
+    }
+
+    if (!title.value) {
+      title.value = file.name;
+    }
+  } finally {
+    cleanup();
+  }
+});
+
 const doCreate = async () => {
   if (errors.value.length > 0) return;
   if (!resourceIdField.value) return;
@@ -181,10 +266,31 @@ const doCreate = async () => {
   try {
     const project = useProjectV1Store().getProjectByUID(projectUID.value!);
 
+    const createdSheets = await Promise.all(
+      files.value.map(async (f) => {
+        const { name, content } = f;
+        const sheet = Sheet.fromPartial({
+          title: name,
+        });
+        setSheetStatement(sheet, content);
+        const created = await useSheetV1Store().createSheet(
+          project.name,
+          sheet
+        );
+        return created;
+      })
+    );
+    const changes = createdSheets.map((sheet) =>
+      Change.fromPartial({
+        sheet: sheet.name,
+      })
+    );
+
     const created = await useChangelistStore().createChangelist({
       parent: project.name,
       changelist: Changelist.fromPartial({
         description: title.value,
+        changes,
       }),
       changelistId: resourceId.value,
     });
@@ -217,3 +323,18 @@ watch(showCreatePanel, (show) => {
   }
 });
 </script>
+
+<style scoped lang="postcss">
+.file-upload :deep(.n-upload-file-list .n-upload-file .n-upload-file-info) {
+  @apply items-center;
+}
+.file-upload
+  :deep(
+    .n-upload-file-list
+      .n-upload-file
+      .n-upload-file-info
+      .n-upload-file-info__thumbnail
+  ) {
+  @apply flex items-center justify-center mr-0.5;
+}
+</style>
