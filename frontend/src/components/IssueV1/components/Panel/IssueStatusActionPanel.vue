@@ -65,10 +65,10 @@
           <template #trigger>
             <NButton
               :disabled="confirmErrors.length > 0"
-              v-bind="issueStatusActionButtonProps(action)"
+              v-bind="confirmButtonProps"
               @click="handleConfirm(action, comment)"
             >
-              {{ issueStatusActionDisplayName(action) }}
+              {{ $t("common.confirm") }}
             </NButton>
           </template>
           <template #default>
@@ -145,6 +145,15 @@ const confirmErrors = computed(() => {
     errors.push(...issueStatusActionErrors.value);
   }
   return errors;
+});
+
+const confirmButtonProps = computed(() => {
+  if (!props.action) return {};
+  const p = issueStatusActionButtonProps(props.action);
+  if (p.type === "default") {
+    p.type = "primary";
+  }
+  return p;
 });
 
 const handleConfirm = async (
