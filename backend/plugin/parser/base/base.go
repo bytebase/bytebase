@@ -94,3 +94,14 @@ func FilterEmptySQL(list []SingleSQL) []SingleSQL {
 	}
 	return result
 }
+
+func GetOffsetLength(total int) int {
+	length := 1
+	for {
+		if total < 10 {
+			return length
+		}
+		total /= 10
+		length++
+	}
+}
