@@ -303,6 +303,7 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			// drop foreign key.
 			case item.FOREIGN_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
 			// we do not deal with DROP FOREIGN KEY statements.
+			
 			// drop column.
 			case item.ColumnInternalRef() != nil:
 				columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
