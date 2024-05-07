@@ -65,14 +65,30 @@
           {{ row.checkResult.sqlSummaryReport.affectedRows }}
         </template>
 
-        <a
-          v-if="row.link"
-          class="ml-1 normal-link"
-          :href="row.link.url"
-          :target="row.link.target"
-        >
-          {{ row.link.title }}
-        </a>
+        <HideInStandaloneMode>
+          <a
+            v-if="row.link"
+            class="ml-1 normal-link"
+            :href="row.link.url"
+            :target="row.link.target"
+          >
+            {{ row.link.title }}
+          </a>
+        </HideInStandaloneMode>
+
+        <template v-if="row.checkResult.sqlReviewReport?.line">
+          <span class="border-r border-control-border ml-1"></span>
+          <span
+            class="ml-1 normal-link"
+            @click="
+              handleClickPlanCheckDetailLine(
+                row.checkResult.sqlReviewReport.line
+              )
+            "
+          >
+            L{{ row.checkResult.sqlReviewReport.line }}
+          </span>
+        </template>
 
         <slot name="row-extra" :row="row" />
       </div>
@@ -125,7 +141,6 @@ interface ErrorCodeLink {
   target: string;
   url: string;
 }
-
 type PreviewSQLReviewRule = {
   rule: RuleTemplate;
   payload: PayloadValueType[];
@@ -154,6 +169,10 @@ const state = reactive<LocalState>({
   activeRule: undefined,
   activeResultDefinition: undefined,
 });
+
+const emit = defineEmits<{
+  (event: "close"): void;
+}>();
 
 const statusIconClass = (status: PlanCheckRun_Result_Status) => {
   switch (status) {
@@ -308,5 +327,10 @@ const getActiveRule = (type: string): PreviewSQLReviewRule | undefined => {
 };
 const setActiveRule = (type: string) => {
   state.activeRule = getActiveRule(type);
+};
+
+const handleClickPlanCheckDetailLine = (line: number) => {
+  window.location.hash = `L${line}`;
+  emit("close");
 };
 </script>

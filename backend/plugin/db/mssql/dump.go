@@ -173,6 +173,65 @@ const (
 	WHERE i.index_id > 0 AND (i.is_primary_key = 1 OR i.is_unique_constraint = 1) AND o.type IN ('U', 'V') AND s.name in (%s)
 	ORDER BY s.name ASC, i.name ASC, ic.key_ordinal ASC
 	`
+	dumpIndexSQL = `
+	SELECT
+		s.name AS schema_name,
+	    o.name AS table_name,
+	    o.type AS table_type,
+	    CAST (CASE WHEN o.is_ms_shipped = 1 THEN 1 WHEN (SELECT major_id FROM sys.extended_properties WHERE major_id = o.object_id AND minor_id = 0 AND class = 1 AND name = 'microsoft_database_tools_support') IS NOT NULL THEN 1 ELSE 0 END AS bit) AS is_system_object,
+	    o.object_id,
+	    i.name,
+	    ic.partition_ordinal,
+	    i.type_desc,
+	    i.index_id,
+	    i.is_unique,
+	    i.is_primary_key,
+	    i.is_unique_constraint,
+	    i.fill_factor,
+	    i.data_space_id,
+	    i.ignore_dup_key,
+	    stat.no_recompute,
+	    i.is_padded,
+	    i.is_disabled,
+	    i.is_hypothetical,
+	    i.allow_row_locks,
+	    i.allow_page_locks,
+	    col.name AS column_name,
+	    ic.is_descending_key,
+	    ic.key_ordinal,
+	    ic.is_included_column,
+	    i.has_filter,
+	    i.filter_definition,
+	    si.spatial_index_type,
+	    sit.bounding_box_xmin,
+	    sit.bounding_box_ymin,
+	    sit.bounding_box_xmax,
+	    sit.bounding_box_ymax,
+	    sit.level_1_grid_desc,
+	    sit.level_2_grid_desc,
+	    sit.level_3_grid_desc,
+	    sit.level_4_grid_desc,
+	    sit.cells_per_object,
+	    xi.secondary_type_desc,
+	    pri.name pri_index_name,
+	    CAST(ep.value AS NVARCHAR(MAX)) comment
+	FROM
+	    sys.indexes i
+	        LEFT JOIN sys.all_objects o ON o.object_id = i.object_id
+	        LEFT JOIN sys.schemas s ON s.schema_id = o.schema_id
+	        LEFT JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+	        LEFT JOIN sys.all_columns col ON ic.column_id = col.column_id AND ic.object_id = col.object_id
+	        LEFT JOIN sys.xml_indexes xi ON i.object_id = xi.object_id AND i.index_id = xi.index_id
+	        LEFT JOIN sys.indexes pri ON xi.object_id = pri.object_id AND xi.using_xml_index_id = pri.index_id
+	        LEFT JOIN sys.key_constraints cons ON (cons.parent_object_id = ic.object_id AND cons.unique_index_id = i.index_id)
+	        LEFT JOIN sys.extended_properties ep ON (((i.is_primary_key <> 1 AND i.is_unique_constraint <> 1 AND ep.class = 7 AND i.object_id = ep.major_id AND ep.minor_id = i.index_id) OR ((i.is_primary_key = 1 OR i.is_unique_constraint = 1) AND ep.class = 1 AND cons.object_id = ep.major_id AND ep.minor_id = 0)) AND ep.name = 'MS_Description')
+	        LEFT JOIN sys.spatial_indexes si ON i.object_id = si.object_id AND i.index_id = si.index_id
+	        LEFT JOIN sys.spatial_index_tessellations sit ON i.object_id = sit.object_id AND i.index_id = sit.index_id,
+	    sys.stats stat
+	        LEFT JOIN sys.all_objects so ON (stat.object_id = so.object_id)
+	WHERE (i.object_id = so.object_id OR i.object_id = so.parent_object_id) AND i.name = stat.name AND i.index_id > 0 AND (i.is_primary_key = 0 AND i.is_unique_constraint = 0) AND s.name in (%s) AND o.type IN ('U', 'S', 'V')
+	ORDER BY s.name, table_name, i.index_id, ic.key_ordinal, ic.index_column_id
+	`
 )
 
 func (*Driver) dumpDatabaseTxn(ctx context.Context, txn *sql.Tx, out io.Writer) error {
@@ -206,19 +265,24 @@ func (*Driver) dumpDatabaseTxn(ctx context.Context, txn *sql.Tx, out io.Writer) 
 		return errors.Wrap(err, "failed to dump indexes")
 	}
 
-	return assembleStatement(out, schemas, tableMetaMap, columnMetaMap, fkMetaMap, checkMetaMap, keyMetaMap)
+	indexMetaMap, err := dumpIndexTxn(ctx, txn, schemas)
+	if err != nil {
+		return errors.Wrap(err, "failed to dump indexes")
+	}
+
+	return assembleStatement(out, schemas, tableMetaMap, columnMetaMap, fkMetaMap, checkMetaMap, keyMetaMap, indexMetaMap)
 }
 
-func assembleStatement(out io.Writer, schemas []string, tableMetaMap map[string][]*tableMeta, columnMetaMap map[string][]*columnMeta, fkMetaMap map[string][]*foreignKeyMeta, checkMetaMap map[string][]*checkConstraintMeta, keyMetaMap map[string][]*keyMeta) error {
+func assembleStatement(out io.Writer, schemas []string, tableMetaMap map[string][]*tableMeta, columnMetaMap map[string][]*columnMeta, fkMetaMap map[string][]*foreignKeyMeta, checkMetaMap map[string][]*checkConstraintMeta, keyMetaMap map[string][]*keyMeta, indexMetaMap map[string][]*indexMeta) error {
 	for _, schema := range schemas {
-		if err := assembleSchema(out, schema, tableMetaMap, columnMetaMap, fkMetaMap, checkMetaMap, keyMetaMap); err != nil {
+		if err := assembleSchema(out, schema, tableMetaMap, columnMetaMap, fkMetaMap, checkMetaMap, keyMetaMap, indexMetaMap); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func assembleSchema(out io.Writer, schema string, tableMetaMap map[string][]*tableMeta, columnMetaMap map[string][]*columnMeta, fkMetaMap map[string][]*foreignKeyMeta, checkMetaMap map[string][]*checkConstraintMeta, keyMetaMap map[string][]*keyMeta) error {
+func assembleSchema(out io.Writer, schema string, tableMetaMap map[string][]*tableMeta, columnMetaMap map[string][]*columnMeta, fkMetaMap map[string][]*foreignKeyMeta, checkMetaMap map[string][]*checkConstraintMeta, keyMetaMap map[string][]*keyMeta, indexMetaMap map[string][]*indexMeta) error {
 	if schema != defaultSchema {
 		if _, err := fmt.Fprintf(out, "CREATE SCHEMA %s;\nGO\n", schema); err != nil {
 			return err
@@ -232,9 +296,56 @@ func assembleSchema(out io.Writer, schema string, tableMetaMap map[string][]*tab
 		if err := assembleTable(out, schema, tableMeta, columnMetaMap, fkMetaMap, checkMetaMap, keyMetaMap); err != nil {
 			return err
 		}
+		if err := assembleIndex(out, schema, tableMeta, indexMetaMap); err != nil {
+			return err
+		}
 	}
 
-	// TODO: add other objects like index, view, procedure, function, etc.
+	// TODO: add other objects like view, procedure, function, etc.
+	return nil
+}
+
+func assembleIndex(out io.Writer, schema string, tableMeta *tableMeta, indexMetaMap map[string][]*indexMeta) error {
+	indexes := mergeIndexMetaMap(indexMetaMap[tableID(schema, tableMeta.name.String)])
+	for _, indexMeta := range indexes {
+		if len(indexMeta) == 0 {
+			continue
+		}
+		if _, err := fmt.Fprintf(out, "\nCREATE "); err != nil {
+			return err
+		}
+		// CLUSTERED or NONCLUSTERED
+		if indexMeta[0].typeDesc.Valid {
+			if _, err := fmt.Fprintf(out, "%s", indexMeta[0].typeDesc.String); err != nil {
+				return err
+			}
+		}
+		if _, err := fmt.Fprintf(out, " INDEX [%s] ON\n[%s].[%s] (\n", indexMeta[0].indexName.String, schema, tableMeta.name.String); err != nil {
+			return err
+		}
+		for i, idx := range indexMeta {
+			if i != 0 {
+				if _, err := fmt.Fprintf(out, ",\n"); err != nil {
+					return err
+				}
+			}
+			if _, err := fmt.Fprintf(out, "    [%s]", idx.columnName.String); err != nil {
+				return err
+			}
+			if idx.isDescendingKey.Valid && idx.isDescendingKey.Bool {
+				if _, err := fmt.Fprintf(out, " DESC"); err != nil {
+					return err
+				}
+			} else {
+				if _, err := fmt.Fprintf(out, " ASC"); err != nil {
+					return err
+				}
+			}
+		}
+		if _, err := fmt.Fprintf(out, "\n);\n"); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -390,6 +501,28 @@ func mergeKeyMetaMap(keyMetaMap []*keyMeta) [][]*keyMeta {
 		}
 	}
 	result = append(result, keyMetaMap[lastIdx:])
+	if len(result) == 1 && len(result[0]) == 0 {
+		return nil
+	}
+	return result
+}
+
+func mergeIndexMetaMap(indexMetaMap []*indexMeta) [][]*indexMeta {
+	var result [][]*indexMeta
+	lastIdx := 0
+	currentKeyID := ""
+	for i, indexMeta := range indexMetaMap {
+		if !indexMeta.schemaName.Valid || !indexMeta.tableName.Valid || !indexMeta.indexName.Valid {
+			continue
+		}
+		keyID := keyID(indexMeta.schemaName.String, indexMeta.tableName.String, indexMeta.indexName.String)
+		if keyID != currentKeyID && currentKeyID != "" {
+			result = append(result, indexMetaMap[lastIdx:i])
+			lastIdx = i
+			currentKeyID = keyID
+		}
+	}
+	result = append(result, indexMetaMap[lastIdx:])
 	if len(result) == 1 && len(result[0]) == 0 {
 		return nil
 	}
@@ -569,6 +702,122 @@ func assembleColumnType(out io.Writer, columnMeta *columnMeta) error {
 		}
 	}
 	return nil
+}
+
+type indexMeta struct {
+	schemaName         sql.NullString
+	tableName          sql.NullString
+	tableType          sql.NullString
+	isSystemObject     sql.NullBool
+	objectID           sql.NullInt64
+	indexName          sql.NullString
+	partitionOrdinal   sql.NullInt64
+	typeDesc           sql.NullString
+	indexID            sql.NullInt64
+	isUnique           sql.NullBool
+	isPrimaryKey       sql.NullBool
+	isUniqueConstraint sql.NullBool
+	fillFactor         sql.NullInt64
+	dataSpaceID        sql.NullInt64
+	ignoreDupKey       sql.NullBool
+	noRecompute        sql.NullBool
+	isPadded           sql.NullBool
+	isDisabled         sql.NullBool
+	isHypothetical     sql.NullBool
+	allowRowLocks      sql.NullBool
+	allowPageLocks     sql.NullBool
+	columnName         sql.NullString
+	isDescendingKey    sql.NullBool
+	keyOrdinal         sql.NullInt64
+	isIncludedColumn   sql.NullBool
+	hasFilter          sql.NullBool
+	filterDefinition   sql.NullString
+	spatialIndexType   sql.NullString
+	boundingBoxXmin    sql.NullFloat64
+	boundingBoxYmin    sql.NullFloat64
+	boundingBoxXmax    sql.NullFloat64
+	boundingBoxYmax    sql.NullFloat64
+	level1GridDesc     sql.NullString
+	level2GridDesc     sql.NullString
+	level3GridDesc     sql.NullString
+	level4GridDesc     sql.NullString
+	cellsPerObject     sql.NullInt64
+	secondaryTypeDesc  sql.NullString
+	priIndexName       sql.NullString
+	comment            sql.NullString
+}
+
+func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schemas []string) (map[string][]*indexMeta, error) {
+	indexMetaMap := make(map[string][]*indexMeta)
+	slog.Debug("running dump index query", slog.String("schemas", fmt.Sprintf("%v", schemas)))
+	query := fmt.Sprintf(dumpIndexSQL, quoteList(schemas))
+	indexRows, err := txn.QueryContext(ctx, query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer indexRows.Close()
+
+	for indexRows.Next() {
+		meta := indexMeta{}
+		if err := indexRows.Scan(
+			&meta.schemaName,
+			&meta.tableName,
+			&meta.tableType,
+			&meta.isSystemObject,
+			&meta.objectID,
+			&meta.indexName,
+			&meta.partitionOrdinal,
+			&meta.typeDesc,
+			&meta.indexID,
+			&meta.isUnique,
+			&meta.isPrimaryKey,
+			&meta.isUniqueConstraint,
+			&meta.fillFactor,
+			&meta.dataSpaceID,
+			&meta.ignoreDupKey,
+			&meta.noRecompute,
+			&meta.isPadded,
+			&meta.isDisabled,
+			&meta.isHypothetical,
+			&meta.allowRowLocks,
+			&meta.allowPageLocks,
+			&meta.columnName,
+			&meta.isDescendingKey,
+			&meta.keyOrdinal,
+			&meta.isIncludedColumn,
+			&meta.hasFilter,
+			&meta.filterDefinition,
+			&meta.spatialIndexType,
+			&meta.boundingBoxXmin,
+			&meta.boundingBoxYmin,
+			&meta.boundingBoxXmax,
+			&meta.boundingBoxYmax,
+			&meta.level1GridDesc,
+			&meta.level2GridDesc,
+			&meta.level3GridDesc,
+			&meta.level4GridDesc,
+			&meta.cellsPerObject,
+			&meta.secondaryTypeDesc,
+			&meta.priIndexName,
+			&meta.comment,
+		); err != nil {
+			return nil, err
+		}
+		if !meta.schemaName.Valid || !meta.tableName.Valid || !meta.indexName.Valid {
+			continue
+		}
+		tableID := tableID(meta.schemaName.String, meta.tableName.String)
+		if indexMetaMap[tableID] == nil {
+			indexMetaMap[tableID] = []*indexMeta{&meta}
+		} else {
+			indexMetaMap[tableID] = append(indexMetaMap[tableID], &meta)
+		}
+	}
+	if err := indexRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+
+	return indexMetaMap, nil
 }
 
 type keyMeta struct {

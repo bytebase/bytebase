@@ -25,6 +25,7 @@
         v-if="selectedPlanCheckRun"
         :plan-check-run="selectedPlanCheckRun"
         :environment="environment"
+        @close="$emit('close')"
       />
     </div>
   </BBModal>
