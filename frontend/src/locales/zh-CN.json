@@ -3389,7 +3389,8 @@
     "confirm-delete-changelist": "删除变更列表？",
     "import": {
       "no-file-to-upload": "没有可以上传的文件",
-      "upload-sql-or-zip-file": "上传 .sql 或 .zip 文件"
+      "upload-sql-or-zip-file": "上传 .sql 或 .zip 文件",
+      "optional-upload-sql-or-zip-file": "（可选）上传 .sql 或 .zip 文件"
     }
   },
   "export-data": {
