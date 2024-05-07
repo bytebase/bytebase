@@ -211,11 +211,6 @@ func (l *suffixSelectStatementListener) EnterUpdateStatement(ctx *parser.UpdateS
 	}
 }
 
-type tableStatement struct {
-	tree  *ParseResult
-	table *TableReference
-}
-
 func extractTables(databaseName string, parseResult *ParseResult, offset int) ([]statementInfo, error) {
 	listener := &tableReferenceListener{
 		databaseName: databaseName,
