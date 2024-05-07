@@ -10465,6 +10465,10 @@ components:
                          - DONE
                          - FAILED
                          - CANCELED
+                labels:
+                    type: array
+                    items:
+                        type: string
         IssueComment:
             type: object
             properties:
@@ -10670,6 +10674,15 @@ components:
                         FieldMapping is the mapping of the user attributes returned by the LDAP
                          server.
             description: LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
+        Label:
+            type: object
+            properties:
+                value:
+                    type: string
+                color:
+                    type: string
+                group:
+                    type: string
         LabelSelector:
             type: object
             properties:
@@ -11774,6 +11787,10 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ProtectionRule'
+                issueLabels:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Label'
         ProtectionRule:
             type: object
             properties:

@@ -4,8 +4,15 @@ package bytebase.store;
 
 option go_package = "generated-go/store";
 
+message Label {
+  string value = 1;
+  string color = 2;
+  string group = 3;
+}
+
 message Project {
   repeated ProtectionRule protection_rules = 1;
+  repeated Label issue_labels = 2;
 }
 
 message ProtectionRule {

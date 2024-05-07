@@ -607,19 +607,8 @@ func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.Datab
 			if table == nil {
 				continue
 			}
-			t := &storepb.TableConfig{
-				Name: table.Name,
-			}
-			for _, column := range table.ColumnConfigs {
-				if column == nil {
-					continue
-				}
-				t.ColumnConfigs = append(t.ColumnConfigs, &storepb.ColumnConfig{
-					Name:           column.Name,
-					SemanticTypeId: column.SemanticTypeId,
-					Labels:         column.Labels,
-				})
-			}
+
+			t := convertV1TableConfig(table)
 			s.TableConfigs = append(s.TableConfigs, t)
 		}
 		config.SchemaConfigs = append(config.SchemaConfigs, s)
