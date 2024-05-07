@@ -18,7 +18,10 @@ import { useI18n } from "vue-i18n";
 import type { AffectedTable } from "@/types";
 import { EmptyAffectedTable } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
-import { getAffectedTablesOfChangeHistory } from "@/utils";
+import {
+  getAffectedTablesOfChangeHistory,
+  stringifyAffectedTable,
+} from "@/utils";
 
 type AffectedTableSelectOption = SelectOption & {
   affectedTable: AffectedTable;
@@ -73,7 +76,7 @@ const renderLabel = (option: SelectOption) => {
   if (isEqual(affectedTable, EmptyAffectedTable)) {
     return t("change-history.all-tables");
   }
-  const name = affectedTable.table;
+  const name = stringifyAffectedTable(affectedTable);
   if (affectedTable.dropped) {
     return (
       <div class="w-full flex flex-row justify-between items-center gap-1">
