@@ -4,6 +4,7 @@ import { sheetServiceClient } from "@/grpcweb";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID } from "@/types";
+import { Engine, engineToJSON } from "@/types/proto/v1/common";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import { extractSheetUID, getSheetStatement } from "@/utils";
 
@@ -34,6 +35,16 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
 
   // CRUD
   const createSheet = async (parent: string, sheet: Partial<Sheet>) => {
+    if (!sheet.engine || sheet.engine === Engine.ENGINE_UNSPECIFIED) {
+      const engineStr = sheet.engine
+        ? engineToJSON(sheet.engine)
+        : "<undefined>";
+      console.warn(
+        `[SheetService.CreateSheet] sheet.engine unspecified: ${engineStr}`
+      );
+
+      sheet.engine = Engine.ENGINE_UNSPECIFIED;
+    }
     const created = await sheetServiceClient.createSheet({
       parent,
       sheet,

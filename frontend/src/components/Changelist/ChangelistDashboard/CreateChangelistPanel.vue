@@ -63,7 +63,9 @@
                     <template #icon>
                       <UploadIcon class="w-4 h-4" />
                     </template>
-                    {{ $t("changelist.import.optional-upload-sql-or-zip-file") }}
+                    {{
+                      $t("changelist.import.optional-upload-sql-or-zip-file")
+                    }}
                   </NButton>
                 </NUploadTrigger>
                 <div class="flex flex-col gap-1">
@@ -151,6 +153,7 @@ import {
   Changelist,
   Changelist_Change as Change,
 } from "@/types/proto/v1/changelist_service";
+import { Engine } from "@/types/proto/v1/common";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { extractChangelistResourceName, setSheetStatement } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
@@ -271,6 +274,7 @@ const doCreate = async () => {
         const { name, content } = f;
         const sheet = Sheet.fromPartial({
           title: name,
+          engine: Engine.ENGINE_UNSPECIFIED, // TODO(jim)
         });
         setSheetStatement(sheet, content);
         const created = await useSheetV1Store().createSheet(
