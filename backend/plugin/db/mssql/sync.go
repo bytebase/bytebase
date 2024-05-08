@@ -77,6 +77,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
+	funcMap, err := getFunctions(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get functions from database %q", driver.databaseName)
+	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
@@ -87,9 +91,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 	for _, schemaName := range schemaNames {
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-			Name:   schemaName,
-			Tables: tableMap[schemaName],
-			Views:  viewMap[schemaName],
+			Name:      schemaName,
+			Tables:    tableMap[schemaName],
+			Views:     viewMap[schemaName],
+			Functions: funcMap[schemaName],
 		})
 	}
 	return databaseMetadata, nil
@@ -323,6 +328,48 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 	}
 
 	return viewMap, nil
+}
+
+func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
+	funcMap := make(map[string][]*storepb.FunctionMetadata)
+
+	// The CAST(...) = 0 means the function is not a system function.
+	query := `
+	SELECT
+		SCHEMA_NAME(ao.schema_id) AS schema_name,
+		ao.name AS func_name,
+		asm.definition
+	FROM sys.all_objects ao
+        INNER JOIN sys.all_sql_modules asm ON asm.object_id = ao.object_id
+	WHERE ao.type IN ('P', 'RF', 'FN', 'IF', 'TF')
+		AND ao.is_ms_shipped = 0 AND
+		(
+			SELECT major_id
+			FROM sys.extended_properties
+			WHERE major_id = ao.object_id
+				AND minor_id = 0
+				AND class = 1
+				AND name = 'microsoft_database_tools_support'
+		) IS NULL
+	ORDER BY schema_name, func_name;`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		function := &storepb.FunctionMetadata{}
+		var schemaName string
+		if err := rows.Scan(&schemaName, &function.Name, &function.Definition); err != nil {
+			return nil, err
+		}
+		funcMap[schemaName] = append(funcMap[schemaName], function)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return funcMap, nil
 }
 
 // SyncSlowQuery syncs the slow query.
