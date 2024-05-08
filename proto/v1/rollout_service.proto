@@ -767,8 +767,8 @@ message TaskRunLogEntry {
 
   message SchemaDump {
     google.protobuf.Timestamp start_time = 1;
-    optional google.protobuf.Timestamp end_time = 2;
-    optional string error = 3;
+    google.protobuf.Timestamp end_time = 2;
+    string error = 3;
   }
 
   message CommandExecute {
