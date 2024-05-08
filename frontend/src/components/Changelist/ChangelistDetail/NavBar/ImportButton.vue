@@ -41,6 +41,7 @@ import {
   Changelist_Change as Change,
   Changelist,
 } from "@/types/proto/v1/changelist_service";
+import { Engine } from "@/types/proto/v1/common";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { setSheetStatement } from "@/utils";
 import { readUpload, type ParsedFile } from "../../import";
@@ -87,6 +88,7 @@ const save = async (files: ParsedFile[]) => {
       const { name, content } = f;
       const sheet = Sheet.fromPartial({
         title: name,
+        engine: Engine.ENGINE_UNSPECIFIED, // TODO(jim)
       });
       setSheetStatement(sheet, content);
       const created = await useSheetV1Store().createSheet(
