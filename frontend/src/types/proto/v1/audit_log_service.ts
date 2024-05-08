@@ -8,6 +8,14 @@ import { ExportFormat, exportFormatFromJSON, exportFormatToJSON, exportFormatToN
 export const protobufPackage = "bytebase.v1";
 
 export interface SearchAuditLogsRequest {
+  /**
+   * The filter of the log. It should be a valid CEL expression.
+   * For example:
+   *  - filter = "method == '/bytebase.v1.SQLService/Query'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
+   */
   filter: string;
   /**
    * The order by of the log.
@@ -42,6 +50,14 @@ export interface SearchAuditLogsResponse {
 }
 
 export interface ExportAuditLogsRequest {
+  /**
+   * The filter of the log. It should be a valid CEL expression.
+   * For example:
+   *  - filter = "method == '/bytebase.v1.SQLService/Query'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
+   */
   filter: string;
   /**
    * The order by of the log.
