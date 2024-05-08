@@ -208,7 +208,8 @@ func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Sta
 	getFilter = func(expr celast.Expr) (string, error) {
 		switch expr.Kind() {
 		case celast.CallKind:
-			switch expr.AsCall().FunctionName() {
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
 			case "_||_":
 				var args []string
 				for _, arg := range expr.AsCall().Args() {
@@ -277,13 +278,13 @@ func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Sta
 				}
 				ts := t.Unix()
 				positionalArgs = append(positionalArgs, ts)
-				if expr.AsCall().FunctionName() == "_>=" {
+				if functionName == "_>=" {
 					return fmt.Sprintf("created_ts >= $%d", len(positionalArgs)), nil
 				}
 				return fmt.Sprintf("created_ts <= $%d", len(positionalArgs)), nil
 
 			default:
-				return "", errors.Errorf("unexpected function %v", expr.AsCall().FunctionName())
+				return "", errors.Errorf("unexpected function %v", functionName)
 			}
 
 		default:
