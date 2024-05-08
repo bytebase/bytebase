@@ -3707,6 +3707,7 @@ The following fields are used for error reporting.
 | command_count | [int32](#int32) |  |  |
 | error | [string](#string) |  |  |
 | affected_rows | [int32](#int32) |  |  |
+| all_affected_rows | [int32](#int32) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
 
 
 

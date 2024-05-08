@@ -1501,6 +1501,11 @@ export interface TaskRunLogEntry_CommandExecute_CommandResponse {
   logTime: Date | undefined;
   error: string;
   affectedRows: number;
+  /**
+   * `all_affected_rows` is the affected rows of each command.
+   * `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
+   */
+  allAffectedRows: number[];
 }
 
 function createBaseGetPlanRequest(): GetPlanRequest {
@@ -6893,7 +6898,7 @@ export const TaskRunLogEntry_CommandExecute = {
 };
 
 function createBaseTaskRunLogEntry_CommandExecute_CommandResponse(): TaskRunLogEntry_CommandExecute_CommandResponse {
-  return { logTime: undefined, error: "", affectedRows: 0 };
+  return { logTime: undefined, error: "", affectedRows: 0, allAffectedRows: [] };
 }
 
 export const TaskRunLogEntry_CommandExecute_CommandResponse = {
@@ -6910,6 +6915,11 @@ export const TaskRunLogEntry_CommandExecute_CommandResponse = {
     if (message.affectedRows !== 0) {
       writer.uint32(24).int32(message.affectedRows);
     }
+    writer.uint32(34).fork();
+    for (const v of message.allAffectedRows) {
+      writer.int32(v);
+    }
+    writer.ldelim();
     return writer;
   },
 
@@ -6941,6 +6951,23 @@ export const TaskRunLogEntry_CommandExecute_CommandResponse = {
 
           message.affectedRows = reader.int32();
           continue;
+        case 4:
+          if (tag === 32) {
+            message.allAffectedRows.push(reader.int32());
+
+            continue;
+          }
+
+          if (tag === 34) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.allAffectedRows.push(reader.int32());
+            }
+
+            continue;
+          }
+
+          break;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6955,6 +6982,9 @@ export const TaskRunLogEntry_CommandExecute_CommandResponse = {
       logTime: isSet(object.logTime) ? fromJsonTimestamp(object.logTime) : undefined,
       error: isSet(object.error) ? globalThis.String(object.error) : "",
       affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
+      allAffectedRows: globalThis.Array.isArray(object?.allAffectedRows)
+        ? object.allAffectedRows.map((e: any) => globalThis.Number(e))
+        : [],
     };
   },
 
@@ -6968,6 +6998,9 @@ export const TaskRunLogEntry_CommandExecute_CommandResponse = {
     }
     if (message.affectedRows !== 0) {
       obj.affectedRows = Math.round(message.affectedRows);
+    }
+    if (message.allAffectedRows?.length) {
+      obj.allAffectedRows = message.allAffectedRows.map((e) => Math.round(e));
     }
     return obj;
   },
@@ -6984,6 +7017,7 @@ export const TaskRunLogEntry_CommandExecute_CommandResponse = {
     message.logTime = object.logTime ?? undefined;
     message.error = object.error ?? "";
     message.affectedRows = object.affectedRows ?? 0;
+    message.allAffectedRows = object.allAffectedRows?.map((e) => e) || [];
     return message;
   },
 };
