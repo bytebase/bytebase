@@ -35,6 +35,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
+  databaseEngineForSpec,
   databaseForTask,
   getLocalSheetByName,
   isValidStage,
@@ -176,6 +177,11 @@ const createSheets = async () => {
       // The sheet is pending create
       const sheet = getLocalSheetByName(config.sheet);
       sheet.database = config.target;
+      const engine = await databaseEngineForSpec(
+        issue.value.projectEntity,
+        spec
+      );
+      sheet.engine = engine;
       pendingCreateSheetMap.set(sheet.name, sheet);
 
       await maybeFormatSQL(sheet, sheet.database);
