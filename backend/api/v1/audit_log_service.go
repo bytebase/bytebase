@@ -278,7 +278,7 @@ func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Sta
 				}
 				ts := t.Unix()
 				positionalArgs = append(positionalArgs, ts)
-				if functionName == "_>=" {
+				if functionName == "_>=_" {
 					return fmt.Sprintf("created_ts >= $%d", len(positionalArgs)), nil
 				}
 				return fmt.Sprintf("created_ts <= $%d", len(positionalArgs)), nil
