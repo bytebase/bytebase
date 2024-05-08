@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"io"
 	"log/slog"
@@ -70,9 +71,9 @@ func newDriver(dc db.DriverConfig) db.Driver {
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	defer func() {
-		for _, f := range driver.openCleanUp {
+		for _, f := range d.openCleanUp {
 			f()
 		}
 	}()
@@ -85,7 +86,7 @@ func (driver *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg d
 	case storepb.DataSourceOptions_AWS_RDS_IAM:
 		dsn, err = getRDSConnection(ctx, connCfg)
 	default:
-		dsn, err = driver.getMySQLConnection(connCfg)
+		dsn, err = d.getMySQLConnection(connCfg)
 	}
 	if err != nil {
 		return nil, err
@@ -95,20 +96,20 @@ func (driver *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg d
 	if err != nil {
 		return nil, err
 	}
-	driver.dbType = dbType
-	driver.db = db
+	d.dbType = dbType
+	d.db = db
 	// TODO(d): remove the work-around once we have clean-up the migration connection hack.
 	db.SetConnMaxLifetime(2 * time.Hour)
 	db.SetMaxOpenConns(50)
 	db.SetMaxIdleConns(15)
-	driver.connectionCtx = connCfg.ConnectionContext
-	driver.connCfg = connCfg
-	driver.databaseName = connCfg.Database
+	d.connectionCtx = connCfg.ConnectionContext
+	d.connCfg = connCfg
+	d.databaseName = connCfg.Database
 
-	return driver, nil
+	return d, nil
 }
 
-func (driver *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error) {
+func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(connCfg.Host, "/") {
 		protocol = "unix"
@@ -120,7 +121,7 @@ func (driver *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, e
 		if err != nil {
 			return "", err
 		}
-		driver.sshClient = sshClient
+		d.sshClient = sshClient
 		// Now we register the dialer with the ssh connection as a parameter.
 		mysql.RegisterDialContext("mysql+tcp", func(_ context.Context, addr string) (net.Conn, error) {
 			return sshClient.Dial("tcp", addr)
@@ -139,7 +140,7 @@ func (driver *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, e
 			return "", errors.Wrap(err, "sql: failed to register tls config")
 		}
 		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
-		driver.openCleanUp = append(driver.openCleanUp, func() { mysql.DeregisterTLSConfig(tlsKey) })
+		d.openCleanUp = append(d.openCleanUp, func() { mysql.DeregisterTLSConfig(tlsKey) })
 		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
 	}
 
@@ -223,35 +224,35 @@ func getCloudSQLConnection(ctx context.Context, connCfg db.ConnectionConfig) (st
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(context.Context) error {
+func (d *Driver) Close(context.Context) error {
 	var err error
-	err = multierr.Append(err, driver.db.Close())
-	if driver.sshClient != nil {
-		err = multierr.Append(err, driver.sshClient.Close())
+	err = multierr.Append(err, d.db.Close())
+	if d.sshClient != nil {
+		err = multierr.Append(err, d.sshClient.Close())
 	}
 	return err
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.db.PingContext(ctx)
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.db.PingContext(ctx)
 }
 
 // GetType returns the database type.
-func (driver *Driver) GetType() storepb.Engine {
-	return driver.dbType
+func (d *Driver) GetType() storepb.Engine {
+	return d.dbType
 }
 
 // GetDB gets the database.
-func (driver *Driver) GetDB() *sql.DB {
-	return driver.db
+func (d *Driver) GetDB() *sql.DB {
+	return d.db
 }
 
 // getVersion gets the version.
-func (driver *Driver) getVersion(ctx context.Context) (string, string, error) {
+func (d *Driver) getVersion(ctx context.Context) (string, string, error) {
 	query := "SELECT VERSION()"
 	var version string
-	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
+	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
 		if err == sql.ErrNoRows {
 			return "", "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -261,15 +262,15 @@ func (driver *Driver) getVersion(ctx context.Context) (string, string, error) {
 	return parseVersion(version)
 }
 
-func (driver *Driver) getReadOnly() bool {
-	if driver.dbType == storepb.Engine_OCEANBASE {
+func (d *Driver) getReadOnly() bool {
+	if d.dbType == storepb.Engine_OCEANBASE {
 		return false
 	}
 	// MariaDB 5.5 doesn't support READ ONLY transactions.
 	// Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'READ ONLY' at line 1
-	v, err := semver.Make(driver.connectionCtx.EngineVersion)
+	v, err := semver.Make(d.connectionCtx.EngineVersion)
 	if err != nil {
-		slog.Debug("invalid version", slog.String("version", driver.connectionCtx.EngineVersion))
+		slog.Debug("invalid version", slog.String("version", d.connectionCtx.EngineVersion))
 		return true
 	}
 	if v.GT(semver.Version{Major: 5, Minor: 5}) {
@@ -286,13 +287,13 @@ func parseVersion(version string) (string, string, error) {
 }
 
 // Execute executes a SQL statement.
-func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	statement, err := mysqlparser.DealWithDelimiter(statement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to deal with delimiter")
 	}
 
-	conn, err := driver.db.Conn(ctx)
+	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -345,79 +346,99 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 	currentIndex := 0
 	var totalRowsAffected int64
-	for _, chunk := range chunks {
-		if len(chunk) == 0 {
-			continue
-		}
-		// Start the current chunk.
 
-		// Set the progress information for the current chunk.
-		if opts.UpdateExecutionStatus != nil {
-			opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
-				CommandsTotal:     int32(totalCommands),
-				CommandsCompleted: int32(currentIndex),
-				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line:   int32(chunk[0].FirstStatementLine),
-					Column: int32(chunk[0].FirstStatementColumn),
-				},
-				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line:   int32(chunk[len(chunk)-1].LastLine),
-					Column: int32(chunk[len(chunk)-1].LastColumn),
-				},
-			})
-		}
-
-		chunkText, err := util.ConcatChunk(chunk)
+	if err := conn.Raw(func(driverConn any) error {
+		//nolint
+		exer := driverConn.(driver.ExecerContext)
+		//nolint
+		txer := driverConn.(driver.ConnBeginTx)
+		tx, err := txer.BeginTx(ctx, driver.TxOptions{})
 		if err != nil {
-			return 0, err
+			return err
 		}
+		defer tx.Rollback()
 
-		opts.LogCommandExecute(int32(currentIndex), int32(len(chunk)))
+		for _, chunk := range chunks {
+			if len(chunk) == 0 {
+				continue
+			}
+			// Start the current chunk.
 
-		sqlResult, err := tx.ExecContext(ctx, chunkText)
-		if err != nil {
-			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-				slog.Info("cancel connection", slog.String("connectionID", connectionID))
-				if err := driver.StopConnectionByID(connectionID); err != nil {
-					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
+			// Set the progress information for the current chunk.
+			if opts.UpdateExecutionStatus != nil {
+				opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
+					CommandsTotal:     int32(totalCommands),
+					CommandsCompleted: int32(currentIndex),
+					CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+						Line:   int32(chunk[0].FirstStatementLine),
+						Column: int32(chunk[0].FirstStatementColumn),
+					},
+					CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+						Line:   int32(chunk[len(chunk)-1].LastLine),
+						Column: int32(chunk[len(chunk)-1].LastColumn),
+					},
+				})
+			}
+
+			chunkText, err := util.ConcatChunk(chunk)
+			if err != nil {
+				return err
+			}
+
+			opts.LogCommandExecute(int32(currentIndex), int32(len(chunk)))
+
+			sqlResult, err := exer.ExecContext(ctx, chunkText, nil)
+			if err != nil {
+				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+					slog.Info("cancel connection", slog.String("connectionID", connectionID))
+					if err := d.StopConnectionByID(connectionID); err != nil {
+						slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
+					}
+				}
+
+				opts.LogCommandResponse(int32(currentIndex), int32(len(chunk)), 0, nil, err.Error())
+
+				return &db.ErrorWithPosition{
+					Err: errors.Wrapf(err, "failed to execute context in a transaction"),
+					Start: &storepb.TaskRunResult_Position{
+						Line:   int32(chunk[0].FirstStatementLine),
+						Column: int32(chunk[0].FirstStatementColumn),
+					},
+					End: &storepb.TaskRunResult_Position{
+						Line:   int32(chunk[len(chunk)-1].LastLine),
+						Column: int32(chunk[len(chunk)-1].LastColumn),
+					},
 				}
 			}
 
-			opts.LogCommandResponse(int32(currentIndex), int32(len(chunk)), 0, err.Error())
-
-			return 0, &db.ErrorWithPosition{
-				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
-				Start: &storepb.TaskRunResult_Position{
-					Line:   int32(chunk[0].FirstStatementLine),
-					Column: int32(chunk[0].FirstStatementColumn),
-				},
-				End: &storepb.TaskRunResult_Position{
-					Line:   int32(chunk[len(chunk)-1].LastLine),
-					Column: int32(chunk[len(chunk)-1].LastColumn),
-				},
+			allRowsAffected := sqlResult.(mysql.Result).AllRowsAffected()
+			var rowsAffected int64
+			var allRowsAffectedInt32 []int32
+			for _, a := range allRowsAffected {
+				rowsAffected += a
+				allRowsAffectedInt32 = append(allRowsAffectedInt32, int32(a))
 			}
-		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-		}
-		opts.LogCommandResponse(int32(currentIndex), int32(len(chunk)), int32(rowsAffected), "")
-		totalRowsAffected += rowsAffected
-		currentIndex += len(chunk)
-	}
+			totalRowsAffected += rowsAffected
+			currentIndex += len(chunk)
 
-	if err := tx.Commit(); err != nil {
-		return 0, errors.Wrapf(err, "failed to commit execute transaction")
+			opts.LogCommandResponse(int32(currentIndex), int32(len(chunk)), int32(rowsAffected), allRowsAffectedInt32, "")
+		}
+
+		if err := tx.Commit(); err != nil {
+			return errors.Wrapf(err, "failed to commit execute transaction")
+		}
+		return nil
+	}); err != nil {
+		return 0, err
 	}
 
 	return totalRowsAffected, nil
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext.ReadOnly {
-		queryContext.ReadOnly = driver.getReadOnly()
+		queryContext.ReadOnly = d.getReadOnly()
 	}
 
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
@@ -436,14 +457,14 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
-		result, err := driver.querySingleSQL(ctx, conn, singleSQL, queryContext)
+		result, err := d.querySingleSQL(ctx, conn, singleSQL, queryContext)
 		if err != nil {
 			results = append(results, &v1pb.QueryResult{
 				Error: err.Error(),
 			})
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				slog.Info("cancel connection", slog.String("connectionID", connectionID))
-				if err := driver.StopConnectionByID(connectionID); err != nil {
+				if err := d.StopConnectionByID(connectionID); err != nil {
 					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
 				}
 				break
@@ -456,9 +477,9 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func (driver *Driver) StopConnectionByID(id string) error {
+func (d *Driver) StopConnectionByID(id string) error {
 	// We cannot use placeholder parameter because TiDB doesn't accept it.
-	_, err := driver.db.Exec(fmt.Sprintf("KILL QUERY %s", id))
+	_, err := d.db.Exec(fmt.Sprintf("KILL QUERY %s", id))
 	return err
 }
 
@@ -470,7 +491,7 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 	return id, nil
 }
 
-func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
 	isExplain := strings.HasPrefix(statement, "EXPLAIN")
 	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
@@ -495,7 +516,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, driver.dbType, conn, stmt, queryContext)
+	result, err := util.Query(ctx, d.dbType, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}
