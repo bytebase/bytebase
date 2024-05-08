@@ -44,6 +44,7 @@ func (s *Store) ListTaskRunLogs(ctx context.Context, taskRunUID int) ([]*TaskRun
 			payload
 		FROM task_run_log
 		WHERE task_run_log.task_run_id = $1
+		ORDER BY id
 	`
 
 	rows, err := s.db.db.QueryContext(ctx, query, taskRunUID)
