@@ -979,9 +979,10 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 				continue
 			}
 			prev.CommandExecute.Response = &v1pb.TaskRunLogEntry_CommandExecute_CommandResponse{
-				LogTime:      timestamppb.New(l.T),
-				Error:        l.Payload.CommandResponse.Error,
-				AffectedRows: l.Payload.CommandResponse.AffectedRows,
+				LogTime:         timestamppb.New(l.T),
+				Error:           l.Payload.CommandResponse.Error,
+				AffectedRows:    l.Payload.CommandResponse.AffectedRows,
+				AllAffectedRows: l.Payload.CommandResponse.AllAffectedRows,
 			}
 		}
 	}
