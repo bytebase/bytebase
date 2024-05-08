@@ -1483,8 +1483,8 @@ export function taskRunLogEntry_TypeToNumber(object: TaskRunLogEntry_Type): numb
 
 export interface TaskRunLogEntry_SchemaDump {
   startTime: Date | undefined;
-  endTime?: Date | undefined;
-  error?: string | undefined;
+  endTime: Date | undefined;
+  error: string;
 }
 
 export interface TaskRunLogEntry_CommandExecute {
@@ -6696,7 +6696,7 @@ export const TaskRunLogEntry = {
 };
 
 function createBaseTaskRunLogEntry_SchemaDump(): TaskRunLogEntry_SchemaDump {
-  return { startTime: undefined, endTime: undefined, error: undefined };
+  return { startTime: undefined, endTime: undefined, error: "" };
 }
 
 export const TaskRunLogEntry_SchemaDump = {
@@ -6707,7 +6707,7 @@ export const TaskRunLogEntry_SchemaDump = {
     if (message.endTime !== undefined) {
       Timestamp.encode(toTimestamp(message.endTime), writer.uint32(18).fork()).ldelim();
     }
-    if (message.error !== undefined) {
+    if (message.error !== "") {
       writer.uint32(26).string(message.error);
     }
     return writer;
@@ -6754,7 +6754,7 @@ export const TaskRunLogEntry_SchemaDump = {
     return {
       startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
       endTime: isSet(object.endTime) ? fromJsonTimestamp(object.endTime) : undefined,
-      error: isSet(object.error) ? globalThis.String(object.error) : undefined,
+      error: isSet(object.error) ? globalThis.String(object.error) : "",
     };
   },
 
@@ -6766,7 +6766,7 @@ export const TaskRunLogEntry_SchemaDump = {
     if (message.endTime !== undefined) {
       obj.endTime = message.endTime.toISOString();
     }
-    if (message.error !== undefined) {
+    if (message.error !== "") {
       obj.error = message.error;
     }
     return obj;
@@ -6779,7 +6779,7 @@ export const TaskRunLogEntry_SchemaDump = {
     const message = createBaseTaskRunLogEntry_SchemaDump();
     message.startTime = object.startTime ?? undefined;
     message.endTime = object.endTime ?? undefined;
-    message.error = object.error ?? undefined;
+    message.error = object.error ?? "";
     return message;
   },
 };

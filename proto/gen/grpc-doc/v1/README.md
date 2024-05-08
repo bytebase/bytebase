@@ -8194,8 +8194,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
-| error | [string](#string) | optional |  |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| error | [string](#string) |  |  |
 
 
 
