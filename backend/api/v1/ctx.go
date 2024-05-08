@@ -160,6 +160,7 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.RolloutService_GetPlan_FullMethodName,
 		v1pb.RolloutService_CreatePlan_FullMethodName,
 		v1pb.RolloutService_ListTaskRuns_FullMethodName,
+		v1pb.RolloutService_GetTaskRunLog_FullMethodName,
 		v1pb.RolloutService_ListPlanCheckRuns_FullMethodName,
 		v1pb.RolloutService_RunPlanChecks_FullMethodName:
 		return p.getProjectIDsForRolloutService(ctx, req)
@@ -258,7 +259,7 @@ func (*ContextProvider) getProjectIDsForChangelistService(_ context.Context, req
 }
 
 func (*ContextProvider) getProjectIDsForRolloutService(_ context.Context, req any) ([]string, error) {
-	var projects, rollouts, plans, tasks []string
+	var projects, rollouts, plans, tasks, taskRuns []string
 	switch r := req.(type) {
 	case *v1pb.GetRolloutRequest:
 		rollouts = append(rollouts, r.GetName())
@@ -272,6 +273,8 @@ func (*ContextProvider) getProjectIDsForRolloutService(_ context.Context, req an
 		projects = append(projects, r.GetParent())
 	case *v1pb.ListTaskRunsRequest:
 		tasks = append(tasks, r.GetParent())
+	case *v1pb.GetTaskRunLogRequest:
+		taskRuns = append(taskRuns, r.GetParent())
 	case *v1pb.ListPlanCheckRunsRequest:
 		plans = append(plans, r.GetParent())
 	case *v1pb.RunPlanChecksRequest:
@@ -304,6 +307,13 @@ func (*ContextProvider) getProjectIDsForRolloutService(_ context.Context, req an
 		projectID, _, _, _, err := common.GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(task)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse task %q", task)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, taskRun := range taskRuns {
+		projectID, _, _, _, _, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse taskRun %q", taskRun)
 		}
 		projectIDs = append(projectIDs, projectID)
 	}
