@@ -208,7 +208,8 @@ func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Sta
 	getFilter = func(expr celast.Expr) (string, error) {
 		switch expr.Kind() {
 		case celast.CallKind:
-			switch expr.AsCall().FunctionName() {
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
 			case "_||_":
 				var args []string
 				for _, arg := range expr.AsCall().Args() {
@@ -253,8 +254,37 @@ func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Sta
 				positionalArgs = append(positionalArgs, value)
 				return fmt.Sprintf("payload->>'%s'=$%d", variable, len(positionalArgs)), nil
 
+			case "_>=_", "_<=_":
+				var variable, value string
+				for _, arg := range expr.AsCall().Args() {
+					switch arg.Kind() {
+					case celast.IdentKind:
+						variable = arg.AsIdent()
+					case celast.LiteralKind:
+						lit, ok := arg.AsLiteral().Value().(string)
+						if !ok {
+							return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", arg.AsLiteral().Value())
+						}
+						value = lit
+					}
+				}
+				if variable != "create_time" {
+					return "", errors.Errorf(`">=" and "<=" are only supported for "create_time"`)
+				}
+
+				t, err := time.Parse(time.RFC3339, value)
+				if err != nil {
+					return "", errors.Errorf("failed to parse time %v, error: %v", value, err)
+				}
+				ts := t.Unix()
+				positionalArgs = append(positionalArgs, ts)
+				if functionName == "_>=_" {
+					return fmt.Sprintf("created_ts >= $%d", len(positionalArgs)), nil
+				}
+				return fmt.Sprintf("created_ts <= $%d", len(positionalArgs)), nil
+
 			default:
-				return "", errors.Errorf("unexpected function %v", expr.AsCall().FunctionName())
+				return "", errors.Errorf("unexpected function %v", functionName)
 			}
 
 		default:
