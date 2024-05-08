@@ -29,7 +29,7 @@ import {
   Rollout,
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
-import { SheetPayload } from "@/types/proto/v1/sheet_service";
+import { Sheet, SheetPayload } from "@/types/proto/v1/sheet_service";
 import {
   extractProjectResourceName,
   extractSheetUID,
@@ -41,7 +41,7 @@ import {
   sheetNameOfTaskV1,
 } from "@/utils";
 import { nextUID } from "../base";
-import { sheetNameForSpec } from "../plan";
+import { databaseEngineForSpec, sheetNameForSpec } from "../plan";
 import { createEmptyLocalSheet, getLocalSheetByName } from "../sheet";
 
 export type InitialSQL = {
@@ -213,9 +213,10 @@ export const buildStepsForDatabaseGroup = async (
   // Create sheet from SQL template in URL query
   // The sheet will be used when previewing rollout
   const sql = params.initialSQL.sql ?? "";
-  const sheetCreate = {
+  const sheetCreate = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
-  };
+    engine: await databaseEngineForSpec(params.project, databaseGroupName),
+  });
   setSheetStatement(sheetCreate, sql);
   const sheet = await useSheetV1Store().createSheet(
     params.project.name,

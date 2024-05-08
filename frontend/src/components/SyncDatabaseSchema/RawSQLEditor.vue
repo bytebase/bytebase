@@ -174,6 +174,7 @@ const handleSQLUpload = async (statement: string, filename: string) => {
   try {
     const sheet = await sheetStore.createSheet(DEFAULT_PROJECT_V1_NAME, {
       title: filename,
+      engine: state.engine,
       content: new TextEncoder().encode(statement),
     });
     const sheetId = Number(extractSheetUID(sheet.name));
