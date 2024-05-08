@@ -14,6 +14,7 @@ export interface SearchAuditLogsRequest {
    *  - filter = "method == '/bytebase.v1.SQLService/Query'"
    *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
    *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
    */
   filter: string;
   /**
@@ -55,6 +56,7 @@ export interface ExportAuditLogsRequest {
    *  - filter = "method == '/bytebase.v1.SQLService/Query'"
    *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
    *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
    */
   filter: string;
   /**
