@@ -150,7 +150,7 @@
           <DBExtensionDataTable :db-extension-list="dbExtensionList" />
         </template>
 
-        <template v-if="databaseEngine === Engine.POSTGRES">
+        <template v-if="databaseEngine === Engine.POSTGRES || databaseEngine === Engine.MSSQL">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.functions") }}
           </div>
