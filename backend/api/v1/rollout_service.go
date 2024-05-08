@@ -440,6 +440,18 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTas
 	}, nil
 }
 
+func (s *RolloutService) GetTaskRunLog(ctx context.Context, request *v1pb.GetTaskRunLogRequest) (*v1pb.TaskRunLog, error) {
+	_, _, _, _, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get task run uid, error: %v", err)
+	}
+	logs, err := s.store.ListTaskRunLogs(ctx, taskRunUID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to list task run logs, error: %v", err)
+	}
+	return convertToTaskRunLog(request.Parent, logs), nil
+}
+
 // BatchRunTasks runs tasks in batch.
 func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTasksResponse, error) {
 	if len(request.Tasks) == 0 {

@@ -65,6 +65,11 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
   }
 
+  rpc GetTaskRunLog(GetTaskRunLogRequest) returns (TaskRunLog) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/log"};
+    option (google.api.method_signature) = "parent";
+  }
+
   rpc ListPlanCheckRuns(ListPlanCheckRunsRequest) returns (ListPlanCheckRunsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/plans/*}/planCheckRuns"};
     option (google.api.method_signature) = "parent";
@@ -509,6 +514,11 @@ message ListTaskRunsResponse {
   string next_page_token = 2;
 }
 
+message GetTaskRunLogRequest {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  string parent = 1;
+}
+
 message Rollout {
   // The resource name of the rollout.
   // Format: projects/{project}/rollouts/{rollout}
@@ -736,4 +746,43 @@ message TaskRun {
     EXPORTED = 2;
   }
   ExportArchiveStatus export_archive_status = 16;
+}
+
+message TaskRunLog {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log
+  string name = 1;
+
+  repeated TaskRunLogEntry entries = 2;
+}
+
+message TaskRunLogEntry {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    SCHEMA_DUMP = 1;
+    COMMAND_EXECUTE = 2;
+  }
+  Type type = 1;
+  SchemaDump schema_dump = 2;
+  CommandExecute command_execute = 3;
+
+  message SchemaDump {
+    google.protobuf.Timestamp start_time = 1;
+    google.protobuf.Timestamp end_time = 2;
+    string error = 3;
+  }
+
+  message CommandExecute {
+    google.protobuf.Timestamp log_time = 1;
+
+    // Executed commands are in range [command_index, command_index + command_count).
+    int32 command_index = 2;
+    int32 command_count = 3;
+    CommandResponse response = 4;
+
+    message CommandResponse {
+      google.protobuf.Timestamp log_time = 1;
+      string error = 2;
+      int32 affected_rows = 3;
+    }
+  }
 }
