@@ -321,7 +321,7 @@ func (x Task_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Task_Status.Descriptor instead.
 func (Task_Status) EnumDescriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{24, 0}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 0}
 }
 
 type Task_Type int32
@@ -399,7 +399,7 @@ func (x Task_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Task_Type.Descriptor instead.
 func (Task_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{24, 1}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 1}
 }
 
 type Task_DatabaseDataUpdate_RollbackSqlStatus int32
@@ -451,7 +451,7 @@ func (x Task_DatabaseDataUpdate_RollbackSqlStatus) Number() protoreflect.EnumNum
 
 // Deprecated: Use Task_DatabaseDataUpdate_RollbackSqlStatus.Descriptor instead.
 func (Task_DatabaseDataUpdate_RollbackSqlStatus) EnumDescriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{24, 3, 0}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 3, 0}
 }
 
 type TaskRun_Status int32
@@ -509,7 +509,7 @@ func (x TaskRun_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TaskRun_Status.Descriptor instead.
 func (TaskRun_Status) EnumDescriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 0}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{26, 0}
 }
 
 type TaskRun_ExecutionStatus int32
@@ -561,7 +561,7 @@ func (x TaskRun_ExecutionStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TaskRun_ExecutionStatus.Descriptor instead.
 func (TaskRun_ExecutionStatus) EnumDescriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 1}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{26, 1}
 }
 
 type TaskRun_ExportArchiveStatus int32
@@ -610,7 +610,56 @@ func (x TaskRun_ExportArchiveStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TaskRun_ExportArchiveStatus.Descriptor instead.
 func (TaskRun_ExportArchiveStatus) EnumDescriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 2}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{26, 2}
+}
+
+type TaskRunLogEntry_Type int32
+
+const (
+	TaskRunLogEntry_TYPE_UNSPECIFIED TaskRunLogEntry_Type = 0
+	TaskRunLogEntry_SCHEMA_DUMP      TaskRunLogEntry_Type = 1
+	TaskRunLogEntry_COMMAND_EXECUTE  TaskRunLogEntry_Type = 2
+)
+
+// Enum value maps for TaskRunLogEntry_Type.
+var (
+	TaskRunLogEntry_Type_name = map[int32]string{
+		0: "TYPE_UNSPECIFIED",
+		1: "SCHEMA_DUMP",
+		2: "COMMAND_EXECUTE",
+	}
+	TaskRunLogEntry_Type_value = map[string]int32{
+		"TYPE_UNSPECIFIED": 0,
+		"SCHEMA_DUMP":      1,
+		"COMMAND_EXECUTE":  2,
+	}
+)
+
+func (x TaskRunLogEntry_Type) Enum() *TaskRunLogEntry_Type {
+	p := new(TaskRunLogEntry_Type)
+	*p = x
+	return p
+}
+
+func (x TaskRunLogEntry_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TaskRunLogEntry_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_rollout_service_proto_enumTypes[10].Descriptor()
+}
+
+func (TaskRunLogEntry_Type) Type() protoreflect.EnumType {
+	return &file_v1_rollout_service_proto_enumTypes[10]
+}
+
+func (x TaskRunLogEntry_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TaskRunLogEntry_Type.Descriptor instead.
+func (TaskRunLogEntry_Type) EnumDescriptor() ([]byte, []int) {
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{28, 0}
 }
 
 type GetPlanRequest struct {
@@ -1980,6 +2029,54 @@ func (x *ListTaskRunsResponse) GetNextPageToken() string {
 	return ""
 }
 
+type GetTaskRunLogRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+}
+
+func (x *GetTaskRunLogRequest) Reset() {
+	*x = GetTaskRunLogRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_rollout_service_proto_msgTypes[22]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetTaskRunLogRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTaskRunLogRequest) ProtoMessage() {}
+
+func (x *GetTaskRunLogRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_rollout_service_proto_msgTypes[22]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTaskRunLogRequest.ProtoReflect.Descriptor instead.
+func (*GetTaskRunLogRequest) Descriptor() ([]byte, []int) {
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *GetTaskRunLogRequest) GetParent() string {
+	if x != nil {
+		return x.Parent
+	}
+	return ""
+}
+
 type Rollout struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2001,7 +2098,7 @@ type Rollout struct {
 func (x *Rollout) Reset() {
 	*x = Rollout{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[22]
+		mi := &file_v1_rollout_service_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2014,7 +2111,7 @@ func (x *Rollout) String() string {
 func (*Rollout) ProtoMessage() {}
 
 func (x *Rollout) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[22]
+	mi := &file_v1_rollout_service_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2027,7 +2124,7 @@ func (x *Rollout) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Rollout.ProtoReflect.Descriptor instead.
 func (*Rollout) Descriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{22}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *Rollout) GetName() string {
@@ -2081,7 +2178,7 @@ type Stage struct {
 func (x *Stage) Reset() {
 	*x = Stage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[23]
+		mi := &file_v1_rollout_service_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2094,7 +2191,7 @@ func (x *Stage) String() string {
 func (*Stage) ProtoMessage() {}
 
 func (x *Stage) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[23]
+	mi := &file_v1_rollout_service_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2107,7 +2204,7 @@ func (x *Stage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Stage.ProtoReflect.Descriptor instead.
 func (*Stage) Descriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{23}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *Stage) GetName() string {
@@ -2173,7 +2270,7 @@ type Task struct {
 func (x *Task) Reset() {
 	*x = Task{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[24]
+		mi := &file_v1_rollout_service_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2186,7 +2283,7 @@ func (x *Task) String() string {
 func (*Task) ProtoMessage() {}
 
 func (x *Task) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[24]
+	mi := &file_v1_rollout_service_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2199,7 +2296,7 @@ func (x *Task) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Task.ProtoReflect.Descriptor instead.
 func (*Task) Descriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{24}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *Task) GetName() string {
@@ -2375,7 +2472,7 @@ type TaskRun struct {
 func (x *TaskRun) Reset() {
 	*x = TaskRun{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[25]
+		mi := &file_v1_rollout_service_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2388,7 +2485,7 @@ func (x *TaskRun) String() string {
 func (*TaskRun) ProtoMessage() {}
 
 func (x *TaskRun) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[25]
+	mi := &file_v1_rollout_service_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2401,7 +2498,7 @@ func (x *TaskRun) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskRun.ProtoReflect.Descriptor instead.
 func (*TaskRun) Descriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *TaskRun) GetName() string {
@@ -2516,6 +2613,125 @@ func (x *TaskRun) GetExportArchiveStatus() TaskRun_ExportArchiveStatus {
 	return TaskRun_EXPORT_ARCHIVE_STATUS_UNSPECIFIED
 }
 
+type TaskRunLog struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log
+	Name    string             `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Entries []*TaskRunLogEntry `protobuf:"bytes,2,rep,name=entries,proto3" json:"entries,omitempty"`
+}
+
+func (x *TaskRunLog) Reset() {
+	*x = TaskRunLog{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_rollout_service_proto_msgTypes[27]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TaskRunLog) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskRunLog) ProtoMessage() {}
+
+func (x *TaskRunLog) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_rollout_service_proto_msgTypes[27]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskRunLog.ProtoReflect.Descriptor instead.
+func (*TaskRunLog) Descriptor() ([]byte, []int) {
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *TaskRunLog) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TaskRunLog) GetEntries() []*TaskRunLogEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+type TaskRunLogEntry struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Type           TaskRunLogEntry_Type            `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.TaskRunLogEntry_Type" json:"type,omitempty"`
+	SchemaDump     *TaskRunLogEntry_SchemaDump     `protobuf:"bytes,2,opt,name=schema_dump,json=schemaDump,proto3" json:"schema_dump,omitempty"`
+	CommandExecute *TaskRunLogEntry_CommandExecute `protobuf:"bytes,3,opt,name=command_execute,json=commandExecute,proto3" json:"command_execute,omitempty"`
+}
+
+func (x *TaskRunLogEntry) Reset() {
+	*x = TaskRunLogEntry{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_rollout_service_proto_msgTypes[28]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TaskRunLogEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskRunLogEntry) ProtoMessage() {}
+
+func (x *TaskRunLogEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_rollout_service_proto_msgTypes[28]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskRunLogEntry.ProtoReflect.Descriptor instead.
+func (*TaskRunLogEntry) Descriptor() ([]byte, []int) {
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *TaskRunLogEntry) GetType() TaskRunLogEntry_Type {
+	if x != nil {
+		return x.Type
+	}
+	return TaskRunLogEntry_TYPE_UNSPECIFIED
+}
+
+func (x *TaskRunLogEntry) GetSchemaDump() *TaskRunLogEntry_SchemaDump {
+	if x != nil {
+		return x.SchemaDump
+	}
+	return nil
+}
+
+func (x *TaskRunLogEntry) GetCommandExecute() *TaskRunLogEntry_CommandExecute {
+	if x != nil {
+		return x.CommandExecute
+	}
+	return nil
+}
+
 type Plan_Step struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2529,7 +2745,7 @@ type Plan_Step struct {
 func (x *Plan_Step) Reset() {
 	*x = Plan_Step{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[26]
+		mi := &file_v1_rollout_service_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2542,7 +2758,7 @@ func (x *Plan_Step) String() string {
 func (*Plan_Step) ProtoMessage() {}
 
 func (x *Plan_Step) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[26]
+	mi := &file_v1_rollout_service_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2595,7 +2811,7 @@ type Plan_Spec struct {
 func (x *Plan_Spec) Reset() {
 	*x = Plan_Spec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[27]
+		mi := &file_v1_rollout_service_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2608,7 +2824,7 @@ func (x *Plan_Spec) String() string {
 func (*Plan_Spec) ProtoMessage() {}
 
 func (x *Plan_Spec) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[27]
+	mi := &file_v1_rollout_service_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2726,7 +2942,7 @@ type Plan_CreateDatabaseConfig struct {
 func (x *Plan_CreateDatabaseConfig) Reset() {
 	*x = Plan_CreateDatabaseConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[28]
+		mi := &file_v1_rollout_service_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2739,7 +2955,7 @@ func (x *Plan_CreateDatabaseConfig) String() string {
 func (*Plan_CreateDatabaseConfig) ProtoMessage() {}
 
 func (x *Plan_CreateDatabaseConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[28]
+	mi := &file_v1_rollout_service_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2847,7 +3063,7 @@ type Plan_ChangeDatabaseConfig struct {
 func (x *Plan_ChangeDatabaseConfig) Reset() {
 	*x = Plan_ChangeDatabaseConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[29]
+		mi := &file_v1_rollout_service_proto_msgTypes[32]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2860,7 +3076,7 @@ func (x *Plan_ChangeDatabaseConfig) String() string {
 func (*Plan_ChangeDatabaseConfig) ProtoMessage() {}
 
 func (x *Plan_ChangeDatabaseConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[29]
+	mi := &file_v1_rollout_service_proto_msgTypes[32]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2953,7 +3169,7 @@ type Plan_ExportDataConfig struct {
 func (x *Plan_ExportDataConfig) Reset() {
 	*x = Plan_ExportDataConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[30]
+		mi := &file_v1_rollout_service_proto_msgTypes[33]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2966,7 +3182,7 @@ func (x *Plan_ExportDataConfig) String() string {
 func (*Plan_ExportDataConfig) ProtoMessage() {}
 
 func (x *Plan_ExportDataConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[30]
+	mi := &file_v1_rollout_service_proto_msgTypes[33]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3026,7 +3242,7 @@ type Plan_VCSSource struct {
 func (x *Plan_VCSSource) Reset() {
 	*x = Plan_VCSSource{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[31]
+		mi := &file_v1_rollout_service_proto_msgTypes[34]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3039,7 +3255,7 @@ func (x *Plan_VCSSource) String() string {
 func (*Plan_VCSSource) ProtoMessage() {}
 
 func (x *Plan_VCSSource) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[31]
+	mi := &file_v1_rollout_service_proto_msgTypes[34]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3092,7 +3308,7 @@ type Plan_ChangeDatabaseConfig_RollbackDetail struct {
 func (x *Plan_ChangeDatabaseConfig_RollbackDetail) Reset() {
 	*x = Plan_ChangeDatabaseConfig_RollbackDetail{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[33]
+		mi := &file_v1_rollout_service_proto_msgTypes[36]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3105,7 +3321,7 @@ func (x *Plan_ChangeDatabaseConfig_RollbackDetail) String() string {
 func (*Plan_ChangeDatabaseConfig_RollbackDetail) ProtoMessage() {}
 
 func (x *Plan_ChangeDatabaseConfig_RollbackDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[33]
+	mi := &file_v1_rollout_service_proto_msgTypes[36]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3148,7 +3364,7 @@ type Plan_ChangeDatabaseConfig_PreUpdateBackupDetail struct {
 func (x *Plan_ChangeDatabaseConfig_PreUpdateBackupDetail) Reset() {
 	*x = Plan_ChangeDatabaseConfig_PreUpdateBackupDetail{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[35]
+		mi := &file_v1_rollout_service_proto_msgTypes[38]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3161,7 +3377,7 @@ func (x *Plan_ChangeDatabaseConfig_PreUpdateBackupDetail) String() string {
 func (*Plan_ChangeDatabaseConfig_PreUpdateBackupDetail) ProtoMessage() {}
 
 func (x *Plan_ChangeDatabaseConfig_PreUpdateBackupDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[35]
+	mi := &file_v1_rollout_service_proto_msgTypes[38]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3203,7 +3419,7 @@ type PlanCheckRun_Result struct {
 func (x *PlanCheckRun_Result) Reset() {
 	*x = PlanCheckRun_Result{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[36]
+		mi := &file_v1_rollout_service_proto_msgTypes[39]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3216,7 +3432,7 @@ func (x *PlanCheckRun_Result) String() string {
 func (*PlanCheckRun_Result) ProtoMessage() {}
 
 func (x *PlanCheckRun_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[36]
+	mi := &file_v1_rollout_service_proto_msgTypes[39]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3312,7 +3528,7 @@ type PlanCheckRun_Result_SqlSummaryReport struct {
 func (x *PlanCheckRun_Result_SqlSummaryReport) Reset() {
 	*x = PlanCheckRun_Result_SqlSummaryReport{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[37]
+		mi := &file_v1_rollout_service_proto_msgTypes[40]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3325,7 +3541,7 @@ func (x *PlanCheckRun_Result_SqlSummaryReport) String() string {
 func (*PlanCheckRun_Result_SqlSummaryReport) ProtoMessage() {}
 
 func (x *PlanCheckRun_Result_SqlSummaryReport) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[37]
+	mi := &file_v1_rollout_service_proto_msgTypes[40]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3384,7 +3600,7 @@ type PlanCheckRun_Result_SqlReviewReport struct {
 func (x *PlanCheckRun_Result_SqlReviewReport) Reset() {
 	*x = PlanCheckRun_Result_SqlReviewReport{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[38]
+		mi := &file_v1_rollout_service_proto_msgTypes[41]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3397,7 +3613,7 @@ func (x *PlanCheckRun_Result_SqlReviewReport) String() string {
 func (*PlanCheckRun_Result_SqlReviewReport) ProtoMessage() {}
 
 func (x *PlanCheckRun_Result_SqlReviewReport) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[38]
+	mi := &file_v1_rollout_service_proto_msgTypes[41]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3464,7 +3680,7 @@ type Task_DatabaseCreate struct {
 func (x *Task_DatabaseCreate) Reset() {
 	*x = Task_DatabaseCreate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[39]
+		mi := &file_v1_rollout_service_proto_msgTypes[42]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3477,7 +3693,7 @@ func (x *Task_DatabaseCreate) String() string {
 func (*Task_DatabaseCreate) ProtoMessage() {}
 
 func (x *Task_DatabaseCreate) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[39]
+	mi := &file_v1_rollout_service_proto_msgTypes[42]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3490,7 +3706,7 @@ func (x *Task_DatabaseCreate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Task_DatabaseCreate.ProtoReflect.Descriptor instead.
 func (*Task_DatabaseCreate) Descriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{24, 0}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 0}
 }
 
 func (x *Task_DatabaseCreate) GetProject() string {
@@ -3560,7 +3776,7 @@ type Task_DatabaseSchemaBaseline struct {
 func (x *Task_DatabaseSchemaBaseline) Reset() {
 	*x = Task_DatabaseSchemaBaseline{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[40]
+		mi := &file_v1_rollout_service_proto_msgTypes[43]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3573,7 +3789,7 @@ func (x *Task_DatabaseSchemaBaseline) String() string {
 func (*Task_DatabaseSchemaBaseline) ProtoMessage() {}
 
 func (x *Task_DatabaseSchemaBaseline) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[40]
+	mi := &file_v1_rollout_service_proto_msgTypes[43]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3586,7 +3802,7 @@ func (x *Task_DatabaseSchemaBaseline) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Task_DatabaseSchemaBaseline.ProtoReflect.Descriptor instead.
 func (*Task_DatabaseSchemaBaseline) Descriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{24, 1}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 1}
 }
 
 func (x *Task_DatabaseSchemaBaseline) GetSchemaVersion() string {
@@ -3609,7 +3825,7 @@ type Task_DatabaseSchemaUpdate struct {
 func (x *Task_DatabaseSchemaUpdate) Reset() {
 	*x = Task_DatabaseSchemaUpdate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[41]
+		mi := &file_v1_rollout_service_proto_msgTypes[44]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3622,7 +3838,7 @@ func (x *Task_DatabaseSchemaUpdate) String() string {
 func (*Task_DatabaseSchemaUpdate) ProtoMessage() {}
 
 func (x *Task_DatabaseSchemaUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[41]
+	mi := &file_v1_rollout_service_proto_msgTypes[44]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3635,7 +3851,7 @@ func (x *Task_DatabaseSchemaUpdate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Task_DatabaseSchemaUpdate.ProtoReflect.Descriptor instead.
 func (*Task_DatabaseSchemaUpdate) Descriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{24, 2}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 2}
 }
 
 func (x *Task_DatabaseSchemaUpdate) GetSheet() string {
@@ -3682,7 +3898,7 @@ type Task_DatabaseDataUpdate struct {
 func (x *Task_DatabaseDataUpdate) Reset() {
 	*x = Task_DatabaseDataUpdate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[42]
+		mi := &file_v1_rollout_service_proto_msgTypes[45]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3695,7 +3911,7 @@ func (x *Task_DatabaseDataUpdate) String() string {
 func (*Task_DatabaseDataUpdate) ProtoMessage() {}
 
 func (x *Task_DatabaseDataUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[42]
+	mi := &file_v1_rollout_service_proto_msgTypes[45]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3708,7 +3924,7 @@ func (x *Task_DatabaseDataUpdate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Task_DatabaseDataUpdate.ProtoReflect.Descriptor instead.
 func (*Task_DatabaseDataUpdate) Descriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{24, 3}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 3}
 }
 
 func (x *Task_DatabaseDataUpdate) GetSheet() string {
@@ -3788,7 +4004,7 @@ type Task_DatabaseDataExport struct {
 func (x *Task_DatabaseDataExport) Reset() {
 	*x = Task_DatabaseDataExport{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[43]
+		mi := &file_v1_rollout_service_proto_msgTypes[46]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3801,7 +4017,7 @@ func (x *Task_DatabaseDataExport) String() string {
 func (*Task_DatabaseDataExport) ProtoMessage() {}
 
 func (x *Task_DatabaseDataExport) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[43]
+	mi := &file_v1_rollout_service_proto_msgTypes[46]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3814,7 +4030,7 @@ func (x *Task_DatabaseDataExport) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Task_DatabaseDataExport.ProtoReflect.Descriptor instead.
 func (*Task_DatabaseDataExport) Descriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{24, 4}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 4}
 }
 
 func (x *Task_DatabaseDataExport) GetTarget() string {
@@ -3860,7 +4076,7 @@ type TaskRun_ExecutionDetail struct {
 func (x *TaskRun_ExecutionDetail) Reset() {
 	*x = TaskRun_ExecutionDetail{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[45]
+		mi := &file_v1_rollout_service_proto_msgTypes[48]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3873,7 +4089,7 @@ func (x *TaskRun_ExecutionDetail) String() string {
 func (*TaskRun_ExecutionDetail) ProtoMessage() {}
 
 func (x *TaskRun_ExecutionDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[45]
+	mi := &file_v1_rollout_service_proto_msgTypes[48]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3886,7 +4102,7 @@ func (x *TaskRun_ExecutionDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskRun_ExecutionDetail.ProtoReflect.Descriptor instead.
 func (*TaskRun_ExecutionDetail) Descriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 0}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{26, 0}
 }
 
 func (x *TaskRun_ExecutionDetail) GetCommandsTotal() int32 {
@@ -3931,7 +4147,7 @@ type TaskRun_ExecutionDetail_Position struct {
 func (x *TaskRun_ExecutionDetail_Position) Reset() {
 	*x = TaskRun_ExecutionDetail_Position{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_rollout_service_proto_msgTypes[46]
+		mi := &file_v1_rollout_service_proto_msgTypes[49]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3944,7 +4160,7 @@ func (x *TaskRun_ExecutionDetail_Position) String() string {
 func (*TaskRun_ExecutionDetail_Position) ProtoMessage() {}
 
 func (x *TaskRun_ExecutionDetail_Position) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_rollout_service_proto_msgTypes[46]
+	mi := &file_v1_rollout_service_proto_msgTypes[49]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3957,7 +4173,7 @@ func (x *TaskRun_ExecutionDetail_Position) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskRun_ExecutionDetail_Position.ProtoReflect.Descriptor instead.
 func (*TaskRun_ExecutionDetail_Position) Descriptor() ([]byte, []int) {
-	return file_v1_rollout_service_proto_rawDescGZIP(), []int{25, 0, 0}
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{26, 0, 0}
 }
 
 func (x *TaskRun_ExecutionDetail_Position) GetLine() int32 {
@@ -3970,6 +4186,204 @@ func (x *TaskRun_ExecutionDetail_Position) GetLine() int32 {
 func (x *TaskRun_ExecutionDetail_Position) GetColumn() int32 {
 	if x != nil {
 		return x.Column
+	}
+	return 0
+}
+
+type TaskRunLogEntry_SchemaDump struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	StartTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	EndTime   *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	Error     string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+}
+
+func (x *TaskRunLogEntry_SchemaDump) Reset() {
+	*x = TaskRunLogEntry_SchemaDump{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_rollout_service_proto_msgTypes[50]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TaskRunLogEntry_SchemaDump) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskRunLogEntry_SchemaDump) ProtoMessage() {}
+
+func (x *TaskRunLogEntry_SchemaDump) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_rollout_service_proto_msgTypes[50]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskRunLogEntry_SchemaDump.ProtoReflect.Descriptor instead.
+func (*TaskRunLogEntry_SchemaDump) Descriptor() ([]byte, []int) {
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{28, 0}
+}
+
+func (x *TaskRunLogEntry_SchemaDump) GetStartTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartTime
+	}
+	return nil
+}
+
+func (x *TaskRunLogEntry_SchemaDump) GetEndTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.EndTime
+	}
+	return nil
+}
+
+func (x *TaskRunLogEntry_SchemaDump) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type TaskRunLogEntry_CommandExecute struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	LogTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=log_time,json=logTime,proto3" json:"log_time,omitempty"`
+	// Executed commands are in range [command_index, command_index + command_count).
+	CommandIndex int32                                           `protobuf:"varint,2,opt,name=command_index,json=commandIndex,proto3" json:"command_index,omitempty"`
+	CommandCount int32                                           `protobuf:"varint,3,opt,name=command_count,json=commandCount,proto3" json:"command_count,omitempty"`
+	Response     *TaskRunLogEntry_CommandExecute_CommandResponse `protobuf:"bytes,4,opt,name=response,proto3" json:"response,omitempty"`
+}
+
+func (x *TaskRunLogEntry_CommandExecute) Reset() {
+	*x = TaskRunLogEntry_CommandExecute{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_rollout_service_proto_msgTypes[51]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TaskRunLogEntry_CommandExecute) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskRunLogEntry_CommandExecute) ProtoMessage() {}
+
+func (x *TaskRunLogEntry_CommandExecute) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_rollout_service_proto_msgTypes[51]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskRunLogEntry_CommandExecute.ProtoReflect.Descriptor instead.
+func (*TaskRunLogEntry_CommandExecute) Descriptor() ([]byte, []int) {
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{28, 1}
+}
+
+func (x *TaskRunLogEntry_CommandExecute) GetLogTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LogTime
+	}
+	return nil
+}
+
+func (x *TaskRunLogEntry_CommandExecute) GetCommandIndex() int32 {
+	if x != nil {
+		return x.CommandIndex
+	}
+	return 0
+}
+
+func (x *TaskRunLogEntry_CommandExecute) GetCommandCount() int32 {
+	if x != nil {
+		return x.CommandCount
+	}
+	return 0
+}
+
+func (x *TaskRunLogEntry_CommandExecute) GetResponse() *TaskRunLogEntry_CommandExecute_CommandResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+type TaskRunLogEntry_CommandExecute_CommandResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	LogTime      *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=log_time,json=logTime,proto3" json:"log_time,omitempty"`
+	Error        string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	AffectedRows int32                  `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+}
+
+func (x *TaskRunLogEntry_CommandExecute_CommandResponse) Reset() {
+	*x = TaskRunLogEntry_CommandExecute_CommandResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_rollout_service_proto_msgTypes[52]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TaskRunLogEntry_CommandExecute_CommandResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskRunLogEntry_CommandExecute_CommandResponse) ProtoMessage() {}
+
+func (x *TaskRunLogEntry_CommandExecute_CommandResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_rollout_service_proto_msgTypes[52]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskRunLogEntry_CommandExecute_CommandResponse.ProtoReflect.Descriptor instead.
+func (*TaskRunLogEntry_CommandExecute_CommandResponse) Descriptor() ([]byte, []int) {
+	return file_v1_rollout_service_proto_rawDescGZIP(), []int{28, 1, 0}
+}
+
+func (x *TaskRunLogEntry_CommandExecute_CommandResponse) GetLogTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LogTime
+	}
+	return nil
+}
+
+func (x *TaskRunLogEntry_CommandExecute_CommandResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *TaskRunLogEntry_CommandExecute_CommandResponse) GetAffectedRows() int32 {
+	if x != nil {
+		return x.AffectedRows
 	}
 	return 0
 }
@@ -4341,7 +4755,10 @@ var file_v1_rollout_service_proto_rawDesc = []byte{
 	0x6e, 0x52, 0x08, 0x74, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x12, 0x26, 0x0a, 0x0f, 0x6e,
 	0x65, 0x78, 0x74, 0x5f, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x6e, 0x65, 0x78, 0x74, 0x50, 0x61, 0x67, 0x65, 0x54, 0x6f,
-	0x6b, 0x65, 0x6e, 0x22, 0x91, 0x01, 0x0a, 0x07, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12,
+	0x6b, 0x65, 0x6e, 0x22, 0x2e, 0x0a, 0x14, 0x47, 0x65, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75,
+	0x6e, 0x4c, 0x6f, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x70,
+	0x61, 0x72, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x70, 0x61, 0x72,
+	0x65, 0x6e, 0x74, 0x22, 0x91, 0x01, 0x0a, 0x07, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12,
 	0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e,
 	0x61, 0x6d, 0x65, 0x12, 0x16, 0x0a, 0x03, 0x75, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
 	0x42, 0x04, 0xe2, 0x41, 0x01, 0x03, 0x52, 0x03, 0x75, 0x69, 0x64, 0x12, 0x18, 0x0a, 0x04, 0x70,
@@ -4596,129 +5013,197 @@ var file_v1_rollout_service_proto_rawDesc = []byte{
 	0x52, 0x54, 0x5f, 0x41, 0x52, 0x43, 0x48, 0x49, 0x56, 0x45, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55,
 	0x53, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12,
 	0x09, 0x0a, 0x05, 0x52, 0x45, 0x41, 0x44, 0x59, 0x10, 0x01, 0x12, 0x0c, 0x0a, 0x08, 0x45, 0x58,
-	0x50, 0x4f, 0x52, 0x54, 0x45, 0x44, 0x10, 0x02, 0x32, 0x85, 0x0f, 0x0a, 0x0e, 0x52, 0x6f, 0x6c,
-	0x6c, 0x6f, 0x75, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x67, 0x0a, 0x07, 0x47,
-	0x65, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x12, 0x1b, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
-	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x11, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x50, 0x6c, 0x61, 0x6e, 0x22, 0x2c, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82,
-	0xd3, 0xe4, 0x93, 0x02, 0x1f, 0x12, 0x1d, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65,
-	0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x70, 0x6c, 0x61, 0x6e,
-	0x73, 0x2f, 0x2a, 0x7d, 0x12, 0x7a, 0x0a, 0x09, 0x4c, 0x69, 0x73, 0x74, 0x50, 0x6c, 0x61, 0x6e,
-	0x73, 0x12, 0x1d, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x4c, 0x69, 0x73, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c,
-	0x69, 0x73, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x22, 0x2e, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x1f, 0x12, 0x1d, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70,
-	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x70, 0x6c, 0x61, 0x6e, 0x73,
-	0x12, 0x7a, 0x0a, 0x0a, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x50, 0x6c, 0x61, 0x6e, 0x12, 0x1e,
-	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65,
+	0x50, 0x4f, 0x52, 0x54, 0x45, 0x44, 0x10, 0x02, 0x22, 0x58, 0x0a, 0x0a, 0x54, 0x61, 0x73, 0x6b,
+	0x52, 0x75, 0x6e, 0x4c, 0x6f, 0x67, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x36, 0x0a, 0x07, 0x65, 0x6e,
+	0x74, 0x72, 0x69, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75,
+	0x6e, 0x4c, 0x6f, 0x67, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x07, 0x65, 0x6e, 0x74, 0x72, 0x69,
+	0x65, 0x73, 0x22, 0xb6, 0x06, 0x0a, 0x0f, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x4c, 0x6f,
+	0x67, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x35, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0e, 0x32, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x4c, 0x6f, 0x67, 0x45, 0x6e, 0x74,
+	0x72, 0x79, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x48, 0x0a,
+	0x0b, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f, 0x64, 0x75, 0x6d, 0x70, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x27, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x4c, 0x6f, 0x67, 0x45, 0x6e, 0x74, 0x72, 0x79,
+	0x2e, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x44, 0x75, 0x6d, 0x70, 0x52, 0x0a, 0x73, 0x63, 0x68,
+	0x65, 0x6d, 0x61, 0x44, 0x75, 0x6d, 0x70, 0x12, 0x54, 0x0a, 0x0f, 0x63, 0x6f, 0x6d, 0x6d, 0x61,
+	0x6e, 0x64, 0x5f, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x2b, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54,
+	0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x4c, 0x6f, 0x67, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x2e, 0x43,
+	0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65, 0x52, 0x0e, 0x63,
+	0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65, 0x1a, 0x94, 0x01,
+	0x0a, 0x0a, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x44, 0x75, 0x6d, 0x70, 0x12, 0x39, 0x0a, 0x0a,
+	0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62,
+	0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x73, 0x74,
+	0x61, 0x72, 0x74, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x35, 0x0a, 0x08, 0x65, 0x6e, 0x64, 0x5f, 0x74,
+	0x69, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67,
+	0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65,
+	0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x07, 0x65, 0x6e, 0x64, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x14,
+	0x0a, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x65,
+	0x72, 0x72, 0x6f, 0x72, 0x1a, 0xf0, 0x02, 0x0a, 0x0e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64,
+	0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65, 0x12, 0x35, 0x0a, 0x08, 0x6c, 0x6f, 0x67, 0x5f, 0x74,
+	0x69, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67,
+	0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65,
+	0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x07, 0x6c, 0x6f, 0x67, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x23,
+	0x0a, 0x0d, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0c, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x49, 0x6e,
+	0x64, 0x65, 0x78, 0x12, 0x23, 0x0a, 0x0d, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x5f, 0x63,
+	0x6f, 0x75, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0c, 0x63, 0x6f, 0x6d, 0x6d,
+	0x61, 0x6e, 0x64, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x57, 0x0a, 0x08, 0x72, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3b, 0x2e, 0x62, 0x79, 0x74,
+	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e,
+	0x4c, 0x6f, 0x67, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64,
+	0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x1a, 0x83, 0x01, 0x0a, 0x0f, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x35, 0x0a, 0x08, 0x6c, 0x6f, 0x67, 0x5f, 0x74, 0x69, 0x6d,
+	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74,
+	0x61, 0x6d, 0x70, 0x52, 0x07, 0x6c, 0x6f, 0x67, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x14, 0x0a, 0x05,
+	0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x65, 0x72, 0x72,
+	0x6f, 0x72, 0x12, 0x23, 0x0a, 0x0d, 0x61, 0x66, 0x66, 0x65, 0x63, 0x74, 0x65, 0x64, 0x5f, 0x72,
+	0x6f, 0x77, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0c, 0x61, 0x66, 0x66, 0x65, 0x63,
+	0x74, 0x65, 0x64, 0x52, 0x6f, 0x77, 0x73, 0x22, 0x42, 0x0a, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12,
+	0x14, 0x0a, 0x10, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46,
+	0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0f, 0x0a, 0x0b, 0x53, 0x43, 0x48, 0x45, 0x4d, 0x41, 0x5f,
+	0x44, 0x55, 0x4d, 0x50, 0x10, 0x01, 0x12, 0x13, 0x0a, 0x0f, 0x43, 0x4f, 0x4d, 0x4d, 0x41, 0x4e,
+	0x44, 0x5f, 0x45, 0x58, 0x45, 0x43, 0x55, 0x54, 0x45, 0x10, 0x02, 0x32, 0xa8, 0x10, 0x0a, 0x0e,
+	0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x67,
+	0x0a, 0x07, 0x47, 0x65, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x12, 0x1b, 0x2e, 0x62, 0x79, 0x74, 0x65,
+	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x11, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x6c, 0x61, 0x6e, 0x22, 0x2c, 0xda, 0x41, 0x04, 0x6e, 0x61,
+	0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1f, 0x12, 0x1d, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e,
+	0x61, 0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x70,
+	0x6c, 0x61, 0x6e, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0x7a, 0x0a, 0x09, 0x4c, 0x69, 0x73, 0x74, 0x50,
+	0x6c, 0x61, 0x6e, 0x73, 0x12, 0x1d, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x2e, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x1f, 0x12, 0x1d, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e,
+	0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x70, 0x6c,
+	0x61, 0x6e, 0x73, 0x12, 0x7a, 0x0a, 0x0a, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x50, 0x6c, 0x61,
+	0x6e, 0x12, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
+	0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x50, 0x6c, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x11, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
+	0x50, 0x6c, 0x61, 0x6e, 0x22, 0x39, 0xda, 0x41, 0x0b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x2c,
+	0x70, 0x6c, 0x61, 0x6e, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x25, 0x3a, 0x04, 0x70, 0x6c, 0x61, 0x6e,
+	0x22, 0x1d, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72,
+	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x70, 0x6c, 0x61, 0x6e, 0x73, 0x12,
+	0x84, 0x01, 0x0a, 0x0a, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x6c, 0x61, 0x6e, 0x12, 0x1e,
+	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x70, 0x64,
 	0x61, 0x74, 0x65, 0x50, 0x6c, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x11,
 	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x6c, 0x61,
-	0x6e, 0x22, 0x39, 0xda, 0x41, 0x0b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x2c, 0x70, 0x6c, 0x61,
-	0x6e, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x25, 0x3a, 0x04, 0x70, 0x6c, 0x61, 0x6e, 0x22, 0x1d, 0x2f,
-	0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65,
-	0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x70, 0x6c, 0x61, 0x6e, 0x73, 0x12, 0x84, 0x01, 0x0a,
-	0x0a, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x6c, 0x61, 0x6e, 0x12, 0x1e, 0x2e, 0x62, 0x79,
-	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65,
-	0x50, 0x6c, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x11, 0x2e, 0x62, 0x79,
-	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x6c, 0x61, 0x6e, 0x22, 0x43,
-	0xda, 0x41, 0x10, 0x70, 0x6c, 0x61, 0x6e, 0x2c, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x6d,
-	0x61, 0x73, 0x6b, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2a, 0x3a, 0x04, 0x70, 0x6c, 0x61, 0x6e, 0x32,
-	0x22, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x6c, 0x61, 0x6e, 0x2e, 0x6e, 0x61, 0x6d, 0x65, 0x3d,
-	0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x70, 0x6c, 0x61, 0x6e, 0x73,
-	0x2f, 0x2a, 0x7d, 0x12, 0x73, 0x0a, 0x0a, 0x47, 0x65, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75,
-	0x74, 0x12, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x47, 0x65, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x6e, 0x22, 0x43, 0xda, 0x41, 0x10, 0x70, 0x6c, 0x61, 0x6e, 0x2c, 0x75, 0x70, 0x64, 0x61, 0x74,
+	0x65, 0x5f, 0x6d, 0x61, 0x73, 0x6b, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2a, 0x3a, 0x04, 0x70, 0x6c,
+	0x61, 0x6e, 0x32, 0x22, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x6c, 0x61, 0x6e, 0x2e, 0x6e, 0x61,
+	0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x70, 0x6c,
+	0x61, 0x6e, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0x73, 0x0a, 0x0a, 0x47, 0x65, 0x74, 0x52, 0x6f, 0x6c,
+	0x6c, 0x6f, 0x75, 0x74, 0x12, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x22, 0x2f, 0xda, 0x41, 0x04, 0x6e,
+	0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x22, 0x12, 0x20, 0x2f, 0x76, 0x31, 0x2f, 0x7b,
+	0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f,
+	0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0x8c, 0x01, 0x0a, 0x0d,
+	0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12, 0x21, 0x2e,
+	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65, 0x61,
+	0x74, 0x65, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x14, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52,
+	0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x22, 0x42, 0xda, 0x41, 0x0e, 0x70, 0x61, 0x72, 0x65, 0x6e,
+	0x74, 0x2c, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2b, 0x3a,
+	0x07, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x22, 0x20, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70,
+	0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a,
+	0x7d, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x12, 0x85, 0x01, 0x0a, 0x0e, 0x50,
+	0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12, 0x22, 0x2e,
+	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x65, 0x76,
+	0x69, 0x65, 0x77, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
 	0x74, 0x1a, 0x14, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x22, 0x2f, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65,
-	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x22, 0x12, 0x20, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d,
-	0x65, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x6f, 0x6c,
-	0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0x8c, 0x01, 0x0a, 0x0d, 0x43, 0x72, 0x65,
-	0x61, 0x74, 0x65, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74,
-	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52,
-	0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e,
-	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x6f, 0x6c, 0x6c,
-	0x6f, 0x75, 0x74, 0x22, 0x42, 0xda, 0x41, 0x0e, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x2c, 0x72,
-	0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2b, 0x3a, 0x07, 0x72, 0x6f,
-	0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x22, 0x20, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65,
-	0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x72,
-	0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x12, 0x85, 0x01, 0x0a, 0x0e, 0x50, 0x72, 0x65, 0x76,
-	0x69, 0x65, 0x77, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12, 0x22, 0x2e, 0x62, 0x79, 0x74,
-	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77,
-	0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14,
-	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x6f, 0x6c,
-	0x6c, 0x6f, 0x75, 0x74, 0x22, 0x39, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4,
-	0x93, 0x02, 0x2c, 0x3a, 0x01, 0x2a, 0x22, 0x27, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x72, 0x6f,
-	0x6a, 0x65, 0x63, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d,
-	0x3a, 0x70, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x12,
-	0xa2, 0x01, 0x0a, 0x0c, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73,
-	0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c,
-	0x69, 0x73, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x1a, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31,
-	0x2e, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4d, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74,
-	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x3e, 0x12, 0x3c, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72,
+	0x52, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x22, 0x39, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2c, 0x3a, 0x01, 0x2a, 0x22, 0x27, 0x2f, 0x76, 0x31, 0x2f, 0x7b,
+	0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73,
+	0x2f, 0x2a, 0x7d, 0x3a, 0x70, 0x72, 0x65, 0x76, 0x69, 0x65, 0x77, 0x52, 0x6f, 0x6c, 0x6c, 0x6f,
+	0x75, 0x74, 0x12, 0xa2, 0x01, 0x0a, 0x0c, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52,
+	0x75, 0x6e, 0x73, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
+	0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4d, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72,
+	0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x3e, 0x12, 0x3c, 0x2f, 0x76, 0x31, 0x2f, 0x7b,
+	0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f,
+	0x2a, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x74, 0x61,
+	0x67, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x74,
+	0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x12, 0xa0, 0x01, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x54,
+	0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x4c, 0x6f, 0x67, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65,
+	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52,
+	0x75, 0x6e, 0x4c, 0x6f, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x17, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x61, 0x73, 0x6b, 0x52,
+	0x75, 0x6e, 0x4c, 0x6f, 0x67, 0x22, 0x53, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x44, 0x12, 0x42, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72,
 	0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72,
 	0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x73,
-	0x2f, 0x2a, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x74, 0x61, 0x73, 0x6b,
-	0x52, 0x75, 0x6e, 0x73, 0x12, 0xa2, 0x01, 0x0a, 0x11, 0x4c, 0x69, 0x73, 0x74, 0x50, 0x6c, 0x61,
-	0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x12, 0x25, 0x2e, 0x62, 0x79, 0x74,
-	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x50, 0x6c, 0x61,
-	0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x26, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x4c, 0x69, 0x73, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e,
-	0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x3e, 0xda, 0x41, 0x06, 0x70, 0x61,
-	0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2f, 0x12, 0x2d, 0x2f, 0x76, 0x31, 0x2f,
-	0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73,
-	0x2f, 0x2a, 0x2f, 0x70, 0x6c, 0x61, 0x6e, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x70, 0x6c, 0x61, 0x6e,
-	0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x12, 0x95, 0x01, 0x0a, 0x0d, 0x52, 0x75,
-	0x6e, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x73, 0x12, 0x21, 0x2e, 0x62, 0x79,
-	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x75, 0x6e, 0x50, 0x6c, 0x61,
-	0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22,
-	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x75, 0x6e,
-	0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x3d, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x30, 0x3a, 0x01, 0x2a, 0x22, 0x2b, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d,
-	0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x70, 0x6c, 0x61, 0x6e, 0x73,
-	0x2f, 0x2a, 0x7d, 0x3a, 0x72, 0x75, 0x6e, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b,
-	0x73, 0x12, 0xa6, 0x01, 0x0a, 0x0d, 0x42, 0x61, 0x74, 0x63, 0x68, 0x52, 0x75, 0x6e, 0x54, 0x61,
-	0x73, 0x6b, 0x73, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x52, 0x75, 0x6e, 0x54, 0x61, 0x73, 0x6b, 0x73, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
-	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x52, 0x75, 0x6e, 0x54, 0x61, 0x73,
-	0x6b, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4e, 0xda, 0x41, 0x06, 0x70,
-	0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x3f, 0x3a, 0x01, 0x2a, 0x22, 0x3a,
-	0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a,
-	0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f,
-	0x2a, 0x2f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x74, 0x61, 0x73, 0x6b,
-	0x73, 0x3a, 0x62, 0x61, 0x74, 0x63, 0x68, 0x52, 0x75, 0x6e, 0x12, 0xaa, 0x01, 0x0a, 0x0e, 0x42,
-	0x61, 0x74, 0x63, 0x68, 0x53, 0x6b, 0x69, 0x70, 0x54, 0x61, 0x73, 0x6b, 0x73, 0x12, 0x22, 0x2e,
-	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63,
-	0x68, 0x53, 0x6b, 0x69, 0x70, 0x54, 0x61, 0x73, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x23, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x42, 0x61, 0x74, 0x63, 0x68, 0x53, 0x6b, 0x69, 0x70, 0x54, 0x61, 0x73, 0x6b, 0x73, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4f, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e,
-	0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x40, 0x3a, 0x01, 0x2a, 0x22, 0x3b, 0x2f, 0x76, 0x31, 0x2f,
-	0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73,
-	0x2f, 0x2a, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x74,
-	0x61, 0x67, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x73, 0x3a, 0x62, 0x61,
-	0x74, 0x63, 0x68, 0x53, 0x6b, 0x69, 0x70, 0x12, 0xc6, 0x01, 0x0a, 0x13, 0x42, 0x61, 0x74, 0x63,
-	0x68, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x12,
-	0x27, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61,
-	0x74, 0x63, 0x68, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e,
-	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
-	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x43, 0x61, 0x6e, 0x63,
-	0x65, 0x6c, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x5c, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4,
-	0x93, 0x02, 0x4d, 0x3a, 0x01, 0x2a, 0x22, 0x48, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72,
-	0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72,
-	0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x73,
-	0x2f, 0x2a, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x74, 0x61, 0x73, 0x6b,
-	0x52, 0x75, 0x6e, 0x73, 0x3a, 0x62, 0x61, 0x74, 0x63, 0x68, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c,
-	0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f,
-	0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x2f, 0x2a, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x73, 0x2f, 0x2a, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x52,
+	0x75, 0x6e, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x6c, 0x6f, 0x67, 0x12, 0xa2, 0x01, 0x0a, 0x11, 0x4c,
+	0x69, 0x73, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x73,
+	0x12, 0x25, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c,
+	0x69, 0x73, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x73,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
+	0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68,
+	0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x3e, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2f,
+	0x12, 0x2d, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72,
+	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x70, 0x6c, 0x61, 0x6e, 0x73, 0x2f, 0x2a,
+	0x7d, 0x2f, 0x70, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x12,
+	0x95, 0x01, 0x0a, 0x0d, 0x52, 0x75, 0x6e, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b,
+	0x73, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
+	0x52, 0x75, 0x6e, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x73, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x52, 0x75, 0x6e, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x73,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x3d, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d,
+	0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x30, 0x3a, 0x01, 0x2a, 0x22, 0x2b, 0x2f, 0x76, 0x31, 0x2f,
+	0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a,
+	0x2f, 0x70, 0x6c, 0x61, 0x6e, 0x73, 0x2f, 0x2a, 0x7d, 0x3a, 0x72, 0x75, 0x6e, 0x50, 0x6c, 0x61,
+	0x6e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x73, 0x12, 0xa6, 0x01, 0x0a, 0x0d, 0x42, 0x61, 0x74, 0x63,
+	0x68, 0x52, 0x75, 0x6e, 0x54, 0x61, 0x73, 0x6b, 0x73, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65,
+	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x52, 0x75, 0x6e,
+	0x54, 0x61, 0x73, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68,
+	0x52, 0x75, 0x6e, 0x54, 0x61, 0x73, 0x6b, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x4e, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x3f, 0x3a, 0x01, 0x2a, 0x22, 0x3a, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e,
+	0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x6f, 0x6c,
+	0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x73, 0x2f, 0x2a,
+	0x7d, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x73, 0x3a, 0x62, 0x61, 0x74, 0x63, 0x68, 0x52, 0x75, 0x6e,
+	0x12, 0xaa, 0x01, 0x0a, 0x0e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x53, 0x6b, 0x69, 0x70, 0x54, 0x61,
+	0x73, 0x6b, 0x73, 0x12, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x53, 0x6b, 0x69, 0x70, 0x54, 0x61, 0x73, 0x6b, 0x73,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
+	0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x53, 0x6b, 0x69, 0x70, 0x54,
+	0x61, 0x73, 0x6b, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4f, 0xda, 0x41,
+	0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x40, 0x3a, 0x01, 0x2a,
+	0x22, 0x3b, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72,
+	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74,
+	0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x74, 0x61,
+	0x73, 0x6b, 0x73, 0x3a, 0x62, 0x61, 0x74, 0x63, 0x68, 0x53, 0x6b, 0x69, 0x70, 0x12, 0xc6, 0x01,
+	0x0a, 0x13, 0x42, 0x61, 0x74, 0x63, 0x68, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x54, 0x61, 0x73,
+	0x6b, 0x52, 0x75, 0x6e, 0x73, 0x12, 0x27, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
+	0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x54,
+	0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28,
+	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74,
+	0x63, 0x68, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x5c, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72,
+	0x65, 0x6e, 0x74, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x4d, 0x3a, 0x01, 0x2a, 0x22, 0x48, 0x2f, 0x76,
+	0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63,
+	0x74, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x6f, 0x75, 0x74, 0x73, 0x2f, 0x2a, 0x2f,
+	0x73, 0x74, 0x61, 0x67, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x73, 0x2f, 0x2a,
+	0x7d, 0x2f, 0x74, 0x61, 0x73, 0x6b, 0x52, 0x75, 0x6e, 0x73, 0x3a, 0x62, 0x61, 0x74, 0x63, 0x68,
+	0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61,
+	0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -4733,8 +5218,8 @@ func file_v1_rollout_service_proto_rawDescGZIP() []byte {
 	return file_v1_rollout_service_proto_rawDescData
 }
 
-var file_v1_rollout_service_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
-var file_v1_rollout_service_proto_msgTypes = make([]protoimpl.MessageInfo, 47)
+var file_v1_rollout_service_proto_enumTypes = make([]protoimpl.EnumInfo, 11)
+var file_v1_rollout_service_proto_msgTypes = make([]protoimpl.MessageInfo, 53)
 var file_v1_rollout_service_proto_goTypes = []interface{}{
 	(Plan_ChangeDatabaseConfig_Type)(0),              // 0: bytebase.v1.Plan.ChangeDatabaseConfig.Type
 	(PlanCheckRun_Type)(0),                           // 1: bytebase.v1.PlanCheckRun.Type
@@ -4746,144 +5231,162 @@ var file_v1_rollout_service_proto_goTypes = []interface{}{
 	(TaskRun_Status)(0),                              // 7: bytebase.v1.TaskRun.Status
 	(TaskRun_ExecutionStatus)(0),                     // 8: bytebase.v1.TaskRun.ExecutionStatus
 	(TaskRun_ExportArchiveStatus)(0),                 // 9: bytebase.v1.TaskRun.ExportArchiveStatus
-	(*GetPlanRequest)(nil),                           // 10: bytebase.v1.GetPlanRequest
-	(*ListPlansRequest)(nil),                         // 11: bytebase.v1.ListPlansRequest
-	(*ListPlansResponse)(nil),                        // 12: bytebase.v1.ListPlansResponse
-	(*CreatePlanRequest)(nil),                        // 13: bytebase.v1.CreatePlanRequest
-	(*UpdatePlanRequest)(nil),                        // 14: bytebase.v1.UpdatePlanRequest
-	(*Plan)(nil),                                     // 15: bytebase.v1.Plan
-	(*ListPlanCheckRunsRequest)(nil),                 // 16: bytebase.v1.ListPlanCheckRunsRequest
-	(*ListPlanCheckRunsResponse)(nil),                // 17: bytebase.v1.ListPlanCheckRunsResponse
-	(*RunPlanChecksRequest)(nil),                     // 18: bytebase.v1.RunPlanChecksRequest
-	(*RunPlanChecksResponse)(nil),                    // 19: bytebase.v1.RunPlanChecksResponse
-	(*BatchRunTasksRequest)(nil),                     // 20: bytebase.v1.BatchRunTasksRequest
-	(*BatchRunTasksResponse)(nil),                    // 21: bytebase.v1.BatchRunTasksResponse
-	(*BatchSkipTasksRequest)(nil),                    // 22: bytebase.v1.BatchSkipTasksRequest
-	(*BatchSkipTasksResponse)(nil),                   // 23: bytebase.v1.BatchSkipTasksResponse
-	(*BatchCancelTaskRunsRequest)(nil),               // 24: bytebase.v1.BatchCancelTaskRunsRequest
-	(*BatchCancelTaskRunsResponse)(nil),              // 25: bytebase.v1.BatchCancelTaskRunsResponse
-	(*PlanCheckRun)(nil),                             // 26: bytebase.v1.PlanCheckRun
-	(*GetRolloutRequest)(nil),                        // 27: bytebase.v1.GetRolloutRequest
-	(*CreateRolloutRequest)(nil),                     // 28: bytebase.v1.CreateRolloutRequest
-	(*PreviewRolloutRequest)(nil),                    // 29: bytebase.v1.PreviewRolloutRequest
-	(*ListTaskRunsRequest)(nil),                      // 30: bytebase.v1.ListTaskRunsRequest
-	(*ListTaskRunsResponse)(nil),                     // 31: bytebase.v1.ListTaskRunsResponse
-	(*Rollout)(nil),                                  // 32: bytebase.v1.Rollout
-	(*Stage)(nil),                                    // 33: bytebase.v1.Stage
-	(*Task)(nil),                                     // 34: bytebase.v1.Task
-	(*TaskRun)(nil),                                  // 35: bytebase.v1.TaskRun
-	(*Plan_Step)(nil),                                // 36: bytebase.v1.Plan.Step
-	(*Plan_Spec)(nil),                                // 37: bytebase.v1.Plan.Spec
-	(*Plan_CreateDatabaseConfig)(nil),                // 38: bytebase.v1.Plan.CreateDatabaseConfig
-	(*Plan_ChangeDatabaseConfig)(nil),                // 39: bytebase.v1.Plan.ChangeDatabaseConfig
-	(*Plan_ExportDataConfig)(nil),                    // 40: bytebase.v1.Plan.ExportDataConfig
-	(*Plan_VCSSource)(nil),                           // 41: bytebase.v1.Plan.VCSSource
-	nil,                                              // 42: bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry
-	(*Plan_ChangeDatabaseConfig_RollbackDetail)(nil), // 43: bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail
-	nil, // 44: bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry
-	(*Plan_ChangeDatabaseConfig_PreUpdateBackupDetail)(nil), // 45: bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail
-	(*PlanCheckRun_Result)(nil),                             // 46: bytebase.v1.PlanCheckRun.Result
-	(*PlanCheckRun_Result_SqlSummaryReport)(nil),            // 47: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
-	(*PlanCheckRun_Result_SqlReviewReport)(nil),             // 48: bytebase.v1.PlanCheckRun.Result.SqlReviewReport
-	(*Task_DatabaseCreate)(nil),                             // 49: bytebase.v1.Task.DatabaseCreate
-	(*Task_DatabaseSchemaBaseline)(nil),                     // 50: bytebase.v1.Task.DatabaseSchemaBaseline
-	(*Task_DatabaseSchemaUpdate)(nil),                       // 51: bytebase.v1.Task.DatabaseSchemaUpdate
-	(*Task_DatabaseDataUpdate)(nil),                         // 52: bytebase.v1.Task.DatabaseDataUpdate
-	(*Task_DatabaseDataExport)(nil),                         // 53: bytebase.v1.Task.DatabaseDataExport
-	nil,                                                     // 54: bytebase.v1.Task.DatabaseCreate.LabelsEntry
-	(*TaskRun_ExecutionDetail)(nil),                         // 55: bytebase.v1.TaskRun.ExecutionDetail
-	(*TaskRun_ExecutionDetail_Position)(nil),                // 56: bytebase.v1.TaskRun.ExecutionDetail.Position
-	(*fieldmaskpb.FieldMask)(nil),                           // 57: google.protobuf.FieldMask
-	(*timestamppb.Timestamp)(nil),                           // 58: google.protobuf.Timestamp
-	(ExportFormat)(0),                                       // 59: bytebase.v1.ExportFormat
-	(VCSType)(0),                                            // 60: bytebase.v1.VCSType
-	(*ChangedResources)(nil),                                // 61: bytebase.v1.ChangedResources
+	(TaskRunLogEntry_Type)(0),                        // 10: bytebase.v1.TaskRunLogEntry.Type
+	(*GetPlanRequest)(nil),                           // 11: bytebase.v1.GetPlanRequest
+	(*ListPlansRequest)(nil),                         // 12: bytebase.v1.ListPlansRequest
+	(*ListPlansResponse)(nil),                        // 13: bytebase.v1.ListPlansResponse
+	(*CreatePlanRequest)(nil),                        // 14: bytebase.v1.CreatePlanRequest
+	(*UpdatePlanRequest)(nil),                        // 15: bytebase.v1.UpdatePlanRequest
+	(*Plan)(nil),                                     // 16: bytebase.v1.Plan
+	(*ListPlanCheckRunsRequest)(nil),                 // 17: bytebase.v1.ListPlanCheckRunsRequest
+	(*ListPlanCheckRunsResponse)(nil),                // 18: bytebase.v1.ListPlanCheckRunsResponse
+	(*RunPlanChecksRequest)(nil),                     // 19: bytebase.v1.RunPlanChecksRequest
+	(*RunPlanChecksResponse)(nil),                    // 20: bytebase.v1.RunPlanChecksResponse
+	(*BatchRunTasksRequest)(nil),                     // 21: bytebase.v1.BatchRunTasksRequest
+	(*BatchRunTasksResponse)(nil),                    // 22: bytebase.v1.BatchRunTasksResponse
+	(*BatchSkipTasksRequest)(nil),                    // 23: bytebase.v1.BatchSkipTasksRequest
+	(*BatchSkipTasksResponse)(nil),                   // 24: bytebase.v1.BatchSkipTasksResponse
+	(*BatchCancelTaskRunsRequest)(nil),               // 25: bytebase.v1.BatchCancelTaskRunsRequest
+	(*BatchCancelTaskRunsResponse)(nil),              // 26: bytebase.v1.BatchCancelTaskRunsResponse
+	(*PlanCheckRun)(nil),                             // 27: bytebase.v1.PlanCheckRun
+	(*GetRolloutRequest)(nil),                        // 28: bytebase.v1.GetRolloutRequest
+	(*CreateRolloutRequest)(nil),                     // 29: bytebase.v1.CreateRolloutRequest
+	(*PreviewRolloutRequest)(nil),                    // 30: bytebase.v1.PreviewRolloutRequest
+	(*ListTaskRunsRequest)(nil),                      // 31: bytebase.v1.ListTaskRunsRequest
+	(*ListTaskRunsResponse)(nil),                     // 32: bytebase.v1.ListTaskRunsResponse
+	(*GetTaskRunLogRequest)(nil),                     // 33: bytebase.v1.GetTaskRunLogRequest
+	(*Rollout)(nil),                                  // 34: bytebase.v1.Rollout
+	(*Stage)(nil),                                    // 35: bytebase.v1.Stage
+	(*Task)(nil),                                     // 36: bytebase.v1.Task
+	(*TaskRun)(nil),                                  // 37: bytebase.v1.TaskRun
+	(*TaskRunLog)(nil),                               // 38: bytebase.v1.TaskRunLog
+	(*TaskRunLogEntry)(nil),                          // 39: bytebase.v1.TaskRunLogEntry
+	(*Plan_Step)(nil),                                // 40: bytebase.v1.Plan.Step
+	(*Plan_Spec)(nil),                                // 41: bytebase.v1.Plan.Spec
+	(*Plan_CreateDatabaseConfig)(nil),                // 42: bytebase.v1.Plan.CreateDatabaseConfig
+	(*Plan_ChangeDatabaseConfig)(nil),                // 43: bytebase.v1.Plan.ChangeDatabaseConfig
+	(*Plan_ExportDataConfig)(nil),                    // 44: bytebase.v1.Plan.ExportDataConfig
+	(*Plan_VCSSource)(nil),                           // 45: bytebase.v1.Plan.VCSSource
+	nil,                                              // 46: bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry
+	(*Plan_ChangeDatabaseConfig_RollbackDetail)(nil), // 47: bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail
+	nil, // 48: bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry
+	(*Plan_ChangeDatabaseConfig_PreUpdateBackupDetail)(nil), // 49: bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail
+	(*PlanCheckRun_Result)(nil),                             // 50: bytebase.v1.PlanCheckRun.Result
+	(*PlanCheckRun_Result_SqlSummaryReport)(nil),            // 51: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
+	(*PlanCheckRun_Result_SqlReviewReport)(nil),             // 52: bytebase.v1.PlanCheckRun.Result.SqlReviewReport
+	(*Task_DatabaseCreate)(nil),                             // 53: bytebase.v1.Task.DatabaseCreate
+	(*Task_DatabaseSchemaBaseline)(nil),                     // 54: bytebase.v1.Task.DatabaseSchemaBaseline
+	(*Task_DatabaseSchemaUpdate)(nil),                       // 55: bytebase.v1.Task.DatabaseSchemaUpdate
+	(*Task_DatabaseDataUpdate)(nil),                         // 56: bytebase.v1.Task.DatabaseDataUpdate
+	(*Task_DatabaseDataExport)(nil),                         // 57: bytebase.v1.Task.DatabaseDataExport
+	nil,                                                     // 58: bytebase.v1.Task.DatabaseCreate.LabelsEntry
+	(*TaskRun_ExecutionDetail)(nil),                         // 59: bytebase.v1.TaskRun.ExecutionDetail
+	(*TaskRun_ExecutionDetail_Position)(nil),                // 60: bytebase.v1.TaskRun.ExecutionDetail.Position
+	(*TaskRunLogEntry_SchemaDump)(nil),                      // 61: bytebase.v1.TaskRunLogEntry.SchemaDump
+	(*TaskRunLogEntry_CommandExecute)(nil),                  // 62: bytebase.v1.TaskRunLogEntry.CommandExecute
+	(*TaskRunLogEntry_CommandExecute_CommandResponse)(nil),  // 63: bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse
+	(*fieldmaskpb.FieldMask)(nil),                           // 64: google.protobuf.FieldMask
+	(*timestamppb.Timestamp)(nil),                           // 65: google.protobuf.Timestamp
+	(ExportFormat)(0),                                       // 66: bytebase.v1.ExportFormat
+	(VCSType)(0),                                            // 67: bytebase.v1.VCSType
+	(*ChangedResources)(nil),                                // 68: bytebase.v1.ChangedResources
 }
 var file_v1_rollout_service_proto_depIdxs = []int32{
-	15, // 0: bytebase.v1.ListPlansResponse.plans:type_name -> bytebase.v1.Plan
-	15, // 1: bytebase.v1.CreatePlanRequest.plan:type_name -> bytebase.v1.Plan
-	15, // 2: bytebase.v1.UpdatePlanRequest.plan:type_name -> bytebase.v1.Plan
-	57, // 3: bytebase.v1.UpdatePlanRequest.update_mask:type_name -> google.protobuf.FieldMask
-	36, // 4: bytebase.v1.Plan.steps:type_name -> bytebase.v1.Plan.Step
-	41, // 5: bytebase.v1.Plan.vcs_source:type_name -> bytebase.v1.Plan.VCSSource
-	58, // 6: bytebase.v1.Plan.create_time:type_name -> google.protobuf.Timestamp
-	26, // 7: bytebase.v1.ListPlanCheckRunsResponse.plan_check_runs:type_name -> bytebase.v1.PlanCheckRun
+	16, // 0: bytebase.v1.ListPlansResponse.plans:type_name -> bytebase.v1.Plan
+	16, // 1: bytebase.v1.CreatePlanRequest.plan:type_name -> bytebase.v1.Plan
+	16, // 2: bytebase.v1.UpdatePlanRequest.plan:type_name -> bytebase.v1.Plan
+	64, // 3: bytebase.v1.UpdatePlanRequest.update_mask:type_name -> google.protobuf.FieldMask
+	40, // 4: bytebase.v1.Plan.steps:type_name -> bytebase.v1.Plan.Step
+	45, // 5: bytebase.v1.Plan.vcs_source:type_name -> bytebase.v1.Plan.VCSSource
+	65, // 6: bytebase.v1.Plan.create_time:type_name -> google.protobuf.Timestamp
+	27, // 7: bytebase.v1.ListPlanCheckRunsResponse.plan_check_runs:type_name -> bytebase.v1.PlanCheckRun
 	1,  // 8: bytebase.v1.PlanCheckRun.type:type_name -> bytebase.v1.PlanCheckRun.Type
 	2,  // 9: bytebase.v1.PlanCheckRun.status:type_name -> bytebase.v1.PlanCheckRun.Status
-	46, // 10: bytebase.v1.PlanCheckRun.results:type_name -> bytebase.v1.PlanCheckRun.Result
-	58, // 11: bytebase.v1.PlanCheckRun.create_time:type_name -> google.protobuf.Timestamp
-	32, // 12: bytebase.v1.CreateRolloutRequest.rollout:type_name -> bytebase.v1.Rollout
-	15, // 13: bytebase.v1.PreviewRolloutRequest.plan:type_name -> bytebase.v1.Plan
-	35, // 14: bytebase.v1.ListTaskRunsResponse.task_runs:type_name -> bytebase.v1.TaskRun
-	33, // 15: bytebase.v1.Rollout.stages:type_name -> bytebase.v1.Stage
-	34, // 16: bytebase.v1.Stage.tasks:type_name -> bytebase.v1.Task
+	50, // 10: bytebase.v1.PlanCheckRun.results:type_name -> bytebase.v1.PlanCheckRun.Result
+	65, // 11: bytebase.v1.PlanCheckRun.create_time:type_name -> google.protobuf.Timestamp
+	34, // 12: bytebase.v1.CreateRolloutRequest.rollout:type_name -> bytebase.v1.Rollout
+	16, // 13: bytebase.v1.PreviewRolloutRequest.plan:type_name -> bytebase.v1.Plan
+	37, // 14: bytebase.v1.ListTaskRunsResponse.task_runs:type_name -> bytebase.v1.TaskRun
+	35, // 15: bytebase.v1.Rollout.stages:type_name -> bytebase.v1.Stage
+	36, // 16: bytebase.v1.Stage.tasks:type_name -> bytebase.v1.Task
 	4,  // 17: bytebase.v1.Task.status:type_name -> bytebase.v1.Task.Status
 	5,  // 18: bytebase.v1.Task.type:type_name -> bytebase.v1.Task.Type
-	49, // 19: bytebase.v1.Task.database_create:type_name -> bytebase.v1.Task.DatabaseCreate
-	50, // 20: bytebase.v1.Task.database_schema_baseline:type_name -> bytebase.v1.Task.DatabaseSchemaBaseline
-	51, // 21: bytebase.v1.Task.database_schema_update:type_name -> bytebase.v1.Task.DatabaseSchemaUpdate
-	52, // 22: bytebase.v1.Task.database_data_update:type_name -> bytebase.v1.Task.DatabaseDataUpdate
-	53, // 23: bytebase.v1.Task.database_data_export:type_name -> bytebase.v1.Task.DatabaseDataExport
-	58, // 24: bytebase.v1.TaskRun.create_time:type_name -> google.protobuf.Timestamp
-	58, // 25: bytebase.v1.TaskRun.update_time:type_name -> google.protobuf.Timestamp
+	53, // 19: bytebase.v1.Task.database_create:type_name -> bytebase.v1.Task.DatabaseCreate
+	54, // 20: bytebase.v1.Task.database_schema_baseline:type_name -> bytebase.v1.Task.DatabaseSchemaBaseline
+	55, // 21: bytebase.v1.Task.database_schema_update:type_name -> bytebase.v1.Task.DatabaseSchemaUpdate
+	56, // 22: bytebase.v1.Task.database_data_update:type_name -> bytebase.v1.Task.DatabaseDataUpdate
+	57, // 23: bytebase.v1.Task.database_data_export:type_name -> bytebase.v1.Task.DatabaseDataExport
+	65, // 24: bytebase.v1.TaskRun.create_time:type_name -> google.protobuf.Timestamp
+	65, // 25: bytebase.v1.TaskRun.update_time:type_name -> google.protobuf.Timestamp
 	7,  // 26: bytebase.v1.TaskRun.status:type_name -> bytebase.v1.TaskRun.Status
 	8,  // 27: bytebase.v1.TaskRun.execution_status:type_name -> bytebase.v1.TaskRun.ExecutionStatus
-	58, // 28: bytebase.v1.TaskRun.execution_status_update_time:type_name -> google.protobuf.Timestamp
-	55, // 29: bytebase.v1.TaskRun.execution_detail:type_name -> bytebase.v1.TaskRun.ExecutionDetail
-	58, // 30: bytebase.v1.TaskRun.start_time:type_name -> google.protobuf.Timestamp
+	65, // 28: bytebase.v1.TaskRun.execution_status_update_time:type_name -> google.protobuf.Timestamp
+	59, // 29: bytebase.v1.TaskRun.execution_detail:type_name -> bytebase.v1.TaskRun.ExecutionDetail
+	65, // 30: bytebase.v1.TaskRun.start_time:type_name -> google.protobuf.Timestamp
 	9,  // 31: bytebase.v1.TaskRun.export_archive_status:type_name -> bytebase.v1.TaskRun.ExportArchiveStatus
-	37, // 32: bytebase.v1.Plan.Step.specs:type_name -> bytebase.v1.Plan.Spec
-	58, // 33: bytebase.v1.Plan.Spec.earliest_allowed_time:type_name -> google.protobuf.Timestamp
-	38, // 34: bytebase.v1.Plan.Spec.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
-	39, // 35: bytebase.v1.Plan.Spec.change_database_config:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig
-	40, // 36: bytebase.v1.Plan.Spec.export_data_config:type_name -> bytebase.v1.Plan.ExportDataConfig
-	42, // 37: bytebase.v1.Plan.CreateDatabaseConfig.labels:type_name -> bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry
-	0,  // 38: bytebase.v1.Plan.ChangeDatabaseConfig.type:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.Type
-	43, // 39: bytebase.v1.Plan.ChangeDatabaseConfig.rollback_detail:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail
-	44, // 40: bytebase.v1.Plan.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry
-	45, // 41: bytebase.v1.Plan.ChangeDatabaseConfig.pre_update_backup_detail:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail
-	59, // 42: bytebase.v1.Plan.ExportDataConfig.format:type_name -> bytebase.v1.ExportFormat
-	60, // 43: bytebase.v1.Plan.VCSSource.vcs_type:type_name -> bytebase.v1.VCSType
-	3,  // 44: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.PlanCheckRun.Result.Status
-	47, // 45: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
-	48, // 46: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
-	61, // 47: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.v1.ChangedResources
-	54, // 48: bytebase.v1.Task.DatabaseCreate.labels:type_name -> bytebase.v1.Task.DatabaseCreate.LabelsEntry
-	6,  // 49: bytebase.v1.Task.DatabaseDataUpdate.rollback_sql_status:type_name -> bytebase.v1.Task.DatabaseDataUpdate.RollbackSqlStatus
-	59, // 50: bytebase.v1.Task.DatabaseDataExport.format:type_name -> bytebase.v1.ExportFormat
-	56, // 51: bytebase.v1.TaskRun.ExecutionDetail.command_start_position:type_name -> bytebase.v1.TaskRun.ExecutionDetail.Position
-	56, // 52: bytebase.v1.TaskRun.ExecutionDetail.command_end_position:type_name -> bytebase.v1.TaskRun.ExecutionDetail.Position
-	10, // 53: bytebase.v1.RolloutService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
-	11, // 54: bytebase.v1.RolloutService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
-	13, // 55: bytebase.v1.RolloutService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
-	14, // 56: bytebase.v1.RolloutService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
-	27, // 57: bytebase.v1.RolloutService.GetRollout:input_type -> bytebase.v1.GetRolloutRequest
-	28, // 58: bytebase.v1.RolloutService.CreateRollout:input_type -> bytebase.v1.CreateRolloutRequest
-	29, // 59: bytebase.v1.RolloutService.PreviewRollout:input_type -> bytebase.v1.PreviewRolloutRequest
-	30, // 60: bytebase.v1.RolloutService.ListTaskRuns:input_type -> bytebase.v1.ListTaskRunsRequest
-	16, // 61: bytebase.v1.RolloutService.ListPlanCheckRuns:input_type -> bytebase.v1.ListPlanCheckRunsRequest
-	18, // 62: bytebase.v1.RolloutService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
-	20, // 63: bytebase.v1.RolloutService.BatchRunTasks:input_type -> bytebase.v1.BatchRunTasksRequest
-	22, // 64: bytebase.v1.RolloutService.BatchSkipTasks:input_type -> bytebase.v1.BatchSkipTasksRequest
-	24, // 65: bytebase.v1.RolloutService.BatchCancelTaskRuns:input_type -> bytebase.v1.BatchCancelTaskRunsRequest
-	15, // 66: bytebase.v1.RolloutService.GetPlan:output_type -> bytebase.v1.Plan
-	12, // 67: bytebase.v1.RolloutService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
-	15, // 68: bytebase.v1.RolloutService.CreatePlan:output_type -> bytebase.v1.Plan
-	15, // 69: bytebase.v1.RolloutService.UpdatePlan:output_type -> bytebase.v1.Plan
-	32, // 70: bytebase.v1.RolloutService.GetRollout:output_type -> bytebase.v1.Rollout
-	32, // 71: bytebase.v1.RolloutService.CreateRollout:output_type -> bytebase.v1.Rollout
-	32, // 72: bytebase.v1.RolloutService.PreviewRollout:output_type -> bytebase.v1.Rollout
-	31, // 73: bytebase.v1.RolloutService.ListTaskRuns:output_type -> bytebase.v1.ListTaskRunsResponse
-	17, // 74: bytebase.v1.RolloutService.ListPlanCheckRuns:output_type -> bytebase.v1.ListPlanCheckRunsResponse
-	19, // 75: bytebase.v1.RolloutService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
-	21, // 76: bytebase.v1.RolloutService.BatchRunTasks:output_type -> bytebase.v1.BatchRunTasksResponse
-	23, // 77: bytebase.v1.RolloutService.BatchSkipTasks:output_type -> bytebase.v1.BatchSkipTasksResponse
-	25, // 78: bytebase.v1.RolloutService.BatchCancelTaskRuns:output_type -> bytebase.v1.BatchCancelTaskRunsResponse
-	66, // [66:79] is the sub-list for method output_type
-	53, // [53:66] is the sub-list for method input_type
-	53, // [53:53] is the sub-list for extension type_name
-	53, // [53:53] is the sub-list for extension extendee
-	0,  // [0:53] is the sub-list for field type_name
+	39, // 32: bytebase.v1.TaskRunLog.entries:type_name -> bytebase.v1.TaskRunLogEntry
+	10, // 33: bytebase.v1.TaskRunLogEntry.type:type_name -> bytebase.v1.TaskRunLogEntry.Type
+	61, // 34: bytebase.v1.TaskRunLogEntry.schema_dump:type_name -> bytebase.v1.TaskRunLogEntry.SchemaDump
+	62, // 35: bytebase.v1.TaskRunLogEntry.command_execute:type_name -> bytebase.v1.TaskRunLogEntry.CommandExecute
+	41, // 36: bytebase.v1.Plan.Step.specs:type_name -> bytebase.v1.Plan.Spec
+	65, // 37: bytebase.v1.Plan.Spec.earliest_allowed_time:type_name -> google.protobuf.Timestamp
+	42, // 38: bytebase.v1.Plan.Spec.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
+	43, // 39: bytebase.v1.Plan.Spec.change_database_config:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig
+	44, // 40: bytebase.v1.Plan.Spec.export_data_config:type_name -> bytebase.v1.Plan.ExportDataConfig
+	46, // 41: bytebase.v1.Plan.CreateDatabaseConfig.labels:type_name -> bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry
+	0,  // 42: bytebase.v1.Plan.ChangeDatabaseConfig.type:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.Type
+	47, // 43: bytebase.v1.Plan.ChangeDatabaseConfig.rollback_detail:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail
+	48, // 44: bytebase.v1.Plan.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry
+	49, // 45: bytebase.v1.Plan.ChangeDatabaseConfig.pre_update_backup_detail:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail
+	66, // 46: bytebase.v1.Plan.ExportDataConfig.format:type_name -> bytebase.v1.ExportFormat
+	67, // 47: bytebase.v1.Plan.VCSSource.vcs_type:type_name -> bytebase.v1.VCSType
+	3,  // 48: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.PlanCheckRun.Result.Status
+	51, // 49: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
+	52, // 50: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
+	68, // 51: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.v1.ChangedResources
+	58, // 52: bytebase.v1.Task.DatabaseCreate.labels:type_name -> bytebase.v1.Task.DatabaseCreate.LabelsEntry
+	6,  // 53: bytebase.v1.Task.DatabaseDataUpdate.rollback_sql_status:type_name -> bytebase.v1.Task.DatabaseDataUpdate.RollbackSqlStatus
+	66, // 54: bytebase.v1.Task.DatabaseDataExport.format:type_name -> bytebase.v1.ExportFormat
+	60, // 55: bytebase.v1.TaskRun.ExecutionDetail.command_start_position:type_name -> bytebase.v1.TaskRun.ExecutionDetail.Position
+	60, // 56: bytebase.v1.TaskRun.ExecutionDetail.command_end_position:type_name -> bytebase.v1.TaskRun.ExecutionDetail.Position
+	65, // 57: bytebase.v1.TaskRunLogEntry.SchemaDump.start_time:type_name -> google.protobuf.Timestamp
+	65, // 58: bytebase.v1.TaskRunLogEntry.SchemaDump.end_time:type_name -> google.protobuf.Timestamp
+	65, // 59: bytebase.v1.TaskRunLogEntry.CommandExecute.log_time:type_name -> google.protobuf.Timestamp
+	63, // 60: bytebase.v1.TaskRunLogEntry.CommandExecute.response:type_name -> bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse
+	65, // 61: bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse.log_time:type_name -> google.protobuf.Timestamp
+	11, // 62: bytebase.v1.RolloutService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
+	12, // 63: bytebase.v1.RolloutService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
+	14, // 64: bytebase.v1.RolloutService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
+	15, // 65: bytebase.v1.RolloutService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
+	28, // 66: bytebase.v1.RolloutService.GetRollout:input_type -> bytebase.v1.GetRolloutRequest
+	29, // 67: bytebase.v1.RolloutService.CreateRollout:input_type -> bytebase.v1.CreateRolloutRequest
+	30, // 68: bytebase.v1.RolloutService.PreviewRollout:input_type -> bytebase.v1.PreviewRolloutRequest
+	31, // 69: bytebase.v1.RolloutService.ListTaskRuns:input_type -> bytebase.v1.ListTaskRunsRequest
+	33, // 70: bytebase.v1.RolloutService.GetTaskRunLog:input_type -> bytebase.v1.GetTaskRunLogRequest
+	17, // 71: bytebase.v1.RolloutService.ListPlanCheckRuns:input_type -> bytebase.v1.ListPlanCheckRunsRequest
+	19, // 72: bytebase.v1.RolloutService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
+	21, // 73: bytebase.v1.RolloutService.BatchRunTasks:input_type -> bytebase.v1.BatchRunTasksRequest
+	23, // 74: bytebase.v1.RolloutService.BatchSkipTasks:input_type -> bytebase.v1.BatchSkipTasksRequest
+	25, // 75: bytebase.v1.RolloutService.BatchCancelTaskRuns:input_type -> bytebase.v1.BatchCancelTaskRunsRequest
+	16, // 76: bytebase.v1.RolloutService.GetPlan:output_type -> bytebase.v1.Plan
+	13, // 77: bytebase.v1.RolloutService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
+	16, // 78: bytebase.v1.RolloutService.CreatePlan:output_type -> bytebase.v1.Plan
+	16, // 79: bytebase.v1.RolloutService.UpdatePlan:output_type -> bytebase.v1.Plan
+	34, // 80: bytebase.v1.RolloutService.GetRollout:output_type -> bytebase.v1.Rollout
+	34, // 81: bytebase.v1.RolloutService.CreateRollout:output_type -> bytebase.v1.Rollout
+	34, // 82: bytebase.v1.RolloutService.PreviewRollout:output_type -> bytebase.v1.Rollout
+	32, // 83: bytebase.v1.RolloutService.ListTaskRuns:output_type -> bytebase.v1.ListTaskRunsResponse
+	38, // 84: bytebase.v1.RolloutService.GetTaskRunLog:output_type -> bytebase.v1.TaskRunLog
+	18, // 85: bytebase.v1.RolloutService.ListPlanCheckRuns:output_type -> bytebase.v1.ListPlanCheckRunsResponse
+	20, // 86: bytebase.v1.RolloutService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
+	22, // 87: bytebase.v1.RolloutService.BatchRunTasks:output_type -> bytebase.v1.BatchRunTasksResponse
+	24, // 88: bytebase.v1.RolloutService.BatchSkipTasks:output_type -> bytebase.v1.BatchSkipTasksResponse
+	26, // 89: bytebase.v1.RolloutService.BatchCancelTaskRuns:output_type -> bytebase.v1.BatchCancelTaskRunsResponse
+	76, // [76:90] is the sub-list for method output_type
+	62, // [62:76] is the sub-list for method input_type
+	62, // [62:62] is the sub-list for extension type_name
+	62, // [62:62] is the sub-list for extension extendee
+	0,  // [0:62] is the sub-list for field type_name
 }
 
 func init() { file_v1_rollout_service_proto_init() }
@@ -5159,7 +5662,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Rollout); i {
+			switch v := v.(*GetTaskRunLogRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5171,7 +5674,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Stage); i {
+			switch v := v.(*Rollout); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5183,7 +5686,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Task); i {
+			switch v := v.(*Stage); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5195,7 +5698,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TaskRun); i {
+			switch v := v.(*Task); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5207,7 +5710,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Plan_Step); i {
+			switch v := v.(*TaskRun); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5219,7 +5722,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Plan_Spec); i {
+			switch v := v.(*TaskRunLog); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5231,7 +5734,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Plan_CreateDatabaseConfig); i {
+			switch v := v.(*TaskRunLogEntry); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5243,7 +5746,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Plan_ChangeDatabaseConfig); i {
+			switch v := v.(*Plan_Step); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5255,7 +5758,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Plan_ExportDataConfig); i {
+			switch v := v.(*Plan_Spec); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5267,7 +5770,19 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[31].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Plan_VCSSource); i {
+			switch v := v.(*Plan_CreateDatabaseConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_rollout_service_proto_msgTypes[32].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Plan_ChangeDatabaseConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5279,7 +5794,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[33].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Plan_ChangeDatabaseConfig_RollbackDetail); i {
+			switch v := v.(*Plan_ExportDataConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5290,8 +5805,8 @@ func file_v1_rollout_service_proto_init() {
 				return nil
 			}
 		}
-		file_v1_rollout_service_proto_msgTypes[35].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Plan_ChangeDatabaseConfig_PreUpdateBackupDetail); i {
+		file_v1_rollout_service_proto_msgTypes[34].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Plan_VCSSource); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5303,19 +5818,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[36].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PlanCheckRun_Result); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_v1_rollout_service_proto_msgTypes[37].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PlanCheckRun_Result_SqlSummaryReport); i {
+			switch v := v.(*Plan_ChangeDatabaseConfig_RollbackDetail); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5327,7 +5830,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[38].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PlanCheckRun_Result_SqlReviewReport); i {
+			switch v := v.(*Plan_ChangeDatabaseConfig_PreUpdateBackupDetail); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5339,7 +5842,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[39].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Task_DatabaseCreate); i {
+			switch v := v.(*PlanCheckRun_Result); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5351,7 +5854,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[40].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Task_DatabaseSchemaBaseline); i {
+			switch v := v.(*PlanCheckRun_Result_SqlSummaryReport); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5363,7 +5866,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[41].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Task_DatabaseSchemaUpdate); i {
+			switch v := v.(*PlanCheckRun_Result_SqlReviewReport); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5375,7 +5878,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[42].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Task_DatabaseDataUpdate); i {
+			switch v := v.(*Task_DatabaseCreate); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5387,7 +5890,19 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[43].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Task_DatabaseDataExport); i {
+			switch v := v.(*Task_DatabaseSchemaBaseline); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_rollout_service_proto_msgTypes[44].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Task_DatabaseSchemaUpdate); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5399,7 +5914,7 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[45].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TaskRun_ExecutionDetail); i {
+			switch v := v.(*Task_DatabaseDataUpdate); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5411,6 +5926,30 @@ func file_v1_rollout_service_proto_init() {
 			}
 		}
 		file_v1_rollout_service_proto_msgTypes[46].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Task_DatabaseDataExport); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_rollout_service_proto_msgTypes[48].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TaskRun_ExecutionDetail); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_rollout_service_proto_msgTypes[49].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TaskRun_ExecutionDetail_Position); i {
 			case 0:
 				return &v.state
@@ -5422,33 +5961,69 @@ func file_v1_rollout_service_proto_init() {
 				return nil
 			}
 		}
+		file_v1_rollout_service_proto_msgTypes[50].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TaskRunLogEntry_SchemaDump); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_rollout_service_proto_msgTypes[51].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TaskRunLogEntry_CommandExecute); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_rollout_service_proto_msgTypes[52].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TaskRunLogEntry_CommandExecute_CommandResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
-	file_v1_rollout_service_proto_msgTypes[24].OneofWrappers = []interface{}{
+	file_v1_rollout_service_proto_msgTypes[25].OneofWrappers = []interface{}{
 		(*Task_DatabaseCreate_)(nil),
 		(*Task_DatabaseSchemaBaseline_)(nil),
 		(*Task_DatabaseSchemaUpdate_)(nil),
 		(*Task_DatabaseDataUpdate_)(nil),
 		(*Task_DatabaseDataExport_)(nil),
 	}
-	file_v1_rollout_service_proto_msgTypes[27].OneofWrappers = []interface{}{
+	file_v1_rollout_service_proto_msgTypes[30].OneofWrappers = []interface{}{
 		(*Plan_Spec_CreateDatabaseConfig)(nil),
 		(*Plan_Spec_ChangeDatabaseConfig)(nil),
 		(*Plan_Spec_ExportDataConfig)(nil),
 	}
-	file_v1_rollout_service_proto_msgTypes[29].OneofWrappers = []interface{}{}
-	file_v1_rollout_service_proto_msgTypes[30].OneofWrappers = []interface{}{}
-	file_v1_rollout_service_proto_msgTypes[36].OneofWrappers = []interface{}{
+	file_v1_rollout_service_proto_msgTypes[32].OneofWrappers = []interface{}{}
+	file_v1_rollout_service_proto_msgTypes[33].OneofWrappers = []interface{}{}
+	file_v1_rollout_service_proto_msgTypes[39].OneofWrappers = []interface{}{
 		(*PlanCheckRun_Result_SqlSummaryReport_)(nil),
 		(*PlanCheckRun_Result_SqlReviewReport_)(nil),
 	}
-	file_v1_rollout_service_proto_msgTypes[43].OneofWrappers = []interface{}{}
+	file_v1_rollout_service_proto_msgTypes[46].OneofWrappers = []interface{}{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_rollout_service_proto_rawDesc,
-			NumEnums:      10,
-			NumMessages:   47,
+			NumEnums:      11,
+			NumMessages:   53,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

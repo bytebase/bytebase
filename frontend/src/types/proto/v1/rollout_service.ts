@@ -761,6 +761,11 @@ export interface ListTaskRunsResponse {
   nextPageToken: string;
 }
 
+export interface GetTaskRunLogRequest {
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} */
+  parent: string;
+}
+
 export interface Rollout {
   /**
    * The resource name of the rollout.
@@ -1409,6 +1414,93 @@ export interface TaskRun_ExecutionDetail_Position {
   line: number;
   /** The column number, starting from 0. */
   column: number;
+}
+
+export interface TaskRunLog {
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log */
+  name: string;
+  entries: TaskRunLogEntry[];
+}
+
+export interface TaskRunLogEntry {
+  type: TaskRunLogEntry_Type;
+  schemaDump: TaskRunLogEntry_SchemaDump | undefined;
+  commandExecute: TaskRunLogEntry_CommandExecute | undefined;
+}
+
+export enum TaskRunLogEntry_Type {
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  SCHEMA_DUMP = "SCHEMA_DUMP",
+  COMMAND_EXECUTE = "COMMAND_EXECUTE",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function taskRunLogEntry_TypeFromJSON(object: any): TaskRunLogEntry_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return TaskRunLogEntry_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "SCHEMA_DUMP":
+      return TaskRunLogEntry_Type.SCHEMA_DUMP;
+    case 2:
+    case "COMMAND_EXECUTE":
+      return TaskRunLogEntry_Type.COMMAND_EXECUTE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return TaskRunLogEntry_Type.UNRECOGNIZED;
+  }
+}
+
+export function taskRunLogEntry_TypeToJSON(object: TaskRunLogEntry_Type): string {
+  switch (object) {
+    case TaskRunLogEntry_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case TaskRunLogEntry_Type.SCHEMA_DUMP:
+      return "SCHEMA_DUMP";
+    case TaskRunLogEntry_Type.COMMAND_EXECUTE:
+      return "COMMAND_EXECUTE";
+    case TaskRunLogEntry_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function taskRunLogEntry_TypeToNumber(object: TaskRunLogEntry_Type): number {
+  switch (object) {
+    case TaskRunLogEntry_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case TaskRunLogEntry_Type.SCHEMA_DUMP:
+      return 1;
+    case TaskRunLogEntry_Type.COMMAND_EXECUTE:
+      return 2;
+    case TaskRunLogEntry_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
+export interface TaskRunLogEntry_SchemaDump {
+  startTime: Date | undefined;
+  endTime: Date | undefined;
+  error: string;
+}
+
+export interface TaskRunLogEntry_CommandExecute {
+  logTime:
+    | Date
+    | undefined;
+  /** Executed commands are in range [command_index, command_index + command_count). */
+  commandIndex: number;
+  commandCount: number;
+  response: TaskRunLogEntry_CommandExecute_CommandResponse | undefined;
+}
+
+export interface TaskRunLogEntry_CommandExecute_CommandResponse {
+  logTime: Date | undefined;
+  error: string;
+  affectedRows: number;
 }
 
 function createBaseGetPlanRequest(): GetPlanRequest {
@@ -4687,6 +4779,63 @@ export const ListTaskRunsResponse = {
   },
 };
 
+function createBaseGetTaskRunLogRequest(): GetTaskRunLogRequest {
+  return { parent: "" };
+}
+
+export const GetTaskRunLogRequest = {
+  encode(message: GetTaskRunLogRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetTaskRunLogRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetTaskRunLogRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetTaskRunLogRequest {
+    return { parent: isSet(object.parent) ? globalThis.String(object.parent) : "" };
+  },
+
+  toJSON(message: GetTaskRunLogRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetTaskRunLogRequest>): GetTaskRunLogRequest {
+    return GetTaskRunLogRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetTaskRunLogRequest>): GetTaskRunLogRequest {
+    const message = createBaseGetTaskRunLogRequest();
+    message.parent = object.parent ?? "";
+    return message;
+  },
+};
+
 function createBaseRollout(): Rollout {
   return { name: "", uid: "", plan: "", title: "", stages: [] };
 }
@@ -6375,6 +6524,470 @@ export const TaskRun_ExecutionDetail_Position = {
   },
 };
 
+function createBaseTaskRunLog(): TaskRunLog {
+  return { name: "", entries: [] };
+}
+
+export const TaskRunLog = {
+  encode(message: TaskRunLog, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.entries) {
+      TaskRunLogEntry.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLog {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLog();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.entries.push(TaskRunLogEntry.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLog {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      entries: globalThis.Array.isArray(object?.entries)
+        ? object.entries.map((e: any) => TaskRunLogEntry.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: TaskRunLog): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.entries?.length) {
+      obj.entries = message.entries.map((e) => TaskRunLogEntry.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLog>): TaskRunLog {
+    return TaskRunLog.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLog>): TaskRunLog {
+    const message = createBaseTaskRunLog();
+    message.name = object.name ?? "";
+    message.entries = object.entries?.map((e) => TaskRunLogEntry.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseTaskRunLogEntry(): TaskRunLogEntry {
+  return { type: TaskRunLogEntry_Type.TYPE_UNSPECIFIED, schemaDump: undefined, commandExecute: undefined };
+}
+
+export const TaskRunLogEntry = {
+  encode(message: TaskRunLogEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== TaskRunLogEntry_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(taskRunLogEntry_TypeToNumber(message.type));
+    }
+    if (message.schemaDump !== undefined) {
+      TaskRunLogEntry_SchemaDump.encode(message.schemaDump, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.commandExecute !== undefined) {
+      TaskRunLogEntry_CommandExecute.encode(message.commandExecute, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLogEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLogEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.type = taskRunLogEntry_TypeFromJSON(reader.int32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.schemaDump = TaskRunLogEntry_SchemaDump.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.commandExecute = TaskRunLogEntry_CommandExecute.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLogEntry {
+    return {
+      type: isSet(object.type) ? taskRunLogEntry_TypeFromJSON(object.type) : TaskRunLogEntry_Type.TYPE_UNSPECIFIED,
+      schemaDump: isSet(object.schemaDump) ? TaskRunLogEntry_SchemaDump.fromJSON(object.schemaDump) : undefined,
+      commandExecute: isSet(object.commandExecute)
+        ? TaskRunLogEntry_CommandExecute.fromJSON(object.commandExecute)
+        : undefined,
+    };
+  },
+
+  toJSON(message: TaskRunLogEntry): unknown {
+    const obj: any = {};
+    if (message.type !== TaskRunLogEntry_Type.TYPE_UNSPECIFIED) {
+      obj.type = taskRunLogEntry_TypeToJSON(message.type);
+    }
+    if (message.schemaDump !== undefined) {
+      obj.schemaDump = TaskRunLogEntry_SchemaDump.toJSON(message.schemaDump);
+    }
+    if (message.commandExecute !== undefined) {
+      obj.commandExecute = TaskRunLogEntry_CommandExecute.toJSON(message.commandExecute);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLogEntry>): TaskRunLogEntry {
+    return TaskRunLogEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLogEntry>): TaskRunLogEntry {
+    const message = createBaseTaskRunLogEntry();
+    message.type = object.type ?? TaskRunLogEntry_Type.TYPE_UNSPECIFIED;
+    message.schemaDump = (object.schemaDump !== undefined && object.schemaDump !== null)
+      ? TaskRunLogEntry_SchemaDump.fromPartial(object.schemaDump)
+      : undefined;
+    message.commandExecute = (object.commandExecute !== undefined && object.commandExecute !== null)
+      ? TaskRunLogEntry_CommandExecute.fromPartial(object.commandExecute)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTaskRunLogEntry_SchemaDump(): TaskRunLogEntry_SchemaDump {
+  return { startTime: undefined, endTime: undefined, error: "" };
+}
+
+export const TaskRunLogEntry_SchemaDump = {
+  encode(message: TaskRunLogEntry_SchemaDump, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.startTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.startTime), writer.uint32(10).fork()).ldelim();
+    }
+    if (message.endTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.endTime), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.error !== "") {
+      writer.uint32(26).string(message.error);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLogEntry_SchemaDump {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLogEntry_SchemaDump();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.startTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.endTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLogEntry_SchemaDump {
+    return {
+      startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
+      endTime: isSet(object.endTime) ? fromJsonTimestamp(object.endTime) : undefined,
+      error: isSet(object.error) ? globalThis.String(object.error) : "",
+    };
+  },
+
+  toJSON(message: TaskRunLogEntry_SchemaDump): unknown {
+    const obj: any = {};
+    if (message.startTime !== undefined) {
+      obj.startTime = message.startTime.toISOString();
+    }
+    if (message.endTime !== undefined) {
+      obj.endTime = message.endTime.toISOString();
+    }
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLogEntry_SchemaDump>): TaskRunLogEntry_SchemaDump {
+    return TaskRunLogEntry_SchemaDump.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLogEntry_SchemaDump>): TaskRunLogEntry_SchemaDump {
+    const message = createBaseTaskRunLogEntry_SchemaDump();
+    message.startTime = object.startTime ?? undefined;
+    message.endTime = object.endTime ?? undefined;
+    message.error = object.error ?? "";
+    return message;
+  },
+};
+
+function createBaseTaskRunLogEntry_CommandExecute(): TaskRunLogEntry_CommandExecute {
+  return { logTime: undefined, commandIndex: 0, commandCount: 0, response: undefined };
+}
+
+export const TaskRunLogEntry_CommandExecute = {
+  encode(message: TaskRunLogEntry_CommandExecute, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.logTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.logTime), writer.uint32(10).fork()).ldelim();
+    }
+    if (message.commandIndex !== 0) {
+      writer.uint32(16).int32(message.commandIndex);
+    }
+    if (message.commandCount !== 0) {
+      writer.uint32(24).int32(message.commandCount);
+    }
+    if (message.response !== undefined) {
+      TaskRunLogEntry_CommandExecute_CommandResponse.encode(message.response, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLogEntry_CommandExecute {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLogEntry_CommandExecute();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.logTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.commandIndex = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.commandCount = reader.int32();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.response = TaskRunLogEntry_CommandExecute_CommandResponse.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLogEntry_CommandExecute {
+    return {
+      logTime: isSet(object.logTime) ? fromJsonTimestamp(object.logTime) : undefined,
+      commandIndex: isSet(object.commandIndex) ? globalThis.Number(object.commandIndex) : 0,
+      commandCount: isSet(object.commandCount) ? globalThis.Number(object.commandCount) : 0,
+      response: isSet(object.response)
+        ? TaskRunLogEntry_CommandExecute_CommandResponse.fromJSON(object.response)
+        : undefined,
+    };
+  },
+
+  toJSON(message: TaskRunLogEntry_CommandExecute): unknown {
+    const obj: any = {};
+    if (message.logTime !== undefined) {
+      obj.logTime = message.logTime.toISOString();
+    }
+    if (message.commandIndex !== 0) {
+      obj.commandIndex = Math.round(message.commandIndex);
+    }
+    if (message.commandCount !== 0) {
+      obj.commandCount = Math.round(message.commandCount);
+    }
+    if (message.response !== undefined) {
+      obj.response = TaskRunLogEntry_CommandExecute_CommandResponse.toJSON(message.response);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLogEntry_CommandExecute>): TaskRunLogEntry_CommandExecute {
+    return TaskRunLogEntry_CommandExecute.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLogEntry_CommandExecute>): TaskRunLogEntry_CommandExecute {
+    const message = createBaseTaskRunLogEntry_CommandExecute();
+    message.logTime = object.logTime ?? undefined;
+    message.commandIndex = object.commandIndex ?? 0;
+    message.commandCount = object.commandCount ?? 0;
+    message.response = (object.response !== undefined && object.response !== null)
+      ? TaskRunLogEntry_CommandExecute_CommandResponse.fromPartial(object.response)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTaskRunLogEntry_CommandExecute_CommandResponse(): TaskRunLogEntry_CommandExecute_CommandResponse {
+  return { logTime: undefined, error: "", affectedRows: 0 };
+}
+
+export const TaskRunLogEntry_CommandExecute_CommandResponse = {
+  encode(
+    message: TaskRunLogEntry_CommandExecute_CommandResponse,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.logTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.logTime), writer.uint32(10).fork()).ldelim();
+    }
+    if (message.error !== "") {
+      writer.uint32(18).string(message.error);
+    }
+    if (message.affectedRows !== 0) {
+      writer.uint32(24).int32(message.affectedRows);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRunLogEntry_CommandExecute_CommandResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLogEntry_CommandExecute_CommandResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.logTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.affectedRows = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLogEntry_CommandExecute_CommandResponse {
+    return {
+      logTime: isSet(object.logTime) ? fromJsonTimestamp(object.logTime) : undefined,
+      error: isSet(object.error) ? globalThis.String(object.error) : "",
+      affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
+    };
+  },
+
+  toJSON(message: TaskRunLogEntry_CommandExecute_CommandResponse): unknown {
+    const obj: any = {};
+    if (message.logTime !== undefined) {
+      obj.logTime = message.logTime.toISOString();
+    }
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
+    if (message.affectedRows !== 0) {
+      obj.affectedRows = Math.round(message.affectedRows);
+    }
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<TaskRunLogEntry_CommandExecute_CommandResponse>,
+  ): TaskRunLogEntry_CommandExecute_CommandResponse {
+    return TaskRunLogEntry_CommandExecute_CommandResponse.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<TaskRunLogEntry_CommandExecute_CommandResponse>,
+  ): TaskRunLogEntry_CommandExecute_CommandResponse {
+    const message = createBaseTaskRunLogEntry_CommandExecute_CommandResponse();
+    message.logTime = object.logTime ?? undefined;
+    message.error = object.error ?? "";
+    message.affectedRows = object.affectedRows ?? 0;
+    return message;
+  },
+};
+
 export type RolloutServiceDefinition = typeof RolloutServiceDefinition;
 export const RolloutServiceDefinition = {
   name: "RolloutService",
@@ -6835,6 +7448,91 @@ export const RolloutServiceDefinition = {
               117,
               110,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    getTaskRunLog: {
+      name: "GetTaskRunLog",
+      requestType: GetTaskRunLogRequest,
+      requestStream: false,
+      responseType: TaskRunLog,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              68,
+              18,
+              66,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              111,
+              108,
+              108,
+              111,
+              117,
+              116,
+              115,
+              47,
+              42,
+              47,
+              115,
+              116,
+              97,
+              103,
+              101,
+              115,
+              47,
+              42,
+              47,
+              116,
+              97,
+              115,
+              107,
+              115,
+              47,
+              42,
+              47,
+              116,
+              97,
+              115,
+              107,
+              82,
+              117,
+              110,
+              115,
+              47,
+              42,
+              125,
+              47,
+              108,
+              111,
+              103,
             ]),
           ],
         },
