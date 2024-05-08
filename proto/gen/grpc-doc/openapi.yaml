@@ -239,6 +239,12 @@ paths:
             parameters:
                 - name: filter
                   in: query
+                  description: |-
+                    The filter of the log. It should be a valid CEL expression.
+                     For example:
+                      - filter = "method == '/bytebase.v1.SQLService/Query'"
+                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
                   schema:
                     type: string
                 - name: orderBy
@@ -9630,6 +9636,12 @@ components:
             properties:
                 filter:
                     type: string
+                    description: |-
+                        The filter of the log. It should be a valid CEL expression.
+                         For example:
+                          - filter = "method == '/bytebase.v1.SQLService/Query'"
+                          - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+                          - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
                 orderBy:
                     type: string
                     description: |-

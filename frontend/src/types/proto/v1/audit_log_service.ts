@@ -8,6 +8,13 @@ import { ExportFormat, exportFormatFromJSON, exportFormatToJSON, exportFormatToN
 export const protobufPackage = "bytebase.v1";
 
 export interface SearchAuditLogsRequest {
+  /**
+   * The filter of the log. It should be a valid CEL expression.
+   * For example:
+   *  - filter = "method == '/bytebase.v1.SQLService/Query'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+   */
   filter: string;
   /**
    * The order by of the log.
@@ -42,6 +49,13 @@ export interface SearchAuditLogsResponse {
 }
 
 export interface ExportAuditLogsRequest {
+  /**
+   * The filter of the log. It should be a valid CEL expression.
+   * For example:
+   *  - filter = "method == '/bytebase.v1.SQLService/Query'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+   */
   filter: string;
   /**
    * The order by of the log.
