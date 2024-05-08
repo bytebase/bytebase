@@ -387,17 +387,18 @@ func (o *ExecuteOptions) LogCommandExecute(commandIndex int32, commandCount int3
 	}
 }
 
-func (o *ExecuteOptions) LogCommandResponse(commandIndex, commandCount, affectedRows int32, rerr string) {
+func (o *ExecuteOptions) LogCommandResponse(commandIndex, commandCount, affectedRows int32, allAffectedRows []int32, rerr string) {
 	if o == nil || o.CreateTaskRunLog == nil {
 		return
 	}
 	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
 		Type: storepb.TaskRunLog_COMMAND_RESPONSE,
 		CommandResponse: &storepb.TaskRunLog_CommandResponse{
-			CommandIndex: commandIndex,
-			CommandCount: commandCount,
-			AffectedRows: affectedRows,
-			Error:        rerr,
+			CommandIndex:    commandIndex,
+			CommandCount:    commandCount,
+			AffectedRows:    affectedRows,
+			AllAffectedRows: allAffectedRows,
+			Error:           rerr,
 		},
 	})
 	if err != nil {
