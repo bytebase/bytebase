@@ -2793,6 +2793,22 @@
       },
       "sql-editor-query": "Truy vấn trình soạn thảo SQL",
       "sql-export": "Xuất SQL"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "Diễn viên",
+          "description": "Tìm kiếm theo tác nhân nhật ký kiểm tra"
+        },
+        "method": {
+          "title": "Phương pháp",
+          "description": "Tìm kiếm theo phương pháp nhật ký kiểm tra"
+        },
+        "level": {
+          "title": "Mức độ",
+          "description": "Tìm kiếm theo cấp độ của nhật ký kiểm tra"
+        }
+      }
     }
   },
   "onboarding-guide": {

@@ -27,6 +27,10 @@ export const SearchScopeIdList = [
   "assignee",
   "subscriber",
   "label",
+  // auditLog related search scopes.
+  "method",
+  "level",
+  "actor",
 ] as const;
 
 export type SearchScopeId =
