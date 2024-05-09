@@ -247,7 +247,7 @@ func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Sta
 					}
 				}
 				switch variable {
-				case "resource", "parent", "method", "user":
+				case "resource", "parent", "method", "user", "severity":
 				default:
 					return "", errors.Errorf("unknown variable %s", variable)
 				}

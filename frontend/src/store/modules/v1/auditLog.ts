@@ -15,8 +15,24 @@ const buildFilter = (search: SearchAuditLogsParams): string => {
   if (search.parent) {
     filter.push(`parent == "${search.parent}"`);
   }
-  if (search.creatorEmail) {
-    filter.push(`user == "${userNamePrefix}${search.creatorEmail}"`);
+  if (search.method) {
+    filter.push(`method == "${search.method}"`);
+  }
+  if (search.level) {
+    filter.push(`severity == "${search.level}"`);
+  }
+  if (search.userEmail) {
+    filter.push(`user == "${userNamePrefix}${search.userEmail}"`);
+  }
+  if (search.createdTsAfter) {
+    filter.push(
+      `create_time >= "${dayjs(search.createdTsAfter).utc().format()}"`
+    );
+  }
+  if (search.createdTsBefore) {
+    filter.push(
+      `create_time <= "${dayjs(search.createdTsBefore).utc().format()}"`
+    );
   }
   return filter.join(" && ");
 };
