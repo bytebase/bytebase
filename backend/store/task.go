@@ -425,10 +425,7 @@ func (s *Store) ListTasksToAutoRollout(ctx context.Context, environmentIDs []int
 	LEFT JOIN stage ON stage.id = task.stage_id
 	LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
 	LEFT JOIN issue ON issue.pipeline_id = pipeline.id
-	LEFT JOIN LATERAL
-		(SELECT 1 AS e FROM task_run WHERE task_run.task_id = task.id LIMIT 1) task_run
-		ON TRUE
-	WHERE task_run.e IS NULL
+	WHERE NOT EXISTS (SELECT 1 FROM task_run WHERE task_run.task_id = task.id)
 	AND task.type != 'bb.task.database.data.export'
 	AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
 	AND COALESCE(issue.status, 'OPEN') = 'OPEN'
