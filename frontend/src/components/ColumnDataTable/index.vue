@@ -198,7 +198,8 @@ const columns = computed(() => {
       key: "classification",
       title: t("database.classification.self"),
       hide: !showClassificationColumn.value,
-      width: 140,
+      minWidth: 140,
+      resizable: true,
       render: (column) => {
         const columnConfig = dbSchemaStore.getColumnConfig(
           props.database.name,
