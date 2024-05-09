@@ -2372,6 +2372,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SheetCommand"><span class="badge">M</span>SheetCommand</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SheetPayload"><span class="badge">M</span>SheetPayload</a>
                 </li>
               
@@ -25786,6 +25790,37 @@ set the `raw` to true in GetSheet request to retrieve the full content. </p></td
 
         
       
+        <h3 id="bytebase.v1.SheetCommand">SheetCommand</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.SheetPayload">SheetPayload</h3>
         <p></p>
 
@@ -25815,6 +25850,13 @@ set the `raw` to true in GetSheet request to retrieve the full content. </p></td
                   <td><a href="#bytebase.v1.DatabaseConfig">DatabaseConfig</a></td>
                   <td></td>
                   <td><p>The snapshot of the baseline database config when creating the sheet. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commands</td>
+                  <td><a href="#bytebase.v1.SheetCommand">SheetCommand</a></td>
+                  <td>repeated</td>
+                  <td><p>The start and end position of each command in the sheet statement. </p></td>
                 </tr>
               
             </tbody>
