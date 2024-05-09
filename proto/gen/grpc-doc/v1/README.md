@@ -572,6 +572,7 @@
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
+    - [SheetCommand](#bytebase-v1-SheetCommand)
     - [SheetPayload](#bytebase-v1-SheetPayload)
     - [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest)
   
@@ -9341,6 +9342,22 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
+<a name="bytebase-v1-SheetCommand"></a>
+
+### SheetCommand
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  |  |
+| end | [int32](#int32) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-SheetPayload"></a>
 
 ### SheetPayload
@@ -9352,6 +9369,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | type | [SheetPayload.Type](#bytebase-v1-SheetPayload-Type) |  |  |
 | database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
 | baseline_database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
+| commands | [SheetCommand](#bytebase-v1-SheetCommand) | repeated | The start and end position of each command in the sheet statement. |
 
 
 
