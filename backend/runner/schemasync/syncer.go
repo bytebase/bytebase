@@ -585,6 +585,9 @@ func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchema
 				}
 			}
 		}
+		if schemaConfig.Size() == 0 {
+			databaseConfig.RemoveSchemaConfig(schema.Name)
+		}
 	}
 }
 

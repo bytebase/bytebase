@@ -217,6 +217,11 @@ func (d *DatabaseConfig) CreateOrGetSchemaConfig(name string) *SchemaConfig {
 	return d.internal[name]
 }
 
+// RemoveSchemaConfig delete the schema config by name.
+func (d *DatabaseConfig) RemoveSchemaConfig(name string) {
+	delete(d.internal, name)
+}
+
 func (d *DatabaseConfig) BuildDatabaseConfig() *storepb.DatabaseConfig {
 	config := &storepb.DatabaseConfig{Name: d.name, ClassificationFromConfig: d.ClassificationFromConfig}
 
@@ -245,6 +250,11 @@ func (d *DatabaseConfig) BuildDatabaseConfig() *storepb.DatabaseConfig {
 // SchemaConfig is the config for a schema.
 type SchemaConfig struct {
 	internal map[string]*TableConfig
+}
+
+// Size returns the table config count for the schema config.
+func (s *SchemaConfig) Size() int {
+	return len(s.internal)
 }
 
 // CreateOrGetTableConfig creates or gets the table config by name.
