@@ -1,17 +1,8 @@
 <template>
   <div class="w-full space-y-4">
     <FeatureAttention feature="bb.feature.audit-log" />
-    <div class="flex justify-between items-center space-x-2">
-      <div>
-        <div class="w-72">
-          <UserSelect
-            v-model:user="state.userUid"
-            :multiple="false"
-            :include-all="true"
-          />
-        </div>
-      </div>
-      <div>
+    <AuditLogSearch v-model:params="state.params">
+      <template #searchbox-suffix>
         <DataExportButton
           size="medium"
           :file-type="'raw'"
@@ -23,8 +14,8 @@
           :disabled="!hasAuditLogFeature"
           @export="handleExport"
         />
-      </div>
-    </div>
+      </template>
+    </AuditLogSearch>
     <PagedAuditLogTable
       v-if="hasAuditLogFeature"
       :search-audit-logs="searchAuditLogs"
@@ -45,31 +36,39 @@
 import type { BinaryLike } from "node:crypto";
 import { reactive, computed } from "vue";
 import AuditLogDataTable from "@/components/AuditLog/AuditLogDataTable.vue";
+import AuditLogSearch from "@/components/AuditLog/AuditLogSearch";
+import { buildSearchAuditLogParams } from "@/components/AuditLog/AuditLogSearch/utils";
 import type { ExportOption } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import PagedAuditLogTable from "@/components/PagedAuditLogTable.vue";
-import { featureToRef, useAuditLogStore, useUserStore } from "@/store";
+import { featureToRef, useAuditLogStore } from "@/store";
 import type { SearchAuditLogsParams } from "@/types";
-import { UNKNOWN_ID } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
+import { type SearchParams } from "@/utils";
 
-const state = reactive({
-  userUid: String(UNKNOWN_ID),
+interface LocalState {
+  params: SearchParams;
+}
+
+const defaultSearchParams = () => {
+  const params: SearchParams = {
+    query: "",
+    scopes: [],
+  };
+  return params;
+};
+
+const state = reactive<LocalState>({
+  params: defaultSearchParams(),
 });
 
-const userStore = useUserStore();
 const auditLogStore = useAuditLogStore();
 
 const hasAuditLogFeature = featureToRef("bb.feature.audit-log");
 
-const selectedUserEmail = computed((): string => {
-  const selected = userStore.getUserById(state.userUid);
-  return selected?.email ?? "";
-});
-
 const searchAuditLogs = computed((): SearchAuditLogsParams => {
   return {
-    creatorEmail: selectedUserEmail.value,
+    ...buildSearchAuditLogParams(state.params),
     order: "desc",
   };
 });

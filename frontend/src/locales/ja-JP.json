@@ -2793,6 +2793,22 @@
       },
       "sql-editor-query": "SQLエディタのクエリ",
       "sql-export": "SQL エクスポート"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "俳優",
+          "description": "監査ログアクターによる検索"
+        },
+        "method": {
+          "title": "方法",
+          "description": "監査ログの方法での検索"
+        },
+        "level": {
+          "title": "レベル",
+          "description": "監査ログのレベルによる検索"
+        }
+      }
     }
   },
   "onboarding-guide": {
