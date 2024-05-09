@@ -1,17 +1,11 @@
 <template>
   <div class="w-full space-y-4">
     <FeatureAttention feature="bb.feature.audit-log" />
-    <div class="flex justify-between items-center space-x-2">
-      <div>
-        <div class="w-72">
-          <UserSelect
-            v-model:user="state.userUid"
-            :multiple="false"
-            :include-all="true"
-          />
-        </div>
-      </div>
-      <div>
+    <AuditLogSearch
+      v-model:params="state.params"
+      :readonly-scopes="readonlyScopes"
+    >
+      <template #searchbox-suffix>
         <DataExportButton
           size="medium"
           :file-type="'raw'"
@@ -23,8 +17,8 @@
           :disabled="!hasAuditLogFeature"
           @export="handleExport"
         />
-      </div>
-    </div>
+      </template>
+    </AuditLogSearch>
 
     <PagedAuditLogTable
       v-if="hasAuditLogFeature"
@@ -46,47 +40,47 @@
 import type { BinaryLike } from "node:crypto";
 import { computed, reactive } from "vue";
 import AuditLogDataTable from "@/components/AuditLog/AuditLogDataTable.vue";
+import AuditLogSearch from "@/components/AuditLog/AuditLogSearch";
+import { buildSearchAuditLogParams } from "@/components/AuditLog/AuditLogSearch/utils";
 import type { ExportOption } from "@/components/DataExportButton.vue";
+import DataExportButton from "@/components/DataExportButton.vue";
 import PagedAuditLogTable from "@/components/PagedAuditLogTable.vue";
-import {
-  featureToRef,
-  useAuditLogStore,
-  useProjectV1Store,
-  useUserStore,
-} from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
-import { UNKNOWN_ID, type SearchAuditLogsParams } from "@/types";
+import { featureToRef, useAuditLogStore } from "@/store";
+import { type SearchAuditLogsParams } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
+import type { SearchParams, SearchScope } from "@/utils";
+
+interface LocalState {
+  params: SearchParams;
+}
 
 const props = defineProps<{
   projectId: string;
 }>();
 
-const state = reactive({
-  userUid: String(UNKNOWN_ID),
+const readonlyScopes = computed((): SearchScope[] => {
+  return [{ id: "project", value: props.projectId }];
+});
+
+const defaultSearchParams = () => {
+  const params: SearchParams = {
+    query: "",
+    scopes: [...readonlyScopes.value],
+  };
+  return params;
+};
+
+const state = reactive<LocalState>({
+  params: defaultSearchParams(),
 });
 
 const hasAuditLogFeature = featureToRef("bb.feature.audit-log");
 
-const userStore = useUserStore();
-const projectV1Store = useProjectV1Store();
 const auditLogStore = useAuditLogStore();
-
-const project = computed(() => {
-  return projectV1Store.getProjectByName(
-    `${projectNamePrefix}${props.projectId}`
-  );
-});
-
-const selectedUserEmail = computed((): string => {
-  const selected = userStore.getUserById(state.userUid);
-  return selected?.email ?? "";
-});
 
 const searchAuditLogs = computed((): SearchAuditLogsParams => {
   return {
-    parent: project.value.name,
-    creatorEmail: selectedUserEmail.value,
+    ...buildSearchAuditLogParams(state.params),
     order: "desc",
   };
 });
