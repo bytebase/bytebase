@@ -16,7 +16,9 @@
     </div>
 
     <template #trigger>
-      <span :class="contentClass" v-bind="$attrs">{{ displayContent }}</span>
+      <slot name="default" :display-content="displayContent">
+        <span :class="contentClass" v-bind="$attrs">{{ displayContent }}</span>
+      </slot>
     </template>
   </NPopover>
 </template>
