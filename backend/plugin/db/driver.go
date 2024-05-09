@@ -371,15 +371,14 @@ func (o *ExecuteOptions) LogSchemaDumpEnd(derr string) {
 	}
 }
 
-func (o *ExecuteOptions) LogCommandExecute(commandIndex int32, commandCount int32) {
+func (o *ExecuteOptions) LogCommandExecute(commandIndexes []int32) {
 	if o == nil || o.CreateTaskRunLog == nil {
 		return
 	}
 	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
 		Type: storepb.TaskRunLog_COMMAND_EXECUTE,
 		CommandExecute: &storepb.TaskRunLog_CommandExecute{
-			CommandIndex: commandIndex,
-			CommandCount: commandCount,
+			CommandIndexes: commandIndexes,
 		},
 	})
 	if err != nil {
@@ -387,15 +386,14 @@ func (o *ExecuteOptions) LogCommandExecute(commandIndex int32, commandCount int3
 	}
 }
 
-func (o *ExecuteOptions) LogCommandResponse(commandIndex, commandCount, affectedRows int32, allAffectedRows []int32, rerr string) {
+func (o *ExecuteOptions) LogCommandResponse(commandIndexes []int32, affectedRows int32, allAffectedRows []int32, rerr string) {
 	if o == nil || o.CreateTaskRunLog == nil {
 		return
 	}
 	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
 		Type: storepb.TaskRunLog_COMMAND_RESPONSE,
 		CommandResponse: &storepb.TaskRunLog_CommandResponse{
-			CommandIndex:    commandIndex,
-			CommandCount:    commandCount,
+			CommandIndexes:  commandIndexes,
 			AffectedRows:    affectedRows,
 			AllAffectedRows: allAffectedRows,
 			Error:           rerr,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -960,9 +961,8 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			e := &v1pb.TaskRunLogEntry{
 				Type: v1pb.TaskRunLogEntry_COMMAND_EXECUTE,
 				CommandExecute: &v1pb.TaskRunLogEntry_CommandExecute{
-					LogTime:      timestamppb.New(l.T),
-					CommandIndex: l.Payload.CommandExecute.CommandIndex,
-					CommandCount: l.Payload.CommandExecute.CommandCount,
+					LogTime:        timestamppb.New(l.T),
+					CommandIndexes: l.Payload.CommandExecute.CommandIndexes,
 				},
 			}
 			entries = append(entries, e)
@@ -975,7 +975,7 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_COMMAND_EXECUTE {
 				continue
 			}
-			if prev.CommandExecute.CommandIndex != l.Payload.CommandResponse.CommandIndex || prev.CommandExecute.CommandCount != l.Payload.CommandResponse.CommandCount {
+			if !slices.Equal(prev.CommandExecute.CommandIndexes, l.Payload.CommandResponse.CommandIndexes) {
 				continue
 			}
 			prev.CommandExecute.Response = &v1pb.TaskRunLogEntry_CommandExecute_CommandResponse{
