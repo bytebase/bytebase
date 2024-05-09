@@ -2793,6 +2793,22 @@
       },
       "sql-editor-query": "SQL Editor Query",
       "sql-export": "SQL Export"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "Actor",
+          "description": "Search by the audit log actor"
+        },
+        "method": {
+          "title": "Method",
+          "description": "Search by the method of audit log"
+        },
+        "level": {
+          "title": "Level",
+          "description": "Search by the level of audit log"
+        }
+      }
     }
   },
   "onboarding-guide": {

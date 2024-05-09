@@ -2793,6 +2793,22 @@
       },
       "sql-editor-query": "SQL 编辑器查询",
       "sql-export": "SQL 导出"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "操作者",
+          "description": "按审计日志操作者搜索"
+        },
+        "method": {
+          "title": "操作",
+          "description": "按审计日志操作搜索"
+        },
+        "level": {
+          "title": "事件等级",
+          "description": "按审计日志事件等级搜索"
+        }
+      }
     }
   },
   "onboarding-guide": {

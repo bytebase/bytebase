@@ -2793,6 +2793,22 @@
       },
       "sql-editor-query": "Consulta del editor de SQL",
       "sql-export": "Exportar SQL"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "Actor",
+          "description": "Búsqueda por actor del registro de auditoría"
+        },
+        "method": {
+          "title": "Método",
+          "description": "Buscar por el método de registro de auditoría"
+        },
+        "level": {
+          "title": "Nivel",
+          "description": "Buscar por nivel de registro de auditoría"
+        }
+      }
     }
   },
   "onboarding-guide": {
