@@ -87,8 +87,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const {
-  targets,
-  currentTab,
   project,
   readonly,
   selectionEnabled,
