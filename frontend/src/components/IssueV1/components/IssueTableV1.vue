@@ -128,6 +128,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       key: "labels",
       title: t("common.labels"),
       resizable: true,
+      minWidth: 120,
       render: (issue) => {
         const labelMap: Map<string, Label> =
           issue.projectEntity.issueLabels.reduce((map, label) => {
@@ -161,7 +162,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
     {
       key: "updateTime",
       title: t("issue.table.updated"),
-      width: 150,
+      minWidth: 130,
       resizable: true,
       hide: !showExtendedColumns.value,
       render: (issue) => humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000),
