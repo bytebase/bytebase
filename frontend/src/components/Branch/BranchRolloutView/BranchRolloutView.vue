@@ -312,6 +312,7 @@ const handlePreviewIssue = async () => {
   if (!target) return;
   if (!db) return;
   if (!editor) return;
+
   editor.applySelectedMetadataEdit(
     db,
     source,

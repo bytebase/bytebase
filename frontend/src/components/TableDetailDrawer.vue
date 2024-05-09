@@ -114,7 +114,7 @@
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.engine") }}
                   </dt>
-                  <dd class="mt-1 text-sm text-main">
+                  <dd class="mt-1 text-semibold">
                     {{ table.engine }}
                   </dd>
                 </div>
@@ -123,9 +123,9 @@
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.classification.self") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 font-semibold">
                     <ClassificationLevelBadge
-                      :classification="table.classification"
+                      :classification="tableConfig.classificationId"
                       :classification-config="classificationConfig"
                       placeholder="-"
                     />
@@ -136,7 +136,7 @@
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.row-count-estimate") }}
                   </dt>
-                  <dd class="mt-1 text-sm text-main">
+                  <dd class="mt-1 text-semibold">
                     {{ table.rowCount }}
                   </dd>
                 </div>
@@ -145,7 +145,7 @@
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.data-size") }}
                   </dt>
-                  <dd class="mt-1 text-sm text-main">
+                  <dd class="mt-1 text-semibold">
                     {{ bytesToString(table.dataSize.toNumber()) }}
                   </dd>
                 </div>
@@ -154,7 +154,7 @@
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.index-size") }}
                   </dt>
-                  <dd class="mt-1 text-sm text-main">
+                  <dd class="mt-1 text-semibold">
                     {{ bytesToString(table.indexSize.toNumber()) }}
                   </dd>
                 </div>
@@ -164,7 +164,7 @@
                     <dt class="text-sm font-medium text-control-light">
                       {{ $t("db.collation") }}
                     </dt>
-                    <dd class="mt-1 text-sm text-main">
+                    <dd class="mt-1 text-semibold">
                       {{ table.collation }}
                     </dd>
                   </div>
@@ -306,6 +306,14 @@ const table = computedAsync(
   {
     evaluating: isFetchingTableMetadata,
   }
+);
+
+const tableConfig = computed(() =>
+  dbSchemaStore.getTableConfig(
+    props.databaseName,
+    props.schemaName,
+    props.tableName
+  )
 );
 
 const database = computed(() => {

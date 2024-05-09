@@ -1,6 +1,6 @@
 import Emittery from "emittery";
 import type { Ref } from "vue";
-import { inject, provide } from "vue";
+import { inject, provide, computed } from "vue";
 import type { ComposedProject } from "@/types";
 import type { RebuildMetadataEditReset } from "../algorithm/rebuild";
 import type { EditTarget, ResourceType, RolloutObject } from "../types";
@@ -38,6 +38,9 @@ export const provideSchemaEditorContext = (params: {
     ...useEditConfigs(params.targets),
     ...useScrollStatus(),
     ...useSelection(params.selectedRolloutObjects, events),
+    showDatabaseConfigColumn: computed(
+      () => params.resourceType.value === "branch"
+    ),
   };
 
   provide(KEY, context);

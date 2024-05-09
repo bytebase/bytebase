@@ -29,14 +29,6 @@
     @update:expression="handleSelectColumnDefaultValueExpression"
   />
 
-  <SelectClassificationDrawer
-    v-if="classificationConfig && state.pendingUpdateColumn"
-    :show="state.showClassificationDrawer"
-    :classification-config="classificationConfig"
-    @dismiss="state.showClassificationDrawer = false"
-    @apply="onClassificationSelect"
-  />
-
   <SemanticTypesDrawer
     v-if="state.pendingUpdateColumn"
     :show="state.showSemanticTypesDrawer"
@@ -67,8 +59,8 @@ import type { DataTableColumn } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
-import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
 import {
@@ -86,7 +78,6 @@ import {
   isTextOfColumnType,
 } from "../../utils/columnDefaultValue";
 import {
-  ClassificationCell,
   DataTypeCell,
   ForeignKeyCell,
   OperationCell,
@@ -98,7 +89,6 @@ import LabelsCell from "./components/LabelsCell.vue";
 
 interface LocalState {
   pendingUpdateColumn?: Column;
-  showClassificationDrawer: boolean;
   showSemanticTypesDrawer: boolean;
   showLabelsDrawer: boolean;
 }
@@ -143,7 +133,6 @@ const emit = defineEmits<{
 }>();
 
 const state = reactive<LocalState>({
-  showClassificationDrawer: false,
   showSemanticTypesDrawer: false,
   showLabelsDrawer: false,
 });
@@ -263,14 +252,15 @@ const columns = computed(() => {
       width: 140,
       render: (column) => {
         return h(ClassificationCell, {
-          classification: column.classification,
+          classification: column.config.classificationId,
           readonly: props.readonly,
           disabled: props.disableChangeTable,
           classificationConfig:
             classificationConfig.value ??
             DataClassificationConfig.fromPartial({}),
-          onEdit: () => openClassificationDrawer(column),
-          onRemove: () => (column.classification = ""),
+          onApply: (id: string) => {
+            column.config.classificationId = id;
+          },
         });
       },
     },
@@ -491,11 +481,6 @@ const handleSelectColumnDefaultValueExpression = (expression: string) => {
   column.defaultExpression = expression;
 };
 
-const openClassificationDrawer = (column: Column) => {
-  state.pendingUpdateColumn = column;
-  state.showClassificationDrawer = true;
-};
-
 const openSemanticTypeDrawer = (column: Column) => {
   state.pendingUpdateColumn = column;
   state.showSemanticTypesDrawer = true;
@@ -504,13 +489,6 @@ const openSemanticTypeDrawer = (column: Column) => {
 const openLabelsDrawer = (column: Column) => {
   state.pendingUpdateColumn = column;
   state.showLabelsDrawer = true;
-};
-
-const onClassificationSelect = (classificationId: string) => {
-  if (!state.pendingUpdateColumn) {
-    return;
-  }
-  state.pendingUpdateColumn.classification = classificationId;
 };
 
 const onSemanticTypeApply = async (semanticTypeId: string) => {

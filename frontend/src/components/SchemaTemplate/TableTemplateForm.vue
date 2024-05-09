@@ -42,13 +42,13 @@
           </label>
           <div class="flex items-center gap-x-2 mt-1">
             <ClassificationLevelBadge
-              :classification="state.table?.classification"
+              :classification="state.table?.config.classificationId"
               :classification-config="classificationConfig"
             />
             <div v-if="!readonly" class="flex">
               <MiniActionButton
-                v-if="state.table?.classification"
-                @click.prevent="state.table!.classification = ''"
+                v-if="state.table?.config.classificationId"
+                @click.prevent="state.table!.config.classificationId = ''"
               >
                 <XIcon class="w-4 h-4" />
               </MiniActionButton>
@@ -276,8 +276,12 @@ const onSubmit = async () => {
     category: state.category,
     table: transformTableEditToMetadata(state.table),
     config: TableConfig.fromPartial({
+      ...state.table.config,
       name: state.table.name,
-      columnConfigs: state.table.columnList.map((col) => col.config),
+      columnConfigs: state.table.columnList.map((col) => ({
+        ...col.config,
+        name: col.name,
+      })),
     }),
   };
   const setting = await settingStore.fetchSettingByName(
@@ -372,7 +376,7 @@ const handleApplyColumnTemplate = (
 };
 
 const onClassificationSelect = (id: string) => {
-  state.table.classification = id;
+  state.table.config.classificationId = id;
 };
 
 const handleReorderColumn = (column: Column, index: number, delta: -1 | 1) => {

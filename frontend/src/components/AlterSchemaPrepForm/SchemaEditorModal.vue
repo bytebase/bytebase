@@ -373,6 +373,7 @@ const generateDiffDDLMap = async (silent: boolean) => {
       editing,
       /* !allowEmptyDiffDDLWithConfigChange */ false
     );
+
     if (result.fatal && !silent) {
       pushNotification({
         module: "bytebase",
@@ -557,6 +558,9 @@ const confirmCreateIssueWithEmptyStatement = (
     style: "z-index: 100000",
     negativeText: t("common.cancel"),
     positiveText: t("common.continue-anyway"),
+    onClose: () => {
+      d.resolve(false);
+    },
     onNegativeClick: () => {
       d.resolve(false);
     },

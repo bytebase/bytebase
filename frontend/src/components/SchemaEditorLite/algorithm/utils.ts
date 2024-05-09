@@ -57,7 +57,7 @@ export const cleanupUnusedConfigs = (metadata: DatabaseMetadata) => {
     });
     // Cleanup empty table configs
     schemaConfig.tableConfigs = schemaConfig.tableConfigs.filter(
-      (tc) => tc.columnConfigs.length > 0
+      (tc) => tc.columnConfigs.length > 0 || tc.classificationId
     );
   };
   const cleanupSchemaConfigs = (metadata: DatabaseMetadata) => {

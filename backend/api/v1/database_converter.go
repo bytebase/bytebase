@@ -135,23 +135,23 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, conf
 	databaseConfig := convertStoreDatabaseConfig(config, filter)
 	if databaseConfig != nil {
 		m.SchemaConfigs = databaseConfig.SchemaConfigs
+		m.ClassificationFromConfig = databaseConfig.ClassificationFromConfig
 	}
 	return m
 }
 
 func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata {
 	t := &v1pb.TableMetadata{
-		Name:           table.Name,
-		Engine:         table.Engine,
-		Collation:      table.Collation,
-		RowCount:       table.RowCount,
-		DataSize:       table.DataSize,
-		IndexSize:      table.IndexSize,
-		DataFree:       table.DataFree,
-		CreateOptions:  table.CreateOptions,
-		Comment:        table.Comment,
-		Classification: table.Classification,
-		UserComment:    table.UserComment,
+		Name:          table.Name,
+		Engine:        table.Engine,
+		Collation:     table.Collation,
+		RowCount:      table.RowCount,
+		DataSize:      table.DataSize,
+		IndexSize:     table.IndexSize,
+		DataFree:      table.DataFree,
+		CreateOptions: table.CreateOptions,
+		Comment:       table.Comment,
+		UserComment:   table.UserComment,
 	}
 	for _, partition := range table.Partitions {
 		if partition == nil {
@@ -254,17 +254,16 @@ func convertStoreTablePartitionMetadata(partition *storepb.TablePartitionMetadat
 
 func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMetadata {
 	metadata := &v1pb.ColumnMetadata{
-		Name:           column.Name,
-		Position:       column.Position,
-		HasDefault:     column.DefaultValue != nil,
-		OnUpdate:       column.OnUpdate,
-		Nullable:       column.Nullable,
-		Type:           column.Type,
-		CharacterSet:   column.CharacterSet,
-		Collation:      column.Collation,
-		Comment:        column.Comment,
-		Classification: column.Classification,
-		UserComment:    column.UserComment,
+		Name:         column.Name,
+		Position:     column.Position,
+		HasDefault:   column.DefaultValue != nil,
+		OnUpdate:     column.OnUpdate,
+		Nullable:     column.Nullable,
+		Type:         column.Type,
+		CharacterSet: column.CharacterSet,
+		Collation:    column.Collation,
+		Comment:      column.Comment,
+		UserComment:  column.UserComment,
 	}
 	if metadata.HasDefault {
 		switch value := column.DefaultValue.(type) {
@@ -285,7 +284,8 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 
 func convertStoreDatabaseConfig(config *storepb.DatabaseConfig, filter *metadataFilter) *v1pb.DatabaseConfig {
 	databaseConfig := &v1pb.DatabaseConfig{
-		Name: config.Name,
+		Name:                     config.Name,
+		ClassificationFromConfig: config.ClassificationFromConfig,
 	}
 	for _, schema := range config.SchemaConfigs {
 		if schema == nil {
@@ -313,7 +313,8 @@ func convertStoreDatabaseConfig(config *storepb.DatabaseConfig, filter *metadata
 
 func convertStoreTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
 	t := &v1pb.TableConfig{
-		Name: table.Name,
+		Name:             table.Name,
+		ClassificationId: table.ClassificationId,
 	}
 	for _, column := range table.ColumnConfigs {
 		if column == nil {
@@ -326,14 +327,16 @@ func convertStoreTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
 
 func convertStoreColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
 	return &v1pb.ColumnConfig{
-		Name:           column.Name,
-		SemanticTypeId: column.SemanticTypeId,
-		Labels:         column.Labels,
+		Name:             column.Name,
+		SemanticTypeId:   column.SemanticTypeId,
+		Labels:           column.Labels,
+		ClassificationId: column.ClassificationId,
 	}
 }
 
 func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseConfig) {
 	m := &storepb.DatabaseSchemaMetadata{
+		Name:         metadata.Name,
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
 	}
@@ -463,7 +466,9 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 
 	databaseConfig := convertV1DatabaseConfig(
 		&v1pb.DatabaseConfig{
-			SchemaConfigs: metadata.SchemaConfigs,
+			Name:                     metadata.Name,
+			SchemaConfigs:            metadata.SchemaConfigs,
+			ClassificationFromConfig: metadata.ClassificationFromConfig,
 		},
 	)
 	return m, databaseConfig
@@ -471,17 +476,16 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 
 func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 	t := &storepb.TableMetadata{
-		Name:           table.Name,
-		Engine:         table.Engine,
-		Collation:      table.Collation,
-		RowCount:       table.RowCount,
-		DataSize:       table.DataSize,
-		IndexSize:      table.IndexSize,
-		DataFree:       table.DataFree,
-		CreateOptions:  table.CreateOptions,
-		Comment:        table.Comment,
-		Classification: table.Classification,
-		UserComment:    table.UserComment,
+		Name:          table.Name,
+		Engine:        table.Engine,
+		Collation:     table.Collation,
+		RowCount:      table.RowCount,
+		DataSize:      table.DataSize,
+		IndexSize:     table.IndexSize,
+		DataFree:      table.DataFree,
+		CreateOptions: table.CreateOptions,
+		Comment:       table.Comment,
+		UserComment:   table.UserComment,
 	}
 	for _, column := range table.Columns {
 		if column == nil {
@@ -567,16 +571,15 @@ func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata
 
 func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadata {
 	metadata := &storepb.ColumnMetadata{
-		Name:           column.Name,
-		Position:       column.Position,
-		Nullable:       column.Nullable,
-		Type:           column.Type,
-		CharacterSet:   column.CharacterSet,
-		Collation:      column.Collation,
-		Comment:        column.Comment,
-		Classification: column.Classification,
-		UserComment:    column.UserComment,
-		OnUpdate:       column.OnUpdate,
+		Name:         column.Name,
+		Position:     column.Position,
+		Nullable:     column.Nullable,
+		Type:         column.Type,
+		CharacterSet: column.CharacterSet,
+		Collation:    column.Collation,
+		Comment:      column.Comment,
+		UserComment:  column.UserComment,
+		OnUpdate:     column.OnUpdate,
 	}
 
 	if column.HasDefault {
@@ -594,7 +597,8 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 
 func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.DatabaseConfig {
 	config := &storepb.DatabaseConfig{
-		Name: databaseConfig.Name,
+		Name:                     databaseConfig.Name,
+		ClassificationFromConfig: databaseConfig.ClassificationFromConfig,
 	}
 	for _, schema := range databaseConfig.SchemaConfigs {
 		if schema == nil {
@@ -618,7 +622,8 @@ func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.Datab
 
 func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
 	t := &storepb.TableConfig{
-		Name: table.Name,
+		Name:             table.Name,
+		ClassificationId: table.ClassificationId,
 	}
 	for _, column := range table.ColumnConfigs {
 		if column == nil {
@@ -631,8 +636,9 @@ func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
 
 func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnConfig {
 	return &storepb.ColumnConfig{
-		Name:           column.Name,
-		SemanticTypeId: column.SemanticTypeId,
-		Labels:         column.Labels,
+		Name:             column.Name,
+		SemanticTypeId:   column.SemanticTypeId,
+		Labels:           column.Labels,
+		ClassificationId: column.ClassificationId,
 	}
 }

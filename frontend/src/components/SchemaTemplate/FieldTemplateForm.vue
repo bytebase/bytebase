@@ -77,13 +77,13 @@
             </label>
             <div class="flex items-center gap-x-2 mt-3">
               <ClassificationLevelBadge
-                :classification="state.column?.classification"
+                :classification="state.config?.classificationId"
                 :classification-config="classificationConfig"
               />
               <div v-if="!readonly" class="flex items-center">
                 <MiniActionButton
-                  v-if="state.column?.classification"
-                  @click.prevent="state.column!.classification = ''"
+                  v-if="state.config?.classificationId"
+                  @click.prevent="state.config!.classificationId = ''"
                 >
                   <XIcon class="w-4 h-4" />
                 </MiniActionButton>
@@ -452,10 +452,10 @@ const submit = async () => {
 };
 
 const onClassificationSelect = (id: string) => {
-  if (!state.column) {
+  if (!state.config) {
     return;
   }
-  state.column.classification = id;
+  state.config.classificationId = id;
 };
 
 const handleColumnDefaultChange = (key: string) => {
