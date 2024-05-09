@@ -23,19 +23,16 @@ message TaskRunLog {
     string error = 1;
   }
   message CommandExecute {
-    // Executed commands are in range [command_index, command_index + command_count).
-    int32 command_index = 1;
-    int32 command_count = 2;
+    // The indexes of the executed commands.
+    repeated int32 command_indexes = 1;
   }
   message CommandResponse {
-    // Executed commands are in range [command_index, command_index + command_count).
-    int32 command_index = 1;
-    int32 command_count = 2;
-
-    string error = 3;
-    int32 affected_rows = 4;
+    // The indexes of the executed commands.
+    repeated int32 command_indexes = 1;
+    string error = 2;
+    int32 affected_rows = 3;
     // `all_affected_rows` is the affected rows of each command.
     // `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
-    repeated int32 all_affected_rows = 5;
+    repeated int32 all_affected_rows = 4;
   }
 }
