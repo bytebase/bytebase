@@ -1491,9 +1491,8 @@ export interface TaskRunLogEntry_CommandExecute {
   logTime:
     | Date
     | undefined;
-  /** Executed commands are in range [command_index, command_index + command_count). */
-  commandIndex: number;
-  commandCount: number;
+  /** The indexes of the executed commands. */
+  commandIndexes: number[];
   response: TaskRunLogEntry_CommandExecute_CommandResponse | undefined;
 }
 
@@ -6790,7 +6789,7 @@ export const TaskRunLogEntry_SchemaDump = {
 };
 
 function createBaseTaskRunLogEntry_CommandExecute(): TaskRunLogEntry_CommandExecute {
-  return { logTime: undefined, commandIndex: 0, commandCount: 0, response: undefined };
+  return { logTime: undefined, commandIndexes: [], response: undefined };
 }
 
 export const TaskRunLogEntry_CommandExecute = {
@@ -6798,14 +6797,13 @@ export const TaskRunLogEntry_CommandExecute = {
     if (message.logTime !== undefined) {
       Timestamp.encode(toTimestamp(message.logTime), writer.uint32(10).fork()).ldelim();
     }
-    if (message.commandIndex !== 0) {
-      writer.uint32(16).int32(message.commandIndex);
+    writer.uint32(18).fork();
+    for (const v of message.commandIndexes) {
+      writer.int32(v);
     }
-    if (message.commandCount !== 0) {
-      writer.uint32(24).int32(message.commandCount);
-    }
+    writer.ldelim();
     if (message.response !== undefined) {
-      TaskRunLogEntry_CommandExecute_CommandResponse.encode(message.response, writer.uint32(34).fork()).ldelim();
+      TaskRunLogEntry_CommandExecute_CommandResponse.encode(message.response, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -6825,21 +6823,24 @@ export const TaskRunLogEntry_CommandExecute = {
           message.logTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 2:
-          if (tag !== 16) {
-            break;
+          if (tag === 16) {
+            message.commandIndexes.push(reader.int32());
+
+            continue;
           }
 
-          message.commandIndex = reader.int32();
-          continue;
+          if (tag === 18) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.commandIndexes.push(reader.int32());
+            }
+
+            continue;
+          }
+
+          break;
         case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.commandCount = reader.int32();
-          continue;
-        case 4:
-          if (tag !== 34) {
+          if (tag !== 26) {
             break;
           }
 
@@ -6857,8 +6858,9 @@ export const TaskRunLogEntry_CommandExecute = {
   fromJSON(object: any): TaskRunLogEntry_CommandExecute {
     return {
       logTime: isSet(object.logTime) ? fromJsonTimestamp(object.logTime) : undefined,
-      commandIndex: isSet(object.commandIndex) ? globalThis.Number(object.commandIndex) : 0,
-      commandCount: isSet(object.commandCount) ? globalThis.Number(object.commandCount) : 0,
+      commandIndexes: globalThis.Array.isArray(object?.commandIndexes)
+        ? object.commandIndexes.map((e: any) => globalThis.Number(e))
+        : [],
       response: isSet(object.response)
         ? TaskRunLogEntry_CommandExecute_CommandResponse.fromJSON(object.response)
         : undefined,
@@ -6870,11 +6872,8 @@ export const TaskRunLogEntry_CommandExecute = {
     if (message.logTime !== undefined) {
       obj.logTime = message.logTime.toISOString();
     }
-    if (message.commandIndex !== 0) {
-      obj.commandIndex = Math.round(message.commandIndex);
-    }
-    if (message.commandCount !== 0) {
-      obj.commandCount = Math.round(message.commandCount);
+    if (message.commandIndexes?.length) {
+      obj.commandIndexes = message.commandIndexes.map((e) => Math.round(e));
     }
     if (message.response !== undefined) {
       obj.response = TaskRunLogEntry_CommandExecute_CommandResponse.toJSON(message.response);
@@ -6888,8 +6887,7 @@ export const TaskRunLogEntry_CommandExecute = {
   fromPartial(object: DeepPartial<TaskRunLogEntry_CommandExecute>): TaskRunLogEntry_CommandExecute {
     const message = createBaseTaskRunLogEntry_CommandExecute();
     message.logTime = object.logTime ?? undefined;
-    message.commandIndex = object.commandIndex ?? 0;
-    message.commandCount = object.commandCount ?? 0;
+    message.commandIndexes = object.commandIndexes?.map((e) => e) || [];
     message.response = (object.response !== undefined && object.response !== null)
       ? TaskRunLogEntry_CommandExecute_CommandResponse.fromPartial(object.response)
       : undefined;

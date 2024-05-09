@@ -13498,23 +13498,21 @@ components:
         TaskRunLog_CommandExecute:
             type: object
             properties:
-                commandIndex:
-                    type: integer
-                    description: Executed commands are in range [command_index, command_index + command_count).
-                    format: int32
-                commandCount:
-                    type: integer
-                    format: int32
+                commandIndexes:
+                    type: array
+                    items:
+                        type: integer
+                        format: int32
+                    description: The indexes of the executed commands.
         TaskRunLog_CommandResponse:
             type: object
             properties:
-                commandIndex:
-                    type: integer
-                    description: Executed commands are in range [command_index, command_index + command_count).
-                    format: int32
-                commandCount:
-                    type: integer
-                    format: int32
+                commandIndexes:
+                    type: array
+                    items:
+                        type: integer
+                        format: int32
+                    description: The indexes of the executed commands.
                 error:
                     type: string
                 affectedRows:
