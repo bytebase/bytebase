@@ -72,6 +72,7 @@ type UpdateIssueMessage struct {
 	Assignee       *UserMessage
 	// PayloadUpsert upserts the presented top-level keys.
 	PayloadUpsert *storepb.IssuePayload
+	RemoveLabels  bool
 	Subscribers   *[]*UserMessage
 
 	PipelineUID *int
@@ -262,7 +263,10 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 			return nil, errors.Wrapf(err, "failed to marshal patch.PayloadUpsert")
 		}
 		set, args = append(set, fmt.Sprintf("payload = payload || $%d", len(args)+1)), append(args, p)
+	} else if patch.RemoveLabels {
+		set, args = append(set, fmt.Sprintf("payload = payload || jsonb_build_object('labels', $%d::JSONB)", len(args)+1)), append(args, nil)
 	}
+
 	if patch.Title != nil || patch.Description != nil {
 		title := oldIssue.Title
 		if patch.Title != nil {
