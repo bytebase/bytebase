@@ -136,11 +136,16 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
             return map;
           }, new Map<string, Label>());
 
+        const labels = issue.labels.filter((label) => labelMap.has(label));
+        if (labels.length === 0) {
+          return h("span", {}, "-");
+        }
+
         return h(NDynamicTags, {
           size: "small",
           disabled: true,
           class: "issue-row-dynamic-tags",
-          value: issue.labels.filter((label) => labelMap.has(label)),
+          value: labels,
           renderTag: (value: string) =>
             h(
               NTag,
