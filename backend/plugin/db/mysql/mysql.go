@@ -419,9 +419,10 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 				allRowsAffectedInt32 = append(allRowsAffectedInt32, int32(a))
 			}
 			totalRowsAffected += rowsAffected
-			currentIndex += len(chunk)
 
 			opts.LogCommandResponse(int32(currentIndex), int32(len(chunk)), int32(rowsAffected), allRowsAffectedInt32, "")
+
+			currentIndex += len(chunk)
 		}
 
 		if err := tx.Commit(); err != nil {
