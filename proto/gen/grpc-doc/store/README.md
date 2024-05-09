@@ -68,8 +68,29 @@
     - [TaskMetadata.State](#bytebase-store-TaskMetadata-State)
   
 - [store/branch.proto](#store_branch-proto)
+    - [BranchColumnMetadata](#bytebase-store-BranchColumnMetadata)
     - [BranchConfig](#bytebase-store-BranchConfig)
+    - [BranchDatabaseSchemaMetadata](#bytebase-store-BranchDatabaseSchemaMetadata)
+    - [BranchDependentColumn](#bytebase-store-BranchDependentColumn)
+    - [BranchExtensionMetadata](#bytebase-store-BranchExtensionMetadata)
+    - [BranchExternalTableMetadata](#bytebase-store-BranchExternalTableMetadata)
+    - [BranchForeignKeyMetadata](#bytebase-store-BranchForeignKeyMetadata)
+    - [BranchFunctionMetadata](#bytebase-store-BranchFunctionMetadata)
+    - [BranchIndexMetadata](#bytebase-store-BranchIndexMetadata)
+    - [BranchMaterializedViewMetadata](#bytebase-store-BranchMaterializedViewMetadata)
+    - [BranchProcedureMetadata](#bytebase-store-BranchProcedureMetadata)
+    - [BranchSchemaMetadata](#bytebase-store-BranchSchemaMetadata)
     - [BranchSnapshot](#bytebase-store-BranchSnapshot)
+    - [BranchStreamMetadata](#bytebase-store-BranchStreamMetadata)
+    - [BranchTableMetadata](#bytebase-store-BranchTableMetadata)
+    - [BranchTablePartitionMetadata](#bytebase-store-BranchTablePartitionMetadata)
+    - [BranchTaskMetadata](#bytebase-store-BranchTaskMetadata)
+    - [BranchViewMetadata](#bytebase-store-BranchViewMetadata)
+  
+    - [BranchStreamMetadata.Mode](#bytebase-store-BranchStreamMetadata-Mode)
+    - [BranchStreamMetadata.Type](#bytebase-store-BranchStreamMetadata-Type)
+    - [BranchTablePartitionMetadata.Type](#bytebase-store-BranchTablePartitionMetadata-Type)
+    - [BranchTaskMetadata.State](#bytebase-store-BranchTaskMetadata-State)
   
 - [store/changelist.proto](#store_changelist-proto)
     - [Changelist](#bytebase-store-Changelist)
@@ -1247,6 +1268,33 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 
 
 
+<a name="bytebase-store-BranchColumnMetadata"></a>
+
+### BranchColumnMetadata
+BranchColumnMetadata is the metadata for columns used in branch.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a column. |
+| position | [int32](#int32) |  | The position is the position in columns. |
+| default | [google.protobuf.StringValue](#google-protobuf-StringValue) |  | The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. |
+| default_null | [bool](#bool) |  |  |
+| default_expression | [string](#string) |  |  |
+| on_update | [string](#string) |  | The on_update is the on update action of a column. For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. |
+| nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
+| type | [string](#string) |  | The type is the type of a column. |
+| character_set | [string](#string) |  | The character_set is the character_set of a column. |
+| collation | [string](#string) |  | The collation is the collation of a column. |
+| comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
+| classification | [string](#string) |  | The classification is the classification of a table parsed from the comment. |
+| user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
+
+
+
+
+
+
 <a name="bytebase-store-BranchConfig"></a>
 
 ### BranchConfig
@@ -1257,6 +1305,205 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | ----- | ---- | ----- | ----------- |
 | source_database | [string](#string) |  | The name of source database. Optional. Example: instances/instance-id/databases/database-name. |
 | source_branch | [string](#string) |  | The name of the source branch. Optional. Example: projects/project-id/branches/branch-id. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchDatabaseSchemaMetadata"></a>
+
+### BranchDatabaseSchemaMetadata
+BranchDatabaseSchemaMetadata is the schema metadata for databases used in branch.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| schemas | [BranchSchemaMetadata](#bytebase-store-BranchSchemaMetadata) | repeated | The schemas is the list of schemas in a database. |
+| character_set | [string](#string) |  | The character_set is the character set of a database. |
+| collation | [string](#string) |  | The collation is the collation of a database. |
+| extensions | [ExtensionMetadata](#bytebase-store-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
+| datashare | [bool](#bool) |  | The database belongs to a datashare. |
+| service_name | [string](#string) |  | The service name of the database. It&#39;s the Oracle specific concept. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchDependentColumn"></a>
+
+### BranchDependentColumn
+BranchDependentColumn is the metadata for dependent columns used in branch.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema is the schema of a reference column. |
+| table | [string](#string) |  | The table is the table of a reference column. |
+| column | [string](#string) |  | The column is the name of a reference column. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchExtensionMetadata"></a>
+
+### BranchExtensionMetadata
+BranchExtensionMetadata is the metadata for extensions used in branch.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of an extension. |
+| schema | [string](#string) |  | The schema is the extension that is installed to. But the extension usage is not limited to the schema. |
+| version | [string](#string) |  | The version is the version of an extension. |
+| description | [string](#string) |  | The description is the description of an extension. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchExternalTableMetadata"></a>
+
+### BranchExternalTableMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a external table. |
+| external_server_name | [string](#string) |  | The external_server_name is the name of the external server. |
+| external_database_name | [string](#string) |  | The external_database_name is the name of the external database. |
+| columns | [BranchColumnMetadata](#bytebase-store-BranchColumnMetadata) | repeated | The columns is the ordered list of columns in a foreign table. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchForeignKeyMetadata"></a>
+
+### BranchForeignKeyMetadata
+BranchForeignKeyMetadata is the metadata for foreign keys used in branch.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a foreign key. |
+| columns | [string](#string) | repeated | The columns are the ordered referencing columns of a foreign key. |
+| referenced_schema | [string](#string) |  | The referenced_schema is the referenced schema name of a foreign key. It is an empty string for databases without such concept such as MySQL. |
+| referenced_table | [string](#string) |  | The referenced_table is the referenced table name of a foreign key. |
+| referenced_columns | [string](#string) | repeated | The referenced_columns are the ordered referenced columns of a foreign key. |
+| on_delete | [string](#string) |  | The on_delete is the on delete action of a foreign key. |
+| on_update | [string](#string) |  | The on_update is the on update action of a foreign key. |
+| match_type | [string](#string) |  | The match_type is the match type of a foreign key. The match_type is the PostgreSQL specific field. It&#39;s empty string for other databases. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchFunctionMetadata"></a>
+
+### BranchFunctionMetadata
+BranchFunctionMetadata is the metadata for functions used in branch.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a function. |
+| definition | [string](#string) |  | The definition is the definition of a function. |
+| updater | [string](#string) |  | The last updater of the object. Format: users/{email} |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the object was last updated. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchIndexMetadata"></a>
+
+### BranchIndexMetadata
+BranchIndexMetadata is the metadata for indexes used in branch.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of an index. |
+| expressions | [string](#string) | repeated | The expressions are the ordered columns or expressions of an index. This could refer to a column or an expression. |
+| key_length | [int64](#int64) | repeated | The key_lengths are the ordered key lengths of an index. If the key length is not specified, it&#39;s -1. |
+| type | [string](#string) |  | The type is the type of an index. |
+| unique | [bool](#bool) |  | The unique is whether the index is unique. |
+| primary | [bool](#bool) |  | The primary is whether the index is a primary key index. |
+| visible | [bool](#bool) |  | The visible is whether the index is visible. |
+| comment | [string](#string) |  | The comment is the comment of an index. |
+| definition | [string](#string) |  | The definition of an index. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchMaterializedViewMetadata"></a>
+
+### BranchMaterializedViewMetadata
+BranchMaterializedViewMetadata is the metadata for materialized views used in branch.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a view. |
+| definition | [string](#string) |  | The definition is the definition of a view. |
+| comment | [string](#string) |  | The comment is the comment of a view. |
+| dependent_columns | [BranchDependentColumn](#bytebase-store-BranchDependentColumn) | repeated | The dependent_columns is the list of dependent columns of a view. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchProcedureMetadata"></a>
+
+### BranchProcedureMetadata
+BranchProcedureMetadata is the metadata for procedures used in branch.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a procedure. |
+| definition | [string](#string) |  | The definition is the definition of a procedure. |
+| updater | [string](#string) |  | The last updater of the object. Format: users/{email} |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the object was last updated. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchSchemaMetadata"></a>
+
+### BranchSchemaMetadata
+BranchSchemaMetadata is the metadata for schemas used in branch.
+This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
+| tables | [BranchTableMetadata](#bytebase-store-BranchTableMetadata) | repeated | The tables is the list of tables in a schema. |
+| external_tables | [BranchExternalTableMetadata](#bytebase-store-BranchExternalTableMetadata) | repeated | The external_tables is the list of external tables in a schema. |
+| views | [BranchViewMetadata](#bytebase-store-BranchViewMetadata) | repeated | The views is the list of views in a schema. |
+| functions | [BranchFunctionMetadata](#bytebase-store-BranchFunctionMetadata) | repeated | The functions is the list of functions in a schema. |
+| procedures | [BranchProcedureMetadata](#bytebase-store-BranchProcedureMetadata) | repeated | The procedures is the list of procedures in a schema. |
+| streams | [BranchStreamMetadata](#bytebase-store-BranchStreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
+| tasks | [BranchTaskMetadata](#bytebase-store-BranchTaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
+| materialized_views | [BranchMaterializedViewMetadata](#bytebase-store-BranchMaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
+| updater | [string](#string) |  | The last updater of the object. Format: users/{email} |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the object was last updated. |
 
 
 
@@ -1278,7 +1525,186 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 
 
 
+
+<a name="bytebase-store-BranchStreamMetadata"></a>
+
+### BranchStreamMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a stream. |
+| table_name | [string](#string) |  | The table_name is the name of the table/view that the stream is created on. |
+| owner | [string](#string) |  | The owner of the stream. |
+| comment | [string](#string) |  | The comment of the stream. |
+| type | [BranchStreamMetadata.Type](#bytebase-store-BranchStreamMetadata-Type) |  | The type of the stream. |
+| stale | [bool](#bool) |  | Indicates whether the stream was last read before the `stale_after` time. |
+| mode | [BranchStreamMetadata.Mode](#bytebase-store-BranchStreamMetadata-Mode) |  | The mode of the stream. |
+| definition | [string](#string) |  | The definition of the stream. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchTableMetadata"></a>
+
+### BranchTableMetadata
+BranchTableMetadata is the metadata for tables used in branch.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a table. |
+| columns | [BranchColumnMetadata](#bytebase-store-BranchColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
+| indexes | [BranchIndexMetadata](#bytebase-store-BranchIndexMetadata) | repeated | The indexes is the list of indexes in a table. |
+| engine | [string](#string) |  | The engine is the engine of a table. |
+| collation | [string](#string) |  | The collation is the collation of a table. |
+| row_count | [int64](#int64) |  | The row_count is the estimated number of rows of a table. |
+| data_size | [int64](#int64) |  | The data_size is the estimated data size of a table. |
+| index_size | [int64](#int64) |  | The index_size is the estimated index size of a table. |
+| data_free | [int64](#int64) |  | The data_free is the estimated free data size of a table. |
+| create_options | [string](#string) |  | The create_options is the create option of a table. |
+| comment | [string](#string) |  | The comment is the comment of a table. classification and user_comment is parsed from the comment. |
+| classification | [string](#string) |  | The classification is the classification of a table parsed from the comment. |
+| user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
+| foreign_keys | [BranchForeignKeyMetadata](#bytebase-store-BranchForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
+| partitions | [BranchTablePartitionMetadata](#bytebase-store-BranchTablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
+| updater | [string](#string) |  | The last updater of the object. Format: users/{email} |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the object was last updated. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchTablePartitionMetadata"></a>
+
+### BranchTablePartitionMetadata
+BranchTablePartitionMetadata is the metadata for table partitions used in branch.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a table partition. |
+| type | [BranchTablePartitionMetadata.Type](#bytebase-store-BranchTablePartitionMetadata-Type) |  | The type of a table partition. |
+| expression | [string](#string) |  | The expression is the expression of a table partition. For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL, the expression is the `expr` or `column_list` of the following syntax. PARTITION BY { [LINEAR] HASH(expr) | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list) | RANGE{(expr) | COLUMNS(column_list)} | LIST{(expr) | COLUMNS(column_list)} }. |
+| value | [string](#string) |  | The value is the value of a table partition. For MySQL, the value is for RANGE and LIST partition types, - For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE. - For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values. - For others, it&#39;s an empty string. |
+| use_default | [string](#string) |  | The use_default is whether the users use the default partition, it stores the different value for different database engines. For MySQL, it&#39;s [INT] type, 0 means not use default partition, otherwise, it&#39;s equals to number in syntax [SUB]PARTITION {number}. |
+| subpartitions | [BranchTablePartitionMetadata](#bytebase-store-BranchTablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchTaskMetadata"></a>
+
+### BranchTaskMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a task. |
+| id | [string](#string) |  | The id is the snowflake-generated id of a task. Example: 01ad32a0-1bb6-5e93-0000-000000000001 |
+| owner | [string](#string) |  | The owner of the task. |
+| comment | [string](#string) |  | The comment of the task. |
+| warehouse | [string](#string) |  | The warehouse of the task. |
+| schedule | [string](#string) |  | The schedule interval of the task. |
+| predecessors | [string](#string) | repeated | The predecessor tasks of the task. |
+| state | [BranchTaskMetadata.State](#bytebase-store-BranchTaskMetadata-State) |  | The state of the task. |
+| condition | [string](#string) |  | The condition of the task. |
+| definition | [string](#string) |  | The definition of the task. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchViewMetadata"></a>
+
+### BranchViewMetadata
+BranchViewMetadata is the metadata for views used in branch.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a view. |
+| definition | [string](#string) |  | The definition is the definition of a view. |
+| comment | [string](#string) |  | The comment is the comment of a view. |
+| dependent_columns | [BranchDependentColumn](#bytebase-store-BranchDependentColumn) | repeated | The dependent_columns is the list of dependent columns of a view. |
+| updater | [string](#string) |  | The last updater of the object. Format: users/{email} |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the object was last updated. |
+
+
+
+
+
  
+
+
+<a name="bytebase-store-BranchStreamMetadata-Mode"></a>
+
+### BranchStreamMetadata.Mode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MODE_UNSPECIFIED | 0 |  |
+| MODE_DEFAULT | 1 |  |
+| MODE_APPEND_ONLY | 2 |  |
+| MODE_INSERT_ONLY | 3 |  |
+
+
+
+<a name="bytebase-store-BranchStreamMetadata-Type"></a>
+
+### BranchStreamMetadata.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_DELTA | 1 |  |
+
+
+
+<a name="bytebase-store-BranchTablePartitionMetadata-Type"></a>
+
+### BranchTablePartitionMetadata.Type
+Type is the type of a table partition, some database engines may not support all types.
+Only avilable for the following database engines now:
+MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY
+PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| RANGE | 1 |  |
+| RANGE_COLUMNS | 2 |  |
+| LIST | 3 |  |
+| LIST_COLUMNS | 4 |  |
+| HASH | 5 |  |
+| LINEAR_HASH | 6 |  |
+| KEY | 7 |  |
+| LINEAR_KEY | 8 |  |
+
+
+
+<a name="bytebase-store-BranchTaskMetadata-State"></a>
+
+### BranchTaskMetadata.State
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATE_UNSPECIFIED | 0 |  |
+| STATE_STARTED | 1 |  |
+| STATE_SUSPENDED | 2 |  |
+
 
  
 

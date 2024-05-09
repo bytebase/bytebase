@@ -431,13 +431,93 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.BranchColumnMetadata"><span class="badge">M</span>BranchColumnMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.BranchConfig"><span class="badge">M</span>BranchConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchDatabaseSchemaMetadata"><span class="badge">M</span>BranchDatabaseSchemaMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchDependentColumn"><span class="badge">M</span>BranchDependentColumn</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchExtensionMetadata"><span class="badge">M</span>BranchExtensionMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchExternalTableMetadata"><span class="badge">M</span>BranchExternalTableMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchForeignKeyMetadata"><span class="badge">M</span>BranchForeignKeyMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchFunctionMetadata"><span class="badge">M</span>BranchFunctionMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchIndexMetadata"><span class="badge">M</span>BranchIndexMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchMaterializedViewMetadata"><span class="badge">M</span>BranchMaterializedViewMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchProcedureMetadata"><span class="badge">M</span>BranchProcedureMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchSchemaMetadata"><span class="badge">M</span>BranchSchemaMetadata</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.store.BranchSnapshot"><span class="badge">M</span>BranchSnapshot</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.BranchStreamMetadata"><span class="badge">M</span>BranchStreamMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchTableMetadata"><span class="badge">M</span>BranchTableMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchTablePartitionMetadata"><span class="badge">M</span>BranchTablePartitionMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchTaskMetadata"><span class="badge">M</span>BranchTaskMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchViewMetadata"><span class="badge">M</span>BranchViewMetadata</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.BranchStreamMetadata.Mode"><span class="badge">E</span>BranchStreamMetadata.Mode</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchStreamMetadata.Type"><span class="badge">E</span>BranchStreamMetadata.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchTablePartitionMetadata.Type"><span class="badge">E</span>BranchTablePartitionMetadata.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchTaskMetadata.State"><span class="badge">E</span>BranchTaskMetadata.State</a>
+                </li>
               
               
               
@@ -3608,6 +3688,116 @@ Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.store.BranchColumnMetadata">BranchColumnMetadata</h3>
+        <p>BranchColumnMetadata is the metadata for columns used in branch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a column. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>position</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The position is the position in columns. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>default</td>
+                  <td><a href="#google.protobuf.StringValue">google.protobuf.StringValue</a></td>
+                  <td></td>
+                  <td><p>The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>default_null</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>default_expression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>on_update</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The on_update is the on update action of a column.
+For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>nullable</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The nullable is the nullable of a column. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The type is the type of a column. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>character_set</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The character_set is the character_set of a column. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The collation is the collation of a column. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment is the comment of a column.
+classification and user_comment is parsed from the comment. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The classification is the classification of a table parsed from the comment. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user_comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The user_comment is the user comment of a table parsed from the comment. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.BranchConfig">BranchConfig</h3>
         <p></p>
 
@@ -3634,6 +3824,591 @@ Example: instances/instance-id/databases/database-name. </p></td>
                   <td><p>The name of the source branch.
 Optional.
 Example: projects/project-id/branches/branch-id. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchDatabaseSchemaMetadata">BranchDatabaseSchemaMetadata</h3>
+        <p>BranchDatabaseSchemaMetadata is the schema metadata for databases used in branch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schemas</td>
+                  <td><a href="#bytebase.store.BranchSchemaMetadata">BranchSchemaMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The schemas is the list of schemas in a database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>character_set</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The character_set is the character set of a database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The collation is the collation of a database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>extensions</td>
+                  <td><a href="#bytebase.store.ExtensionMetadata">ExtensionMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The extensions is the list of extensions in a database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>datashare</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The database belongs to a datashare. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>service_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The service name of the database. It&#39;s the Oracle specific concept. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchDependentColumn">BranchDependentColumn</h3>
+        <p>BranchDependentColumn is the metadata for dependent columns used in branch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The schema is the schema of a reference column. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The table is the table of a reference column. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>column</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The column is the name of a reference column. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchExtensionMetadata">BranchExtensionMetadata</h3>
+        <p>BranchExtensionMetadata is the metadata for extensions used in branch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of an extension. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The schema is the extension that is installed to. But the extension usage is not limited to the schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The version is the version of an extension. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>description</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The description is the description of an extension. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchExternalTableMetadata">BranchExternalTableMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a external table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>external_server_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The external_server_name is the name of the external server. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>external_database_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The external_database_name is the name of the external database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>columns</td>
+                  <td><a href="#bytebase.store.BranchColumnMetadata">BranchColumnMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The columns is the ordered list of columns in a foreign table. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchForeignKeyMetadata">BranchForeignKeyMetadata</h3>
+        <p>BranchForeignKeyMetadata is the metadata for foreign keys used in branch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a foreign key. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>columns</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The columns are the ordered referencing columns of a foreign key. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>referenced_schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The referenced_schema is the referenced schema name of a foreign key.
+It is an empty string for databases without such concept such as MySQL. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>referenced_table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The referenced_table is the referenced table name of a foreign key. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>referenced_columns</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The referenced_columns are the ordered referenced columns of a foreign key. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>on_delete</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The on_delete is the on delete action of a foreign key. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>on_update</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The on_update is the on update action of a foreign key. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>match_type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The match_type is the match type of a foreign key.
+The match_type is the PostgreSQL specific field.
+It&#39;s empty string for other databases. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchFunctionMetadata">BranchFunctionMetadata</h3>
+        <p>BranchFunctionMetadata is the metadata for functions used in branch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a function. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The definition is the definition of a function. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the object.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the object was last updated. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchIndexMetadata">BranchIndexMetadata</h3>
+        <p>BranchIndexMetadata is the metadata for indexes used in branch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of an index. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expressions</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The expressions are the ordered columns or expressions of an index.
+This could refer to a column or an expression. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>key_length</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td>repeated</td>
+                  <td><p>The key_lengths are the ordered key lengths of an index.
+If the key length is not specified, it&#39;s -1. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The type is the type of an index. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>unique</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The unique is whether the index is unique. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>primary</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The primary is whether the index is a primary key index. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>visible</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The visible is whether the index is visible. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment is the comment of an index. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The definition of an index. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchMaterializedViewMetadata">BranchMaterializedViewMetadata</h3>
+        <p>BranchMaterializedViewMetadata is the metadata for materialized views used in branch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a view. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The definition is the definition of a view. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment is the comment of a view. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>dependent_columns</td>
+                  <td><a href="#bytebase.store.BranchDependentColumn">BranchDependentColumn</a></td>
+                  <td>repeated</td>
+                  <td><p>The dependent_columns is the list of dependent columns of a view. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchProcedureMetadata">BranchProcedureMetadata</h3>
+        <p>BranchProcedureMetadata is the metadata for procedures used in branch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a procedure. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The definition is the definition of a procedure. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the object.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the object was last updated. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchSchemaMetadata">BranchSchemaMetadata</h3>
+        <p>BranchSchemaMetadata is the metadata for schemas used in branch.</p><p>This is the concept of schema in Postgres, but it's a no-op for MySQL.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the schema name.
+It is an empty string for databases without such concept such as MySQL. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tables</td>
+                  <td><a href="#bytebase.store.BranchTableMetadata">BranchTableMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The tables is the list of tables in a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>external_tables</td>
+                  <td><a href="#bytebase.store.BranchExternalTableMetadata">BranchExternalTableMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The external_tables is the list of external tables in a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>views</td>
+                  <td><a href="#bytebase.store.BranchViewMetadata">BranchViewMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The views is the list of views in a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>functions</td>
+                  <td><a href="#bytebase.store.BranchFunctionMetadata">BranchFunctionMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The functions is the list of functions in a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>procedures</td>
+                  <td><a href="#bytebase.store.BranchProcedureMetadata">BranchProcedureMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The procedures is the list of procedures in a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>streams</td>
+                  <td><a href="#bytebase.store.BranchStreamMetadata">BranchStreamMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The streams is the list of streams in a schema, currently, only used for Snowflake. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tasks</td>
+                  <td><a href="#bytebase.store.BranchTaskMetadata">BranchTaskMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The routines is the list of routines in a schema, currently, only used for Snowflake. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>materialized_views</td>
+                  <td><a href="#bytebase.store.BranchMaterializedViewMetadata">BranchMaterializedViewMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The materialized_views is the list of materialized views in a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the object.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the object was last updated. </p></td>
                 </tr>
               
             </tbody>
@@ -3674,7 +4449,589 @@ Example: projects/project-id/branches/branch-id. </p></td>
 
         
       
+        <h3 id="bytebase.store.BranchStreamMetadata">BranchStreamMetadata</h3>
+        <p></p>
 
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a stream. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The table_name is the name of the table/view that the stream is created on. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>owner</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The owner of the stream. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment of the stream. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.BranchStreamMetadata.Type">BranchStreamMetadata.Type</a></td>
+                  <td></td>
+                  <td><p>The type of the stream. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>stale</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Indicates whether the stream was last read before the `stale_after` time. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mode</td>
+                  <td><a href="#bytebase.store.BranchStreamMetadata.Mode">BranchStreamMetadata.Mode</a></td>
+                  <td></td>
+                  <td><p>The mode of the stream. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The definition of the stream. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchTableMetadata">BranchTableMetadata</h3>
+        <p>BranchTableMetadata is the metadata for tables used in branch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>columns</td>
+                  <td><a href="#bytebase.store.BranchColumnMetadata">BranchColumnMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The columns is the ordered list of columns in a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>indexes</td>
+                  <td><a href="#bytebase.store.BranchIndexMetadata">BranchIndexMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The indexes is the list of indexes in a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>engine</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The engine is the engine of a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The collation is the collation of a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>row_count</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The row_count is the estimated number of rows of a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data_size</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The data_size is the estimated data size of a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>index_size</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The index_size is the estimated index size of a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data_free</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The data_free is the estimated free data size of a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_options</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The create_options is the create option of a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment is the comment of a table.
+classification and user_comment is parsed from the comment. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The classification is the classification of a table parsed from the comment. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user_comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The user_comment is the user comment of a table parsed from the comment. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>foreign_keys</td>
+                  <td><a href="#bytebase.store.BranchForeignKeyMetadata">BranchForeignKeyMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The foreign_keys is the list of foreign keys in a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>partitions</td>
+                  <td><a href="#bytebase.store.BranchTablePartitionMetadata">BranchTablePartitionMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The partitions is the list of partitions in a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the object.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the object was last updated. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchTablePartitionMetadata">BranchTablePartitionMetadata</h3>
+        <p>BranchTablePartitionMetadata is the metadata for table partitions used in branch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a table partition. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.BranchTablePartitionMetadata.Type">BranchTablePartitionMetadata.Type</a></td>
+                  <td></td>
+                  <td><p>The type of a table partition. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expression is the expression of a table partition.
+For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html.
+For MySQL, the expression is the `expr` or `column_list` of the following syntax.
+PARTITION BY
+   { [LINEAR] HASH(expr)
+   | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)
+   | RANGE{(expr) | COLUMNS(column_list)}
+   | LIST{(expr) | COLUMNS(column_list)} }. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The value is the value of a table partition.
+For MySQL, the value is for RANGE and LIST partition types,
+- For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
+- For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values.
+- For others, it&#39;s an empty string. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>use_default</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The use_default is whether the users use the default partition, it stores the different value for different database engines.
+For MySQL, it&#39;s [INT] type, 0 means not use default partition, otherwise, it&#39;s equals to number in syntax [SUB]PARTITION {number}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>subpartitions</td>
+                  <td><a href="#bytebase.store.BranchTablePartitionMetadata">BranchTablePartitionMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The subpartitions is the list of subpartitions in a table partition. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchTaskMetadata">BranchTaskMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a task. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The id is the snowflake-generated id of a task.
+Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>owner</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The owner of the task. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment of the task. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>warehouse</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The warehouse of the task. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schedule</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The schedule interval of the task. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>predecessors</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The predecessor tasks of the task. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>state</td>
+                  <td><a href="#bytebase.store.BranchTaskMetadata.State">BranchTaskMetadata.State</a></td>
+                  <td></td>
+                  <td><p>The state of the task. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>condition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The condition of the task. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The definition of the task. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchViewMetadata">BranchViewMetadata</h3>
+        <p>BranchViewMetadata is the metadata for views used in branch.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a view. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The definition is the definition of a view. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment is the comment of a view. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>dependent_columns</td>
+                  <td><a href="#bytebase.store.BranchDependentColumn">BranchDependentColumn</a></td>
+                  <td>repeated</td>
+                  <td><p>The dependent_columns is the list of dependent columns of a view. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the object.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the object was last updated. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.BranchStreamMetadata.Mode">BranchStreamMetadata.Mode</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MODE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MODE_DEFAULT</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MODE_APPEND_ONLY</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MODE_INSERT_ONLY</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.BranchStreamMetadata.Type">BranchStreamMetadata.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TYPE_DELTA</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.BranchTablePartitionMetadata.Type">BranchTablePartitionMetadata.Type</h3>
+        <p>Type is the type of a table partition, some database engines may not support all types.</p><p>Only avilable for the following database engines now:</p><p>MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)</p><p>TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY</p><p>PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RANGE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RANGE_COLUMNS</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LIST</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LIST_COLUMNS</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>HASH</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LINEAR_HASH</td>
+                <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>KEY</td>
+                <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LINEAR_KEY</td>
+                <td>8</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.BranchTaskMetadata.State">BranchTaskMetadata.State</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STATE_STARTED</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STATE_SUSPENDED</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       
