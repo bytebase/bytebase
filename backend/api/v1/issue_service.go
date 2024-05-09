@@ -1592,10 +1592,14 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				},
 			})
 		case "labels":
-			if patch.PayloadUpsert == nil {
-				patch.PayloadUpsert = &storepb.IssuePayload{}
+			if len(request.Issue.Labels) == 0 {
+				patch.RemoveLabels = true
+			} else {
+				if patch.PayloadUpsert == nil {
+					patch.PayloadUpsert = &storepb.IssuePayload{}
+				}
+				patch.PayloadUpsert.Labels = request.Issue.Labels
 			}
-			patch.PayloadUpsert.Labels = request.Issue.Labels
 		}
 	}
 
