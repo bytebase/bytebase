@@ -352,6 +352,12 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 				BaselineDatabaseConfig: convertStoreDatabaseConfig(payload.BaselineDatabaseConfig, nil /* filter */),
 			}
 		}
+		if len(payload.Commands) > 0 {
+			if v1SheetPayload == nil {
+				v1SheetPayload = &v1pb.SheetPayload{}
+			}
+			v1SheetPayload.Commands = convertToSheetCommands(payload.Commands)
+		}
 	}
 
 	return &v1pb.Sheet{
@@ -384,4 +390,16 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 	}
 
 	return sheetMessage, nil
+}
+
+func convertToSheetCommands(commands []*storepb.SheetCommand) []*v1pb.SheetCommand {
+	var cs []*v1pb.SheetCommand
+	for _, command := range commands {
+		c := &v1pb.SheetCommand{
+			Start: command.Start,
+			End:   command.End,
+		}
+		cs = append(cs, c)
+	}
+	return cs
 }
