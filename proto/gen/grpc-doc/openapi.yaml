@@ -239,6 +239,13 @@ paths:
             parameters:
                 - name: filter
                   in: query
+                  description: |-
+                    The filter of the log. It should be a valid CEL expression.
+                     For example:
+                      - filter = "method == '/bytebase.v1.SQLService/Query'"
+                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
                   schema:
                     type: string
                 - name: orderBy
@@ -6008,6 +6015,55 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log:
+        get:
+            tags:
+                - RolloutService
+            operationId: RolloutService_GetTaskRunLog
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+                - name: stage
+                  in: path
+                  description: The stage id.
+                  required: true
+                  schema:
+                    type: string
+                - name: task
+                  in: path
+                  description: The task id.
+                  required: true
+                  schema:
+                    type: string
+                - name: taskRun
+                  in: path
+                  description: The taskRun id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskRunLog'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns:batchCancel:
         post:
             tags:
@@ -9635,6 +9691,13 @@ components:
             properties:
                 filter:
                     type: string
+                    description: |-
+                        The filter of the log. It should be a valid CEL expression.
+                         For example:
+                          - filter = "method == '/bytebase.v1.SQLService/Query'"
+                          - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+                          - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+                          - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
                 orderBy:
                     type: string
                     description: |-
@@ -12828,6 +12891,15 @@ components:
                     type: string
                     description: The SQL dialect.
                     format: enum
+        SheetCommand:
+            type: object
+            properties:
+                start:
+                    type: integer
+                    format: int32
+                end:
+                    type: integer
+                    format: int32
         SheetPayload:
             type: object
             properties:
@@ -12845,6 +12917,11 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/DatabaseConfig'
                     description: The snapshot of the baseline database config when creating the sheet.
+                commands:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/SheetCommand'
+                    description: The start and end position of each command in the sheet statement.
         SlowQueryDetails:
             type: object
             properties:
@@ -13402,6 +13479,65 @@ components:
                         - EXPORTED
                     type: string
                     format: enum
+        TaskRunLog:
+            type: object
+            properties:
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - SCHEMA_DUMP_START
+                        - SCHEMA_DUMP_END
+                        - COMMAND_EXECUTE
+                        - COMMAND_RESPONSE
+                    type: string
+                    format: enum
+                schemaDumpStart:
+                    $ref: '#/components/schemas/TaskRunLog_SchemaDumpStart'
+                schemaDumpEnd:
+                    $ref: '#/components/schemas/TaskRunLog_SchemaDumpEnd'
+                commandExecute:
+                    $ref: '#/components/schemas/TaskRunLog_CommandExecute'
+                commandResponse:
+                    $ref: '#/components/schemas/TaskRunLog_CommandResponse'
+        TaskRunLog_CommandExecute:
+            type: object
+            properties:
+                commandIndexes:
+                    type: array
+                    items:
+                        type: integer
+                        format: int32
+                    description: The indexes of the executed commands.
+        TaskRunLog_CommandResponse:
+            type: object
+            properties:
+                commandIndexes:
+                    type: array
+                    items:
+                        type: integer
+                        format: int32
+                    description: The indexes of the executed commands.
+                error:
+                    type: string
+                affectedRows:
+                    type: integer
+                    format: int32
+                allAffectedRows:
+                    type: array
+                    items:
+                        type: integer
+                        format: int32
+                    description: |-
+                        `all_affected_rows` is the affected rows of each command.
+                         `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
+        TaskRunLog_SchemaDumpEnd:
+            type: object
+            properties:
+                error:
+                    type: string
+        TaskRunLog_SchemaDumpStart:
+            type: object
+            properties: {}
         TaskRun_ExecutionDetail:
             type: object
             properties:

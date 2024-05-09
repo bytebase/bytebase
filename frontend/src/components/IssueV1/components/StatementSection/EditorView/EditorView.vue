@@ -216,7 +216,7 @@
 
 <script setup lang="ts">
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, head } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -236,6 +236,7 @@ import {
   notifyNotEditableLegacyIssue,
   isDeploymentConfigChangeTaskV1,
   isGroupingChangeTaskV1,
+  databaseEngineForSpec,
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
@@ -254,6 +255,7 @@ import { TaskTypeListWithStatement, dialectOfEngineV1 } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import type { Plan_Spec, Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   defer,
   flattenTaskV1List,
@@ -679,10 +681,11 @@ const updateStatement = async (statement: string) => {
     .flatMap((step) => step.specs)
     .filter((spec) => distinctSpecIds.has(spec.id));
 
-  const sheet = {
+  const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
     title: issue.value.title,
-  };
+    engine: await databaseEngineForSpec(project.value, head(specsToPatch)),
+  });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(
     issue.value.project,

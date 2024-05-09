@@ -452,6 +452,7 @@
     - [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest)
     - [GetPlanRequest](#bytebase-v1-GetPlanRequest)
     - [GetRolloutRequest](#bytebase-v1-GetRolloutRequest)
+    - [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest)
     - [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest)
     - [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse)
     - [ListPlansRequest](#bytebase-v1-ListPlansRequest)
@@ -488,6 +489,11 @@
     - [TaskRun](#bytebase-v1-TaskRun)
     - [TaskRun.ExecutionDetail](#bytebase-v1-TaskRun-ExecutionDetail)
     - [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position)
+    - [TaskRunLog](#bytebase-v1-TaskRunLog)
+    - [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry)
+    - [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute)
+    - [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse)
+    - [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump)
     - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
   
     - [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type)
@@ -500,6 +506,7 @@
     - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
     - [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
+    - [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type)
   
     - [RolloutService](#bytebase-v1-RolloutService)
   
@@ -565,6 +572,7 @@
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
+    - [SheetCommand](#bytebase-v1-SheetCommand)
     - [SheetPayload](#bytebase-v1-SheetPayload)
     - [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest)
   
@@ -1139,7 +1147,7 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| filter | [string](#string) |  |  |
+| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; |
 | order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
 
@@ -1171,7 +1179,7 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| filter | [string](#string) |  |  |
+| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; |
 | order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
 | page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `SearchLogs` call. Provide this to retrieve the subsequent page. |
@@ -7432,6 +7440,21 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
+<a name="bytebase-v1-GetTaskRunLogRequest"></a>
+
+### GetTaskRunLogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+
+
+
+
+
+
 <a name="bytebase-v1-ListPlanCheckRunsRequest"></a>
 
 ### ListPlanCheckRunsRequest
@@ -8097,6 +8120,91 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
+<a name="bytebase-v1-TaskRunLog"></a>
+
+### TaskRunLog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log |
+| entries | [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry"></a>
+
+### TaskRunLogEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type) |  |  |
+| schema_dump | [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump) |  |  |
+| command_execute | [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-CommandExecute"></a>
+
+### TaskRunLogEntry.CommandExecute
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| command_indexes | [int32](#int32) | repeated | The indexes of the executed commands. |
+| response | [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse"></a>
+
+### TaskRunLogEntry.CommandExecute.CommandResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| error | [string](#string) |  |  |
+| affected_rows | [int32](#int32) |  |  |
+| all_affected_rows | [int32](#int32) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-SchemaDump"></a>
+
+### TaskRunLogEntry.SchemaDump
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| error | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdatePlanRequest"></a>
 
 ### UpdatePlanRequest
@@ -8274,6 +8382,19 @@ Type is the database change type.
 | CANCELED | 5 |  |
 
 
+
+<a name="bytebase-v1-TaskRunLogEntry-Type"></a>
+
+### TaskRunLogEntry.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| SCHEMA_DUMP | 1 |  |
+| COMMAND_EXECUTE | 2 |  |
+
+
  
 
  
@@ -8294,6 +8415,7 @@ Type is the database change type.
 | CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) |  |
+| GetTaskRunLog | [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest) | [TaskRunLog](#bytebase-v1-TaskRunLog) |  |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
 | RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) |  |
 | BatchRunTasks | [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest) | [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse) |  |
@@ -9221,6 +9343,22 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
+<a name="bytebase-v1-SheetCommand"></a>
+
+### SheetCommand
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  |  |
+| end | [int32](#int32) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-SheetPayload"></a>
 
 ### SheetPayload
@@ -9232,6 +9370,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | type | [SheetPayload.Type](#bytebase-v1-SheetPayload-Type) |  |  |
 | database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
 | baseline_database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
+| commands | [SheetCommand](#bytebase-v1-SheetCommand) | repeated | The start and end position of each command in the sheet statement. |
 
 
 

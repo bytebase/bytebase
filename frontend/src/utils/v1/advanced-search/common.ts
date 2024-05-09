@@ -15,15 +15,17 @@ export const CommonFilterScopeIdList = ["environment", "instance"] as const;
 type CommonFilterScopeId = (typeof CommonFilterScopeIdList)[number];
 
 export const SearchScopeIdList = [
+  // common search scopes.
   "project",
   "instance",
   "database",
-  "type",
   "creator",
+  "created",
+  "type",
+  "status",
+  // issue related search scopes.
   "assignee",
   "subscriber",
-  "status",
-  "created",
   "label",
 ] as const;
 

@@ -9098,17 +9098,10 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
             <tbody>
               
                 <tr>
-                  <td>command_index</td>
+                  <td>command_indexes</td>
                   <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Executed commands are in range [command_index, command_index &#43; command_count). </p></td>
-                </tr>
-              
-                <tr>
-                  <td>command_count</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
+                  <td>repeated</td>
+                  <td><p>The indexes of the executed commands. </p></td>
                 </tr>
               
             </tbody>
@@ -9129,17 +9122,10 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
             <tbody>
               
                 <tr>
-                  <td>command_index</td>
+                  <td>command_indexes</td>
                   <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Executed commands are in range [command_index, command_index &#43; command_count). </p></td>
-                </tr>
-              
-                <tr>
-                  <td>command_count</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
+                  <td>repeated</td>
+                  <td><p>The indexes of the executed commands. </p></td>
                 </tr>
               
                 <tr>
@@ -9154,6 +9140,14 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>all_affected_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>repeated</td>
+                  <td><p>`all_affected_rows` is the affected rows of each command.
+`all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. </p></td>
                 </tr>
               
             </tbody>

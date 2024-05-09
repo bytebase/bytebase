@@ -95,6 +95,12 @@ type SearchAuditLogsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The filter of the log. It should be a valid CEL expression.
+	// For example:
+	//   - filter = "method == '/bytebase.v1.SQLService/Query'"
+	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
 	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The order by of the log.
 	// Only support order by create_time.
@@ -235,6 +241,12 @@ type ExportAuditLogsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The filter of the log. It should be a valid CEL expression.
+	// For example:
+	//   - filter = "method == '/bytebase.v1.SQLService/Query'"
+	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
 	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The order by of the log.
 	// Only support order by create_time.

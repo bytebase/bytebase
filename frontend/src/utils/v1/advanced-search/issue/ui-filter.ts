@@ -7,9 +7,9 @@ import { useUserStore } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import { hasProjectPermissionV2 } from "@/utils";
-import { extractUserResourceName } from "../../user";
-import type { SearchParams } from "./common";
-import { getValueFromSearchParams } from "./common";
+import { extractUserResourceName } from "@/utils/v1/user";
+import type { SearchParams } from "../common";
+import { getValueFromSearchParams } from "../common";
 
 export const IssueApprovalStatusList = ["pending", "approved"] as const;
 export type IssueApprovalStatus = (typeof IssueApprovalStatusList)[number];
