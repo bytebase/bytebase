@@ -12,6 +12,7 @@
 import { computedAsync } from "@vueuse/core";
 import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
+import { watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useIssueContext } from "@/components/IssueV1";
 import { rolloutServiceClient } from "@/grpcweb";
@@ -123,72 +124,91 @@ const rowSpan = (entry: FlattenLogEntry) => {
   }
   return 1;
 };
+const colSpan = (entry: FlattenLogEntry) => {
+  if (
+    entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE &&
+    entry.commandExecute
+  ) {
+    const { commandExecute } = entry;
+    if (commandExecute.raw.commandIndexes.length > 1) {
+      return 1;
+    }
+  }
+  return 2;
+};
 
-const columns: DataTableColumn<FlattenLogEntry>[] = [
-  {
-    key: "batch",
-    title: () => t("issue.task-run.task-run-log.batch"),
-    width: 50,
-    className: "whitespace-nowrap",
-    titleColSpan: 2,
-    rowSpan,
-    colSpan: (entry) => {
-      if (
-        entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE &&
-        entry.commandExecute
-      ) {
-        const { commandExecute } = entry;
-        if (commandExecute.raw.commandIndexes.length > 1) {
-          return 1;
-        }
-      }
-      return 2;
+watchEffect(() =>
+  console.log(
+    flattenLogEntries.value
+      .map((entry) => [entry.batch, entry.serial, colSpan(entry)].join("/"))
+      .join("\n")
+  )
+);
+
+const columns = computed(() => {
+  const splitBatchAndSerialCol = flattenLogEntries.value.some(
+    (entry) => colSpan(entry) === 1
+  );
+  const columns: (DataTableColumn<FlattenLogEntry> & { hide?: boolean })[] = [
+    {
+      key: "batch",
+      title: () => t("issue.task-run.task-run-log.batch"),
+      width: 50,
+      className: "whitespace-nowrap",
+      titleColSpan: splitBatchAndSerialCol ? 2 : 1,
+      rowSpan,
+      colSpan: (entry) => {
+        if (splitBatchAndSerialCol) return colSpan(entry);
+        return 1;
+      },
+      render: (entry) => {
+        return String(entry.batch + 1);
+      },
     },
-    render: (entry) => {
-      return String(entry.batch + 1);
+    {
+      key: "serial",
+      title: () => "serial",
+      width: 50,
+      className: "whitespace-nowrap",
+      hide: !splitBatchAndSerialCol,
+      render: (entry) => {
+        return String(entry.serial + 1);
+      },
     },
-  },
-  {
-    key: "serial",
-    title: () => "serial",
-    width: 50,
-    className: "whitespace-nowrap",
-    render: (entry) => {
-      return String(entry.serial + 1);
+    {
+      key: "type",
+      title: () => t("common.type"),
+      width: 120,
+      className: "whitespace-nowrap",
+      render: (entry) => {
+        return <span class="text-sm">{entry.type}</span>;
+      },
     },
-  },
-  {
-    key: "type",
-    title: () => t("common.type"),
-    width: 120,
-    className: "whitespace-nowrap",
-    render: (entry) => {
-      return <span class="text-sm">{entry.type}</span>;
+    {
+      key: "statement",
+      title: () => t("common.statement"),
+      render: (entry) => {
+        return <StatementCell entry={entry} sheet={sheet.value} />;
+      },
     },
-  },
-  {
-    key: "statement",
-    title: () => t("common.statement"),
-    render: (entry) => {
-      return <StatementCell entry={entry} sheet={sheet.value} />;
+    {
+      key: "affected-rows",
+      title: () => t("issue.task-run.task-run-log.affected-rows"),
+      width: 120,
+      render: (entry) => {
+        return <AffectedRowsCell entry={entry} sheet={sheet.value} />;
+      },
     },
-  },
-  {
-    key: "affected-rows",
-    title: () => t("issue.task-run.task-run-log.affected-rows"),
-    width: 120,
-    render: (entry) => {
-      return <AffectedRowsCell entry={entry} sheet={sheet.value} />;
+    {
+      key: "duration",
+      title: () => t("common.duration"),
+      width: 120,
+      rowSpan,
+      render: (entry) => {
+        return <DurationCell entry={entry} />;
+      },
     },
-  },
-  {
-    key: "duration",
-    title: () => t("common.duration"),
-    width: 120,
-    rowSpan,
-    render: (entry) => {
-      return <DurationCell entry={entry} />;
-    },
-  },
-];
+  ];
+  return columns.filter((column) => !column.hide);
+});
 </script>
