@@ -89,15 +89,13 @@ export interface TaskRunLog_SchemaDumpEnd {
 }
 
 export interface TaskRunLog_CommandExecute {
-  /** Executed commands are in range [command_index, command_index + command_count). */
-  commandIndex: number;
-  commandCount: number;
+  /** The indexes of the executed commands. */
+  commandIndexes: number[];
 }
 
 export interface TaskRunLog_CommandResponse {
-  /** Executed commands are in range [command_index, command_index + command_count). */
-  commandIndex: number;
-  commandCount: number;
+  /** The indexes of the executed commands. */
+  commandIndexes: number[];
   error: string;
   affectedRows: number;
   /**
@@ -347,17 +345,16 @@ export const TaskRunLog_SchemaDumpEnd = {
 };
 
 function createBaseTaskRunLog_CommandExecute(): TaskRunLog_CommandExecute {
-  return { commandIndex: 0, commandCount: 0 };
+  return { commandIndexes: [] };
 }
 
 export const TaskRunLog_CommandExecute = {
   encode(message: TaskRunLog_CommandExecute, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.commandIndex !== 0) {
-      writer.uint32(8).int32(message.commandIndex);
+    writer.uint32(10).fork();
+    for (const v of message.commandIndexes) {
+      writer.int32(v);
     }
-    if (message.commandCount !== 0) {
-      writer.uint32(16).int32(message.commandCount);
-    }
+    writer.ldelim();
     return writer;
   },
 
@@ -369,19 +366,22 @@ export const TaskRunLog_CommandExecute = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
-            break;
+          if (tag === 8) {
+            message.commandIndexes.push(reader.int32());
+
+            continue;
           }
 
-          message.commandIndex = reader.int32();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
+          if (tag === 10) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.commandIndexes.push(reader.int32());
+            }
+
+            continue;
           }
 
-          message.commandCount = reader.int32();
-          continue;
+          break;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -393,18 +393,16 @@ export const TaskRunLog_CommandExecute = {
 
   fromJSON(object: any): TaskRunLog_CommandExecute {
     return {
-      commandIndex: isSet(object.commandIndex) ? globalThis.Number(object.commandIndex) : 0,
-      commandCount: isSet(object.commandCount) ? globalThis.Number(object.commandCount) : 0,
+      commandIndexes: globalThis.Array.isArray(object?.commandIndexes)
+        ? object.commandIndexes.map((e: any) => globalThis.Number(e))
+        : [],
     };
   },
 
   toJSON(message: TaskRunLog_CommandExecute): unknown {
     const obj: any = {};
-    if (message.commandIndex !== 0) {
-      obj.commandIndex = Math.round(message.commandIndex);
-    }
-    if (message.commandCount !== 0) {
-      obj.commandCount = Math.round(message.commandCount);
+    if (message.commandIndexes?.length) {
+      obj.commandIndexes = message.commandIndexes.map((e) => Math.round(e));
     }
     return obj;
   },
@@ -414,31 +412,29 @@ export const TaskRunLog_CommandExecute = {
   },
   fromPartial(object: DeepPartial<TaskRunLog_CommandExecute>): TaskRunLog_CommandExecute {
     const message = createBaseTaskRunLog_CommandExecute();
-    message.commandIndex = object.commandIndex ?? 0;
-    message.commandCount = object.commandCount ?? 0;
+    message.commandIndexes = object.commandIndexes?.map((e) => e) || [];
     return message;
   },
 };
 
 function createBaseTaskRunLog_CommandResponse(): TaskRunLog_CommandResponse {
-  return { commandIndex: 0, commandCount: 0, error: "", affectedRows: 0, allAffectedRows: [] };
+  return { commandIndexes: [], error: "", affectedRows: 0, allAffectedRows: [] };
 }
 
 export const TaskRunLog_CommandResponse = {
   encode(message: TaskRunLog_CommandResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.commandIndex !== 0) {
-      writer.uint32(8).int32(message.commandIndex);
+    writer.uint32(10).fork();
+    for (const v of message.commandIndexes) {
+      writer.int32(v);
     }
-    if (message.commandCount !== 0) {
-      writer.uint32(16).int32(message.commandCount);
-    }
+    writer.ldelim();
     if (message.error !== "") {
-      writer.uint32(26).string(message.error);
+      writer.uint32(18).string(message.error);
     }
     if (message.affectedRows !== 0) {
-      writer.uint32(32).int32(message.affectedRows);
+      writer.uint32(24).int32(message.affectedRows);
     }
-    writer.uint32(42).fork();
+    writer.uint32(34).fork();
     for (const v of message.allAffectedRows) {
       writer.int32(v);
     }
@@ -454,41 +450,44 @@ export const TaskRunLog_CommandResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
-            break;
+          if (tag === 8) {
+            message.commandIndexes.push(reader.int32());
+
+            continue;
           }
 
-          message.commandIndex = reader.int32();
-          continue;
+          if (tag === 10) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.commandIndexes.push(reader.int32());
+            }
+
+            continue;
+          }
+
+          break;
         case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.commandCount = reader.int32();
-          continue;
-        case 3:
-          if (tag !== 26) {
+          if (tag !== 18) {
             break;
           }
 
           message.error = reader.string();
           continue;
-        case 4:
-          if (tag !== 32) {
+        case 3:
+          if (tag !== 24) {
             break;
           }
 
           message.affectedRows = reader.int32();
           continue;
-        case 5:
-          if (tag === 40) {
+        case 4:
+          if (tag === 32) {
             message.allAffectedRows.push(reader.int32());
 
             continue;
           }
 
-          if (tag === 42) {
+          if (tag === 34) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.allAffectedRows.push(reader.int32());
@@ -509,8 +508,9 @@ export const TaskRunLog_CommandResponse = {
 
   fromJSON(object: any): TaskRunLog_CommandResponse {
     return {
-      commandIndex: isSet(object.commandIndex) ? globalThis.Number(object.commandIndex) : 0,
-      commandCount: isSet(object.commandCount) ? globalThis.Number(object.commandCount) : 0,
+      commandIndexes: globalThis.Array.isArray(object?.commandIndexes)
+        ? object.commandIndexes.map((e: any) => globalThis.Number(e))
+        : [],
       error: isSet(object.error) ? globalThis.String(object.error) : "",
       affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
       allAffectedRows: globalThis.Array.isArray(object?.allAffectedRows)
@@ -521,11 +521,8 @@ export const TaskRunLog_CommandResponse = {
 
   toJSON(message: TaskRunLog_CommandResponse): unknown {
     const obj: any = {};
-    if (message.commandIndex !== 0) {
-      obj.commandIndex = Math.round(message.commandIndex);
-    }
-    if (message.commandCount !== 0) {
-      obj.commandCount = Math.round(message.commandCount);
+    if (message.commandIndexes?.length) {
+      obj.commandIndexes = message.commandIndexes.map((e) => Math.round(e));
     }
     if (message.error !== "") {
       obj.error = message.error;
@@ -544,8 +541,7 @@ export const TaskRunLog_CommandResponse = {
   },
   fromPartial(object: DeepPartial<TaskRunLog_CommandResponse>): TaskRunLog_CommandResponse {
     const message = createBaseTaskRunLog_CommandResponse();
-    message.commandIndex = object.commandIndex ?? 0;
-    message.commandCount = object.commandCount ?? 0;
+    message.commandIndexes = object.commandIndexes?.map((e) => e) || [];
     message.error = object.error ?? "";
     message.affectedRows = object.affectedRows ?? 0;
     message.allAffectedRows = object.allAffectedRows?.map((e) => e) || [];

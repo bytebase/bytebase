@@ -385,7 +385,12 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 				return err
 			}
 
-			opts.LogCommandExecute(int32(currentIndex), int32(len(chunk)))
+			var indexes []int32
+			for i := currentIndex; i < currentIndex+len(chunk); i++ {
+				indexes = append(indexes, int32(i))
+			}
+
+			opts.LogCommandExecute(indexes)
 
 			sqlResult, err := exer.ExecContext(ctx, chunkText, nil)
 			if err != nil {
@@ -396,7 +401,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 					}
 				}
 
-				opts.LogCommandResponse(int32(currentIndex), int32(len(chunk)), 0, nil, err.Error())
+				opts.LogCommandResponse(indexes, 0, nil, err.Error())
 
 				return &db.ErrorWithPosition{
 					Err: errors.Wrapf(err, "failed to execute context in a transaction"),
@@ -420,7 +425,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			}
 			totalRowsAffected += rowsAffected
 
-			opts.LogCommandResponse(int32(currentIndex), int32(len(chunk)), int32(rowsAffected), allRowsAffectedInt32, "")
+			opts.LogCommandResponse(indexes, int32(rowsAffected), allRowsAffectedInt32, "")
 
 			currentIndex += len(chunk)
 		}

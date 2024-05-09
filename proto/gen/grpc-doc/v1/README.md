@@ -8160,8 +8160,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| command_index | [int32](#int32) |  | Executed commands are in range [command_index, command_index &#43; command_count). |
-| command_count | [int32](#int32) |  |  |
+| command_indexes | [int32](#int32) | repeated | The indexes of the executed commands. |
 | response | [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse) |  |  |
 
 
