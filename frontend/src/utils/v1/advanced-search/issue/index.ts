@@ -1,2 +1,2 @@
-export * from "./advanced-search";
+export * from "./utils";
 export * from "./ui-filter";
