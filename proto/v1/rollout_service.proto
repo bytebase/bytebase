@@ -773,12 +773,10 @@ message TaskRunLogEntry {
 
   message CommandExecute {
     google.protobuf.Timestamp log_time = 1;
+    // The indexes of the executed commands.
+    repeated int32 command_indexes = 2;
 
-    // Executed commands are in range [command_index, command_index + command_count).
-    int32 command_index = 2;
-    int32 command_count = 3;
-    CommandResponse response = 4;
-
+    CommandResponse response = 3;
     message CommandResponse {
       google.protobuf.Timestamp log_time = 1;
       string error = 2;
