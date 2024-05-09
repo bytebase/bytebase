@@ -2,7 +2,8 @@
   <NDataTable
     :columns="columns"
     :loading="isLoading"
-    :data="logEntries"
+    :data="flattenLogEntries"
+    :row-key="rowKey"
     size="small"
   />
 </template>
@@ -16,13 +17,14 @@ import { useIssueContext } from "@/components/IssueV1";
 import { rolloutServiceClient } from "@/grpcweb";
 import { useSheetV1Store } from "@/store";
 import {
-  TaskRunLogEntry,
   type TaskRun,
+  TaskRunLogEntry_Type,
 } from "@/types/proto/v1/rollout_service";
 import { sheetNameOfTaskV1 } from "@/utils";
 import AffectedRowsCell from "./AffectedRowsCell.vue";
 import DurationCell from "./DurationCell.vue";
 import StatementCell from "./StatementCell.vue";
+import { type FlattenLogEntry } from "./common";
 
 const props = defineProps<{
   taskRun: TaskRun;
@@ -67,15 +69,92 @@ const logEntries = computed(() => {
   if (!sheet.value) return [];
   return taskRunLog.value?.entries ?? [];
 });
+const flattenLogEntries = computed(() => {
+  const flattenEntries: FlattenLogEntry[] = [];
+  logEntries.value.forEach((entry, batch) => {
+    if (entry.type === TaskRunLogEntry_Type.SCHEMA_DUMP && entry.schemaDump) {
+      const { schemaDump } = entry;
+      flattenEntries.push({
+        batch,
+        serial: 0,
+        type: TaskRunLogEntry_Type.SCHEMA_DUMP,
+        startTime: schemaDump.startTime,
+        endTime: schemaDump.endTime,
+        schemaDump,
+      });
+    }
+    if (
+      entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE &&
+      entry.commandExecute
+    ) {
+      const { commandExecute } = entry;
+      const { response, logTime: startTime } = commandExecute;
+      commandExecute.commandIndexes.forEach((commandIndex, serial) => {
+        const affectedRows = response?.allAffectedRows[serial];
+        const endTime = response?.logTime;
+        flattenEntries.push({
+          batch,
+          serial,
+          type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+          startTime,
+          endTime,
+          commandExecute: {
+            raw: commandExecute,
+            commandIndex,
+            affectedRows,
+          },
+        });
+      });
+    }
+  });
+  return flattenEntries;
+});
 
-const columns: DataTableColumn<TaskRunLogEntry>[] = [
+const rowKey = (entry: FlattenLogEntry) => {
+  return `${entry.batch}-${entry.serial}`;
+};
+const rowSpan = (entry: FlattenLogEntry) => {
+  if (
+    entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE &&
+    entry.commandExecute
+  ) {
+    const { commandExecute } = entry;
+    return commandExecute.raw.commandIndexes.length;
+  }
+  return 1;
+};
+
+const columns: DataTableColumn<FlattenLogEntry>[] = [
   {
-    key: "serial",
+    key: "batch",
     title: () => t("issue.task-run.task-run-log.batch"),
     width: 50,
     className: "whitespace-nowrap",
-    render: (row, index) => {
-      return String(index + 1);
+    titleColSpan: 2,
+    rowSpan,
+    colSpan: (entry) => {
+      if (
+        entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE &&
+        entry.commandExecute
+      ) {
+        const { commandExecute } = entry;
+        if (commandExecute.raw.commandIndexes.length > 1) {
+          return 1;
+        }
+      }
+      return 2;
+    },
+    render: (entry) => {
+      return String(entry.batch + 1);
+    },
+  },
+  {
+    key: "serial",
+    title: () => "serial",
+    width: 50,
+    className: "whitespace-nowrap",
+    render: (entry) => {
+      return String(entry.serial + 1);
     },
   },
   {
@@ -106,6 +185,7 @@ const columns: DataTableColumn<TaskRunLogEntry>[] = [
     key: "duration",
     title: () => t("common.duration"),
     width: 120,
+    rowSpan,
     render: (entry) => {
       return <DurationCell entry={entry} />;
     },

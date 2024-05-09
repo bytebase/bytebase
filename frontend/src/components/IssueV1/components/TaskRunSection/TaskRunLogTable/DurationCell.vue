@@ -3,20 +3,17 @@
     <div v-if="duration">
       {{ humanizeDurationV1(duration) }}
     </div>
-    <div v-else class="text-control-placeholder">N/A</div>
+    <div v-else class="text-control-placeholder">-</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
 import { Duration } from "@/types/proto/google/protobuf/duration";
-import {
-  TaskRunLogEntry_Type,
-  type TaskRunLogEntry,
-} from "@/types/proto/v1/rollout_service";
+import type { FlattenLogEntry } from "./common";
 
 const props = defineProps<{
-  entry: TaskRunLogEntry;
+  entry: FlattenLogEntry;
 }>();
 
 const toDuration = (startTime: Date, endTime: Date) => {
@@ -31,22 +28,9 @@ const toDuration = (startTime: Date, endTime: Date) => {
 
 const duration = computed(() => {
   const { entry } = props;
-  if (entry.type === TaskRunLogEntry_Type.SCHEMA_DUMP && entry.schemaDump) {
-    const { startTime, endTime } = entry.schemaDump;
-    if (startTime && endTime) {
-      return toDuration(startTime, endTime);
-    }
-  }
-  if (
-    entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE &&
-    entry.commandExecute
-  ) {
-    const exec = entry.commandExecute;
-    const startTime = exec.logTime;
-    const endTime = exec.response?.logTime;
-    if (startTime && endTime) {
-      return toDuration(startTime, endTime);
-    }
+  const { startTime, endTime } = entry;
+  if (startTime && endTime) {
+    return toDuration(startTime, endTime);
   }
   return undefined;
 });

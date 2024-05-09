@@ -1,6 +1,6 @@
 <template>
   <NPopover
-    :disabled="content.length <= maxLength"
+    :disabled="popoverDisabled"
     :placement="placement"
     style="max-height: 300px"
     width="trigger"
@@ -79,5 +79,9 @@ const displayPopoverContent = computed(() => {
   return content.length <= maxPopoverContentLength
     ? content
     : content.substring(0, maxPopoverContentLength) + "...";
+});
+
+const popoverDisabled = computed(() => {
+  return displayContent.value === props.content;
 });
 </script>

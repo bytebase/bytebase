@@ -2,10 +2,11 @@
   <div class="text-sm">
     <TextOverflowPopover
       v-if="statement"
-      :content="statement"
+      :content="statement.trim()"
       :max-length="100"
       :max-popover-content-length="1000"
       :line-wrap="false"
+      :line-break-replacer="' '"
       content-class=""
       placement="top"
     >
@@ -22,7 +23,7 @@
         </span>
       </template>
     </TextOverflowPopover>
-    <div v-else class="text-control-placeholder">N/A</div>
+    <div v-else class="text-control-placeholder">-</div>
   </div>
 </template>
 
@@ -31,15 +32,13 @@ import { CopyIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
-import {
-  TaskRunLogEntry_Type,
-  type TaskRunLogEntry,
-} from "@/types/proto/v1/rollout_service";
+import { TaskRunLogEntry_Type } from "@/types/proto/v1/rollout_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import { extractSheetCommandByIndex } from "@/utils";
+import type { FlattenLogEntry } from "./common";
 
 const props = defineProps<{
-  entry: TaskRunLogEntry;
+  entry: FlattenLogEntry;
   sheet?: Sheet;
 }>();
 
@@ -59,10 +58,8 @@ const statement = computed(() => {
       return "";
     }
 
-    const exec = entry.commandExecute;
-    return exec.commandIndexes
-      .map((index) => (extractSheetCommandByIndex(sheet, index) ?? "").trim())
-      .join("\n");
+    const { commandExecute } = entry;
+    return extractSheetCommandByIndex(sheet, commandExecute.commandIndex);
   }
   return "";
 });
