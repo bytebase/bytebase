@@ -12886,6 +12886,15 @@ components:
                     type: string
                     description: The SQL dialect.
                     format: enum
+        SheetCommand:
+            type: object
+            properties:
+                start:
+                    type: integer
+                    format: int32
+                end:
+                    type: integer
+                    format: int32
         SheetPayload:
             type: object
             properties:
@@ -12903,6 +12912,11 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/DatabaseConfig'
                     description: The snapshot of the baseline database config when creating the sheet.
+                commands:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/SheetCommand'
+                    description: The start and end position of each command in the sheet statement.
         SlowQueryDetails:
             type: object
             properties:
