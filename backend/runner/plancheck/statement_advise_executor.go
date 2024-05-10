@@ -379,6 +379,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 				adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
 					Charset:    dbSchema.GetMetadata().CharacterSet,
 					Collation:  dbSchema.GetMetadata().Collation,
+					DBSchema:   dbSchema.GetMetadata(),
 					ChangeType: changeType,
 					DbType:     instance.Engine,
 					Catalog:    catalog,
