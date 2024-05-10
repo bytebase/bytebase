@@ -12,7 +12,6 @@
 import { computedAsync } from "@vueuse/core";
 import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
-import { watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useIssueContext } from "@/components/IssueV1";
 import { rolloutServiceClient } from "@/grpcweb";
@@ -40,7 +39,6 @@ const isLoading = computed(() => {
 });
 const taskRunLog = computedAsync(
   () => {
-    console.log("evaluate taskRunLog", props.taskRun.name);
     return rolloutServiceClient.getTaskRunLog({
       parent: props.taskRun.name,
     });
@@ -56,8 +54,6 @@ const sheetName = computed(() => {
 const sheet = computedAsync(
   async () => {
     const name = sheetName.value;
-
-    console.log("evaluate sheet", name);
     return useSheetV1Store().getOrFetchSheetByName(name, "FULL");
   },
   undefined,
@@ -136,14 +132,6 @@ const colSpan = (entry: FlattenLogEntry) => {
   }
   return 2;
 };
-
-watchEffect(() =>
-  console.log(
-    flattenLogEntries.value
-      .map((entry) => [entry.batch, entry.serial, colSpan(entry)].join("/"))
-      .join("\n")
-  )
-);
 
 const columns = computed(() => {
   const splitBatchAndSerialCol = flattenLogEntries.value.some(
