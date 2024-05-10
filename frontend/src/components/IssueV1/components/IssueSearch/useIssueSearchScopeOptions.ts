@@ -1,36 +1,20 @@
 import { orderBy } from "lodash-es";
-import type { Ref, RenderFunction, VNode } from "vue";
-import { computed, h, ref } from "vue";
+import type { Ref, RenderFunction } from "vue";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
-import GitIcon from "@/components/GitIcon.vue";
+import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import {
-  InstanceV1Name,
-  ProjectV1Name,
-  RichDatabaseName,
-  EnvironmentV1Name,
-} from "@/components/v2";
-import {
   useCurrentUserV1,
   useDatabaseV1Store,
-  useInstanceV1List,
-  useSearchDatabaseV1List,
   useUserStore,
-  useEnvironmentV1List,
   useProjectV1List,
 } from "@/store";
 import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
-import { engineToJSON } from "@/types/proto/v1/common";
-import { Workflow, Label } from "@/types/proto/v1/project_service";
+import { Label } from "@/types/proto/v1/project_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
-import {
-  environmentV1Name,
-  extractEnvironmentResourceName,
-  extractInstanceResourceName,
-  extractProjectResourceName,
-} from "@/utils";
 
 export type ScopeOption = {
   id: SearchScopeId;
@@ -65,7 +49,7 @@ const useProjectLabels = (params: Ref<SearchParams>) => {
   return [...labels.values()];
 };
 
-export const useSearchScopeOptions = (
+export const useIssueSearchScopeOptions = (
   params: Ref<SearchParams>,
   supportOptionIdList: Ref<SearchScopeId[]>
 ) => {
@@ -73,12 +57,11 @@ export const useSearchScopeOptions = (
   const me = useCurrentUserV1();
   const userStore = useUserStore();
   const databaseV1Store = useDatabaseV1Store();
-  const environmentList = useEnvironmentV1List(false /* !showDeleted */);
-  const { projectList } = useProjectV1List();
-  const { instanceList } = useInstanceV1List(false /* !showDeleted */);
-  const { databaseList } = useSearchDatabaseV1List({
-    filter: "instance = instances/-",
-  });
+
+  const commonScopeOptions = useCommonSearchScopeOptions(
+    params,
+    supportOptionIdList
+  );
 
   const principalSearchValueOptions = computed(() => {
     // Put "you" to the top
@@ -112,27 +95,7 @@ export const useSearchScopeOptions = (
   // we need this as the source of truth.
   const fullScopeOptions = computed((): ScopeOption[] => {
     const scopes: ScopeOption[] = [
-      {
-        id: "project",
-        title: t("issue.advanced-search.scope.project.title"),
-        description: t("issue.advanced-search.scope.project.description"),
-        options: projectList.value.map<ValueOption>((proj) => {
-          const name = extractProjectResourceName(proj.name);
-          return {
-            value: name,
-            keywords: [name, proj.title, proj.key],
-            render: () => {
-              const children: VNode[] = [
-                h(ProjectV1Name, { project: proj, link: false }),
-              ];
-              if (proj.workflow === Workflow.VCS) {
-                children.push(h(GitIcon, { class: "h-4" }));
-              }
-              return h("div", { class: "flex items-center gap-x-2" }, children);
-            },
-          };
-        }),
-      },
+      ...commonScopeOptions.value,
       {
         id: "status",
         title: t("common.status"),
@@ -200,79 +163,6 @@ export const useSearchScopeOptions = (
         options: principalSearchValueOptions.value,
       },
       {
-        id: "instance",
-        title: t("issue.advanced-search.scope.instance.title"),
-        description: t("issue.advanced-search.scope.instance.description"),
-        options: instanceList.value.map((ins) => {
-          const name = extractInstanceResourceName(ins.name);
-          return {
-            value: name,
-            keywords: [
-              name,
-              ins.title,
-              engineToJSON(ins.engine),
-              ins.environmentEntity.title,
-              extractEnvironmentResourceName(ins.environment),
-            ],
-            render: () => {
-              return h("div", { class: "flex items-center gap-x-1" }, [
-                h(InstanceV1Name, {
-                  instance: ins,
-                  link: false,
-                  tooltip: false,
-                }),
-                renderSpan(`(${environmentV1Name(ins.environmentEntity)})`),
-              ]);
-            },
-          };
-        }),
-      },
-      {
-        id: "database",
-        title: t("issue.advanced-search.scope.database.title"),
-        description: t("issue.advanced-search.scope.database.description"),
-        options: databaseList.value.map((db) => {
-          return {
-            value: `${db.databaseName}-${db.uid}`,
-            keywords: [
-              db.databaseName,
-              extractInstanceResourceName(db.instance),
-              db.instanceEntity.title,
-              extractEnvironmentResourceName(db.effectiveEnvironment),
-              db.effectiveEnvironmentEntity.title,
-              extractProjectResourceName(db.project),
-              db.projectEntity.title,
-              db.projectEntity.key,
-            ],
-            custom: true,
-            render: () => {
-              return h("div", { class: "text-sm" }, [
-                h(RichDatabaseName, {
-                  database: db,
-                  showProject: true,
-                }),
-              ]);
-            },
-          };
-        }),
-      },
-      {
-        id: "environment",
-        title: t("issue.advanced-search.scope.environment.title"),
-        description: t("issue.advanced-search.scope.environment.description"),
-        options: environmentList.value.map((env) => {
-          return {
-            value: extractEnvironmentResourceName(env.name),
-            keywords: [env.name, env.title],
-            render: () =>
-              h(EnvironmentV1Name, {
-                environment: env,
-                link: false,
-              }),
-          };
-        }),
-      },
-      {
         id: "type",
         title: t("issue.advanced-search.scope.type.title"),
         description: t("issue.advanced-search.scope.type.description"),
@@ -286,31 +176,6 @@ export const useSearchScopeOptions = (
             value: "DML",
             keywords: ["dml", "data manipulation language"],
             render: () => renderSpan("Data Manipulation Language"),
-          },
-        ],
-      },
-      {
-        id: "project-assigned",
-        title: t("issue.advanced-search.scope.project-assigned.title"),
-        description: t(
-          "issue.advanced-search.scope.project-assigned.description"
-        ),
-        options: [
-          {
-            value: "yes",
-            keywords: ["yes"],
-            render: () =>
-              renderSpan(
-                t("issue.advanced-search.scope.project-assigned.value.yes")
-              ),
-          },
-          {
-            value: "no",
-            keywords: ["no"],
-            render: () =>
-              renderSpan(
-                t("issue.advanced-search.scope.project-assigned.value.no")
-              ),
           },
         ],
       },
@@ -383,52 +248,7 @@ export const useSearchScopeOptions = (
     return clone;
   });
 
-  // availableScopeOptions will hide chosen search scope.
-  // For example, if uses already select the instance, we should NOT show the instance scope in the dropdown.
-  const availableScopeOptions = computed((): ScopeOption[] => {
-    const existedScopes = new Set<SearchScopeId>(
-      params.value.scopes.map((scope) => scope.id)
-    );
-
-    return filteredScopeOptions.value.filter((scope) => {
-      if (existedScopes.has(scope.id)) {
-        return false;
-      }
-      return true;
-    });
-  });
-
-  const menuView = ref<"scope" | "value">();
-  const currentScope = ref<SearchScopeId>();
-  const currentScopeOption = computed(() => {
-    if (currentScope.value) {
-      return filteredScopeOptions.value.find(
-        (opt) => opt.id === currentScope.value
-      );
-    }
-    return undefined;
-  });
-  const scopeOptions = computed(() => {
-    if (menuView.value === "scope") return availableScopeOptions.value;
-    return [];
-  });
-  const valueOptions = computed(() => {
-    if (menuView.value === "value" && currentScopeOption.value) {
-      return currentScopeOption.value.options;
-    }
-    return [];
-  });
-
-  return {
-    fullScopeOptions,
-    filteredScopeOptions,
-    availableScopeOptions,
-    menuView,
-    currentScope,
-    currentScopeOption,
-    scopeOptions,
-    valueOptions,
-  };
+  return filteredScopeOptions;
 };
 
 const renderSpan = (content: string) => {

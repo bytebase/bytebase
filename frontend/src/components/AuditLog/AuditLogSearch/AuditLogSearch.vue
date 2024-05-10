@@ -1,11 +1,10 @@
 <template>
   <div class="flex flex-row items-center gap-x-2">
-    <AdvancedSearchBox
-      :params="params"
-      :autofocus="autofocus"
-      :readonly-scopes="readonlyScopes"
-      :support-option-id-list="supportOptionIdList"
+    <AdvancedSearch
       class="flex-1"
+      :params="params"
+      :readonly-scopes="readonlyScopes"
+      :scope-options="scopeOptions"
       @update:params="$emit('update:params', $event)"
     />
     <TimeRange
@@ -17,30 +16,132 @@
   </div>
 </template>
 
-<script lang="ts" setup>
-import { ref, computed } from "vue";
-import type { SearchParams, SearchScope } from "@/utils";
-import { SearchScopeIdList } from "@/utils";
-import AdvancedSearchBox from "./AdvancedSearchBox.vue";
-import TimeRange from "./TimeRange.vue";
+<script lang="tsx" setup>
+import { orderBy } from "lodash-es";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { BBAvatar } from "@/bbkit";
+import AdvancedSearch, { TimeRange } from "@/components/AdvancedSearch";
+import type {
+  ScopeOption,
+  ValueOption,
+} from "@/components/AdvancedSearch/types";
+import GitIcon from "@/components/GitIcon.vue";
+import SystemBotTag from "@/components/misc/SystemBotTag.vue";
+import YouTag from "@/components/misc/YouTag.vue";
+import { ProjectV1Name } from "@/components/v2";
+import ALL_METHODS from "@/grpcweb/methods";
+import { useCurrentUserV1, useProjectV1List, useUserStore } from "@/store";
+import { SYSTEM_BOT_EMAIL } from "@/types";
+import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
+import { Workflow } from "@/types/proto/v1/project_service";
+import {
+  extractProjectResourceName,
+  type SearchParams,
+  type SearchScope,
+} from "@/utils";
 
 withDefaults(
   defineProps<{
     params: SearchParams;
     readonlyScopes?: SearchScope[];
-    autofocus?: boolean;
   }>(),
   {
     readonlyScopes: () => [],
-    components: () => ["searchbox", "time-range"],
-    componentProps: undefined,
   }
 );
 defineEmits<{
   (event: "update:params", params: SearchParams): void;
 }>();
 
+const { t } = useI18n();
+const me = useCurrentUserV1();
+const userStore = useUserStore();
+const { projectList } = useProjectV1List();
+
 const showTimeRange = ref(false);
 
-const supportOptionIdList = computed(() => [...SearchScopeIdList]);
+const principalSearchValueOptions = computed(() => {
+  // Put "you" to the top
+  const sortedUsers = orderBy(
+    userStore.activeUserList,
+    (user) => (user.name === me.value.name ? -1 : 1),
+    "asc"
+  );
+  return sortedUsers.map<ValueOption>((user) => {
+    return {
+      value: user.email,
+      keywords: [user.email, user.title],
+      render: () => {
+        const children = [
+          <BBAvatar size="TINY" username={user.title} />,
+          <span>{user.title}</span>,
+        ];
+        if (user.name === me.value.name) {
+          children.push(<YouTag />);
+        }
+        if (user.email === SYSTEM_BOT_EMAIL) {
+          children.push(<SystemBotTag />);
+        }
+        return <div class="flex items-center gap-x-1">{children}</div>;
+      },
+    };
+  });
+});
+
+// fullScopeOptions provides full search scopes and options.
+const scopeOptions = computed((): ScopeOption[] => {
+  const scopes: ScopeOption[] = [
+    {
+      id: "project",
+      title: t("issue.advanced-search.scope.project.title"),
+      description: t("issue.advanced-search.scope.project.description"),
+      options: projectList.value.map<ValueOption>((proj) => {
+        const name = extractProjectResourceName(proj.name);
+        return {
+          value: name,
+          keywords: [name, proj.title, proj.key],
+          render: () => {
+            const children = [<ProjectV1Name project={proj} link={false} />];
+            if (proj.workflow === Workflow.VCS) {
+              children.push(<GitIcon class="h-4" />);
+            }
+            return <div class="flex items-center gap-x-2">{children}</div>;
+          },
+        };
+      }),
+    },
+    {
+      id: "actor",
+      title: t("audit-log.advanced-search.scope.actor.title"),
+      description: t("audit-log.advanced-search.scope.actor.description"),
+      options: principalSearchValueOptions.value,
+    },
+    {
+      id: "method",
+      title: t("audit-log.advanced-search.scope.method.title"),
+      description: t("audit-log.advanced-search.scope.method.description"),
+      options: ALL_METHODS.map((method) => {
+        return {
+          value: method,
+          keywords: [method],
+          render: () => "",
+        };
+      }),
+    },
+    {
+      id: "level",
+      title: t("audit-log.advanced-search.scope.level.title"),
+      description: t("audit-log.advanced-search.scope.level.description"),
+      options: Object.values(AuditLog_Severity).map((severity) => {
+        return {
+          value: severity,
+          keywords: [severity],
+          render: () => "",
+        };
+      }),
+    },
+  ];
+  return scopes;
+});
 </script>

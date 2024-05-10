@@ -4,7 +4,7 @@
       v-model:params="state.params"
       :readonly-scopes="readonlyScopes"
       :components="
-        state.advanced ? ['searchbox', 'status', 'time-range'] : ['status']
+        state.advanced ? ['searchbox', 'time-range', 'status'] : ['status']
       "
       :component-props="{ status: { disabled: statusTabDisabled } }"
       class="gap-y-1"

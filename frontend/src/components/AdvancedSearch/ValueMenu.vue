@@ -61,7 +61,7 @@ import { NEmpty } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import { VirtualList } from "vueuc";
 import type { SearchParams } from "@/utils";
-import type { ScopeOption, ValueOption } from "./useSearchScopeOptions";
+import type { ScopeOption, ValueOption } from "./types";
 
 type ListItem = {
   item: ValueOption;

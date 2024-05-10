@@ -3,11 +3,11 @@
     <div
       class="w-full px-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
     >
-      <AdvancedSearchBox
+      <AdvancedSearch
         v-model:params="state.params"
         :autofocus="false"
         :placeholder="$t('database.filter-database')"
-        :support-option-id-list="supportOptionIdList"
+        :scope-options="scopeOptions"
       />
       <DatabaseLabelFilter
         v-model:selected="state.selectedLabels"
@@ -35,6 +35,8 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import AdvancedSearch from "@/components/AdvancedSearch";
+import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import {
   useDatabaseV1Store,
@@ -44,7 +46,7 @@ import {
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
-import type { SearchScopeId, SearchParams } from "@/utils";
+import type { SearchParams } from "@/utils";
 import {
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
@@ -109,6 +111,11 @@ watch(
 );
 
 const databaseV1Store = useDatabaseV1Store();
+
+const scopeOptions = useCommonSearchScopeOptions(
+  computed(() => state.params),
+  [...CommonFilterScopeIdList, "project", "project-assigned"]
+);
 
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
@@ -214,12 +221,6 @@ const selectedDatabases = computed((): ComposedDatabase[] => {
     state.selectedDatabaseIds.has(db.uid)
   );
 });
-
-const supportOptionIdList = computed((): SearchScopeId[] => [
-  ...CommonFilterScopeIdList,
-  "project",
-  "project-assigned",
-]);
 
 const handleDatabasesSelectionChanged = (
   selectedDatabaseNameList: Set<string>

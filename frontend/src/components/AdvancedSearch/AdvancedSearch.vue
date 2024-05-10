@@ -1,10 +1,13 @@
 <template>
-  <div ref="containerRef" class="bb-advanced-issue-search-box w-full relative">
+  <div
+    ref="containerRef"
+    class="bb-advanced-audit-log-search-box w-full relative"
+  >
     <NInput
       ref="inputRef"
       v-model:value="inputText"
       :placeholder="placeholder ?? $t('issue.advanced-search.self')"
-      class="bb-advanced-issue-search-box__input"
+      class="bb-advanced-audit-log-search-box__input"
       style="--n-padding-left: 8px; --n-padding-right: 4px"
       @click="handleInputClick"
       @blur="hideMenu"
@@ -60,7 +63,7 @@
         class="absolute top-[36px] w-full bg-gray-100 shadow-xl origin-top-left rounded-[3px] overflow-clip"
       >
         <ScopeMenu
-          :show="menuView === 'scope'"
+          :show="state.menuView === 'scope'"
           :params="params"
           :options="visibleScopeOptions"
           :menu-index="menuIndex"
@@ -68,7 +71,7 @@
           @hover-item="menuIndex = $event"
         />
         <ValueMenu
-          :show="menuView === 'value'"
+          :show="state.menuView === 'value'"
           :params="params"
           :scope-option="currentScopeOption"
           :value-options="visibleValueOptions"
@@ -91,15 +94,7 @@ import type { InputInst } from "naive-ui";
 import { NInput } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
-import {
-  reactive,
-  watch,
-  onMounted,
-  ref,
-  toRef,
-  computed,
-  nextTick,
-} from "vue";
+import { reactive, watch, onMounted, ref, computed, nextTick } from "vue";
 import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
 import {
   emptySearchParams,
@@ -110,19 +105,19 @@ import {
 import ScopeMenu from "./ScopeMenu.vue";
 import ScopeTags from "./ScopeTags.vue";
 import ValueMenu from "./ValueMenu.vue";
-import { useSearchScopeOptions } from "./useSearchScopeOptions";
+import type { ScopeOption } from "./types";
 
 const props = withDefaults(
   defineProps<{
-    placeholder?: string | undefined;
     params: SearchParams;
+    scopeOptions: ScopeOption[];
+    placeholder?: string | undefined;
     readonlyScopes?: SearchScope[];
     autofocus?: boolean;
-    supportOptionIdList?: SearchScopeId[];
   }>(),
   {
+    scopeOptions: () => [],
     readonlyScopes: () => [],
-    supportOptionIdList: () => [],
     autofocus: false,
     placeholder: undefined,
   }
@@ -135,8 +130,8 @@ const emit = defineEmits<{
 
 interface LocalState {
   searchText: string;
-  showSearchScopes: boolean;
   currentScope?: SearchScopeId;
+  menuView?: "value" | "scope";
 }
 
 const defaultSearchParams = () => {
@@ -160,7 +155,6 @@ const buildSearchTextByParams = (params: SearchParams | undefined): string => {
 
 const state = reactive<LocalState>({
   searchText: buildSearchTextByParams(props.params),
-  showSearchScopes: props.autofocus,
 });
 const containerRef = ref<HTMLElement>();
 const tagsContainerRef = ref<HTMLElement>();
@@ -177,30 +171,40 @@ const editableScopes = computed(() => {
 });
 
 watch(
-  () => state.showSearchScopes,
-  (show) => {
-    if (show) state.currentScope = undefined;
-  }
-);
-
-watch(
   () => props.params,
   (params) => {
     state.searchText = buildSearchTextByParams(params);
   }
 );
 
-const {
-  menuView,
-  fullScopeOptions,
-  availableScopeOptions,
-  currentScope,
-  currentScopeOption,
-  valueOptions,
-} = useSearchScopeOptions(
-  toRef(props, "params"),
-  toRef(props, "supportOptionIdList")
-);
+const valueOptions = computed(() => {
+  if (state.menuView === "value" && currentScopeOption.value) {
+    return currentScopeOption.value.options;
+  }
+  return [];
+});
+
+const currentScopeOption = computed(() => {
+  if (state.currentScope) {
+    return props.scopeOptions.find((opt) => opt.id === state.currentScope);
+  }
+  return undefined;
+});
+
+// availableScopeOptions will hide chosen search scope.
+// For example, if uses already select the instance, we should NOT show the instance scope in the dropdown.
+const availableScopeOptions = computed((): ScopeOption[] => {
+  const existedScopes = new Set<SearchScopeId>(
+    props.params.scopes.map((scope) => scope.id)
+  );
+
+  return props.scopeOptions.filter((scope) => {
+    if (existedScopes.has(scope.id)) {
+      return false;
+    }
+    return true;
+  });
+});
 
 const visibleScopeOptions = computed(() => {
   if (currentScopeOption.value) {
@@ -218,8 +222,8 @@ const visibleScopeOptions = computed(() => {
 });
 
 const visibleValueOptions = computed(() => {
-  if (!currentScope.value) return [];
-  const scopePrefix = `${currentScope.value}:`;
+  if (!state.currentScope) return [];
+  const scopePrefix = `${state.currentScope}:`;
   const keyword = inputText.value
     .trim()
     .toLowerCase()
@@ -235,7 +239,7 @@ const visibleValueOptions = computed(() => {
 
   const currentValue = getValueFromSearchParams(
     props.params,
-    currentScope.value
+    state.currentScope
   );
   const option = valueOptions.value.find((opt) => opt.value === currentValue);
   if (currentValue && option) {
@@ -249,18 +253,18 @@ const visibleValueOptions = computed(() => {
 });
 
 const visibleOptions = computed(() => {
-  return menuView.value === "scope"
+  return state.menuView === "scope"
     ? visibleScopeOptions.value
-    : menuView.value === "value"
+    : state.menuView === "value"
       ? visibleValueOptions.value
       : ([] as unknown[]);
 });
 
 const showMenu = computed(() => {
-  if (menuView.value === "scope") {
+  if (state.menuView === "scope") {
     return visibleScopeOptions.value.length > 0;
   }
-  if (menuView.value === "value") {
+  if (state.menuView === "value") {
     return true;
   }
   return false;
@@ -274,8 +278,8 @@ const clearable = computed(() => {
 
 const hideMenu = () => {
   nextTick(() => {
-    menuView.value = undefined;
-    currentScope.value = undefined;
+    state.menuView = undefined;
+    state.currentScope = undefined;
     focusedTagId.value = undefined;
   });
 };
@@ -299,22 +303,22 @@ const selectScope = (
   id: SearchScopeId | undefined,
   value: string | undefined = undefined
 ) => {
-  currentScope.value = id;
+  state.currentScope = id;
   if (id) {
-    menuView.value = "value";
+    state.menuView = "value";
     // Fill-in the scope prefix if needed
     if (!inputText.value.startsWith(`${id}:`)) {
       inputText.value = `${id}:${value ?? ""}`;
     }
     scrollScopeTagIntoViewIfNeeded(id);
   } else {
-    menuView.value = "scope";
+    state.menuView = "scope";
   }
 };
 const selectValue = (value: string) => {
-  const id = currentScope.value;
+  const id = state.currentScope;
   if (!id) {
-    menuView.value = undefined;
+    state.menuView = undefined;
     return;
   }
   const updated = upsertScope(props.params, {
@@ -330,20 +334,20 @@ const selectValue = (value: string) => {
   hideMenu();
 };
 const selectScopeFromTag = (id: SearchScopeId) => {
-  if (fullScopeOptions.value.find((opt) => opt.id === id)) {
-    // For AdvancedSearchBox supported scopes
+  if (props.scopeOptions.find((opt) => opt.id === id)) {
+    // For AdvancedSearch supported scopes
     selectScope(id);
     return;
   }
 
-  // Unsupported scope for AdvancedSearchBox
+  // Unsupported scope for AdvancedSearch
   // emit an event and wish the parent UI can handle this
   emit("select-unsupported-scope", id);
   hideMenu();
 };
 
 const maybeSelectMatchedScope = () => {
-  if (!menuView.value || menuView.value === "scope") {
+  if (!state.menuView || state.menuView === "scope") {
     const matchedScope = visibleScopeOptions.value.find((opt) =>
       inputText.value.startsWith(`${opt.id}:`)
     );
@@ -352,19 +356,19 @@ const maybeSelectMatchedScope = () => {
       selectScope(matchedScope.id);
       return true;
     }
-    if (!menuView.value) {
+    if (!state.menuView) {
       // Show scope menu if none of the menus are shown
-      menuView.value = "scope";
+      state.menuView = "scope";
       return true;
     }
   }
   return false;
 };
 const maybeDeselectMismatchedScope = () => {
-  if (menuView.value === "value" && currentScope.value) {
-    if (!inputText.value.startsWith(`${currentScope.value}:`)) {
+  if (state.menuView === "value" && state.currentScope) {
+    if (!inputText.value.startsWith(`${state.currentScope}:`)) {
       // de-select current scope since the inputText doesn't match its prefix.
-      menuView.value = "scope";
+      state.menuView = "scope";
       selectScope(undefined);
       return true;
     }
@@ -430,7 +434,7 @@ const handleKeyUp = (e: KeyboardEvent) => {
   const { key } = e;
   if (key === "Escape") {
     maybeEmitIncompleteValue();
-    menuView.value = undefined;
+    state.menuView = undefined;
     return;
   }
   if (key === "Backspace" && inputText.value === "") {
@@ -451,7 +455,7 @@ const handleKeyUp = (e: KeyboardEvent) => {
     // Press enter to select scope (dive into the next step)
     // or select value
     const index = menuIndex.value;
-    if (menuView.value === "scope") {
+    if (state.menuView === "scope") {
       const option = visibleScopeOptions.value[index];
       if (option) {
         selectScope(option.id);
@@ -459,7 +463,7 @@ const handleKeyUp = (e: KeyboardEvent) => {
         return;
       }
     }
-    if (menuView.value === "value") {
+    if (state.menuView === "value") {
       const option = visibleValueOptions.value[index];
       if (option) {
         selectValue(option.value);
@@ -497,21 +501,24 @@ onMounted(() => {
     inputRef.value?.inputElRef?.focus();
   }
 });
-watch(menuView, () => {
-  focusedTagId.value = undefined;
-  menuIndex.value = 0;
-  if (menuView.value === "value" && currentScope.value) {
-    const value = getValueFromSearchParams(props.params, currentScope.value);
-    if (value) {
-      const index = valueOptions.value.findIndex(
-        (option) => option.value === value
-      );
-      if (index >= 0) menuIndex.value = index;
+watch(
+  () => state.menuView,
+  () => {
+    focusedTagId.value = undefined;
+    menuIndex.value = 0;
+    if (state.menuView === "value" && state.currentScope) {
+      const value = getValueFromSearchParams(props.params, state.currentScope);
+      if (value) {
+        const index = valueOptions.value.findIndex(
+          (option) => option.value === value
+        );
+        if (index >= 0) menuIndex.value = index;
+      }
     }
   }
-});
+);
 watch(visibleScopeOptions, (newOptions, oldOptions) => {
-  if (menuView.value !== "scope") return;
+  if (state.menuView !== "scope") return;
   const highlightedScope = oldOptions[menuIndex.value]?.id;
   if (highlightedScope) {
     const index = newOptions.findIndex((opt) => opt.id === highlightedScope);
@@ -523,7 +530,7 @@ watch(visibleScopeOptions, (newOptions, oldOptions) => {
   menuIndex.value = minmax(menuIndex.value, 0, newOptions.length - 1);
 });
 watch(visibleValueOptions, (newOptions, oldOptions) => {
-  if (menuView.value !== "value") return;
+  if (state.menuView !== "value") return;
   const highlightedValue = oldOptions[menuIndex.value]?.value;
   if (highlightedValue) {
     const index = newOptions.findIndex((opt) => opt.value === highlightedValue);
@@ -543,8 +550,8 @@ watch(
 </script>
 
 <style lang="postcss" scoped>
-.bb-advanced-issue-search-box
-  .bb-advanced-issue-search-box__input
+.bb-advanced-audit-log-search-box
+  .bb-advanced-audit-log-search-box__input
   :deep(.n-input__input) {
   @apply flex flex-row items-center;
 }
