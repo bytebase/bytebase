@@ -27,6 +27,7 @@ withDefaults(
     border?: boolean;
   }>(),
   {
+    imgAttrs: undefined,
     border: true,
   }
 );
