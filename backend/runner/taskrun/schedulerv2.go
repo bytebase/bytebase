@@ -330,9 +330,16 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 			slog.Error("failed to get task", slog.Int("task id", taskRun.TaskUID), log.BBError(err))
 			continue
 		}
-		if task.DatabaseID != nil && minTaskIDForDatabase[*task.DatabaseID] != task.ID {
-			continue
+		if task.DatabaseID != nil {
+			if minTaskIDForDatabase[*task.DatabaseID] != task.ID {
+				continue
+			}
+			// Skip the task run if there is an ongoing migration on the database.
+			if _, ok := s.stateCfg.RunningDatabaseMigration.Load(*task.DatabaseID); ok {
+				continue
+			}
 		}
+
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 		if err != nil {
 			continue
@@ -373,6 +380,9 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		s.stateCfg.TaskRunExecutionStatuses.Delete(taskRun.ID)
 		// We don't need to do s.stateCfg.RunningTaskRuns.Delete(taskRun.ID) to avoid race condition.
 		s.stateCfg.RunningTaskRunsCancelFunc.Delete(taskRun.ID)
+		if task.DatabaseID != nil {
+			s.stateCfg.RunningDatabaseMigration.Delete(*task.DatabaseID)
+		}
 		s.stateCfg.Lock()
 		s.stateCfg.InstanceOutstandingConnections[task.InstanceID]--
 		s.stateCfg.Unlock()
@@ -381,6 +391,9 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	driverCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	s.stateCfg.RunningTaskRunsCancelFunc.Store(taskRun.ID, cancel)
+	if task.DatabaseID != nil {
+		s.stateCfg.RunningDatabaseMigration.Store(*task.DatabaseID, true)
+	}
 
 	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRun.ID)
 
