@@ -40,7 +40,7 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import type { DataTableColumn } from "naive-ui";
-import { NPerformantEllipsis, NDataTable, NDynamicTags, NTag } from "naive-ui";
+import { NPerformantEllipsis, NDataTable } from "naive-ui";
 import { reactive, computed, watch, ref, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -61,6 +61,7 @@ import {
   extractProjectResourceName,
   humanizeTs,
 } from "@/utils";
+import IssueLabelSelector from "./IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "./IssueStatusIconWithTaskSummary.vue";
 
 type Mode = "ALL" | "PROJECT";
@@ -129,6 +130,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       title: t("common.labels"),
       resizable: true,
       minWidth: 120,
+      hide: !showExtendedColumns.value,
       render: (issue) => {
         const labelMap: Map<string, Label> =
           issue.projectEntity.issueLabels.reduce((map, label) => {
@@ -136,26 +138,17 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
             return map;
           }, new Map<string, Label>());
 
-        return h(NDynamicTags, {
-          size: "small",
+        const labels = issue.labels.filter((label) => labelMap.has(label));
+        if (labels.length === 0) {
+          return h("span", {}, "-");
+        }
+
+        return h(IssueLabelSelector, {
           disabled: true,
-          class: "issue-row-dynamic-tags",
-          value: issue.labels.filter((label) => labelMap.has(label)),
-          renderTag: (value: string) =>
-            h(
-              NTag,
-              { closable: false, size: "small" },
-              {
-                default: () =>
-                  h("div", { class: "flex items-center gap-x-2" }, [
-                    h("div", {
-                      class: "w-4 h-4 rounded cursor-pointer relative",
-                      style: `background-color: ${labelMap.get(value)?.color};`,
-                    }),
-                    value,
-                  ]),
-              }
-            ),
+          selected: labels,
+          size: "small",
+          maxTagCount: "responsive",
+          labels: issue.projectEntity.issueLabels,
         });
       },
     },
@@ -409,7 +402,12 @@ const isIssueExpanded = (issue: ComposedIssue): boolean => {
 </script>
 
 <style scoped lang="postcss">
-:deep(.issue-row-dynamic-tags) > :last-child {
+:deep(.n-base-selection-tags) {
+  @apply !bg-transparent !p-0;
+}
+:deep(.n-base-suffix),
+:deep(.n-base-selection__border),
+:deep(.n-base-selection__state-border) {
   @apply !hidden;
 }
 </style>
