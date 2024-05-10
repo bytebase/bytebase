@@ -1196,6 +1196,12 @@
     },
     "update-rollout-time": {
       "self": "Update rollout time"
+    },
+    "task-run": {
+      "task-run-log": {
+        "batch": "Batch",
+        "affected-rows": "Affected rows"
+      }
     }
   },
   "alter-schema": {

@@ -1196,6 +1196,12 @@
     },
     "update-rollout-time": {
       "self": "修改指定发布时间"
+    },
+    "task-run": {
+      "task-run-log": {
+        "batch": "批次",
+        "affected-rows": "影响行数"
+      }
     }
   },
   "alter-schema": {
