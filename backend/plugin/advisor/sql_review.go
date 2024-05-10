@@ -135,6 +135,8 @@ const (
 	SchemaRuleStatementPriorBackupCheck = "statement.prior-backup-check"
 	// SchemaRuleStatementNonTransactional checks for non-transactional statements.
 	SchemaRuleStatementNonTransactional = "statement.non-transactional"
+	// SchemaRuleStatementAddColumnWithoutPosition check no position in ADD COLUMN clause.
+	SchemaRuleStatementAddColumnWithoutPosition = "statement.add-column-without-position"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -1496,6 +1498,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLStatementPriorBackupCheck, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLStatementPriorBackupCheck, nil
+		}
+	case SchemaRuleStatementAddColumnWithoutPosition:
+		if engine == storepb.Engine_OCEANBASE {
+			return MySQLStatementAddColumnWithoutPosition, nil
 		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {

@@ -344,6 +344,10 @@ ruleList:
       - MYSQL
       - POSTGRES
       - TIDB
+  - type: statement.add-column-without-position
+    category: STATEMENT
+    engineList:
+      - OCEANBASE
   - type: naming.fully-qualified
     category: NAMING
     engineList:
