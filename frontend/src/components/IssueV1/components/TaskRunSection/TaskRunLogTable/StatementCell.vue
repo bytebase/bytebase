@@ -1,5 +1,5 @@
 <template>
-  <div class="text-sm">
+  <div class="text-sm group">
     <TextOverflowPopover
       v-if="statement"
       :content="statement.trim()"
@@ -15,7 +15,7 @@
           <span class="line-clamp-1">
             {{ displayContent }}
           </span>
-          <NButton text size="tiny">
+          <NButton text size="tiny" class="invisible group-hover:visible">
             <template #icon>
               <CopyIcon class="w-3 h-3" />
             </template>
