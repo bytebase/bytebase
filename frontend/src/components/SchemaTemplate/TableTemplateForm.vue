@@ -1,8 +1,6 @@
 <template>
   <DrawerContent :title="$t('schema-template.table-template.self')">
-    <div
-      class="space-y-6 divide-y divide-block-border w-[calc(100vw-256px)] !max-w-[60rem]"
-    >
+    <div class="space-y-6 divide-y divide-block-border w-[calc(100vw-256px)]">
       <div class="space-y-6">
         <!-- category -->
         <div class="sm:col-span-2 sm:col-start-1">

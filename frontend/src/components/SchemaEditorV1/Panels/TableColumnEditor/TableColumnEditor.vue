@@ -63,11 +63,7 @@ import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
-import {
-  useSettingV1Store,
-  useSubscriptionV1Store,
-  useSchemaEditorV1Store,
-} from "@/store/modules";
+import { useSettingV1Store, useSubscriptionV1Store } from "@/store/modules";
 import type { Engine } from "@/types/proto/v1/common";
 import { ColumnConfig } from "@/types/proto/v1/database_service";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
@@ -159,15 +155,7 @@ const layoutReady = computed(() => tableHeaderHeight.value > 0);
 const { t } = useI18n();
 const subscriptionV1Store = useSubscriptionV1Store();
 const settingStore = useSettingV1Store();
-const schemaEditorV1Store = useSchemaEditorV1Store();
 const editColumnDefaultValueExpressionContext = ref<Column>();
-
-const classificationConfig = computed(() => {
-  if (!props.classificationConfigId) {
-    return;
-  }
-  return settingStore.getProjectClassification(props.classificationConfigId);
-});
 
 const semanticTypeList = computed(() => {
   return (
@@ -176,15 +164,15 @@ const semanticTypeList = computed(() => {
   );
 });
 
-const showDatabaseConfigColumn = computed(
-  () => schemaEditorV1Store.resourceType === "branch"
-);
-
 const showSemanticTypeColumn = computed(() => {
-  return (
-    subscriptionV1Store.hasFeature("bb.feature.sensitive-data") &&
-    showDatabaseConfigColumn.value
-  );
+  return subscriptionV1Store.hasFeature("bb.feature.sensitive-data");
+});
+
+const classificationConfig = computed(() => {
+  if (!props.classificationConfigId) {
+    return;
+  }
+  return settingStore.getProjectClassification(props.classificationConfigId);
 });
 
 const columns = computed(() => {
@@ -210,7 +198,7 @@ const columns = computed(() => {
       key: "name",
       title: t("schema-editor.column.name"),
       resizable: true,
-      width: 140,
+      width: 100,
       className: "input-cell",
       render: (column) => {
         return h(InlineInput, {
@@ -374,7 +362,6 @@ const columns = computed(() => {
       title: t("common.labels"),
       resizable: true,
       width: 140,
-      hide: !showDatabaseConfigColumn.value,
       render: (column) => {
         return h(LabelsCell, {
           column,

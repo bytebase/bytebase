@@ -63,6 +63,7 @@ import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
+import { supportSetClassificationFromComment } from "@/components/ColumnDataTable/utils";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
 import { useSettingV1Store, useSubscriptionV1Store } from "@/store/modules";
@@ -165,6 +166,8 @@ const state = reactive<LocalState>({
 });
 
 const {
+  classificationConfig,
+  showClassificationColumn,
   showDatabaseConfigColumn,
   disableDiffColoring,
   selectionEnabled,
@@ -242,12 +245,7 @@ const configForColumn = (column: ColumnMetadata) => {
 const primaryKey = computed(() => {
   return props.table.indexes.find((idx) => idx.primary);
 });
-const classificationConfig = computed(() => {
-  if (!props.classificationConfigId) {
-    return;
-  }
-  return settingStore.getProjectClassification(props.classificationConfigId);
-});
+
 const semanticTypeList = computed(() => {
   return (
     settingStore.getSettingByName("bb.workspace.semantic-types")?.value
@@ -262,8 +260,11 @@ const showSemanticTypeColumn = computed(() => {
   );
 });
 
-const showClassificationColumn = computed(() => {
-  return !!classificationConfig.value && showDatabaseConfigColumn.value;
+const showClassification = computed(() => {
+  return showClassificationColumn(
+    props.engine,
+    props.database.classificationFromConfig
+  );
 });
 
 const columns = computed(() => {
@@ -368,7 +369,7 @@ const columns = computed(() => {
     {
       key: "classification",
       title: t("schema-editor.column.classification"),
-      hide: !showClassificationColumn.value,
+      hide: !showClassification.value,
       resizable: true,
       minWidth: 140,
       maxWidth: 320,

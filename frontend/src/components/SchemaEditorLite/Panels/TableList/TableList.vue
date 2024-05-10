@@ -101,7 +101,8 @@ const {
   useConsumePendingScrollToTable,
   getAllTablesSelectionState,
   updateAllTablesSelection,
-  showDatabaseConfigColumn,
+  showClassificationColumn,
+  classificationConfig,
 } = useSchemaEditorContext();
 const dataTableRef = ref<DataTableInst>();
 const containerElRef = ref<HTMLElement>();
@@ -118,7 +119,6 @@ const tableBodyHeight = computed(() => {
 });
 // Use this to avoid unnecessary initial rendering
 const layoutReady = computed(() => tableHeaderHeight.value > 0);
-const settingStore = useSettingV1Store();
 const state = reactive<LocalState>({
   showFeatureModal: false,
   showSchemaTemplateDrawer: false,
@@ -133,15 +133,6 @@ const engine = computed(() => {
   return props.db.instanceEntity.engine;
 });
 
-const classificationConfig = computed(() => {
-  if (!project.value.dataClassificationConfigId) {
-    return;
-  }
-  return settingStore.getProjectClassification(
-    project.value.dataClassificationConfigId
-  );
-});
-
 const configForTable = (table: TableMetadata) => {
   return (
     getTableConfig(props.db, { schema: props.schema, table }) ??
@@ -151,8 +142,11 @@ const configForTable = (table: TableMetadata) => {
   );
 };
 
-const showClassificationColumn = computed(() => {
-  return !!classificationConfig.value && showDatabaseConfigColumn.value;
+const showClassification = computed(() => {
+  return showClassificationColumn(
+    engine.value,
+    props.database.classificationFromConfig
+  );
 });
 
 const onClassificationSelect = (classificationId: string) => {
@@ -248,7 +242,7 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 140,
       maxWidth: 320,
-      hide: !showClassificationColumn.value,
+      hide: !showClassification.value,
       render: (table) => {
         const config = configForTable(table);
         return h(ClassificationCell, {
