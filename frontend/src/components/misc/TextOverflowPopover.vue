@@ -6,11 +6,13 @@
     width="trigger"
     scrollable
   >
-    <highlight-code-block
-      v-if="codeMode"
-      :code="displayPopoverContent"
-      class="whitespace-pre-wrap"
-    />
+    <div v-if="codeMode" :class="codeClass">
+      <slot name="popover-header" />
+      <highlight-code-block
+        :code="displayPopoverContent"
+        class="whitespace-pre-wrap"
+      />
+    </div>
     <div v-else class="whitespace-pre-wrap">
       {{ displayPopoverContent }}
     </div>
@@ -48,6 +50,10 @@ const props = defineProps({
     default: "top",
   },
   contentClass: {
+    type: [String, Object, Array] as PropType<VueClass>,
+    default: undefined,
+  },
+  codeClass: {
     type: [String, Object, Array] as PropType<VueClass>,
     default: undefined,
   },
