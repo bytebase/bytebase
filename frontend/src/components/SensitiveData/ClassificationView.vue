@@ -1,22 +1,5 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="flex items-center justify-end">
-      <NButton
-        type="primary"
-        :disabled="!hasPermission || !hasSensitiveDataFeature"
-        @click="onUpload"
-      >
-        {{ $t("settings.sensitive-data.classification.upload") }}
-      </NButton>
-      <input
-        ref="uploader"
-        type="file"
-        accept=".json"
-        class="sr-only hidden"
-        :disabled="!hasPermission || !hasSensitiveDataFeature"
-        @input="onFileChange"
-      />
-    </div>
     <div class="textinfolabel">
       {{ $t("settings.sensitive-data.classification.label") }}
       <span
@@ -26,7 +9,25 @@
         {{ $t("settings.sensitive-data.classification.view-example") }}
       </span>
     </div>
-    <NoDataPlaceholder v-if="settingStore.classification.length === 0" />
+    <div
+      v-if="settingStore.classification.length === 0"
+      class="flex justify-center border-2 border-gray-300 border-dashed rounded-md relative h-72"
+    >
+      <SingleFileSelector
+        class="space-y-1 text-center flex flex-col justify-center items-center absolute top-0 bottom-0 left-0 right-0"
+        :support-file-extensions="['.json']"
+        :max-file-size-in-mi-b="maxFileSizeInMiB"
+        :disabled="!hasPermission || !hasSensitiveDataFeature"
+        @on-select="onFileSelect"
+      >
+        <template #image>
+          <NoDataPlaceholder
+            :border="false"
+            :img-attrs="{ class: '!max-h-[10vh]' }"
+          />
+        </template>
+      </SingleFileSelector>
+    </div>
     <div v-else class="h-full">
       <ClassificationTree
         :classification-config="settingStore.classification[0]"
@@ -67,7 +68,7 @@ import type {
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
-const uploader = ref<HTMLInputElement | null>(null);
+const maxFileSizeInMiB = 10;
 
 interface UploadClassificationConfig {
   title: string;
@@ -126,17 +127,7 @@ const hasPermission = computed(() => {
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
-const onUpload = () => {
-  uploader.value?.click();
-};
-
-const onFileChange = () => {
-  const files: File[] = (uploader.value as any).files;
-  if (files.length !== 1) {
-    return;
-  }
-  const file = files[0];
-
+const onFileSelect = (file: File) => {
   const fr = new FileReader();
   fr.onload = () => {
     if (!fr.result) {
