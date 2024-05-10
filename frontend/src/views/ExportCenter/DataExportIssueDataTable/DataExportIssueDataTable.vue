@@ -115,12 +115,10 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
 const props = withDefaults(
   defineProps<{
     issueList: ComposedIssue[];
-    highlightText?: string;
     loading?: boolean;
     showProject: boolean;
   }>(),
   {
-    highlightText: "",
     loading: true,
     showProject: true,
   }
