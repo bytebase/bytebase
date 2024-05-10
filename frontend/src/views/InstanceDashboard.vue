@@ -5,12 +5,12 @@
       feature="bb.feature.instance-count"
       :description="instanceCountAttention"
     />
-    <AdvancedSearchBox
+    <AdvancedSearch
       v-model:params="state.params"
       class="px-4"
       :autofocus="false"
       :placeholder="$t('instance.filter-instance-name')"
-      :support-option-id-list="supportOptionIdList"
+      :scope-options="scopeOptions"
     />
     <InstanceV1Table
       :bordered="false"
@@ -24,6 +24,8 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import AdvancedSearch from "@/components/AdvancedSearch";
+import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { InstanceV1Table } from "@/components/v2";
 import {
   useUIStateStore,
@@ -34,7 +36,7 @@ import {
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import type { SearchParams, SearchScopeId } from "@/utils";
+import type { SearchParams } from "@/utils";
 import {
   sortInstanceV1ListByEnvironmentV1,
   extractEnvironmentResourceName,
@@ -57,6 +59,11 @@ const state = reactive<LocalState>({
     scopes: [],
   },
 });
+
+const scopeOptions = useCommonSearchScopeOptions(
+  computed(() => state.params),
+  ["environment"]
+);
 
 const selectedEnvironment = computed(() => {
   return (
@@ -117,9 +124,5 @@ const instanceCountAttention = computed((): string => {
   }
 
   return `${status} ${upgrade}`;
-});
-
-const supportOptionIdList = computed((): SearchScopeId[] => {
-  return ["environment"];
 });
 </script>
