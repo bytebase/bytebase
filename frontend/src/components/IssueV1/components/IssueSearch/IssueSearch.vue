@@ -89,6 +89,6 @@ const allowedScopes = computed(() => {
 
 const scopeOptions = useIssueSearchScopeOptions(
   computed(() => props.params),
-  computed(() => allowedScopes.value)
+  allowedScopes
 );
 </script>
