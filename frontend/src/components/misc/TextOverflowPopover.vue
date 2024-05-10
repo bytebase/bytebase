@@ -1,22 +1,26 @@
 <template>
   <NPopover
-    :disabled="content.length <= maxLength"
+    :disabled="popoverDisabled"
     :placement="placement"
     style="max-height: 300px"
     width="trigger"
     scrollable
   >
-    <highlight-code-block
-      v-if="codeMode"
-      :code="displayPopoverContent"
-      class="whitespace-pre-wrap"
-    />
+    <div v-if="codeMode" :class="codeClass">
+      <slot name="popover-header" />
+      <highlight-code-block
+        :code="displayPopoverContent"
+        class="whitespace-pre-wrap"
+      />
+    </div>
     <div v-else class="whitespace-pre-wrap">
       {{ displayPopoverContent }}
     </div>
 
     <template #trigger>
-      <span :class="contentClass" v-bind="$attrs">{{ displayContent }}</span>
+      <slot name="default" :display-content="displayContent">
+        <span :class="contentClass" v-bind="$attrs">{{ displayContent }}</span>
+      </slot>
     </template>
   </NPopover>
 </template>
@@ -49,6 +53,10 @@ const props = defineProps({
     type: [String, Object, Array] as PropType<VueClass>,
     default: undefined,
   },
+  codeClass: {
+    type: [String, Object, Array] as PropType<VueClass>,
+    default: undefined,
+  },
   codeMode: {
     type: Boolean,
     default: true,
@@ -77,5 +85,9 @@ const displayPopoverContent = computed(() => {
   return content.length <= maxPopoverContentLength
     ? content
     : content.substring(0, maxPopoverContentLength) + "...";
+});
+
+const popoverDisabled = computed(() => {
+  return displayContent.value === props.content;
 });
 </script>
