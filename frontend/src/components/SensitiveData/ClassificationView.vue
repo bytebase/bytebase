@@ -1,5 +1,22 @@
 <template>
   <div class="w-full space-y-4">
+    <div class="flex items-center justify-end">
+      <NButton
+        type="primary"
+        :disabled="!hasPermission || !hasSensitiveDataFeature"
+        @click="onUpload"
+      >
+        {{ $t("settings.sensitive-data.classification.upload") }}
+      </NButton>
+      <input
+        ref="uploader"
+        type="file"
+        accept=".json"
+        class="sr-only hidden"
+        :disabled="!hasPermission || !hasSensitiveDataFeature"
+        @input="onFileChange"
+      />
+    </div>
     <div class="textinfolabel">
       {{ $t("settings.sensitive-data.classification.label") }}
       <span
@@ -68,6 +85,7 @@ import type {
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
+const uploader = ref<HTMLInputElement | null>(null);
 const maxFileSizeInMiB = 10;
 
 interface UploadClassificationConfig {
@@ -126,6 +144,29 @@ const hasPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+
+const onUpload = () => {
+  uploader.value?.click();
+};
+
+const onFileChange = () => {
+  const files: File[] = (uploader.value as any).files;
+  if (files.length !== 1) {
+    return;
+  }
+  const file = files[0];
+  if (file.size > maxFileSizeInMiB * 1024 * 1024) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.file-selector.size-limit", {
+        size: maxFileSizeInMiB,
+      }),
+    });
+    return;
+  }
+  onFileSelect(file);
+};
 
 const onFileSelect = (file: File) => {
   const fr = new FileReader();
