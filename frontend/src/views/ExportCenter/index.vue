@@ -7,8 +7,8 @@
         <IssueSearch
           v-model:params="state.params"
           class="flex-1"
-          :placeholder="''"
           :readonly-scopes="readonlyScopes"
+          :override-scope-id-list="overideSearchScopeIdList"
         >
           <template #searchbox-suffix>
             <NTooltip :disabled="allowExportData">
@@ -43,6 +43,7 @@
             :loading="loading"
             :issue-list="issueList"
             :highlight-text="state.params.query"
+            :show-project="!specificProject"
           />
         </template>
       </PagedIssueTableV1>
@@ -77,6 +78,7 @@ import {
   hasPermissionToCreateDataExportIssueInProject,
   type SearchParams,
   type SearchScope,
+  type SearchScopeId,
 } from "@/utils";
 import DataExportIssueDataTable from "./DataExportIssueDataTable";
 import type { ExportRecord } from "./types";
@@ -152,6 +154,18 @@ const dataExportIssueSearchParams = computed(() => {
     query: state.params.query,
     scopes: [...state.params.scopes, ...defaultScopes],
   } as SearchParams;
+});
+
+const overideSearchScopeIdList = computed(() => {
+  const defaultScopeIdList: SearchScopeId[] = [
+    "status",
+    "instance",
+    "database",
+  ];
+  if (!specificProject.value) {
+    defaultScopeIdList.push("project");
+  }
+  return defaultScopeIdList;
 });
 
 const mergedIssueFilter = computed(() => {
