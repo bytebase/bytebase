@@ -1,11 +1,7 @@
-import { orderBy } from "lodash-es";
 import type { Ref, VNode } from "vue";
 import { computed, h, unref } from "vue";
 import { useI18n } from "vue-i18n";
-import BBAvatar from "@/bbkit/BBAvatar.vue";
 import GitIcon from "@/components/GitIcon.vue";
-import SystemBotTag from "@/components/misc/SystemBotTag.vue";
-import YouTag from "@/components/misc/YouTag.vue";
 import {
   InstanceV1Name,
   ProjectV1Name,
@@ -13,15 +9,13 @@ import {
   EnvironmentV1Name,
 } from "@/components/v2";
 import {
-  useCurrentUserV1,
   useDatabaseV1Store,
   useInstanceV1List,
   useSearchDatabaseV1List,
-  useUserStore,
   useEnvironmentV1List,
   useProjectV1List,
 } from "@/store";
-import { SYSTEM_BOT_EMAIL, UNKNOWN_ID, type MaybeRef } from "@/types";
+import { UNKNOWN_ID, type MaybeRef } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
 import { Workflow } from "@/types/proto/v1/project_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
@@ -38,42 +32,12 @@ export const useCommonSearchScopeOptions = (
   supportOptionIdList: MaybeRef<SearchScopeId[]>
 ) => {
   const { t } = useI18n();
-  const me = useCurrentUserV1();
-  const userStore = useUserStore();
   const databaseV1Store = useDatabaseV1Store();
   const environmentList = useEnvironmentV1List(false /* !showDeleted */);
   const { projectList } = useProjectV1List();
   const { instanceList } = useInstanceV1List(false /* !showDeleted */);
   const { databaseList } = useSearchDatabaseV1List({
     filter: "instance = instances/-",
-  });
-
-  const principalSearchValueOptions = computed(() => {
-    // Put "you" to the top
-    const sortedUsers = orderBy(
-      userStore.activeUserList,
-      (user) => (user.name === me.value.name ? -1 : 1),
-      "asc"
-    );
-    return sortedUsers.map<ValueOption>((user) => {
-      return {
-        value: user.email,
-        keywords: [user.email, user.title],
-        render: () => {
-          const children = [
-            h(BBAvatar, { size: "TINY", username: user.title }),
-            renderSpan(user.title),
-          ];
-          if (user.name === me.value.name) {
-            children.push(h(YouTag));
-          }
-          if (user.email === SYSTEM_BOT_EMAIL) {
-            children.push(h(SystemBotTag));
-          }
-          return h("div", { class: "flex items-center gap-x-1" }, children);
-        },
-      };
-    });
   });
 
   // fullScopeOptions provides full search scopes and options.
@@ -100,12 +64,6 @@ export const useCommonSearchScopeOptions = (
             },
           };
         }),
-      },
-      {
-        id: "creator",
-        title: t("issue.advanced-search.scope.creator.title"),
-        description: t("issue.advanced-search.scope.creator.description"),
-        options: principalSearchValueOptions.value,
       },
       {
         id: "instance",

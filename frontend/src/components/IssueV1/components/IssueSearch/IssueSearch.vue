@@ -40,7 +40,7 @@
 import { ref, computed } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
-import type { SearchParams, SearchScope } from "@/utils";
+import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
 import { UIIssueFilterScopeIdList, SearchScopeIdList } from "@/utils";
 import Status from "./Status.vue";
 import { useIssueSearchScopeOptions } from "./useIssueSearchScopeOptions";
@@ -62,12 +62,14 @@ const props = withDefaults(
   defineProps<{
     params: SearchParams;
     readonlyScopes?: SearchScope[];
+    overrideScopeIdList?: SearchScopeId[];
     autofocus?: boolean;
     components?: SearchComponent[];
     componentProps?: Partial<Record<SearchComponent, any>>;
   }>(),
   {
     readonlyScopes: () => [],
+    overrideScopeIdList: () => [],
     components: () => ["searchbox", "time-range", "status"],
     componentProps: undefined,
   }
@@ -78,8 +80,15 @@ defineEmits<{
 
 const showTimeRange = ref(false);
 
+const allowedScopes = computed(() => {
+  if (props.overrideScopeIdList && props.overrideScopeIdList.length > 0) {
+    return props.overrideScopeIdList;
+  }
+  return [...UIIssueFilterScopeIdList, ...SearchScopeIdList];
+});
+
 const scopeOptions = useIssueSearchScopeOptions(
   computed(() => props.params),
-  computed(() => [...UIIssueFilterScopeIdList, ...SearchScopeIdList])
+  allowedScopes
 );
 </script>
