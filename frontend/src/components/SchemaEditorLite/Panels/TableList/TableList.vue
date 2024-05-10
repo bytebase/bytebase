@@ -56,7 +56,7 @@ import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
-import { hasFeature, useSettingV1Store } from "@/store";
+import { hasFeature } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
@@ -87,7 +87,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const {
-  project,
   readonly,
   selectionEnabled,
   disableDiffColoring,
