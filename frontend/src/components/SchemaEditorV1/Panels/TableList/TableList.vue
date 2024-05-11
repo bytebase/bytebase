@@ -45,14 +45,6 @@
     </DrawerContent>
   </Drawer>
 
-  <SelectClassificationDrawer
-    v-if="classificationConfig"
-    :show="state.showClassificationDrawer"
-    :classification-config="classificationConfig"
-    @dismiss="state.showClassificationDrawer = false"
-    @apply="onClassificationSelect"
-  />
-
   <FeatureModal
     feature="bb.feature.schema-template"
     :open="state.showFeatureModal"
@@ -66,8 +58,8 @@ import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
-import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   hasFeature,
@@ -86,7 +78,6 @@ import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../../Modals/TableNameModal.vue";
 import { isTableChanged } from "../../utils";
-import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
 import { NameCell, OperationCell } from "./components";
 
 const props = defineProps<{
@@ -97,7 +88,6 @@ const props = defineProps<{
 interface LocalState {
   showFeatureModal: boolean;
   showSchemaTemplateDrawer: boolean;
-  showClassificationDrawer: boolean;
   tableNameModalContext?: {
     parentName: string;
     schemaId: string;
@@ -129,7 +119,6 @@ const currentTab = computed(
 const state = reactive<LocalState>({
   showFeatureModal: false,
   showSchemaTemplateDrawer: false,
-  showClassificationDrawer: false,
 });
 
 const engine = computed(() => {
@@ -153,11 +142,6 @@ const classificationConfig = computed(() => {
   );
 });
 
-const showClassificationDrawer = (table: Table) => {
-  state.activeTableId = table.id;
-  state.showClassificationDrawer = true;
-};
-
 const onClassificationSelect = (classificationId: string) => {
   const table = tableList.value.find(
     (table) => table.id === state.activeTableId
@@ -165,7 +149,7 @@ const onClassificationSelect = (classificationId: string) => {
   if (!table) {
     return;
   }
-  table.classification = classificationId;
+  table.config.classificationId = classificationId;
   state.activeTableId = undefined;
 };
 
@@ -192,14 +176,16 @@ const columns = computed(() => {
       hide: !classificationConfig.value,
       render: (table) => {
         return h(ClassificationCell, {
-          classification: table.classification,
+          classification: table.config.classificationId,
           readonly: readonly.value,
           disabled: !disableChangeTable(table),
           classificationConfig:
             classificationConfig.value ??
             DataClassificationConfig.fromPartial({}),
-          onEdit: () => showClassificationDrawer(table),
-          onRemove: () => (table.classification = ""),
+          onApply: (id: string) => {
+            state.activeTableId = table.id;
+            onClassificationSelect(id);
+          },
         });
       },
     },

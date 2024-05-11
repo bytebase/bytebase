@@ -7022,6 +7022,13 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><p>The user labels for a column. </p></td>
                 </tr>
               
+                <tr>
+                  <td>classification_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7154,13 +7161,6 @@ For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CUR
                   <td></td>
                   <td><p>The comment is the comment of a column.
 classification and user_comment is parsed from the comment. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>classification</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The classification is the classification of a column parsed from the comment. </p></td>
                 </tr>
               
                 <tr>
@@ -7332,6 +7332,15 @@ Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-ove
                   <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
                 </tr>
               
+                <tr>
+                  <td>classification_from_config</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If true, we will only store the classification in the config.
+Otherwise we will get the classification from table/column comment,
+and write back to the schema metadata. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7391,6 +7400,13 @@ Format: instances/{instance}/databases/{database}/metadata </p></td>
                   <td><a href="#bytebase.v1.SchemaConfig">SchemaConfig</a></td>
                   <td>repeated</td>
                   <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_from_config</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -9020,6 +9036,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p>The column_configs is the ordered list of configs for columns in a table. </p></td>
                 </tr>
               
+                <tr>
+                  <td>classification_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -9113,13 +9136,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td></td>
                   <td><p>The comment is the comment of a table.
 classification and user_comment is parsed from the comment. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>classification</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The classification is the classification of a table parsed from the comment. </p></td>
                 </tr>
               
                 <tr>

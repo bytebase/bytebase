@@ -1752,7 +1752,11 @@
     "transfer-database-to": "Transfer databases to target project",
     "transfer-database-from-to": "Transfer database from source project to target project",
     "classification": {
-      "self": "Classification"
+      "self": "Classification",
+      "sync-from-comment": "Sync classification from comment",
+      "sync-from-comment-tip": "Once enabled, the classification will sync from the table/column comment. The comment should follow \"{format}\" format.",
+      "sync-from-comment-enable-warning": "Classification will change with the DDL and sync from the original comment.",
+      "sync-from-comment-disable-warning": "Classification won't change with the DDL, you can change it anytime on the database detail page."
     },
     "recent": "Recent",
     "partitioned": "Partitioned",

@@ -26,7 +26,25 @@
         {{ $t("settings.sensitive-data.classification.view-example") }}
       </span>
     </div>
-    <NoDataPlaceholder v-if="settingStore.classification.length === 0" />
+    <div
+      v-if="settingStore.classification.length === 0"
+      class="flex justify-center border-2 border-gray-300 border-dashed rounded-md relative h-72"
+    >
+      <SingleFileSelector
+        class="space-y-1 text-center flex flex-col justify-center items-center absolute top-0 bottom-0 left-0 right-0"
+        :support-file-extensions="['.json']"
+        :max-file-size-in-mi-b="maxFileSizeInMiB"
+        :disabled="!hasPermission || !hasSensitiveDataFeature"
+        @on-select="onFileSelect"
+      >
+        <template #image>
+          <NoDataPlaceholder
+            :border="false"
+            :img-attrs="{ class: '!max-h-[10vh]' }"
+          />
+        </template>
+      </SingleFileSelector>
+    </div>
     <div v-else class="h-full">
       <ClassificationTree
         :classification-config="settingStore.classification[0]"
@@ -68,6 +86,7 @@ import { DataClassificationSetting_DataClassificationConfig } from "@/types/prot
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const uploader = ref<HTMLInputElement | null>(null);
+const maxFileSizeInMiB = 10;
 
 interface UploadClassificationConfig {
   title: string;
@@ -136,7 +155,20 @@ const onFileChange = () => {
     return;
   }
   const file = files[0];
+  if (file.size > maxFileSizeInMiB * 1024 * 1024) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.file-selector.size-limit", {
+        size: maxFileSizeInMiB,
+      }),
+    });
+    return;
+  }
+  onFileSelect(file);
+};
 
+const onFileSelect = (file: File) => {
   const fr = new FileReader();
   fr.onload = () => {
     if (!fr.result) {

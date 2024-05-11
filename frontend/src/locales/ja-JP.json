@@ -1752,7 +1752,11 @@
     "transfer-database-to": "データベースをターゲットプロジェクトに転送します",
     "transfer-database-from-to": "データベースをソース プロジェクトからターゲット プロジェクトに転送する",
     "classification": {
-      "self": "分類と格付け"
+      "self": "分類と格付け",
+      "sync-from-comment": "コメントからカテゴリと評価を同期する",
+      "sync-from-comment-tip": "有効にすると、分類評価がテーブルまたは列のコメントから同期されます。コメントは「{format}」形式に従う必要があります。",
+      "sync-from-comment-enable-warning": "分類評価は DDL とともに変更され、元の注釈と同期されます。",
+      "sync-from-comment-disable-warning": "分類評価は DDL によって変更されません。データベースの詳細ページでいつでも変更できます。"
     },
     "recent": "最近の訪問",
     "partitioned": "パーティション",

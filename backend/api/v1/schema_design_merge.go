@@ -354,9 +354,6 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 		if n.head.UserComment != other.head.UserComment {
 			return true, fmt.Sprintf("conflict table user comment, one is %s, the other is %s", n.head.UserComment, other.head.UserComment)
 		}
-		if n.head.Classification != other.head.Classification {
-			return true, fmt.Sprintf("conflict table classification, one is %s, the other is %s", n.head.Classification, other.head.Classification)
-		}
 	}
 
 	if n.action == diffActionUpdate {
@@ -379,16 +376,6 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 				}
 			} else {
 				n.head.UserComment = other.head.UserComment
-			}
-		}
-
-		if other.base.Classification != other.head.Classification {
-			if n.base.Classification != n.head.Classification {
-				if n.head.Classification != other.head.Classification {
-					return true, fmt.Sprintf("conflict table classification, one is %s, the other is %s", n.head.Classification, other.head.Classification)
-				}
-			} else {
-				n.head.Classification = other.head.Classification
 			}
 		}
 	}
@@ -492,12 +479,11 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 	switch n.action {
 	case diffActionCreate:
 		newTable := &storepb.TableMetadata{
-			Name:           n.name,
-			Engine:         n.head.Engine,
-			Collation:      n.head.Collation,
-			Comment:        n.head.Comment,
-			UserComment:    n.head.UserComment,
-			Classification: n.head.Classification,
+			Name:        n.name,
+			Engine:      n.head.Engine,
+			Collation:   n.head.Collation,
+			Comment:     n.head.Comment,
+			UserComment: n.head.UserComment,
 		}
 		for _, columnName := range n.columnNames {
 			if columnNode, in := n.columnsMap[columnName]; in {
@@ -547,15 +533,14 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 			// So we do apply column and foreign key diff to target table.
 			if table.Name == n.name {
 				newTable := &storepb.TableMetadata{
-					Name:           n.name,
-					Engine:         n.head.Engine,
-					Collation:      n.head.Collation,
-					Comment:        n.head.Comment,
-					UserComment:    n.head.UserComment,
-					Classification: n.head.Classification,
-					Columns:        table.Columns,
-					ForeignKeys:    table.ForeignKeys,
-					Indexes:        table.Indexes,
+					Name:        n.name,
+					Engine:      n.head.Engine,
+					Collation:   n.head.Collation,
+					Comment:     n.head.Comment,
+					UserComment: n.head.UserComment,
+					Columns:     table.Columns,
+					ForeignKeys: table.ForeignKeys,
+					Indexes:     table.Indexes,
 				}
 				for _, columnName := range n.columnNames {
 					if columnNode, in := n.columnsMap[columnName]; in {
@@ -636,9 +621,6 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 		if n.head.UserComment != other.head.UserComment {
 			return true, fmt.Sprintf("conflict column user comment, one is %s, the other is %s", n.head.UserComment, other.head.UserComment)
 		}
-		if n.head.Classification != other.head.Classification {
-			return true, fmt.Sprintf("conflict column classification, one is %s, the other is %s", n.head.Classification, other.head.Classification)
-		}
 	}
 	if n.action == diffActionUpdate {
 		if other.base.Type != other.head.Type {
@@ -688,16 +670,6 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 				}
 			} else {
 				n.head.UserComment = other.head.UserComment
-			}
-		}
-
-		if other.base.Classification != other.head.Classification {
-			if n.base.Classification != n.head.Classification {
-				if n.head.Classification != other.head.Classification {
-					return true, fmt.Sprintf("conflict column classification, one is %s, the other is %s", n.head.Classification, other.head.Classification)
-				}
-			} else {
-				n.head.Classification = other.head.Classification
 			}
 		}
 	}

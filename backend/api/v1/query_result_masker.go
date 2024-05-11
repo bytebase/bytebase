@@ -212,7 +212,7 @@ func (s *QueryResultMasker) getMasterForColumnResource(
 		}
 	}
 
-	maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, semanticTypeID, meta.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
+	maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, semanticTypeID, config.ClassificationId, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
 	}
@@ -261,20 +261,13 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	columnMetadata = column
 
 	var columnConfig *storepb.ColumnConfig
-	config := dbSchema.GetDatabaseConfig()
+	config := dbSchema.GetInternalConfig()
 	if config == nil {
 		return columnMetadata, nil, nil
 	}
-	schemaConfig := config.GetSchemaConfig(sourceColumn.Schema)
-	if schemaConfig == nil {
-		return columnMetadata, nil, nil
-	}
-	tableConfig := schemaConfig.GetTableConfig(sourceColumn.Table)
-	if tableConfig == nil {
-		return columnMetadata, nil, nil
-	}
-
-	columnConfig = tableConfig.GetColumnConfig(sourceColumn.Column)
+	schemaConfig := config.CreateOrGetSchemaConfig(sourceColumn.Schema)
+	tableConfig := schemaConfig.CreateOrGetTableConfig(sourceColumn.Table)
+	columnConfig = tableConfig.CreateOrGetColumnConfig(sourceColumn.Column)
 	return columnMetadata, columnConfig, nil
 }
 

@@ -336,7 +336,27 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
 	}
-	setClassificationAndUserCommentFromComment(databaseMetadata)
+
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
+	}
+
+	dbModelConfig := model.NewDatabaseConfig(nil)
+	if dbSchema != nil {
+		dbModelConfig = dbSchema.GetInternalConfig()
+	}
+	if instance.Engine != storepb.Engine_MYSQL && instance.Engine != storepb.Engine_POSTGRES {
+		// Force to disable classification from comment if the engine is not MYSQL or PG.
+		dbModelConfig.ClassificationFromConfig = true
+	}
+	if dbModelConfig.ClassificationFromConfig {
+		// Only set the user comment.
+		setUserCommentFromComment(databaseMetadata)
+	} else {
+		// Get classification from the comment.
+		setClassificationAndUserCommentFromComment(databaseMetadata, dbModelConfig)
+	}
 
 	syncStatus := api.OK
 	ts := time.Now().Unix()
@@ -352,10 +372,6 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
-	}
 	var oldDatabaseMetadata *storepb.DatabaseSchemaMetadata
 	var rawDump []byte
 	if dbSchema != nil {
@@ -376,7 +392,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 
 		if err := s.store.UpsertDBSchema(ctx,
 			database.UID,
-			model.NewDBSchema(databaseMetadata, rawDump, nil /* config */),
+			model.NewDBSchema(databaseMetadata, rawDump, dbModelConfig.BuildDatabaseConfig()),
 			api.SystemBotID,
 		); err != nil {
 			if strings.Contains(err.Error(), "escape sequence") {
@@ -546,12 +562,49 @@ func equalDatabaseMetadata(x, y *storepb.DatabaseSchemaMetadata) bool {
 	)
 }
 
-func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {
+func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata, databaseConfig *model.DatabaseConfig) {
+	for _, schema := range dbSchema.Schemas {
+		schemaConfig := databaseConfig.CreateOrGetSchemaConfig(schema.Name)
+
+		for _, table := range schema.Tables {
+			tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
+			classification, userComment := common.GetClassificationAndUserComment(table.Comment)
+
+			table.UserComment = userComment
+			tableConfig.ClassificationID = classification
+
+			for _, col := range table.Columns {
+				columnConfig := tableConfig.CreateOrGetColumnConfig(col.Name)
+				colClassification, colUserComment := common.GetClassificationAndUserComment(col.Comment)
+
+				col.UserComment = colUserComment
+				columnConfig.ClassificationId = colClassification
+
+				if isEmptyColumnConfig(columnConfig) {
+					tableConfig.RemoveColumnConfig(col.Name)
+				}
+			}
+
+			if tableConfig.IsEmpty() {
+				schemaConfig.RemoveTableConfig(table.Name)
+			}
+		}
+		if schemaConfig.IsEmpty() {
+			databaseConfig.RemoveSchemaConfig(schema.Name)
+		}
+	}
+}
+
+func isEmptyColumnConfig(config *storepb.ColumnConfig) bool {
+	return len(config.Labels) == 0 && config.ClassificationId == "" && config.SemanticTypeId == ""
+}
+
+func setUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {
 	for _, schema := range dbSchema.Schemas {
 		for _, table := range schema.Tables {
-			table.Classification, table.UserComment = common.GetClassificationAndUserComment(table.Comment)
+			table.UserComment = table.Comment
 			for _, col := range table.Columns {
-				col.Classification, col.UserComment = common.GetClassificationAndUserComment(col.Comment)
+				col.UserComment = col.Comment
 			}
 		}
 	}

@@ -407,6 +407,7 @@ export interface DatabaseMetadata {
   extensions: ExtensionMetadata[];
   /** The schema_configs is the list of configs for schemas in a database. */
   schemaConfigs: SchemaConfig[];
+  classificationFromConfig: boolean;
 }
 
 /**
@@ -475,8 +476,6 @@ export interface TableMetadata {
    * classification and user_comment is parsed from the comment.
    */
   comment: string;
-  /** The classification is the classification of a table parsed from the comment. */
-  classification: string;
   /** The user_comment is the user comment of a table parsed from the comment. */
   userComment: string;
   /** The foreign_keys is the list of foreign keys in a table. */
@@ -657,8 +656,6 @@ export interface ColumnMetadata {
    * classification and user_comment is parsed from the comment.
    */
   comment: string;
-  /** The classification is the classification of a column parsed from the comment. */
-  classification: string;
   /** The user_comment is the user comment of a column parsed from the comment. */
   userComment: string;
   /**
@@ -993,6 +990,12 @@ export interface DatabaseConfig {
   name: string;
   /** The schema_configs is the list of configs for schemas in a database. */
   schemaConfigs: SchemaConfig[];
+  /**
+   * If true, we will only store the classification in the config.
+   * Otherwise we will get the classification from table/column comment,
+   * and write back to the schema metadata.
+   */
+  classificationFromConfig: boolean;
 }
 
 export interface SchemaConfig {
@@ -1010,6 +1013,7 @@ export interface TableConfig {
   name: string;
   /** The column_configs is the ordered list of configs for columns in a table. */
   columnConfigs: ColumnConfig[];
+  classificationId: string;
 }
 
 export interface ColumnConfig {
@@ -1018,6 +1022,7 @@ export interface ColumnConfig {
   semanticTypeId: string;
   /** The user labels for a column. */
   labels: { [key: string]: string };
+  classificationId: string;
 }
 
 export interface ColumnConfig_LabelsEntry {
@@ -3023,7 +3028,15 @@ export const Database_LabelsEntry = {
 };
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], schemaConfigs: [] };
+  return {
+    name: "",
+    schemas: [],
+    characterSet: "",
+    collation: "",
+    extensions: [],
+    schemaConfigs: [],
+    classificationFromConfig: false,
+  };
 }
 
 export const DatabaseMetadata = {
@@ -3045,6 +3058,9 @@ export const DatabaseMetadata = {
     }
     for (const v of message.schemaConfigs) {
       SchemaConfig.encode(v!, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.classificationFromConfig === true) {
+      writer.uint32(56).bool(message.classificationFromConfig);
     }
     return writer;
   },
@@ -3098,6 +3114,13 @@ export const DatabaseMetadata = {
 
           message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.classificationFromConfig = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3121,6 +3144,9 @@ export const DatabaseMetadata = {
       schemaConfigs: globalThis.Array.isArray(object?.schemaConfigs)
         ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
         : [],
+      classificationFromConfig: isSet(object.classificationFromConfig)
+        ? globalThis.Boolean(object.classificationFromConfig)
+        : false,
     };
   },
 
@@ -3144,6 +3170,9 @@ export const DatabaseMetadata = {
     if (message.schemaConfigs?.length) {
       obj.schemaConfigs = message.schemaConfigs.map((e) => SchemaConfig.toJSON(e));
     }
+    if (message.classificationFromConfig === true) {
+      obj.classificationFromConfig = message.classificationFromConfig;
+    }
     return obj;
   },
 
@@ -3158,6 +3187,7 @@ export const DatabaseMetadata = {
     message.collation = object.collation ?? "";
     message.extensions = object.extensions?.map((e) => ExtensionMetadata.fromPartial(e)) || [];
     message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
+    message.classificationFromConfig = object.classificationFromConfig ?? false;
     return message;
   },
 };
@@ -3480,7 +3510,6 @@ function createBaseTableMetadata(): TableMetadata {
     dataFree: Long.ZERO,
     createOptions: "",
     comment: "",
-    classification: "",
     userComment: "",
     foreignKeys: [],
     partitions: [],
@@ -3521,9 +3550,6 @@ export const TableMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(90).string(message.comment);
-    }
-    if (message.classification !== "") {
-      writer.uint32(106).string(message.classification);
     }
     if (message.userComment !== "") {
       writer.uint32(114).string(message.userComment);
@@ -3621,13 +3647,6 @@ export const TableMetadata = {
 
           message.comment = reader.string();
           continue;
-        case 13:
-          if (tag !== 106) {
-            break;
-          }
-
-          message.classification = reader.string();
-          continue;
         case 14:
           if (tag !== 114) {
             break;
@@ -3675,7 +3694,6 @@ export const TableMetadata = {
       dataFree: isSet(object.dataFree) ? Long.fromValue(object.dataFree) : Long.ZERO,
       createOptions: isSet(object.createOptions) ? globalThis.String(object.createOptions) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      classification: isSet(object.classification) ? globalThis.String(object.classification) : "",
       userComment: isSet(object.userComment) ? globalThis.String(object.userComment) : "",
       foreignKeys: globalThis.Array.isArray(object?.foreignKeys)
         ? object.foreignKeys.map((e: any) => ForeignKeyMetadata.fromJSON(e))
@@ -3721,9 +3739,6 @@ export const TableMetadata = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
-    if (message.classification !== "") {
-      obj.classification = message.classification;
-    }
     if (message.userComment !== "") {
       obj.userComment = message.userComment;
     }
@@ -3760,7 +3775,6 @@ export const TableMetadata = {
       : Long.ZERO;
     message.createOptions = object.createOptions ?? "";
     message.comment = object.comment ?? "";
-    message.classification = object.classification ?? "";
     message.userComment = object.userComment ?? "";
     message.foreignKeys = object.foreignKeys?.map((e) => ForeignKeyMetadata.fromPartial(e)) || [];
     message.partitions = object.partitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
@@ -3927,7 +3941,6 @@ function createBaseColumnMetadata(): ColumnMetadata {
     characterSet: "",
     collation: "",
     comment: "",
-    classification: "",
     userComment: "",
     effectiveMaskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
   };
@@ -3970,9 +3983,6 @@ export const ColumnMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(90).string(message.comment);
-    }
-    if (message.classification !== "") {
-      writer.uint32(98).string(message.classification);
     }
     if (message.userComment !== "") {
       writer.uint32(106).string(message.userComment);
@@ -4074,13 +4084,6 @@ export const ColumnMetadata = {
 
           message.comment = reader.string();
           continue;
-        case 12:
-          if (tag !== 98) {
-            break;
-          }
-
-          message.classification = reader.string();
-          continue;
         case 13:
           if (tag !== 106) {
             break;
@@ -4118,7 +4121,6 @@ export const ColumnMetadata = {
       characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
       collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      classification: isSet(object.classification) ? globalThis.String(object.classification) : "",
       userComment: isSet(object.userComment) ? globalThis.String(object.userComment) : "",
       effectiveMaskingLevel: isSet(object.effectiveMaskingLevel)
         ? maskingLevelFromJSON(object.effectiveMaskingLevel)
@@ -4164,9 +4166,6 @@ export const ColumnMetadata = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
-    if (message.classification !== "") {
-      obj.classification = message.classification;
-    }
     if (message.userComment !== "") {
       obj.userComment = message.userComment;
     }
@@ -4193,7 +4192,6 @@ export const ColumnMetadata = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.comment = object.comment ?? "";
-    message.classification = object.classification ?? "";
     message.userComment = object.userComment ?? "";
     message.effectiveMaskingLevel = object.effectiveMaskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
     return message;
@@ -5512,7 +5510,7 @@ export const ForeignKeyMetadata = {
 };
 
 function createBaseDatabaseConfig(): DatabaseConfig {
-  return { name: "", schemaConfigs: [] };
+  return { name: "", schemaConfigs: [], classificationFromConfig: false };
 }
 
 export const DatabaseConfig = {
@@ -5522,6 +5520,9 @@ export const DatabaseConfig = {
     }
     for (const v of message.schemaConfigs) {
       SchemaConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.classificationFromConfig === true) {
+      writer.uint32(24).bool(message.classificationFromConfig);
     }
     return writer;
   },
@@ -5547,6 +5548,13 @@ export const DatabaseConfig = {
 
           message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.classificationFromConfig = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5562,6 +5570,9 @@ export const DatabaseConfig = {
       schemaConfigs: globalThis.Array.isArray(object?.schemaConfigs)
         ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
         : [],
+      classificationFromConfig: isSet(object.classificationFromConfig)
+        ? globalThis.Boolean(object.classificationFromConfig)
+        : false,
     };
   },
 
@@ -5573,6 +5584,9 @@ export const DatabaseConfig = {
     if (message.schemaConfigs?.length) {
       obj.schemaConfigs = message.schemaConfigs.map((e) => SchemaConfig.toJSON(e));
     }
+    if (message.classificationFromConfig === true) {
+      obj.classificationFromConfig = message.classificationFromConfig;
+    }
     return obj;
   },
 
@@ -5583,6 +5597,7 @@ export const DatabaseConfig = {
     const message = createBaseDatabaseConfig();
     message.name = object.name ?? "";
     message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
+    message.classificationFromConfig = object.classificationFromConfig ?? false;
     return message;
   },
 };
@@ -5664,7 +5679,7 @@ export const SchemaConfig = {
 };
 
 function createBaseTableConfig(): TableConfig {
-  return { name: "", columnConfigs: [] };
+  return { name: "", columnConfigs: [], classificationId: "" };
 }
 
 export const TableConfig = {
@@ -5674,6 +5689,9 @@ export const TableConfig = {
     }
     for (const v of message.columnConfigs) {
       ColumnConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.classificationId !== "") {
+      writer.uint32(26).string(message.classificationId);
     }
     return writer;
   },
@@ -5699,6 +5717,13 @@ export const TableConfig = {
 
           message.columnConfigs.push(ColumnConfig.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.classificationId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5714,6 +5739,7 @@ export const TableConfig = {
       columnConfigs: globalThis.Array.isArray(object?.columnConfigs)
         ? object.columnConfigs.map((e: any) => ColumnConfig.fromJSON(e))
         : [],
+      classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
     };
   },
 
@@ -5725,6 +5751,9 @@ export const TableConfig = {
     if (message.columnConfigs?.length) {
       obj.columnConfigs = message.columnConfigs.map((e) => ColumnConfig.toJSON(e));
     }
+    if (message.classificationId !== "") {
+      obj.classificationId = message.classificationId;
+    }
     return obj;
   },
 
@@ -5735,12 +5764,13 @@ export const TableConfig = {
     const message = createBaseTableConfig();
     message.name = object.name ?? "";
     message.columnConfigs = object.columnConfigs?.map((e) => ColumnConfig.fromPartial(e)) || [];
+    message.classificationId = object.classificationId ?? "";
     return message;
   },
 };
 
 function createBaseColumnConfig(): ColumnConfig {
-  return { name: "", semanticTypeId: "", labels: {} };
+  return { name: "", semanticTypeId: "", labels: {}, classificationId: "" };
 }
 
 export const ColumnConfig = {
@@ -5754,6 +5784,9 @@ export const ColumnConfig = {
     Object.entries(message.labels).forEach(([key, value]) => {
       ColumnConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).ldelim();
     });
+    if (message.classificationId !== "") {
+      writer.uint32(34).string(message.classificationId);
+    }
     return writer;
   },
 
@@ -5788,6 +5821,13 @@ export const ColumnConfig = {
             message.labels[entry3.key] = entry3.value;
           }
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.classificationId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5807,6 +5847,7 @@ export const ColumnConfig = {
           return acc;
         }, {})
         : {},
+      classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
     };
   },
 
@@ -5827,6 +5868,9 @@ export const ColumnConfig = {
         });
       }
     }
+    if (message.classificationId !== "") {
+      obj.classificationId = message.classificationId;
+    }
     return obj;
   },
 
@@ -5843,6 +5887,7 @@ export const ColumnConfig = {
       }
       return acc;
     }, {});
+    message.classificationId = object.classificationId ?? "";
     return message;
   },
 };
