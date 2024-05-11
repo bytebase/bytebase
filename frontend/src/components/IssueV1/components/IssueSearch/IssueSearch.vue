@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col gap-y-1">
     <div
       v-if="components.includes('searchbox')"
       class="flex flex-row items-center gap-x-2"
@@ -22,7 +22,7 @@
     </div>
     <slot name="default" />
 
-    <div class="mt-2 flex flex-col md:flex-row md:items-center gap-y-1">
+    <div class="flex flex-col md:flex-row md:items-center gap-y-1">
       <div class="flex-1 flex items-start">
         <Status
           v-if="components.includes('status')"
