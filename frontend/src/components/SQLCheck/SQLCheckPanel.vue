@@ -8,7 +8,11 @@
     container-class="!pt-0 -mt-px"
     @close="$emit('close')"
   >
-    <PlanCheckDetail :plan-check-run="planCheckRun" :environment="environment">
+    <PlanCheckDetail
+      :plan-check-run="planCheckRun"
+      :environment="environment"
+      :is-latest="true"
+    >
       <template #row-extra="{ row }">
         <slot name="row-extra" :row="row" />
       </template>

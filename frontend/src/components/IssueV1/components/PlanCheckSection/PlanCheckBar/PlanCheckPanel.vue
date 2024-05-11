@@ -25,6 +25,7 @@
         v-if="selectedPlanCheckRun"
         :plan-check-run="selectedPlanCheckRun"
         :environment="environment"
+        :is-latest="isLatestPlanCheckRun"
         @close="$emit('close')"
       />
     </div>
@@ -79,6 +80,10 @@ const selectedPlanCheckRun = computed(() => {
   return selectedPlanCheckRunList.value.find(
     (checkRun) => checkRun.uid === uid
   );
+});
+
+const isLatestPlanCheckRun = computed(() => {
+  return selectedPlanCheckRunUID.value === first(selectedPlanCheckRunList.value)?.uid;
 });
 
 const tabItemList = computed(() => {
