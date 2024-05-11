@@ -1196,6 +1196,12 @@
     },
     "update-rollout-time": {
       "self": "Cập nhật thời gian triển khai"
+    },
+    "task-run": {
+      "task-run-log": {
+        "batch": "Lô hàng",
+        "affected-rows": "Hàng bị ảnh hưởng"
+      }
     }
   },
   "alter-schema": {

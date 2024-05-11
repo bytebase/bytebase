@@ -14,11 +14,10 @@
       <div v-if="ready">
         <div class="space-y-3">
           <div class="w-full flex items-center space-x-2">
-            <AdvancedSearchBox
+            <AdvancedSearch
               v-model:params="state.params"
-              :autofocus="false"
               :placeholder="$t('database.filter-database')"
-              :support-option-id-list="supportOptionIdList"
+              :scope-options="scopeOptions"
             />
             <DatabaseLabelFilter
               v-model:selected="state.selectedLabels"
@@ -68,6 +67,7 @@
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
+import AdvancedSearch from "@/components/AdvancedSearch";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -79,7 +79,7 @@ import {
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import type { SearchScopeId, SearchParams } from "@/utils";
+import type { SearchParams } from "@/utils";
 import {
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
@@ -88,6 +88,7 @@ import {
   generateIssueName,
   extractProjectResourceName,
 } from "@/utils";
+import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchScopeOptions";
 import { DatabaseLabelFilter, DrawerContent } from "../v2";
 
 type LocalState = {
@@ -119,6 +120,11 @@ const state = reactive<LocalState>({
     scopes: [],
   },
 });
+
+const scopeOptions = useCommonSearchScopeOptions(
+  computed(() => state.params),
+  ["project", "instance", "environment"]
+);
 
 const selectedProject = computed(() => {
   if (props.projectId) {
@@ -238,8 +244,4 @@ const navigateToIssuePage = async () => {
 const cancel = () => {
   emit("dismiss");
 };
-
-const supportOptionIdList = computed((): SearchScopeId[] => {
-  return ["project", "instance", "environment"];
-});
 </script>

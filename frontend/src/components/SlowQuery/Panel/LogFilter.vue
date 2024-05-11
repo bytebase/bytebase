@@ -3,13 +3,12 @@
     <div
       class="flex flex-col md:flex-row items-end md:items-center gap-y-2 gap-x-2"
     >
-      <AdvancedSearchBox
+      <AdvancedSearch
         v-if="supportOptionIdList.length > 0"
-        :params="params"
-        :autofocus="false"
-        :placeholder="''"
         class="flex-1 hidden md:block"
-        :support-option-id-list="supportOptionIdList"
+        :params="params"
+        :placeholder="''"
+        :scope-options="scopeOptions"
         @update:params="$emit('update:params', $event)"
       />
       <NInputGroup style="width: auto">
@@ -46,6 +45,9 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { NDatePicker, NInputGroup } from "naive-ui";
+import { computed } from "vue";
+import AdvancedSearch from "@/components/AdvancedSearch";
+import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { useSlowQueryPolicyList } from "@/store";
 import type { SearchParams, SearchScopeId } from "@/utils";
 
@@ -66,6 +68,11 @@ const emit = defineEmits<{
 }>();
 
 const { ready } = useSlowQueryPolicyList();
+
+const scopeOptions = useCommonSearchScopeOptions(
+  computed(() => props.params),
+  computed(() => props.supportOptionIdList)
+);
 
 const changeTime = (
   fromTime: number | undefined,

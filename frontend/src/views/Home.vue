@@ -3,7 +3,7 @@
     <IssueSearch
       v-model:params="state.params"
       :components="
-        state.advanced ? ['searchbox', 'status', 'time-range'] : ['status']
+        state.advanced ? ['searchbox', 'time-range', 'status'] : ['status']
       "
       :component-props="{ status: { disabled: statusTabDisabled } }"
       class="px-4 pb-2 gap-y-1"
