@@ -565,30 +565,38 @@ func equalDatabaseMetadata(x, y *storepb.DatabaseSchemaMetadata) bool {
 func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata, databaseConfig *model.DatabaseConfig) {
 	for _, schema := range dbSchema.Schemas {
 		schemaConfig := databaseConfig.CreateOrGetSchemaConfig(schema.Name)
-		for _, table := range schema.Tables {
-			classification, userComment := common.GetClassificationAndUserComment(table.Comment)
-			table.UserComment = userComment
 
-			if classification != "" {
-				tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
-				tableConfig.ClassificationID = classification
-			}
+		for _, table := range schema.Tables {
+			tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
+			classification, userComment := common.GetClassificationAndUserComment(table.Comment)
+
+			table.UserComment = userComment
+			tableConfig.ClassificationID = classification
 
 			for _, col := range table.Columns {
+				columnConfig := tableConfig.CreateOrGetColumnConfig(col.Name)
 				colClassification, colUserComment := common.GetClassificationAndUserComment(col.Comment)
-				col.UserComment = colUserComment
 
-				if colClassification != "" {
-					tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
-					columnConfig := tableConfig.CreateOrGetColumnConfig(col.Name)
-					columnConfig.ClassificationId = colClassification
+				col.UserComment = colUserComment
+				columnConfig.ClassificationId = colClassification
+
+				if isEmptyColumnConfig(columnConfig) {
+					tableConfig.RemoveColumnConfig(col.Name)
 				}
 			}
+
+			if tableConfig.IsEmpty() {
+				schemaConfig.RemoveTableConfig(table.Name)
+			}
 		}
-		if schemaConfig.Size() == 0 {
+		if schemaConfig.IsEmpty() {
 			databaseConfig.RemoveSchemaConfig(schema.Name)
 		}
 	}
+}
+
+func isEmptyColumnConfig(config *storepb.ColumnConfig) bool {
+	return len(config.Labels) == 0 && config.ClassificationId == "" && config.SemanticTypeId == ""
 }
 
 func setUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {

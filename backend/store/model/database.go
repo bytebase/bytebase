@@ -253,8 +253,8 @@ type SchemaConfig struct {
 }
 
 // Size returns the table config count for the schema config.
-func (s *SchemaConfig) Size() int {
-	return len(s.internal)
+func (s *SchemaConfig) IsEmpty() bool {
+	return len(s.internal) == 0
 }
 
 // CreateOrGetTableConfig creates or gets the table config by name.
@@ -266,6 +266,11 @@ func (s *SchemaConfig) CreateOrGetTableConfig(name string) *TableConfig {
 		internal: make(map[string]*storepb.ColumnConfig),
 	}
 	return s.internal[name]
+}
+
+// RemoveTableConfig delete the table config by name.
+func (s *SchemaConfig) RemoveTableConfig(name string) {
+	delete(s.internal, name)
 }
 
 // TableConfig is the config for a table.
@@ -283,6 +288,16 @@ func (t *TableConfig) CreateOrGetColumnConfig(name string) *storepb.ColumnConfig
 		Name: name,
 	}
 	return t.internal[name]
+}
+
+// RemoveColumnConfig delete the column config by name.
+func (t *TableConfig) RemoveColumnConfig(name string) {
+	delete(t.internal, name)
+}
+
+// RemoveColumnConfig delete the column config by name.
+func (t *TableConfig) IsEmpty() bool {
+	return len(t.internal) == 0 && t.ClassificationID == ""
 }
 
 // DatabaseMetadata is the metadata for a database.
