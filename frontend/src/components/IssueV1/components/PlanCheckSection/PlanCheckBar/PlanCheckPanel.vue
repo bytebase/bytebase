@@ -8,8 +8,8 @@
 
     <PlanCheckBadgeBar
       :plan-check-run-list="planCheckRunList"
-      :selected-type="selectedType"
-      @select-type="(type) => (selectedType = type)"
+      :selected-type="selectedTypeRef"
+      @select-type="(type) => (selectedTypeRef = type)"
     />
 
     <PlanCheckDetail
@@ -31,7 +31,6 @@ import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
 import {
   PlanCheckRun_Result_Status,
-  PlanCheckRun_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
   type Task,
@@ -56,7 +55,7 @@ const getInitialSelectedType = () => {
   }
 
   // Find the first plan check run with error or warning.
-  let planCheck = props.planCheckRunList.find((checkRun) =>
+  const planCheck = props.planCheckRunList.find((checkRun) =>
     [PlanCheckRun_Result_Status.ERROR, PlanCheckRun_Result_Status.WARNING].some(
       (status) =>
         checkRun.results.map((result) => result.status).includes(status)
@@ -72,12 +71,12 @@ const getInitialSelectedType = () => {
 
 const { t } = useI18n();
 const { issue } = useIssueContext();
-const selectedType = ref<PlanCheckRun_Type>(getInitialSelectedType());
+const selectedTypeRef = ref<PlanCheckRun_Type>(getInitialSelectedType());
 
 const selectedPlanCheckRunList = computed(() => {
   return orderBy(
     props.planCheckRunList.filter(
-      (checkRun) => checkRun.type === selectedType.value
+      (checkRun) => checkRun.type === selectedTypeRef.value
     ),
     (checkRun) => parseInt(checkRun.uid, 10),
     "desc"

@@ -30,7 +30,7 @@
             </span>
           </template>
         </div>
-        <div class="shrink-0" v-if="showCategoryColumn">
+        <div v-if="showCategoryColumn" class="shrink-0">
           {{ row.category }}
         </div>
         <div class="font-semibold">{{ row.title }}</div>
