@@ -52,7 +52,9 @@
             v-if="resultSet.status === Status.PERMISSION_DENIED"
             #suffix
           >
-            <RequestQueryButton />
+            <HideInStandaloneMode>
+              <RequestQueryButton />
+            </HideInStandaloneMode>
           </template>
         </ErrorView>
       </template>
