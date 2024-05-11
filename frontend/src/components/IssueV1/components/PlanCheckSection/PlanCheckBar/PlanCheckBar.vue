@@ -13,7 +13,7 @@
         :plan-check-run-list="planCheckRunList"
         @select-type="selectedType = $event"
       >
-        <NTooltip trigger="hover">
+        <NTooltip v-if="planCheckRunList.length > 0" trigger="hover">
           <template #trigger>
             <NButton
               strong
