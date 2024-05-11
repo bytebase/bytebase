@@ -7,7 +7,6 @@
         state.advanced ? ['searchbox', 'time-range', 'status'] : ['status']
       "
       :component-props="{ status: { disabled: statusTabDisabled } }"
-      class="gap-y-1"
     >
       <template v-if="!state.advanced" #default>
         <div class="h-[34px] flex items-center gap-x-2">
