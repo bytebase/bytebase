@@ -802,7 +802,7 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 		return fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, c.CharacterSet, c.Collation), nil
 	case storepb.Engine_MSSQL:
 		return fmt.Sprintf(`CREATE DATABASE "%s";`, databaseName), nil
-	case storepb.Engine_POSTGRES:
+	case storepb.Engine_POSTGRES, storepb.Engine_GAUSSDB:
 		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
 		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
 		if adminDatasourceUser != "" && c.Owner != adminDatasourceUser {

@@ -28,6 +28,7 @@ export const supportedEngineList = () => {
     "REDSHIFT",
     "DM",
     "RISINGWAVE",
+    "GAUSSDB",
   ];
   return engines;
 };

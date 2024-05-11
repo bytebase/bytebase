@@ -301,7 +301,7 @@ func validateRole(dbType storepb.Engine, upsert *db.DatabaseRoleUpsertMessage) e
 		return status.Errorf(codes.InvalidArgument, "Invalid role name, role name cannot be empty")
 	}
 	switch dbType {
-	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
+	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE, storepb.Engine_GAUSSDB:
 		if v := upsert.ConnectionLimit; v != nil && *v < int32(-1) {
 			return status.Errorf(codes.InvalidArgument, "Invalid connection limit, it should greater than or equal to -1")
 		}

@@ -123,7 +123,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		// TODO(d): use maria mysqlbinlog for MariaDB.
 		dbBinDir = d.mysqlBinDir
-	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
+	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE, storepb.Engine_GAUSSDB:
 		dbBinDir = d.pgBinDir
 	case storepb.Engine_MONGODB:
 		dbBinDir = d.mongoBinDir

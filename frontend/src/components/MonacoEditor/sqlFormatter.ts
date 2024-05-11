@@ -14,6 +14,7 @@ const convertDialectToFormatterLanguage = (
   if (dialect === "MYSQL" || dialect === "TIDB" || dialect === "OCEANBASE")
     return "mysql";
   if (dialect === "POSTGRES") return "postgresql";
+  if (dialect === "GAUSSDB") return "postgresql";
   if (dialect === "SNOWFLAKE") return "snowflake";
   return "sql";
 };

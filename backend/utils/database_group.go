@@ -32,6 +32,8 @@ func ConvertDatabaseToParserEngineType(engine storepb.Engine) (storepb.Engine, e
 		return storepb.Engine_MARIADB, nil
 	case storepb.Engine_OCEANBASE:
 		return storepb.Engine_OCEANBASE, nil
+	case storepb.Engine_GAUSSDB:
+		return storepb.Engine_GAUSSDB, nil
 	}
 	return storepb.Engine_ENGINE_UNSPECIFIED, errors.Errorf("unsupported engine type %q", engine)
 }

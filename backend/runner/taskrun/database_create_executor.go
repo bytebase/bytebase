@@ -427,7 +427,7 @@ func getConnectionStatement(dbType storepb.Engine, databaseName string) (string,
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
 	case storepb.Engine_MSSQL:
 		return fmt.Sprintf(`USE "%s";\n`, databaseName), nil
-	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
+	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE, storepb.Engine_GAUSSDB:
 		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
 	case storepb.Engine_CLICKHOUSE:
 		return fmt.Sprintf("USE `%s`;\n", databaseName), nil

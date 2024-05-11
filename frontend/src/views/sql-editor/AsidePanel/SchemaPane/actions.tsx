@@ -42,6 +42,7 @@ const VIEW_SCHEMA_ACTION_ENABLED_ENGINES = [
   Engine.OCEANBASE,
   Engine.POSTGRES,
   Engine.TIDB,
+  Engine.GAUSSDB,
 ];
 
 export const useDropdown = () => {

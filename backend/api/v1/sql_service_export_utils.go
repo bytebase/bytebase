@@ -101,7 +101,7 @@ func getSQLStatementPrefix(engine storepb.Engine, resourceList []base.SchemaReso
 	switch engine {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_TIDB, storepb.Engine_OCEANBASE, storepb.Engine_SPANNER:
 		escapeQuote = "`"
-	case storepb.Engine_CLICKHOUSE, storepb.Engine_MSSQL, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_DM, storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_SQLITE, storepb.Engine_SNOWFLAKE:
+	case storepb.Engine_CLICKHOUSE, storepb.Engine_MSSQL, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_DM, storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_SQLITE, storepb.Engine_SNOWFLAKE, storepb.Engine_GAUSSDB:
 		// ClickHouse takes both double-quotes or backticks.
 		escapeQuote = "\""
 	default:
@@ -330,7 +330,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 			result = append(result, resource)
 		}
 		return result, nil
-	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
+	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_GAUSSDB:
 		list, err := base.ExtractResourceList(engine, databaseName, "public", statement)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())

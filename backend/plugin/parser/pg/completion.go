@@ -30,6 +30,7 @@ func init() {
 	base.RegisterCompleteFunc(store.Engine_OCEANBASE_ORACLE, Completion)
 	base.RegisterCompleteFunc(store.Engine_SNOWFLAKE, Completion)
 	base.RegisterCompleteFunc(store.Engine_MSSQL, Completion)
+	base.RegisterCompleteFunc(store.Engine_GAUSSDB, Completion)
 }
 
 // Completion is the entry point of PostgreSQL code completion.

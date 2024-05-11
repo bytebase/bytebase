@@ -120,7 +120,7 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 
 	var results []*storepb.PlanCheckRunResult_Result
 	switch instance.Engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
+	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE, storepb.Engine_GAUSSDB:
 		checkResults, err := postgresqlStatementTypeCheck(renderedStatement)
 		if err != nil {
 			return nil, err
@@ -295,7 +295,7 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
 				var results []*storepb.PlanCheckRunResult_Result
 				switch instance.Engine {
-				case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
+				case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE, storepb.Engine_GAUSSDB:
 					checkResults, err := postgresqlStatementTypeCheck(renderedStatement)
 					if err != nil {
 						return nil, err

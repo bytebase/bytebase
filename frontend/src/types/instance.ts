@@ -20,6 +20,7 @@ export const EngineTypeList = [
   "OCEANBASE",
   "DM",
   "RISINGWAVE",
+  "GAUSSDB",
 ] as const;
 
 export type EngineType = (typeof EngineTypeList)[number];
@@ -56,6 +57,8 @@ export function convertEngineType(type: EngineType): Engine {
       return Engine.DM;
     case "RISINGWAVE":
       return Engine.RISINGWAVE;
+    case "GAUSSDB":
+      return Engine.GAUSSDB;
   }
   return Engine.ENGINE_UNSPECIFIED;
 }
@@ -96,6 +99,8 @@ export function defaultCharset(type: EngineType): string {
       return "UNICODE";
     case "RISINGWAVE":
       return "UTF8";
+    case "GAUSSDB":
+      return "UTF8";
   }
 }
 
@@ -131,6 +136,8 @@ export function engineName(type: EngineType): string {
       return "DM";
     case "RISINGWAVE":
       return "RisingWave";
+    case "GAUSSDB":
+      return "GaussDB";
   }
 }
 
@@ -164,6 +171,8 @@ export function defaultCollation(type: EngineType): string {
       return "";
     case "DM":
       return "BINARY_CI";
+    case "GAUSSDB":
+      return "";
   }
 }
 

@@ -487,7 +487,7 @@ func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []A
 		return tidbSyntaxCheck(statement)
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		return mysqlSyntaxCheck(statement)
-	case storepb.Engine_POSTGRES:
+	case storepb.Engine_POSTGRES, storepb.Engine_GAUSSDB:
 		return postgresSyntaxCheck(statement)
 	case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
 		return oracleSyntaxCheck(statement)

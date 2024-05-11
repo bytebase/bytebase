@@ -77,6 +77,7 @@ export const EngineIconPath: Record<number, string> = {
     "@/assets/db-elasticsearch.svg",
     import.meta.url
   ).href,
+  [Engine.GAUSSDB]: new URL("@/assets/db-gaussdb.png", import.meta.url).href,
 };
 
 export const MongoDBConnectionStringSchemaList = [

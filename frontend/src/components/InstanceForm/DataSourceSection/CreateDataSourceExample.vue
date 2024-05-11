@@ -99,7 +99,9 @@
           </template>
         </i18n-t>
       </template>
-      <template v-else-if="props.engine === Engine.POSTGRES">
+      <template v-else-if="props.engine === Engine.POSTGRES
+                         ||props.engine === Engine.GAUSSDB
+      ">
         <BBAttention class="my-3" type="warning">
           {{ $t("instance.sentence.create-user-example.postgresql.warn") }}
         </BBAttention>
@@ -356,6 +358,7 @@ GRANT ALL PRIVILEGES ON FUTURE SESSION POLICYS IN DATABASE {{YOUR_DB_NAME}} TO R
 GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE BYTEBASE;
 `;
       case Engine.RISINGWAVE:
+      case Engine.GAUSSDB:
       case Engine.POSTGRES:
         if (
           props.authenticationType ===
@@ -507,6 +510,7 @@ GRANT ALL PRIVILEGES ON FUTURE SESSION POLICYS IN DATABASE {{YOUR_DB_NAME}} TO R
 GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE BYTEBASE_READER;
 `;
       case Engine.RISINGWAVE:
+      case Engine.GAUSSDB:
       case Engine.POSTGRES:
         if (
           props.authenticationType ===

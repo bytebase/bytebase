@@ -8614,6 +8614,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - GAUSSDB
                     type: string
                     description: The database engine of the branch.
                     format: enum
@@ -9396,6 +9397,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - GAUSSDB
                     type: string
                     description: The database engine of the schema.
                     format: enum
@@ -9460,6 +9462,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - GAUSSDB
                     type: string
                     format: enum
                 oldSchema:
@@ -10132,6 +10135,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - GAUSSDB
                     type: string
                     format: enum
                 engineVersion:
@@ -10195,6 +10199,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - GAUSSDB
                     type: string
                     format: enum
                 engineVersion:
@@ -11634,6 +11639,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - GAUSSDB
                     type: string
                     format: enum
                 currentSchema:
@@ -12211,6 +12217,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - GAUSSDB
                     type: string
                     format: enum
                 comment:
@@ -12332,6 +12339,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - GAUSSDB
                     type: string
                     format: enum
                 enabled:
@@ -12369,6 +12377,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - GAUSSDB
                     type: string
                     format: enum
                 category:
@@ -12406,6 +12415,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - GAUSSDB
                     type: string
                     format: enum
                 category:
@@ -12912,6 +12922,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - GAUSSDB
                     type: string
                     description: The database engine of the schema string.
                     format: enum

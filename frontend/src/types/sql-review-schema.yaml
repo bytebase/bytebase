@@ -16,6 +16,7 @@ ruleList:
       - SNOWFLAKE
       - MSSQL
       - MARIADB
+      - GAUSSDB 
   - type: table.no-foreign-key
     category: TABLE
     engineList:
@@ -28,6 +29,7 @@ ruleList:
       - SNOWFLAKE
       - MSSQL
       - MARIADB
+      - GAUSSDB 
   - type: table.drop-naming-convention
     category: TABLE
     engineList:
@@ -38,6 +40,7 @@ ruleList:
       - SNOWFLAKE
       - MSSQL
       - MARIADB
+      - GAUSSDB 
     componentList:
       - key: format
         payload:
@@ -67,6 +70,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB
   - type: table.disallow-trigger
     category: TABLE
     engineList:
@@ -118,6 +122,7 @@ ruleList:
       - SNOWFLAKE
       - MSSQL
       - MARIADB
+      - GAUSSDB 
   - type: statement.where.require
     category: STATEMENT
     engineList:
@@ -130,6 +135,7 @@ ruleList:
       - SNOWFLAKE
       - MSSQL
       - MARIADB
+      - GAUSSDB 
   - type: statement.where.no-leading-wildcard-like
     category: STATEMENT
     engineList:
@@ -140,6 +146,7 @@ ruleList:
       - OCEANBASE_ORACLE
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
   - type: statement.disallow-cascade
     category: STATEMENT
     engineList:
@@ -152,6 +159,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
   - type: statement.disallow-limit
     category: STATEMENT
     engineList:
@@ -174,6 +182,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
   - type: statement.insert.row-limit
     category: STATEMENT
     engineList:
@@ -181,6 +190,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
     componentList:
       - key: number
         payload:
@@ -196,6 +206,7 @@ ruleList:
       - OCEANBASE_ORACLE
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
   - type: statement.insert.disallow-order-by-rand
     category: STATEMENT
     engineList:
@@ -204,6 +215,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
   - type: statement.affected-row-limit
     category: STATEMENT
     engineList:
@@ -211,6 +223,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
     componentList:
       - key: number
         payload:
@@ -224,6 +237,7 @@ ruleList:
       - OCEANBASE
       - MARIADB
       - TIDB
+      - GAUSSDB
   - type: statement.disallow-add-column-with-default
     category: STATEMENT
     engineList:
@@ -339,6 +353,7 @@ ruleList:
       - SNOWFLAKE
       - MSSQL
       - MARIADB
+      - GAUSSDB 
     componentList:
       - key: format
         payload:
@@ -356,6 +371,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
     componentList:
       - key: format
         payload:
@@ -373,6 +389,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
     componentList:
       - key: format
         payload:
@@ -393,6 +410,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
     componentList:
       - key: format
         payload:
@@ -413,6 +431,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
     componentList:
       - key: format
         payload:
@@ -497,6 +516,7 @@ ruleList:
       - SNOWFLAKE
       - MSSQL
       - MARIADB
+      - GAUSSDB 
     componentList:
       - key: list
         payload:
@@ -538,6 +558,7 @@ ruleList:
       - SNOWFLAKE
       - MSSQL
       - MARIADB
+      - GAUSSDB
   - type: column.disallow-change-type
     category: COLUMN
     engineList:
@@ -546,6 +567,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
   - type: column.set-default-for-not-null
     category: COLUMN
     engineList:
@@ -610,6 +632,7 @@ ruleList:
       - OCEANBASE
       - MARIADB
       - MSSQL
+      - GAUSSDB
     componentList:
       - key: list
         payload:
@@ -632,6 +655,7 @@ ruleList:
       - OCEANBASE_ORACLE
       - OCEANBASE
       - MARIADB
+      - GAUSSDB
     componentList:
       - key: number
         payload:
@@ -688,6 +712,7 @@ ruleList:
       - OCEANBASE_ORACLE
       - OCEANBASE
       - MARIADB
+      - GAUSSDB
   - type: schema.backward-compatibility
     category: SCHEMA
     engineList:
@@ -698,6 +723,7 @@ ruleList:
       - SNOWFLAKE
       - MSSQL
       - MARIADB
+      - GAUSSDB
   - type: database.drop-empty-database
     category: DATABASE
     engineList:
@@ -713,6 +739,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB 
   - type: index.key-number-limit
     category: INDEX
     engineList:
@@ -723,6 +750,7 @@ ruleList:
       - OCEANBASE_ORACLE
       - OCEANBASE
       - MARIADB
+      - GAUSSDB
     componentList:
       - key: number
         payload:
@@ -750,6 +778,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB
     componentList:
       - key: number
         payload:
@@ -762,6 +791,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - OCEANBASE
+      - GAUSSDB
     componentList:
       - key: list
         payload:
@@ -788,6 +818,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB
     componentList:
       - key: list
         payload:
@@ -801,6 +832,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - GAUSSDB
     componentList:
       - key: list
         payload:

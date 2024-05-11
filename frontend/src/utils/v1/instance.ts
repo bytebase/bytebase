@@ -94,6 +94,7 @@ export const supportedEngineV1List = () => {
     Engine.RISINGWAVE,
     Engine.HIVE,
     Engine.ELASTICSEARCH,
+    Engine.GAUSSDB,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
@@ -287,6 +288,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "Hive";
     case Engine.ELASTICSEARCH:
       return "Elasticsearch";
+    case Engine.GAUSSDB:
+      return "GaussDB";
   }
   return "";
 };

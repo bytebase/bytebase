@@ -1381,6 +1381,7 @@ Used internally for obfuscating the page token.
 | DORIS | 19 |  |
 | HIVE | 20 |  |
 | ELASTICSEARCH | 21 |  |
+| GAUSSDB | 22 |  |
 
 
 

@@ -1550,7 +1550,7 @@ func (*SQLService) DifferPreview(_ context.Context, request *v1pb.DifferPreviewR
 // StringifyMetadata returns the stringified schema of the given metadata.
 func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyMetadataRequest) (*v1pb.StringifyMetadataResponse, error) {
 	switch request.Engine {
-	case v1pb.Engine_MYSQL, v1pb.Engine_OCEANBASE, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE:
+	case v1pb.Engine_MYSQL, v1pb.Engine_OCEANBASE, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE, v1pb.Engine_GAUSSDB:
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine: %v", request.Engine)
 	}

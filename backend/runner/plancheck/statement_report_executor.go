@@ -116,7 +116,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 	renderedStatement := utils.RenderStatement(statement, materials)
 
 	switch instance.Engine {
-	case storepb.Engine_POSTGRES:
+	case storepb.Engine_POSTGRES, storepb.Engine_GAUSSDB:
 		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 		if err != nil {
 			return nil, err
@@ -266,7 +266,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			renderedStatement := utils.RenderStatement(statement, materials)
 			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
 				switch instance.Engine {
-				case storepb.Engine_POSTGRES:
+				case storepb.Engine_POSTGRES, storepb.Engine_GAUSSDB:
 					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 					if err != nil {
 						return nil, err

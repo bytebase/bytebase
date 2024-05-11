@@ -25,4 +25,6 @@ const (
 	MSSQL Type = "MSSQL"
 	// DM is the database type for DM.
 	DM Type = "DM"
+	// GAUSSDB is the database type for GAUSSDB.
+	GAUSSDB Type = "GAUSSDB"
 )

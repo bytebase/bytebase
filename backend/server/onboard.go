@@ -337,7 +337,7 @@ func getSampleSQLReviewPolicy() *storepb.SQLReviewPolicy {
 	for _, e := range []storepb.Engine{
 		storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES,
 		storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_OCEANBASE,
-		storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL, storepb.Engine_MARIADB,
+		storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL, storepb.Engine_MARIADB, storepb.Engine_GAUSSDB,
 	} {
 		ruleList = append(ruleList, &storepb.SQLReviewRule{
 			Type:    string(advisor.SchemaRuleColumnNotNull),
@@ -351,7 +351,7 @@ func getSampleSQLReviewPolicy() *storepb.SQLReviewPolicy {
 	for _, e := range []storepb.Engine{
 		storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES,
 		storepb.Engine_OCEANBASE, storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL,
-		storepb.Engine_MARIADB,
+		storepb.Engine_MARIADB, storepb.Engine_GAUSSDB,
 	} {
 		ruleList = append(ruleList, &storepb.SQLReviewRule{
 			Type:    string(advisor.SchemaRuleTableDropNamingConvention),
