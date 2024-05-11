@@ -9,6 +9,8 @@
       :plan-check-run-list="group.list"
       @click="$emit('select-type', group.type)"
     />
+    <!-- Default slot for other actions -->
+    <slot></slot>
   </div>
 </template>
 
