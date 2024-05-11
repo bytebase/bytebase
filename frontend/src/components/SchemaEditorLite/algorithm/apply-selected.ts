@@ -89,10 +89,10 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
       schema: SchemaMetadata,
       table: TableMetadata,
       schemaConfig: SchemaConfig,
-      tableConfig: TableConfig | undefined
+      tableConfig: TableConfig
     ) => {
       const targetTableConfigMap = new Map(
-        tableConfig?.columnConfigs.map((cc) => [cc.name, cc])
+        tableConfig.columnConfigs.map((cc) => [cc.name, cc])
       );
       const pickedColumns: ColumnMetadata[] = [];
       const pickedColumnConfigs: ColumnConfig[] = [];
@@ -144,7 +144,7 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
       table.columns = pickedColumns;
       schemaConfig.tableConfigs.push(
         TableConfig.fromPartial({
-          name: table.name,
+          ...tableConfig,
           columnConfigs: pickedColumnConfigs,
         })
       );
@@ -175,9 +175,10 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
           } else {
             // Collect the edited table
             tables.push(table);
-            const tableConfig = targetSchemaConfig?.tableConfigs.find(
-              (tc) => tc.name === table.name
-            );
+            const tableConfig =
+              targetSchemaConfig?.tableConfigs.find(
+                (tc) => tc.name === table.name
+              ) ?? TableConfig.fromPartial({ name: table.name });
             // apply column edits for picked table
             // Together with its tableConfig and columnConfigs
             applyTableEdits(schema, table, schemaConfig, tableConfig);

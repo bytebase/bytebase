@@ -35,7 +35,6 @@ export const filterColumnMetadata = (column: ColumnMetadata) => {
     name: column.name,
     comment: column.comment,
     userComment: column.userComment,
-    classification: column.classification,
     type: column.type,
     hasDefault: column.hasDefault,
     defaultExpression: column.defaultExpression,
@@ -86,7 +85,6 @@ export const filterTablePartitionMetadata = (
 export const filterTableMetadata = (table: TableMetadata) => {
   return TableMetadata.fromPartial({
     name: table.name,
-    classification: table.classification,
     comment: table.comment,
     userComment: table.userComment,
     collation: table.collation,
@@ -116,7 +114,6 @@ export const filterFunctionMetadata = (func: FunctionMetadata) => {
 
 export const ComparableTableFields: (keyof TableMetadata)[] = [
   "name",
-  "classification",
   "comment",
   "userComment",
   "collation",
@@ -143,7 +140,6 @@ export const ComparableColumnFields: (keyof ColumnMetadata)[] = [
   "name",
   "comment",
   "userComment",
-  "classification",
   "type",
   "hasDefault",
   "defaultExpression",

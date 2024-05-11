@@ -1752,7 +1752,11 @@
     "transfer-database-to": "Chuyển cơ sở dữ liệu đến dự án mục tiêu",
     "transfer-database-from-to": "Chuyển cơ sở dữ liệu từ dự án nguồn sang dự án đích",
     "classification": {
-      "self": "Phân loại"
+      "self": "Phân loại",
+      "sync-from-comment": "Đồng bộ hóa phân loại từ nhận xét",
+      "sync-from-comment-tip": "Sau khi được bật, phân loại sẽ đồng bộ hóa từ nhận xét bảng/cột. Nhận xét phải theo định dạng \"{format}\".",
+      "sync-from-comment-enable-warning": "Việc phân loại sẽ thay đổi theo DDL và đồng bộ hóa với nhận xét ban đầu.",
+      "sync-from-comment-disable-warning": "Phân loại sẽ không thay đổi với DDL, bạn có thể thay đổi bất cứ lúc nào trên trang chi tiết cơ sở dữ liệu."
     },
     "recent": "Gần đây",
     "partitioned": "Đã phân vùng",

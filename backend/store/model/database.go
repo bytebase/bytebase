@@ -47,7 +47,7 @@ func (dbs *DBSchema) GetDatabaseMetadata() *DatabaseMetadata {
 	return dbs.metadataInternal
 }
 
-func (dbs *DBSchema) GetDatabaseConfig() *DatabaseConfig {
+func (dbs *DBSchema) GetInternalConfig() *DatabaseConfig {
 	return dbs.configInternal
 }
 
@@ -172,7 +172,9 @@ func (dbs *DBSchema) FindIndex(schemaName string, tableName string, indexName st
 
 // DatabaseConfig is the config for a database.
 type DatabaseConfig struct {
-	internal map[string]*SchemaConfig
+	name                     string
+	ClassificationFromConfig bool
+	internal                 map[string]*SchemaConfig
 }
 
 // NewDatabaseConfig creates a new database config.
@@ -183,13 +185,16 @@ func NewDatabaseConfig(config *storepb.DatabaseConfig) *DatabaseConfig {
 	if config == nil {
 		return databaseConfig
 	}
+	databaseConfig.name = config.Name
+	databaseConfig.ClassificationFromConfig = config.ClassificationFromConfig
 	for _, schema := range config.SchemaConfigs {
 		schemaConfig := &SchemaConfig{
 			internal: make(map[string]*TableConfig),
 		}
 		for _, table := range schema.TableConfigs {
 			tableConfig := &TableConfig{
-				internal: make(map[string]*storepb.ColumnConfig),
+				ClassificationID: table.ClassificationId,
+				internal:         make(map[string]*storepb.ColumnConfig),
 			}
 			for _, column := range table.ColumnConfigs {
 				tableConfig.internal[column.Name] = column
@@ -201,9 +206,45 @@ func NewDatabaseConfig(config *storepb.DatabaseConfig) *DatabaseConfig {
 	return databaseConfig
 }
 
-// GetSchemaConfig gets the schema config by name.
-func (d *DatabaseConfig) GetSchemaConfig(name string) *SchemaConfig {
+// CreateOrGetSchemaConfig creates or gets a new schema config by name.
+func (d *DatabaseConfig) CreateOrGetSchemaConfig(name string) *SchemaConfig {
+	if config := d.internal[name]; config != nil {
+		return config
+	}
+	d.internal[name] = &SchemaConfig{
+		internal: make(map[string]*TableConfig),
+	}
 	return d.internal[name]
+}
+
+// RemoveSchemaConfig delete the schema config by name.
+func (d *DatabaseConfig) RemoveSchemaConfig(name string) {
+	delete(d.internal, name)
+}
+
+func (d *DatabaseConfig) BuildDatabaseConfig() *storepb.DatabaseConfig {
+	config := &storepb.DatabaseConfig{Name: d.name, ClassificationFromConfig: d.ClassificationFromConfig}
+
+	for schemaName, sConfig := range d.internal {
+		schemaConfig := &storepb.SchemaConfig{Name: schemaName}
+
+		for tableName, tConfig := range sConfig.internal {
+			tableConfig := &storepb.TableConfig{Name: tableName, ClassificationId: tConfig.ClassificationID}
+
+			for colName, colConfig := range tConfig.internal {
+				tableConfig.ColumnConfigs = append(tableConfig.ColumnConfigs, &storepb.ColumnConfig{
+					Name:             colName,
+					SemanticTypeId:   colConfig.SemanticTypeId,
+					Labels:           colConfig.Labels,
+					ClassificationId: colConfig.ClassificationId,
+				})
+			}
+			schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, tableConfig)
+		}
+		config.SchemaConfigs = append(config.SchemaConfigs, schemaConfig)
+	}
+
+	return config
 }
 
 // SchemaConfig is the config for a schema.
@@ -211,19 +252,52 @@ type SchemaConfig struct {
 	internal map[string]*TableConfig
 }
 
-// GetTableConfig gets the table config by name.
-func (s *SchemaConfig) GetTableConfig(name string) *TableConfig {
+// Size returns the table config count for the schema config.
+func (s *SchemaConfig) IsEmpty() bool {
+	return len(s.internal) == 0
+}
+
+// CreateOrGetTableConfig creates or gets the table config by name.
+func (s *SchemaConfig) CreateOrGetTableConfig(name string) *TableConfig {
+	if config := s.internal[name]; config != nil {
+		return config
+	}
+	s.internal[name] = &TableConfig{
+		internal: make(map[string]*storepb.ColumnConfig),
+	}
 	return s.internal[name]
+}
+
+// RemoveTableConfig delete the table config by name.
+func (s *SchemaConfig) RemoveTableConfig(name string) {
+	delete(s.internal, name)
 }
 
 // TableConfig is the config for a table.
 type TableConfig struct {
-	internal map[string]*storepb.ColumnConfig
+	ClassificationID string
+	internal         map[string]*storepb.ColumnConfig
 }
 
-// GetColumnConfig gets the column config by name.
-func (t *TableConfig) GetColumnConfig(name string) *storepb.ColumnConfig {
+// CreateOrGetColumnConfig creates or gets the column config by name.
+func (t *TableConfig) CreateOrGetColumnConfig(name string) *storepb.ColumnConfig {
+	if config := t.internal[name]; config != nil {
+		return config
+	}
+	t.internal[name] = &storepb.ColumnConfig{
+		Name: name,
+	}
 	return t.internal[name]
+}
+
+// RemoveColumnConfig delete the column config by name.
+func (t *TableConfig) RemoveColumnConfig(name string) {
+	delete(t.internal, name)
+}
+
+// RemoveColumnConfig delete the column config by name.
+func (t *TableConfig) IsEmpty() bool {
+	return len(t.internal) == 0 && t.ClassificationID == ""
 }
 
 // DatabaseMetadata is the metadata for a database.

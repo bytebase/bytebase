@@ -32,14 +32,6 @@
     @update:expression="handleSelectColumnDefaultValueExpression"
   />
 
-  <SelectClassificationDrawer
-    v-if="classificationConfig && state.pendingUpdateColumn"
-    :show="state.showClassificationDrawer"
-    :classification-config="classificationConfig"
-    @dismiss="state.showClassificationDrawer = false"
-    @apply="onClassificationSelect"
-  />
-
   <SemanticTypesDrawer
     v-if="state.pendingUpdateColumn"
     :show="state.showSemanticTypesDrawer"
@@ -70,7 +62,7 @@ import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
+import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
 import { useSettingV1Store, useSubscriptionV1Store } from "@/store/modules";
@@ -92,7 +84,6 @@ import type { DefaultValueOption } from "../../utils";
 import { getDefaultValueByKey, isTextOfColumnType } from "../../utils";
 import { markUUID } from "../common";
 import {
-  ClassificationCell,
   DataTypeCell,
   ForeignKeyCell,
   OperationCell,
@@ -105,7 +96,6 @@ import LabelsCell from "./components/LabelsCell.vue";
 
 interface LocalState {
   pendingUpdateColumn?: ColumnMetadata;
-  showClassificationDrawer: boolean;
   showSemanticTypesDrawer: boolean;
   showLabelsDrawer: boolean;
 }
@@ -170,13 +160,14 @@ const emit = defineEmits<{
 }>();
 
 const state = reactive<LocalState>({
-  showClassificationDrawer: false,
   showSemanticTypesDrawer: false,
   showLabelsDrawer: false,
 });
 
 const {
-  resourceType,
+  classificationConfig,
+  showClassificationColumn,
+  showDatabaseConfigColumn,
   disableDiffColoring,
   selectionEnabled,
   markEditStatus,
@@ -240,6 +231,7 @@ const markColumnStatus = (
   }
   markEditStatus(props.db, metadataForColumn(column), status);
 };
+
 const configForColumn = (column: ColumnMetadata) => {
   return (
     getColumnConfig(props.db, metadataForColumn(column)) ??
@@ -252,25 +244,25 @@ const configForColumn = (column: ColumnMetadata) => {
 const primaryKey = computed(() => {
   return props.table.indexes.find((idx) => idx.primary);
 });
-const classificationConfig = computed(() => {
-  if (!props.classificationConfigId) {
-    return;
-  }
-  return settingStore.getProjectClassification(props.classificationConfigId);
-});
+
 const semanticTypeList = computed(() => {
   return (
     settingStore.getSettingByName("bb.workspace.semantic-types")?.value
       ?.semanticTypeSettingValue?.types ?? []
   );
 });
-const showDatabaseConfigColumn = computed(
-  () => resourceType.value === "branch"
-);
+
 const showSemanticTypeColumn = computed(() => {
   return (
     subscriptionV1Store.hasFeature("bb.feature.sensitive-data") &&
     showDatabaseConfigColumn.value
+  );
+});
+
+const showClassification = computed(() => {
+  return showClassificationColumn(
+    props.engine,
+    props.database.classificationFromConfig
   );
 });
 
@@ -376,22 +368,22 @@ const columns = computed(() => {
     {
       key: "classification",
       title: t("schema-editor.column.classification"),
-      hide: !classificationConfig.value,
+      hide: !showClassification.value,
       resizable: true,
       minWidth: 140,
       maxWidth: 320,
       render: (column) => {
+        const config = configForColumn(column);
         return h(ClassificationCell, {
-          classification: column.classification,
+          classification: config.classificationId,
           readonly: props.readonly,
           disabled: props.disableChangeTable,
           classificationConfig:
             classificationConfig.value ??
             DataClassificationConfig.fromPartial({}),
-          onEdit: () => openClassificationDrawer(column),
-          onRemove: () => {
-            column.classification = "";
-            markColumnStatus(column, "updated");
+          onApply: (id: string) => {
+            state.pendingUpdateColumn = column;
+            onClassificationSelect(id);
           },
         });
       },
@@ -666,11 +658,6 @@ const handleSelectColumnDefaultValueExpression = (expression: string) => {
   markColumnStatus(column, "updated");
 };
 
-const openClassificationDrawer = (column: ColumnMetadata) => {
-  state.pendingUpdateColumn = column;
-  state.showClassificationDrawer = true;
-};
-
 const openSemanticTypeDrawer = (column: ColumnMetadata) => {
   state.pendingUpdateColumn = column;
   state.showSemanticTypesDrawer = true;
@@ -685,8 +672,11 @@ const onClassificationSelect = (classificationId: string) => {
   if (!state.pendingUpdateColumn) {
     return;
   }
-  state.pendingUpdateColumn.classification = classificationId;
+
   markColumnStatus(state.pendingUpdateColumn, "updated");
+  updateColumnConfig(state.pendingUpdateColumn, (config) => {
+    config.classificationId = classificationId;
+  });
 };
 
 const updateColumnConfig = (

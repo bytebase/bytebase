@@ -72,6 +72,10 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *mo
 	if err != nil {
 		return err
 	}
+	configBytes, err := protojson.Marshal(dbSchema.GetConfig())
+	if err != nil {
+		return err
+	}
 
 	query := `
 		INSERT INTO db_schema (
@@ -79,12 +83,14 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *mo
 			updater_id,
 			database_id,
 			metadata,
-			raw_dump
+			raw_dump,
+			config
 		)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT(database_id) DO UPDATE SET
 			metadata = EXCLUDED.metadata,
 			raw_dump = EXCLUDED.raw_dump,
+			config = EXCLUDED.config,
 			updated_ts = extract(epoch from now())
 		RETURNING metadata, raw_dump, config
 	`
@@ -102,6 +108,7 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *mo
 		metadataBytes,
 		// Convert to string because []byte{} is null which violates db schema constraints.
 		string(dbSchema.GetSchema()),
+		configBytes,
 	).Scan(
 		&metadata,
 		&schema,
