@@ -2266,6 +2266,7 @@ AdviseIndexResponse is the response of advising index.
 | name | [string](#string) |  | The name is the name of a column. |
 | semantic_type_id | [string](#string) |  |  |
 | labels | [ColumnConfig.LabelsEntry](#bytebase-v1-ColumnConfig-LabelsEntry) | repeated | The user labels for a column. |
+| classification_id | [string](#string) |  |  |
 
 
 
@@ -2308,7 +2309,6 @@ ColumnMetadata is the metadata for columns.
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
 | collation | [string](#string) |  | The collation is the collation of a column. |
 | comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
-| classification | [string](#string) |  | The classification is the classification of a column parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a column parsed from the comment. |
 | effective_masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  | The effective_masking_level is the effective masking level of the column, evaluate from the column masking data and global masking rules. |
 
@@ -2367,6 +2367,7 @@ ColumnMetadata is the metadata for columns.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
 | schema_configs | [SchemaConfig](#bytebase-v1-SchemaConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
+| classification_from_config | [bool](#bool) |  | If true, we will only store the classification in the config. Otherwise we will get the classification from table/column comment, and write back to the schema metadata. |
 
 
 
@@ -2389,6 +2390,7 @@ Format: instances/{instance}/databases/{database}/metadata |
 | collation | [string](#string) |  | The collation is the collation of a database. |
 | extensions | [ExtensionMetadata](#bytebase-v1-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
 | schema_configs | [SchemaConfig](#bytebase-v1-SchemaConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
+| classification_from_config | [bool](#bool) |  |  |
 
 
 
@@ -3034,6 +3036,7 @@ SlowQueryStatistics is the statistics of the slow query log.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a table. |
 | column_configs | [ColumnConfig](#bytebase-v1-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
+| classification_id | [string](#string) |  |  |
 
 
 
@@ -3059,7 +3062,6 @@ TableMetadata is the metadata for tables.
 | data_free | [int64](#int64) |  | The data_free is the estimated free data size of a table. |
 | create_options | [string](#string) |  | The create_options is the create option of a table. |
 | comment | [string](#string) |  | The comment is the comment of a table. classification and user_comment is parsed from the comment. |
-| classification | [string](#string) |  | The classification is the classification of a table parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
 | partitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |

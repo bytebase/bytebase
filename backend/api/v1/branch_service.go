@@ -302,7 +302,9 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 
 	if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
 		metadata, config := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
-		sanitizeCommentForSchemaMetadata(metadata)
+		if !config.ClassificationFromConfig {
+			sanitizeCommentForSchemaMetadata(metadata, model.NewDatabaseConfig(config))
+		}
 		reconcileMetadata(metadata, branch.Engine)
 		filteredMetadata := filterDatabaseMetadataByEngine(metadata, branch.Engine)
 
@@ -415,6 +417,10 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	// Maybe we can support auto-merging in the future.
 
 	// The first crazy night in 2024.
+	sanitizeCommentIfNecessary(headBranch.Base)
+	sanitizeCommentIfNecessary(headBranch.Head)
+	sanitizeCommentIfNecessary(baseBranch.Head)
+
 	adHead, err := tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
 	if err != nil {
 		slog.Info("cannot merge branches", log.BBError(err))
@@ -471,6 +477,13 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		return nil, err
 	}
 	return v1Branch, nil
+}
+
+func sanitizeCommentIfNecessary(branchSnapshot *storepb.BranchSnapshot) {
+	config := branchSnapshot.DatabaseConfig
+	if config != nil && !config.ClassificationFromConfig {
+		sanitizeCommentForSchemaMetadata(branchSnapshot.Metadata, model.NewDatabaseConfig(config))
+	}
 }
 
 // RebaseBranch rebases a branch to the target branch.
@@ -530,6 +543,9 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return nil, status.Errorf(codes.InvalidArgument, "failed to convert merged schema to metadata, %v", err)
 		}
 		newHeadConfig = baseBranch.Head.GetDatabaseConfig()
+		if !newHeadConfig.ClassificationFromConfig {
+			sanitizeCommentForSchemaMetadata(newHeadMetadata, model.NewDatabaseConfig(newHeadConfig))
+		}
 		reconcileMetadata(newHeadMetadata, baseBranch.Engine)
 	} else {
 		newHeadMetadata, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata)
@@ -735,12 +751,18 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 	if request.SourceMetadata == nil || request.TargetMetadata == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
 	}
-	storeSourceMetadata, _ := convertV1DatabaseMetadata(request.SourceMetadata)
-	storeTargetMetadata, _ := convertV1DatabaseMetadata(request.TargetMetadata)
+	storeSourceMetadata, sourceConfig := convertV1DatabaseMetadata(request.SourceMetadata)
+	if !sourceConfig.ClassificationFromConfig {
+		sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseConfig(sourceConfig))
+	}
+
+	storeTargetMetadata, targetConfig := convertV1DatabaseMetadata(request.TargetMetadata)
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
-	sanitizeCommentForSchemaMetadata(storeTargetMetadata)
+	if !targetConfig.ClassificationFromConfig {
+		sanitizeCommentForSchemaMetadata(storeTargetMetadata, model.NewDatabaseConfig(targetConfig))
+	}
 
 	storeSourceMetadata, storeTargetMetadata = trimDatabaseMetadata(storeSourceMetadata, storeTargetMetadata)
 	if err := checkDatabaseMetadataColumnType(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
@@ -892,12 +914,15 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	return v1Branch, nil
 }
 
-func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata) {
+func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseConfig) {
 	for _, schema := range dbSchema.Schemas {
+		schemaConfig := dbModelConfig.CreateOrGetSchemaConfig(schema.Name)
 		for _, table := range schema.Tables {
-			table.Comment = common.GetCommentFromClassificationAndUserComment(table.Classification, table.UserComment)
+			tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
+			table.Comment = common.GetCommentFromClassificationAndUserComment(tableConfig.ClassificationID, table.UserComment)
 			for _, col := range table.Columns {
-				col.Comment = common.GetCommentFromClassificationAndUserComment(col.Classification, col.UserComment)
+				columnConfig := tableConfig.CreateOrGetColumnConfig(col.Name)
+				col.Comment = common.GetCommentFromClassificationAndUserComment(columnConfig.ClassificationId, col.UserComment)
 			}
 		}
 	}
@@ -915,25 +940,23 @@ func filterDatabaseMetadataByEngine(metadata *storepb.DatabaseSchemaMetadata, en
 		}
 		for _, table := range schema.Tables {
 			filteredTable := &storepb.TableMetadata{
-				Name:           table.Name,
-				Classification: table.Classification,
-				Comment:        table.Comment,
-				UserComment:    table.UserComment,
+				Name:        table.Name,
+				Comment:     table.Comment,
+				UserComment: table.UserComment,
 				// For Display only.
 				Collation: table.Collation,
 				Engine:    table.Engine,
 			}
 			for _, column := range table.Columns {
 				filteredColumn := &storepb.ColumnMetadata{
-					Name:           column.Name,
-					OnUpdate:       column.OnUpdate,
-					Comment:        column.Comment,
-					UserComment:    column.UserComment,
-					Classification: column.Classification,
-					Type:           column.Type,
-					DefaultValue:   column.DefaultValue,
-					Nullable:       column.Nullable,
-					Position:       column.Position,
+					Name:         column.Name,
+					OnUpdate:     column.OnUpdate,
+					Comment:      column.Comment,
+					UserComment:  column.UserComment,
+					Type:         column.Type,
+					DefaultValue: column.DefaultValue,
+					Nullable:     column.Nullable,
+					Position:     column.Position,
 				}
 				filteredTable.Columns = append(filteredTable.Columns, filteredColumn)
 			}
@@ -1113,9 +1136,6 @@ func equalTable(s, t *storepb.TableMetadata) bool {
 	if s.GetUserComment() != t.GetUserComment() {
 		return false
 	}
-	if s.GetClassification() != t.GetClassification() {
-		return false
-	}
 	for i := 0; i < len(s.GetColumns()); i++ {
 		sc, tc := s.GetColumns()[i], t.GetColumns()[i]
 		if sc.Name != tc.Name {
@@ -1128,9 +1148,6 @@ func equalTable(s, t *storepb.TableMetadata) bool {
 			return false
 		}
 		if sc.UserComment != tc.UserComment {
-			return false
-		}
-		if sc.Classification != tc.Classification {
 			return false
 		}
 		if sc.Type != tc.Type {

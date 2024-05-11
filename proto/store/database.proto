@@ -180,9 +180,6 @@ message TableMetadata {
   // classification and user_comment is parsed from the comment.
   string comment = 11;
 
-  // The classification is the classification of a table parsed from the comment.
-  string classification = 13;
-
   // The user_comment is the user comment of a table parsed from the comment.
   string user_comment = 14;
 
@@ -292,9 +289,6 @@ message ColumnMetadata {
   // The comment is the comment of a column.
   // classification and user_comment is parsed from the comment.
   string comment = 10;
-
-  // The classification is the classification of a table parsed from the comment.
-  string classification = 11;
 
   // The user_comment is the user comment of a table parsed from the comment.
   string user_comment = 12;
@@ -467,6 +461,11 @@ message DatabaseConfig {
 
   // The schema_configs is the list of configs for schemas in a database.
   repeated SchemaConfig schema_configs = 2;
+
+  // If true, we will only store the classification in the config.
+  // Otherwise we will get the classification from table/column comment,
+  // and write back to the schema metadata.
+  bool classification_from_config = 3;
 }
 
 message SchemaConfig {
@@ -484,6 +483,8 @@ message TableConfig {
 
   // The column_configs is the ordered list of configs for columns in a table.
   repeated ColumnConfig column_configs = 2;
+
+  string classification_id = 3;
 }
 
 message ColumnConfig {
@@ -494,4 +495,6 @@ message ColumnConfig {
 
   // The user labels for a column.
   map<string, string> labels = 3;
+
+  string classification_id = 4;
 }

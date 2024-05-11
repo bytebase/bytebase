@@ -1517,8 +1517,10 @@ func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyM
 	if request.Metadata == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "metadata is required")
 	}
-	storeSchemaMetadata, _ := convertV1DatabaseMetadata(request.Metadata)
-	sanitizeCommentForSchemaMetadata(storeSchemaMetadata)
+	storeSchemaMetadata, config := convertV1DatabaseMetadata(request.Metadata)
+	if !config.ClassificationFromConfig {
+		sanitizeCommentForSchemaMetadata(storeSchemaMetadata, model.NewDatabaseConfig(config))
+	}
 
 	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeSchemaMetadata)
 	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), defaultSchema, "" /* baseline */, storeSchemaMetadata)

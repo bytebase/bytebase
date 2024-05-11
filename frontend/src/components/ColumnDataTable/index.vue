@@ -17,8 +17,11 @@ import { computed } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
-import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
-import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
+import {
+  useCurrentUserV1,
+  useSubscriptionV1Store,
+  useDBSchemaV1Store,
+} from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type {
@@ -27,10 +30,16 @@ import type {
 } from "@/types/proto/v1/database_service";
 import type { MaskData } from "@/types/proto/v1/org_policy_service";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import ClassificationCell from "./ClassificationCell.vue";
 import LabelsCell from "./LabelsCell.vue";
 import MaskingLevelCell from "./MaskingLevelCell.vue";
 import SemanticTypeCell from "./SemanticTypeCell.vue";
+import {
+  updateColumnConfig,
+  supportSetClassificationFromComment,
+} from "./utils";
 
 const props = defineProps({
   database: {
@@ -80,6 +89,7 @@ const engine = computed(() => {
 });
 const currentUserV1 = useCurrentUserV1();
 const subscriptionV1Store = useSubscriptionV1Store();
+const dbSchemaStore = useDBSchemaV1Store();
 
 const hasSensitiveDataFeature = computed(() => {
   return (
@@ -103,13 +113,20 @@ const showSensitiveColumn = computed(() => {
   );
 });
 
-const showClassificationColumn = computed(() => {
-  return (
-    !props.isExternalTable &&
-    (engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES) &&
-    props.classificationConfig
-  );
+const databaseSchemaMetadata = computed(() => {
+  return dbSchemaStore.getDatabaseMetadata(props.database.name);
 });
+
+const showClassificationColumn = computed(() => {
+  return !props.isExternalTable && props.classificationConfig;
+});
+
+const setClassificationFromComment = computed(() =>
+  supportSetClassificationFromComment(
+    engine.value,
+    databaseSchemaMetadata.value.classificationFromConfig
+  )
+);
 
 const showLabelsColumn = computed(() => {
   return !props.isExternalTable;
@@ -181,11 +198,22 @@ const columns = computed(() => {
       key: "classification",
       title: t("database.classification.self"),
       hide: !showClassificationColumn.value,
-      width: 140,
+      minWidth: 140,
+      resizable: true,
       render: (column) => {
-        return h(ClassificationLevelBadge, {
-          classification: column.classification,
-          classificationConfig: props.classificationConfig,
+        const columnConfig = dbSchemaStore.getColumnConfig(
+          props.database.name,
+          props.schema,
+          props.table.name,
+          column.name
+        );
+        return h(ClassificationCell, {
+          classification: columnConfig.classificationId,
+          classificationConfig:
+            props.classificationConfig ??
+            DataClassificationConfig.fromPartial({}),
+          readonly: setClassificationFromComment.value,
+          onApply: (id: string) => onClassificationIdApply(column.name, id),
         });
       },
     },
@@ -279,4 +307,17 @@ const filteredColumnList = computed(() => {
   }
   return props.columnList;
 });
+
+const onClassificationIdApply = async (
+  column: string,
+  classificationId: string
+) => {
+  await updateColumnConfig(
+    props.database.name,
+    props.schema,
+    props.table.name,
+    column,
+    { classificationId }
+  );
+};
 </script>
