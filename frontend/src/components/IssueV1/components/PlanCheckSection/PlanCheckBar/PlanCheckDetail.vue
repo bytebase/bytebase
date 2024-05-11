@@ -42,7 +42,7 @@
             class="ml-1 normal-link"
             @click="
               state.activeResultDefinition =
-                row.checkResult.sqlReviewReport.detail
+                row.checkResult.sqlReviewReport!.detail
             "
             >{{ $t("sql-review.view-definition") }}</span
           >
@@ -76,13 +76,14 @@
           </a>
         </HideInStandaloneMode>
 
-        <template v-if="row.checkResult.sqlReviewReport?.line">
+        <!-- Only show the error line for latest plan check run -->
+        <template v-if="isLatest && row.checkResult.sqlReviewReport?.line">
           <span class="border-r border-control-border ml-1"></span>
           <span
             class="ml-1 normal-link"
             @click="
               handleClickPlanCheckDetailLine(
-                row.checkResult.sqlReviewReport.line
+                row.checkResult.sqlReviewReport!.line
               )
             "
           >
@@ -161,6 +162,7 @@ type LocalState = {
 const props = defineProps<{
   planCheckRun: PlanCheckRun;
   environment?: string;
+  isLatest?: boolean;
 }>();
 
 const { t } = useI18n();
