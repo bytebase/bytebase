@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-5 divide-y pb-5 px-2">
+  <div class="space-y-3 divide-y pb-4 px-2">
     <div
       v-for="(row, i) in tableRows"
       :key="i"
-      class="pt-5 first:pt-2 space-y-2"
+      class="pt-3 first:pt-2 space-y-2"
     >
       <div class="flex items-center space-x-3">
         <div
@@ -30,7 +30,7 @@
             </span>
           </template>
         </div>
-        <div v-if="showCategoryColumn">
+        <div v-if="showCategoryColumn" class="shrink-0">
           {{ row.category }}
         </div>
         <div class="font-semibold">{{ row.title }}</div>

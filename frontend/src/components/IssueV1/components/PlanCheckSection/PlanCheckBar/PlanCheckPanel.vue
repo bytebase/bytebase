@@ -1,35 +1,25 @@
 <template>
-  <BBModal
-    :title="
-      task
-        ? $t('task.check-result.title', { name: task.title })
-        : $t('task.check-result.title-general')
-    "
-    class="!w-[56rem]"
-    header-class="whitespace-pre-wrap break-all gap-x-1"
-    @close="$emit('close')"
-  >
-    <div class="space-y-4">
-      <PlanCheckBadgeBar
-        :plan-check-run-list="planCheckRunList"
-        :selected-type="selectedType"
-        @select-type="$emit('select-type', $event)"
-      />
-      <TabFilter
-        v-if="selectedPlanCheckRunUID"
-        v-model:value="selectedPlanCheckRunUID"
-        :items="tabItemList"
-      />
+  <div class="space-y-2">
+    <TabFilter
+      v-if="selectedPlanCheckRunUID && tabItemList.length > 1"
+      v-model:value="selectedPlanCheckRunUID"
+      :items="tabItemList"
+    />
 
-      <PlanCheckDetail
-        v-if="selectedPlanCheckRun"
-        :plan-check-run="selectedPlanCheckRun"
-        :environment="environment"
-        :is-latest="isLatestPlanCheckRun"
-        @close="$emit('close')"
-      />
-    </div>
-  </BBModal>
+    <PlanCheckBadgeBar
+      :plan-check-run-list="planCheckRunList"
+      :selected-type="selectedTypeRef"
+      @select-type="(type) => (selectedTypeRef = type)"
+    />
+
+    <PlanCheckDetail
+      v-if="selectedPlanCheckRun"
+      :plan-check-run="selectedPlanCheckRun"
+      :environment="environment"
+      :is-latest="isLatestPlanCheckRun"
+      @close="$emit('close')"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -39,10 +29,11 @@ import { useI18n } from "vue-i18n";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
-import type {
-  PlanCheckRun,
+import {
+  PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
-  Task,
+  type PlanCheckRun,
+  type Task,
 } from "@/types/proto/v1/rollout_service";
 import { humanizeDate } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
@@ -50,22 +41,42 @@ import PlanCheckDetail from "./PlanCheckDetail.vue";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
-  selectedType: PlanCheckRun_Type;
+  selectedType?: PlanCheckRun_Type;
   task?: Task;
 }>();
 
 defineEmits<{
-  (event: "select-type", type: PlanCheckRun_Type): void;
   (event: "close"): void;
 }>();
 
+const getInitialSelectedType = () => {
+  if (props.selectedType) {
+    return props.selectedType;
+  }
+
+  // Find the first plan check run with error or warning.
+  const planCheck = props.planCheckRunList.find((checkRun) =>
+    [PlanCheckRun_Result_Status.ERROR, PlanCheckRun_Result_Status.WARNING].some(
+      (status) =>
+        checkRun.results.map((result) => result.status).includes(status)
+    )
+  );
+  if (planCheck) {
+    return planCheck.type;
+  }
+  return (
+    first(props.planCheckRunList)?.type ?? PlanCheckRun_Type.TYPE_UNSPECIFIED
+  );
+};
+
 const { t } = useI18n();
 const { issue } = useIssueContext();
+const selectedTypeRef = ref<PlanCheckRun_Type>(getInitialSelectedType());
 
 const selectedPlanCheckRunList = computed(() => {
   return orderBy(
     props.planCheckRunList.filter(
-      (checkRun) => checkRun.type === props.selectedType
+      (checkRun) => checkRun.type === selectedTypeRef.value
     ),
     (checkRun) => parseInt(checkRun.uid, 10),
     "desc"
@@ -83,7 +94,9 @@ const selectedPlanCheckRun = computed(() => {
 });
 
 const isLatestPlanCheckRun = computed(() => {
-  return selectedPlanCheckRunUID.value === first(selectedPlanCheckRunList.value)?.uid;
+  return (
+    selectedPlanCheckRunUID.value === first(selectedPlanCheckRunList.value)?.uid
+  );
 });
 
 const tabItemList = computed(() => {
