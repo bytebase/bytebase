@@ -1,7 +1,6 @@
 import { useLocalStorage } from "@vueuse/core";
 import { cloneDeep, orderBy, uniq } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
-import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watch } from "vue";
 import type {
   ComposedDatabase,
@@ -193,15 +192,17 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   };
 });
 
-export const keyForSQLEditorTreeNodeTarget = <T extends NodeType>(
+const keyForSQLEditorTreeNodeTarget = <T extends NodeType>(
   type: T,
-  target: NodeTarget<T>
+  target: NodeTarget<T>,
+  parent?: TreeNode
 ): string => {
-  let prefix: string = type;
-  if (type === "label") {
-    prefix = `label:${(target as NodeTarget<"label">).key}`;
+  const id = idForSQLEditorTreeNodeTarget(type, target);
+  const parts = [id];
+  if (parent) {
+    parts.unshift(parent.key);
   }
-  return `${prefix}-${uuidv4()}`;
+  return JSON.stringify(parts);
 };
 
 export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
@@ -336,7 +337,7 @@ export const mapTreeNodeByType = <T extends NodeType>(
   parent: TreeNode | undefined,
   overrides: Partial<TreeNode<T>> | undefined = undefined
 ): TreeNode<T> => {
-  const key = keyForSQLEditorTreeNodeTarget(type, target);
+  const key = keyForSQLEditorTreeNodeTarget(type, target, parent);
   const node: TreeNode<T> = {
     key,
     meta: { type, target },
