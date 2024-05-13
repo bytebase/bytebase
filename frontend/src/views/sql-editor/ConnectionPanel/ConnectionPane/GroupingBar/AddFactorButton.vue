@@ -1,5 +1,5 @@
 <template>
-  <NPopselect :options="options" trigger="click" @update:value="handleSelect">
+  <NPopselect :options="options" trigger="click" placement="right-start" @update:value="handleSelect">
     <NButton v-if="visible" size="small" style="--n-padding: 4px">
       <template #icon>
         <PlusIcon class="w-4 h-4" />

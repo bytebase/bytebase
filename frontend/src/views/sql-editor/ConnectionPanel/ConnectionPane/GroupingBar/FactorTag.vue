@@ -1,5 +1,8 @@
 <template>
   <NButton class="group" size="small" @click.stop="handleClick">
+    <template #icon>
+      <slot name="icon" />
+    </template>
     <span class="leading-6" :class="[factor.disabled && 'line-through']">
       {{ readableSQLEditorTreeFactor(factor.factor) }}
     </span>
