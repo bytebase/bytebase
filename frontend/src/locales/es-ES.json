@@ -2289,7 +2289,8 @@
       "n-rows": "{n} filas",
       "rows": "filas"
     },
-    "n-per-page": "{n} / página"
+    "n-per-page": "{n} / página",
+    "customize-tree-structure": "Personalizar la estructura del árbol"
   },
   "schema-editor": {
     "self": "Editor de esquema",

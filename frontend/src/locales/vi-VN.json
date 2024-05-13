@@ -2289,7 +2289,8 @@
       "n-rows": "{n} hàng",
       "rows": "hàng"
     },
-    "n-per-page": "{n} / trang"
+    "n-per-page": "{n} / trang",
+    "customize-tree-structure": "Tùy chỉnh cấu trúc cây"
   },
   "schema-editor": {
     "self": "Trình chỉnh sửa lược đồ",
