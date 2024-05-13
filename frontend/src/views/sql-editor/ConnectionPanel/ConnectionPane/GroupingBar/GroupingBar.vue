@@ -43,9 +43,12 @@ const treeStore = useSQLEditorTreeStore();
 const { factorList } = storeToRefs(treeStore);
 
 const viewMode = computed((): "PRESET" | "CUSTOM" => {
+  if (factorList.value.length === 0) {
+    return "PRESET";
+  }
   if (factorList.value.length === 1) {
     const factor = factorList.value[0].factor;
-    if (factor === "project" || factor === "instance") {
+    if (factor === "environment" || factor === "instance") {
       return "PRESET";
     }
   }
