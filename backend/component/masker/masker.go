@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -778,17 +779,25 @@ func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
 	return nil
 }
 
-func NewInnerOuterMasker(maskerType, prefixLen, suffixLen int32) *InnerOuterMasker {
+func NewInnerOuterMasker(storeMaskerType storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType, prefixLen, suffixLen int32) *InnerOuterMasker {
+	var maskerType int32
+	if storeMaskerType == storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_INNER {
+		maskerType = InnerOuterMaskerTypeInner
+	} else {
+		maskerType = InnerOuterMaskerTypeOuter
+	}
+
 	return &InnerOuterMasker{
-		maskerType: maskerType,
+		maskerType: int32(maskerType),
 		prefixLen:  prefixLen,
 		suffixLen:  suffixLen,
 	}
 }
 
 const (
-	InnerOuterMaskerTypeInner = 1
-	InnerOuterMaskerTypeOuter = 2
+	InnerOuterMaskerTypeInnerUndefined = 0
+	InnerOuterMaskerTypeInner          = 1
+	InnerOuterMaskerTypeOuter          = 2
 )
 
 type InnerOuterMasker struct {

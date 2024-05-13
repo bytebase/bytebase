@@ -8248,12 +8248,11 @@ components:
                     type: integer
                     format: int32
                 type:
-                    type: integer
-                    description: |-
-                        type indicates whether the current type is 'Inner or' 'Outer'.
-                         Inner = 1.
-                         Outer = 2.
-                    format: int32
+                    enum:
+                        - INNER
+                        - OUTER
+                    type: string
+                    format: enum
         Algorithm_MD5Mask:
             type: object
             properties:
