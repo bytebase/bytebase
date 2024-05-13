@@ -451,7 +451,9 @@ func (p *ContextProvider) getProjectIDsForDatabase(ctx context.Context, req any)
 	var databaseNames []string
 	switch r := req.(type) {
 	case *v1pb.QueryRequest:
-		databaseNames = append(databaseNames, r.GetName())
+		if strings.Contains(r.GetName(), common.DatabaseIDPrefix) {
+			databaseNames = append(databaseNames, r.GetName())
+		}
 	case *v1pb.ExportRequest:
 		if strings.HasPrefix(r.GetName(), common.ProjectNamePrefix) {
 			projectID, _, err := common.GetProjectIDIssueUID(r.GetName())
@@ -460,7 +462,7 @@ func (p *ContextProvider) getProjectIDsForDatabase(ctx context.Context, req any)
 			}
 			projectIDs = append(projectIDs, projectID)
 		}
-		if strings.HasPrefix(r.GetName(), common.InstanceNamePrefix) {
+		if strings.Contains(r.GetName(), common.DatabaseIDPrefix) {
 			databaseNames = append(databaseNames, r.GetName())
 		}
 	case *v1pb.GetDatabaseRequest:
