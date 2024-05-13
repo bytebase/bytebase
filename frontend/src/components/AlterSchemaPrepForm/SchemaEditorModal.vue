@@ -558,6 +558,8 @@ const confirmCreateIssueWithEmptyStatement = (
     style: "z-index: 100000",
     negativeText: t("common.cancel"),
     positiveText: t("common.continue-anyway"),
+    closeOnEsc: false,
+    maskClosable: false,
     onClose: () => {
       d.resolve(false);
     },

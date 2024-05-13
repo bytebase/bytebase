@@ -302,9 +302,8 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 
 	if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
 		metadata, config := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
-		if !config.ClassificationFromConfig {
-			sanitizeCommentForSchemaMetadata(metadata, model.NewDatabaseConfig(config))
-		}
+		sanitizeCommentForSchemaMetadata(metadata, model.NewDatabaseConfig(config))
+
 		reconcileMetadata(metadata, branch.Engine)
 		filteredMetadata := filterDatabaseMetadataByEngine(metadata, branch.Engine)
 
@@ -417,9 +416,9 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	// Maybe we can support auto-merging in the future.
 
 	// The first crazy night in 2024.
-	sanitizeCommentIfNecessary(headBranch.Base)
-	sanitizeCommentIfNecessary(headBranch.Head)
-	sanitizeCommentIfNecessary(baseBranch.Head)
+	sanitizeCommentForSchemaMetadata(headBranch.Base.Metadata, model.NewDatabaseConfig(headBranch.Base.DatabaseConfig))
+	sanitizeCommentForSchemaMetadata(headBranch.Head.Metadata, model.NewDatabaseConfig(headBranch.Head.DatabaseConfig))
+	sanitizeCommentForSchemaMetadata(baseBranch.Head.Metadata, model.NewDatabaseConfig(baseBranch.Head.DatabaseConfig))
 
 	adHead, err := tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
 	if err != nil {
@@ -479,13 +478,6 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	return v1Branch, nil
 }
 
-func sanitizeCommentIfNecessary(branchSnapshot *storepb.BranchSnapshot) {
-	config := branchSnapshot.DatabaseConfig
-	if config != nil && !config.ClassificationFromConfig {
-		sanitizeCommentForSchemaMetadata(branchSnapshot.Metadata, model.NewDatabaseConfig(config))
-	}
-}
-
 // RebaseBranch rebases a branch to the target branch.
 func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBranchRequest) (*v1pb.RebaseBranchResponse, error) {
 	baseProjectID, baseBranchID, err := common.GetProjectAndBranchID(request.Name)
@@ -543,9 +535,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return nil, status.Errorf(codes.InvalidArgument, "failed to convert merged schema to metadata, %v", err)
 		}
 		newHeadConfig = baseBranch.Head.GetDatabaseConfig()
-		if !newHeadConfig.ClassificationFromConfig {
-			sanitizeCommentForSchemaMetadata(newHeadMetadata, model.NewDatabaseConfig(newHeadConfig))
-		}
+		sanitizeCommentForSchemaMetadata(newHeadMetadata, model.NewDatabaseConfig(newHeadConfig))
 		reconcileMetadata(newHeadMetadata, baseBranch.Engine)
 	} else {
 		newHeadMetadata, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata)
@@ -752,17 +742,13 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
 	}
 	storeSourceMetadata, sourceConfig := convertV1DatabaseMetadata(request.SourceMetadata)
-	if !sourceConfig.ClassificationFromConfig {
-		sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseConfig(sourceConfig))
-	}
+	sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseConfig(sourceConfig))
 
 	storeTargetMetadata, targetConfig := convertV1DatabaseMetadata(request.TargetMetadata)
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
-	if !targetConfig.ClassificationFromConfig {
-		sanitizeCommentForSchemaMetadata(storeTargetMetadata, model.NewDatabaseConfig(targetConfig))
-	}
+	sanitizeCommentForSchemaMetadata(storeTargetMetadata, model.NewDatabaseConfig(targetConfig))
 
 	storeSourceMetadata, storeTargetMetadata = trimDatabaseMetadata(storeSourceMetadata, storeTargetMetadata)
 	if err := checkDatabaseMetadataColumnType(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
@@ -919,10 +905,18 @@ func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, 
 		schemaConfig := dbModelConfig.CreateOrGetSchemaConfig(schema.Name)
 		for _, table := range schema.Tables {
 			tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
-			table.Comment = common.GetCommentFromClassificationAndUserComment(tableConfig.ClassificationID, table.UserComment)
+			classificationID := ""
+			if !dbModelConfig.ClassificationFromConfig {
+				classificationID = tableConfig.ClassificationID
+			}
+			table.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, table.UserComment)
 			for _, col := range table.Columns {
 				columnConfig := tableConfig.CreateOrGetColumnConfig(col.Name)
-				col.Comment = common.GetCommentFromClassificationAndUserComment(columnConfig.ClassificationId, col.UserComment)
+				classificationID := ""
+				if !dbModelConfig.ClassificationFromConfig {
+					classificationID = columnConfig.ClassificationId
+				}
+				col.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, col.UserComment)
 			}
 		}
 	}
