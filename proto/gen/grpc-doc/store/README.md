@@ -244,7 +244,7 @@
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
     - [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel)
-    - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.InnerOuterMaskType](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-InnerOuterMaskType)
+    - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType)
     - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
     - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
   
@@ -3631,7 +3631,7 @@ The type of target.
 | ----- | ---- | ----- | ----------- |
 | prefix_len | [int32](#int32) |  |  |
 | suffix_len | [int32](#int32) |  |  |
-| type | [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.InnerOuterMaskType](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-InnerOuterMaskType) |  |  |
+| type | [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType) |  |  |
 
 
 
@@ -3886,15 +3886,16 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 
 
-<a name="bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-InnerOuterMaskType"></a>
+<a name="bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType"></a>
 
-### MaskingAlgorithmSetting.Algorithm.InnerOuterMask.InnerOuterMaskType
+### MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| INNER | 0 |  |
-| OUTER | 1 |  |
+| MASK_TYPE_UNSPECIFIED | 0 |  |
+| INNER | 1 |  |
+| OUTER | 2 |  |
 
 
 

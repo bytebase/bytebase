@@ -265,12 +265,13 @@ message MaskingAlgorithmSetting {
       int32 prefix_len = 1;
       int32 suffix_len = 2;
 
-      enum InnerOuterMaskType {
-        INNER = 0;
-        OUTER = 1;
+      enum MaskType {
+        MASK_TYPE_UNSPECIFIED = 0;
+        INNER = 1;
+        OUTER = 2;
       }
 
-      InnerOuterMaskType type = 3;
+      MaskType type = 3;
     }
 
     oneof mask {

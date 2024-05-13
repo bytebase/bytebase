@@ -8249,6 +8249,7 @@ components:
                     format: int32
                 type:
                     enum:
+                        - MASK_TYPE_UNSPECIFIED
                         - INNER
                         - OUTER
                     type: string

@@ -779,7 +779,7 @@ func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
 	return nil
 }
 
-func NewInnerOuterMasker(storeMaskerType storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType, prefixLen, suffixLen int32) *InnerOuterMasker {
+func NewInnerOuterMasker(storeMaskerType storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType, prefixLen, suffixLen int32) *InnerOuterMasker {
 	var maskerType int32
 	if storeMaskerType == storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_INNER {
 		maskerType = InnerOuterMaskerTypeInner
@@ -795,8 +795,9 @@ func NewInnerOuterMasker(storeMaskerType storepb.MaskingAlgorithmSetting_Algorit
 }
 
 const (
-	InnerOuterMaskerTypeInner = 0
-	InnerOuterMaskerTypeOuter = 1
+	InnerOuterMaskerTypeInnerUndefined = 0
+	InnerOuterMaskerTypeInner          = 1
+	InnerOuterMaskerTypeOuter          = 2
 )
 
 type InnerOuterMasker struct {
