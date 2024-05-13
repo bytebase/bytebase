@@ -86,7 +86,7 @@ const renderTag = ({
     NTag,
     {
       size: props.size,
-      closable: true,
+      closable: !props.disabled,
       onClose: handleClose,
     },
     {
