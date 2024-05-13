@@ -369,18 +369,23 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 	var remainingSQLs []base.SingleSQL
 
+	remainingSQLsIndex := map[int]int{}
+	nonTransactionAndSetRoleStmtsIndex := map[int]int{}
+
 	var nonTransactionAndSetRoleStmts []string
-	for _, singleSQL := range singleSQLs {
+	for i, singleSQL := range singleSQLs {
 		if isIgnoredStatement(singleSQL.Text) {
 			continue
 		}
 		if IsNonTransactionStatement(singleSQL.Text) {
 			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
+			nonTransactionAndSetRoleStmtsIndex[len(nonTransactionAndSetRoleStmts)-1] = i
 			continue
 		}
 
 		if isSetRoleStatement(singleSQL.Text) {
 			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
+			nonTransactionAndSetRoleStmtsIndex[len(nonTransactionAndSetRoleStmts)-1] = i
 		}
 
 		if isSuperuserStatement(singleSQL.Text) {
@@ -396,9 +401,27 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			singleSQL.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", singleSQL.Text, owner)
 		}
 		remainingSQLs = append(remainingSQLs, singleSQL)
+		remainingSQLsIndex[len(remainingSQLs)-1] = i
 	}
 
 	totalRowsAffected := int64(0)
+	if len(remainingSQLs) != 0 {
+		tx, err := driver.db.BeginTx(ctx, nil)
+		if err != nil {
+			return 0, err
+		}
+		defer tx.Rollback()
+
+		if err := tx.Commit(); err != nil {
+			return 0, err
+		}
+	}
+	conn, err := driver.db.Conn(ctx)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get connection")
+	}
+	defer conn.Close()
+
 	if len(remainingSQLs) != 0 {
 		var totalCommands int
 		var chunks [][]base.SingleSQL
@@ -416,83 +439,107 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		}
 		currentIndex := 0
 
-		tx, err := driver.db.BeginTx(ctx, nil)
+		err := conn.Raw(func(driverConn any) error {
+			conn := driverConn.(*stdlib.Conn).Conn()
+
+			tx, err := conn.Begin(ctx)
+			if err != nil {
+				return errors.Wrapf(err, "failed to begin transaction")
+			}
+			defer tx.Rollback(ctx)
+
+			// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
+			if _, err := tx.Exec(ctx, fmt.Sprintf("SET LOCAL ROLE '%s'", owner)); err != nil {
+				return err
+			}
+
+			for _, chunk := range chunks {
+				if len(chunk) == 0 {
+					continue
+				}
+				// Start the current chunk.
+				// Set the progress information for the current chunk.
+				if opts.UpdateExecutionStatus != nil {
+					opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
+						CommandsTotal:     int32(totalCommands),
+						CommandsCompleted: int32(currentIndex),
+						CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+							Line:   int32(chunk[0].FirstStatementLine),
+							Column: int32(chunk[0].FirstStatementColumn),
+						},
+						CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+							Line:   int32(chunk[len(chunk)-1].LastLine),
+							Column: int32(chunk[len(chunk)-1].LastColumn),
+						},
+					})
+				}
+
+				chunkText, err := util.ConcatChunk(chunk)
+				if err != nil {
+					return err
+				}
+
+				var indexes []int32
+				for i := currentIndex; i < currentIndex+len(chunk); i++ {
+					indexes = append(indexes, int32(remainingSQLsIndex[i]))
+				}
+				opts.LogCommandExecute(indexes)
+
+				rr := tx.Conn().PgConn().Exec(ctx, chunkText)
+				results, err := rr.ReadAll()
+				if err != nil {
+					opts.LogCommandResponse(indexes, 0, nil, err.Error())
+
+					return &db.ErrorWithPosition{
+						Err: errors.Wrapf(err, "failed to execute context in a transaction"),
+						Start: &storepb.TaskRunResult_Position{
+							Line:   int32(chunk[0].FirstStatementLine),
+							Column: int32(chunk[0].FirstStatementColumn),
+						},
+						End: &storepb.TaskRunResult_Position{
+							Line:   int32(chunk[len(chunk)-1].LastLine),
+							Column: int32(chunk[len(chunk)-1].LastColumn),
+						},
+					}
+				}
+
+				var rowsAffected int64
+				var allRowsAffected []int32
+				for _, result := range results {
+					ra := result.CommandTag.RowsAffected()
+					allRowsAffected = append(allRowsAffected, int32(ra))
+					rowsAffected += ra
+				}
+				opts.LogCommandResponse(indexes, int32(rowsAffected), allRowsAffected, "")
+
+				totalRowsAffected += rowsAffected
+				currentIndex += len(chunk)
+			}
+
+			if err := tx.Commit(ctx); err != nil {
+				return errors.Wrapf(err, "failed to commit transaction")
+			}
+
+			return nil
+		})
 		if err != nil {
 			return 0, err
 		}
-		defer tx.Rollback()
-		// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE '%s'", owner)); err != nil {
-			return 0, err
-		}
-
-		for _, chunk := range chunks {
-			if len(chunk) == 0 {
-				continue
-			}
-			// Start the current chunk.
-			// Set the progress information for the current chunk.
-			if opts.UpdateExecutionStatus != nil {
-				opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
-					CommandsTotal:     int32(totalCommands),
-					CommandsCompleted: int32(currentIndex),
-					CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-						Line:   int32(chunk[0].FirstStatementLine),
-						Column: int32(chunk[0].FirstStatementColumn),
-					},
-					CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-						Line:   int32(chunk[len(chunk)-1].LastLine),
-						Column: int32(chunk[len(chunk)-1].LastColumn),
-					},
-				})
-			}
-
-			chunkText, err := util.ConcatChunk(chunk)
-			if err != nil {
-				return 0, err
-			}
-
-			sqlResult, err := tx.ExecContext(ctx, chunkText)
-			if err != nil {
-				return 0, &db.ErrorWithPosition{
-					Err: errors.Wrapf(err, "failed to execute context in a transaction"),
-					Start: &storepb.TaskRunResult_Position{
-						Line:   int32(chunk[0].FirstStatementLine),
-						Column: int32(chunk[0].FirstStatementColumn),
-					},
-					End: &storepb.TaskRunResult_Position{
-						Line:   int32(chunk[len(chunk)-1].LastLine),
-						Column: int32(chunk[len(chunk)-1].LastColumn),
-					},
-				}
-			}
-			rowsAffected, err := sqlResult.RowsAffected()
-			if err != nil {
-				// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-				slog.Debug("rowsAffected returns error", log.BBError(err))
-			}
-			totalRowsAffected += rowsAffected
-			currentIndex += len(chunk)
-		}
-
-		if err := tx.Commit(); err != nil {
-			return 0, err
-		}
 	}
-	conn, err := driver.db.Conn(ctx)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get connection")
-	}
-	defer conn.Close()
+
 	// USE SET SESSION ROLE to set the role for the current session.
 	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
 		return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 	}
 	// Run non-transaction statements at the end.
-	for _, stmt := range nonTransactionAndSetRoleStmts {
+	for i, stmt := range nonTransactionAndSetRoleStmts {
+		indexes := []int32{int32(nonTransactionAndSetRoleStmtsIndex[i])}
+		opts.LogCommandExecute(indexes)
 		if _, err := conn.ExecContext(ctx, stmt); err != nil {
+			opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
 			return 0, err
 		}
+		opts.LogCommandResponse(indexes, 0, []int32{0}, "")
 	}
 	return totalRowsAffected, nil
 }
