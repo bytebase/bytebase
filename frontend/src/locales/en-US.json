@@ -2289,7 +2289,8 @@
       "n-rows": "{n} rows",
       "rows": "rows"
     },
-    "n-per-page": "{n} / page"
+    "n-per-page": "{n} / page",
+    "customize-tree-structure": "Customize tree structure"
   },
   "schema-editor": {
     "self": "Schema Editor",

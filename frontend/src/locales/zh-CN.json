@@ -2289,7 +2289,8 @@
       "n-rows": "{n} 行",
       "rows": "行"
     },
-    "n-per-page": "{n} / 页"
+    "n-per-page": "{n} / 页",
+    "customize-tree-structure": "自定义树结构"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
