@@ -313,12 +313,14 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 	var totalCommands int
 	var chunks [][]base.SingleSQL
+	var originalIndex map[int]int
+	var logTaskRun bool
 	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := mysqlparser.SplitSQL(statement)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to split sql")
 		}
-		singleSQLs = base.FilterEmptySQL(singleSQLs)
+		singleSQLs, originalIndex = base.FilterEmptySQLWithIndexes(singleSQLs)
 		if len(singleSQLs) == 0 {
 			return 0, nil
 		}
@@ -328,6 +330,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			return 0, errors.Wrapf(err, "failed to chunk sql")
 		}
 		chunks = ret
+		logTaskRun = true
 	} else {
 		chunks = [][]base.SingleSQL{
 			{
@@ -386,11 +389,13 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			}
 
 			var indexes []int32
-			for i := currentIndex; i < currentIndex+len(chunk); i++ {
-				indexes = append(indexes, int32(i))
-			}
+			if logTaskRun {
+				for i := currentIndex; i < currentIndex+len(chunk); i++ {
+					indexes = append(indexes, int32(originalIndex[i]))
+				}
 
-			opts.LogCommandExecute(indexes)
+				opts.LogCommandExecute(indexes)
+			}
 
 			sqlResult, err := exer.ExecContext(ctx, chunkText, nil)
 			if err != nil {
@@ -401,7 +406,9 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 					}
 				}
 
-				opts.LogCommandResponse(indexes, 0, nil, err.Error())
+				if logTaskRun {
+					opts.LogCommandResponse(indexes, 0, nil, err.Error())
+				}
 
 				return &db.ErrorWithPosition{
 					Err: errors.Wrapf(err, "failed to execute context in a transaction"),
@@ -425,7 +432,9 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			}
 			totalRowsAffected += rowsAffected
 
-			opts.LogCommandResponse(indexes, int32(rowsAffected), allRowsAffectedInt32, "")
+			if logTaskRun {
+				opts.LogCommandResponse(indexes, int32(rowsAffected), allRowsAffectedInt32, "")
+			}
 
 			currentIndex += len(chunk)
 		}

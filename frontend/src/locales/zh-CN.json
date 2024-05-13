@@ -1753,7 +1753,7 @@
     "transfer-database-from-to": "将数据库从源项目转移到目标项目",
     "classification": {
       "self": "分类分级",
-      "sync-from-comment": "从评论中同步分类分级",
+      "sync-from-comment": "从注释中同步分类分级",
       "sync-from-comment-tip": "启用后，分类分级将从表或列的注释同步。注释应遵循“{format}”格式。",
       "sync-from-comment-enable-warning": "分类分级将随着 DDL 而改变，并与原始注释同步。",
       "sync-from-comment-disable-warning": "分类分级不会随着DDL而改变，您可以在数据库详细信息页面上随时更改它。"
