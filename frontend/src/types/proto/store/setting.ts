@@ -446,12 +446,58 @@ export interface MaskingAlgorithmSetting_Algorithm_MD5Mask {
 export interface MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
   prefixLen: number;
   suffixLen: number;
-  /**
-   * type indicates whether the current type is 'Inner or' 'Outer'.
-   * Inner = 1.
-   * Outer = 2.
-   */
-  type: number;
+  type: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType;
+}
+
+export enum MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType {
+  INNER = "INNER",
+  OUTER = "OUTER",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function maskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskTypeFromJSON(
+  object: any,
+): MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType {
+  switch (object) {
+    case 0:
+    case "INNER":
+      return MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.INNER;
+    case 1:
+    case "OUTER":
+      return MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.OUTER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.UNRECOGNIZED;
+  }
+}
+
+export function maskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskTypeToJSON(
+  object: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType,
+): string {
+  switch (object) {
+    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.INNER:
+      return "INNER";
+    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.OUTER:
+      return "OUTER";
+    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function maskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskTypeToNumber(
+  object: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType,
+): number {
+  switch (object) {
+    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.INNER:
+      return 0;
+    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.OUTER:
+      return 1;
+    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
@@ -2947,7 +2993,11 @@ export const MaskingAlgorithmSetting_Algorithm_MD5Mask = {
 };
 
 function createBaseMaskingAlgorithmSetting_Algorithm_InnerOuterMask(): MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
-  return { prefixLen: 0, suffixLen: 0, type: 0 };
+  return {
+    prefixLen: 0,
+    suffixLen: 0,
+    type: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.INNER,
+  };
 }
 
 export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask = {
@@ -2961,8 +3011,10 @@ export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask = {
     if (message.suffixLen !== 0) {
       writer.uint32(16).int32(message.suffixLen);
     }
-    if (message.type !== 0) {
-      writer.uint32(24).int32(message.type);
+    if (message.type !== MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.INNER) {
+      writer.uint32(24).int32(
+        maskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskTypeToNumber(message.type),
+      );
     }
     return writer;
   },
@@ -2993,7 +3045,7 @@ export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask = {
             break;
           }
 
-          message.type = reader.int32();
+          message.type = maskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskTypeFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3008,7 +3060,9 @@ export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask = {
     return {
       prefixLen: isSet(object.prefixLen) ? globalThis.Number(object.prefixLen) : 0,
       suffixLen: isSet(object.suffixLen) ? globalThis.Number(object.suffixLen) : 0,
-      type: isSet(object.type) ? globalThis.Number(object.type) : 0,
+      type: isSet(object.type)
+        ? maskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskTypeFromJSON(object.type)
+        : MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.INNER,
     };
   },
 
@@ -3020,8 +3074,8 @@ export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask = {
     if (message.suffixLen !== 0) {
       obj.suffixLen = Math.round(message.suffixLen);
     }
-    if (message.type !== 0) {
-      obj.type = Math.round(message.type);
+    if (message.type !== MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.INNER) {
+      obj.type = maskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskTypeToJSON(message.type);
     }
     return obj;
   },
@@ -3037,7 +3091,7 @@ export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask = {
     const message = createBaseMaskingAlgorithmSetting_Algorithm_InnerOuterMask();
     message.prefixLen = object.prefixLen ?? 0;
     message.suffixLen = object.suffixLen ?? 0;
-    message.type = object.type ?? 0;
+    message.type = object.type ?? MaskingAlgorithmSetting_Algorithm_InnerOuterMask_InnerOuterMaskType.INNER;
     return message;
   },
 };

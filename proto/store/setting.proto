@@ -264,10 +264,13 @@ message MaskingAlgorithmSetting {
     message InnerOuterMask {
       int32 prefix_len = 1;
       int32 suffix_len = 2;
-      // type indicates whether the current type is 'Inner or' 'Outer'.
-      // Inner = 1.
-      // Outer = 2.
-      int32 type = 3;
+
+      enum InnerOuterMaskType {
+        INNER = 0;
+        OUTER = 1;
+      }
+
+      InnerOuterMaskType type = 3;
     }
 
     oneof mask {
