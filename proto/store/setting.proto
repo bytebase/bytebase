@@ -270,7 +270,6 @@ message MaskingAlgorithmSetting {
       int32 type = 3;
     }
 
-
     oneof mask {
       FullMask full_mask = 5;
       RangeMask range_mask = 6;
