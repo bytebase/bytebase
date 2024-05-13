@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
@@ -475,6 +476,12 @@ message SchemaConfig {
 
   // The table_configs is the list of configs for tables in a schema.
   repeated TableConfig table_configs = 2;
+
+  repeated FunctionConfig function_configs = 3;
+
+  repeated ProcedureConfig procedure_configs = 4;
+
+  repeated ViewConfig view_configs = 5;
 }
 
 message TableConfig {
@@ -485,6 +492,49 @@ message TableConfig {
   repeated ColumnConfig column_configs = 2;
 
   string classification_id = 3;
+
+  // The last updater of the table in branch.
+  // Format: users/{email}
+  string updater = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the table is updated in branch.
+  google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message FunctionConfig {
+  // The name is the name of a function.
+  string name = 1;
+
+  // The last updater of the function in branch.
+  // Format: users/{email}
+  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the function is updated in branch.
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message ProcedureConfig {
+  // The name is the name of a procedure.
+  string name = 1;
+
+  // The last updater of the procedure in branch.
+  // Format: users/{email}
+  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the procedure is updated in branch.
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message ViewConfig {
+  // The name is the name of a view.
+  string name = 1;
+
+  // The last updater of the view in branch.
+  // Format: users/{email}
+  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the view is updated in branch.
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message ColumnConfig {
