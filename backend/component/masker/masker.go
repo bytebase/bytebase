@@ -783,8 +783,10 @@ func NewInnerOuterMasker(storeMaskerType storepb.MaskingAlgorithmSetting_Algorit
 	var maskerType int32
 	if storeMaskerType == storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_INNER {
 		maskerType = InnerOuterMaskerTypeInner
-	} else {
+	} else if storeMaskerType == storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_OUTER {
 		maskerType = InnerOuterMaskerTypeOuter
+	} else {
+		return nil
 	}
 
 	return &InnerOuterMasker{
