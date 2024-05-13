@@ -95,6 +95,18 @@ func FilterEmptySQL(list []SingleSQL) []SingleSQL {
 	return result
 }
 
+func FilterEmptySQLWithIndexes(list []SingleSQL) ([]SingleSQL, map[int]int) {
+	var result []SingleSQL
+	originalIndex := map[int]int{}
+	for i, sql := range list {
+		if !sql.Empty {
+			result = append(result, sql)
+			originalIndex[len(result)-1] = i
+		}
+	}
+	return result, originalIndex
+}
+
 func GetOffsetLength(total int) int {
 	length := 1
 	for {
