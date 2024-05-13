@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"sort"
 	"strconv"
+	"strings"
 
 	mssqldb "github.com/microsoft/go-mssqldb"
 	"google.golang.org/protobuf/proto"
@@ -776,3 +777,160 @@ func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
 	}
 	return nil
 }
+
+func NewInnerOuterMasker(maskerType, prefixLen, suffixLen int32) *InnerOuterMasker {
+	return &InnerOuterMasker{
+		maskerType: maskerType,
+		prefixLen:  prefixLen,
+		suffixLen:  suffixLen,
+	}
+}
+
+const (
+	InnerOuterMaskerTypeInner = 1
+	InnerOuterMaskerTypeOuter = 2
+)
+
+type InnerOuterMasker struct {
+	prefixLen  int32
+	suffixLen  int32
+	maskerType int32
+}
+
+func (m *InnerOuterMasker) Equal(other Masker) bool {
+	if otherInnerOuterMasker, ok := other.(*InnerOuterMasker); ok {
+		return otherInnerOuterMasker.maskerType == m.maskerType && otherInnerOuterMasker.prefixLen == m.prefixLen && otherInnerOuterMasker.suffixLen == m.suffixLen
+	}
+	return false
+}
+
+// Mask implements Masker.
+func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
+	if data.Data == nil {
+		return nil
+	}
+
+	unmaskedData := ""
+	// Datav1.
+	if data.Data != nil {
+		if raw, ok := data.Data.(*sql.NullBool); ok && raw.Valid {
+			unmaskedData = "******"
+		} else if raw, ok := data.Data.(*sql.NullString); ok && raw.Valid {
+			unmaskedData = raw.String
+		} else if raw, ok := data.Data.(*sql.NullInt32); ok && raw.Valid {
+			unmaskedData = strconv.FormatInt(int64(raw.Int32), 10)
+		} else if raw, ok := data.Data.(*sql.NullInt64); ok && raw.Valid {
+			unmaskedData = strconv.FormatInt(raw.Int64, 10)
+		} else if raw, ok := data.Data.(*sql.NullFloat64); ok && raw.Valid {
+			unmaskedData = strconv.FormatFloat(raw.Float64, 'f', -1, 64)
+		}
+	} else {
+		// Datav2.
+		switch kind := data.DataV2.Kind.(type) {
+		case *v1pb.RowValue_NullValue:
+			if kind.NullValue == structpb.NullValue_NULL_VALUE {
+				unmaskedData = "******"
+			}
+		case *v1pb.RowValue_BoolValue:
+			unmaskedData = "******"
+		case *v1pb.RowValue_BytesValue:
+			unmaskedData = string(kind.BytesValue)
+		case *v1pb.RowValue_DoubleValue:
+			unmaskedData = strconv.FormatFloat(kind.DoubleValue, 'f', -1, 64)
+		case *v1pb.RowValue_FloatValue:
+			unmaskedData = strconv.FormatFloat(float64(kind.FloatValue), 'f', -1, 64)
+		case *v1pb.RowValue_Int32Value:
+			unmaskedData = strconv.FormatInt(int64(kind.Int32Value), 10)
+		case *v1pb.RowValue_Int64Value:
+			unmaskedData = strconv.FormatInt(kind.Int64Value, 10)
+		case *v1pb.RowValue_StringValue:
+			unmaskedData = kind.StringValue
+		case *v1pb.RowValue_Uint32Value:
+			unmaskedData = strconv.FormatUint(uint64(kind.Uint32Value), 10)
+		case *v1pb.RowValue_Uint64Value:
+			unmaskedData = strconv.FormatUint(kind.Uint64Value, 10)
+		case *v1pb.RowValue_ValueValue:
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_ValueValue{
+					ValueValue: maskProtoValue(m, kind.ValueValue),
+				},
+			}
+		}
+	}
+
+	maskedData := ""
+	if m.maskerType == InnerOuterMaskerTypeInner {
+		maskedData = m.maskInner([]rune(unmaskedData))
+	} else if m.maskerType == InnerOuterMaskerTypeOuter {
+		maskedData = m.maskOuter([]rune(unmaskedData))
+	}
+
+	if maskedData == "" {
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_NullValue{
+				NullValue: structpb.NullValue_NULL_VALUE,
+			},
+		}
+	}
+	return &v1pb.RowValue{
+		Kind: &v1pb.RowValue_StringValue{
+			StringValue: maskedData,
+		},
+	}
+}
+
+func (m *InnerOuterMasker) checkArgs(data []rune) bool {
+	return int(m.prefixLen) <= len(data) && int(m.suffixLen) <= len(data)
+}
+
+func (m *InnerOuterMasker) maskInner(data []rune) string {
+	if !m.checkArgs(data) {
+		return ""
+	}
+	maskedData := ""
+	maxSuffixLen := len(data) - int(m.prefixLen)
+	if maskLen := maxSuffixLen - int(m.suffixLen); maskLen > 0 {
+		builder := strings.Builder{}
+		if _, err := builder.WriteString(string(data[:m.prefixLen])); err != nil {
+			return ""
+		}
+		if _, err := builder.WriteString(strings.Repeat("*", maskLen)); err != nil {
+			return ""
+		}
+		if _, err := builder.WriteString(string(data[m.prefixLen+int32(maskLen):])); err != nil {
+			return ""
+		}
+		maskedData = builder.String()
+	} else {
+		maskedData = string(data)
+	}
+	return maskedData
+}
+
+func (m *InnerOuterMasker) maskOuter(data []rune) string {
+	if !m.checkArgs(data) {
+		return ""
+	}
+	maskedData := ""
+	maxSuffixLen := len(data) - int(m.prefixLen)
+	if dataLen := maxSuffixLen - int(m.suffixLen); dataLen > 0 {
+		builder := strings.Builder{}
+		dataStartIdx := m.prefixLen
+		dataEndIdx := m.prefixLen + int32(dataLen)
+		if _, err := builder.WriteString(strings.Repeat("*", int(m.prefixLen))); err != nil {
+			return ""
+		}
+		if _, err := builder.WriteString(string(data[dataStartIdx:dataEndIdx])); err != nil {
+			return ""
+		}
+		if _, err := builder.WriteString(strings.Repeat("*", int(m.suffixLen))); err != nil {
+			return ""
+		}
+		maskedData = builder.String()
+	} else {
+		maskedData = strings.Repeat("*", len(data))
+	}
+	return maskedData
+}
+
+var _ Masker = (*InnerOuterMasker)(nil)

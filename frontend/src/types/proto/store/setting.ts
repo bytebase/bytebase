@@ -410,6 +410,7 @@ export interface MaskingAlgorithmSetting_Algorithm {
   fullMask?: MaskingAlgorithmSetting_Algorithm_FullMask | undefined;
   rangeMask?: MaskingAlgorithmSetting_Algorithm_RangeMask | undefined;
   md5Mask?: MaskingAlgorithmSetting_Algorithm_MD5Mask | undefined;
+  innerOuterMask?: MaskingAlgorithmSetting_Algorithm_InnerOuterMask | undefined;
 }
 
 export interface MaskingAlgorithmSetting_Algorithm_FullMask {
@@ -440,6 +441,17 @@ export interface MaskingAlgorithmSetting_Algorithm_RangeMask_Slice {
 export interface MaskingAlgorithmSetting_Algorithm_MD5Mask {
   /** salt is the salt value to generate a different hash that with the word alone. */
   salt: string;
+}
+
+export interface MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
+  prefixLen: number;
+  suffixLen: number;
+  /**
+   * type indicates whether the current type is 'Inner or' 'Outer'.
+   * Inner = 1.
+   * Outer = 2.
+   */
+  type: number;
 }
 
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
@@ -2478,6 +2490,7 @@ function createBaseMaskingAlgorithmSetting_Algorithm(): MaskingAlgorithmSetting_
     fullMask: undefined,
     rangeMask: undefined,
     md5Mask: undefined,
+    innerOuterMask: undefined,
   };
 }
 
@@ -2503,6 +2516,10 @@ export const MaskingAlgorithmSetting_Algorithm = {
     }
     if (message.md5Mask !== undefined) {
       MaskingAlgorithmSetting_Algorithm_MD5Mask.encode(message.md5Mask, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.innerOuterMask !== undefined) {
+      MaskingAlgorithmSetting_Algorithm_InnerOuterMask.encode(message.innerOuterMask, writer.uint32(66).fork())
+        .ldelim();
     }
     return writer;
   },
@@ -2563,6 +2580,13 @@ export const MaskingAlgorithmSetting_Algorithm = {
 
           message.md5Mask = MaskingAlgorithmSetting_Algorithm_MD5Mask.decode(reader, reader.uint32());
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.innerOuterMask = MaskingAlgorithmSetting_Algorithm_InnerOuterMask.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2585,6 +2609,9 @@ export const MaskingAlgorithmSetting_Algorithm = {
         ? MaskingAlgorithmSetting_Algorithm_RangeMask.fromJSON(object.rangeMask)
         : undefined,
       md5Mask: isSet(object.md5Mask) ? MaskingAlgorithmSetting_Algorithm_MD5Mask.fromJSON(object.md5Mask) : undefined,
+      innerOuterMask: isSet(object.innerOuterMask)
+        ? MaskingAlgorithmSetting_Algorithm_InnerOuterMask.fromJSON(object.innerOuterMask)
+        : undefined,
     };
   },
 
@@ -2611,6 +2638,9 @@ export const MaskingAlgorithmSetting_Algorithm = {
     if (message.md5Mask !== undefined) {
       obj.md5Mask = MaskingAlgorithmSetting_Algorithm_MD5Mask.toJSON(message.md5Mask);
     }
+    if (message.innerOuterMask !== undefined) {
+      obj.innerOuterMask = MaskingAlgorithmSetting_Algorithm_InnerOuterMask.toJSON(message.innerOuterMask);
+    }
     return obj;
   },
 
@@ -2631,6 +2661,9 @@ export const MaskingAlgorithmSetting_Algorithm = {
       : undefined;
     message.md5Mask = (object.md5Mask !== undefined && object.md5Mask !== null)
       ? MaskingAlgorithmSetting_Algorithm_MD5Mask.fromPartial(object.md5Mask)
+      : undefined;
+    message.innerOuterMask = (object.innerOuterMask !== undefined && object.innerOuterMask !== null)
+      ? MaskingAlgorithmSetting_Algorithm_InnerOuterMask.fromPartial(object.innerOuterMask)
       : undefined;
     return message;
   },
@@ -2909,6 +2942,102 @@ export const MaskingAlgorithmSetting_Algorithm_MD5Mask = {
   ): MaskingAlgorithmSetting_Algorithm_MD5Mask {
     const message = createBaseMaskingAlgorithmSetting_Algorithm_MD5Mask();
     message.salt = object.salt ?? "";
+    return message;
+  },
+};
+
+function createBaseMaskingAlgorithmSetting_Algorithm_InnerOuterMask(): MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
+  return { prefixLen: 0, suffixLen: 0, type: 0 };
+}
+
+export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask = {
+  encode(
+    message: MaskingAlgorithmSetting_Algorithm_InnerOuterMask,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.prefixLen !== 0) {
+      writer.uint32(8).int32(message.prefixLen);
+    }
+    if (message.suffixLen !== 0) {
+      writer.uint32(16).int32(message.suffixLen);
+    }
+    if (message.type !== 0) {
+      writer.uint32(24).int32(message.type);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaskingAlgorithmSetting_Algorithm_InnerOuterMask();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.prefixLen = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.suffixLen = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.type = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
+    return {
+      prefixLen: isSet(object.prefixLen) ? globalThis.Number(object.prefixLen) : 0,
+      suffixLen: isSet(object.suffixLen) ? globalThis.Number(object.suffixLen) : 0,
+      type: isSet(object.type) ? globalThis.Number(object.type) : 0,
+    };
+  },
+
+  toJSON(message: MaskingAlgorithmSetting_Algorithm_InnerOuterMask): unknown {
+    const obj: any = {};
+    if (message.prefixLen !== 0) {
+      obj.prefixLen = Math.round(message.prefixLen);
+    }
+    if (message.suffixLen !== 0) {
+      obj.suffixLen = Math.round(message.suffixLen);
+    }
+    if (message.type !== 0) {
+      obj.type = Math.round(message.type);
+    }
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<MaskingAlgorithmSetting_Algorithm_InnerOuterMask>,
+  ): MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
+    return MaskingAlgorithmSetting_Algorithm_InnerOuterMask.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<MaskingAlgorithmSetting_Algorithm_InnerOuterMask>,
+  ): MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
+    const message = createBaseMaskingAlgorithmSetting_Algorithm_InnerOuterMask();
+    message.prefixLen = object.prefixLen ?? 0;
+    message.suffixLen = object.suffixLen ?? 0;
+    message.type = object.type ?? 0;
     return message;
   },
 };

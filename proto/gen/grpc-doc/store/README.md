@@ -228,6 +228,7 @@
     - [MaskingAlgorithmSetting](#bytebase-store-MaskingAlgorithmSetting)
     - [MaskingAlgorithmSetting.Algorithm](#bytebase-store-MaskingAlgorithmSetting-Algorithm)
     - [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-FullMask)
+    - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask)
     - [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-MD5Mask)
     - [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask)
     - [MaskingAlgorithmSetting.Algorithm.RangeMask.Slice](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice)
@@ -3597,6 +3598,7 @@ The type of target.
 | full_mask | [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-FullMask) |  |  |
 | range_mask | [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask) |  |  |
 | md5_mask | [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-MD5Mask) |  |  |
+| inner_outer_mask | [MaskingAlgorithmSetting.Algorithm.InnerOuterMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask) |  |  |
 
 
 
@@ -3612,6 +3614,23 @@ The type of target.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | substitution | [string](#string) |  | substitution is the string used to replace the original value, the max length of the string is 16 bytes. |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask"></a>
+
+### MaskingAlgorithmSetting.Algorithm.InnerOuterMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| prefix_len | [int32](#int32) |  |  |
+| suffix_len | [int32](#int32) |  |  |
+| type | [int32](#int32) |  | type indicates whether the current type is &#39;Inner or&#39; &#39;Outer&#39;. Inner = 1. Outer = 2. |
 
 
 

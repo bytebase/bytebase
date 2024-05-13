@@ -261,10 +261,21 @@ message MaskingAlgorithmSetting {
       string salt = 1;
     }
 
+    message InnerOuterMask {
+      int32 prefix_len = 1;
+      int32 suffix_len = 2;
+      // type indicates whether the current type is 'Inner or' 'Outer'.
+      // Inner = 1.
+      // Outer = 2.
+      int32 type = 3;
+    }
+
+
     oneof mask {
       FullMask full_mask = 5;
       RangeMask range_mask = 6;
       MD5Mask md5_mask = 7;
+      InnerOuterMask inner_outer_mask = 8;
     }
   }
 
