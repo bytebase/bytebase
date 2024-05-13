@@ -1,5 +1,5 @@
 <template>
-  <NPopselect :options="options" trigger="click">
+  <NPopselect :options="options" trigger="click" @update:value="handleSelect">
     <NButton v-if="visible" size="small" style="--n-padding: 4px">
       <template #icon>
         <PlusIcon class="w-4 h-4" />
@@ -12,10 +12,12 @@
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, type SelectOption } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, h } from "vue";
+import { computed, h, nextTick } from "vue";
 import { useSQLEditorTreeStore } from "@/store";
 import { readableSQLEditorTreeFactor } from "@/types";
+import { useSQLEditorContext } from "@/views/sql-editor/context";
 
+const { events } = useSQLEditorContext();
 const treeStore = useSQLEditorTreeStore();
 const { factorList, availableFactorList } = storeToRefs(treeStore);
 
@@ -67,4 +69,14 @@ const options = computed(() => {
     },
   ];
 });
+
+const handleSelect = async (factor: string) => {
+  factorList.value.push({
+    factor,
+    disabled: false,
+  });
+  treeStore.buildTree();
+  await nextTick();
+  events.emit("tree-ready");
+};
 </script>
