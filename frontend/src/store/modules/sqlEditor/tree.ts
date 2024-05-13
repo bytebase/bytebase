@@ -1,5 +1,5 @@
 import { useLocalStorage } from "@vueuse/core";
-import { cloneDeep, orderBy } from "lodash-es";
+import { cloneDeep, orderBy, uniq } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watch } from "vue";
@@ -19,16 +19,11 @@ import {
   extractSQLEditorLabelFactor as extractLabelFactor,
   unknownEnvironment,
   LeafTreeNodeTypes,
-  DEFAULT_PROJECT_V1_NAME,
 } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import { getSemanticLabelValue, groupBy } from "@/utils";
 import { useFilterStore } from "../filter";
-import {
-  useEnvironmentV1Store,
-  useInstanceV1Store,
-  useProjectV1Store,
-} from "../v1";
+import { useEnvironmentV1Store, useInstanceV1Store } from "../v1";
 import { useSQLEditorStore } from "./editor";
 
 export const ROOT_NODE_ID = "ROOT";
@@ -102,16 +97,25 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     return databaseList.value;
   });
   const filteredFactorList = computed(() => {
-    return factorList.value
-      .filter((sf) => {
-        if (!currentProject.value) {
-          return true;
-        }
-        return sf.factor !== "project";
-      })
-      .filter((sf) => !sf.disabled)
-      .map((sf) => sf.factor);
+    return factorList.value.filter((sf) => !sf.disabled).map((sf) => sf.factor);
   });
+  const availableFactorList = computed(() => {
+    const PRESET_FACTORS: Factor[] = ["instance", "environment"];
+    const labelFactors = orderBy(
+      uniq(
+        databaseList.value.flatMap((db) => Object.keys(db.labels))
+      ).map<Factor>((key) => `label:${key}` as Factor),
+      [(key) => key],
+      ["asc"] // lexicographical order
+    );
+
+    return {
+      preset: PRESET_FACTORS,
+      label: labelFactors,
+      all: [...PRESET_FACTORS, ...labelFactors],
+    };
+  });
+
   const state = ref<TreeState>("UNSET");
   const tree = ref<TreeNode[]>([]);
   const expandedKeys = ref<string[]>([]);
@@ -176,6 +180,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   );
 
   return {
+    availableFactorList,
     factorList,
     filteredFactorList,
     state,
@@ -203,12 +208,7 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
   type: T,
   target: NodeTarget<T>
 ) => {
-  if (
-    type === "project" ||
-    type === "instance" ||
-    type === "environment" ||
-    type === "database"
-  ) {
+  if (type === "instance" || type === "environment" || type === "database") {
     return (
       target as
         | ComposedProject
@@ -281,14 +281,6 @@ const sortNodesIfNeeded = (nodes: TreeNode[], factor: Factor) => {
       ["asc", "asc"]
     );
   }
-  if (factor === "project") {
-    // Put unassigned project to the last
-    return orderBy(
-      nodes as TreeNode<"project">[],
-      [(node) => (node.meta.target.name === DEFAULT_PROJECT_V1_NAME ? 1 : -1)],
-      ["asc"]
-    );
-  }
 
   return nodes;
 };
@@ -319,10 +311,6 @@ const mapGroupNode = (
   if (factor === "instance") {
     const instance = useInstanceV1Store().getInstanceByName(value);
     return mapTreeNodeByType("instance", instance, parent);
-  }
-  if (factor === "project") {
-    const project = useProjectV1Store().getProjectByName(value);
-    return mapTreeNodeByType("project", project, parent);
   }
   // factor is label
   const key = extractLabelFactor(factor);
@@ -370,9 +358,6 @@ const readableTargetByType = <T extends NodeType>(
   if (type === "environment") {
     return (target as Environment).title;
   }
-  if (type === "project") {
-    return (target as ComposedProject).title;
-  }
   if (type === "instance") {
     return (target as ComposedInstance).title;
   }
@@ -392,8 +377,6 @@ const getSemanticFactorValue = (db: ComposedDatabase, factor: Factor) => {
       return db.instanceEntity.environment;
     case "instance":
       return db.instance;
-    case "project":
-      return db.project;
   }
 
   const key = extractLabelFactor(factor);

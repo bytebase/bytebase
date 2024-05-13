@@ -14,7 +14,7 @@
         v-bind="$attrs"
       >
         <template #icon>
-          <heroicons:adjustments-horizontal
+          <ListTreeIcon
             class="w-6 h-6"
             :class="viewMode === 'CUSTOM' && 'text-accent'"
           />
@@ -28,6 +28,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ListTreeIcon } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";

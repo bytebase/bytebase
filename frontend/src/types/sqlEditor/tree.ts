@@ -1,15 +1,9 @@
 import type { TreeOption } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { useSQLEditorStore } from "@/store";
 import type { Environment } from "../proto/v1/environment_service";
-import type {
-  ComposedDatabase,
-  ComposedInstance,
-  ComposedProject,
-} from "../v1";
+import type { ComposedDatabase, ComposedInstance } from "../v1";
 
 export type SQLEditorTreeFactor =
-  | "project"
   | "instance"
   | "environment"
   | `label:${string}`; // "label:xxxxx" to group by certain label key
@@ -20,7 +14,6 @@ export type StatefulSQLEditorTreeFactor<F extends SQLEditorTreeFactor = any> = {
 };
 
 export type SQLEditorTreeNodeType =
-  | "project"
   | "instance"
   | "environment"
   | "database"
@@ -32,17 +25,15 @@ export type LabelTarget = {
 };
 
 export type SQLEditorTreeNodeTarget<T extends SQLEditorTreeNodeType = any> =
-  T extends "project"
-    ? ComposedProject
-    : T extends "instance"
-      ? ComposedInstance
-      : T extends "environment"
-        ? Environment
-        : T extends "database"
-          ? ComposedDatabase
-          : T extends "label"
-            ? LabelTarget
-            : never;
+  T extends "instance"
+    ? ComposedInstance
+    : T extends "environment"
+      ? Environment
+      : T extends "database"
+        ? ComposedDatabase
+        : T extends "label"
+          ? LabelTarget
+          : never;
 
 export type SQLEditorTreeState = "UNSET" | "LOADING" | "READY";
 
@@ -62,7 +53,6 @@ export type SQLEditorTreeNode<T extends SQLEditorTreeNodeType = any> =
 export const isValidSQLEditorTreeFactor = (
   str: string
 ): str is SQLEditorTreeFactor => {
-  if (str === "project") return true;
   if (str === "instance") return true;
   if (str === "environment") return true;
   if (str.match(/^label:.+$/)) return true;
@@ -72,7 +62,6 @@ export const isValidSQLEditorTreeFactor = (
 export const ExpandableTreeNodeTypes: readonly SQLEditorTreeNodeType[] = [
   "instance",
   "environment",
-  "project",
   "label",
 ] as const;
 
@@ -94,14 +83,6 @@ export const readableSQLEditorTreeFactor = (
   factor: SQLEditorTreeFactor,
   labelPrefix: string | undefined = ""
 ) => {
-  const editorStore = useSQLEditorStore();
-  if (factor === "project") {
-    if (editorStore.currentProject) {
-      return t("common.database");
-    } else {
-      return t("common.project");
-    }
-  }
   if (factor === "environment") {
     return t("common.environment");
   }

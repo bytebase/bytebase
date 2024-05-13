@@ -4,10 +4,10 @@
       v-for="(factor, i) in factorList"
       :key="i"
       :factor="factor"
-      :allow-disable="filteredFactorList.length > 1"
       @toggle-disabled="toggleDisabled(factor, i)"
       @remove="remove(factor, i)"
     />
+    <AddFactorButton />
   </div>
 </template>
 
@@ -16,11 +16,12 @@ import { storeToRefs } from "pinia";
 import { useSQLEditorTreeStore } from "@/store";
 import type { StatefulSQLEditorTreeFactor as StatefulFactor } from "@/types";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
+import AddFactorButton from "./AddFactorButton.vue";
 import FactorTag from "./FactorTag.vue";
 
 const treeStore = useSQLEditorTreeStore();
 const { events } = useSQLEditorContext();
-const { factorList, filteredFactorList } = storeToRefs(treeStore);
+const { factorList } = storeToRefs(treeStore);
 
 const toggleDisabled = (factor: StatefulFactor, index: number) => {
   factor.disabled = !factor.disabled;
@@ -30,12 +31,6 @@ const toggleDisabled = (factor: StatefulFactor, index: number) => {
 
 const remove = (factor: StatefulFactor, index: number) => {
   factorList.value.splice(index, 1);
-  if (factorList.value.length === 0) {
-    factorList.value.push({
-      factor: "project",
-      disabled: false,
-    });
-  }
   treeStore.buildTree();
   events.emit("tree-ready");
 };
