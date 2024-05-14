@@ -2922,6 +2922,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | ----- | ---- | ----- | ----------- |
 | protection_rules | [ProtectionRule](#bytebase-store-ProtectionRule) | repeated |  |
 | issue_labels | [Label](#bytebase-store-Label) | repeated |  |
+| force_issue_labels | [bool](#bool) |  |  |
 
 
 

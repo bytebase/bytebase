@@ -1954,8 +1954,11 @@
         "no-protection-rule-configured": "ブランチ保護ルールは構成されていません。",
         "only-apply-to-main-branches": "メインブランチでのみ有効です"
       },
-      "issue-labels": "作業指示タグ",
-      "configure-labels": "ラベルを設定する"
+      "labels": {
+        "issue-labels": "作業指示タグ",
+        "configure-labels": "タグを構成する",
+        "force-issue-labels": "問題のラベル付けを強制する"
+      }
     },
     "members": {
       "description": "プロジェクト メンバーの役割により、プロジェクト内のデータベースと作業指示書を操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",

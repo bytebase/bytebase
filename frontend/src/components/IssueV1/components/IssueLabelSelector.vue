@@ -27,12 +27,22 @@
           }"
           class="textinfolabel normal-link mb-4"
         >
-          {{ $t("project.settings.configure-labels") }}
+          {{ $t("project.settings.labels.configure-labels") }}
         </router-link>
       </div>
     </template>
   </NSelect>
 </template>
+
+<script lang="ts">
+export const getValidIssueLabels = (
+  selected: string[],
+  issueLabels: Label[]
+) => {
+  const pool = new Set(issueLabels.map((label) => label.value));
+  return selected.filter((label) => pool.has(label));
+};
+</script>
 
 <script setup lang="ts">
 import { NCheckbox, NSelect, NTag } from "naive-ui";
@@ -43,6 +53,7 @@ import { PROJECT_V1_ROUTE_SETTINGS } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
+import { Label } from "@/types/proto/v1/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
 type IsseuLabelOption = SelectOption & {
@@ -78,8 +89,7 @@ const hasPermission = computed(() => {
 });
 
 const issueLabels = computed(() => {
-  const pool = new Set(props.project.issueLabels.map((label) => label.value));
-  return props.selected.filter((label) => pool.has(label));
+  return getValidIssueLabels(props.selected, props.project.issueLabels);
 });
 
 const options = computed(() => {

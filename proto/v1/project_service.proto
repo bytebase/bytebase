@@ -338,6 +338,8 @@ message Project {
   string data_classification_config_id = 12;
 
   repeated Label issue_labels = 13;
+
+  bool force_issue_labels = 14;
 }
 
 enum Workflow {
