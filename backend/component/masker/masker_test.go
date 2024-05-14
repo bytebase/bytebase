@@ -284,7 +284,7 @@ func TestInnerOuterMask(t *testing.T) {
 			},
 		},
 		{
-			input: &MaskData{Data: &sql.NullString{String: "1234", Valid: false}},
+			input: &MaskData{Data: &sql.NullString{String: "1234", Valid: true}},
 			masker: InnerOuterMasker{
 				maskerType: InnerOuterMaskerTypeInner,
 				prefixLen:  1000,
