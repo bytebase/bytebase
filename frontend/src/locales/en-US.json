@@ -1200,7 +1200,11 @@
     "task-run": {
       "task-run-log": {
         "batch": "Batch",
-        "affected-rows": "Affected rows"
+        "affected-rows": "Affected rows",
+        "entry-type": {
+          "command-execute": "Command execute",
+          "schema-dump": "Schema dump"
+        }
       }
     }
   },

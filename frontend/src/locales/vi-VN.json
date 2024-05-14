@@ -1200,7 +1200,11 @@
     "task-run": {
       "task-run-log": {
         "batch": "Lô hàng",
-        "affected-rows": "Hàng bị ảnh hưởng"
+        "affected-rows": "Hàng bị ảnh hưởng",
+        "entry-type": {
+          "command-execute": "Thực thi lệnh",
+          "schema-dump": "Kết xuất lược đồ"
+        }
       }
     }
   },
