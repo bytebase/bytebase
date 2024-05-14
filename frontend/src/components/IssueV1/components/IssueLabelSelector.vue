@@ -55,8 +55,8 @@ const props = withDefaults(
     disabled: boolean;
     selected: string[];
     project: ComposedProject;
-    size: "small" | "medium" | "large";
-    maxTagCount: number | "responsive";
+    size?: "small" | "medium" | "large";
+    maxTagCount?: number | "responsive";
   }>(),
   {
     size: "medium",
