@@ -19,6 +19,8 @@ import type {
 } from "../../proto/v1/rollout_service";
 import { EMPTY_ROLLOUT_NAME, UNKNOWN_ROLLOUT_NAME } from "./rollout";
 
+// For grant request issue, it has no plan and rollout.
+// For sql review issue, it has no rollout.
 export interface ComposedIssue extends Issue {
   planEntity: Plan | undefined;
   planCheckRunList: PlanCheckRun[];
