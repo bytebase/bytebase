@@ -1953,7 +1953,8 @@
         "no-protection-rule-configured": "没有配置分支保护规则。",
         "only-apply-to-main-branches": "只对主分支生效"
       },
-      "issue-labels": "工单标签"
+      "issue-labels": "工单标签",
+      "configure-labels": "配置标签"
     },
     "members": {
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
