@@ -1204,7 +1204,8 @@
         "entry-type": {
           "command-execute": "执行指令",
           "schema-dump": "导出 schema"
-        }
+        },
+        "affected-rows-n": "影响行数：{n}"
       }
     }
   },
