@@ -306,15 +306,59 @@ func convertStoreDatabaseConfig(config *storepb.DatabaseConfig, filter *metadata
 			}
 			s.TableConfigs = append(s.TableConfigs, convertStoreTableConfig(table))
 		}
+		for _, view := range schema.ViewConfigs {
+			if view == nil {
+				continue
+			}
+			s.ViewConfigs = append(s.ViewConfigs, convertStoreViewConfig(view))
+		}
+		for _, function := range schema.FunctionConfigs {
+			if function == nil {
+				continue
+			}
+			s.FunctionConfigs = append(s.FunctionConfigs, convertStoreFunctionConfig(function))
+		}
+		for _, procedure := range schema.ProcedureConfigs {
+			if procedure == nil {
+				continue
+			}
+			s.ProcedureConfigs = append(s.ProcedureConfigs, convertStoreProcedureConfig(procedure))
+		}
 		databaseConfig.SchemaConfigs = append(databaseConfig.SchemaConfigs, s)
 	}
 	return databaseConfig
+}
+
+func convertStoreFunctionConfig(config *storepb.FunctionConfig) *v1pb.FunctionConfig {
+	return &v1pb.FunctionConfig{
+		Name:       config.Name,
+		Updater:    config.Updater,
+		UpdateTime: config.UpdateTime,
+	}
+}
+
+func convertStoreProcedureConfig(config *storepb.ProcedureConfig) *v1pb.ProcedureConfig {
+	return &v1pb.ProcedureConfig{
+		Name:       config.Name,
+		Updater:    config.Updater,
+		UpdateTime: config.UpdateTime,
+	}
+}
+
+func convertStoreViewConfig(config *storepb.ViewConfig) *v1pb.ViewConfig {
+	return &v1pb.ViewConfig{
+		Name:       config.Name,
+		Updater:    config.Updater,
+		UpdateTime: config.UpdateTime,
+	}
 }
 
 func convertStoreTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
 	t := &v1pb.TableConfig{
 		Name:             table.Name,
 		ClassificationId: table.ClassificationId,
+		Updater:          table.Updater,
+		UpdateTime:       table.UpdateTime,
 	}
 	for _, column := range table.ColumnConfigs {
 		if column == nil {
@@ -615,15 +659,59 @@ func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.Datab
 			t := convertV1TableConfig(table)
 			s.TableConfigs = append(s.TableConfigs, t)
 		}
+		for _, view := range schema.ViewConfigs {
+			if view == nil {
+				continue
+			}
+			s.ViewConfigs = append(s.ViewConfigs, convertV1ViewConfig(view))
+		}
+		for _, function := range schema.FunctionConfigs {
+			if function == nil {
+				continue
+			}
+			s.FunctionConfigs = append(s.FunctionConfigs, convertV1FunctionConfig(function))
+		}
+		for _, procedure := range schema.ProcedureConfigs {
+			if procedure == nil {
+				continue
+			}
+			s.ProcedureConfigs = append(s.ProcedureConfigs, convertV1ProcedureConfig(procedure))
+		}
 		config.SchemaConfigs = append(config.SchemaConfigs, s)
 	}
 	return config
+}
+
+func convertV1ViewConfig(view *v1pb.ViewConfig) *storepb.ViewConfig {
+	return &storepb.ViewConfig{
+		Name:       view.Name,
+		Updater:    view.Updater,
+		UpdateTime: view.UpdateTime,
+	}
+}
+
+func convertV1FunctionConfig(function *v1pb.FunctionConfig) *storepb.FunctionConfig {
+	return &storepb.FunctionConfig{
+		Name:       function.Name,
+		Updater:    function.Updater,
+		UpdateTime: function.UpdateTime,
+	}
+}
+
+func convertV1ProcedureConfig(procedure *v1pb.ProcedureConfig) *storepb.ProcedureConfig {
+	return &storepb.ProcedureConfig{
+		Name:       procedure.Name,
+		Updater:    procedure.Updater,
+		UpdateTime: procedure.UpdateTime,
+	}
 }
 
 func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
 	t := &storepb.TableConfig{
 		Name:             table.Name,
 		ClassificationId: table.ClassificationId,
+		Updater:          table.Updater,
+		UpdateTime:       table.UpdateTime,
 	}
 	for _, column := range table.ColumnConfigs {
 		if column == nil {
