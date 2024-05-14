@@ -6,7 +6,7 @@
     <IssueLabelSelector
       :disabled="!hasEditPermission"
       :selected="issue.labels"
-      :labels="issue.projectEntity.issueLabels"
+      :project="issue.projectEntity"
       :size="'medium'"
       @update:selected="onLablesUpdate"
     />

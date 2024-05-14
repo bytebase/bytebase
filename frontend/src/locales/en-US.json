@@ -1953,7 +1953,8 @@
         "no-protection-rule-configured": "No protection rule configured.",
         "only-apply-to-main-branches": "Only apply to main branches"
       },
-      "issue-labels": "Issue Labels"
+      "issue-labels": "Issue Labels",
+      "configure-labels": "Configure labels"
     },
     "members": {
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
