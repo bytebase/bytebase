@@ -280,7 +280,18 @@ func TestInnerOuterMask(t *testing.T) {
 				suffixLen:  2,
 			},
 			want: &v1pb.RowValue{
-				Kind: &v1pb.RowValue_NullValue{},
+				Kind: &v1pb.RowValue_StringValue{StringValue: "******"},
+			},
+		},
+		{
+			input: &MaskData{Data: &sql.NullString{String: "1234", Valid: false}},
+			masker: InnerOuterMasker{
+				maskerType: InnerOuterMaskerTypeInner,
+				prefixLen:  1000,
+				suffixLen:  10000,
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{StringValue: "******"},
 			},
 		},
 	}
