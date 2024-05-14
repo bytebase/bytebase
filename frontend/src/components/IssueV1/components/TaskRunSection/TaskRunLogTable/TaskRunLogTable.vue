@@ -169,7 +169,16 @@ const columns = computed(() => {
       width: 120,
       className: "whitespace-nowrap",
       render: (entry) => {
-        return <span class="text-sm">{entry.type}</span>;
+        const text =
+          entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE
+            ? t("issue.task-run.task-run-log.entry-type.command-execute")
+            : entry.type === TaskRunLogEntry_Type.SCHEMA_DUMP
+              ? t("issue.task-run.task-run-log.entry-type.schema-dump")
+              : "";
+        if (text) {
+          return <span class="text-sm">{text}</span>;
+        }
+        return <span class="text-sm text-control-placeholder">-</span>;
       },
     },
     {
