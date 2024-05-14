@@ -39,7 +39,7 @@ var (
 )
 
 func init() {
-	db.Register(storepb.Engine_POSTGRES, newDriver)
+	db.Register(storepb.Engine_GAUSSDB, newDriver)
 }
 
 // Driver is the Postgres driver.
@@ -244,7 +244,7 @@ func (driver *Driver) Ping(ctx context.Context) error {
 
 // GetType returns the database type.
 func (*Driver) GetType() storepb.Engine {
-	return storepb.Engine_POSTGRES
+	return storepb.Engine_GAUSSDB
 }
 
 // GetDB gets the database.
@@ -612,7 +612,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_POSTGRES, conn, stmt, queryContext)
+	result, err := util.Query(ctx, storepb.Engine_GAUSSDB, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
 	}
@@ -623,5 +623,5 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, storepb.Engine_POSTGRES, conn, statement)
+	return util.RunStatement(ctx, storepb.Engine_GAUSSDB, conn, statement)
 }

@@ -16,6 +16,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/spanner"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/starrocks"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/gauss"
 
 	// Parsers.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
