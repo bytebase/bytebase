@@ -21,7 +21,7 @@ import {
   TaskRunLogEntry_Type,
 } from "@/types/proto/v1/rollout_service";
 import { sheetNameOfTaskV1 } from "@/utils";
-import AffectedRowsCell from "./AffectedRowsCell.vue";
+import DetailCell, { detailCellRowSpan } from "./DetailCell";
 import DurationCell from "./DurationCell.vue";
 import StatementCell from "./StatementCell.vue";
 import { type FlattenLogEntry } from "./common";
@@ -184,16 +184,18 @@ const columns = computed(() => {
     {
       key: "statement",
       title: () => t("common.statement"),
+      width: '60%',
       render: (entry) => {
         return <StatementCell entry={entry} sheet={sheet.value} />;
       },
     },
     {
-      key: "affected-rows",
-      title: () => t("issue.task-run.task-run-log.affected-rows"),
-      width: 120,
+      key: "detail",
+      title: () => t("common.detail"),
+      width: '40%',
+      rowSpan: detailCellRowSpan,
       render: (entry) => {
-        return <AffectedRowsCell entry={entry} sheet={sheet.value} />;
+        return <DetailCell entry={entry} sheet={sheet.value} />;
       },
     },
     {
