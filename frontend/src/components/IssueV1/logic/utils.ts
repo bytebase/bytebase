@@ -106,7 +106,7 @@ export const specForTask = (plan: Plan | undefined, task: Task) => {
 
 export const stageForTask = (issue: ComposedIssue, task: Task) => {
   const rollout = issue.rolloutEntity;
-  return rollout.stages.find(
+  return rollout?.stages.find(
     (stage) => stage.tasks.findIndex((t) => t.name === task.name) >= 0
   );
 };
