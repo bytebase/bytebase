@@ -338,6 +338,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 		for _, view := range schema.Views {
 			schemaMetadata.internalViews[view.Name] = &ViewMetadata{
 				Definition: view.Definition,
+				proto:      view,
 			}
 		}
 		for _, materializedView := range schema.MaterializedViews {
@@ -348,11 +349,13 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 		for _, function := range schema.Functions {
 			schemaMetadata.internalFunctions[function.Name] = &FunctionMetadata{
 				Definition: function.Definition,
+				proto:      function,
 			}
 		}
 		for _, procedure := range schema.Procedures {
 			schemaMetadata.internalProcedures[procedure.Name] = &ProcedureMetadata{
 				Definition: procedure.Definition,
+				proto:      procedure,
 			}
 		}
 		databaseMetadata.internal[schema.Name] = schemaMetadata
@@ -561,6 +564,11 @@ func (t *ExternalTableMetadata) GetColumns() []*storepb.ColumnMetadata {
 // ViewMetadata is the metadata for a view.
 type ViewMetadata struct {
 	Definition string
+	proto      *storepb.ViewMetadata
+}
+
+func (v *ViewMetadata) GetProto() *storepb.ViewMetadata {
+	return v.proto
 }
 
 type MaterializedViewMetadata struct {
@@ -569,8 +577,18 @@ type MaterializedViewMetadata struct {
 
 type FunctionMetadata struct {
 	Definition string
+	proto      *storepb.FunctionMetadata
+}
+
+func (f *FunctionMetadata) GetProto() *storepb.FunctionMetadata {
+	return f.proto
 }
 
 type ProcedureMetadata struct {
 	Definition string
+	proto      *storepb.ProcedureMetadata
+}
+
+func (p *ProcedureMetadata) GetProto() *storepb.ProcedureMetadata {
+	return p.proto
 }
