@@ -32,7 +32,6 @@ import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store } from "@/store";
 import { type ComposedIssue } from "@/types";
-import type { Label } from "@/types/proto/v1/project_service";
 import {
   issueSlug,
   extractProjectResourceName,
