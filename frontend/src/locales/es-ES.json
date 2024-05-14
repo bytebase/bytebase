@@ -1204,7 +1204,8 @@
         "entry-type": {
           "command-execute": "ejecutar comando",
           "schema-dump": "Volcado de esquema"
-        }
+        },
+        "affected-rows-n": "Filas afectadas: {n}"
       }
     }
   },

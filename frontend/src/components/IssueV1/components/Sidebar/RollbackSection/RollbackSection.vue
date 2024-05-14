@@ -1,42 +1,44 @@
 <template>
-  <div
-    v-if="rollbackUIType !== 'NONE'"
-    class="flex items-center justify-between gap-x-2 min-h-[34px] whitespace-nowrap"
-  >
-    <NTooltip>
-      <template #trigger>
-        <div class="textlabel flex items-center">
-          {{ $t("task.rollback.sql-rollback") }}
-        </div>
-      </template>
-      <template #default>
-        <i18n-t
-          tag="div"
-          keypath="task.rollback.sql-rollback-tips"
-          class="whitespace-pre-line"
-        >
-          <template #link>
-            <HideInStandaloneMode>
-              <LearnMoreLink
-                url="https://www.bytebase.com/docs/change-database/rollback-data-changes?source=console"
-                color="light"
-              />
-            </HideInStandaloneMode>
-          </template>
-        </i18n-t>
-      </template>
-    </NTooltip>
-    <div class="">
-      <RollbackSwitch v-if="rollbackUIType === 'SWITCH'" />
-      <RollbackStatus v-if="rollbackUIType === 'FULL'" />
+  <template v-if="showRollbackSection">
+    <div
+      v-if="rollbackUIType !== 'NONE'"
+      class="flex items-center justify-between gap-x-2 min-h-[34px] whitespace-nowrap"
+    >
+      <NTooltip>
+        <template #trigger>
+          <div class="textlabel flex items-center">
+            {{ $t("task.rollback.sql-rollback") }}
+          </div>
+        </template>
+        <template #default>
+          <i18n-t
+            tag="div"
+            keypath="task.rollback.sql-rollback-tips"
+            class="whitespace-pre-line"
+          >
+            <template #link>
+              <HideInStandaloneMode>
+                <LearnMoreLink
+                  url="https://www.bytebase.com/docs/change-database/rollback-data-changes?source=console"
+                  color="light"
+                />
+              </HideInStandaloneMode>
+            </template>
+          </i18n-t>
+        </template>
+      </NTooltip>
+      <div class="">
+        <RollbackSwitch v-if="rollbackUIType === 'SWITCH'" />
+        <RollbackStatus v-if="rollbackUIType === 'FULL'" />
+      </div>
     </div>
-  </div>
-  <p
-    v-if="rollbackUIType === 'SWITCH' && rollbackEnabled"
-    class="textinfolabel -mt-3 w-full break-words"
-  >
-    {{ $t("task.rollback.maximum-size-tips") }}
-  </p>
+    <p
+      v-if="rollbackUIType === 'SWITCH' && rollbackEnabled"
+      class="textinfolabel -mt-3 w-full break-words"
+    >
+      {{ $t("task.rollback.maximum-size-tips") }}
+    </p>
+  </template>
 </template>
 
 <script setup lang="ts">
@@ -45,7 +47,6 @@ import RollbackStatus from "./RollbackStatus.vue";
 import RollbackSwitch from "./RollbackSwitch.vue";
 import { useRollbackContext } from "./common";
 
-const rollbackContext = useRollbackContext();
-
-const { rollbackUIType, rollbackEnabled } = rollbackContext;
+const { showRollbackSection, rollbackUIType, rollbackEnabled } =
+  useRollbackContext();
 </script>

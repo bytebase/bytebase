@@ -1204,7 +1204,8 @@
         "entry-type": {
           "command-execute": "コマンド実行",
           "schema-dump": "スキーマダンプ"
-        }
+        },
+        "affected-rows-n": "影響を受ける行: {n}"
       }
     }
   },

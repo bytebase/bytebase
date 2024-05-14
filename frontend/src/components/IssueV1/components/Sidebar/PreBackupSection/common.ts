@@ -15,7 +15,11 @@ import {
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
-import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
+import {
+  extractUserResourceName,
+  hasProjectPermissionV2,
+  isDatabaseChangeRelatedIssue,
+} from "@/utils";
 
 export const usePreBackupContext = () => {
   const currentUserV1 = useCurrentUserV1();
@@ -25,6 +29,9 @@ export const usePreBackupContext = () => {
   const project = computed(() => issue.value.projectEntity);
 
   const showPreBackupSection = computed((): boolean => {
+    if (!isDatabaseChangeRelatedIssue(issue.value)) {
+      return false;
+    }
     if (task.value.type !== Task_Type.DATABASE_DATA_UPDATE) {
       return false;
     }

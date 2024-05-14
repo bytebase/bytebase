@@ -1204,7 +1204,8 @@
         "entry-type": {
           "command-execute": "Command execute",
           "schema-dump": "Schema dump"
-        }
+        },
+        "affected-rows-n": "Affected rows: {n}"
       }
     }
   },

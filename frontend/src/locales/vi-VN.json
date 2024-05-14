@@ -1204,7 +1204,8 @@
         "entry-type": {
           "command-execute": "Thực thi lệnh",
           "schema-dump": "Kết xuất lược đồ"
-        }
+        },
+        "affected-rows-n": "Các hàng bị ảnh hưởng: {n}"
       }
     }
   },
