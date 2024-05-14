@@ -1200,7 +1200,11 @@
     "task-run": {
       "task-run-log": {
         "batch": "批次",
-        "affected-rows": "影响行数"
+        "affected-rows": "影响行数",
+        "entry-type": {
+          "command-execute": "执行指令",
+          "schema-dump": "导出 schema"
+        }
       }
     }
   },

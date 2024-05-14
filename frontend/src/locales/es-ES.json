@@ -1200,7 +1200,11 @@
     "task-run": {
       "task-run-log": {
         "batch": "Lote",
-        "affected-rows": "Filas afectadas"
+        "affected-rows": "Filas afectadas",
+        "entry-type": {
+          "command-execute": "ejecutar comando",
+          "schema-dump": "Volcado de esquema"
+        }
       }
     }
   },
