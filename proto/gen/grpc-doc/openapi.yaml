@@ -11893,6 +11893,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Label'
+                forceIssueLabels:
+                    type: boolean
         ProtectionRule:
             type: object
             properties:

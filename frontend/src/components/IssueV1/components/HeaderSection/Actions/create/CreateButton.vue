@@ -33,6 +33,7 @@ import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref, toRaw } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   databaseEngineForSpec,
@@ -91,6 +92,15 @@ const issueCreateErrorList = computed(() => {
   }
   if (!issue.value.rolloutEntity?.stages.every((stage) => isValidStage(stage))) {
     errorList.push("Missing SQL statement in some stages");
+  }
+  if (
+    issue.value.projectEntity.forceIssueLabels &&
+    getValidIssueLabels(
+      issue.value.labels,
+      issue.value.projectEntity.issueLabels
+    ).length === 0
+  ) {
+    errorList.push("Force to have labels for issue");
   }
   return errorList;
 });

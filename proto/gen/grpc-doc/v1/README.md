@@ -6540,6 +6540,7 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 | data_classification_config_id | [string](#string) |  |  |
 | issue_labels | [Label](#bytebase-v1-Label) | repeated |  |
+| force_issue_labels | [bool](#bool) |  |  |
 
 
 

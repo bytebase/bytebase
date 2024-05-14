@@ -13,6 +13,7 @@ export interface Label {
 export interface Project {
   protectionRules: ProtectionRule[];
   issueLabels: Label[];
+  forceIssueLabels: boolean;
 }
 
 export interface ProtectionRule {
@@ -218,7 +219,7 @@ export const Label = {
 };
 
 function createBaseProject(): Project {
-  return { protectionRules: [], issueLabels: [] };
+  return { protectionRules: [], issueLabels: [], forceIssueLabels: false };
 }
 
 export const Project = {
@@ -228,6 +229,9 @@ export const Project = {
     }
     for (const v of message.issueLabels) {
       Label.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.forceIssueLabels === true) {
+      writer.uint32(24).bool(message.forceIssueLabels);
     }
     return writer;
   },
@@ -253,6 +257,13 @@ export const Project = {
 
           message.issueLabels.push(Label.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.forceIssueLabels = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -270,6 +281,7 @@ export const Project = {
       issueLabels: globalThis.Array.isArray(object?.issueLabels)
         ? object.issueLabels.map((e: any) => Label.fromJSON(e))
         : [],
+      forceIssueLabels: isSet(object.forceIssueLabels) ? globalThis.Boolean(object.forceIssueLabels) : false,
     };
   },
 
@@ -281,6 +293,9 @@ export const Project = {
     if (message.issueLabels?.length) {
       obj.issueLabels = message.issueLabels.map((e) => Label.toJSON(e));
     }
+    if (message.forceIssueLabels === true) {
+      obj.forceIssueLabels = message.forceIssueLabels;
+    }
     return obj;
   },
 
@@ -291,6 +306,7 @@ export const Project = {
     const message = createBaseProject();
     message.protectionRules = object.protectionRules?.map((e) => ProtectionRule.fromPartial(e)) || [];
     message.issueLabels = object.issueLabels?.map((e) => Label.fromPartial(e)) || [];
+    message.forceIssueLabels = object.forceIssueLabels ?? false;
     return message;
   },
 };
