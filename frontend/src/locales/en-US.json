@@ -1943,7 +1943,7 @@
       "select-schema-change-type-sdl": "Declarative - Specify the desired schema. Only use CREATE TABLE/INDEX.",
       "schema-path-template-sdl-description": "The schema file describes the database's full schema.",
       "branch-protection-rules": {
-        "self": "Branch protection rules",
+        "self": "Branch Protection Rules",
         "add-rule": "Add Rule",
         "branch-name-pattern": {
           "self": "Branch name pattern",
@@ -1954,8 +1954,11 @@
         "no-protection-rule-configured": "No protection rule configured.",
         "only-apply-to-main-branches": "Only apply to main branches"
       },
-      "issue-labels": "Issue Labels",
-      "configure-labels": "Configure labels"
+      "labels": {
+        "issue-labels": "Issue Labels",
+        "configure-labels": "Configure labels",
+        "force-issue-labels": "Force to have labels for issues"
+      }
     },
     "members": {
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",

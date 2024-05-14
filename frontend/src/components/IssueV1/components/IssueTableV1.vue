@@ -54,14 +54,15 @@ import { useCurrentUserV1 } from "@/store";
 import { type ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Workflow } from "@/types/proto/v1/project_service";
-import { Label } from "@/types/proto/v1/project_service";
 import {
   getHighlightHTMLByRegExp,
   issueSlug,
   extractProjectResourceName,
   humanizeTs,
 } from "@/utils";
-import IssueLabelSelector from "./IssueLabelSelector.vue";
+import IssueLabelSelector, {
+  getValidIssueLabels,
+} from "./IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "./IssueStatusIconWithTaskSummary.vue";
 
 type Mode = "ALL" | "PROJECT";
@@ -132,13 +133,10 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       minWidth: 120,
       hide: !showExtendedColumns.value,
       render: (issue) => {
-        const labelMap: Map<string, Label> =
-          issue.projectEntity.issueLabels.reduce((map, label) => {
-            map.set(label.value, label);
-            return map;
-          }, new Map<string, Label>());
-
-        const labels = issue.labels.filter((label) => labelMap.has(label));
+        const labels = getValidIssueLabels(
+          issue.labels,
+          issue.projectEntity.issueLabels
+        );
         if (labels.length === 0) {
           return h("span", {}, "-");
         }

@@ -197,6 +197,10 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			}
 			projectSettings.IssueLabels = issueLabels
 			patch.Setting = projectSettings
+		case "force_issue_labels":
+			projectSettings := project.Setting
+			projectSettings.ForceIssueLabels = request.Project.ForceIssueLabels
+			patch.Setting = projectSettings
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1858,6 +1862,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
 		IssueLabels:                issueLabels,
+		ForceIssueLabels:           projectMessage.Setting.ForceIssueLabels,
 	}
 }
 

@@ -13,6 +13,7 @@ message Label {
 message Project {
   repeated ProtectionRule protection_rules = 1;
   repeated Label issue_labels = 2;
+  bool force_issue_labels = 3;
 }
 
 message ProtectionRule {
