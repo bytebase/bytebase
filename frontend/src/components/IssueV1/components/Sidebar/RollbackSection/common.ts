@@ -23,6 +23,7 @@ import {
   extractUserResourceName,
   flattenTaskV1List,
   hasProjectPermissionV2,
+  isDatabaseChangeRelatedIssue,
   semverCompare,
 } from "@/utils";
 
@@ -40,9 +41,19 @@ export const useRollbackContext = () => {
   const { isCreating, issue, selectedTask: task, events } = context;
   const project = computed(() => issue.value.projectEntity);
 
+  const showRollbackSection = computed((): boolean => {
+    if (!isDatabaseChangeRelatedIssue(issue.value)) {
+      return false;
+    }
+    if (task.value.type !== Task_Type.DATABASE_DATA_UPDATE) {
+      return false;
+    }
+    return true;
+  });
+
   // Decide with type of UI should be displayed.
   const rollbackUIType = computed((): RollbackUIType => {
-    if (task.value.type !== Task_Type.DATABASE_DATA_UPDATE) {
+    if (!showRollbackSection.value) {
       return "NONE";
     }
 
@@ -176,6 +187,7 @@ export const useRollbackContext = () => {
   };
 
   return {
+    showRollbackSection,
     rollbackUIType,
     allowRollback,
     rollbackEnabled,

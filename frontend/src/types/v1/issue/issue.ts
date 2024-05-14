@@ -17,17 +17,12 @@ import type {
   Rollout,
   TaskRun,
 } from "../../proto/v1/rollout_service";
-import {
-  EMPTY_ROLLOUT_NAME,
-  UNKNOWN_ROLLOUT_NAME,
-  emptyRollout,
-  unknownRollout,
-} from "./rollout";
+import { EMPTY_ROLLOUT_NAME, UNKNOWN_ROLLOUT_NAME } from "./rollout";
 
 export interface ComposedIssue extends Issue {
   planEntity: Plan | undefined;
   planCheckRunList: PlanCheckRun[];
-  rolloutEntity: Rollout;
+  rolloutEntity: Rollout | undefined;
   rolloutTaskRunList: TaskRun[];
   project: string;
   projectEntity: ComposedProject;
@@ -51,7 +46,7 @@ export const emptyIssue = (): ComposedIssue => {
     }),
     planEntity: undefined,
     planCheckRunList: [],
-    rolloutEntity: emptyRollout(),
+    rolloutEntity: undefined,
     rolloutTaskRunList: [],
     project: EMPTY_PROJECT_NAME,
     projectEntity: emptyProject(),
@@ -69,7 +64,7 @@ export const unknownIssue = (): ComposedIssue => {
     }),
     planEntity: undefined,
     planCheckRunList: [],
-    rolloutEntity: unknownRollout(),
+    rolloutEntity: undefined,
     rolloutTaskRunList: [],
     project: UNKNOWN_PROJECT_NAME,
     projectEntity: unknownProject(),

@@ -55,7 +55,7 @@ export const useBaseIssueContext = (
   const selectedStage = computed((): Stage => {
     const stageSlug = route.query.stage as string;
     const taskSlug = route.query.task as string;
-    const stageList = rollout.value.stages;
+    const stageList = rollout.value?.stages || [];
 
     // Index is used when `isCreating === true`
     // UID is used when otherwise
@@ -115,7 +115,7 @@ export const useBaseIssueContext = (
   });
 
   events.on("select-task", ({ task }) => {
-    const stages = rollout.value.stages;
+    const stages = rollout.value?.stages || [];
     const stage = stageForTask(issue.value, task);
     if (!stage) return;
     const stageParam = isCreating.value
