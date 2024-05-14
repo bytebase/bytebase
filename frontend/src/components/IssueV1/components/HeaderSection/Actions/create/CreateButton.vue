@@ -89,7 +89,7 @@ const issueCreateErrorList = computed(() => {
   if (!issue.value.title.trim()) {
     errorList.push("Missing issue title");
   }
-  if (!issue.value.rolloutEntity.stages.every((stage) => isValidStage(stage))) {
+  if (!issue.value.rolloutEntity?.stages.every((stage) => isValidStage(stage))) {
     errorList.push("Missing SQL statement in some stages");
   }
   return errorList;

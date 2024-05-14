@@ -65,14 +65,17 @@ export const activeTaskInStageV1 = (stage: Stage): Task => {
   return activeTaskInTaskList(stage.tasks);
 };
 
-export const activeTaskInRollout = (rollout: Rollout): Task => {
+export const activeTaskInRollout = (rollout: Rollout | undefined): Task => {
+  if (!rollout) {
+    return emptyTask();
+  }
   return activeTaskInTaskList(flattenTaskV1List(rollout));
 };
 
-export const activeStageInRollout = (rollout: Rollout): Stage => {
+export const activeStageInRollout = (rollout: Rollout | undefined): Stage => {
   const activeTask = activeTaskInRollout(rollout);
   if (activeTask.name !== EMPTY_TASK_NAME) {
-    const stage = rollout.stages.find((stage) =>
+    const stage = rollout?.stages.find((stage) =>
       stage.tasks.includes(activeTask)
     );
     if (stage) {
@@ -142,7 +145,7 @@ export const buildIssueV1LinkWithTask = (
   task: Task,
   simple = false
 ) => {
-  const stage = issue.rolloutEntity.stages.find(
+  const stage = issue.rolloutEntity?.stages.find(
     (s) => s.tasks.findIndex((t) => t.uid === task.uid) >= 0
   );
 
