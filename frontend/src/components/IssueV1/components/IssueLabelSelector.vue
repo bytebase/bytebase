@@ -12,19 +12,20 @@
     @update:value="onLablesUpdate"
   >
     <template #empty>
-      <div class="flex flex-col items-center justify-center mb-4">
+      <div class="flex flex-col items-center justify-center">
         <NoDataPlaceholder
           :border="false"
           :img-attrs="{ class: '!max-h-[6vh]' }"
         />
         <router-link
+          v-if="hasPermission"
           :to="{
             name: PROJECT_V1_ROUTE_SETTINGS,
             params: {
               projectId: getProjectName(project.name),
             },
           }"
-          class="textinfolabel normal-link"
+          class="textinfolabel normal-link mb-4"
         >
           {{ $t("project.settings.configure-labels") }}
         </router-link>
@@ -39,8 +40,10 @@ import type { SelectOption } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed, h } from "vue";
 import { PROJECT_V1_ROUTE_SETTINGS } from "@/router/dashboard/projectV1";
+import { useCurrentUserV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
-import { Project } from "@/types/proto/v1/project_service";
+import type { ComposedProject } from "@/types";
+import { hasProjectPermissionV2 } from "@/utils";
 
 type IsseuLabelOption = SelectOption & {
   value: string;
@@ -51,7 +54,7 @@ const props = withDefaults(
   defineProps<{
     disabled: boolean;
     selected: string[];
-    project: Project;
+    project: ComposedProject;
     size: "small" | "medium" | "large";
     maxTagCount: number | "responsive";
   }>(),
@@ -64,6 +67,15 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "update:selected", selected: string[]): void;
 }>();
+
+const currentUser = useCurrentUserV1();
+const hasPermission = computed(() => {
+  return hasProjectPermissionV2(
+    props.project,
+    currentUser.value,
+    "bb.projects.update"
+  );
+});
 
 const issueLabels = computed(() => {
   const pool = new Set(props.project.issueLabels.map((label) => label.value));
