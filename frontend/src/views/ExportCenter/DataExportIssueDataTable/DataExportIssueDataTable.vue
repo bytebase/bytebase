@@ -23,7 +23,9 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { databaseForTask } from "@/components/IssueV1";
-import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelector.vue";
+import IssueLabelSelector, {
+  getValidIssueLabels,
+} from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "@/components/IssueV1/components/IssueStatusIconWithTaskSummary.vue";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { emitWindowEvent } from "@/plugins";
@@ -83,13 +85,10 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       width: 144,
       resizable: true,
       render: (issue) => {
-        const labelMap: Map<string, Label> =
-          issue.projectEntity.issueLabels.reduce((map, label) => {
-            map.set(label.value, label);
-            return map;
-          }, new Map<string, Label>());
-
-        const labels = issue.labels.filter((label) => labelMap.has(label));
+        const labels = getValidIssueLabels(
+          issue.labels,
+          issue.projectEntity.issueLabels
+        );
         if (labels.length === 0) {
           return "-";
         }
