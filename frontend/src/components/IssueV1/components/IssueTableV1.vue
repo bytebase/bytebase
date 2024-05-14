@@ -148,7 +148,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
           selected: labels,
           size: "small",
           maxTagCount: "responsive",
-          labels: issue.projectEntity.issueLabels,
+          project: issue.projectEntity,
         });
       },
     },
