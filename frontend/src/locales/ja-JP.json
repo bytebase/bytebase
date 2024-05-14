@@ -1200,7 +1200,11 @@
     "task-run": {
       "task-run-log": {
         "batch": "バッチ",
-        "affected-rows": "影響を受ける行"
+        "affected-rows": "影響を受ける行",
+        "entry-type": {
+          "command-execute": "コマンド実行",
+          "schema-dump": "スキーマダンプ"
+        }
       }
     }
   },
