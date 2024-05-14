@@ -23,12 +23,14 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { databaseForTask } from "@/components/IssueV1";
+import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "@/components/IssueV1/components/IssueStatusIconWithTaskSummary.vue";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store } from "@/store";
 import { type ComposedIssue } from "@/types";
+import type { Label } from "@/types/proto/v1/project_service";
 import {
   issueSlug,
   extractProjectResourceName,
@@ -74,6 +76,33 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       render: (issue) => (
         <ProjectNameCell project={issue.projectEntity} mode={"ALL_SHORT"} />
       ),
+    },
+    {
+      key: "labels",
+      title: t("common.labels"),
+      width: 144,
+      resizable: true,
+      render: (issue) => {
+        const labelMap: Map<string, Label> =
+          issue.projectEntity.issueLabels.reduce((map, label) => {
+            map.set(label.value, label);
+            return map;
+          }, new Map<string, Label>());
+
+        const labels = issue.labels.filter((label) => labelMap.has(label));
+        if (labels.length === 0) {
+          return "-";
+        }
+        return (
+          <IssueLabelSelector
+            disabled={true}
+            selected={labels}
+            size="small"
+            maxTagCount="responsive"
+            project={issue.projectEntity}
+          />
+        );
+      },
     },
     {
       key: "database",
@@ -194,3 +223,14 @@ watch(
   }
 );
 </script>
+
+<style scoped lang="postcss">
+:deep(.n-base-selection-tags) {
+  @apply !bg-transparent !p-0;
+}
+:deep(.n-base-suffix),
+:deep(.n-base-selection__border),
+:deep(.n-base-selection__state-border) {
+  @apply !hidden;
+}
+</style>
