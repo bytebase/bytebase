@@ -87,7 +87,10 @@ const flattenLogEntries = computed(() => {
       const { commandExecute } = entry;
       const { response, logTime: startTime } = commandExecute;
       commandExecute.commandIndexes.forEach((commandIndex, serial) => {
-        const affectedRows = response?.allAffectedRows[serial];
+        let affectedRows = response?.affectedRows;
+        if (commandExecute.commandIndexes.length === response?.allAffectedRows.length) {
+          affectedRows = response?.allAffectedRows[serial] ?? affectedRows;
+        }
         const endTime = response?.logTime;
         flattenEntries.push({
           batch,
