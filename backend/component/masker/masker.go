@@ -817,15 +817,11 @@ func (m *InnerOuterMasker) Equal(other Masker) bool {
 
 // Mask implements Masker.
 func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
-	if data.Data == nil {
-		return nil
-	}
-
 	unmaskedData := ""
 	// Datav1.
 	if data.Data != nil {
 		if raw, ok := data.Data.(*sql.NullBool); ok && raw.Valid {
-			unmaskedData = "******"
+			unmaskedData = ""
 		} else if raw, ok := data.Data.(*sql.NullString); ok && raw.Valid {
 			unmaskedData = raw.String
 		} else if raw, ok := data.Data.(*sql.NullInt32); ok && raw.Valid {
@@ -839,11 +835,7 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 		// Datav2.
 		switch kind := data.DataV2.Kind.(type) {
 		case *v1pb.RowValue_NullValue:
-			if kind.NullValue == structpb.NullValue_NULL_VALUE {
-				unmaskedData = "******"
-			}
 		case *v1pb.RowValue_BoolValue:
-			unmaskedData = "******"
 		case *v1pb.RowValue_BytesValue:
 			unmaskedData = string(kind.BytesValue)
 		case *v1pb.RowValue_DoubleValue:
@@ -878,8 +870,8 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 
 	if maskedData == "" {
 		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_NullValue{
-				NullValue: structpb.NullValue_NULL_VALUE,
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: "******",
 			},
 		}
 	}
@@ -890,8 +882,9 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 	}
 }
 
+// Return unmasked data if checkArgs() fails.
 func (m *InnerOuterMasker) checkArgs(data []rune) bool {
-	return int(m.prefixLen) <= len(data) && int(m.suffixLen) <= len(data)
+	return int(m.prefixLen) >= 0 && int(m.suffixLen) >= 0 && int(m.prefixLen+m.suffixLen) <= len(data)
 }
 
 func (m *InnerOuterMasker) maskInner(data []rune) string {
