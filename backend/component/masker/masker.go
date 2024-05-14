@@ -820,22 +820,35 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 	unmaskedData := ""
 	// Datav1.
 	if data.Data != nil {
-		if raw, ok := data.Data.(*sql.NullBool); ok && raw.Valid {
-			unmaskedData = ""
-		} else if raw, ok := data.Data.(*sql.NullString); ok && raw.Valid {
+		isDataNullOrBool := true
+		if raw, ok := data.Data.(*sql.NullString); ok && raw.Valid {
+			isDataNullOrBool = false
 			unmaskedData = raw.String
 		} else if raw, ok := data.Data.(*sql.NullInt32); ok && raw.Valid {
+			isDataNullOrBool = false
 			unmaskedData = strconv.FormatInt(int64(raw.Int32), 10)
 		} else if raw, ok := data.Data.(*sql.NullInt64); ok && raw.Valid {
+			isDataNullOrBool = false
 			unmaskedData = strconv.FormatInt(raw.Int64, 10)
 		} else if raw, ok := data.Data.(*sql.NullFloat64); ok && raw.Valid {
+			isDataNullOrBool = false
 			unmaskedData = strconv.FormatFloat(raw.Float64, 'f', -1, 64)
+		}
+		if isDataNullOrBool {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: "******",
+				},
+			}
 		}
 	} else {
 		// Datav2.
+		isDataNullOrBool := false
 		switch kind := data.DataV2.Kind.(type) {
 		case *v1pb.RowValue_NullValue:
+			isDataNullOrBool = true
 		case *v1pb.RowValue_BoolValue:
+			isDataNullOrBool = true
 		case *v1pb.RowValue_BytesValue:
 			unmaskedData = string(kind.BytesValue)
 		case *v1pb.RowValue_DoubleValue:
@@ -859,22 +872,38 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 				},
 			}
 		}
+		if isDataNullOrBool {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: "******",
+				},
+			}
+		}
 	}
 
 	maskedData := ""
+	// Do nothing if the sum of the margin excced the length of the data.
+	// Reference: https://dev.mysql.com/doc/refman/5.7/en/data-masking-functions.html#function_mask-inner.
+	if !m.isMarginSumWithinRange(len([]rune(unmaskedData))) {
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: unmaskedData,
+			},
+		}
+	}
+	// Return null value if either margin is negetive.
+	if m.isMarginNegetive() {
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_NullValue{},
+		}
+	}
+
 	if m.maskerType == InnerOuterMaskerTypeInner {
 		maskedData = m.maskInner([]rune(unmaskedData))
 	} else if m.maskerType == InnerOuterMaskerTypeOuter {
 		maskedData = m.maskOuter([]rune(unmaskedData))
 	}
 
-	if maskedData == "" {
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_StringValue{
-				StringValue: "******",
-			},
-		}
-	}
 	return &v1pb.RowValue{
 		Kind: &v1pb.RowValue_StringValue{
 			StringValue: maskedData,
@@ -882,15 +911,17 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 	}
 }
 
-// Return unmasked data if checkArgs() fails.
-func (m *InnerOuterMasker) checkArgs(data []rune) bool {
-	return int(m.prefixLen) >= 0 && int(m.suffixLen) >= 0 && int(m.prefixLen+m.suffixLen) <= len(data)
+// Return true if either margin is negetive.
+func (m *InnerOuterMasker) isMarginSumWithinRange(lenRange int) bool {
+	return m.prefixLen+m.suffixLen <= int32(lenRange)
+}
+
+// Return true if either margin is negetive.
+func (m *InnerOuterMasker) isMarginNegetive() bool {
+	return int(m.prefixLen) < 0 || int(m.suffixLen) < 0
 }
 
 func (m *InnerOuterMasker) maskInner(data []rune) string {
-	if !m.checkArgs(data) {
-		return ""
-	}
 	maskedData := ""
 	maxSuffixLen := len(data) - int(m.prefixLen)
 	if maskLen := maxSuffixLen - int(m.suffixLen); maskLen > 0 {
@@ -912,9 +943,6 @@ func (m *InnerOuterMasker) maskInner(data []rune) string {
 }
 
 func (m *InnerOuterMasker) maskOuter(data []rune) string {
-	if !m.checkArgs(data) {
-		return ""
-	}
 	maskedData := ""
 	maxSuffixLen := len(data) - int(m.prefixLen)
 	if dataLen := maxSuffixLen - int(m.suffixLen); dataLen > 0 {
