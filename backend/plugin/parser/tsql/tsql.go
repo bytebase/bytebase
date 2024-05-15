@@ -53,8 +53,7 @@ func ParseTSQL(statement string) (*ParseResult, error) {
 	return result, nil
 }
 
-// NormalizeTSQLTableName returns the normalized table name.
-func NormalizeTSQLTableName(ctx parser.ITable_nameContext, fallbackDatabaseName, fallbackSchemaName string, _ bool) string {
+func normalizeTableNameSeparated(ctx parser.ITable_nameContext, fallbackDatabaseName, fallbackSchemaName string, _ bool) (string, string, string) {
 	database := fallbackDatabaseName
 	schema := fallbackSchemaName
 	table := ""
@@ -73,6 +72,12 @@ func NormalizeTSQLTableName(ctx parser.ITable_nameContext, fallbackDatabaseName,
 			table = id
 		}
 	}
+	return database, schema, table
+}
+
+// NormalizeTSQLTableName returns the normalized table name.
+func NormalizeTSQLTableName(ctx parser.ITable_nameContext, fallbackDatabaseName, fallbackSchemaName string, caseSensitive bool) string {
+	database, schema, table := normalizeTableNameSeparated(ctx, fallbackDatabaseName, fallbackSchemaName, caseSensitive)
 	tableNameParts := []string{}
 	if database != "" {
 		tableNameParts = append(tableNameParts, database)
