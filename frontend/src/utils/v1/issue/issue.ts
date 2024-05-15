@@ -18,8 +18,8 @@ export const flattenTaskV1List = (rollout: Rollout | undefined) => {
   return rollout?.stages.flatMap((stage) => stage.tasks) || [];
 };
 
-export const flattenSpecList = (plan: Plan) => {
-  return plan.steps.flatMap((step) => step.specs);
+export const flattenSpecList = (plan: Plan | undefined) => {
+  return plan?.steps.flatMap((step) => step.specs) || [];
 };
 
 export const isDatabaseChangeRelatedIssue = (issue: ComposedIssue): boolean => {

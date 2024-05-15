@@ -35,22 +35,17 @@
     </div>
 
     <div class="flex justify-end items-center shrink-0">
-      <PlanCheckRunButton
-        v-if="allowRunChecks && task"
-        :task="task"
-        @run-checks="runChecks"
-      />
+      <PlanCheckRunButton v-if="allowRunChecks" @run-checks="runChecks" />
     </div>
 
     <div v-if="state.showPlanCheckDetail" class="w-full mt-2">
-      <PlanCheckPanel :plan-check-run-list="planCheckRunList" :task="task" />
+      <PlanCheckPanel :plan-check-run-list="planCheckRunList" />
     </div>
 
     <PlanCheckModal
       v-if="planCheckRunList.length > 0 && selectedType"
       :selected-type="selectedType"
       :plan-check-run-list="planCheckRunList"
-      :task="task"
       @close="selectedType = undefined"
     />
   </div>
@@ -59,17 +54,15 @@
 <script lang="ts" setup>
 import { ChevronsUpDownIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
-import { computed, reactive, ref } from "vue";
+import { reactive, ref } from "vue";
 import {
   notifyNotEditableLegacyIssue,
-  planCheckRunListForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
 import type {
   PlanCheckRun,
   PlanCheckRun_Type,
-  Task,
 } from "@/types/proto/v1/rollout_service";
 import type { VueClass } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
@@ -81,12 +74,18 @@ interface LocalState {
   showPlanCheckDetail: boolean;
 }
 
-const props = defineProps<{
-  allowRunChecks?: boolean;
-  task?: Task;
-  labelClass?: VueClass;
-  planCheckRunList?: PlanCheckRun[];
-}>();
+withDefaults(
+  defineProps<{
+    allowRunChecks?: boolean;
+    labelClass?: VueClass;
+    planCheckRunList?: PlanCheckRun[];
+  }>(),
+  {
+    allowRunChecks: true,
+    labelClass: "",
+    planCheckRunList: () => [],
+  }
+);
 
 const { issue, events } = useIssueContext();
 const state = reactive<LocalState>({
@@ -94,14 +93,7 @@ const state = reactive<LocalState>({
 });
 const selectedType = ref<PlanCheckRun_Type>();
 
-const planCheckRunList = computed(() => {
-  if (!props.task) {
-    return props.planCheckRunList ?? issue.value.planCheckRunList;
-  }
-  return planCheckRunListForTask(issue.value, props.task);
-});
-
-const runChecks = (taskList: Task[]) => {
+const runChecks = () => {
   const { plan } = issue.value;
   if (!plan) {
     notifyNotEditableLegacyIssue();
