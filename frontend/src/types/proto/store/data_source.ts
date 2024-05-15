@@ -235,7 +235,13 @@ export interface DataSourceOptions {
   authenticationPrivateKeyObfuscated: string;
   externalSecret: DataSourceExternalSecret | undefined;
   authenticationType: DataSourceOptions_AuthenticationType;
-  saslConfig: SASLConfig | undefined;
+  saslConfig:
+    | SASLConfig
+    | undefined;
+  /** additional_addresses is used for MongoDB replica set. */
+  additionalAddresses: DataSourceOptions_Address[];
+  /** replica_set is used for MongoDB replica set. */
+  replicaSet: string;
 }
 
 export enum DataSourceOptions_AuthenticationType {
@@ -297,6 +303,11 @@ export function dataSourceOptions_AuthenticationTypeToNumber(object: DataSourceO
     default:
       return -1;
   }
+}
+
+export interface DataSourceOptions_Address {
+  host: string;
+  port: string;
 }
 
 export interface SASLConfig {
@@ -620,6 +631,8 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     externalSecret: undefined,
     authenticationType: DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
     saslConfig: undefined,
+    additionalAddresses: [],
+    replicaSet: "",
   };
 }
 
@@ -663,6 +676,12 @@ export const DataSourceOptions = {
     }
     if (message.saslConfig !== undefined) {
       SASLConfig.encode(message.saslConfig, writer.uint32(106).fork()).ldelim();
+    }
+    for (const v of message.additionalAddresses) {
+      DataSourceOptions_Address.encode(v!, writer.uint32(114).fork()).ldelim();
+    }
+    if (message.replicaSet !== "") {
+      writer.uint32(122).string(message.replicaSet);
     }
     return writer;
   },
@@ -765,6 +784,20 @@ export const DataSourceOptions = {
 
           message.saslConfig = SASLConfig.decode(reader, reader.uint32());
           continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.additionalAddresses.push(DataSourceOptions_Address.decode(reader, reader.uint32()));
+          continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.replicaSet = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -799,6 +832,10 @@ export const DataSourceOptions = {
         ? dataSourceOptions_AuthenticationTypeFromJSON(object.authenticationType)
         : DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
       saslConfig: isSet(object.saslConfig) ? SASLConfig.fromJSON(object.saslConfig) : undefined,
+      additionalAddresses: globalThis.Array.isArray(object?.additionalAddresses)
+        ? object.additionalAddresses.map((e: any) => DataSourceOptions_Address.fromJSON(e))
+        : [],
+      replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
     };
   },
 
@@ -843,6 +880,12 @@ export const DataSourceOptions = {
     if (message.saslConfig !== undefined) {
       obj.saslConfig = SASLConfig.toJSON(message.saslConfig);
     }
+    if (message.additionalAddresses?.length) {
+      obj.additionalAddresses = message.additionalAddresses.map((e) => DataSourceOptions_Address.toJSON(e));
+    }
+    if (message.replicaSet !== "") {
+      obj.replicaSet = message.replicaSet;
+    }
     return obj;
   },
 
@@ -869,6 +912,83 @@ export const DataSourceOptions = {
     message.saslConfig = (object.saslConfig !== undefined && object.saslConfig !== null)
       ? SASLConfig.fromPartial(object.saslConfig)
       : undefined;
+    message.additionalAddresses = object.additionalAddresses?.map((e) => DataSourceOptions_Address.fromPartial(e)) ||
+      [];
+    message.replicaSet = object.replicaSet ?? "";
+    return message;
+  },
+};
+
+function createBaseDataSourceOptions_Address(): DataSourceOptions_Address {
+  return { host: "", port: "" };
+}
+
+export const DataSourceOptions_Address = {
+  encode(message: DataSourceOptions_Address, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.host !== "") {
+      writer.uint32(10).string(message.host);
+    }
+    if (message.port !== "") {
+      writer.uint32(18).string(message.port);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DataSourceOptions_Address {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSourceOptions_Address();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.host = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.port = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSourceOptions_Address {
+    return {
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
+      port: isSet(object.port) ? globalThis.String(object.port) : "",
+    };
+  },
+
+  toJSON(message: DataSourceOptions_Address): unknown {
+    const obj: any = {};
+    if (message.host !== "") {
+      obj.host = message.host;
+    }
+    if (message.port !== "") {
+      obj.port = message.port;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataSourceOptions_Address>): DataSourceOptions_Address {
+    return DataSourceOptions_Address.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DataSourceOptions_Address>): DataSourceOptions_Address {
+    const message = createBaseDataSourceOptions_Address();
+    message.host = object.host ?? "";
+    message.port = object.port ?? "";
     return message;
   },
 };

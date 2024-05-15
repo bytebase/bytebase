@@ -9280,6 +9280,14 @@ components:
                     format: enum
                 saslConfig:
                     $ref: '#/components/schemas/SASLConfig'
+                additionalAddresses:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/DataSource_Address'
+                    description: additional_addresses is used for MongoDB replica set.
+                replicaSet:
+                    type: string
+                    description: replica_set is used for MongoDB replica set.
         DataSourceExternalSecret:
             type: object
             properties:
@@ -9333,6 +9341,13 @@ components:
                 mountPath:
                     type: string
                     description: The path where the approle auth method is mounted.
+        DataSource_Address:
+            type: object
+            properties:
+                host:
+                    type: string
+                port:
+                    type: string
         Database:
             type: object
             properties:
