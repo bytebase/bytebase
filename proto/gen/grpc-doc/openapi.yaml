@@ -8254,6 +8254,8 @@ components:
                         - OUTER
                     type: string
                     format: enum
+                substitution:
+                    type: string
         Algorithm_MD5Mask:
             type: object
             properties:

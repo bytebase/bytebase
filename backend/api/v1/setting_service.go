@@ -1174,11 +1174,8 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 		}
 		switch m := algorithm.Mask.(type) {
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_FullMask_:
-			if m.FullMask.Substitution == "" {
-				return status.Errorf(codes.InvalidArgument, "the substitution for full mask is required")
-			}
-			if len(m.FullMask.Substitution) > 16 {
-				return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
+			if err := checkSubstitution(m.FullMask.Substitution); err != nil {
+				return err
 			}
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
 			for i, slice := range m.RangeMask.Slices {
@@ -1196,6 +1193,10 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 					return status.Errorf(codes.InvalidArgument, "the slice range cannot overlap: [%d,%d) and [%d,%d)", pre.Start, pre.End, slice.Start, slice.End)
 				}
 			}
+		case *v1pb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_:
+			if err := checkSubstitution(m.InnerOuterMask.Substitution); err != nil {
+				return err
+			}
 		default:
 			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
 		}
@@ -1212,5 +1213,15 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm category: %s", algorithm.Category)
 	}
 
+	return nil
+}
+
+func checkSubstitution(substitution string) error {
+	if substitution == "" {
+		return status.Errorf(codes.InvalidArgument, "the substitution for inner or outer masks is required")
+	}
+	if len(substitution) > 16 {
+		return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
+	}
 	return nil
 }

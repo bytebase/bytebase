@@ -183,6 +183,114 @@
               />
             </div>
           </template>
+          <template v-if="state.maskingType === 'inner-outer-mask'">
+            <label class="textlabel">
+              {{
+                $t("settings.sensitive-data.algorithms.inner-outer-mask.type")
+              }}
+              <span class="text-red-600 mr-2">*</span>
+              <p class="textinfolabel">
+                {{
+                  state.innerOuterMask.type ==
+                  MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER
+                    ? $t(
+                        "settings.sensitive-data.algorithms.inner-outer-mask.inner-label"
+                      )
+                    : $t(
+                        "settings.sensitive-data.algorithms.inner-outer-mask.outer-label"
+                      )
+                }}
+              </p>
+            </label>
+
+            <NRadio
+              :checked="
+                state.innerOuterMask.type ==
+                MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER
+              "
+              @update:checked="
+                state.innerOuterMask.type =
+                  MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER
+              "
+            >
+              Inner Mask
+            </NRadio>
+            <NRadio
+              :checked="
+                state.innerOuterMask.type ==
+                MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.OUTER
+              "
+              @update:checked="
+                state.innerOuterMask.type =
+                  MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.OUTER
+              "
+            >
+              Outer Mask
+            </NRadio>
+            <div class="flex space-x-2 items-center">
+              <div class="flex-none flex flex-col gap-y-1">
+                <label for="slice-start" class="textlabel flex">
+                  {{
+                    $t(
+                      "settings.sensitive-data.algorithms.inner-outer-mask.prefix-length"
+                    )
+                  }}
+                  <span class="text-red-600 mr-2">*</span>
+                </label>
+                <NInputNumber
+                  :value="state.innerOuterMask.prefixLen"
+                  :placeholder="
+                    t(
+                      'settings.sensitive-data.algorithms.inner-outer-mask.prefix-length'
+                    )
+                  "
+                  :disabled="state.processing || readonly"
+                  style="width: 5.5rem"
+                  @update:value="onPrefixChange($event as number)"
+                />
+              </div>
+              <div class="flex-none flex flex-col gap-y-1">
+                <label for="slice-end" class="textlabel">
+                  {{
+                    $t(
+                      "settings.sensitive-data.algorithms.inner-outer-mask.suffix-length"
+                    )
+                  }}
+                  <span class="text-red-600 mr-2">*</span>
+                </label>
+                <NInputNumber
+                  :value="state.innerOuterMask.suffixLen"
+                  :placeholder="
+                    t(
+                      'settings.sensitive-data.algorithms.inner-outer-mask.suffix-length'
+                    )
+                  "
+                  :disabled="state.processing || readonly"
+                  style="width: 5.5rem"
+                  @update:value="onSuffixChange($event as number)"
+                />
+              </div>
+              <div class="flex-1 flex flex-col gap-y-1">
+                <label for="substitution" class="textlabel">
+                  {{
+                    $t(
+                      "settings.sensitive-data.algorithms.range-mask.substitution"
+                    )
+                  }}
+                  <span class="text-red-600 mr-2">*</span>
+                </label>
+                <NInput
+                  v-model:value="state.innerOuterMask.substitution"
+                  :placeholder="
+                    t(
+                      'settings.sensitive-data.algorithms.range-mask.substitution'
+                    )
+                  "
+                  :disabled="state.processing || readonly"
+                />
+              </div>
+            </div>
+          </template>
         </div>
       </div>
       <template #footer>
@@ -213,7 +321,7 @@
 <script setup lang="ts">
 import { cloneDeep } from "lodash-es";
 import { TrashIcon } from "lucide-vue-next";
-import { NInput, NInputNumber } from "naive-ui";
+import { NInput, NInputNumber, NRadio } from "naive-ui";
 import { computed, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RadioGridOption, RadioGridItem } from "@/components/v2";
@@ -229,7 +337,9 @@ import {
   MaskingAlgorithmSetting_Algorithm_FullMask as FullMask,
   MaskingAlgorithmSetting_Algorithm_RangeMask as RangeMask,
   MaskingAlgorithmSetting_Algorithm_MD5Mask as MD5Mask,
+  MaskingAlgorithmSetting_Algorithm_InnerOuterMask as InnerOuterMask,
   MaskingAlgorithmSetting_Algorithm_RangeMask_Slice as RangeMask_Slice,
+  MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType,
 } from "@/types/proto/v1/setting_service";
 import type { MaskingType } from "./utils";
 import { getMaskingType } from "./utils";
@@ -247,6 +357,7 @@ interface LocalState {
   fullMask: FullMask;
   rangeMask: RangeMask;
   md5Mask: MD5Mask;
+  innerOuterMask: InnerOuterMask;
 }
 
 const props = defineProps<{
@@ -271,6 +382,15 @@ const defaultRangeMask = computed(() =>
   })
 );
 
+const defaultInnerOuterMask = computed(() =>
+  InnerOuterMask.fromPartial({
+    prefixLen: 0,
+    suffixLen: 0,
+    type: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER,
+    substitution: "*",
+  })
+);
+
 const state = reactive<LocalState>({
   processing: false,
   maskingType: "full-mask",
@@ -279,7 +399,9 @@ const state = reactive<LocalState>({
   fullMask: FullMask.fromPartial({}),
   rangeMask: cloneDeep(defaultRangeMask.value),
   md5Mask: MD5Mask.fromPartial({}),
+  innerOuterMask: cloneDeep(defaultInnerOuterMask.value),
 });
+
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
@@ -295,6 +417,10 @@ const maskingTypeList = computed((): MaskingTypeOption[] => [
   {
     value: "md5-mask",
     label: t("settings.sensitive-data.algorithms.md5-mask.self"),
+  },
+  {
+    value: "inner-outer-mask",
+    label: t("settings.sensitive-data.algorithms.inner-outer-mask.self"),
   },
 ]);
 
@@ -314,6 +440,8 @@ watch(
     state.fullMask = algorithm.fullMask ?? FullMask.fromPartial({});
     state.rangeMask = algorithm.rangeMask ?? cloneDeep(defaultRangeMask.value);
     state.md5Mask = algorithm.md5Mask ?? MD5Mask.fromPartial({});
+    state.innerOuterMask =
+      algorithm.innerOuterMask ?? cloneDeep(defaultInnerOuterMask.value);
   }
 );
 
@@ -335,6 +463,8 @@ const maskingAlgorithm = computed((): Algorithm => {
     case "md5-mask":
       result.md5Mask = state.md5Mask;
       break;
+    case "inner-outer-mask":
+      result.innerOuterMask = state.innerOuterMask;
   }
 
   return result;
@@ -395,6 +525,18 @@ const errorMessage = computed(() => {
       return "";
     case "range-mask":
       return rangeMaskErrorMessage.value;
+    case "inner-outer-mask":
+      if (!state.innerOuterMask.substitution) {
+        return t(
+          "settings.sensitive-data.algorithms.error.substitution-required"
+        );
+      }
+      if (state.innerOuterMask.substitution.length > 16) {
+        return t(
+          "settings.sensitive-data.algorithms.error.substitution-length"
+        );
+      }
+      return "";
   }
   return "";
 });
@@ -459,6 +601,9 @@ const onMaskingTypeChange = (maskingType: MaskingType) => {
     case "md5-mask":
       state.md5Mask = MD5Mask.fromPartial({});
       break;
+    case "inner-outer-mask":
+      state.innerOuterMask = cloneDeep(defaultInnerOuterMask.value);
+      break;
   }
   state.maskingType = maskingType;
 };
@@ -496,4 +641,20 @@ const onSliceEndChange = (index: number, val: number | null) => {
   const slice = state.rangeMask.slices[index];
   slice.end = val;
 };
+
+const onPrefixChange = (val: number) => {
+  if (val === null || Number.isNaN(val) || val < 0) {
+    return;
+  }
+  state.innerOuterMask.prefixLen = val;
+};
+
+const onSuffixChange = (val: number) => {
+  if (val === null || Number.isNaN(val) || val < 0) {
+    return;
+  }
+  state.innerOuterMask.suffixLen = val;
+};
+
+console.log(state.innerOuterMask);
 </script>
