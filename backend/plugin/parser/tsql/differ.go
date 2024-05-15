@@ -539,7 +539,7 @@ func buildSchemaMap(stmt string) (schemaMap, error) {
 	m := make(schemaMap)
 	m[defaultSchema] = newSchemaInfo(0, defaultSchema, nil)
 	listener := &buildSchemaInfoListener{
-		m: make(schemaMap),
+		m: m,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, node.Tree)
