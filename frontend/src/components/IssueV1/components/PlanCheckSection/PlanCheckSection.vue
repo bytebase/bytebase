@@ -12,7 +12,7 @@
   <PlanCheckBar
     v-if="show"
     :allow-run-checks="allowRunChecks"
-    :task="selectedTask"
+    :plan-check-run-list="planCheckRunList"
     class="px-4 py-2"
   />
 </template>
@@ -21,27 +21,28 @@
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import {
+  planCheckRunListForSpec,
+  planCheckRunListForTask,
   planSpecHasPlanChecks,
-  specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
+import { UNKNOWN_ID } from "@/types";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 import PlanCheckBar from "./PlanCheckBar";
 
 const currentUser = useCurrentUserV1();
-const { isCreating, issue, selectedTask } = useIssueContext();
+const { isCreating, issue, selectedSpec, selectedTask } = useIssueContext();
 
 const show = computed(() => {
   if (isCreating.value) {
     return false;
   }
-  const spec = specForTask(issue.value.planEntity, selectedTask.value);
-  if (!spec) {
+  if (selectedSpec.value.id === String(UNKNOWN_ID)) {
     return false;
   }
-  return planSpecHasPlanChecks(spec);
+  return planSpecHasPlanChecks(selectedSpec.value);
 });
 
 const allowRunChecks = computed(() => {
@@ -66,6 +67,19 @@ const allowRunChecks = computed(() => {
     return true;
   }
   return false;
+});
+
+const planCheckRunList = computed(() => {
+  // If a task is selected, show plan checks for the task.
+  if (selectedTask.value && selectedTask.value.uid !== String(UNKNOWN_ID)) {
+    return planCheckRunListForTask(issue.value, selectedTask.value);
+  }
+  // If a spec is selected, show plan checks for the spec.
+  if (selectedSpec.value && selectedSpec.value.id !== String(UNKNOWN_ID)) {
+    return planCheckRunListForSpec(issue.value, selectedSpec.value);
+  }
+  // Otherwise, show plan checks for the issue.
+  return issue.value.planCheckRunList;
 });
 
 const runPlanChecks = async () => {

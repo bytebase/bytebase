@@ -26,14 +26,14 @@
 import { first, orderBy } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
+import { databaseForSpec, useIssueContext } from "@/components/IssueV1/logic";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
+import { UNKNOWN_ID } from "@/types";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
-  type Task,
 } from "@/types/proto/v1/rollout_service";
 import { humanizeDate } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
@@ -42,7 +42,6 @@ import PlanCheckDetail from "./PlanCheckDetail.vue";
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
   selectedType?: PlanCheckRun_Type;
-  task?: Task;
 }>();
 
 defineEmits<{
@@ -70,7 +69,7 @@ const getInitialSelectedType = () => {
 };
 
 const { t } = useI18n();
-const { issue } = useIssueContext();
+const { issue, selectedSpec } = useIssueContext();
 const selectedTypeRef = ref<PlanCheckRun_Type>(getInitialSelectedType());
 
 const selectedPlanCheckRunList = computed(() => {
@@ -121,11 +120,11 @@ watch(selectedPlanCheckRunList, (list) => {
 });
 
 const environment = computed(() => {
-  const task = props.task;
-  if (!task) {
+  const spec = selectedSpec.value;
+  if (!spec || spec.id === String(UNKNOWN_ID)) {
     return;
   }
-  const database = databaseForTask(issue.value, task);
+  const database = databaseForSpec(issue.value, spec);
   return database.effectiveEnvironmentEntity.name;
 });
 </script>

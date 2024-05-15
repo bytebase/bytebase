@@ -56,11 +56,14 @@
         </div>
 
         <PlanCheckBar
-          v-if="action === 'ROLLOUT' || action === 'RETRY'"
-          :allow-run-checks="false"
-          :plan-check-run-list="planCheckRunList"
+          v-if="
+            (action === 'ROLLOUT' || action === 'RETRY') &&
+            planCheckRunList.length > 0
+          "
           class="shrink-0 flex-col gap-y-1"
           label-class="!text-base"
+          :allow-run-checks="false"
+          :plan-check-run-list="planCheckRunList"
         />
 
         <div v-if="planCheckErrors.length > 0" class="flex flex-col">
@@ -109,7 +112,7 @@
             <NButton
               :disabled="confirmErrors.length > 0"
               v-bind="taskRolloutActionButtonProps(action)"
-              @click="handleConfirm(action, comment)"
+              @click="handleConfirm(action!, comment)"
             >
               {{ taskRolloutActionDialogButtonName(action, taskList) }}
             </NButton>

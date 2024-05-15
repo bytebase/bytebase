@@ -5,7 +5,7 @@
     :disabled="hasRunningPlanCheck"
     preference-key="issue.task.run-checks"
     default-action-key="RUN-CHECKS"
-    @click="$emit('run-checks', ($event as ButtonAction).params.taskList)"
+    @click="$emit('run-checks')"
   >
     <template #icon>
       <BBSpin v-if="hasRunningPlanCheck" :size="20" />
@@ -26,32 +26,20 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
-  planCheckRunListForTask,
+  planCheckRunListForSpec,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import type { ContextMenuButtonAction } from "@/components/v2";
 import { ContextMenuButton } from "@/components/v2";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
-import {
-  PlanCheckRun_Status,
-  Task_Status,
-} from "@/types/proto/v1/rollout_service";
-
-type ButtonAction = ContextMenuButtonAction<{
-  taskList: Task[];
-}>;
-
-const props = defineProps<{
-  task: Task;
-}>();
+import { PlanCheckRun_Status } from "@/types/proto/v1/rollout_service";
 
 defineEmits<{
-  (event: "run-checks", taskList: Task[]): void;
+  (event: "run-checks"): void;
 }>();
 
 const { t } = useI18n();
-const { isCreating, issue } = useIssueContext();
+const { isCreating, issue, selectedSpec } = useIssueContext();
 
 const allowRunCheckForIssue = computed(() => {
   if (isCreating.value) {
@@ -66,34 +54,24 @@ const allowRunCheckForIssue = computed(() => {
 const actionList = computed(() => {
   if (!allowRunCheckForIssue.value) return [];
 
-  const actionList: ButtonAction[] = [];
-  if (allowRunChecksForTask(props.task)) {
-    actionList.push({
-      key: "RUN-CHECKS",
-      text: t("task.run-checks"),
-      params: {
-        taskList: [props.task],
-      },
-    });
-  }
+  const actionList: ContextMenuButtonAction[] = [];
+  actionList.push({
+    key: "RUN-CHECKS",
+    text: t("task.run-checks"),
+    params: {},
+  });
   return actionList;
 });
 
 const hasRunningPlanCheck = computed((): boolean => {
   if (isCreating.value) return false;
 
-  const planCheckRunList = planCheckRunListForTask(issue.value, props.task);
+  const planCheckRunList = planCheckRunListForSpec(
+    issue.value,
+    selectedSpec.value
+  );
   return planCheckRunList.some(
     (checkRun) => checkRun.status === PlanCheckRun_Status.RUNNING
   );
 });
-
-const allowRunChecksForTask = (task: Task) => {
-  return (
-    task.status === Task_Status.NOT_STARTED ||
-    task.status === Task_Status.PENDING ||
-    task.status === Task_Status.RUNNING ||
-    task.status === Task_Status.FAILED
-  );
-};
 </script>
