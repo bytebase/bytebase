@@ -442,6 +442,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSource.Address"><span class="badge">M</span>DataSource.Address</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSourceExternalSecret"><span class="badge">M</span>DataSourceExternalSecret</a>
                 </li>
               
@@ -5275,6 +5279,51 @@ Used for authentication when connecting to the data source. </p></td>
                 <tr>
                   <td>sasl_config</td>
                   <td><a href="#bytebase.v1.SASLConfig">SASLConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>additional_addresses</td>
+                  <td><a href="#bytebase.v1.DataSource.Address">DataSource.Address</a></td>
+                  <td>repeated</td>
+                  <td><p>additional_addresses is used for MongoDB replica set. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>replica_set</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>replica_set is used for MongoDB replica set. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DataSource.Address">DataSource.Address</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>port</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

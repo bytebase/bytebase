@@ -94,6 +94,15 @@ message DataSourceOptions {
   AuthenticationType authentication_type = 12;
 
   SASLConfig sasl_config = 13;
+
+  message Address {
+    string host = 1;
+    string port = 2;
+  }
+  // additional_addresses is used for MongoDB replica set.
+  repeated Address additional_addresses = 14;
+  // replica_set is used for MongoDB replica set.
+  string replica_set = 15;
 }
 
 message SASLConfig {

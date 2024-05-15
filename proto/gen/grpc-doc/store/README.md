@@ -90,6 +90,7 @@
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
+    - [DataSourceOptions.Address](#bytebase-store-DataSourceOptions-Address)
     - [KerberosConfig](#bytebase-store-KerberosConfig)
     - [SASLConfig](#bytebase-store-SASLConfig)
   
@@ -1575,6 +1576,24 @@ Used internally for obfuscating the page token.
 | external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType) |  |  |
 | sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
+| additional_addresses | [DataSourceOptions.Address](#bytebase-store-DataSourceOptions-Address) | repeated | additional_addresses is used for MongoDB replica set. |
+| replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
+
+
+
+
+
+
+<a name="bytebase-store-DataSourceOptions-Address"></a>
+
+### DataSourceOptions.Address
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  |  |
+| port | [string](#string) |  |  |
 
 
 
