@@ -22,13 +22,13 @@
       v-if="confirm"
       class="flex flex-row justify-end items-center gap-x-3 mt-4"
     >
-      <NButton @click="confirm.resolve(false)">
+      <NButton @click="confirm!.resolve(false)">
         {{ $t("issue.sql-check.back-to-edit") }}
       </NButton>
       <NButton
         v-if="!restrictIssueCreationForSQLReview"
         type="primary"
-        @click="confirm.resolve(true)"
+        @click="confirm!.resolve(true)"
       >
         {{ $t("issue.sql-check.continue-anyway") }}
       </NButton>
