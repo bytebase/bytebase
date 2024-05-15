@@ -797,16 +797,18 @@ func NewInnerOuterMasker(storeMaskerType storepb.MaskingAlgorithmSetting_Algorit
 	}
 }
 
+type InnerOuterMaskerType = int32
+
 const (
-	InnerOuterMaskerTypeInnerUndefined = 0
-	InnerOuterMaskerTypeInner          = 1
-	InnerOuterMaskerTypeOuter          = 2
+	InnerOuterMaskerTypeUndefined InnerOuterMaskerType = 0
+	InnerOuterMaskerTypeInner     InnerOuterMaskerType = 1
+	InnerOuterMaskerTypeOuter     InnerOuterMaskerType = 2
 )
 
 type InnerOuterMasker struct {
 	prefixLen    int32
 	suffixLen    int32
-	maskerType   int32
+	maskerType   InnerOuterMaskerType
 	substitution string
 }
 
