@@ -7,11 +7,13 @@ import (
 	"log/slog"
 	"sort"
 	"strconv"
+	"strings"
 
 	mssqldb "github.com/microsoft/go-mssqldb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -776,3 +778,195 @@ func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
 	}
 	return nil
 }
+
+func NewInnerOuterMasker(storeMaskerType storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType, prefixLen, suffixLen int32, substitution string) *InnerOuterMasker {
+	var maskerType int32
+	if storeMaskerType == storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_INNER {
+		maskerType = InnerOuterMaskerTypeInner
+	} else if storeMaskerType == storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_OUTER {
+		maskerType = InnerOuterMaskerTypeOuter
+	} else {
+		return nil
+	}
+
+	return &InnerOuterMasker{
+		maskerType:   int32(maskerType),
+		prefixLen:    prefixLen,
+		suffixLen:    suffixLen,
+		substitution: substitution,
+	}
+}
+
+type InnerOuterMaskerType = int32
+
+const (
+	InnerOuterMaskerTypeUndefined InnerOuterMaskerType = 0
+	InnerOuterMaskerTypeInner     InnerOuterMaskerType = 1
+	InnerOuterMaskerTypeOuter     InnerOuterMaskerType = 2
+)
+
+type InnerOuterMasker struct {
+	prefixLen    int32
+	suffixLen    int32
+	maskerType   InnerOuterMaskerType
+	substitution string
+}
+
+func (m *InnerOuterMasker) Equal(other Masker) bool {
+	if otherInnerOuterMasker, ok := other.(*InnerOuterMasker); ok {
+		return otherInnerOuterMasker.maskerType == m.maskerType && otherInnerOuterMasker.prefixLen == m.prefixLen && otherInnerOuterMasker.suffixLen == m.suffixLen
+	}
+	return false
+}
+
+// Mask implements Masker.
+func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
+	unmaskedData := ""
+	// Datav1.
+	if data.Data != nil {
+		isDataNullOrBool := true
+		if raw, ok := data.Data.(*sql.NullString); ok && raw.Valid {
+			isDataNullOrBool = false
+			unmaskedData = raw.String
+		} else if raw, ok := data.Data.(*sql.NullInt32); ok && raw.Valid {
+			isDataNullOrBool = false
+			unmaskedData = strconv.FormatInt(int64(raw.Int32), 10)
+		} else if raw, ok := data.Data.(*sql.NullInt64); ok && raw.Valid {
+			isDataNullOrBool = false
+			unmaskedData = strconv.FormatInt(raw.Int64, 10)
+		} else if raw, ok := data.Data.(*sql.NullFloat64); ok && raw.Valid {
+			isDataNullOrBool = false
+			unmaskedData = strconv.FormatFloat(raw.Float64, 'f', -1, 64)
+		}
+		if isDataNullOrBool {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: strings.Repeat(m.substitution, 6),
+				},
+			}
+		}
+	} else {
+		// Datav2.
+		isDataNullOrBool := false
+		switch kind := data.DataV2.Kind.(type) {
+		case *v1pb.RowValue_NullValue:
+			isDataNullOrBool = true
+		case *v1pb.RowValue_BoolValue:
+			isDataNullOrBool = true
+		case *v1pb.RowValue_BytesValue:
+			unmaskedData = string(kind.BytesValue)
+		case *v1pb.RowValue_DoubleValue:
+			unmaskedData = strconv.FormatFloat(kind.DoubleValue, 'f', -1, 64)
+		case *v1pb.RowValue_FloatValue:
+			unmaskedData = strconv.FormatFloat(float64(kind.FloatValue), 'f', -1, 64)
+		case *v1pb.RowValue_Int32Value:
+			unmaskedData = strconv.FormatInt(int64(kind.Int32Value), 10)
+		case *v1pb.RowValue_Int64Value:
+			unmaskedData = strconv.FormatInt(kind.Int64Value, 10)
+		case *v1pb.RowValue_StringValue:
+			unmaskedData = kind.StringValue
+		case *v1pb.RowValue_Uint32Value:
+			unmaskedData = strconv.FormatUint(uint64(kind.Uint32Value), 10)
+		case *v1pb.RowValue_Uint64Value:
+			unmaskedData = strconv.FormatUint(kind.Uint64Value, 10)
+		case *v1pb.RowValue_ValueValue:
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_ValueValue{
+					ValueValue: maskProtoValue(m, kind.ValueValue),
+				},
+			}
+		}
+		if isDataNullOrBool {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: strings.Repeat(m.substitution, 6),
+				},
+			}
+		}
+	}
+
+	maskedData := ""
+	// Do nothing if the sum of the margin excced the length of the data.
+	// Reference: https://dev.mysql.com/doc/refman/5.7/en/data-masking-functions.html#function_mask-inner.
+	if !m.isMarginSumWithinRange(len([]rune(unmaskedData))) {
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: unmaskedData,
+			},
+		}
+	}
+	// Return null value if either margin is negetive.
+	if m.isMarginNegetive() {
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_NullValue{},
+		}
+	}
+
+	if m.maskerType == InnerOuterMaskerTypeInner {
+		maskedData = m.maskInner([]rune(unmaskedData))
+	} else if m.maskerType == InnerOuterMaskerTypeOuter {
+		maskedData = m.maskOuter([]rune(unmaskedData))
+	}
+
+	return &v1pb.RowValue{
+		Kind: &v1pb.RowValue_StringValue{
+			StringValue: maskedData,
+		},
+	}
+}
+
+// Return true if either margin is negetive.
+func (m *InnerOuterMasker) isMarginSumWithinRange(lenRange int) bool {
+	return m.prefixLen+m.suffixLen <= int32(lenRange)
+}
+
+// Return true if either margin is negetive.
+func (m *InnerOuterMasker) isMarginNegetive() bool {
+	return int(m.prefixLen) < 0 || int(m.suffixLen) < 0
+}
+
+func (m *InnerOuterMasker) maskInner(data []rune) string {
+	maskedData := ""
+	maxSuffixLen := len(data) - int(m.prefixLen)
+	if maskLen := maxSuffixLen - int(m.suffixLen); maskLen > 0 {
+		builder := strings.Builder{}
+		if _, err := builder.WriteString(string(data[:m.prefixLen])); err != nil {
+			return ""
+		}
+		if _, err := builder.WriteString(strings.Repeat(m.substitution, maskLen)); err != nil {
+			return ""
+		}
+		if _, err := builder.WriteString(string(data[m.prefixLen+int32(maskLen):])); err != nil {
+			return ""
+		}
+		maskedData = builder.String()
+	} else {
+		maskedData = string(data)
+	}
+	return maskedData
+}
+
+func (m *InnerOuterMasker) maskOuter(data []rune) string {
+	maskedData := ""
+	maxSuffixLen := len(data) - int(m.prefixLen)
+	if dataLen := maxSuffixLen - int(m.suffixLen); dataLen > 0 {
+		builder := strings.Builder{}
+		dataStartIdx := m.prefixLen
+		dataEndIdx := m.prefixLen + int32(dataLen)
+		if _, err := builder.WriteString(strings.Repeat(m.substitution, int(m.prefixLen))); err != nil {
+			return ""
+		}
+		if _, err := builder.WriteString(string(data[dataStartIdx:dataEndIdx])); err != nil {
+			return ""
+		}
+		if _, err := builder.WriteString(strings.Repeat(m.substitution, int(m.suffixLen))); err != nil {
+			return ""
+		}
+		maskedData = builder.String()
+	} else {
+		maskedData = strings.Repeat(m.substitution, len(data))
+	}
+	return maskedData
+}
+
+var _ Masker = (*InnerOuterMasker)(nil)

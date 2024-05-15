@@ -210,6 +210,7 @@
     - [MaskingAlgorithmSetting](#bytebase-store-MaskingAlgorithmSetting)
     - [MaskingAlgorithmSetting.Algorithm](#bytebase-store-MaskingAlgorithmSetting-Algorithm)
     - [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-FullMask)
+    - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask)
     - [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-MD5Mask)
     - [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask)
     - [MaskingAlgorithmSetting.Algorithm.RangeMask.Slice](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice)
@@ -225,6 +226,7 @@
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
     - [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel)
+    - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType)
     - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
     - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
   
@@ -3231,6 +3233,7 @@ The type of target.
 | full_mask | [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-FullMask) |  |  |
 | range_mask | [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask) |  |  |
 | md5_mask | [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-MD5Mask) |  |  |
+| inner_outer_mask | [MaskingAlgorithmSetting.Algorithm.InnerOuterMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask) |  |  |
 
 
 
@@ -3246,6 +3249,24 @@ The type of target.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | substitution | [string](#string) |  | substitution is the string used to replace the original value, the max length of the string is 16 bytes. |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask"></a>
+
+### MaskingAlgorithmSetting.Algorithm.InnerOuterMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| prefix_len | [int32](#int32) |  |  |
+| suffix_len | [int32](#int32) |  |  |
+| substitution | [string](#string) |  |  |
+| type | [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType) |  |  |
 
 
 
@@ -3497,6 +3518,19 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | ALERT_LEVEL_INFO | 1 |  |
 | ALERT_LEVEL_WARNING | 2 |  |
 | ALERT_LEVEL_CRITICAL | 3 |  |
+
+
+
+<a name="bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType"></a>
+
+### MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASK_TYPE_UNSPECIFIED | 0 |  |
+| INNER | 1 |  |
+| OUTER | 2 |  |
 
 
 
