@@ -30,6 +30,7 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_CHANGE_HISTORIES,
+  PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
   PROJECT_V1_ROUTE_SLOW_QUERIES,
   PROJECT_V1_ROUTE_ANOMALIES,
@@ -282,6 +283,13 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
 const getItemClass = (item: SidebarItem) => {
   const list = ["outline-item"];
   const { name: current } = route;
+
+  if (current?.toString() === PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL) {
+    if (item.path === PROJECT_V1_ROUTE_CHANGE_HISTORIES) {
+      list.push("router-link-active", "bg-link-hover");
+    }
+    return list;
+  }
 
   const isActiveRoute =
     item.path === current?.toString() ||
