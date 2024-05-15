@@ -100,7 +100,7 @@ message DataSourceOptions {
     string port = 2;
   }
   // replica_nodes is used for MongoDB replica set.
-  repeated Address replica_nodes = 14 [(google.api.field_behavior) = OPTIONAL];
+  repeated Address replica_nodes = 14;
   // replica_set is used for MongoDB replica set.
   string replica_set = 15;
 }
