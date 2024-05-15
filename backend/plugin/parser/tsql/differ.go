@@ -36,6 +36,66 @@ type diffNode struct {
 	addConstraint  []string
 }
 
+func (d *diffNode) String() (string, error) {
+	var buf strings.Builder
+	for _, dropConstraint := range d.dropConstraint {
+		if _, err := fmt.Fprintf(&buf, "%s;\n\n", dropConstraint); err != nil {
+			return "", err
+		}
+	}
+	for _, dropIndex := range d.dropIndex {
+		if _, err := fmt.Fprintf(&buf, "%s;\n\n", dropIndex); err != nil {
+			return "", err
+		}
+	}
+	for _, dropColumn := range d.dropColumn {
+		if _, err := fmt.Fprintf(&buf, "%s;\n\n", dropColumn); err != nil {
+			return "", err
+		}
+	}
+	for _, dropTable := range d.dropTable {
+		if _, err := fmt.Fprintf(&buf, "%s;\n\n", dropTable); err != nil {
+			return "", err
+		}
+	}
+	for _, dropSchema := range d.dropSchema {
+		if _, err := fmt.Fprintf(&buf, "%s;\n\n", dropSchema); err != nil {
+			return "", err
+		}
+	}
+	for _, createSchema := range d.createSchema {
+		if _, err := fmt.Fprintf(&buf, "%s;\n\n", createSchema); err != nil {
+			return "", err
+		}
+	}
+	for _, createTable := range d.createTable {
+		if _, err := fmt.Fprintf(&buf, "%s;\n\n", createTable); err != nil {
+			return "", err
+		}
+	}
+	for _, addColumn := range d.addColumn {
+		if _, err := fmt.Fprintf(&buf, "%s;\n\n", addColumn); err != nil {
+			return "", err
+		}
+	}
+	for _, modifyColumn := range d.modifyColumn {
+		if _, err := fmt.Fprintf(&buf, "%s;\n\n", modifyColumn); err != nil {
+			return "", err
+		}
+	}
+	for _, addIndex := range d.addIndex {
+		if _, err := fmt.Fprintf(&buf, "%s;\n\n", addIndex); err != nil {
+			return "", err
+		}
+	}
+	for _, addConstraint := range d.addConstraint {
+		if _, err := fmt.Fprintf(&buf, "%s;\n\n", addConstraint); err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
+}
+
 func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	oldSchemaMap, err := buildSchemaMap(oldStmt)
 	if err != nil {
@@ -61,10 +121,40 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			diff.addSchema(newSchema)
 			continue
 		}
+		oldSchema.existsInNew = true
 		if err := diff.diffSchema(oldSchema, newSchema); err != nil {
 			return "", errors.Wrapf(err, "failed to diff schema %q", newSchema.name)
 		}
 	}
+	var remainingSchemas []*schemaInfo
+	for _, oldSchema := range oldSchemaMap {
+		if oldSchema.existsInNew {
+			continue
+		}
+		remainingSchemas = append(remainingSchemas, oldSchema)
+	}
+	sort.Slice(remainingSchemas, func(i, j int) bool {
+		return remainingSchemas[i].id < remainingSchemas[j].id
+	})
+	for _, oldSchema := range remainingSchemas {
+		diff.dropFullSchema(oldSchema)
+		oldSchema.existsInNew = true
+	}
+	return diff.String()
+}
+
+func (d *diffNode) dropFullSchema(schema *schemaInfo) {
+	var tables []*tableInfo
+	for _, table := range schema.tableMap {
+		tables = append(tables, table)
+	}
+	sort.Slice(tables, func(i, j int) bool {
+		return tables[i].id < tables[j].id
+	})
+	for _, table := range tables {
+		d.dropFullTable(schema.name, table)
+	}
+	d.dropSchema = append(d.dropSchema, fmt.Sprintf("DROP SCHEMA [%s]", schema.name))
 }
 
 func (d *diffNode) diffSchema(oldSchema, newSchema *schemaInfo) error {
@@ -82,15 +172,48 @@ func (d *diffNode) diffSchema(oldSchema, newSchema *schemaInfo) error {
 			d.createTable = append(d.createTable, newTable.node.GetParser().GetTokenStream().GetTextFromRuleContext(newTable.node))
 			continue
 		}
+		oldTable.existsInNew = true
 		if err := d.diffTable(newSchema.name, oldTable, newTable); err != nil {
 			return errors.Wrapf(err, "failed to diff table %q", newTable.name)
 		}
 	}
+	var remainingTables []*tableInfo
+	for _, oldTable := range oldSchema.tableMap {
+		if oldTable.existsInNew {
+			continue
+		}
+		remainingTables = append(remainingTables, oldTable)
+	}
+	sort.Slice(remainingTables, func(i, j int) bool {
+		return remainingTables[i].id < remainingTables[j].id
+	})
+	for _, oldTable := range remainingTables {
+		d.dropFullTable(oldSchema.name, oldTable)
+		oldTable.existsInNew = true
+	}
+	return nil
+}
+
+func (d *diffNode) dropFullTable(schemaName string, table *tableInfo) {
+	var indexes []*indexInfo
+	for _, index := range table.indexMap {
+		indexes = append(indexes, index)
+	}
+	sort.Slice(indexes, func(i, j int) bool {
+		return indexes[i].id < indexes[j].id
+	})
+	for _, index := range indexes {
+		d.dropIndex = append(d.dropIndex, fmt.Sprintf("DROP INDEX [%s] ON [%s].[%s]", index.name, schemaName, table.name))
+	}
+	d.dropTable = append(d.dropTable, fmt.Sprintf("DROP TABLE [%s].[%s]", schemaName, table.name))
 }
 
 func (d *diffNode) diffTable(schemaName string, oldTable, newTable *tableInfo) error {
 	if err := d.diffColumn(schemaName, oldTable, newTable); err != nil {
 		return errors.Wrapf(err, "failed to diff column for table %q", newTable.name)
+	}
+	if err := d.diffConstraint(schemaName, oldTable, newTable); err != nil {
+		return errors.Wrapf(err, "failed to diff constraint for table %q", newTable.name)
 	}
 
 	var newIndexes []*indexInfo
@@ -107,7 +230,8 @@ func (d *diffNode) diffTable(schemaName string, oldTable, newTable *tableInfo) e
 			d.addIndex = append(d.addIndex, newIndex.node.GetParser().GetTokenStream().GetTextFromRuleContext(newIndex.node))
 			continue
 		}
-		if err := d.diffIndex(schemaName, oldIndex, newIndex); err != nil {
+		oldIndex.existsInNew = true
+		if err := d.diffIndex(schemaName, oldTable.name, oldIndex, newIndex); err != nil {
 			return errors.Wrapf(err, "failed to diff index %q", newIndex.name)
 		}
 	}
@@ -125,6 +249,113 @@ func (d *diffNode) diffTable(schemaName string, oldTable, newTable *tableInfo) e
 		d.dropIndex = append(d.dropIndex, fmt.Sprintf("DROP INDEX [%s] ON [%s].[%s]", oldIndex.name, schemaName, oldTable.name))
 		oldIndex.existsInNew = true
 	}
+	return nil
+}
+
+func (d *diffNode) diffIndex(schemaName, tableName string, oldIndex, newIndex *indexInfo) error {
+	oldString := oldIndex.node.GetParser().GetTokenStream().GetTextFromInterval(
+		antlr.NewInterval(
+			oldIndex.node.GetStart().GetTokenIndex(),
+			oldIndex.node.Id_(0).GetStart().GetTokenIndex()-1,
+		)) + oldIndex.node.GetParser().GetTokenStream().GetTextFromInterval(
+		antlr.NewInterval(
+			oldIndex.node.Table_name().GetStop().GetTokenIndex()+1,
+			oldIndex.node.GetStop().GetTokenIndex(),
+		))
+	newString := newIndex.node.GetParser().GetTokenStream().GetTextFromInterval(
+		antlr.NewInterval(
+			newIndex.node.GetStart().GetTokenIndex(),
+			newIndex.node.Id_(0).GetStart().GetTokenIndex()-1,
+		)) + newIndex.node.GetParser().GetTokenStream().GetTextFromInterval(
+		antlr.NewInterval(
+			newIndex.node.Table_name().GetStop().GetTokenIndex()+1,
+			newIndex.node.GetStop().GetTokenIndex(),
+		))
+
+	if oldString != newString {
+		d.dropIndex = append(d.dropIndex, fmt.Sprintf("DROP INDEX [%s] ON [%s].[%s]", oldIndex.name, schemaName, tableName))
+		d.addIndex = append(d.addIndex, newIndex.node.GetParser().GetTokenStream().GetTextFromRuleContext(newIndex.node))
+	}
+	return nil
+}
+
+func (d *diffNode) diffConstraint(schemaName string, oldTable, newTable *tableInfo) error {
+	var addConstraints []tsql.ITable_constraintContext
+	var dropConstraints []string
+
+	oldConstraintMap := buildConstraintMap(oldTable)
+	for _, item := range newTable.node.Column_def_table_constraints().AllColumn_def_table_constraint() {
+		constraint := item.Table_constraint()
+		if constraint == nil {
+			continue
+		}
+		if constraint.Id_(0) == nil {
+			continue
+		}
+		_, lowerConstraint := NormalizeTSQLIdentifier(constraint.Id_(0))
+		oldConstraint, ok := oldConstraintMap[lowerConstraint]
+		if !ok {
+			addConstraints = append(addConstraints, constraint)
+			continue
+		}
+
+		if !isConstraintEqual(oldConstraint, constraint) {
+			dropConstraints = append(dropConstraints, lowerConstraint)
+			addConstraints = append(addConstraints, constraint)
+		}
+		delete(oldConstraintMap, lowerConstraint)
+	}
+	for _, constraint := range oldConstraintMap {
+		constraintName, _ := NormalizeTSQLIdentifier(constraint.Id_(0))
+		dropConstraints = append(dropConstraints, constraintName)
+	}
+
+	return d.appendConstraintDiff(schemaName, newTable.name, addConstraints, dropConstraints)
+}
+
+func (d *diffNode) appendConstraintDiff(schemaName, tableName string, addConstraints []tsql.ITable_constraintContext, dropConstraints []string) error {
+	if len(addConstraints) > 0 {
+		if err := d.appendAddConstraint(schemaName, tableName, addConstraints); err != nil {
+			return err
+		}
+	}
+	if len(dropConstraints) > 0 {
+		if err := d.appendDropConstraint(schemaName, tableName, dropConstraints); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *diffNode) appendDropConstraint(schemaName, tableName string, dropConstraints []string) error {
+	for _, constraintName := range dropConstraints {
+		var buf strings.Builder
+		if _, err := fmt.Fprintf(&buf, "ALTER TABLE [%s].[%s] DROP CONSTRAINT [%s]", schemaName, tableName, constraintName); err != nil {
+			return err
+		}
+		d.dropConstraint = append(d.dropConstraint, buf.String())
+	}
+	return nil
+}
+
+func (d *diffNode) appendAddConstraint(schemaName, tableName string, addConstraints []tsql.ITable_constraintContext) error {
+	var buf strings.Builder
+
+	if _, err := fmt.Fprintf(&buf, "ALTER TABLE [%s].[%s] ADD ", schemaName, tableName); err != nil {
+		return err
+	}
+	for i, addConstraint := range addConstraints {
+		if i > 0 {
+			if _, err := fmt.Fprintf(&buf, ","); err != nil {
+				return err
+			}
+		}
+		if _, err := fmt.Fprintf(&buf, "\n  %s", addConstraint.GetParser().GetTokenStream().GetTextFromRuleContext(addConstraint)); err != nil {
+			return err
+		}
+	}
+	d.addConstraint = append(d.addConstraint, buf.String())
+	return nil
 }
 
 func (d *diffNode) diffColumn(schemaName string, oldTable, newTable *tableInfo) error {
@@ -178,12 +409,46 @@ func (d *diffNode) appendColumnDiff(schemaName, tableName string, addColumns, mo
 	return nil
 }
 
+func (d *diffNode) appendDropColumn(schemaName, tableName string, dropColumns []string) error {
+	for _, columnName := range dropColumns {
+		var buf strings.Builder
+		if _, err := fmt.Fprintf(&buf, "ALTER TABLE [%s].[%s] DROP COLUMN [%s]", schemaName, tableName, columnName); err != nil {
+			return err
+		}
+		d.dropColumn = append(d.dropColumn, buf.String())
+	}
+	return nil
+}
+
+func (d *diffNode) appendModifyColumn(schemaName, tableName string, modifyColumns []tsql.IColumn_definitionContext) error {
+	for _, modifyColumn := range modifyColumns {
+		var buf strings.Builder
+		if _, err := fmt.Fprintf(&buf, "ALTER TABLE [%s].[%s] ALTER COLUMN %s", schemaName, tableName, modifyColumn.GetParser().GetTokenStream().GetTextFromRuleContext(modifyColumn)); err != nil {
+			return err
+		}
+		d.modifyColumn = append(d.modifyColumn, buf.String())
+	}
+	return nil
+}
+
 func (d *diffNode) appendAddColumn(schemaName, tableName string, addColumns []tsql.IColumn_definitionContext) error {
 	var buf strings.Builder
 
 	if _, err := fmt.Fprintf(&buf, "ALTER TABLE [%s].[%s] ADD ", schemaName, tableName); err != nil {
 		return err
 	}
+	for i, addColumn := range addColumns {
+		if i > 0 {
+			if _, err := fmt.Fprintf(&buf, ","); err != nil {
+				return err
+			}
+		}
+		if _, err := fmt.Fprintf(&buf, "\n  %s", addColumn.GetParser().GetTokenStream().GetTextFromRuleContext(addColumn)); err != nil {
+			return err
+		}
+	}
+	d.addColumn = append(d.addColumn, buf.String())
+	return nil
 }
 
 func isColumnEqual(oldColumn, newColumn tsql.IColumn_definitionContext) bool {
@@ -206,6 +471,34 @@ func buildColumnMap(table *tableInfo) map[string]tsql.IColumn_definitionContext 
 		if column := item.Column_definition(); column != nil {
 			_, lowerColumn := NormalizeTSQLIdentifier(column.Id_())
 			m[lowerColumn] = column
+		}
+	}
+	return m
+}
+
+func isConstraintEqual(oldConstraint, newConstraint tsql.ITable_constraintContext) bool {
+	oldString := oldConstraint.GetParser().GetTokenStream().GetTextFromInterval(
+		antlr.NewInterval(
+			oldConstraint.Id_(0).GetStop().GetTokenIndex()+1,
+			oldConstraint.GetStop().GetTokenIndex(),
+		))
+	newString := newConstraint.GetParser().GetTokenStream().GetTextFromInterval(
+		antlr.NewInterval(
+			newConstraint.Id_(0).GetStop().GetTokenIndex()+1,
+			newConstraint.GetStop().GetTokenIndex(),
+		))
+	return oldString == newString
+}
+
+func buildConstraintMap(table *tableInfo) map[string]tsql.ITable_constraintContext {
+	m := make(map[string]tsql.ITable_constraintContext)
+	for _, item := range table.node.Column_def_table_constraints().AllColumn_def_table_constraint() {
+		if constraint := item.Table_constraint(); constraint != nil {
+			if constraint.Id_(0) == nil {
+				continue
+			}
+			_, lowerConstraint := NormalizeTSQLIdentifier(constraint.Id_(0))
+			m[lowerConstraint] = constraint
 		}
 	}
 	return m
@@ -318,11 +611,12 @@ type tableMap map[string]*tableInfo
 type indexMap map[string]*indexInfo
 
 type schemaInfo struct {
-	id        int
-	name      string
-	lowerName string
-	tableMap  tableMap
-	node      *tsql.Create_schemaContext
+	id          int
+	name        string
+	lowerName   string
+	tableMap    tableMap
+	node        *tsql.Create_schemaContext
+	existsInNew bool
 }
 
 func newSchemaInfo(id int, name string, node *tsql.Create_schemaContext) *schemaInfo {
