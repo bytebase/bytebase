@@ -800,6 +800,16 @@
           "self": "MD5 mask",
           "salt": "Salt",
           "salt-label": "Salt is used to generate a hash from the original value."
+        },
+        "inner-outer-mask": {
+          "self": "Inner / Outer mask",
+          "type": "Mask Type",
+          "inner-label": "Inner mask masks the interior part of a string. The prefix and suffix represent the unmasked parts of the data.",
+          "inner-mask": "Inner Mask",
+          "outer-label": "Outer mask masks the left and right ends of a string. The prefix and suffix represent the masked parts of the data.",
+          "outer-mask": "Outer Mask",
+          "prefix-length": "Prefix Length",
+          "suffix-length": "Suffix Length"
         }
       },
       "masking-level": {

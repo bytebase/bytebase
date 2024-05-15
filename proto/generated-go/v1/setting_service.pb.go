@@ -232,6 +232,55 @@ func (Announcement_AlertLevel) EnumDescriptor() ([]byte, []int) {
 	return file_v1_setting_service_proto_rawDescGZIP(), []int{11, 0}
 }
 
+type MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType int32
+
+const (
+	MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MASK_TYPE_UNSPECIFIED MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType = 0
+	MaskingAlgorithmSetting_Algorithm_InnerOuterMask_INNER                 MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType = 1
+	MaskingAlgorithmSetting_Algorithm_InnerOuterMask_OUTER                 MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType = 2
+)
+
+// Enum value maps for MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.
+var (
+	MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType_name = map[int32]string{
+		0: "MASK_TYPE_UNSPECIFIED",
+		1: "INNER",
+		2: "OUTER",
+	}
+	MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType_value = map[string]int32{
+		"MASK_TYPE_UNSPECIFIED": 0,
+		"INNER":                 1,
+		"OUTER":                 2,
+	}
+)
+
+func (x MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType) Enum() *MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType {
+	p := new(MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType)
+	*p = x
+	return p
+}
+
+func (x MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_setting_service_proto_enumTypes[4].Descriptor()
+}
+
+func (MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType) Type() protoreflect.EnumType {
+	return &file_v1_setting_service_proto_enumTypes[4]
+}
+
+func (x MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.Descriptor instead.
+func (MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType) EnumDescriptor() ([]byte, []int) {
+	return file_v1_setting_service_proto_rawDescGZIP(), []int{18, 0, 3, 0}
+}
+
 type ListSettingsRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2339,6 +2388,7 @@ type MaskingAlgorithmSetting_Algorithm struct {
 	//	*MaskingAlgorithmSetting_Algorithm_FullMask_
 	//	*MaskingAlgorithmSetting_Algorithm_RangeMask_
 	//	*MaskingAlgorithmSetting_Algorithm_Md5Mask
+	//	*MaskingAlgorithmSetting_Algorithm_InnerOuterMask_
 	Mask isMaskingAlgorithmSetting_Algorithm_Mask `protobuf_oneof:"mask"`
 }
 
@@ -2430,6 +2480,13 @@ func (x *MaskingAlgorithmSetting_Algorithm) GetMd5Mask() *MaskingAlgorithmSettin
 	return nil
 }
 
+func (x *MaskingAlgorithmSetting_Algorithm) GetInnerOuterMask() *MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
+	if x, ok := x.GetMask().(*MaskingAlgorithmSetting_Algorithm_InnerOuterMask_); ok {
+		return x.InnerOuterMask
+	}
+	return nil
+}
+
 type isMaskingAlgorithmSetting_Algorithm_Mask interface {
 	isMaskingAlgorithmSetting_Algorithm_Mask()
 }
@@ -2446,11 +2503,18 @@ type MaskingAlgorithmSetting_Algorithm_Md5Mask struct {
 	Md5Mask *MaskingAlgorithmSetting_Algorithm_MD5Mask `protobuf:"bytes,7,opt,name=md5_mask,json=md5Mask,proto3,oneof"`
 }
 
+type MaskingAlgorithmSetting_Algorithm_InnerOuterMask_ struct {
+	InnerOuterMask *MaskingAlgorithmSetting_Algorithm_InnerOuterMask `protobuf:"bytes,8,opt,name=inner_outer_mask,json=innerOuterMask,proto3,oneof"`
+}
+
 func (*MaskingAlgorithmSetting_Algorithm_FullMask_) isMaskingAlgorithmSetting_Algorithm_Mask() {}
 
 func (*MaskingAlgorithmSetting_Algorithm_RangeMask_) isMaskingAlgorithmSetting_Algorithm_Mask() {}
 
 func (*MaskingAlgorithmSetting_Algorithm_Md5Mask) isMaskingAlgorithmSetting_Algorithm_Mask() {}
+
+func (*MaskingAlgorithmSetting_Algorithm_InnerOuterMask_) isMaskingAlgorithmSetting_Algorithm_Mask() {
+}
 
 type MaskingAlgorithmSetting_Algorithm_FullMask struct {
 	state         protoimpl.MessageState
@@ -2598,6 +2662,77 @@ func (x *MaskingAlgorithmSetting_Algorithm_MD5Mask) GetSalt() string {
 	return ""
 }
 
+type MaskingAlgorithmSetting_Algorithm_InnerOuterMask struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	PrefixLen    int32                                                     `protobuf:"varint,1,opt,name=prefix_len,json=prefixLen,proto3" json:"prefix_len,omitempty"`
+	SuffixLen    int32                                                     `protobuf:"varint,2,opt,name=suffix_len,json=suffixLen,proto3" json:"suffix_len,omitempty"`
+	Type         MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.v1.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType" json:"type,omitempty"`
+	Substitution string                                                    `protobuf:"bytes,4,opt,name=substitution,proto3" json:"substitution,omitempty"`
+}
+
+func (x *MaskingAlgorithmSetting_Algorithm_InnerOuterMask) Reset() {
+	*x = MaskingAlgorithmSetting_Algorithm_InnerOuterMask{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_setting_service_proto_msgTypes[34]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MaskingAlgorithmSetting_Algorithm_InnerOuterMask) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MaskingAlgorithmSetting_Algorithm_InnerOuterMask) ProtoMessage() {}
+
+func (x *MaskingAlgorithmSetting_Algorithm_InnerOuterMask) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_setting_service_proto_msgTypes[34]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MaskingAlgorithmSetting_Algorithm_InnerOuterMask.ProtoReflect.Descriptor instead.
+func (*MaskingAlgorithmSetting_Algorithm_InnerOuterMask) Descriptor() ([]byte, []int) {
+	return file_v1_setting_service_proto_rawDescGZIP(), []int{18, 0, 3}
+}
+
+func (x *MaskingAlgorithmSetting_Algorithm_InnerOuterMask) GetPrefixLen() int32 {
+	if x != nil {
+		return x.PrefixLen
+	}
+	return 0
+}
+
+func (x *MaskingAlgorithmSetting_Algorithm_InnerOuterMask) GetSuffixLen() int32 {
+	if x != nil {
+		return x.SuffixLen
+	}
+	return 0
+}
+
+func (x *MaskingAlgorithmSetting_Algorithm_InnerOuterMask) GetType() MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType {
+	if x != nil {
+		return x.Type
+	}
+	return MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MASK_TYPE_UNSPECIFIED
+}
+
+func (x *MaskingAlgorithmSetting_Algorithm_InnerOuterMask) GetSubstitution() string {
+	if x != nil {
+		return x.Substitution
+	}
+	return ""
+}
+
 type MaskingAlgorithmSetting_Algorithm_RangeMask_Slice struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2614,7 +2749,7 @@ type MaskingAlgorithmSetting_Algorithm_RangeMask_Slice struct {
 func (x *MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) Reset() {
 	*x = MaskingAlgorithmSetting_Algorithm_RangeMask_Slice{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_setting_service_proto_msgTypes[34]
+		mi := &file_v1_setting_service_proto_msgTypes[35]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2627,7 +2762,7 @@ func (x *MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) String() string {
 func (*MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) ProtoMessage() {}
 
 func (x *MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[34]
+	mi := &file_v1_setting_service_proto_msgTypes[35]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3065,14 +3200,14 @@ var file_v1_setting_service_proto_rawDesc = []byte{
 	0x64, 0x12, 0x33, 0x0a, 0x16, 0x66, 0x75, 0x6c, 0x6c, 0x5f, 0x6d, 0x61, 0x73, 0x6b, 0x5f, 0x61,
 	0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x5f, 0x69, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x13, 0x66, 0x75, 0x6c, 0x6c, 0x4d, 0x61, 0x73, 0x6b, 0x41, 0x6c, 0x67, 0x6f, 0x72,
-	0x69, 0x74, 0x68, 0x6d, 0x49, 0x64, 0x22, 0xf5, 0x05, 0x0a, 0x17, 0x4d, 0x61, 0x73, 0x6b, 0x69,
+	0x69, 0x74, 0x68, 0x6d, 0x49, 0x64, 0x22, 0xee, 0x08, 0x0a, 0x17, 0x4d, 0x61, 0x73, 0x6b, 0x69,
 	0x6e, 0x67, 0x41, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x53, 0x65, 0x74, 0x74, 0x69,
 	0x6e, 0x67, 0x12, 0x4e, 0x0a, 0x0a, 0x61, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x73,
 	0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
 	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67, 0x41, 0x6c, 0x67, 0x6f,
 	0x72, 0x69, 0x74, 0x68, 0x6d, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x41, 0x6c, 0x67,
 	0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x52, 0x0a, 0x61, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68,
-	0x6d, 0x73, 0x1a, 0x89, 0x05, 0x0a, 0x09, 0x41, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d,
+	0x6d, 0x73, 0x1a, 0x82, 0x08, 0x0a, 0x09, 0x41, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d,
 	0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64,
 	0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69,
@@ -3095,48 +3230,72 @@ var file_v1_setting_service_proto_rawDesc = []byte{
 	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67, 0x41,
 	0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e,
 	0x41, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x2e, 0x4d, 0x44, 0x35, 0x4d, 0x61, 0x73,
-	0x6b, 0x48, 0x00, 0x52, 0x07, 0x6d, 0x64, 0x35, 0x4d, 0x61, 0x73, 0x6b, 0x1a, 0x2e, 0x0a, 0x08,
-	0x46, 0x75, 0x6c, 0x6c, 0x4d, 0x61, 0x73, 0x6b, 0x12, 0x22, 0x0a, 0x0c, 0x73, 0x75, 0x62, 0x73,
-	0x74, 0x69, 0x74, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c,
-	0x73, 0x75, 0x62, 0x73, 0x74, 0x69, 0x74, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0xb8, 0x01, 0x0a,
-	0x09, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x4d, 0x61, 0x73, 0x6b, 0x12, 0x56, 0x0a, 0x06, 0x73, 0x6c,
-	0x69, 0x63, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x3e, 0x2e, 0x62, 0x79, 0x74,
-	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67,
-	0x41, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67,
-	0x2e, 0x41, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x2e, 0x52, 0x61, 0x6e, 0x67, 0x65,
-	0x4d, 0x61, 0x73, 0x6b, 0x2e, 0x53, 0x6c, 0x69, 0x63, 0x65, 0x52, 0x06, 0x73, 0x6c, 0x69, 0x63,
-	0x65, 0x73, 0x1a, 0x53, 0x0a, 0x05, 0x53, 0x6c, 0x69, 0x63, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x73,
-	0x74, 0x61, 0x72, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x73, 0x74, 0x61, 0x72,
-	0x74, 0x12, 0x10, 0x0a, 0x03, 0x65, 0x6e, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x03,
-	0x65, 0x6e, 0x64, 0x12, 0x22, 0x0a, 0x0c, 0x73, 0x75, 0x62, 0x73, 0x74, 0x69, 0x74, 0x75, 0x74,
-	0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x75, 0x62, 0x73, 0x74,
-	0x69, 0x74, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0x1d, 0x0a, 0x07, 0x4d, 0x44, 0x35, 0x4d, 0x61,
-	0x73, 0x6b, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x61, 0x6c, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x04, 0x73, 0x61, 0x6c, 0x74, 0x42, 0x06, 0x0a, 0x04, 0x6d, 0x61, 0x73, 0x6b, 0x32, 0xe2,
-	0x02, 0x0a, 0x0e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63,
-	0x65, 0x12, 0x6c, 0x0a, 0x0c, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67,
-	0x73, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x17, 0xda, 0x41, 0x00, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x0e, 0x12, 0x0c, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x12,
-	0x68, 0x0a, 0x0a, 0x47, 0x65, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x1e, 0x2e,
-	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x53,
-	0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e,
-	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x74, 0x74,
-	0x69, 0x6e, 0x67, 0x22, 0x24, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x17, 0x12, 0x15, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x73, 0x65,
-	0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0x78, 0x0a, 0x0d, 0x55, 0x70, 0x64,
-	0x61, 0x74, 0x65, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74,
-	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x53,
-	0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e,
-	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x74, 0x74,
-	0x69, 0x6e, 0x67, 0x22, 0x2e, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x28, 0x3a, 0x07, 0x73, 0x65, 0x74,
-	0x74, 0x69, 0x6e, 0x67, 0x32, 0x1d, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x73, 0x65, 0x74, 0x74, 0x69,
-	0x6e, 0x67, 0x2e, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73,
-	0x2f, 0x2a, 0x7d, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64,
-	0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6b, 0x48, 0x00, 0x52, 0x07, 0x6d, 0x64, 0x35, 0x4d, 0x61, 0x73, 0x6b, 0x12, 0x69, 0x0a, 0x10,
+	0x69, 0x6e, 0x6e, 0x65, 0x72, 0x5f, 0x6f, 0x75, 0x74, 0x65, 0x72, 0x5f, 0x6d, 0x61, 0x73, 0x6b,
+	0x18, 0x08, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3d, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67, 0x41, 0x6c, 0x67, 0x6f,
+	0x72, 0x69, 0x74, 0x68, 0x6d, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x41, 0x6c, 0x67,
+	0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x2e, 0x49, 0x6e, 0x6e, 0x65, 0x72, 0x4f, 0x75, 0x74, 0x65,
+	0x72, 0x4d, 0x61, 0x73, 0x6b, 0x48, 0x00, 0x52, 0x0e, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x4f, 0x75,
+	0x74, 0x65, 0x72, 0x4d, 0x61, 0x73, 0x6b, 0x1a, 0x2e, 0x0a, 0x08, 0x46, 0x75, 0x6c, 0x6c, 0x4d,
+	0x61, 0x73, 0x6b, 0x12, 0x22, 0x0a, 0x0c, 0x73, 0x75, 0x62, 0x73, 0x74, 0x69, 0x74, 0x75, 0x74,
+	0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x75, 0x62, 0x73, 0x74,
+	0x69, 0x74, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0xb8, 0x01, 0x0a, 0x09, 0x52, 0x61, 0x6e, 0x67,
+	0x65, 0x4d, 0x61, 0x73, 0x6b, 0x12, 0x56, 0x0a, 0x06, 0x73, 0x6c, 0x69, 0x63, 0x65, 0x73, 0x18,
+	0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x3e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
+	0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67, 0x41, 0x6c, 0x67, 0x6f, 0x72,
+	0x69, 0x74, 0x68, 0x6d, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x41, 0x6c, 0x67, 0x6f,
+	0x72, 0x69, 0x74, 0x68, 0x6d, 0x2e, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x4d, 0x61, 0x73, 0x6b, 0x2e,
+	0x53, 0x6c, 0x69, 0x63, 0x65, 0x52, 0x06, 0x73, 0x6c, 0x69, 0x63, 0x65, 0x73, 0x1a, 0x53, 0x0a,
+	0x05, 0x53, 0x6c, 0x69, 0x63, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x72, 0x74, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x73, 0x74, 0x61, 0x72, 0x74, 0x12, 0x10, 0x0a, 0x03,
+	0x65, 0x6e, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x03, 0x65, 0x6e, 0x64, 0x12, 0x22,
+	0x0a, 0x0c, 0x73, 0x75, 0x62, 0x73, 0x74, 0x69, 0x74, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x75, 0x62, 0x73, 0x74, 0x69, 0x74, 0x75, 0x74, 0x69,
+	0x6f, 0x6e, 0x1a, 0x1d, 0x0a, 0x07, 0x4d, 0x44, 0x35, 0x4d, 0x61, 0x73, 0x6b, 0x12, 0x12, 0x0a,
+	0x04, 0x73, 0x61, 0x6c, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x73, 0x61, 0x6c,
+	0x74, 0x1a, 0x8b, 0x02, 0x0a, 0x0e, 0x49, 0x6e, 0x6e, 0x65, 0x72, 0x4f, 0x75, 0x74, 0x65, 0x72,
+	0x4d, 0x61, 0x73, 0x6b, 0x12, 0x1d, 0x0a, 0x0a, 0x70, 0x72, 0x65, 0x66, 0x69, 0x78, 0x5f, 0x6c,
+	0x65, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x09, 0x70, 0x72, 0x65, 0x66, 0x69, 0x78,
+	0x4c, 0x65, 0x6e, 0x12, 0x1d, 0x0a, 0x0a, 0x73, 0x75, 0x66, 0x66, 0x69, 0x78, 0x5f, 0x6c, 0x65,
+	0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x09, 0x73, 0x75, 0x66, 0x66, 0x69, 0x78, 0x4c,
+	0x65, 0x6e, 0x12, 0x5a, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e,
+	0x32, 0x46, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d,
+	0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67, 0x41, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d, 0x53,
+	0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x41, 0x6c, 0x67, 0x6f, 0x72, 0x69, 0x74, 0x68, 0x6d,
+	0x2e, 0x49, 0x6e, 0x6e, 0x65, 0x72, 0x4f, 0x75, 0x74, 0x65, 0x72, 0x4d, 0x61, 0x73, 0x6b, 0x2e,
+	0x4d, 0x61, 0x73, 0x6b, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x22,
+	0x0a, 0x0c, 0x73, 0x75, 0x62, 0x73, 0x74, 0x69, 0x74, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x75, 0x62, 0x73, 0x74, 0x69, 0x74, 0x75, 0x74, 0x69,
+	0x6f, 0x6e, 0x22, 0x3b, 0x0a, 0x08, 0x4d, 0x61, 0x73, 0x6b, 0x54, 0x79, 0x70, 0x65, 0x12, 0x19,
+	0x0a, 0x15, 0x4d, 0x41, 0x53, 0x4b, 0x5f, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50,
+	0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05, 0x49, 0x4e, 0x4e,
+	0x45, 0x52, 0x10, 0x01, 0x12, 0x09, 0x0a, 0x05, 0x4f, 0x55, 0x54, 0x45, 0x52, 0x10, 0x02, 0x42,
+	0x06, 0x0a, 0x04, 0x6d, 0x61, 0x73, 0x6b, 0x32, 0xe2, 0x02, 0x0a, 0x0e, 0x53, 0x65, 0x74, 0x74,
+	0x69, 0x6e, 0x67, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x6c, 0x0a, 0x0c, 0x4c, 0x69,
+	0x73, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74,
+	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x74,
+	0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x21, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53,
+	0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x17, 0xda, 0x41, 0x00, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x0e, 0x12, 0x0c, 0x2f, 0x76, 0x31, 0x2f,
+	0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x68, 0x0a, 0x0a, 0x47, 0x65, 0x74, 0x53,
+	0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x22, 0x24, 0xda, 0x41,
+	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x17, 0x12, 0x15, 0x2f, 0x76, 0x31,
+	0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x2f,
+	0x2a, 0x7d, 0x12, 0x78, 0x0a, 0x0d, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x53, 0x65, 0x74, 0x74,
+	0x69, 0x6e, 0x67, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x22, 0x2e, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x28, 0x3a, 0x07, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x32, 0x1d, 0x2f,
+	0x76, 0x31, 0x2f, 0x7b, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x6e, 0x61, 0x6d, 0x65,
+	0x3d, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x2f, 0x2a, 0x7d, 0x42, 0x11, 0x5a, 0x0f,
+	0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -3151,120 +3310,124 @@ func file_v1_setting_service_proto_rawDescGZIP() []byte {
 	return file_v1_setting_service_proto_rawDescData
 }
 
-var file_v1_setting_service_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_v1_setting_service_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
+var file_v1_setting_service_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_v1_setting_service_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_v1_setting_service_proto_goTypes = []interface{}{
-	(SMTPMailDeliverySettingValue_Encryption)(0),                     // 0: bytebase.v1.SMTPMailDeliverySettingValue.Encryption
-	(SMTPMailDeliverySettingValue_Authentication)(0),                 // 1: bytebase.v1.SMTPMailDeliverySettingValue.Authentication
-	(AppIMSetting_IMType)(0),                                         // 2: bytebase.v1.AppIMSetting.IMType
-	(Announcement_AlertLevel)(0),                                     // 3: bytebase.v1.Announcement.AlertLevel
-	(*ListSettingsRequest)(nil),                                      // 4: bytebase.v1.ListSettingsRequest
-	(*ListSettingsResponse)(nil),                                     // 5: bytebase.v1.ListSettingsResponse
-	(*GetSettingRequest)(nil),                                        // 6: bytebase.v1.GetSettingRequest
-	(*GetSettingResponse)(nil),                                       // 7: bytebase.v1.GetSettingResponse
-	(*UpdateSettingRequest)(nil),                                     // 8: bytebase.v1.UpdateSettingRequest
-	(*Setting)(nil),                                                  // 9: bytebase.v1.Setting
-	(*Value)(nil),                                                    // 10: bytebase.v1.Value
-	(*SMTPMailDeliverySettingValue)(nil),                             // 11: bytebase.v1.SMTPMailDeliverySettingValue
-	(*AppIMSetting)(nil),                                             // 12: bytebase.v1.AppIMSetting
-	(*AgentPluginSetting)(nil),                                       // 13: bytebase.v1.AgentPluginSetting
-	(*WorkspaceProfileSetting)(nil),                                  // 14: bytebase.v1.WorkspaceProfileSetting
-	(*Announcement)(nil),                                             // 15: bytebase.v1.Announcement
-	(*WorkspaceApprovalSetting)(nil),                                 // 16: bytebase.v1.WorkspaceApprovalSetting
-	(*ExternalApprovalSetting)(nil),                                  // 17: bytebase.v1.ExternalApprovalSetting
-	(*SchemaTemplateSetting)(nil),                                    // 18: bytebase.v1.SchemaTemplateSetting
-	(*WorkspaceTrialSetting)(nil),                                    // 19: bytebase.v1.WorkspaceTrialSetting
-	(*DataClassificationSetting)(nil),                                // 20: bytebase.v1.DataClassificationSetting
-	(*SemanticTypeSetting)(nil),                                      // 21: bytebase.v1.SemanticTypeSetting
-	(*MaskingAlgorithmSetting)(nil),                                  // 22: bytebase.v1.MaskingAlgorithmSetting
-	(*AppIMSetting_ExternalApproval)(nil),                            // 23: bytebase.v1.AppIMSetting.ExternalApproval
-	(*WorkspaceApprovalSetting_Rule)(nil),                            // 24: bytebase.v1.WorkspaceApprovalSetting.Rule
-	(*ExternalApprovalSetting_Node)(nil),                             // 25: bytebase.v1.ExternalApprovalSetting.Node
-	(*SchemaTemplateSetting_FieldTemplate)(nil),                      // 26: bytebase.v1.SchemaTemplateSetting.FieldTemplate
-	(*SchemaTemplateSetting_ColumnType)(nil),                         // 27: bytebase.v1.SchemaTemplateSetting.ColumnType
-	(*SchemaTemplateSetting_TableTemplate)(nil),                      // 28: bytebase.v1.SchemaTemplateSetting.TableTemplate
-	(*DataClassificationSetting_DataClassificationConfig)(nil),       // 29: bytebase.v1.DataClassificationSetting.DataClassificationConfig
-	(*DataClassificationSetting_DataClassificationConfig_Level)(nil), // 30: bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
-	(*DataClassificationSetting_DataClassificationConfig_DataClassification)(nil), // 31: bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
-	nil,                                      // 32: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	(*SemanticTypeSetting_SemanticType)(nil), // 33: bytebase.v1.SemanticTypeSetting.SemanticType
-	(*MaskingAlgorithmSetting_Algorithm)(nil),                 // 34: bytebase.v1.MaskingAlgorithmSetting.Algorithm
-	(*MaskingAlgorithmSetting_Algorithm_FullMask)(nil),        // 35: bytebase.v1.MaskingAlgorithmSetting.Algorithm.FullMask
-	(*MaskingAlgorithmSetting_Algorithm_RangeMask)(nil),       // 36: bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask
-	(*MaskingAlgorithmSetting_Algorithm_MD5Mask)(nil),         // 37: bytebase.v1.MaskingAlgorithmSetting.Algorithm.MD5Mask
-	(*MaskingAlgorithmSetting_Algorithm_RangeMask_Slice)(nil), // 38: bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice
-	(*durationpb.Duration)(nil),                               // 39: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),                             // 40: google.protobuf.Timestamp
-	(PlanType)(0),                                             // 41: bytebase.v1.PlanType
-	(*ApprovalTemplate)(nil),                                  // 42: bytebase.v1.ApprovalTemplate
-	(*expr.Expr)(nil),                                         // 43: google.type.Expr
-	(Engine)(0),                                               // 44: bytebase.v1.Engine
-	(*ColumnMetadata)(nil),                                    // 45: bytebase.v1.ColumnMetadata
-	(*ColumnConfig)(nil),                                      // 46: bytebase.v1.ColumnConfig
-	(*TableMetadata)(nil),                                     // 47: bytebase.v1.TableMetadata
-	(*TableConfig)(nil),                                       // 48: bytebase.v1.TableConfig
+	(SMTPMailDeliverySettingValue_Encryption)(0),                                  // 0: bytebase.v1.SMTPMailDeliverySettingValue.Encryption
+	(SMTPMailDeliverySettingValue_Authentication)(0),                              // 1: bytebase.v1.SMTPMailDeliverySettingValue.Authentication
+	(AppIMSetting_IMType)(0),                                                      // 2: bytebase.v1.AppIMSetting.IMType
+	(Announcement_AlertLevel)(0),                                                  // 3: bytebase.v1.Announcement.AlertLevel
+	(MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType)(0),                // 4: bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType
+	(*ListSettingsRequest)(nil),                                                   // 5: bytebase.v1.ListSettingsRequest
+	(*ListSettingsResponse)(nil),                                                  // 6: bytebase.v1.ListSettingsResponse
+	(*GetSettingRequest)(nil),                                                     // 7: bytebase.v1.GetSettingRequest
+	(*GetSettingResponse)(nil),                                                    // 8: bytebase.v1.GetSettingResponse
+	(*UpdateSettingRequest)(nil),                                                  // 9: bytebase.v1.UpdateSettingRequest
+	(*Setting)(nil),                                                               // 10: bytebase.v1.Setting
+	(*Value)(nil),                                                                 // 11: bytebase.v1.Value
+	(*SMTPMailDeliverySettingValue)(nil),                                          // 12: bytebase.v1.SMTPMailDeliverySettingValue
+	(*AppIMSetting)(nil),                                                          // 13: bytebase.v1.AppIMSetting
+	(*AgentPluginSetting)(nil),                                                    // 14: bytebase.v1.AgentPluginSetting
+	(*WorkspaceProfileSetting)(nil),                                               // 15: bytebase.v1.WorkspaceProfileSetting
+	(*Announcement)(nil),                                                          // 16: bytebase.v1.Announcement
+	(*WorkspaceApprovalSetting)(nil),                                              // 17: bytebase.v1.WorkspaceApprovalSetting
+	(*ExternalApprovalSetting)(nil),                                               // 18: bytebase.v1.ExternalApprovalSetting
+	(*SchemaTemplateSetting)(nil),                                                 // 19: bytebase.v1.SchemaTemplateSetting
+	(*WorkspaceTrialSetting)(nil),                                                 // 20: bytebase.v1.WorkspaceTrialSetting
+	(*DataClassificationSetting)(nil),                                             // 21: bytebase.v1.DataClassificationSetting
+	(*SemanticTypeSetting)(nil),                                                   // 22: bytebase.v1.SemanticTypeSetting
+	(*MaskingAlgorithmSetting)(nil),                                               // 23: bytebase.v1.MaskingAlgorithmSetting
+	(*AppIMSetting_ExternalApproval)(nil),                                         // 24: bytebase.v1.AppIMSetting.ExternalApproval
+	(*WorkspaceApprovalSetting_Rule)(nil),                                         // 25: bytebase.v1.WorkspaceApprovalSetting.Rule
+	(*ExternalApprovalSetting_Node)(nil),                                          // 26: bytebase.v1.ExternalApprovalSetting.Node
+	(*SchemaTemplateSetting_FieldTemplate)(nil),                                   // 27: bytebase.v1.SchemaTemplateSetting.FieldTemplate
+	(*SchemaTemplateSetting_ColumnType)(nil),                                      // 28: bytebase.v1.SchemaTemplateSetting.ColumnType
+	(*SchemaTemplateSetting_TableTemplate)(nil),                                   // 29: bytebase.v1.SchemaTemplateSetting.TableTemplate
+	(*DataClassificationSetting_DataClassificationConfig)(nil),                    // 30: bytebase.v1.DataClassificationSetting.DataClassificationConfig
+	(*DataClassificationSetting_DataClassificationConfig_Level)(nil),              // 31: bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
+	(*DataClassificationSetting_DataClassificationConfig_DataClassification)(nil), // 32: bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
+	nil,                                      // 33: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	(*SemanticTypeSetting_SemanticType)(nil), // 34: bytebase.v1.SemanticTypeSetting.SemanticType
+	(*MaskingAlgorithmSetting_Algorithm)(nil),                 // 35: bytebase.v1.MaskingAlgorithmSetting.Algorithm
+	(*MaskingAlgorithmSetting_Algorithm_FullMask)(nil),        // 36: bytebase.v1.MaskingAlgorithmSetting.Algorithm.FullMask
+	(*MaskingAlgorithmSetting_Algorithm_RangeMask)(nil),       // 37: bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask
+	(*MaskingAlgorithmSetting_Algorithm_MD5Mask)(nil),         // 38: bytebase.v1.MaskingAlgorithmSetting.Algorithm.MD5Mask
+	(*MaskingAlgorithmSetting_Algorithm_InnerOuterMask)(nil),  // 39: bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask
+	(*MaskingAlgorithmSetting_Algorithm_RangeMask_Slice)(nil), // 40: bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice
+	(*durationpb.Duration)(nil),                               // 41: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),                             // 42: google.protobuf.Timestamp
+	(PlanType)(0),                                             // 43: bytebase.v1.PlanType
+	(*ApprovalTemplate)(nil),                                  // 44: bytebase.v1.ApprovalTemplate
+	(*expr.Expr)(nil),                                         // 45: google.type.Expr
+	(Engine)(0),                                               // 46: bytebase.v1.Engine
+	(*ColumnMetadata)(nil),                                    // 47: bytebase.v1.ColumnMetadata
+	(*ColumnConfig)(nil),                                      // 48: bytebase.v1.ColumnConfig
+	(*TableMetadata)(nil),                                     // 49: bytebase.v1.TableMetadata
+	(*TableConfig)(nil),                                       // 50: bytebase.v1.TableConfig
 }
 var file_v1_setting_service_proto_depIdxs = []int32{
-	9,  // 0: bytebase.v1.ListSettingsResponse.settings:type_name -> bytebase.v1.Setting
-	9,  // 1: bytebase.v1.GetSettingResponse.setting:type_name -> bytebase.v1.Setting
-	9,  // 2: bytebase.v1.UpdateSettingRequest.setting:type_name -> bytebase.v1.Setting
-	10, // 3: bytebase.v1.Setting.value:type_name -> bytebase.v1.Value
-	11, // 4: bytebase.v1.Value.smtp_mail_delivery_setting_value:type_name -> bytebase.v1.SMTPMailDeliverySettingValue
-	12, // 5: bytebase.v1.Value.app_im_setting_value:type_name -> bytebase.v1.AppIMSetting
-	13, // 6: bytebase.v1.Value.agent_plugin_setting_value:type_name -> bytebase.v1.AgentPluginSetting
-	14, // 7: bytebase.v1.Value.workspace_profile_setting_value:type_name -> bytebase.v1.WorkspaceProfileSetting
-	16, // 8: bytebase.v1.Value.workspace_approval_setting_value:type_name -> bytebase.v1.WorkspaceApprovalSetting
-	19, // 9: bytebase.v1.Value.workspace_trial_setting_value:type_name -> bytebase.v1.WorkspaceTrialSetting
-	17, // 10: bytebase.v1.Value.external_approval_setting_value:type_name -> bytebase.v1.ExternalApprovalSetting
-	18, // 11: bytebase.v1.Value.schema_template_setting_value:type_name -> bytebase.v1.SchemaTemplateSetting
-	20, // 12: bytebase.v1.Value.data_classification_setting_value:type_name -> bytebase.v1.DataClassificationSetting
-	21, // 13: bytebase.v1.Value.semantic_type_setting_value:type_name -> bytebase.v1.SemanticTypeSetting
-	22, // 14: bytebase.v1.Value.masking_algorithm_setting_value:type_name -> bytebase.v1.MaskingAlgorithmSetting
+	10, // 0: bytebase.v1.ListSettingsResponse.settings:type_name -> bytebase.v1.Setting
+	10, // 1: bytebase.v1.GetSettingResponse.setting:type_name -> bytebase.v1.Setting
+	10, // 2: bytebase.v1.UpdateSettingRequest.setting:type_name -> bytebase.v1.Setting
+	11, // 3: bytebase.v1.Setting.value:type_name -> bytebase.v1.Value
+	12, // 4: bytebase.v1.Value.smtp_mail_delivery_setting_value:type_name -> bytebase.v1.SMTPMailDeliverySettingValue
+	13, // 5: bytebase.v1.Value.app_im_setting_value:type_name -> bytebase.v1.AppIMSetting
+	14, // 6: bytebase.v1.Value.agent_plugin_setting_value:type_name -> bytebase.v1.AgentPluginSetting
+	15, // 7: bytebase.v1.Value.workspace_profile_setting_value:type_name -> bytebase.v1.WorkspaceProfileSetting
+	17, // 8: bytebase.v1.Value.workspace_approval_setting_value:type_name -> bytebase.v1.WorkspaceApprovalSetting
+	20, // 9: bytebase.v1.Value.workspace_trial_setting_value:type_name -> bytebase.v1.WorkspaceTrialSetting
+	18, // 10: bytebase.v1.Value.external_approval_setting_value:type_name -> bytebase.v1.ExternalApprovalSetting
+	19, // 11: bytebase.v1.Value.schema_template_setting_value:type_name -> bytebase.v1.SchemaTemplateSetting
+	21, // 12: bytebase.v1.Value.data_classification_setting_value:type_name -> bytebase.v1.DataClassificationSetting
+	22, // 13: bytebase.v1.Value.semantic_type_setting_value:type_name -> bytebase.v1.SemanticTypeSetting
+	23, // 14: bytebase.v1.Value.masking_algorithm_setting_value:type_name -> bytebase.v1.MaskingAlgorithmSetting
 	0,  // 15: bytebase.v1.SMTPMailDeliverySettingValue.encryption:type_name -> bytebase.v1.SMTPMailDeliverySettingValue.Encryption
 	1,  // 16: bytebase.v1.SMTPMailDeliverySettingValue.authentication:type_name -> bytebase.v1.SMTPMailDeliverySettingValue.Authentication
 	2,  // 17: bytebase.v1.AppIMSetting.im_type:type_name -> bytebase.v1.AppIMSetting.IMType
-	23, // 18: bytebase.v1.AppIMSetting.external_approval:type_name -> bytebase.v1.AppIMSetting.ExternalApproval
-	39, // 19: bytebase.v1.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
-	15, // 20: bytebase.v1.WorkspaceProfileSetting.announcement:type_name -> bytebase.v1.Announcement
+	24, // 18: bytebase.v1.AppIMSetting.external_approval:type_name -> bytebase.v1.AppIMSetting.ExternalApproval
+	41, // 19: bytebase.v1.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
+	16, // 20: bytebase.v1.WorkspaceProfileSetting.announcement:type_name -> bytebase.v1.Announcement
 	3,  // 21: bytebase.v1.Announcement.level:type_name -> bytebase.v1.Announcement.AlertLevel
-	24, // 22: bytebase.v1.WorkspaceApprovalSetting.rules:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule
-	25, // 23: bytebase.v1.ExternalApprovalSetting.nodes:type_name -> bytebase.v1.ExternalApprovalSetting.Node
-	26, // 24: bytebase.v1.SchemaTemplateSetting.field_templates:type_name -> bytebase.v1.SchemaTemplateSetting.FieldTemplate
-	27, // 25: bytebase.v1.SchemaTemplateSetting.column_types:type_name -> bytebase.v1.SchemaTemplateSetting.ColumnType
-	28, // 26: bytebase.v1.SchemaTemplateSetting.table_templates:type_name -> bytebase.v1.SchemaTemplateSetting.TableTemplate
-	40, // 27: bytebase.v1.WorkspaceTrialSetting.expire_time:type_name -> google.protobuf.Timestamp
-	40, // 28: bytebase.v1.WorkspaceTrialSetting.issued_time:type_name -> google.protobuf.Timestamp
-	41, // 29: bytebase.v1.WorkspaceTrialSetting.plan:type_name -> bytebase.v1.PlanType
-	29, // 30: bytebase.v1.DataClassificationSetting.configs:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig
-	33, // 31: bytebase.v1.SemanticTypeSetting.types:type_name -> bytebase.v1.SemanticTypeSetting.SemanticType
-	34, // 32: bytebase.v1.MaskingAlgorithmSetting.algorithms:type_name -> bytebase.v1.MaskingAlgorithmSetting.Algorithm
-	42, // 33: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
-	43, // 34: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
-	44, // 35: bytebase.v1.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.v1.Engine
-	45, // 36: bytebase.v1.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.v1.ColumnMetadata
-	46, // 37: bytebase.v1.SchemaTemplateSetting.FieldTemplate.config:type_name -> bytebase.v1.ColumnConfig
-	44, // 38: bytebase.v1.SchemaTemplateSetting.ColumnType.engine:type_name -> bytebase.v1.Engine
-	44, // 39: bytebase.v1.SchemaTemplateSetting.TableTemplate.engine:type_name -> bytebase.v1.Engine
-	47, // 40: bytebase.v1.SchemaTemplateSetting.TableTemplate.table:type_name -> bytebase.v1.TableMetadata
-	48, // 41: bytebase.v1.SchemaTemplateSetting.TableTemplate.config:type_name -> bytebase.v1.TableConfig
-	30, // 42: bytebase.v1.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
-	32, // 43: bytebase.v1.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	31, // 44: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
-	35, // 45: bytebase.v1.MaskingAlgorithmSetting.Algorithm.full_mask:type_name -> bytebase.v1.MaskingAlgorithmSetting.Algorithm.FullMask
-	36, // 46: bytebase.v1.MaskingAlgorithmSetting.Algorithm.range_mask:type_name -> bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask
-	37, // 47: bytebase.v1.MaskingAlgorithmSetting.Algorithm.md5_mask:type_name -> bytebase.v1.MaskingAlgorithmSetting.Algorithm.MD5Mask
-	38, // 48: bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask.slices:type_name -> bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice
-	4,  // 49: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
-	6,  // 50: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
-	8,  // 51: bytebase.v1.SettingService.UpdateSetting:input_type -> bytebase.v1.UpdateSettingRequest
-	5,  // 52: bytebase.v1.SettingService.ListSettings:output_type -> bytebase.v1.ListSettingsResponse
-	9,  // 53: bytebase.v1.SettingService.GetSetting:output_type -> bytebase.v1.Setting
-	9,  // 54: bytebase.v1.SettingService.UpdateSetting:output_type -> bytebase.v1.Setting
-	52, // [52:55] is the sub-list for method output_type
-	49, // [49:52] is the sub-list for method input_type
-	49, // [49:49] is the sub-list for extension type_name
-	49, // [49:49] is the sub-list for extension extendee
-	0,  // [0:49] is the sub-list for field type_name
+	25, // 22: bytebase.v1.WorkspaceApprovalSetting.rules:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule
+	26, // 23: bytebase.v1.ExternalApprovalSetting.nodes:type_name -> bytebase.v1.ExternalApprovalSetting.Node
+	27, // 24: bytebase.v1.SchemaTemplateSetting.field_templates:type_name -> bytebase.v1.SchemaTemplateSetting.FieldTemplate
+	28, // 25: bytebase.v1.SchemaTemplateSetting.column_types:type_name -> bytebase.v1.SchemaTemplateSetting.ColumnType
+	29, // 26: bytebase.v1.SchemaTemplateSetting.table_templates:type_name -> bytebase.v1.SchemaTemplateSetting.TableTemplate
+	42, // 27: bytebase.v1.WorkspaceTrialSetting.expire_time:type_name -> google.protobuf.Timestamp
+	42, // 28: bytebase.v1.WorkspaceTrialSetting.issued_time:type_name -> google.protobuf.Timestamp
+	43, // 29: bytebase.v1.WorkspaceTrialSetting.plan:type_name -> bytebase.v1.PlanType
+	30, // 30: bytebase.v1.DataClassificationSetting.configs:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig
+	34, // 31: bytebase.v1.SemanticTypeSetting.types:type_name -> bytebase.v1.SemanticTypeSetting.SemanticType
+	35, // 32: bytebase.v1.MaskingAlgorithmSetting.algorithms:type_name -> bytebase.v1.MaskingAlgorithmSetting.Algorithm
+	44, // 33: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
+	45, // 34: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
+	46, // 35: bytebase.v1.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.v1.Engine
+	47, // 36: bytebase.v1.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.v1.ColumnMetadata
+	48, // 37: bytebase.v1.SchemaTemplateSetting.FieldTemplate.config:type_name -> bytebase.v1.ColumnConfig
+	46, // 38: bytebase.v1.SchemaTemplateSetting.ColumnType.engine:type_name -> bytebase.v1.Engine
+	46, // 39: bytebase.v1.SchemaTemplateSetting.TableTemplate.engine:type_name -> bytebase.v1.Engine
+	49, // 40: bytebase.v1.SchemaTemplateSetting.TableTemplate.table:type_name -> bytebase.v1.TableMetadata
+	50, // 41: bytebase.v1.SchemaTemplateSetting.TableTemplate.config:type_name -> bytebase.v1.TableConfig
+	31, // 42: bytebase.v1.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
+	33, // 43: bytebase.v1.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	32, // 44: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
+	36, // 45: bytebase.v1.MaskingAlgorithmSetting.Algorithm.full_mask:type_name -> bytebase.v1.MaskingAlgorithmSetting.Algorithm.FullMask
+	37, // 46: bytebase.v1.MaskingAlgorithmSetting.Algorithm.range_mask:type_name -> bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask
+	38, // 47: bytebase.v1.MaskingAlgorithmSetting.Algorithm.md5_mask:type_name -> bytebase.v1.MaskingAlgorithmSetting.Algorithm.MD5Mask
+	39, // 48: bytebase.v1.MaskingAlgorithmSetting.Algorithm.inner_outer_mask:type_name -> bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask
+	40, // 49: bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask.slices:type_name -> bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice
+	4,  // 50: bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.type:type_name -> bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType
+	5,  // 51: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
+	7,  // 52: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
+	9,  // 53: bytebase.v1.SettingService.UpdateSetting:input_type -> bytebase.v1.UpdateSettingRequest
+	6,  // 54: bytebase.v1.SettingService.ListSettings:output_type -> bytebase.v1.ListSettingsResponse
+	10, // 55: bytebase.v1.SettingService.GetSetting:output_type -> bytebase.v1.Setting
+	10, // 56: bytebase.v1.SettingService.UpdateSetting:output_type -> bytebase.v1.Setting
+	54, // [54:57] is the sub-list for method output_type
+	51, // [51:54] is the sub-list for method input_type
+	51, // [51:51] is the sub-list for extension type_name
+	51, // [51:51] is the sub-list for extension extendee
+	0,  // [0:51] is the sub-list for field type_name
 }
 
 func init() { file_v1_setting_service_proto_init() }
@@ -3674,6 +3837,18 @@ func file_v1_setting_service_proto_init() {
 			}
 		}
 		file_v1_setting_service_proto_msgTypes[34].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MaskingAlgorithmSetting_Algorithm_InnerOuterMask); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_setting_service_proto_msgTypes[35].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MaskingAlgorithmSetting_Algorithm_RangeMask_Slice); i {
 			case 0:
 				return &v.state
@@ -3706,14 +3881,15 @@ func file_v1_setting_service_proto_init() {
 		(*MaskingAlgorithmSetting_Algorithm_FullMask_)(nil),
 		(*MaskingAlgorithmSetting_Algorithm_RangeMask_)(nil),
 		(*MaskingAlgorithmSetting_Algorithm_Md5Mask)(nil),
+		(*MaskingAlgorithmSetting_Algorithm_InnerOuterMask_)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_setting_service_proto_rawDesc,
-			NumEnums:      4,
-			NumMessages:   35,
+			NumEnums:      5,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
