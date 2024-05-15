@@ -800,6 +800,16 @@
           "self": "mặt nạ MD5",
           "salt": "Muối",
           "salt-label": "Muối được sử dụng để tạo ra hàm băm từ giá trị ban đầu."
+        },
+        "inner-outer-mask": {
+          "self": "Mặt nạ trong / ngoài",
+          "type": "Loại mặt nạ",
+          "inner-label": "Mặt nạ bên trong che phần bên trong của một chuỗi. Tiền tố và hậu tố đại diện cho các phần không được che của dữ liệu.",
+          "inner-mask": "Mặt nạ bên trong",
+          "outer-label": "Mặt nạ bên ngoài che các đầu trái và phải của một chuỗi. Tiền tố và hậu tố đại diện cho các phần được che của dữ liệu.",
+          "outer-mask": "Mặt nạ bên ngoài",
+          "prefix-length": "Độ dài tiền tố",
+          "suffix-length": "Độ dài hậu tố"
         }
       },
       "masking-level": {

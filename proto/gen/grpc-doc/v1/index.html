@@ -2277,6 +2277,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.InnerOuterMask</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.MD5Mask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.MD5Mask</a>
                 </li>
               
@@ -2351,6 +2355,10 @@
               
                 <li>
                   <a href="#bytebase.v1.AppIMSetting.IMType"><span class="badge">E</span>AppIMSetting.IMType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</a>
                 </li>
               
                 <li>
@@ -24805,6 +24813,13 @@ HASH: MD5Mask </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>inner_outer_mask</td>
+                  <td><a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask">MaskingAlgorithmSetting.Algorithm.InnerOuterMask</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -24828,6 +24843,51 @@ HASH: MD5Mask </p></td>
                   <td></td>
                   <td><p>substitution is the string used to replace the original value, the
 max length of the string is 16 bytes. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask">MaskingAlgorithmSetting.Algorithm.InnerOuterMask</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>prefix_len</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>suffix_len</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType">MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>substitution</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -25687,6 +25747,35 @@ The external URL is used for:
               <tr>
                 <td>FEISHU</td>
                 <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType">MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MASK_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>INNER</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OUTER</td>
+                <td>2</td>
                 <td><p></p></td>
               </tr>
             

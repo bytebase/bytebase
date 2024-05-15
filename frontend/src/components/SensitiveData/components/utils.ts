@@ -81,7 +81,7 @@ export const factorOperatorOverrideMap = new Map<Factor, Operator[]>([
   ["project_id", uniq([...EqualityOperatorList, ...CollectionOperatorList])],
 ]);
 
-export type MaskingType = "full-mask" | "range-mask" | "md5-mask";
+export type MaskingType = "full-mask" | "range-mask" | "md5-mask" | "inner-outer-mask";
 
 export const getMaskingType = (
   algorithm: MaskingAlgorithmSetting_Algorithm
@@ -94,6 +94,8 @@ export const getMaskingType = (
         return "full-mask";
       } else if (algorithm.rangeMask) {
         return "range-mask";
+      } else if (algorithm.innerOuterMask) {
+        return "inner-outer-mask"
       }
       break;
     default:
