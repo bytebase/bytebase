@@ -10,15 +10,51 @@
     :render-tag="renderTag"
     :value="issueLabels"
     @update:value="onLablesUpdate"
-  />
+  >
+    <template #empty>
+      <div class="flex flex-col items-center justify-center">
+        <NoDataPlaceholder
+          :border="false"
+          :img-attrs="{ class: '!max-h-[6vh]' }"
+        />
+        <router-link
+          v-if="hasPermission"
+          :to="{
+            name: PROJECT_V1_ROUTE_SETTINGS,
+            params: {
+              projectId: getProjectName(project.name),
+            },
+          }"
+          class="textinfolabel normal-link mb-4"
+        >
+          {{ $t("project.settings.labels.configure-labels") }}
+        </router-link>
+      </div>
+    </template>
+  </NSelect>
 </template>
+
+<script lang="ts">
+export const getValidIssueLabels = (
+  selected: string[],
+  issueLabels: Label[]
+) => {
+  const pool = new Set(issueLabels.map((label) => label.value));
+  return selected.filter((label) => pool.has(label));
+};
+</script>
 
 <script setup lang="ts">
 import { NCheckbox, NSelect, NTag } from "naive-ui";
 import type { SelectOption } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed, h } from "vue";
+import { PROJECT_V1_ROUTE_SETTINGS } from "@/router/dashboard/projectV1";
+import { useCurrentUserV1 } from "@/store";
+import { getProjectName } from "@/store/modules/v1/common";
+import type { ComposedProject } from "@/types";
 import { Label } from "@/types/proto/v1/project_service";
+import { hasProjectPermissionV2 } from "@/utils";
 
 type IsseuLabelOption = SelectOption & {
   value: string;
@@ -29,9 +65,9 @@ const props = withDefaults(
   defineProps<{
     disabled: boolean;
     selected: string[];
-    labels: Label[];
-    size: "small" | "medium" | "large";
-    maxTagCount: number | "responsive";
+    project: ComposedProject;
+    size?: "small" | "medium" | "large";
+    maxTagCount?: number | "responsive";
   }>(),
   {
     size: "medium",
@@ -43,13 +79,21 @@ const emit = defineEmits<{
   (event: "update:selected", selected: string[]): void;
 }>();
 
+const currentUser = useCurrentUserV1();
+const hasPermission = computed(() => {
+  return hasProjectPermissionV2(
+    props.project,
+    currentUser.value,
+    "bb.projects.update"
+  );
+});
+
 const issueLabels = computed(() => {
-  const pool = new Set(props.labels.map((label) => label.value));
-  return props.selected.filter((label) => pool.has(label));
+  return getValidIssueLabels(props.selected, props.project.issueLabels);
 });
 
 const options = computed(() => {
-  return props.labels.map<IsseuLabelOption>((label) => ({
+  return props.project.issueLabels.map<IsseuLabelOption>((label) => ({
     label: label.value,
     value: label.value,
     color: label.color,
@@ -86,7 +130,7 @@ const renderTag = ({
     NTag,
     {
       size: props.size,
-      closable: true,
+      closable: !props.disabled,
       onClose: handleClose,
     },
     {

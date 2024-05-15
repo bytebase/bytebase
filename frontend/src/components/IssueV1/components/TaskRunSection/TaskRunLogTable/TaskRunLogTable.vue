@@ -21,7 +21,7 @@ import {
   TaskRunLogEntry_Type,
 } from "@/types/proto/v1/rollout_service";
 import { sheetNameOfTaskV1 } from "@/utils";
-import AffectedRowsCell from "./AffectedRowsCell.vue";
+import DetailCell, { detailCellRowSpan } from "./DetailCell";
 import DurationCell from "./DurationCell.vue";
 import StatementCell from "./StatementCell.vue";
 import { type FlattenLogEntry } from "./common";
@@ -87,7 +87,10 @@ const flattenLogEntries = computed(() => {
       const { commandExecute } = entry;
       const { response, logTime: startTime } = commandExecute;
       commandExecute.commandIndexes.forEach((commandIndex, serial) => {
-        const affectedRows = response?.allAffectedRows[serial];
+        let affectedRows = response?.affectedRows;
+        if (commandExecute.commandIndexes.length === response?.allAffectedRows.length) {
+          affectedRows = response?.allAffectedRows[serial] ?? affectedRows;
+        }
         const endTime = response?.logTime;
         flattenEntries.push({
           batch,
@@ -169,22 +172,33 @@ const columns = computed(() => {
       width: 120,
       className: "whitespace-nowrap",
       render: (entry) => {
-        return <span class="text-sm">{entry.type}</span>;
+        const text =
+          entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE
+            ? t("issue.task-run.task-run-log.entry-type.command-execute")
+            : entry.type === TaskRunLogEntry_Type.SCHEMA_DUMP
+              ? t("issue.task-run.task-run-log.entry-type.schema-dump")
+              : "";
+        if (text) {
+          return <span class="text-sm">{text}</span>;
+        }
+        return <span class="text-sm text-control-placeholder">-</span>;
       },
     },
     {
       key: "statement",
       title: () => t("common.statement"),
+      width: '60%',
       render: (entry) => {
         return <StatementCell entry={entry} sheet={sheet.value} />;
       },
     },
     {
-      key: "affected-rows",
-      title: () => t("issue.task-run.task-run-log.affected-rows"),
-      width: 120,
+      key: "detail",
+      title: () => t("common.detail"),
+      width: '40%',
+      rowSpan: detailCellRowSpan,
       render: (entry) => {
-        return <AffectedRowsCell entry={entry} sheet={sheet.value} />;
+        return <DetailCell entry={entry} sheet={sheet.value} />;
       },
     },
     {

@@ -5,7 +5,6 @@ import { TEMPLATE_LIST, getRuleLocalizationKey } from "../types/sqlReview";
 import { mergedLocalMessage } from "./i18n-messages";
 
 describe("Test i18n messages", () => {
-  let a = false;
   for (const keyA of Object.keys(mergedLocalMessage)) {
     for (const keyB of Object.keys(mergedLocalMessage)) {
       if (keyA === keyB) {
@@ -23,12 +22,7 @@ describe("Test i18n messages", () => {
           console.error(message);
         }
         expect(missMatchKey).toBe("");
-        a = true;
       });
-      break;
-    }
-    if (a) {
-      break;
     }
   }
 });
@@ -98,7 +92,7 @@ const compareMessages = (
       }
       // i18n v4 has special body for locale message string.
       if ("type" in valA && "start" in valA && "end" in valA) {
-        return "";
+        continue;
       }
       const missMatch = compareMessages(valA, valB);
       if (missMatch) {

@@ -67,7 +67,7 @@ const { isCreating, issue } = useIssueContext();
 const me = useCurrentUserV1();
 
 const stageList = computed(() => {
-  return issue.value.rolloutEntity.stages;
+  return issue.value.rolloutEntity?.stages || [];
 });
 
 const placeholder = computed(() => {

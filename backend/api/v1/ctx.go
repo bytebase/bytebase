@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -451,7 +452,11 @@ func (p *ContextProvider) getProjectIDsForDatabase(ctx context.Context, req any)
 	var databaseNames []string
 	switch r := req.(type) {
 	case *v1pb.QueryRequest:
-		databaseNames = append(databaseNames, r.GetName())
+		if strings.Contains(r.GetName(), common.DatabaseIDPrefix) {
+			databaseNames = append(databaseNames, r.GetName())
+		} else if strings.HasPrefix(r.GetName(), common.InstanceNamePrefix) && r.GetConnectionDatabase() != "" {
+			databaseNames = append(databaseNames, fmt.Sprintf("%s/%s%s", r.GetName(), common.DatabaseIDPrefix, r.GetConnectionDatabase()))
+		}
 	case *v1pb.ExportRequest:
 		if strings.HasPrefix(r.GetName(), common.ProjectNamePrefix) {
 			projectID, _, err := common.GetProjectIDIssueUID(r.GetName())
@@ -459,9 +464,10 @@ func (p *ContextProvider) getProjectIDsForDatabase(ctx context.Context, req any)
 				return nil, errors.Wrapf(err, "failed to get projectID from %q", r.GetName())
 			}
 			projectIDs = append(projectIDs, projectID)
-		}
-		if strings.HasPrefix(r.GetName(), common.InstanceNamePrefix) {
+		} else if strings.Contains(r.GetName(), common.DatabaseIDPrefix) {
 			databaseNames = append(databaseNames, r.GetName())
+		} else if strings.HasPrefix(r.GetName(), common.InstanceNamePrefix) && r.GetConnectionDatabase() != "" {
+			databaseNames = append(databaseNames, fmt.Sprintf("%s/%s%s", r.GetName(), common.DatabaseIDPrefix, r.GetConnectionDatabase()))
 		}
 	case *v1pb.GetDatabaseRequest:
 		databaseNames = append(databaseNames, r.GetName())

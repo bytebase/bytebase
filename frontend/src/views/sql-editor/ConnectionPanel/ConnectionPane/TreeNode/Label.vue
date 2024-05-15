@@ -1,7 +1,4 @@
 <template>
-  <template v-if="type === 'project'">
-    <ProjectNode :node="node" :factors="factors" :keyword="keyword" />
-  </template>
   <template v-if="type === 'instance'">
     <InstanceNode :node="node" :factors="factors" :keyword="keyword" />
   </template>
@@ -26,7 +23,6 @@ import DatabaseNode from "./DatabaseNode.vue";
 import EnvironmentNode from "./EnvironmentNode.vue";
 import InstanceNode from "./InstanceNode.vue";
 import LabelNode from "./LabelNode.vue";
-import ProjectNode from "./ProjectNode.vue";
 
 const props = defineProps<{
   node: TreeNode;

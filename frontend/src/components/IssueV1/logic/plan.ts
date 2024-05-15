@@ -3,9 +3,16 @@ import {
   useDatabaseV1Store,
   useDBGroupStore,
   useDeploymentConfigV1Store,
+  useInstanceV1Store,
 } from "@/store";
-import { type ComposedProject, UNKNOWN_ID } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import {
+  type ComposedProject,
+  UNKNOWN_ID,
+  type ComposedIssue,
+  unknownDatabase,
+} from "@/types";
+import { Engine, State } from "@/types/proto/v1/common";
+import { InstanceResource } from "@/types/proto/v1/instance_service";
 import type { Plan_Spec } from "@/types/proto/v1/rollout_service";
 import {
   extractDatabaseResourceName,
@@ -13,6 +20,56 @@ import {
   extractDeploymentConfigName,
   getPipelineFromDeploymentScheduleV1,
 } from "@/utils";
+
+export const databaseForSpec = (issue: ComposedIssue, spec: Plan_Spec) => {
+  const { createDatabaseConfig, changeDatabaseConfig, exportDataConfig } = spec;
+  if (createDatabaseConfig !== undefined) {
+    const instance = createDatabaseConfig.target;
+    const databaseName = createDatabaseConfig.database;
+    const instanceEntity = useInstanceV1Store().getInstanceByName(instance);
+    return {
+      ...unknownDatabase(),
+      name: `${instance}/databases/${databaseName}`,
+      uid: String(UNKNOWN_ID),
+      databaseName,
+      instance,
+      instanceEntity,
+      project: issue.project,
+      projectEntity: issue.projectEntity,
+      effectiveEnvironment: instanceEntity.environment,
+      effectiveEnvironmentEntity: instanceEntity.environmentEntity,
+    };
+  } else if (
+    changeDatabaseConfig !== undefined ||
+    exportDataConfig !== undefined
+  ) {
+    // TODO(steven): handle db group and deployment config.
+    const target = (changeDatabaseConfig?.target ??
+      exportDataConfig?.target) as string;
+    const db = useDatabaseV1Store().getDatabaseByName(target);
+    if (db.uid === String(UNKNOWN_ID)) {
+      // Database not found, it's probably NOT_FOUND (maybe dropped actually)
+      // Mock a database using all known resources
+      db.project = issue.project;
+      db.projectEntity = issue.projectEntity;
+      db.name = target;
+      const { instance, databaseName } = extractDatabaseResourceName(db.name);
+      db.databaseName = databaseName;
+      db.instance = instance;
+      const instanceEntity = useInstanceV1Store().getInstanceByName(
+        db.instance
+      );
+      db.instanceEntity = instanceEntity;
+      db.instanceResource = InstanceResource.fromJSON(instanceEntity);
+      db.environment = instanceEntity.environment;
+      db.effectiveEnvironment = instanceEntity.environment;
+      db.effectiveEnvironmentEntity = instanceEntity.environmentEntity;
+      db.syncState = State.DELETED;
+    }
+    return db;
+  }
+  return unknownDatabase();
+};
 
 /**
  *

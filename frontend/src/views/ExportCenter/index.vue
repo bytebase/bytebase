@@ -161,6 +161,7 @@ const overideSearchScopeIdList = computed(() => {
     "status",
     "instance",
     "database",
+    "label",
   ];
   if (!specificProject.value) {
     defaultScopeIdList.push("project");

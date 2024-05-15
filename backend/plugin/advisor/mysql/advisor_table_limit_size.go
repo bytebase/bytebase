@@ -78,7 +78,7 @@ func (*MaximumTableSizeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.
 							Status:  status,
 							Code:    advisor.TableExceedLimitSize,
 							Title:   ctx.Rule.Type,
-							Content: fmt.Sprintf("Apply DDL on large table '%s' ( %d bytes )will lock table for a long time", tabName, dataSize),
+							Content: fmt.Sprintf("Apply DDL on large table '%s' ( %d bytes ) will lock table for a long time", tabName, dataSize),
 							Line:    statementBaseLine + tableSizeChecker.baseLine,
 						})
 					}

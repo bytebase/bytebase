@@ -1209,7 +1209,12 @@
     "task-run": {
       "task-run-log": {
         "batch": "バッチ",
-        "affected-rows": "影響を受ける行"
+        "affected-rows": "影響を受ける行",
+        "entry-type": {
+          "command-execute": "コマンド実行",
+          "schema-dump": "スキーマダンプ"
+        },
+        "affected-rows-n": "影響を受ける行: {n}"
       }
     }
   },
@@ -1958,7 +1963,11 @@
         "no-protection-rule-configured": "ブランチ保護ルールは構成されていません。",
         "only-apply-to-main-branches": "メインブランチでのみ有効です"
       },
-      "issue-labels": "作業指示タグ"
+      "labels": {
+        "issue-labels": "作業指示タグ",
+        "configure-labels": "タグを構成する",
+        "force-issue-labels": "問題のラベル付けを強制する"
+      }
     },
     "members": {
       "description": "プロジェクト メンバーの役割により、プロジェクト内のデータベースと作業指示書を操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
@@ -2298,7 +2307,8 @@
       "n-rows": "{n} 行",
       "rows": "行"
     },
-    "n-per-page": "{n} / ページ"
+    "n-per-page": "{n} / ページ",
+    "customize-tree-structure": "ツリー構造をカスタマイズする"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

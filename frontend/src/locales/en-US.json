@@ -1208,7 +1208,12 @@
     "task-run": {
       "task-run-log": {
         "batch": "Batch",
-        "affected-rows": "Affected rows"
+        "affected-rows": "Affected rows",
+        "entry-type": {
+          "command-execute": "Command execute",
+          "schema-dump": "Schema dump"
+        },
+        "affected-rows-n": "Affected rows: {n}"
       }
     }
   },
@@ -1946,7 +1951,7 @@
       "select-schema-change-type-sdl": "Declarative - Specify the desired schema. Only use CREATE TABLE/INDEX.",
       "schema-path-template-sdl-description": "The schema file describes the database's full schema.",
       "branch-protection-rules": {
-        "self": "Branch protection rules",
+        "self": "Branch Protection Rules",
         "add-rule": "Add Rule",
         "branch-name-pattern": {
           "self": "Branch name pattern",
@@ -1957,7 +1962,11 @@
         "no-protection-rule-configured": "No protection rule configured.",
         "only-apply-to-main-branches": "Only apply to main branches"
       },
-      "issue-labels": "Issue Labels"
+      "labels": {
+        "issue-labels": "Issue Labels",
+        "configure-labels": "Configure labels",
+        "force-issue-labels": "Force to have labels for issues"
+      }
     },
     "members": {
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
@@ -2297,7 +2306,8 @@
       "n-rows": "{n} rows",
       "rows": "rows"
     },
-    "n-per-page": "{n} / page"
+    "n-per-page": "{n} / page",
+    "customize-tree-structure": "Customize tree structure"
   },
   "schema-editor": {
     "self": "Schema Editor",
