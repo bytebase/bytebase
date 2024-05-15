@@ -504,6 +504,10 @@
       "title": "Kiểm tra sao lưu trước khi thay đổi dữ liệu",
       "description": "Quy tắc này sẽ kiểm tra xem có thể tạo sao lưu trước khi thay đổi dữ liệu hay không. Để biết thêm chi tiết, hãy kiểm tra xem cơ sở dữ liệu mục tiêu sao lưu có tồn tại và không cho phép câu lệnh DDL."
     },
+    "statement-add-column-without-position": {
+      "title": "Cấm thêm cột vào vị trí được chỉ định",
+      "description": "Trong một số trường hợp, việc sử dụng FIRST/AFTER để thêm cột vào vị trí được chỉ định có thể gây ra việc sắp xếp lại dữ liệu (viết lại dữ liệu gốc). Mức độ khuyến cáo: cảnh báo."
+    },
     "schema-backward-compatibility": {
       "title": "Kiểm tra khả năng tương thích ngược của ứng dụng",
       "description": "Một số thay đổi có thể ảnh hưởng đến các ứng dụng đang chạy, chẳng hạn như sửa đổi tên đối tượng cơ sở dữ liệu, thêm các ràng buộc mới, v.v. Quy tắc này có thể tránh những thay đổi bất cẩn dẫn đến lỗi ứng dụng hiện có. Mức độ lỗi đề xuất: Cảnh báo"
