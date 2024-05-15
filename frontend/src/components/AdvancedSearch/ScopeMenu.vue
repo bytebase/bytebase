@@ -39,7 +39,7 @@ import { useElementBounding, useWindowSize } from "@vueuse/core";
 import { computed, nextTick, ref, watch } from "vue";
 import { VirtualList } from "vueuc";
 import type { SearchParams, SearchScopeId } from "@/utils";
-import type { ScopeOption } from "./useSearchScopeOptions";
+import type { ScopeOption } from "./types";
 
 type ListItem = {
   item: ScopeOption;

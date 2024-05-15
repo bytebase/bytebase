@@ -72,6 +72,7 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 			}
 		}
 
+		createAuditLogCtx := context.WithoutCancel(ctx)
 		for _, parent := range parents {
 			p := &storepb.AuditLog{
 				Parent:   parent,
@@ -83,7 +84,7 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 				Response: responseString,
 				Status:   st.Proto(),
 			}
-			if err := in.store.CreateAuditLog(ctx, p); err != nil {
+			if err := in.store.CreateAuditLog(createAuditLogCtx, p); err != nil {
 				return errors.Wrapf(err, "failed to create audit log")
 			}
 		}

@@ -652,8 +652,9 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		}, nil
 	case api.SettingSchemaTemplate:
+		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
 		value := new(storepb.SchemaTemplateSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), value); err != nil {
+		if err := decoder.Unmarshal([]byte(setting.Value), value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 
@@ -731,7 +732,8 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	}
 
 	value := new(storepb.SchemaTemplateSetting)
-	if err := protojson.Unmarshal([]byte(settingValue), value); err != nil {
+	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err := decoder.Unmarshal([]byte(settingValue), value); err != nil {
 		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", settingName, err)
 	}
 	v1Value := convertSchemaTemplateSetting(value)

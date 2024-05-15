@@ -8238,6 +8238,22 @@ components:
                     description: |-
                         substitution is the string used to replace the original value, the
                          max length of the string is 16 bytes.
+        Algorithm_InnerOuterMask:
+            type: object
+            properties:
+                prefixLen:
+                    type: integer
+                    format: int32
+                suffixLen:
+                    type: integer
+                    format: int32
+                type:
+                    enum:
+                        - MASK_TYPE_UNSPECIFIED
+                        - INNER
+                        - OUTER
+                    type: string
+                    format: enum
         Algorithm_MD5Mask:
             type: object
             properties:
@@ -8985,6 +9001,8 @@ components:
                     additionalProperties:
                         type: string
                     description: The user labels for a column.
+                classificationId:
+                    type: string
         ColumnMetadata:
             type: object
             properties:
@@ -9025,9 +9043,6 @@ components:
                     description: |-
                         The comment is the comment of a column.
                          classification and user_comment is parsed from the comment.
-                classification:
-                    type: string
-                    description: The classification is the classification of a column parsed from the comment.
                 userComment:
                     type: string
                     description: The user_comment is the user comment of a column parsed from the comment.
@@ -9265,6 +9280,14 @@ components:
                     format: enum
                 saslConfig:
                     $ref: '#/components/schemas/SASLConfig'
+                additionalAddresses:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/DataSource_Address'
+                    description: additional_addresses is used for MongoDB replica set.
+                replicaSet:
+                    type: string
+                    description: replica_set is used for MongoDB replica set.
         DataSourceExternalSecret:
             type: object
             properties:
@@ -9318,6 +9341,13 @@ components:
                 mountPath:
                     type: string
                     description: The path where the approle auth method is mounted.
+        DataSource_Address:
+            type: object
+            properties:
+                host:
+                    type: string
+                port:
+                    type: string
         Database:
             type: object
             properties:
@@ -9385,6 +9415,12 @@ components:
                     items:
                         $ref: '#/components/schemas/SchemaConfig'
                     description: The schema_configs is the list of configs for schemas in a database.
+                classificationFromConfig:
+                    type: boolean
+                    description: |-
+                        If true, we will only store the classification in the config.
+                         Otherwise we will get the classification from table/column comment,
+                         and write back to the schema metadata.
         DatabaseGroup:
             type: object
             properties:
@@ -10131,6 +10167,23 @@ components:
                          The match_type is the PostgreSQL specific field.
                          It's empty string for other databases.
             description: ForeignKeyMetadata is the metadata for foreign keys.
+        FunctionConfig:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: The name is the name of a function.
+                updater:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The last updater of the function in branch.
+                         Format: users/{email}
+                updateTime:
+                    readOnly: true
+                    type: string
+                    description: The timestamp when the function is updated in branch.
+                    format: date-time
         GoogleProtobufAny:
             type: object
             properties:
@@ -11281,6 +11334,8 @@ components:
                     $ref: '#/components/schemas/Algorithm_RangeMask'
                 md5Mask:
                     $ref: '#/components/schemas/Algorithm_MD5Mask'
+                innerOuterMask:
+                    $ref: '#/components/schemas/Algorithm_InnerOuterMask'
         MaskingExceptionPolicy:
             type: object
             properties:
@@ -11843,6 +11898,23 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/Plan'
                     description: The plan used to preview rollout.
+        ProcedureConfig:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: The name is the name of a procedure.
+                updater:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The last updater of the procedure in branch.
+                         Format: users/{email}
+                updateTime:
+                    readOnly: true
+                    type: string
+                    description: The timestamp when the procedure is updated in branch.
+                    format: date-time
         Project:
             type: object
             properties:
@@ -11854,6 +11926,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Label'
+                forceIssueLabels:
+                    type: boolean
         ProtectionRule:
             type: object
             properties:
@@ -12421,6 +12495,18 @@ components:
                     items:
                         $ref: '#/components/schemas/TableConfig'
                     description: The table_configs is the list of configs for tables in a schema.
+                functionConfigs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/FunctionConfig'
+                procedureConfigs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ProcedureConfig'
+                viewConfigs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ViewConfig'
         SchemaGroup:
             type: object
             properties:
@@ -13222,6 +13308,19 @@ components:
                     items:
                         $ref: '#/components/schemas/ColumnConfig'
                     description: The column_configs is the ordered list of configs for columns in a table.
+                classificationId:
+                    type: string
+                updater:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The last updater of the table in branch.
+                         Format: users/{email}
+                updateTime:
+                    readOnly: true
+                    type: string
+                    description: The timestamp when the table is updated in branch.
+                    format: date-time
         TableMetadata:
             type: object
             properties:
@@ -13264,9 +13363,6 @@ components:
                     description: |-
                         The comment is the comment of a table.
                          classification and user_comment is parsed from the comment.
-                classification:
-                    type: string
-                    description: The classification is the classification of a table parsed from the comment.
                 userComment:
                     type: string
                     description: The user_comment is the user comment of a table parsed from the comment.
@@ -13991,6 +14087,23 @@ components:
                 maskingAlgorithmSettingValue:
                     $ref: '#/components/schemas/MaskingAlgorithmSetting'
             description: The data in setting value.
+        ViewConfig:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: The name is the name of a view.
+                updater:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The last updater of the view in branch.
+                         Format: users/{email}
+                updateTime:
+                    readOnly: true
+                    type: string
+                    description: The timestamp when the view is updated in branch.
+                    format: date-time
         Webhook:
             required:
                 - type

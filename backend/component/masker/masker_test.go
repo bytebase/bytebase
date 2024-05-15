@@ -210,3 +210,114 @@ func TestRangeMask(t *testing.T) {
 		a.Equal(tc.want, got, "description: %s", tc.description)
 	}
 }
+
+func TestInnerOuterMask(t *testing.T) {
+	testCases := []struct {
+		input  *MaskData
+		masker InnerOuterMasker
+		want   *v1pb.RowValue
+	}{
+		{
+			input: &MaskData{Data: &sql.NullString{String: "012345678", Valid: true}},
+			masker: InnerOuterMasker{
+				maskerType:   InnerOuterMaskerTypeOuter,
+				prefixLen:    1,
+				suffixLen:    3,
+				substitution: "#",
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{StringValue: "#12345###"},
+			},
+		},
+		{
+			input: &MaskData{Data: &sql.NullBool{Bool: true, Valid: true}},
+			masker: InnerOuterMasker{
+				maskerType:   InnerOuterMaskerTypeOuter,
+				prefixLen:    2,
+				suffixLen:    3,
+				substitution: "*",
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{StringValue: "******"},
+			},
+		},
+		{
+			input: &MaskData{Data: &sql.NullFloat64{Float64: 123.4567, Valid: true}},
+			masker: InnerOuterMasker{
+				maskerType:   InnerOuterMaskerTypeOuter,
+				prefixLen:    1,
+				suffixLen:    2,
+				substitution: "*",
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{StringValue: "*23.45**"},
+			},
+		},
+		{
+			input: &MaskData{Data: &sql.NullInt64{Int64: 27865874362589245, Valid: true}},
+			masker: InnerOuterMasker{
+				maskerType:   InnerOuterMaskerTypeInner,
+				prefixLen:    6,
+				suffixLen:    3,
+				substitution: "*",
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{StringValue: "278658********245"},
+			},
+		},
+		{
+			input: &MaskData{Data: &sql.NullString{String: "😂😠😡😊😂", Valid: true}},
+			masker: InnerOuterMasker{
+				maskerType:   InnerOuterMaskerTypeInner,
+				prefixLen:    1,
+				suffixLen:    1,
+				substitution: "xx",
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{StringValue: "😂xxxxxx😂"},
+			},
+		},
+		{
+			input: &MaskData{Data: &sql.NullString{String: "", Valid: false}},
+			masker: InnerOuterMasker{
+				maskerType:   InnerOuterMaskerTypeInner,
+				prefixLen:    1,
+				suffixLen:    2,
+				substitution: "*",
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{StringValue: "******"},
+			},
+		},
+		{
+			input: &MaskData{Data: &sql.NullString{String: "1234", Valid: true}},
+			masker: InnerOuterMasker{
+				maskerType:   InnerOuterMaskerTypeInner,
+				prefixLen:    1000,
+				suffixLen:    10000,
+				substitution: "*",
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{StringValue: "1234"},
+			},
+		},
+		{
+			input: &MaskData{Data: &sql.NullString{String: "Love this LMG", Valid: true}},
+			masker: InnerOuterMasker{
+				maskerType:   InnerOuterMaskerTypeInner,
+				prefixLen:    -1,
+				suffixLen:    1,
+				substitution: "*",
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_NullValue{},
+			},
+		},
+	}
+
+	a := require.New(t)
+	for _, tc := range testCases {
+		got := tc.masker.Mask(tc.input)
+		a.Equal(tc.want, got)
+	}
+}

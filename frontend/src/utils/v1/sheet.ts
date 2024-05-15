@@ -23,3 +23,12 @@ export const setSheetStatement = (
 export const getSheetStatement = (sheet: Sheet | Worksheet) => {
   return new TextDecoder().decode(sheet.content);
 };
+
+export const extractSheetCommandByIndex = (sheet: Sheet, index: number) => {
+  const commands = sheet.payload?.commands;
+  if (!commands) return undefined;
+  const command = commands[index];
+  if (!command) return undefined;
+  const subarray = sheet.content.subarray(command.start, command.end);
+  return new TextDecoder().decode(subarray);
+};

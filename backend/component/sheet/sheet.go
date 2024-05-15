@@ -21,7 +21,16 @@ func CreateSheet(ctx context.Context, s *store.Store, sheet *store.SheetMessage)
 }
 
 func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetCommand {
-	if len(statement) > common.MaxSheetCheckSize {
+	// Do get sheet commands if
+	// - engine=MYSQL and sql is not large
+	// - engine=POSTGRES
+	switch engine {
+	case storepb.Engine_MYSQL:
+		if len(statement) > common.MaxSheetCheckSize {
+			return nil
+		}
+	case storepb.Engine_POSTGRES:
+	default:
 		return nil
 	}
 

@@ -294,7 +294,6 @@ watch(
       expandNodesByType("instance", instance);
     }
     if (database.uid !== String(UNKNOWN_ID)) {
-      expandNodesByType("project", database.projectEntity);
       expandNodesByType("database", database);
     }
   },
@@ -350,6 +349,8 @@ const calcDefaultExpandKeys = async (override = false) => {
       }
     }
   }
+
+  await nextTick();
   expandedKeys.value = Array.from(keys);
 };
 

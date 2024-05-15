@@ -1323,9 +1323,6 @@ func (m CompletionMap) insertColumns(c *Completer, databases, tables map[string]
 					definition += ", NOT NULL"
 				}
 				comment := column.UserComment
-				if len(column.Classification) != 0 {
-					comment = column.Classification + "\n" + column.UserComment
-				}
 				m.Insert(base.Candidate{
 					Type:       base.CandidateTypeColumn,
 					Text:       c.quotedIdentifierIfNeeded(column.Name),

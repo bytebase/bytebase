@@ -32,7 +32,7 @@ const { t } = useI18n();
 const { isCreating, issue, activeStage, selectedStage, events } =
   useIssueContext();
 
-const stageList = computed(() => issue.value.rolloutEntity.stages);
+const stageList = computed(() => issue.value.rolloutEntity?.stages || []);
 
 const options = computed(() => {
   return stageList.value.map<StageSelectOption>((stage) => ({

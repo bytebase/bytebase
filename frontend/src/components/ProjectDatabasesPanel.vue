@@ -3,12 +3,12 @@
     <div
       class="w-full text-lg font-medium leading-7 text-main flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
     >
-      <AdvancedSearchBox
+      <AdvancedSearch
         v-model:params="state.params"
         class="flex-1"
         :autofocus="false"
         :placeholder="$t('database.filter-database')"
-        :support-option-id-list="supportOptionIdList"
+        :scope-options="scopeOptions"
       />
       <DatabaseLabelFilter
         v-model:selected="state.selectedLabels"
@@ -50,6 +50,8 @@ import {
   extractInstanceResourceName,
   databaseV1Url,
 } from "@/utils";
+import AdvancedSearch from "./AdvancedSearch";
+import { useCommonSearchScopeOptions } from "./AdvancedSearch/useCommonSearchScopeOptions";
 import { DatabaseOperations, DatabaseLabelFilter } from "./v2";
 
 interface LocalState {
@@ -76,6 +78,11 @@ const state = reactive<LocalState>({
     scopes: [],
   },
 });
+
+const scopeOptions = useCommonSearchScopeOptions(
+  computed(() => state.params),
+  [...CommonFilterScopeIdList]
+);
 
 const selectedInstance = computed(() => {
   return (
@@ -142,8 +149,6 @@ const selectedDatabases = computed((): ComposedDatabase[] => {
     state.selectedDatabaseIds.has(db.uid)
   );
 });
-
-const supportOptionIdList = computed(() => [...CommonFilterScopeIdList]);
 
 const handleDatabasesSelectionChanged = (
   selectedDatabaseNameList: Set<string>

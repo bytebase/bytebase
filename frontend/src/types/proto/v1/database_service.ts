@@ -407,6 +407,7 @@ export interface DatabaseMetadata {
   extensions: ExtensionMetadata[];
   /** The schema_configs is the list of configs for schemas in a database. */
   schemaConfigs: SchemaConfig[];
+  classificationFromConfig: boolean;
 }
 
 /**
@@ -475,8 +476,6 @@ export interface TableMetadata {
    * classification and user_comment is parsed from the comment.
    */
   comment: string;
-  /** The classification is the classification of a table parsed from the comment. */
-  classification: string;
   /** The user_comment is the user comment of a table parsed from the comment. */
   userComment: string;
   /** The foreign_keys is the list of foreign keys in a table. */
@@ -657,8 +656,6 @@ export interface ColumnMetadata {
    * classification and user_comment is parsed from the comment.
    */
   comment: string;
-  /** The classification is the classification of a column parsed from the comment. */
-  classification: string;
   /** The user_comment is the user comment of a column parsed from the comment. */
   userComment: string;
   /**
@@ -993,6 +990,12 @@ export interface DatabaseConfig {
   name: string;
   /** The schema_configs is the list of configs for schemas in a database. */
   schemaConfigs: SchemaConfig[];
+  /**
+   * If true, we will only store the classification in the config.
+   * Otherwise we will get the classification from table/column comment,
+   * and write back to the schema metadata.
+   */
+  classificationFromConfig: boolean;
 }
 
 export interface SchemaConfig {
@@ -1003,6 +1006,9 @@ export interface SchemaConfig {
   name: string;
   /** The table_configs is the list of configs for tables in a schema. */
   tableConfigs: TableConfig[];
+  functionConfigs: FunctionConfig[];
+  procedureConfigs: ProcedureConfig[];
+  viewConfigs: ViewConfig[];
 }
 
 export interface TableConfig {
@@ -1010,6 +1016,50 @@ export interface TableConfig {
   name: string;
   /** The column_configs is the ordered list of configs for columns in a table. */
   columnConfigs: ColumnConfig[];
+  classificationId: string;
+  /**
+   * The last updater of the table in branch.
+   * Format: users/{email}
+   */
+  updater: string;
+  /** The timestamp when the table is updated in branch. */
+  updateTime: Date | undefined;
+}
+
+export interface FunctionConfig {
+  /** The name is the name of a function. */
+  name: string;
+  /**
+   * The last updater of the function in branch.
+   * Format: users/{email}
+   */
+  updater: string;
+  /** The timestamp when the function is updated in branch. */
+  updateTime: Date | undefined;
+}
+
+export interface ProcedureConfig {
+  /** The name is the name of a procedure. */
+  name: string;
+  /**
+   * The last updater of the procedure in branch.
+   * Format: users/{email}
+   */
+  updater: string;
+  /** The timestamp when the procedure is updated in branch. */
+  updateTime: Date | undefined;
+}
+
+export interface ViewConfig {
+  /** The name is the name of a view. */
+  name: string;
+  /**
+   * The last updater of the view in branch.
+   * Format: users/{email}
+   */
+  updater: string;
+  /** The timestamp when the view is updated in branch. */
+  updateTime: Date | undefined;
 }
 
 export interface ColumnConfig {
@@ -1018,6 +1068,7 @@ export interface ColumnConfig {
   semanticTypeId: string;
   /** The user labels for a column. */
   labels: { [key: string]: string };
+  classificationId: string;
 }
 
 export interface ColumnConfig_LabelsEntry {
@@ -3023,7 +3074,15 @@ export const Database_LabelsEntry = {
 };
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], schemaConfigs: [] };
+  return {
+    name: "",
+    schemas: [],
+    characterSet: "",
+    collation: "",
+    extensions: [],
+    schemaConfigs: [],
+    classificationFromConfig: false,
+  };
 }
 
 export const DatabaseMetadata = {
@@ -3045,6 +3104,9 @@ export const DatabaseMetadata = {
     }
     for (const v of message.schemaConfigs) {
       SchemaConfig.encode(v!, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.classificationFromConfig === true) {
+      writer.uint32(56).bool(message.classificationFromConfig);
     }
     return writer;
   },
@@ -3098,6 +3160,13 @@ export const DatabaseMetadata = {
 
           message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.classificationFromConfig = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3121,6 +3190,9 @@ export const DatabaseMetadata = {
       schemaConfigs: globalThis.Array.isArray(object?.schemaConfigs)
         ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
         : [],
+      classificationFromConfig: isSet(object.classificationFromConfig)
+        ? globalThis.Boolean(object.classificationFromConfig)
+        : false,
     };
   },
 
@@ -3144,6 +3216,9 @@ export const DatabaseMetadata = {
     if (message.schemaConfigs?.length) {
       obj.schemaConfigs = message.schemaConfigs.map((e) => SchemaConfig.toJSON(e));
     }
+    if (message.classificationFromConfig === true) {
+      obj.classificationFromConfig = message.classificationFromConfig;
+    }
     return obj;
   },
 
@@ -3158,6 +3233,7 @@ export const DatabaseMetadata = {
     message.collation = object.collation ?? "";
     message.extensions = object.extensions?.map((e) => ExtensionMetadata.fromPartial(e)) || [];
     message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
+    message.classificationFromConfig = object.classificationFromConfig ?? false;
     return message;
   },
 };
@@ -3480,7 +3556,6 @@ function createBaseTableMetadata(): TableMetadata {
     dataFree: Long.ZERO,
     createOptions: "",
     comment: "",
-    classification: "",
     userComment: "",
     foreignKeys: [],
     partitions: [],
@@ -3521,9 +3596,6 @@ export const TableMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(90).string(message.comment);
-    }
-    if (message.classification !== "") {
-      writer.uint32(106).string(message.classification);
     }
     if (message.userComment !== "") {
       writer.uint32(114).string(message.userComment);
@@ -3621,13 +3693,6 @@ export const TableMetadata = {
 
           message.comment = reader.string();
           continue;
-        case 13:
-          if (tag !== 106) {
-            break;
-          }
-
-          message.classification = reader.string();
-          continue;
         case 14:
           if (tag !== 114) {
             break;
@@ -3675,7 +3740,6 @@ export const TableMetadata = {
       dataFree: isSet(object.dataFree) ? Long.fromValue(object.dataFree) : Long.ZERO,
       createOptions: isSet(object.createOptions) ? globalThis.String(object.createOptions) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      classification: isSet(object.classification) ? globalThis.String(object.classification) : "",
       userComment: isSet(object.userComment) ? globalThis.String(object.userComment) : "",
       foreignKeys: globalThis.Array.isArray(object?.foreignKeys)
         ? object.foreignKeys.map((e: any) => ForeignKeyMetadata.fromJSON(e))
@@ -3721,9 +3785,6 @@ export const TableMetadata = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
-    if (message.classification !== "") {
-      obj.classification = message.classification;
-    }
     if (message.userComment !== "") {
       obj.userComment = message.userComment;
     }
@@ -3760,7 +3821,6 @@ export const TableMetadata = {
       : Long.ZERO;
     message.createOptions = object.createOptions ?? "";
     message.comment = object.comment ?? "";
-    message.classification = object.classification ?? "";
     message.userComment = object.userComment ?? "";
     message.foreignKeys = object.foreignKeys?.map((e) => ForeignKeyMetadata.fromPartial(e)) || [];
     message.partitions = object.partitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
@@ -3927,7 +3987,6 @@ function createBaseColumnMetadata(): ColumnMetadata {
     characterSet: "",
     collation: "",
     comment: "",
-    classification: "",
     userComment: "",
     effectiveMaskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
   };
@@ -3970,9 +4029,6 @@ export const ColumnMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(90).string(message.comment);
-    }
-    if (message.classification !== "") {
-      writer.uint32(98).string(message.classification);
     }
     if (message.userComment !== "") {
       writer.uint32(106).string(message.userComment);
@@ -4074,13 +4130,6 @@ export const ColumnMetadata = {
 
           message.comment = reader.string();
           continue;
-        case 12:
-          if (tag !== 98) {
-            break;
-          }
-
-          message.classification = reader.string();
-          continue;
         case 13:
           if (tag !== 106) {
             break;
@@ -4118,7 +4167,6 @@ export const ColumnMetadata = {
       characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
       collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      classification: isSet(object.classification) ? globalThis.String(object.classification) : "",
       userComment: isSet(object.userComment) ? globalThis.String(object.userComment) : "",
       effectiveMaskingLevel: isSet(object.effectiveMaskingLevel)
         ? maskingLevelFromJSON(object.effectiveMaskingLevel)
@@ -4164,9 +4212,6 @@ export const ColumnMetadata = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
-    if (message.classification !== "") {
-      obj.classification = message.classification;
-    }
     if (message.userComment !== "") {
       obj.userComment = message.userComment;
     }
@@ -4193,7 +4238,6 @@ export const ColumnMetadata = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.comment = object.comment ?? "";
-    message.classification = object.classification ?? "";
     message.userComment = object.userComment ?? "";
     message.effectiveMaskingLevel = object.effectiveMaskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
     return message;
@@ -5512,7 +5556,7 @@ export const ForeignKeyMetadata = {
 };
 
 function createBaseDatabaseConfig(): DatabaseConfig {
-  return { name: "", schemaConfigs: [] };
+  return { name: "", schemaConfigs: [], classificationFromConfig: false };
 }
 
 export const DatabaseConfig = {
@@ -5522,6 +5566,9 @@ export const DatabaseConfig = {
     }
     for (const v of message.schemaConfigs) {
       SchemaConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.classificationFromConfig === true) {
+      writer.uint32(24).bool(message.classificationFromConfig);
     }
     return writer;
   },
@@ -5547,6 +5594,13 @@ export const DatabaseConfig = {
 
           message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.classificationFromConfig = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5562,6 +5616,9 @@ export const DatabaseConfig = {
       schemaConfigs: globalThis.Array.isArray(object?.schemaConfigs)
         ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
         : [],
+      classificationFromConfig: isSet(object.classificationFromConfig)
+        ? globalThis.Boolean(object.classificationFromConfig)
+        : false,
     };
   },
 
@@ -5573,6 +5630,9 @@ export const DatabaseConfig = {
     if (message.schemaConfigs?.length) {
       obj.schemaConfigs = message.schemaConfigs.map((e) => SchemaConfig.toJSON(e));
     }
+    if (message.classificationFromConfig === true) {
+      obj.classificationFromConfig = message.classificationFromConfig;
+    }
     return obj;
   },
 
@@ -5583,12 +5643,13 @@ export const DatabaseConfig = {
     const message = createBaseDatabaseConfig();
     message.name = object.name ?? "";
     message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
+    message.classificationFromConfig = object.classificationFromConfig ?? false;
     return message;
   },
 };
 
 function createBaseSchemaConfig(): SchemaConfig {
-  return { name: "", tableConfigs: [] };
+  return { name: "", tableConfigs: [], functionConfigs: [], procedureConfigs: [], viewConfigs: [] };
 }
 
 export const SchemaConfig = {
@@ -5598,6 +5659,15 @@ export const SchemaConfig = {
     }
     for (const v of message.tableConfigs) {
       TableConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    for (const v of message.functionConfigs) {
+      FunctionConfig.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    for (const v of message.procedureConfigs) {
+      ProcedureConfig.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    for (const v of message.viewConfigs) {
+      ViewConfig.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -5623,6 +5693,27 @@ export const SchemaConfig = {
 
           message.tableConfigs.push(TableConfig.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.functionConfigs.push(FunctionConfig.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.procedureConfigs.push(ProcedureConfig.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.viewConfigs.push(ViewConfig.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5638,6 +5729,15 @@ export const SchemaConfig = {
       tableConfigs: globalThis.Array.isArray(object?.tableConfigs)
         ? object.tableConfigs.map((e: any) => TableConfig.fromJSON(e))
         : [],
+      functionConfigs: globalThis.Array.isArray(object?.functionConfigs)
+        ? object.functionConfigs.map((e: any) => FunctionConfig.fromJSON(e))
+        : [],
+      procedureConfigs: globalThis.Array.isArray(object?.procedureConfigs)
+        ? object.procedureConfigs.map((e: any) => ProcedureConfig.fromJSON(e))
+        : [],
+      viewConfigs: globalThis.Array.isArray(object?.viewConfigs)
+        ? object.viewConfigs.map((e: any) => ViewConfig.fromJSON(e))
+        : [],
     };
   },
 
@@ -5649,6 +5749,15 @@ export const SchemaConfig = {
     if (message.tableConfigs?.length) {
       obj.tableConfigs = message.tableConfigs.map((e) => TableConfig.toJSON(e));
     }
+    if (message.functionConfigs?.length) {
+      obj.functionConfigs = message.functionConfigs.map((e) => FunctionConfig.toJSON(e));
+    }
+    if (message.procedureConfigs?.length) {
+      obj.procedureConfigs = message.procedureConfigs.map((e) => ProcedureConfig.toJSON(e));
+    }
+    if (message.viewConfigs?.length) {
+      obj.viewConfigs = message.viewConfigs.map((e) => ViewConfig.toJSON(e));
+    }
     return obj;
   },
 
@@ -5659,12 +5768,15 @@ export const SchemaConfig = {
     const message = createBaseSchemaConfig();
     message.name = object.name ?? "";
     message.tableConfigs = object.tableConfigs?.map((e) => TableConfig.fromPartial(e)) || [];
+    message.functionConfigs = object.functionConfigs?.map((e) => FunctionConfig.fromPartial(e)) || [];
+    message.procedureConfigs = object.procedureConfigs?.map((e) => ProcedureConfig.fromPartial(e)) || [];
+    message.viewConfigs = object.viewConfigs?.map((e) => ViewConfig.fromPartial(e)) || [];
     return message;
   },
 };
 
 function createBaseTableConfig(): TableConfig {
-  return { name: "", columnConfigs: [] };
+  return { name: "", columnConfigs: [], classificationId: "", updater: "", updateTime: undefined };
 }
 
 export const TableConfig = {
@@ -5674,6 +5786,15 @@ export const TableConfig = {
     }
     for (const v of message.columnConfigs) {
       ColumnConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.classificationId !== "") {
+      writer.uint32(26).string(message.classificationId);
+    }
+    if (message.updater !== "") {
+      writer.uint32(34).string(message.updater);
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -5699,6 +5820,27 @@ export const TableConfig = {
 
           message.columnConfigs.push(ColumnConfig.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.classificationId = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.updater = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5714,6 +5856,9 @@ export const TableConfig = {
       columnConfigs: globalThis.Array.isArray(object?.columnConfigs)
         ? object.columnConfigs.map((e: any) => ColumnConfig.fromJSON(e))
         : [],
+      classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
+      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
   },
 
@@ -5725,6 +5870,15 @@ export const TableConfig = {
     if (message.columnConfigs?.length) {
       obj.columnConfigs = message.columnConfigs.map((e) => ColumnConfig.toJSON(e));
     }
+    if (message.classificationId !== "") {
+      obj.classificationId = message.classificationId;
+    }
+    if (message.updater !== "") {
+      obj.updater = message.updater;
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
     return obj;
   },
 
@@ -5735,12 +5889,282 @@ export const TableConfig = {
     const message = createBaseTableConfig();
     message.name = object.name ?? "";
     message.columnConfigs = object.columnConfigs?.map((e) => ColumnConfig.fromPartial(e)) || [];
+    message.classificationId = object.classificationId ?? "";
+    message.updater = object.updater ?? "";
+    message.updateTime = object.updateTime ?? undefined;
+    return message;
+  },
+};
+
+function createBaseFunctionConfig(): FunctionConfig {
+  return { name: "", updater: "", updateTime: undefined };
+}
+
+export const FunctionConfig = {
+  encode(message: FunctionConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.updater !== "") {
+      writer.uint32(18).string(message.updater);
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): FunctionConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFunctionConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updater = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FunctionConfig {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+    };
+  },
+
+  toJSON(message: FunctionConfig): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.updater !== "") {
+      obj.updater = message.updater;
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<FunctionConfig>): FunctionConfig {
+    return FunctionConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<FunctionConfig>): FunctionConfig {
+    const message = createBaseFunctionConfig();
+    message.name = object.name ?? "";
+    message.updater = object.updater ?? "";
+    message.updateTime = object.updateTime ?? undefined;
+    return message;
+  },
+};
+
+function createBaseProcedureConfig(): ProcedureConfig {
+  return { name: "", updater: "", updateTime: undefined };
+}
+
+export const ProcedureConfig = {
+  encode(message: ProcedureConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.updater !== "") {
+      writer.uint32(18).string(message.updater);
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProcedureConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProcedureConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updater = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProcedureConfig {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+    };
+  },
+
+  toJSON(message: ProcedureConfig): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.updater !== "") {
+      obj.updater = message.updater;
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProcedureConfig>): ProcedureConfig {
+    return ProcedureConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProcedureConfig>): ProcedureConfig {
+    const message = createBaseProcedureConfig();
+    message.name = object.name ?? "";
+    message.updater = object.updater ?? "";
+    message.updateTime = object.updateTime ?? undefined;
+    return message;
+  },
+};
+
+function createBaseViewConfig(): ViewConfig {
+  return { name: "", updater: "", updateTime: undefined };
+}
+
+export const ViewConfig = {
+  encode(message: ViewConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.updater !== "") {
+      writer.uint32(18).string(message.updater);
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ViewConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseViewConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updater = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ViewConfig {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+    };
+  },
+
+  toJSON(message: ViewConfig): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.updater !== "") {
+      obj.updater = message.updater;
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ViewConfig>): ViewConfig {
+    return ViewConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ViewConfig>): ViewConfig {
+    const message = createBaseViewConfig();
+    message.name = object.name ?? "";
+    message.updater = object.updater ?? "";
+    message.updateTime = object.updateTime ?? undefined;
     return message;
   },
 };
 
 function createBaseColumnConfig(): ColumnConfig {
-  return { name: "", semanticTypeId: "", labels: {} };
+  return { name: "", semanticTypeId: "", labels: {}, classificationId: "" };
 }
 
 export const ColumnConfig = {
@@ -5754,6 +6178,9 @@ export const ColumnConfig = {
     Object.entries(message.labels).forEach(([key, value]) => {
       ColumnConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).ldelim();
     });
+    if (message.classificationId !== "") {
+      writer.uint32(34).string(message.classificationId);
+    }
     return writer;
   },
 
@@ -5788,6 +6215,13 @@ export const ColumnConfig = {
             message.labels[entry3.key] = entry3.value;
           }
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.classificationId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5807,6 +6241,7 @@ export const ColumnConfig = {
           return acc;
         }, {})
         : {},
+      classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
     };
   },
 
@@ -5827,6 +6262,9 @@ export const ColumnConfig = {
         });
       }
     }
+    if (message.classificationId !== "") {
+      obj.classificationId = message.classificationId;
+    }
     return obj;
   },
 
@@ -5843,6 +6281,7 @@ export const ColumnConfig = {
       }
       return acc;
     }, {});
+    message.classificationId = object.classificationId ?? "";
     return message;
   },
 };

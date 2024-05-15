@@ -405,6 +405,15 @@ message DataSource {
   AuthenticationType authentication_type = 22;
 
   SASLConfig sasl_config = 23;
+
+  message Address {
+    string host = 1;
+    string port = 2;
+  }
+  // additional_addresses is used for MongoDB replica set.
+  repeated Address additional_addresses = 24 [(google.api.field_behavior) = OPTIONAL];
+  // replica_set is used for MongoDB replica set.
+  string replica_set = 25;
 }
 
 enum DataSourceType {

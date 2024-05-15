@@ -313,12 +313,13 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 	var totalCommands int
 	var chunks [][]base.SingleSQL
+	var originalIndex map[int]int
 	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := mysqlparser.SplitSQL(statement)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to split sql")
 		}
-		singleSQLs = base.FilterEmptySQL(singleSQLs)
+		singleSQLs, originalIndex = base.FilterEmptySQLWithIndexes(singleSQLs)
 		if len(singleSQLs) == 0 {
 			return 0, nil
 		}
@@ -336,6 +337,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 				},
 			},
 		}
+		originalIndex = map[int]int{0: 0}
 	}
 
 	tx, err := conn.BeginTx(ctx, nil)
@@ -387,7 +389,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 			var indexes []int32
 			for i := currentIndex; i < currentIndex+len(chunk); i++ {
-				indexes = append(indexes, int32(i))
+				indexes = append(indexes, int32(originalIndex[i]))
 			}
 
 			opts.LogCommandExecute(indexes)

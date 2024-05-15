@@ -40,7 +40,7 @@ func MergeDatabaseConfig(baseline, head, target *storepb.DatabaseConfig) *storep
 		delete(currentMap, schemaName)
 	}
 
-	result := &storepb.DatabaseConfig{Name: head.Name}
+	result := &storepb.DatabaseConfig{Name: head.Name, ClassificationFromConfig: head.ClassificationFromConfig}
 	for _, v := range currentMap {
 		result.SchemaConfigs = append(result.SchemaConfigs, v)
 	}
@@ -122,7 +122,7 @@ func mergeTableConfig(target, baseline, current *storepb.TableConfig) *storepb.T
 		delete(currentMap, tableName)
 	}
 
-	result := &storepb.TableConfig{Name: current.Name}
+	result := &storepb.TableConfig{Name: current.Name, ClassificationId: current.ClassificationId}
 	for _, v := range currentMap {
 		result.ColumnConfigs = append(result.ColumnConfigs, v)
 	}
@@ -142,6 +142,9 @@ func mergeColumnConfig(target, baseline, current *storepb.ColumnConfig) *storepb
 	// If baseline = A, target = A, current = B, we should set merged value to B since there is no change intentially.
 	if target.SemanticTypeId != baseline.SemanticTypeId {
 		current.SemanticTypeId = target.SemanticTypeId
+	}
+	if target.ClassificationId != baseline.ClassificationId {
+		current.ClassificationId = target.ClassificationId
 	}
 
 	if !reflect.DeepEqual(target.Labels, baseline.Labels) {

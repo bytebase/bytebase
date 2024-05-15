@@ -1196,6 +1196,17 @@
     },
     "update-rollout-time": {
       "self": "Hora de implementación de la actualización"
+    },
+    "task-run": {
+      "task-run-log": {
+        "batch": "Lote",
+        "affected-rows": "Filas afectadas",
+        "entry-type": {
+          "command-execute": "ejecutar comando",
+          "schema-dump": "Volcado de esquema"
+        },
+        "affected-rows-n": "Filas afectadas: {n}"
+      }
     }
   },
   "alter-schema": {
@@ -1746,7 +1757,11 @@
     "transfer-database-to": "Transferir bases de datos al proyecto de destino",
     "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino",
     "classification": {
-      "self": "Clasificación"
+      "self": "Clasificación",
+      "sync-from-comment": "Sincronizar clasificación desde comentario",
+      "sync-from-comment-tip": "Una vez habilitada, la clasificación se sincronizará desde el comentario de tabla/columna. El comentario debe seguir el formato \"{format}\".",
+      "sync-from-comment-enable-warning": "La clasificación cambiará con el DDL y se sincronizará con el comentario original.",
+      "sync-from-comment-disable-warning": "La clasificación no cambiará con el DDL; puede cambiarla en cualquier momento en la página de detalles de la base de datos."
     },
     "recent": "Reciente",
     "partitioned": "Particionado",
@@ -1928,7 +1943,7 @@
       "select-schema-change-type-sdl": "Declarativo: especifique el esquema deseado. Utilice únicamente CREAR TABLA/ÍNDICE.",
       "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos.",
       "branch-protection-rules": {
-        "self": "Branch protection rules",
+        "self": "Branch Protection Rules",
         "add-rule": "Agregar Regla",
         "branch-name-pattern": {
           "self": "Patrón de nombre de rama",
@@ -1939,7 +1954,11 @@
         "no-protection-rule-configured": "No hay regla de protección configurada",
         "only-apply-to-main-branches": "Sólo aplica en sucursales principales"
       },
-      "issue-labels": "Etiquetas de problemas"
+      "labels": {
+        "issue-labels": "Etiquetas de problemas",
+        "configure-labels": "Configurar etiquetas",
+        "force-issue-labels": "Forzar tener etiquetas para problemas"
+      }
     },
     "members": {
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
@@ -2279,7 +2298,8 @@
       "n-rows": "{n} filas",
       "rows": "filas"
     },
-    "n-per-page": "{n} / página"
+    "n-per-page": "{n} / página",
+    "customize-tree-structure": "Personalizar la estructura del árbol"
   },
   "schema-editor": {
     "self": "Editor de esquema",

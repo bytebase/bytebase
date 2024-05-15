@@ -135,23 +135,23 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, conf
 	databaseConfig := convertStoreDatabaseConfig(config, filter)
 	if databaseConfig != nil {
 		m.SchemaConfigs = databaseConfig.SchemaConfigs
+		m.ClassificationFromConfig = databaseConfig.ClassificationFromConfig
 	}
 	return m
 }
 
 func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata {
 	t := &v1pb.TableMetadata{
-		Name:           table.Name,
-		Engine:         table.Engine,
-		Collation:      table.Collation,
-		RowCount:       table.RowCount,
-		DataSize:       table.DataSize,
-		IndexSize:      table.IndexSize,
-		DataFree:       table.DataFree,
-		CreateOptions:  table.CreateOptions,
-		Comment:        table.Comment,
-		Classification: table.Classification,
-		UserComment:    table.UserComment,
+		Name:          table.Name,
+		Engine:        table.Engine,
+		Collation:     table.Collation,
+		RowCount:      table.RowCount,
+		DataSize:      table.DataSize,
+		IndexSize:     table.IndexSize,
+		DataFree:      table.DataFree,
+		CreateOptions: table.CreateOptions,
+		Comment:       table.Comment,
+		UserComment:   table.UserComment,
 	}
 	for _, partition := range table.Partitions {
 		if partition == nil {
@@ -254,17 +254,16 @@ func convertStoreTablePartitionMetadata(partition *storepb.TablePartitionMetadat
 
 func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMetadata {
 	metadata := &v1pb.ColumnMetadata{
-		Name:           column.Name,
-		Position:       column.Position,
-		HasDefault:     column.DefaultValue != nil,
-		OnUpdate:       column.OnUpdate,
-		Nullable:       column.Nullable,
-		Type:           column.Type,
-		CharacterSet:   column.CharacterSet,
-		Collation:      column.Collation,
-		Comment:        column.Comment,
-		Classification: column.Classification,
-		UserComment:    column.UserComment,
+		Name:         column.Name,
+		Position:     column.Position,
+		HasDefault:   column.DefaultValue != nil,
+		OnUpdate:     column.OnUpdate,
+		Nullable:     column.Nullable,
+		Type:         column.Type,
+		CharacterSet: column.CharacterSet,
+		Collation:    column.Collation,
+		Comment:      column.Comment,
+		UserComment:  column.UserComment,
 	}
 	if metadata.HasDefault {
 		switch value := column.DefaultValue.(type) {
@@ -285,7 +284,8 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 
 func convertStoreDatabaseConfig(config *storepb.DatabaseConfig, filter *metadataFilter) *v1pb.DatabaseConfig {
 	databaseConfig := &v1pb.DatabaseConfig{
-		Name: config.Name,
+		Name:                     config.Name,
+		ClassificationFromConfig: config.ClassificationFromConfig,
 	}
 	for _, schema := range config.SchemaConfigs {
 		if schema == nil {
@@ -306,14 +306,59 @@ func convertStoreDatabaseConfig(config *storepb.DatabaseConfig, filter *metadata
 			}
 			s.TableConfigs = append(s.TableConfigs, convertStoreTableConfig(table))
 		}
+		for _, view := range schema.ViewConfigs {
+			if view == nil {
+				continue
+			}
+			s.ViewConfigs = append(s.ViewConfigs, convertStoreViewConfig(view))
+		}
+		for _, function := range schema.FunctionConfigs {
+			if function == nil {
+				continue
+			}
+			s.FunctionConfigs = append(s.FunctionConfigs, convertStoreFunctionConfig(function))
+		}
+		for _, procedure := range schema.ProcedureConfigs {
+			if procedure == nil {
+				continue
+			}
+			s.ProcedureConfigs = append(s.ProcedureConfigs, convertStoreProcedureConfig(procedure))
+		}
 		databaseConfig.SchemaConfigs = append(databaseConfig.SchemaConfigs, s)
 	}
 	return databaseConfig
 }
 
+func convertStoreFunctionConfig(config *storepb.FunctionConfig) *v1pb.FunctionConfig {
+	return &v1pb.FunctionConfig{
+		Name:       config.Name,
+		Updater:    config.Updater,
+		UpdateTime: config.UpdateTime,
+	}
+}
+
+func convertStoreProcedureConfig(config *storepb.ProcedureConfig) *v1pb.ProcedureConfig {
+	return &v1pb.ProcedureConfig{
+		Name:       config.Name,
+		Updater:    config.Updater,
+		UpdateTime: config.UpdateTime,
+	}
+}
+
+func convertStoreViewConfig(config *storepb.ViewConfig) *v1pb.ViewConfig {
+	return &v1pb.ViewConfig{
+		Name:       config.Name,
+		Updater:    config.Updater,
+		UpdateTime: config.UpdateTime,
+	}
+}
+
 func convertStoreTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
 	t := &v1pb.TableConfig{
-		Name: table.Name,
+		Name:             table.Name,
+		ClassificationId: table.ClassificationId,
+		Updater:          table.Updater,
+		UpdateTime:       table.UpdateTime,
 	}
 	for _, column := range table.ColumnConfigs {
 		if column == nil {
@@ -326,14 +371,16 @@ func convertStoreTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
 
 func convertStoreColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
 	return &v1pb.ColumnConfig{
-		Name:           column.Name,
-		SemanticTypeId: column.SemanticTypeId,
-		Labels:         column.Labels,
+		Name:             column.Name,
+		SemanticTypeId:   column.SemanticTypeId,
+		Labels:           column.Labels,
+		ClassificationId: column.ClassificationId,
 	}
 }
 
 func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseConfig) {
 	m := &storepb.DatabaseSchemaMetadata{
+		Name:         metadata.Name,
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
 	}
@@ -463,7 +510,9 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 
 	databaseConfig := convertV1DatabaseConfig(
 		&v1pb.DatabaseConfig{
-			SchemaConfigs: metadata.SchemaConfigs,
+			Name:                     metadata.Name,
+			SchemaConfigs:            metadata.SchemaConfigs,
+			ClassificationFromConfig: metadata.ClassificationFromConfig,
 		},
 	)
 	return m, databaseConfig
@@ -471,17 +520,16 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 
 func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 	t := &storepb.TableMetadata{
-		Name:           table.Name,
-		Engine:         table.Engine,
-		Collation:      table.Collation,
-		RowCount:       table.RowCount,
-		DataSize:       table.DataSize,
-		IndexSize:      table.IndexSize,
-		DataFree:       table.DataFree,
-		CreateOptions:  table.CreateOptions,
-		Comment:        table.Comment,
-		Classification: table.Classification,
-		UserComment:    table.UserComment,
+		Name:          table.Name,
+		Engine:        table.Engine,
+		Collation:     table.Collation,
+		RowCount:      table.RowCount,
+		DataSize:      table.DataSize,
+		IndexSize:     table.IndexSize,
+		DataFree:      table.DataFree,
+		CreateOptions: table.CreateOptions,
+		Comment:       table.Comment,
+		UserComment:   table.UserComment,
 	}
 	for _, column := range table.Columns {
 		if column == nil {
@@ -567,16 +615,15 @@ func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata
 
 func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadata {
 	metadata := &storepb.ColumnMetadata{
-		Name:           column.Name,
-		Position:       column.Position,
-		Nullable:       column.Nullable,
-		Type:           column.Type,
-		CharacterSet:   column.CharacterSet,
-		Collation:      column.Collation,
-		Comment:        column.Comment,
-		Classification: column.Classification,
-		UserComment:    column.UserComment,
-		OnUpdate:       column.OnUpdate,
+		Name:         column.Name,
+		Position:     column.Position,
+		Nullable:     column.Nullable,
+		Type:         column.Type,
+		CharacterSet: column.CharacterSet,
+		Collation:    column.Collation,
+		Comment:      column.Comment,
+		UserComment:  column.UserComment,
+		OnUpdate:     column.OnUpdate,
 	}
 
 	if column.HasDefault {
@@ -594,7 +641,8 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 
 func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.DatabaseConfig {
 	config := &storepb.DatabaseConfig{
-		Name: databaseConfig.Name,
+		Name:                     databaseConfig.Name,
+		ClassificationFromConfig: databaseConfig.ClassificationFromConfig,
 	}
 	for _, schema := range databaseConfig.SchemaConfigs {
 		if schema == nil {
@@ -611,14 +659,59 @@ func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.Datab
 			t := convertV1TableConfig(table)
 			s.TableConfigs = append(s.TableConfigs, t)
 		}
+		for _, view := range schema.ViewConfigs {
+			if view == nil {
+				continue
+			}
+			s.ViewConfigs = append(s.ViewConfigs, convertV1ViewConfig(view))
+		}
+		for _, function := range schema.FunctionConfigs {
+			if function == nil {
+				continue
+			}
+			s.FunctionConfigs = append(s.FunctionConfigs, convertV1FunctionConfig(function))
+		}
+		for _, procedure := range schema.ProcedureConfigs {
+			if procedure == nil {
+				continue
+			}
+			s.ProcedureConfigs = append(s.ProcedureConfigs, convertV1ProcedureConfig(procedure))
+		}
 		config.SchemaConfigs = append(config.SchemaConfigs, s)
 	}
 	return config
 }
 
+func convertV1ViewConfig(view *v1pb.ViewConfig) *storepb.ViewConfig {
+	return &storepb.ViewConfig{
+		Name:       view.Name,
+		Updater:    view.Updater,
+		UpdateTime: view.UpdateTime,
+	}
+}
+
+func convertV1FunctionConfig(function *v1pb.FunctionConfig) *storepb.FunctionConfig {
+	return &storepb.FunctionConfig{
+		Name:       function.Name,
+		Updater:    function.Updater,
+		UpdateTime: function.UpdateTime,
+	}
+}
+
+func convertV1ProcedureConfig(procedure *v1pb.ProcedureConfig) *storepb.ProcedureConfig {
+	return &storepb.ProcedureConfig{
+		Name:       procedure.Name,
+		Updater:    procedure.Updater,
+		UpdateTime: procedure.UpdateTime,
+	}
+}
+
 func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
 	t := &storepb.TableConfig{
-		Name: table.Name,
+		Name:             table.Name,
+		ClassificationId: table.ClassificationId,
+		Updater:          table.Updater,
+		UpdateTime:       table.UpdateTime,
 	}
 	for _, column := range table.ColumnConfigs {
 		if column == nil {
@@ -631,8 +724,9 @@ func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
 
 func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnConfig {
 	return &storepb.ColumnConfig{
-		Name:           column.Name,
-		SemanticTypeId: column.SemanticTypeId,
-		Labels:         column.Labels,
+		Name:             column.Name,
+		SemanticTypeId:   column.SemanticTypeId,
+		Labels:           column.Labels,
+		ClassificationId: column.ClassificationId,
 	}
 }

@@ -1196,6 +1196,17 @@
     },
     "update-rollout-time": {
       "self": "修改指定发布时间"
+    },
+    "task-run": {
+      "task-run-log": {
+        "batch": "批次",
+        "affected-rows": "影响行数",
+        "entry-type": {
+          "command-execute": "执行指令",
+          "schema-dump": "导出 schema"
+        },
+        "affected-rows-n": "影响行数：{n}"
+      }
     }
   },
   "alter-schema": {
@@ -1746,7 +1757,11 @@
     "transfer-database-to": "将数据库转移到目标项目",
     "transfer-database-from-to": "将数据库从源项目转移到目标项目",
     "classification": {
-      "self": "分类分级"
+      "self": "分类分级",
+      "sync-from-comment": "从注释中同步分类分级",
+      "sync-from-comment-tip": "启用后，分类分级将从表或列的注释同步。注释应遵循“{format}”格式。",
+      "sync-from-comment-enable-warning": "分类分级将随着 DDL 而改变，并与原始注释同步。",
+      "sync-from-comment-disable-warning": "分类分级不会随着DDL而改变，您可以在数据库详细信息页面上随时更改它。"
     },
     "recent": "最近访问",
     "partitioned": "分区",
@@ -1939,7 +1954,11 @@
         "no-protection-rule-configured": "没有配置分支保护规则。",
         "only-apply-to-main-branches": "只对主分支生效"
       },
-      "issue-labels": "工单标签"
+      "labels": {
+        "issue-labels": "工单标签",
+        "configure-labels": "配置标签",
+        "force-issue-labels": "强制给问题贴上标签"
+      }
     },
     "members": {
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
@@ -2279,7 +2298,8 @@
       "n-rows": "{n} 行",
       "rows": "行"
     },
-    "n-per-page": "{n} / 页"
+    "n-per-page": "{n} / 页",
+    "customize-tree-structure": "自定义树结构"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

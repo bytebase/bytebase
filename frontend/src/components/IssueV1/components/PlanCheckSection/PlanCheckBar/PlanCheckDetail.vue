@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-5 divide-y pb-5 px-2">
+  <div class="space-y-3 divide-y pb-4 px-2">
     <div
       v-for="(row, i) in tableRows"
       :key="i"
-      class="pt-5 first:pt-2 space-y-2"
+      class="pt-3 first:pt-2 space-y-2"
     >
       <div class="flex items-center space-x-3">
         <div
@@ -30,7 +30,7 @@
             </span>
           </template>
         </div>
-        <div v-if="showCategoryColumn">
+        <div v-if="showCategoryColumn" class="shrink-0">
           {{ row.category }}
         </div>
         <div class="font-semibold">{{ row.title }}</div>
@@ -42,7 +42,7 @@
             class="ml-1 normal-link"
             @click="
               state.activeResultDefinition =
-                row.checkResult.sqlReviewReport.detail
+                row.checkResult.sqlReviewReport!.detail
             "
             >{{ $t("sql-review.view-definition") }}</span
           >
@@ -76,13 +76,14 @@
           </a>
         </HideInStandaloneMode>
 
-        <template v-if="row.checkResult.sqlReviewReport?.line">
+        <!-- Only show the error line for latest plan check run -->
+        <template v-if="isLatest && row.checkResult.sqlReviewReport?.line">
           <span class="border-r border-control-border ml-1"></span>
           <span
             class="ml-1 normal-link"
             @click="
               handleClickPlanCheckDetailLine(
-                row.checkResult.sqlReviewReport.line
+                row.checkResult.sqlReviewReport!.line
               )
             "
           >
@@ -161,6 +162,7 @@ type LocalState = {
 const props = defineProps<{
   planCheckRun: PlanCheckRun;
   environment?: string;
+  isLatest?: boolean;
 }>();
 
 const { t } = useI18n();

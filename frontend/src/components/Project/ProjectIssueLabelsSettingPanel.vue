@@ -1,9 +1,19 @@
 <template>
   <div class="w-full flex flex-col justify-start items-start pt-6 space-y-4">
-    <div class="w-full flex flex-row justify-between items-center">
+    <div>
       <h3 class="text-lg font-medium leading-7 text-main">
-        {{ $t("project.settings.issue-labels") }}
+        {{ $t("project.settings.labels.issue-labels") }}
       </h3>
+      <div class="flex space-x-2 items-center textinfolabel">
+        {{ $t("project.settings.labels.force-issue-labels") }}
+        <NSwitch
+          class="ml-2"
+          :size="'small'"
+          :value="project.forceIssueLabels"
+          :disabled="!allowEdit"
+          @update:value="onSwitchUpdate"
+        />
+      </div>
     </div>
     <NDynamicTags
       :size="'large'"
@@ -37,7 +47,7 @@
 <script setup lang="ts">
 import { onClickOutside } from "@vueuse/core";
 import { isEqual, cloneDeep } from "lodash-es";
-import { NDynamicTags, NTag, NColorPicker } from "naive-ui";
+import { NDynamicTags, NTag, NColorPicker, NSwitch } from "naive-ui";
 import { h, computed, nextTick, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useProjectV1Store } from "@/store";
@@ -147,6 +157,17 @@ const onColorChange = (color: string) => {
     return;
   }
   state.labels[state.pendingEditColorIndex].color = color;
+};
+
+const onSwitchUpdate = async (on: boolean) => {
+  const projectPatch = cloneDeep(props.project);
+  projectPatch.forceIssueLabels = on;
+  await projectStore.updateProject(projectPatch, ["force_issue_labels"]);
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
 };
 </script>
 

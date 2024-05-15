@@ -4,7 +4,7 @@
     <button
       v-if="!readonly && columnSemanticType"
       class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
-      @click.prevent="onSemanticTypeRemove()"
+      @click.prevent="onSemanticTypeApply('')"
     >
       <heroicons-outline:x class="w-4 h-4" />
     </button>
@@ -34,12 +34,9 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import { reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import {
-  pushNotification,
   useDBSchemaV1Store,
   useSettingV1Store,
   useSubscriptionV1Store,
@@ -49,12 +46,7 @@ import type {
   ColumnMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import {
-  ColumnConfig,
-  SchemaConfig,
-  TableConfig,
-  DatabaseMetadataView,
-} from "@/types/proto/v1/database_service";
+import { updateColumnConfig } from "./utils";
 
 type LocalState = {
   showFeatureModal: boolean;
@@ -69,7 +61,6 @@ const props = defineProps<{
   readonly?: boolean;
 }>();
 
-const { t } = useI18n();
 const state = reactive<LocalState>({
   showFeatureModal: false,
   showSemanticTypesDrawer: false,
@@ -96,47 +87,13 @@ const semanticTypeList = computed(() => {
   );
 });
 
-const databaseMetadata = computed(() => {
-  return dbSchemaV1Store.getDatabaseMetadata(
-    props.database.name,
-    DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
-  );
-});
-
-const schemaConfig = computed(() => {
-  return (
-    databaseMetadata.value.schemaConfigs.find(
-      (config) => config.name === props.schema
-    ) ??
-    SchemaConfig.fromPartial({
-      name: props.schema,
-      tableConfigs: [],
-    })
-  );
-});
-
-const tableConfig = computed(() => {
-  return (
-    schemaConfig.value.tableConfigs.find(
-      (config) => config.name === props.table.name
-    ) ??
-    TableConfig.fromPartial({
-      name: props.table.name,
-      columnConfigs: [],
-    })
-  );
-});
-
-const getColumnConfig = (columnName: string) => {
-  return (
-    tableConfig.value.columnConfigs.find(
-      (config) => config.name === columnName
-    ) ?? ColumnConfig.fromPartial({})
-  );
-};
-
 const columnSemanticType = computed(() => {
-  const config = getColumnConfig(props.column.name);
+  const config = dbSchemaV1Store.getColumnConfig(
+    props.database.name,
+    props.schema,
+    props.table.name,
+    props.column.name
+  );
   if (!config.semanticTypeId) {
     return;
   }
@@ -155,65 +112,12 @@ const openSemanticTypeDrawer = () => {
 };
 
 const onSemanticTypeApply = async (semanticTypeId: string) => {
-  await updateColumnConfig(props.column.name, { semanticTypeId });
-};
-
-const onSemanticTypeRemove = async () => {
-  await updateColumnConfig(props.column.name, { semanticTypeId: "" });
-};
-
-const updateColumnConfig = async (
-  column: string,
-  config: Partial<ColumnConfig>
-) => {
-  const index = tableConfig.value.columnConfigs.findIndex(
-    (config) => config.name === column
+  await updateColumnConfig(
+    props.database.name,
+    props.schema,
+    props.table.name,
+    props.column.name,
+    { semanticTypeId }
   );
-
-  const pendingUpdateTableConfig = cloneDeep(tableConfig.value);
-  if (index < 0) {
-    pendingUpdateTableConfig.columnConfigs.push(
-      ColumnConfig.fromPartial({
-        name: column,
-        ...config,
-      })
-    );
-  } else {
-    pendingUpdateTableConfig.columnConfigs[index] = {
-      ...pendingUpdateTableConfig.columnConfigs[index],
-      ...config,
-    };
-  }
-
-  const pendingUpdateSchemaConfig = cloneDeep(schemaConfig.value);
-  const tableIndex = pendingUpdateSchemaConfig.tableConfigs.findIndex(
-    (config) => config.name === pendingUpdateTableConfig.name
-  );
-  if (tableIndex < 0) {
-    pendingUpdateSchemaConfig.tableConfigs.push(pendingUpdateTableConfig);
-  } else {
-    pendingUpdateSchemaConfig.tableConfigs[tableIndex] =
-      pendingUpdateTableConfig;
-  }
-
-  const pendingUpdateDatabaseConfig = cloneDeep(databaseMetadata.value);
-  const schemaIndex = pendingUpdateDatabaseConfig.schemaConfigs.findIndex(
-    (config) => config.name === pendingUpdateSchemaConfig.name
-  );
-  if (schemaIndex < 0) {
-    pendingUpdateDatabaseConfig.schemaConfigs.push(pendingUpdateSchemaConfig);
-  } else {
-    pendingUpdateDatabaseConfig.schemaConfigs[schemaIndex] =
-      pendingUpdateSchemaConfig;
-  }
-
-  await dbSchemaV1Store.updateDatabaseSchemaConfigs(
-    pendingUpdateDatabaseConfig
-  );
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
-  });
 };
 </script>

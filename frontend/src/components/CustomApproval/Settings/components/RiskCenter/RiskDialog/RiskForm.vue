@@ -144,20 +144,20 @@ const { allowAdmin } = context;
 const currentUser = useCurrentUserV1();
 
 const state = ref<LocalState>({
-  risk: Risk.fromJSON({}),
-  expr: wrapAsGroup(resolveCELExpr(CELExpr.fromJSON({}))),
+  risk: Risk.fromPartial({}),
+  expr: wrapAsGroup(resolveCELExpr(CELExpr.fromPartial({}))),
 });
 const mode = computed(() => context.dialog.value?.mode ?? "CREATE");
 
 const resolveLocalState = async () => {
   const risk = cloneDeep(context.dialog.value!.risk);
 
-  let expr = CELExpr.fromJSON({});
+  let expr = CELExpr.fromPartial({});
   if (risk.condition?.expression) {
     const parsedExprs = await batchConvertCELStringToParsedExpr([
       risk.condition.expression,
     ]);
-    expr = parsedExprs[0].expr ?? CELExpr.fromJSON({});
+    expr = parsedExprs[0].expr ?? CELExpr.fromPartial({});
   }
 
   state.value = {
@@ -200,11 +200,11 @@ const handleUpsert = async () => {
   const risk = cloneDeep(state.value.risk);
 
   const expressions = await batchConvertParsedExprToCELString([
-    ParsedExpr.fromJSON({
+    ParsedExpr.fromPartial({
       expr: buildCELExpr(state.value.expr),
     }),
   ]);
-  risk.condition = Expr.fromJSON({
+  risk.condition = Expr.fromPartial({
     expression: expressions[0],
   });
   emit("save", risk);
