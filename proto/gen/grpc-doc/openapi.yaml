@@ -8238,6 +8238,22 @@ components:
                     description: |-
                         substitution is the string used to replace the original value, the
                          max length of the string is 16 bytes.
+        Algorithm_InnerOuterMask:
+            type: object
+            properties:
+                prefixLen:
+                    type: integer
+                    format: int32
+                suffixLen:
+                    type: integer
+                    format: int32
+                type:
+                    enum:
+                        - MASK_TYPE_UNSPECIFIED
+                        - INNER
+                        - OUTER
+                    type: string
+                    format: enum
         Algorithm_MD5Mask:
             type: object
             properties:
@@ -11303,6 +11319,8 @@ components:
                     $ref: '#/components/schemas/Algorithm_RangeMask'
                 md5Mask:
                     $ref: '#/components/schemas/Algorithm_MD5Mask'
+                innerOuterMask:
+                    $ref: '#/components/schemas/Algorithm_InnerOuterMask'
         MaskingExceptionPolicy:
             type: object
             properties:

@@ -261,10 +261,25 @@ message MaskingAlgorithmSetting {
       string salt = 1;
     }
 
+    message InnerOuterMask {
+      int32 prefix_len = 1;
+      int32 suffix_len = 2;
+      string substitution = 3;
+
+      enum MaskType {
+        MASK_TYPE_UNSPECIFIED = 0;
+        INNER = 1;
+        OUTER = 2;
+      }
+
+      MaskType type = 4;
+    }
+
     oneof mask {
       FullMask full_mask = 5;
       RangeMask range_mask = 6;
       MD5Mask md5_mask = 7;
+      InnerOuterMask inner_outer_mask = 8;
     }
   }
 
