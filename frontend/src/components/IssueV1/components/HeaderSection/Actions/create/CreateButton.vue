@@ -90,7 +90,9 @@ const issueCreateErrorList = computed(() => {
   if (!issue.value.title.trim()) {
     errorList.push("Missing issue title");
   }
-  if (!issue.value.rolloutEntity?.stages.every((stage) => isValidStage(stage))) {
+  if (
+    !issue.value.rolloutEntity?.stages.every((stage) => isValidStage(stage))
+  ) {
     errorList.push("Missing SQL statement in some stages");
   }
   if (
@@ -100,7 +102,7 @@ const issueCreateErrorList = computed(() => {
       issue.value.projectEntity.issueLabels
     ).length === 0
   ) {
-    errorList.push("Force to have labels for issue");
+    errorList.push(t("project.settings.labels.force-issue-labels"));
   }
   return errorList;
 });
