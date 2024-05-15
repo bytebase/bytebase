@@ -202,7 +202,10 @@
                 }}
               </p>
             </label>
-            <NRadioGroup v-model:value="state.innerOuterMask.type">
+            <NRadioGroup
+              v-model:value="state.innerOuterMask.type"
+              :disabled="state.processing || readonly"
+            >
               <NRadio
                 :value="
                   MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER
