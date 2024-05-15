@@ -264,6 +264,7 @@ message MaskingAlgorithmSetting {
     message InnerOuterMask {
       int32 prefix_len = 1;
       int32 suffix_len = 2;
+      string substitution = 3;
 
       enum MaskType {
         MASK_TYPE_UNSPECIFIED = 0;
@@ -271,7 +272,7 @@ message MaskingAlgorithmSetting {
         OUTER = 2;
       }
 
-      MaskType type = 3;
+      MaskType type = 4;
     }
 
     oneof mask {

@@ -291,7 +291,7 @@ func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.MaskingAlgorithmSett
 	case *storepb.MaskingAlgorithmSetting_Algorithm_Md5Mask:
 		return masker.NewMD5Masker(m.Md5Mask.Salt)
 	case *storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_:
-		return masker.NewInnerOuterMasker(m.InnerOuterMask.Type, m.InnerOuterMask.PrefixLen, m.InnerOuterMask.SuffixLen)
+		return masker.NewInnerOuterMasker(m.InnerOuterMask.Type, m.InnerOuterMask.PrefixLen, m.InnerOuterMask.SuffixLen, m.InnerOuterMask.Substitution)
 	}
 	return masker.NewNoneMasker()
 }

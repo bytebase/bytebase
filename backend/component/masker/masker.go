@@ -779,7 +779,7 @@ func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
 	return nil
 }
 
-func NewInnerOuterMasker(storeMaskerType storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType, prefixLen, suffixLen int32) *InnerOuterMasker {
+func NewInnerOuterMasker(storeMaskerType storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType, prefixLen, suffixLen int32, substitution string) *InnerOuterMasker {
 	var maskerType int32
 	if storeMaskerType == storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_INNER {
 		maskerType = InnerOuterMaskerTypeInner
@@ -790,9 +790,10 @@ func NewInnerOuterMasker(storeMaskerType storepb.MaskingAlgorithmSetting_Algorit
 	}
 
 	return &InnerOuterMasker{
-		maskerType: int32(maskerType),
-		prefixLen:  prefixLen,
-		suffixLen:  suffixLen,
+		maskerType:   int32(maskerType),
+		prefixLen:    prefixLen,
+		suffixLen:    suffixLen,
+		substitution: substitution,
 	}
 }
 
@@ -803,9 +804,10 @@ const (
 )
 
 type InnerOuterMasker struct {
-	prefixLen  int32
-	suffixLen  int32
-	maskerType int32
+	prefixLen    int32
+	suffixLen    int32
+	maskerType   int32
+	substitution string
 }
 
 func (m *InnerOuterMasker) Equal(other Masker) bool {
@@ -837,7 +839,7 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 		if isDataNullOrBool {
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
-					StringValue: "******",
+					StringValue: strings.Repeat(m.substitution, 6),
 				},
 			}
 		}
@@ -875,7 +877,7 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 		if isDataNullOrBool {
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
-					StringValue: "******",
+					StringValue: strings.Repeat(m.substitution, 6),
 				},
 			}
 		}
@@ -929,7 +931,7 @@ func (m *InnerOuterMasker) maskInner(data []rune) string {
 		if _, err := builder.WriteString(string(data[:m.prefixLen])); err != nil {
 			return ""
 		}
-		if _, err := builder.WriteString(strings.Repeat("*", maskLen)); err != nil {
+		if _, err := builder.WriteString(strings.Repeat(m.substitution, maskLen)); err != nil {
 			return ""
 		}
 		if _, err := builder.WriteString(string(data[m.prefixLen+int32(maskLen):])); err != nil {
@@ -949,18 +951,18 @@ func (m *InnerOuterMasker) maskOuter(data []rune) string {
 		builder := strings.Builder{}
 		dataStartIdx := m.prefixLen
 		dataEndIdx := m.prefixLen + int32(dataLen)
-		if _, err := builder.WriteString(strings.Repeat("*", int(m.prefixLen))); err != nil {
+		if _, err := builder.WriteString(strings.Repeat(m.substitution, int(m.prefixLen))); err != nil {
 			return ""
 		}
 		if _, err := builder.WriteString(string(data[dataStartIdx:dataEndIdx])); err != nil {
 			return ""
 		}
-		if _, err := builder.WriteString(strings.Repeat("*", int(m.suffixLen))); err != nil {
+		if _, err := builder.WriteString(strings.Repeat(m.substitution, int(m.suffixLen))); err != nil {
 			return ""
 		}
 		maskedData = builder.String()
 	} else {
-		maskedData = strings.Repeat("*", len(data))
+		maskedData = strings.Repeat(m.substitution, len(data))
 	}
 	return maskedData
 }

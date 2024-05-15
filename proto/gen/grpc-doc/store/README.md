@@ -3631,6 +3631,7 @@ The type of target.
 | ----- | ---- | ----- | ----------- |
 | prefix_len | [int32](#int32) |  |  |
 | suffix_len | [int32](#int32) |  |  |
+| substitution | [string](#string) |  |  |
 | type | [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType) |  |  |
 
 
