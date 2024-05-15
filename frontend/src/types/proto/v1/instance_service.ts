@@ -541,7 +541,13 @@ export interface DataSource {
   authenticationPrivateKey: string;
   externalSecret: DataSourceExternalSecret | undefined;
   authenticationType: DataSource_AuthenticationType;
-  saslConfig: SASLConfig | undefined;
+  saslConfig:
+    | SASLConfig
+    | undefined;
+  /** additional_addresses is used for MongoDB replica set. */
+  additionalAddresses: DataSource_Address[];
+  /** replica_set is used for MongoDB replica set. */
+  replicaSet: string;
 }
 
 export enum DataSource_AuthenticationType {
@@ -603,6 +609,11 @@ export function dataSource_AuthenticationTypeToNumber(object: DataSource_Authent
     default:
       return -1;
   }
+}
+
+export interface DataSource_Address {
+  host: string;
+  port: string;
 }
 
 export interface InstanceResource {
@@ -2449,6 +2460,8 @@ function createBaseDataSource(): DataSource {
     externalSecret: undefined,
     authenticationType: DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
     saslConfig: undefined,
+    additionalAddresses: [],
+    replicaSet: "",
   };
 }
 
@@ -2522,6 +2535,12 @@ export const DataSource = {
     }
     if (message.saslConfig !== undefined) {
       SASLConfig.encode(message.saslConfig, writer.uint32(186).fork()).ldelim();
+    }
+    for (const v of message.additionalAddresses) {
+      DataSource_Address.encode(v!, writer.uint32(194).fork()).ldelim();
+    }
+    if (message.replicaSet !== "") {
+      writer.uint32(202).string(message.replicaSet);
     }
     return writer;
   },
@@ -2694,6 +2713,20 @@ export const DataSource = {
 
           message.saslConfig = SASLConfig.decode(reader, reader.uint32());
           continue;
+        case 24:
+          if (tag !== 194) {
+            break;
+          }
+
+          message.additionalAddresses.push(DataSource_Address.decode(reader, reader.uint32()));
+          continue;
+        case 25:
+          if (tag !== 202) {
+            break;
+          }
+
+          message.replicaSet = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2736,6 +2769,10 @@ export const DataSource = {
         ? dataSource_AuthenticationTypeFromJSON(object.authenticationType)
         : DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
       saslConfig: isSet(object.saslConfig) ? SASLConfig.fromJSON(object.saslConfig) : undefined,
+      additionalAddresses: globalThis.Array.isArray(object?.additionalAddresses)
+        ? object.additionalAddresses.map((e: any) => DataSource_Address.fromJSON(e))
+        : [],
+      replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
     };
   },
 
@@ -2810,6 +2847,12 @@ export const DataSource = {
     if (message.saslConfig !== undefined) {
       obj.saslConfig = SASLConfig.toJSON(message.saslConfig);
     }
+    if (message.additionalAddresses?.length) {
+      obj.additionalAddresses = message.additionalAddresses.map((e) => DataSource_Address.toJSON(e));
+    }
+    if (message.replicaSet !== "") {
+      obj.replicaSet = message.replicaSet;
+    }
     return obj;
   },
 
@@ -2845,6 +2888,82 @@ export const DataSource = {
     message.saslConfig = (object.saslConfig !== undefined && object.saslConfig !== null)
       ? SASLConfig.fromPartial(object.saslConfig)
       : undefined;
+    message.additionalAddresses = object.additionalAddresses?.map((e) => DataSource_Address.fromPartial(e)) || [];
+    message.replicaSet = object.replicaSet ?? "";
+    return message;
+  },
+};
+
+function createBaseDataSource_Address(): DataSource_Address {
+  return { host: "", port: "" };
+}
+
+export const DataSource_Address = {
+  encode(message: DataSource_Address, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.host !== "") {
+      writer.uint32(10).string(message.host);
+    }
+    if (message.port !== "") {
+      writer.uint32(18).string(message.port);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DataSource_Address {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSource_Address();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.host = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.port = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSource_Address {
+    return {
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
+      port: isSet(object.port) ? globalThis.String(object.port) : "",
+    };
+  },
+
+  toJSON(message: DataSource_Address): unknown {
+    const obj: any = {};
+    if (message.host !== "") {
+      obj.host = message.host;
+    }
+    if (message.port !== "") {
+      obj.port = message.port;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataSource_Address>): DataSource_Address {
+    return DataSource_Address.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DataSource_Address>): DataSource_Address {
+    const message = createBaseDataSource_Address();
+    message.host = object.host ?? "";
+    message.port = object.port ?? "";
     return message;
   },
 };
