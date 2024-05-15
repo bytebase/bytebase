@@ -81,6 +81,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get functions from database %q", driver.databaseName)
 	}
+	procedureMap, err := getProcedures(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get procedures from database %q", driver.databaseName)
+	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
@@ -91,10 +95,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 	for _, schemaName := range schemaNames {
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-			Name:      schemaName,
-			Tables:    tableMap[schemaName],
-			Views:     viewMap[schemaName],
-			Functions: funcMap[schemaName],
+			Name:       schemaName,
+			Tables:     tableMap[schemaName],
+			Views:      viewMap[schemaName],
+			Functions:  funcMap[schemaName],
+			Procedures: procedureMap[schemaName],
 		})
 	}
 	return databaseMetadata, nil
@@ -330,6 +335,48 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 	return viewMap, nil
 }
 
+func getProcedures(txn *sql.Tx) (map[string][]*storepb.ProcedureMetadata, error) {
+	procedureMap := make(map[string][]*storepb.ProcedureMetadata)
+
+	// The CAST(...) = 0 means the procedure is not a system function.
+	query := `
+	SELECT
+		SCHEMA_NAME(ao.schema_id) AS schema_name,
+		ao.name AS procedure_name,
+		asm.definition
+	FROM sys.all_objects ao
+        INNER JOIN sys.all_sql_modules asm ON asm.object_id = ao.object_id
+	WHERE ao.type IN ('P', 'RF')
+		AND ao.is_ms_shipped = 0 AND
+		(
+			SELECT major_id
+			FROM sys.extended_properties
+			WHERE major_id = ao.object_id
+				AND minor_id = 0
+				AND class = 1
+				AND name = 'microsoft_database_tools_support'
+		) IS NULL
+	ORDER BY schema_name, procedure_name;`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		procedure := &storepb.ProcedureMetadata{}
+		var schemaName string
+		if err := rows.Scan(&schemaName, &procedure.Name, &procedure.Definition); err != nil {
+			return nil, err
+		}
+		procedureMap[schemaName] = append(procedureMap[schemaName], procedure)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return procedureMap, nil
+}
+
 func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 	funcMap := make(map[string][]*storepb.FunctionMetadata)
 
@@ -341,7 +388,7 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 		asm.definition
 	FROM sys.all_objects ao
         INNER JOIN sys.all_sql_modules asm ON asm.object_id = ao.object_id
-	WHERE ao.type IN ('P', 'RF', 'FN', 'IF', 'TF')
+	WHERE ao.type IN ('FN', 'IF', 'TF')
 		AND ao.is_ms_shipped = 0 AND
 		(
 			SELECT major_id
