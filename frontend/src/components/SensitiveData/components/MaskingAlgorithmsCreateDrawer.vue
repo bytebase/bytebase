@@ -202,31 +202,30 @@
                 }}
               </p>
             </label>
-
-            <NRadio
-              :checked="
-                state.innerOuterMask.type ==
-                MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER
-              "
-              @update:checked="
-                state.innerOuterMask.type =
+            <NRadioGroup v-model:value="state.innerOuterMask.type">
+              <NRadio
+                :value="
                   MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER
-              "
-            >
-              Inner Mask
-            </NRadio>
-            <NRadio
-              :checked="
-                state.innerOuterMask.type ==
-                MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.OUTER
-              "
-              @update:checked="
-                state.innerOuterMask.type =
+                "
+              >
+                {{
+                  $t(
+                    "settings.sensitive-data.algorithms.inner-outer-mask.inner-mask"
+                  )
+                }}
+              </NRadio>
+              <NRadio
+                :value="
                   MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.OUTER
-              "
-            >
-              Outer Mask
-            </NRadio>
+                "
+              >
+                {{
+                  $t(
+                    "settings.sensitive-data.algorithms.inner-outer-mask.outer-mask"
+                  )
+                }}
+              </NRadio>
+            </NRadioGroup>
             <div class="flex space-x-2 items-center">
               <div class="flex-none flex flex-col gap-y-1">
                 <label for="slice-start" class="textlabel flex">

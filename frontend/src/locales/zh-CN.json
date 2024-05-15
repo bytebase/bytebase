@@ -805,11 +805,12 @@
           "self": "内/外遮掩",
           "type": "遮掩类型",
           "inner-label": "内遮掩遮蔽字符串的内部部分。前缀和后缀代表数据的未遮蔽部分。",
+          "inner-mask": "内遮掩",
           "outer-label": "外遮掩遮蔽字符串的左右两端。前缀和后缀代表数据的遮蔽部分。",
+          "outer-mask": "外遮掩",
           "prefix-length": "前缀长度",
           "suffix-length": "后缀长度"
         }
-        
       },
       "masking-level": {
         "self": "脱敏程度",

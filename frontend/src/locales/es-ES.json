@@ -805,10 +805,12 @@
           "self": "Máscara interna / externa",
           "type": "Tipo de máscara",
           "inner-label": "La máscara interna enmascara la parte interior de una cadena. El prefijo y el sufijo representan las partes no enmascaradas de los datos.",
+          "inner-mask": "Mascarilla interior",
           "outer-label": "La máscara externa enmascara los extremos izquierdo y derecho de una cadena. El prefijo y el sufijo representan las partes enmascaradas de los datos.",
+          "outer-mask": "Mascarilla exterior",
           "prefix-length": "Longitud del prefijo",
           "suffix-length": "Longitud del sufijo"
-        }        
+        }
       },
       "masking-level": {
         "self": "Nivel de enmascaramiento",
