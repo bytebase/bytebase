@@ -658,5 +658,4 @@ const onSuffixChange = (val: number) => {
   state.innerOuterMask.suffixLen = val;
 };
 
-console.log(state.innerOuterMask);
 </script>
