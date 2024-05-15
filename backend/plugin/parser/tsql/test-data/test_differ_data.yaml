@@ -6,17 +6,17 @@
         [PublicationDate] date NULL,
         CONSTRAINT [PK__Books__3DE0C22787641226] PRIMARY KEY CLUSTERED ([BookID] ASC),
     );
-    
+
     CREATE NONCLUSTERED INDEX [idx_Books_AuthorID2] ON
     [dbo].[Books] (
         [AuthorID] ASC
     );
-    
+
     CREATE NONCLUSTERED INDEX [idx_Books_AuthorID] ON
     [dbo].[Books] (
         [AuthorID] DESC
     );
-    
+
     CREATE TABLE [dbo].[Students] (
         [StudentID] int NOT NULL,
         [FirstName] nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
@@ -36,17 +36,17 @@
         CONSTRAINT [PK__Books__3DE0C22787641226] PRIMARY KEY CLUSTERED ([BookID] ASC),
         CONSTRAINT [FK__Books__AuthorID__276EDEB3] FOREIGN KEY ([AuthorID]) REFERENCES [dbo].[Authors] ([AuthorID]) ON DELETE NO ACTION ON UPDATE NO ACTION
     );
-    
+
     CREATE NONCLUSTERED INDEX [idx_Books_AuthorID] ON
     [dbo].[Books] (
         [AuthorID] ASC
     );
-    
+
     CREATE NONCLUSTERED INDEX [idx_Books_AuthorID3] ON
     [dbo].[Books] (
         [AuthorID] ASC
     );
-    
+
     CREATE TABLE [dbo].[CourseOfferings] (
         [OfferingID] int IDENTITY(1,1) NOT NULL,
         [CourseID] int NULL,
@@ -67,3 +67,43 @@
         CONSTRAINT [CHK_StudentAge] CHECK ([Age]>=(18) AND [Age]<=(30)),
         CONSTRAINT [CHK_StudentAge1] CHECK ([Age]>=(20) AND [Age]<=(30))
     );
+  diff: |+
+    ALTER TABLE [dbo].[Students] DROP CONSTRAINT [chk_studentage1];
+
+    DROP INDEX [idx_Books_AuthorID] ON [dbo].[Books];
+
+    DROP INDEX [idx_Books_AuthorID2] ON [dbo].[Books];
+
+    ALTER TABLE [dbo].[Books] DROP COLUMN [Price];
+
+    CREATE TABLE [dbo].[CourseOfferings] (
+        [OfferingID] int IDENTITY(1,1) NOT NULL,
+        [CourseID] int NULL,
+        [DepartmentID] int NULL,
+        [Semester] nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+        [Year] int NULL,
+        CONSTRAINT [PK__CourseOf__3500D7CD56B5AD60] PRIMARY KEY CLUSTERED ([OfferingID] ASC),
+        CONSTRAINT [FK__CourseOfferings__412EB0B6] FOREIGN KEY ([CourseID], [DepartmentID]) REFERENCES [dbo].[Courses] ([CourseID], [DepartmentID]) ON DELETE NO ACTION ON UPDATE NO ACTION
+    );
+
+    ALTER TABLE [dbo].[Books] ADD
+      [Title] nvarchar(510) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL;
+
+    ALTER TABLE [dbo].[Books] ALTER COLUMN [AuthorID] int NOT NULL;
+
+    CREATE NONCLUSTERED INDEX [idx_Books_AuthorID] ON
+    [dbo].[Books] (
+        [AuthorID] ASC
+    );
+
+    CREATE NONCLUSTERED INDEX [idx_Books_AuthorID3] ON
+    [dbo].[Books] (
+        [AuthorID] ASC
+    );
+
+    ALTER TABLE [dbo].[Books] ADD
+      CONSTRAINT [FK__Books__AuthorID__276EDEB3] FOREIGN KEY ([AuthorID]) REFERENCES [dbo].[Authors] ([AuthorID]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+    ALTER TABLE [dbo].[Students] ADD
+      CONSTRAINT [CHK_StudentAge1] CHECK ([Age]>=(20) AND [Age]<=(30));
+

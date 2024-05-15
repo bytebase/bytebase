@@ -69,7 +69,7 @@ func (d *diffNode) String() (string, error) {
 		}
 	}
 	for _, createTable := range d.createTable {
-		if _, err := fmt.Fprintf(&buf, "%s;\n\n", createTable); err != nil {
+		if _, err := fmt.Fprintf(&buf, "%s\n\n", createTable); err != nil {
 			return "", err
 		}
 	}
@@ -84,7 +84,7 @@ func (d *diffNode) String() (string, error) {
 		}
 	}
 	for _, addIndex := range d.addIndex {
-		if _, err := fmt.Fprintf(&buf, "%s;\n\n", addIndex); err != nil {
+		if _, err := fmt.Fprintf(&buf, "%s\n\n", addIndex); err != nil {
 			return "", err
 		}
 	}
@@ -341,7 +341,7 @@ func (d *diffNode) appendDropConstraint(schemaName, tableName string, dropConstr
 func (d *diffNode) appendAddConstraint(schemaName, tableName string, addConstraints []tsql.ITable_constraintContext) error {
 	var buf strings.Builder
 
-	if _, err := fmt.Fprintf(&buf, "ALTER TABLE [%s].[%s] ADD ", schemaName, tableName); err != nil {
+	if _, err := fmt.Fprintf(&buf, "ALTER TABLE [%s].[%s] ADD", schemaName, tableName); err != nil {
 		return err
 	}
 	for i, addConstraint := range addConstraints {
@@ -434,7 +434,7 @@ func (d *diffNode) appendModifyColumn(schemaName, tableName string, modifyColumn
 func (d *diffNode) appendAddColumn(schemaName, tableName string, addColumns []tsql.IColumn_definitionContext) error {
 	var buf strings.Builder
 
-	if _, err := fmt.Fprintf(&buf, "ALTER TABLE [%s].[%s] ADD ", schemaName, tableName); err != nil {
+	if _, err := fmt.Fprintf(&buf, "ALTER TABLE [%s].[%s] ADD", schemaName, tableName); err != nil {
 		return err
 	}
 	for i, addColumn := range addColumns {
