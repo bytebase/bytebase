@@ -94,6 +94,15 @@ message DataSourceOptions {
   AuthenticationType authentication_type = 12;
 
   SASLConfig sasl_config = 13;
+
+  message Address {
+    string host = 1;
+    string port = 2;
+  }
+  // replica_nodes is used for MongoDB replica set.
+  repeated Address replica_nodes = 14 [(google.api.field_behavior) = OPTIONAL];
+  // replica_set is used for MongoDB replica set.
+  string replica_set = 15;
 }
 
 message SASLConfig {
