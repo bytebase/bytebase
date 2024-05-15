@@ -99,8 +99,8 @@ message DataSourceOptions {
     string host = 1;
     string port = 2;
   }
-  // replica_nodes is used for MongoDB replica set.
-  repeated Address replica_nodes = 14;
+  // additional_nodes is used for MongoDB replica set.
+  repeated Address additional_nodes = 14;
   // replica_set is used for MongoDB replica set.
   string replica_set = 15;
 }

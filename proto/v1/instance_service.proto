@@ -410,8 +410,8 @@ message DataSource {
     string host = 1;
     string port = 2;
   }
-  // replica_nodes is used for MongoDB replica set.
-  repeated Address replica_nodes = 24 [(google.api.field_behavior) = OPTIONAL];
+  // additional_nodes is used for MongoDB replica set.
+  repeated Address additional_nodes = 24 [(google.api.field_behavior) = OPTIONAL];
   // replica_set is used for MongoDB replica set.
   string replica_set = 25;
 }
