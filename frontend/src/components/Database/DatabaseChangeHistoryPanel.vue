@@ -28,6 +28,7 @@
       <div class="flex flex-row justify-end items-center grow space-x-2">
         <BBSpin
           v-if="state.loading"
+          :size="20"
           :title="$t('change-history.refreshing-history')"
         />
         <TooltipButton
@@ -72,6 +73,7 @@
         </TooltipButton>
       </div>
     </div>
+
     <ChangeHistoryTable
       v-model:selected-change-history-names="
         state.selectedChangeHistoryNameList
@@ -79,8 +81,23 @@
       :mode="'DATABASE'"
       :database-section-list="[database]"
       :history-section-list="changeHistorySectionList"
+      :custom-click="true"
+      @row-click="(id: string) => (state.selectedChangeHistoryId = id)"
     />
   </div>
+
+  <Drawer
+    :show="!!state.selectedChangeHistoryId"
+    @close="state.selectedChangeHistoryId = ''"
+  >
+    <DrawerContent class="w-[80vw] relative" :title="$t('change-history.self')">
+      <ChangeHistoryDetail
+        :instance="database.instance"
+        :database="database.name"
+        :change-history-id="state.selectedChangeHistoryId"
+      />
+    </DrawerContent>
+  </Drawer>
 
   <BBAlert
     v-model:show="state.showBaselineModal"
@@ -112,9 +129,11 @@ import type { BBTableSectionDataSource } from "@/bbkit/types";
 import {
   AffectedTableSelect,
   ChangeHistoryTable,
+  ChangeHistoryDetail,
 } from "@/components/ChangeHistory";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
@@ -140,6 +159,7 @@ interface LocalState {
   isExporting: boolean;
   selectedAffectedTable: AffectedTable;
   selectedChangeType: Set<string>;
+  selectedChangeHistoryId: string;
 }
 
 const props = defineProps<{
@@ -159,6 +179,7 @@ const state = reactive<LocalState>({
   isExporting: false,
   selectedAffectedTable: EmptyAffectedTable,
   selectedChangeType: new Set(CHANGE_TYPES),
+  selectedChangeHistoryId: "",
 });
 
 const { allowAlterSchema } = useDatabaseDetailContext();

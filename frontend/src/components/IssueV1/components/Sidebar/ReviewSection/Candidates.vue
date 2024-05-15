@@ -1,5 +1,5 @@
 <template>
-  <div v-if="candidates.length === 0" class="w-[14rem] text-warning">
+  <div v-if="candidates.length === 0" class="w-[14rem] text-wrap text-warning">
     {{ $t("custom-approval.issue-review.no-one-matches-role") }}
   </div>
 
