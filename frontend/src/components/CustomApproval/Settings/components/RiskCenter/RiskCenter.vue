@@ -77,9 +77,13 @@ const riskListGroupBySource = computed(() => {
 });
 
 const addRisk = () => {
-  const risk = Risk.fromJSON({
+  let source = filter.source.value;
+  if (source === Risk_Source.SOURCE_UNSPECIFIED) {
+    source = SupportedSourceList[0];
+  }
+  const risk = Risk.fromPartial({
     level: PresetRiskLevelList[0].level,
-    source: filter.source.value || SupportedSourceList[0],
+    source,
     active: true,
   });
   if (!hasFeature.value) {
