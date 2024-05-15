@@ -1,10 +1,6 @@
 <template>
   <BBModal
-    :title="
-      task
-        ? $t('task.check-result.title', { name: task.title })
-        : $t('task.check-result.title-general')
-    "
+    :title="$t('task.check-result.title-general')"
     class="!w-[56rem]"
     header-class="whitespace-pre-wrap break-all gap-x-1"
     @close="$emit('close')"
@@ -12,7 +8,6 @@
     <PlanCheckPanel
       :plan-check-run-list="planCheckRunList"
       :selected-type="selectedType"
-      :task="task"
     />
   </BBModal>
 </template>
@@ -23,14 +18,12 @@ import { computed, ref, watch } from "vue";
 import type {
   PlanCheckRun,
   PlanCheckRun_Type,
-  Task,
 } from "@/types/proto/v1/rollout_service";
 import PlanCheckPanel from "./PlanCheckPanel.vue";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
   selectedType: PlanCheckRun_Type;
-  task?: Task;
 }>();
 
 defineEmits<{

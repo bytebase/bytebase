@@ -19,9 +19,10 @@
 
         <PlanCheckBar
           v-if="issue.planCheckRunList.length > 0"
-          :allow-run-checks="false"
           class="shrink-0 flex-col gap-y-1"
           label-class="!text-base"
+          :allow-run-checks="false"
+          :plan-check-run-list="issue.planCheckRunList"
         />
 
         <div v-if="planCheckErrors.length > 0" class="flex flex-col">

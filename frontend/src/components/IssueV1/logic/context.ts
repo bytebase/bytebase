@@ -6,7 +6,7 @@ import { inject, provide } from "vue";
 import type { ComposedIssue, ReviewFlow } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import type { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import type { Stage, Task } from "@/types/proto/v1/rollout_service";
+import type { Plan_Spec, Stage, Task } from "@/types/proto/v1/rollout_service";
 import type {
   IssueReviewAction,
   IssueStatusAction,
@@ -60,6 +60,7 @@ export type IssueContext = {
   // UI status
   selectedStage: Ref<Stage>;
   selectedTask: Ref<Task>;
+  selectedSpec: Ref<Plan_Spec>;
   formatOnSave: Ref<boolean>;
 
   // UI events
