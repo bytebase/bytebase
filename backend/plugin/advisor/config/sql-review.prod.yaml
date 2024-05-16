@@ -116,6 +116,8 @@ ruleList:
     level: ERROR
   - type: statement.add-column-without-position
     level: WARNING
+  - type: statement.disallow-offline-ddl
+    level: WARNING
   - type: naming.fully-qualified
     level: WARNING
   - type: naming.table

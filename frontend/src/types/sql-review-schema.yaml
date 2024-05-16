@@ -348,6 +348,10 @@ ruleList:
     category: STATEMENT
     engineList:
       - OCEANBASE
+  - type: statement.disallow-offline-ddl
+    category: STATEMENT
+    engineList:
+      - OCEANBASE
   - type: naming.fully-qualified
     category: NAMING
     engineList:

@@ -137,6 +137,8 @@ const (
 	SchemaRuleStatementNonTransactional = "statement.non-transactional"
 	// SchemaRuleStatementAddColumnWithoutPosition check no position in ADD COLUMN clause.
 	SchemaRuleStatementAddColumnWithoutPosition = "statement.add-column-without-position"
+	// SchemaRuleStatementDisallowOfflineDDL disallow offline ddl.
+	SchemaRuleStatementDisallowOfflineDDL = "statement.disallow-offline-ddl"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -1697,6 +1699,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementNonTransactional:
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLNonTransactional, nil
+		}
+	case SchemaRuleStatementDisallowOfflineDDL:
+		if engine == storepb.Engine_OCEANBASE {
+			return MySQLDisallowOfflineDDL, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

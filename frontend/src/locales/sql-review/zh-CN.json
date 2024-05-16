@@ -512,6 +512,10 @@
       "title": "禁止在指定位置加列",
       "description": "某些情况下，使用 FIRST/AFTER 在指定位置加列将引起数据重整（把原来的数据重写一遍）。建议错误级别：警告"
     },
+    "statement-disallow-offline-ddl": {
+      "title": "禁止离线 DDL",
+      "description": "为了防止数据库更改影响您的业务，请避免使用离线 DDL。"
+    },
     "schema-backward-compatibility": {
       "title": "检查应用向后兼容性",
       "description": "某些变更可能影响现有应用功能，例如修改数据库对象名，增加新的约束等，此规范可避免不谨慎变更导致现有应用运行失败。建议错误等级：警告"
