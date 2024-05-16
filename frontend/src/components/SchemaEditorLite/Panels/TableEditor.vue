@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden"
-  >
+  <div class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden">
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex justify-start items-center gap-x-2">
         <template
@@ -95,7 +93,7 @@
           />
         </div>
         <LastUpdater
-          v-if="tableConfig"
+          v-if="(showLastUpdater, tableConfig)"
           :updater="tableConfig.updater"
           :update-time="tableConfig.updateTime"
         />
@@ -253,6 +251,7 @@ const { t } = useI18n();
 const {
   project,
   readonly,
+  showLastUpdater,
   events,
   addTab,
   markEditStatus,

@@ -6,7 +6,7 @@
     :status="status"
     @update:code="handleUpdateDefinition"
   >
-    <template v-if="procedureConfig" #header-suffix>
+    <template v-if="showLastUpdater && procedureConfig" #header-suffix>
       <div class="flex justify-end items-center h-[28px]">
         <LastUpdater
           :updater="procedureConfig.updater"
@@ -37,8 +37,13 @@ const props = defineProps<{
   procedure: ProcedureMetadata;
 }>();
 
-const { readonly, markEditStatus, getSchemaStatus, getProcedureStatus } =
-  useSchemaEditorContext();
+const {
+  readonly,
+  showLastUpdater,
+  markEditStatus,
+  getSchemaStatus,
+  getProcedureStatus,
+} = useSchemaEditorContext();
 
 const statusForSchema = () => {
   return getSchemaStatus(props.db, {

@@ -6,7 +6,7 @@
     :status="status"
     @update:code="handleUpdateDefinition"
   >
-    <template v-if="functionConfig" #header-suffix>
+    <template v-if="showLastUpdater && functionConfig" #header-suffix>
       <div class="flex justify-end items-center h-[28px]">
         <LastUpdater
           :updater="functionConfig.updater"
@@ -36,8 +36,13 @@ const props = defineProps<{
   func: FunctionMetadata;
 }>();
 
-const { readonly, markEditStatus, getSchemaStatus, getFunctionStatus } =
-  useSchemaEditorContext();
+const {
+  readonly,
+  showLastUpdater,
+  markEditStatus,
+  getSchemaStatus,
+  getFunctionStatus,
+} = useSchemaEditorContext();
 
 const statusForSchema = () => {
   return getSchemaStatus(props.db, {
