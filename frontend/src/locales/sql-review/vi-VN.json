@@ -512,6 +512,10 @@
       "title": "Cấm thêm cột vào vị trí được chỉ định",
       "description": "Trong một số trường hợp, việc sử dụng FIRST/AFTER để thêm cột vào vị trí được chỉ định có thể gây ra việc sắp xếp lại dữ liệu (viết lại dữ liệu gốc). Mức độ khuyến cáo: cảnh báo."
     },
+    "statement-disallow-offline-ddl": {
+      "title": "Cấm DDL ngoại tuyến",
+      "description": "Để tránh các thay đổi cơ sở dữ liệu ảnh hưởng đến doanh nghiệp của bạn, vui lòng tránh sử dụng DDL ngoại tuyến."
+    },
     "schema-backward-compatibility": {
       "title": "Kiểm tra khả năng tương thích ngược của ứng dụng",
       "description": "Một số thay đổi có thể ảnh hưởng đến các ứng dụng đang chạy, chẳng hạn như sửa đổi tên đối tượng cơ sở dữ liệu, thêm các ràng buộc mới, v.v. Quy tắc này có thể tránh những thay đổi bất cẩn dẫn đến lỗi ứng dụng hiện có. Mức độ lỗi đề xuất: Cảnh báo"
