@@ -459,7 +459,6 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	filteredMergedMetadata := filterDatabaseMetadataByEngine(mergedMetadata, baseBranch.Engine)
 	reconcileMetadata(filteredMergedMetadata, baseBranch.Engine)
-	updateConfigBranchUpdateInfo(baseBranch.Head.Metadata, mergedMetadata, mergedConfig, common.FormatUserEmail(user.Email))
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
 		DatabaseConfig: mergedConfig,
