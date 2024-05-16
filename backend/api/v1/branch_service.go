@@ -163,7 +163,6 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 			return nil, status.Errorf(codes.NotFound, "parent branch %q not found", parentBranchID)
 		}
 		parentBranchHeadConfig := parentBranch.Head.GetDatabaseConfig()
-		initializeBranchUpdaterInfoConfig(parentBranch.Head.Metadata, parentBranchHeadConfig, common.FormatUserEmail(user.Email))
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
 			ProjectID:  project.ResourceID,
 			ResourceID: branchID,
