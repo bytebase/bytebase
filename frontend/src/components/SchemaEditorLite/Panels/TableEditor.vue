@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden px-1 -mx-1"
+    class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden"
   >
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex justify-start items-center gap-x-2">
@@ -94,6 +94,11 @@
             }"
           />
         </div>
+        <LastUpdater
+          v-if="tableConfig"
+          :updater="tableConfig.updater"
+          :update-time="tableConfig.updateTime"
+        />
       </div>
     </div>
 
@@ -341,6 +346,14 @@ const disableAlterColumn = (column: ColumnMetadata): boolean => {
     isDroppedSchema.value || isDroppedTable.value || isDroppedColumn(column)
   );
 };
+
+const tableConfig = computed(() => {
+  const sc = props.database.schemaConfigs.find(
+    (sc) => sc.name === props.schema.name
+  );
+  if (!sc) return undefined;
+  return sc.tableConfigs.find((pc) => pc.name === props.table.name);
+});
 
 const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
   if (isPrimaryKey) {
