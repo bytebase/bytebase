@@ -21,7 +21,6 @@ import (
 
 	// Advisors.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
-	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oceanbase"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/tidb"
 
 	// Transformers.
