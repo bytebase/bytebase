@@ -107,29 +107,23 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 	totalAffectRows := int64(0)
 
-	// Split to batches to support some client commands like GO.
-	s := strings.Split(statement, "\n")
-	scanner := func() (string, error) {
-		if len(s) > 0 {
-			z := s[0]
-			s = s[1:]
-			return z, nil
-		}
-		return "", io.EOF
-	}
-	batch := tsqlbatch.NewBatch(scanner)
+	batch := NewBatch(statement)
 
-	for {
+	for idx := 0; ; idx++ {
 		command, err := batch.Next()
 		if err != nil {
 			if err == io.EOF {
 				// Try send the last batch to server.
 				v := batch.String()
 				if v != "" {
+					indexes := []int32{int32(idx)}
+					opts.LogCommandExecute(indexes)
 					rowsAffected, err := execute(ctx, tx, v)
 					if err != nil {
+						opts.LogCommandResponse(indexes, 0, nil, err.Error())
 						return 0, err
 					}
+					opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 					totalAffectRows += rowsAffected
 				}
 				break
@@ -143,11 +137,16 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		case *tsqlbatch.GoCommand:
 			stmt := batch.String()
 			// Try send the batch to server.
+
+			indexes := []int32{int32(idx)}
 			for i := uint(0); i < v.Count; i++ {
+				opts.LogCommandExecute(indexes)
 				rowsAffected, err := execute(ctx, tx, stmt)
 				if err != nil {
+					opts.LogCommandResponse(indexes, 0, nil, err.Error())
 					return 0, err
 				}
+				opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 				totalAffectRows += rowsAffected
 			}
 		default:
@@ -231,4 +230,18 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 // RunStatement runs a SQL statement.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, storepb.Engine_MSSQL, conn, statement)
+}
+
+func NewBatch(statement string) *tsqlbatch.Batch {
+	// Split to batches to support some client commands like GO.
+	s := strings.Split(statement, "\n")
+	scanner := func() (string, error) {
+		if len(s) > 0 {
+			z := s[0]
+			s = s[1:]
+			return z, nil
+		}
+		return "", io.EOF
+	}
+	return tsqlbatch.NewBatch(scanner)
 }
