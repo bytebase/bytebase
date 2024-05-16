@@ -1064,7 +1064,7 @@
       "assignee": "Người được chuyển nhượng"
     },
     "stage-select": {
-      "active": "{name} (đang hoạt động)"
+      "current": "{name} (hiện hành)"
     },
     "not-allowed-to-operate-unassigned-database": "Không thể {operation} đối với cơ sở dữ liệu chưa được chỉ định.\nNó cần phải được chuyển giao cho một dự án đầu tiên.",
     "migration-mode": {
@@ -1853,11 +1853,6 @@
       "success-prompt": "Đã tạo thành công dự án {name}."
     },
     "overview": {
-      "view-all": "Xem tất cả",
-      "view-all-closed": "Xem tất cả đã đóng",
-      "recent-activity": "Gần đây @.lower:{'common.activities'}",
-      "in-progress": "Trong tiến trình",
-      "recently-closed": "Đã đóng gần đây",
       "info-slot-content": "Bytebase đồng bộ hóa lược đồ phiên bản theo định kỳ. Cơ sở dữ liệu mới được đồng bộ hóa lần đầu tiên được đặt ở đây. Người dùng nên chuyển chúng vào dự án ứng dụng thích hợp.",
       "no-db-prompt": "Không có cơ sở dữ liệu thuộc về dự án này. Bạn có thể thêm cơ sở dữ liệu bằng cách nhấp vào {newDb} hoặc {transferInDb} từ thanh hành động trên cùng."
     },
