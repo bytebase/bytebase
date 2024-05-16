@@ -1962,7 +1962,7 @@
       "labels": {
         "issue-labels": "Etiquetas de problemas",
         "configure-labels": "Configurar etiquetas",
-        "force-issue-labels": "Forzar tener etiquetas para problemas"
+        "force-issue-labels": "Requerir etiquetas para todos los incidencias"
       }
     },
     "members": {
