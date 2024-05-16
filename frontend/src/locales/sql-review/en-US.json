@@ -512,6 +512,10 @@
       "title": "Check no position in ADD COLUMN clause",
       "description": "In some cases, using FIRST/AFTER to add columns will cause data reorganization (rewriting all data). Suggested error level: Warning"
     },
+    "statement-disallow-offline-ddl": {
+      "title": "Disallow Offline DDL",
+      "description": "To prevent database changes from impacting your business, avoid using Offline DDL."
+    },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"
