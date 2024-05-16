@@ -504,6 +504,10 @@
       "title": "Check for prior backup before data change",
       "description": "This rule will check if a backup can be created before the data change. For more details, contains the backup target database exists and disallow the DDL statement."
     },
+    "statement-add-column-without-position": {
+      "title": "Check no position in ADD COLUMN clause",
+      "description": "In some cases, using FIRST/AFTER to add columns will cause data reorganization (rewriting all data). Suggested error level: Warning"
+    },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"

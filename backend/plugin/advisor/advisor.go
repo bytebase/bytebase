@@ -284,6 +284,9 @@ const (
 	// MySQLStatementPriorBackupCheck is an advisor type for MySQL prior backup check.
 	MySQLStatementPriorBackupCheck Type = "bb.plugin.advisor.mysql.statement.prior-backup-check"
 
+	// MySQLStatementAddColumnWithoutPosition is an advisor type for MySQL checking no position in ADD COLUMN clause.
+	MySQLStatementAddColumnWithoutPosition Type = "bb.plugin.advisor.mysql.statement.add-column-without-position"
+
 	// MySQLProcedureDisallowCreate is an advisor type for MySQL disallow create procedure.
 	MySQLProcedureDisallowCreate Type = "bb.plugin.advisor.mysql.procedure.disallow-create"
 
