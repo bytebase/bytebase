@@ -1,4 +1,4 @@
-import { snakeCase } from "lodash-es";
+import { snakeCase, isEqual } from "lodash-es";
 import { humanizeTs } from "../util";
 
 export const calcUpdateMask = (a: any, b: any, toSnakeCase = false) => {
@@ -7,7 +7,7 @@ export const calcUpdateMask = (a: any, b: any, toSnakeCase = false) => {
   const bKeys = new Set(Object.keys(b));
 
   for (const key of aKeys) {
-    if (a[key] !== b[key]) {
+    if (!isEqual(a[key], b[key])) {
       updateMask.add(key);
     }
     bKeys.delete(key);
