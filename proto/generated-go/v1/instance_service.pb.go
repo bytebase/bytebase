@@ -1581,7 +1581,7 @@ type DataSource struct {
 	Host     string         `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
 	Port     string         `protobuf:"bytes,9,opt,name=port,proto3" json:"port,omitempty"`
 	Database string         `protobuf:"bytes,10,opt,name=database,proto3" json:"database,omitempty"`
-	// srv and authentication_database are used for MongoDB.
+	// srv, authentication_database and replica_set are used for MongoDB.
 	Srv                    bool   `protobuf:"varint,11,opt,name=srv,proto3" json:"srv,omitempty"`
 	AuthenticationDatabase string `protobuf:"bytes,12,opt,name=authentication_database,json=authenticationDatabase,proto3" json:"authentication_database,omitempty"`
 	// sid and service_name are used for Oracle.

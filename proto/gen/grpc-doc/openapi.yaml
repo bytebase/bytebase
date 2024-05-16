@@ -9232,7 +9232,7 @@ components:
                     type: string
                 srv:
                     type: boolean
-                    description: srv and authentication_database are used for MongoDB.
+                    description: srv, authentication_database and replica_set are used for MongoDB.
                 authenticationDatabase:
                     type: string
                 sid:
