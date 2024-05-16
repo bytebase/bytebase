@@ -1,5 +1,5 @@
 import { v1 as uuidv1 } from "uuid";
-import type { EditStatus } from "../types";
+import type { EditStatus } from "../../types";
 
 export const markUUID = (obj: any) => {
   // column.name is editable, so we need to insert another hidden field

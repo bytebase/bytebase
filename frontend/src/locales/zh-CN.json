@@ -3515,6 +3515,9 @@
     "table-partition": {
       "drop-partition-confirm": "删除表分区？",
       "drop-partition-with-subpartitions-confirm": "将会同时删除其所有子分区。"
+    },
+    "last-update": {
+      "self": "最后更新"
     }
   }
 }
