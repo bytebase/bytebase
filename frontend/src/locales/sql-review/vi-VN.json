@@ -278,6 +278,10 @@
       "title": "Cấm thay đổi thứ tự các cột trong bảng",
       "description": "Việc sửa đổi thứ tự các cột có thể khiến một số ứng dụng hoặc dạng xem phụ thuộc vào thứ tự mặc định của bảng gốc tạo ra kết quả không mong muốn, chẳng hạn như \"chọn *\". Mức độ lỗi đề xuất: Cảnh báo"
     },
+    "column-disallow-drop": {
+      "title": "Cấm xóa cột",
+      "description": "Cấm xóa cột. Cấp độ lỗi đề nghị: cảnh báo."
+    },
     "column-disallow-drop-in-index": {
       "title": "Cấm bỏ cột trong chỉ mục",
       "description": "Cấm bỏ cột trong chỉ mục. Mức độ lỗi đề xuất: Lỗi"

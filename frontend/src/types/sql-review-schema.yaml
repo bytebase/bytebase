@@ -594,6 +594,10 @@ ruleList:
       - TIDB
       - OCEANBASE
       - MARIADB
+  - type: column.disallow-drop
+    category: COLUMN
+    engineList:
+      - OCEANBASE
   - type: column.disallow-drop-in-index
     category: COLUMN
     engineList:
