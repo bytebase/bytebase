@@ -54,11 +54,7 @@ export const cleanupUnusedConfigs = (metadata: DatabaseMetadata) => {
     // Recursively cleanup column configs
     schemaConfig.tableConfigs.forEach((tc) => {
       cleanupColumnConfigs(tableMap.get(tc.name)!, tc);
-    });
-    // Cleanup empty table configs
-    schemaConfig.tableConfigs = schemaConfig.tableConfigs.filter(
-      (tc) => tc.columnConfigs.length > 0 || tc.classificationId
-    );
+    })
   };
   const cleanupViewConfigs = (
     schema: SchemaMetadata,
