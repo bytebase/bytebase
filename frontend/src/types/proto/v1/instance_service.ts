@@ -508,7 +508,7 @@ export interface DataSource {
   host: string;
   port: string;
   database: string;
-  /** srv and authentication_database are used for MongoDB. */
+  /** srv, authentication_database and replica_set are used for MongoDB. */
   srv: boolean;
   authenticationDatabase: string;
   /** sid and service_name are used for Oracle. */

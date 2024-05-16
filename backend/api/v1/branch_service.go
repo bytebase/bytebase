@@ -163,7 +163,6 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 			return nil, status.Errorf(codes.NotFound, "parent branch %q not found", parentBranchID)
 		}
 		parentBranchHeadConfig := parentBranch.Head.GetDatabaseConfig()
-		initializeBranchUpdaterInfoConfig(parentBranch.Head.Metadata, parentBranchHeadConfig, common.FormatUserEmail(user.Email))
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
 			ProjectID:  project.ResourceID,
 			ResourceID: branchID,
@@ -222,6 +221,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 			return nil, status.Errorf(codes.Internal, "failed to create branch: %v", err)
 		}
 		config := databaseSchema.GetConfig()
+		sanitizeCommentForSchemaMetadata(filteredBaseSchemaMetadata, model.NewDatabaseConfig(config))
 		initializeBranchUpdaterInfoConfig(filteredBaseSchemaMetadata, config, common.FormatUserEmail(user.Email))
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
 			ProjectID:  project.ResourceID,
@@ -318,9 +318,9 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 
 		reconcileMetadata(metadata, branch.Engine)
 		filteredMetadata := filterDatabaseMetadataByEngine(metadata, branch.Engine)
-		updateConfigBranchUpdateInfo(branch.Head.Metadata, metadata, config, common.FormatUserEmail(user.Email))
-		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(branch.Engine), metadata)
-		schema, err := schema.GetDesignSchema(branch.Engine, defaultSchema, "", metadata)
+		updateConfigBranchUpdateInfo(branch.Head.Metadata, filteredMetadata, config, common.FormatUserEmail(user.Email))
+		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(branch.Engine), filteredMetadata)
+		schema, err := schema.GetDesignSchema(branch.Engine, defaultSchema, "", filteredMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -458,7 +458,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	filteredMergedMetadata := filterDatabaseMetadataByEngine(mergedMetadata, baseBranch.Engine)
 	reconcileMetadata(filteredMergedMetadata, baseBranch.Engine)
-	updateConfigBranchUpdateInfo(baseBranch.Head.Metadata, mergedMetadata, mergedConfig, common.FormatUserEmail(user.Email))
+	updateConfigBranchUpdateInfo(baseBranch.Base.Metadata, filteredMergedMetadata, mergedConfig, common.FormatUserEmail(user.Email))
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
 		DatabaseConfig: mergedConfig,
