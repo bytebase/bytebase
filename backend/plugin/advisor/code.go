@@ -55,6 +55,7 @@ const (
 	StatementPriorBackupCheck                 Code = 228
 	StatementAddFKWithValidation              Code = 229
 	StatementNonTransactional                 Code = 230
+	StatementAddColumnWithPosition            Code = 231
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
