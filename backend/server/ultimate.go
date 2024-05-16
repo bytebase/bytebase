@@ -25,6 +25,7 @@ import (
 
 	// Advisors.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oceanbase"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
 

@@ -278,6 +278,10 @@
       "title": "Prohibir el cambio del orden de las columnas en una tabla",
       "description": "Modificar el orden de las columnas puede hacer que algunas aplicaciones o vistas que dependen del orden predeterminado de la tabla original produzcan resultados inesperados, como \"select *\". Nivel de error sugerido: Advertencia"
     },
+    "column-disallow-drop": {
+      "title": "Prohibir eliminar columnas",
+      "description": "Se prohíbe eliminar columnas. Nivel de error sugerido: advertencia."
+    },
     "column-disallow-drop-in-index": {
       "title": "Prohibir eliminar columnas en el índice",
       "description": "Prohibir eliminar columnas en el índice. Nivel de error sugerido: Advertencia"
@@ -503,6 +507,14 @@
     "statement-prior-backup-check": {
       "title": "Verificar la existencia de una copia de seguridad previa antes de cambiar los datos",
       "description": "Esta regla verificará si se puede crear una copia de seguridad antes del cambio de datos. Para más detalles, contiene la existencia de la base de datos objetivo de la copia de seguridad y no permite la sentencia DDL."
+    },
+    "statement-add-column-without-position": {
+      "title": "Prohibir añadir columnas en una posición especificada",
+      "description": "En algunos casos, usar FIRST/AFTER para añadir columnas en una posición especificada puede causar una reorganización de los datos (reescribiendo los datos originales). Nivel de recomendación: advertencia."
+    },
+    "statement-disallow-offline-ddl": {
+      "title": "Prohibir DDL sin conexión",
+      "description": "Para evitar que los cambios en la base de datos afecten su negocio, por favor evite usar DDL sin conexión."
     },
     "schema-backward-compatibility": {
       "title": "Comprobación de la compatibilidad con versiones anteriores de la aplicación",
