@@ -15,6 +15,11 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const (
+	// 1MB.
+	contentLengthLimit = 1024 * 1024
+)
+
 func newEmptyCompletionList() *lsp.CompletionList {
 	return &lsp.CompletionList{
 		IsIncomplete: false,
@@ -32,6 +37,10 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	content, err := h.readFile(ctx, params.TextDocument.URI)
 	if err != nil {
 		return nil, err
+	}
+	if len(content) > contentLengthLimit {
+		// We don't want to parse a huge file.
+		return newEmptyCompletionList(), nil
 	}
 	_, valid, why := offsetForPosition(content, params.Position)
 	if !valid {
