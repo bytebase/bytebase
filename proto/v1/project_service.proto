@@ -468,6 +468,8 @@ enum OperatorType {
   OPERATOR_TYPE_IN = 1;
   // The operator is "Exists".
   OPERATOR_TYPE_EXISTS = 2;
+  // The operator is "Not In".
+  OPERATOR_TYPE_NOT_IN = 3;
 }
 
 // TODO(zp): move to activity later.

@@ -14,7 +14,7 @@
       style="width: auto"
     />
     <NSelect
-      v-if="selector.operator == OperatorType.OPERATOR_TYPE_IN"
+      v-if="selector.operator !== OperatorType.OPERATOR_TYPE_EXISTS"
       v-bind="valueSelectProps"
       @update:value="handleUpdateValues"
     />
@@ -56,6 +56,7 @@ import { ErrorTipsButton } from "../v2";
 
 const OPERATORS: OperatorType[] = [
   OperatorType.OPERATOR_TYPE_IN,
+  OperatorType.OPERATOR_TYPE_NOT_IN,
   OperatorType.OPERATOR_TYPE_EXISTS,
 ];
 
@@ -100,6 +101,18 @@ const commonSelectProps = computed((): SelectProps => {
   };
 });
 
+const operators = computed(() => {
+  return OPERATORS.filter((op) => {
+    if (
+      props.selector.key === "environment" &&
+      op === OperatorType.OPERATOR_TYPE_NOT_IN
+    ) {
+      return false;
+    }
+    return true;
+  });
+});
+
 const keys = computed(() => {
   return getAvailableDeploymentConfigMatchSelectorKeyList(
     props.databaseList,
@@ -116,7 +129,7 @@ const keyOptions = computed(() => {
   });
 });
 const operatorOptions = computed(() => {
-  return OPERATORS.map<SelectOption>((op) => {
+  return operators.value.map<SelectOption>((op) => {
     return {
       label: operatorToText(op),
       value: op,
@@ -147,12 +160,14 @@ const resetValues = () => {
   props.selector.values = [];
 };
 
-const operatorToText = (op: string) => {
-  if (op === OperatorType.OPERATOR_TYPE_IN) {
-    return allowMultipleValues.value ? "in" : "is";
-  }
-  if (op === OperatorType.OPERATOR_TYPE_EXISTS) {
-    return "exists";
+const operatorToText = (op: OperatorType) => {
+  switch (op) {
+    case OperatorType.OPERATOR_TYPE_IN:
+      return allowMultipleValues.value ? "in" : "is";
+    case OperatorType.OPERATOR_TYPE_NOT_IN:
+      return "not in";
+    case OperatorType.OPERATOR_TYPE_EXISTS:
+      return "exists";
   }
   console.error("[operatorToText] should never reach this line", op);
   return "";
