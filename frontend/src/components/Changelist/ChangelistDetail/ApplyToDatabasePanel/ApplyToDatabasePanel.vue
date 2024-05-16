@@ -214,7 +214,7 @@ const handleClickNext = async () => {
         changelist.value
       ),
       changelist: changelist.value.name,
-      databaseList: databaseList.map((db) => db.name),
+      databaseList: databaseList.map((db) => db.name).join(','),
     };
 
     router.push({
