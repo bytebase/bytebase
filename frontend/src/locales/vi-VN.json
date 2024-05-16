@@ -1962,7 +1962,7 @@
       "labels": {
         "issue-labels": "Nhãn phát hành",
         "configure-labels": "Định cấu hình nhãn",
-        "force-issue-labels": "Buộc phải có nhãn cho các vấn đề"
+        "force-issue-labels": "Yêu cầu gắn nhãn cho tất cả các vấn đề"
       }
     },
     "members": {

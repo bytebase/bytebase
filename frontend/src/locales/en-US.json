@@ -1962,7 +1962,7 @@
       "labels": {
         "issue-labels": "Issue Labels",
         "configure-labels": "Configure labels",
-        "force-issue-labels": "Force to have labels for issues"
+        "force-issue-labels": "Require labels for all issues"
       }
     },
     "members": {
