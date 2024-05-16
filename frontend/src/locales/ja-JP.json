@@ -1962,7 +1962,7 @@
       "labels": {
         "issue-labels": "作業指示タグ",
         "configure-labels": "タグを構成する",
-        "force-issue-labels": "問題のラベル付けを強制する"
+        "force-issue-labels": "すべての作業命令にラベルを付けることを要求する"
       }
     },
     "members": {

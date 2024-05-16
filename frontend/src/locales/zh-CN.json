@@ -1962,7 +1962,7 @@
       "labels": {
         "issue-labels": "工单标签",
         "configure-labels": "配置标签",
-        "force-issue-labels": "强制给问题贴上标签"
+        "force-issue-labels": "要求所有工单都必须有标签"
       }
     },
     "members": {
