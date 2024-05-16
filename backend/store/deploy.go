@@ -24,38 +24,9 @@ type DeploymentConfigMessage struct {
 	UID int
 }
 
-// ToAPIDeploymentConfig converts the message to a legacy API deployment config.
-func (d *DeploymentConfigMessage) ToAPIDeploymentConfig() (*api.DeploymentConfig, error) {
-	schedule := d.Schedule.toAPIDeploymentSchedule()
-	payload, err := json.Marshal(schedule)
-	if err != nil {
-		return nil, err
-	}
-	return &api.DeploymentConfig{
-		ID:      d.UID,
-		Name:    d.Name,
-		Payload: string(payload),
-	}, nil
-}
-
 // Schedule is the message for deployment schedule.
 type Schedule struct {
 	Deployments []*Deployment `json:"deployments"`
-}
-
-func (s *Schedule) toAPIDeploymentSchedule() *api.DeploymentSchedule {
-	var deployments []*api.Deployment
-	for _, d := range s.Deployments {
-		deployments = append(deployments, &api.Deployment{
-			Name: d.Name,
-			Spec: &api.DeploymentSpec{
-				Selector: d.Spec.Selector.toAPILabelSelector(),
-			},
-		})
-	}
-	return &api.DeploymentSchedule{
-		Deployments: deployments,
-	}
 }
 
 // Deployment is the message for deployment.
@@ -75,25 +46,6 @@ type LabelSelector struct {
 	MatchExpressions []*LabelSelectorRequirement `json:"matchExpressions"`
 }
 
-func (ls *LabelSelector) toAPILabelSelector() *api.LabelSelector {
-	labelSelector := &api.LabelSelector{}
-	for _, r := range ls.MatchExpressions {
-		operatorTp := api.InOperatorType
-		switch r.Operator {
-		case InOperatorType:
-			operatorTp = api.InOperatorType
-		case ExistsOperatorType:
-			operatorTp = api.ExistsOperatorType
-		}
-		labelSelector.MatchExpressions = append(labelSelector.MatchExpressions, &api.LabelSelectorRequirement{
-			Key:      r.Key,
-			Operator: operatorTp,
-			Values:   r.Values,
-		})
-	}
-	return labelSelector
-}
-
 // OperatorType is the type of label selector requirement operator.
 // Valid operators are In, Exists.
 // Note: NotIn and DoesNotExist are not supported initially.
@@ -102,6 +54,8 @@ type OperatorType string
 const (
 	// InOperatorType is the operator type for In.
 	InOperatorType OperatorType = "In"
+	// NotInOperatorType is the operator type for Not In.
+	NotInOperatorType OperatorType = "Not_In"
 	// ExistsOperatorType is the operator type for Exists.
 	ExistsOperatorType OperatorType = "Exists"
 )

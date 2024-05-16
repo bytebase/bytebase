@@ -471,16 +471,10 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 	if err != nil {
 		return nil, model.Version{}, "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.UID)
 	}
-	apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
-	if err != nil {
-		return nil, model.Version{}, "", errors.Wrapf(err, "Failed to convert deployment config for project ID: %v", project.UID)
-	}
-
-	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
-	if err != nil {
+	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
 		return nil, model.Version{}, "", errors.Errorf("Failed to get deployment schedule")
 	}
-	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, databases)
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, databases)
 	if err != nil {
 		return nil, model.Version{}, "", errors.Errorf("Failed to create deployment pipeline")
 	}

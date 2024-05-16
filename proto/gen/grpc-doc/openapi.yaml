@@ -8256,22 +8256,6 @@ components:
                     format: enum
                 substitution:
                     type: string
-        Algorithm_InnerOuterMask:
-            type: object
-            properties:
-                prefixLen:
-                    type: integer
-                    format: int32
-                suffixLen:
-                    type: integer
-                    format: int32
-                type:
-                    enum:
-                        - MASK_TYPE_UNSPECIFIED
-                        - INNER
-                        - OUTER
-                    type: string
-                    format: enum
         Algorithm_MD5Mask:
             type: object
             properties:
@@ -10834,6 +10818,7 @@ components:
                         - OPERATOR_TYPE_UNSPECIFIED
                         - OPERATOR_TYPE_IN
                         - OPERATOR_TYPE_EXISTS
+                        - OPERATOR_TYPE_NOT_IN
                     type: string
                     format: enum
                 values:
