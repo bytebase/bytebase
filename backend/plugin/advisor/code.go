@@ -104,6 +104,7 @@ const (
 	VarcharLengthExceedsLimit                  Code = 422
 	InvalidColumnDefault                       Code = 423
 	DropIndexColumn                            Code = 424
+	DropColumn                                 Code = 425
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501

@@ -119,6 +119,9 @@ const (
 	// MySQLColumnDisallowChanging is an advisor type for MySQL disallow CHANGE COLUMN statement.
 	MySQLColumnDisallowChanging Type = "bb.plugin.advisor.mysql.column.disallow-change"
 
+	// MySQLColumnDisallowDrop is an advisor type for MySQL disallow DROP COLUMN statement.
+	MySQLColumnDisallowDrop Type = "bb.plugin.advisor.mysql.column.disallow-drop"
+
 	// MySQLColumnDisallowDropInIndex is an advisor type for MySQL disallow DROP COLUMN in index.
 	MySQLColumnDisallowDropInIndex Type = "bb.plugin.advisor.mysql.column.disallow-drop-in-index"
 
