@@ -45,6 +45,7 @@
           :resource-type="'branch'"
           :branch="branch"
           :diff-when-ready="true"
+          :show-last-updater="true"
           :disable-diff-coloring="disableDiffColoring"
         />
       </div>

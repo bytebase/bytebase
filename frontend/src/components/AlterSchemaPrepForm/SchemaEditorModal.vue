@@ -38,6 +38,7 @@
           :targets="state.targets"
           :loading="state.isPreparingMetadata"
           :diff-when-ready="false"
+          :hide-last-updater="true"
         />
       </NTabPane>
       <NTabPane

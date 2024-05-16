@@ -73,6 +73,7 @@
     - [BatchSyncInstanceResponse](#bytebase-v1-BatchSyncInstanceResponse)
     - [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest)
     - [DataSource](#bytebase-v1-DataSource)
+    - [DataSource.Address](#bytebase-v1-DataSource-Address)
     - [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption)
     - [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest)
@@ -546,6 +547,7 @@
     - [MaskingAlgorithmSetting](#bytebase-v1-MaskingAlgorithmSetting)
     - [MaskingAlgorithmSetting.Algorithm](#bytebase-v1-MaskingAlgorithmSetting-Algorithm)
     - [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-FullMask)
+    - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-InnerOuterMask)
     - [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-MD5Mask)
     - [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask)
     - [MaskingAlgorithmSetting.Algorithm.RangeMask.Slice](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice)
@@ -566,6 +568,7 @@
   
     - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
     - [AppIMSetting.IMType](#bytebase-v1-AppIMSetting-IMType)
+    - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType)
     - [SMTPMailDeliverySettingValue.Authentication](#bytebase-v1-SMTPMailDeliverySettingValue-Authentication)
     - [SMTPMailDeliverySettingValue.Encryption](#bytebase-v1-SMTPMailDeliverySettingValue-Encryption)
   
@@ -1624,6 +1627,24 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | external_secret | [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType) |  |  |
 | sasl_config | [SASLConfig](#bytebase-v1-SASLConfig) |  |  |
+| additional_addresses | [DataSource.Address](#bytebase-v1-DataSource-Address) | repeated | additional_addresses is used for MongoDB replica set. |
+| replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSource-Address"></a>
+
+### DataSource.Address
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  |  |
+| port | [string](#string) |  |  |
 
 
 
@@ -6540,6 +6561,7 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 | data_classification_config_id | [string](#string) |  |  |
 | issue_labels | [Label](#bytebase-v1-Label) | repeated |  |
+| force_issue_labels | [bool](#bool) |  |  |
 
 
 
@@ -6941,6 +6963,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | OPERATOR_TYPE_UNSPECIFIED | 0 | The operator is not specified. |
 | OPERATOR_TYPE_IN | 1 | The operator is &#34;In&#34;. |
 | OPERATOR_TYPE_EXISTS | 2 | The operator is &#34;Exists&#34;. |
+| OPERATOR_TYPE_NOT_IN | 3 | The operator is &#34;Not In&#34;. |
 
 
 
@@ -8929,6 +8952,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | full_mask | [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-FullMask) |  |  |
 | range_mask | [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask) |  |  |
 | md5_mask | [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-MD5Mask) |  |  |
+| inner_outer_mask | [MaskingAlgorithmSetting.Algorithm.InnerOuterMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-InnerOuterMask) |  |  |
 
 
 
@@ -8944,6 +8968,24 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | substitution | [string](#string) |  | substitution is the string used to replace the original value, the max length of the string is 16 bytes. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingAlgorithmSetting-Algorithm-InnerOuterMask"></a>
+
+### MaskingAlgorithmSetting.Algorithm.InnerOuterMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| prefix_len | [int32](#int32) |  |  |
+| suffix_len | [int32](#int32) |  |  |
+| type | [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType) |  |  |
+| substitution | [string](#string) |  |  |
 
 
 
@@ -9288,6 +9330,19 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | ---- | ------ | ----------- |
 | IM_TYPE_UNSPECIFIED | 0 |  |
 | FEISHU | 1 |  |
+
+
+
+<a name="bytebase-v1-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType"></a>
+
+### MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASK_TYPE_UNSPECIFIED | 0 |  |
+| INNER | 1 |  |
+| OUTER | 2 |  |
 
 
 

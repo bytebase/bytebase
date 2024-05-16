@@ -63,28 +63,26 @@ message DataSourceOptions {
   // authentication_database is the database name to authenticate against, which stores the user credentials.
   string authentication_database = 2;
 
-  string replica_set = 3;
-
   // sid and service_name are used for Oracle.
-  string sid = 4;
-  string service_name = 5;
+  string sid = 3;
+  string service_name = 4;
   // SSH related
   // The hostname of the SSH server agent.
-  string ssh_host = 6;
+  string ssh_host = 5;
   // The port of the SSH server agent. It's 22 typically.
-  string ssh_port = 7;
+  string ssh_port = 6;
   // The user to login the server.
-  string ssh_user = 8;
+  string ssh_user = 7;
   // The password to login the server. If it's empty string, no password is required.
-  string ssh_obfuscated_password = 9;
+  string ssh_obfuscated_password = 8;
   // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
-  string ssh_obfuscated_private_key = 10;
+  string ssh_obfuscated_private_key = 9;
 
   // PKCS#8 private key in PEM format. If it's empty string, no private key is required.
   // Used for authentication when connecting to the data source.
-  string authentication_private_key_obfuscated = 11;
+  string authentication_private_key_obfuscated = 10;
 
-  DataSourceExternalSecret external_secret = 12;
+  DataSourceExternalSecret external_secret = 11;
 
   enum AuthenticationType {
     AUTHENTICATION_UNSPECIFIED = 0;
@@ -93,13 +91,18 @@ message DataSourceOptions {
     AWS_RDS_IAM = 3;
   }
 
-  AuthenticationType authentication_type = 13;
+  AuthenticationType authentication_type = 12;
 
-  SASLConfig sasl_config = 14;
+  SASLConfig sasl_config = 13;
 
-  repeated string additional_hosts = 15;
-
-  repeated string additional_ports = 16;
+  message Address {
+    string host = 1;
+    string port = 2;
+  }
+  // additional_addresses is used for MongoDB replica set.
+  repeated Address additional_addresses = 14;
+  // replica_set is used for MongoDB replica set.
+  string replica_set = 15;
 }
 
 message SASLConfig {

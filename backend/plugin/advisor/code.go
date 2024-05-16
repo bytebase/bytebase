@@ -55,6 +55,8 @@ const (
 	StatementPriorBackupCheck                 Code = 228
 	StatementAddFKWithValidation              Code = 229
 	StatementNonTransactional                 Code = 230
+	StatementAddColumnWithPosition            Code = 231
+	StatementOfflineDDL                       Code = 232
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
@@ -103,6 +105,7 @@ const (
 	VarcharLengthExceedsLimit                  Code = 422
 	InvalidColumnDefault                       Code = 423
 	DropIndexColumn                            Code = 424
+	DropColumn                                 Code = 425
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501

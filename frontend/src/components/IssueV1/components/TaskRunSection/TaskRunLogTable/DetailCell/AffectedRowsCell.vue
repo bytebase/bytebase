@@ -30,7 +30,7 @@ const affectedRows = computed(() => {
     entry.commandExecute
   ) {
     const exec = entry.commandExecute;
-    return exec.affectedRows ?? exec.raw.response?.affectedRows ?? Number.NaN;
+    return exec.affectedRows ?? Number.NaN;
   }
   return Number.NaN;
 });

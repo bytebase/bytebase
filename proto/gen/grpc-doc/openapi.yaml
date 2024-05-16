@@ -8238,6 +8238,24 @@ components:
                     description: |-
                         substitution is the string used to replace the original value, the
                          max length of the string is 16 bytes.
+        Algorithm_InnerOuterMask:
+            type: object
+            properties:
+                prefixLen:
+                    type: integer
+                    format: int32
+                suffixLen:
+                    type: integer
+                    format: int32
+                type:
+                    enum:
+                        - MASK_TYPE_UNSPECIFIED
+                        - INNER
+                        - OUTER
+                    type: string
+                    format: enum
+                substitution:
+                    type: string
         Algorithm_MD5Mask:
             type: object
             properties:
@@ -9264,6 +9282,14 @@ components:
                     format: enum
                 saslConfig:
                     $ref: '#/components/schemas/SASLConfig'
+                additionalAddresses:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/DataSource_Address'
+                    description: additional_addresses is used for MongoDB replica set.
+                replicaSet:
+                    type: string
+                    description: replica_set is used for MongoDB replica set.
         DataSourceExternalSecret:
             type: object
             properties:
@@ -9317,6 +9343,13 @@ components:
                 mountPath:
                     type: string
                     description: The path where the approle auth method is mounted.
+        DataSource_Address:
+            type: object
+            properties:
+                host:
+                    type: string
+                port:
+                    type: string
         Database:
             type: object
             properties:
@@ -10785,6 +10818,7 @@ components:
                         - OPERATOR_TYPE_UNSPECIFIED
                         - OPERATOR_TYPE_IN
                         - OPERATOR_TYPE_EXISTS
+                        - OPERATOR_TYPE_NOT_IN
                     type: string
                     format: enum
                 values:
@@ -11303,6 +11337,8 @@ components:
                     $ref: '#/components/schemas/Algorithm_RangeMask'
                 md5Mask:
                     $ref: '#/components/schemas/Algorithm_MD5Mask'
+                innerOuterMask:
+                    $ref: '#/components/schemas/Algorithm_InnerOuterMask'
         MaskingExceptionPolicy:
             type: object
             properties:
@@ -11893,6 +11929,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Label'
+                forceIssueLabels:
+                    type: boolean
         ProtectionRule:
             type: object
             properties:

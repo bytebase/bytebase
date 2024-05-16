@@ -800,6 +800,16 @@
           "self": "Máscara MD5",
           "salt": "Sal (Salt)",
           "salt-label": "La sal (Salt) se utiliza para generar un hash a partir del valor original."
+        },
+        "inner-outer-mask": {
+          "self": "Máscara interna / externa",
+          "type": "Tipo de máscara",
+          "inner-label": "La máscara interna enmascara la parte interior de una cadena. El prefijo y el sufijo representan las partes no enmascaradas de los datos.",
+          "inner-mask": "Mascarilla interior",
+          "outer-label": "La máscara externa enmascara los extremos izquierdo y derecho de una cadena. El prefijo y el sufijo representan las partes enmascaradas de los datos.",
+          "outer-mask": "Mascarilla exterior",
+          "prefix-length": "Longitud del prefijo",
+          "suffix-length": "Longitud del sufijo"
         }
       },
       "masking-level": {
@@ -1943,7 +1953,7 @@
       "select-schema-change-type-sdl": "Declarativo: especifique el esquema deseado. Utilice únicamente CREAR TABLA/ÍNDICE.",
       "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos.",
       "branch-protection-rules": {
-        "self": "Branch protection rules",
+        "self": "Branch Protection Rules",
         "add-rule": "Agregar Regla",
         "branch-name-pattern": {
           "self": "Patrón de nombre de rama",
@@ -1954,8 +1964,11 @@
         "no-protection-rule-configured": "No hay regla de protección configurada",
         "only-apply-to-main-branches": "Sólo aplica en sucursales principales"
       },
-      "issue-labels": "Etiquetas de problemas",
-      "configure-labels": "Configurar etiquetas"
+      "labels": {
+        "issue-labels": "Etiquetas de problemas",
+        "configure-labels": "Configurar etiquetas",
+        "force-issue-labels": "Forzar tener etiquetas para problemas"
+      }
     },
     "members": {
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
@@ -3502,6 +3515,9 @@
     "table-partition": {
       "drop-partition-confirm": "¿Eliminar partición de mesa?",
       "drop-partition-with-subpartitions-confirm": "También eliminará todas sus subparticiones."
+    },
+    "last-update": {
+      "self": "Última actualización"
     }
   }
 }

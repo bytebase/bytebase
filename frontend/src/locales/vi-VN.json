@@ -800,6 +800,16 @@
           "self": "mặt nạ MD5",
           "salt": "Muối",
           "salt-label": "Muối được sử dụng để tạo ra hàm băm từ giá trị ban đầu."
+        },
+        "inner-outer-mask": {
+          "self": "Mặt nạ trong / ngoài",
+          "type": "Loại mặt nạ",
+          "inner-label": "Mặt nạ bên trong che phần bên trong của một chuỗi. Tiền tố và hậu tố đại diện cho các phần không được che của dữ liệu.",
+          "inner-mask": "Mặt nạ bên trong",
+          "outer-label": "Mặt nạ bên ngoài che các đầu trái và phải của một chuỗi. Tiền tố và hậu tố đại diện cho các phần được che của dữ liệu.",
+          "outer-mask": "Mặt nạ bên ngoài",
+          "prefix-length": "Độ dài tiền tố",
+          "suffix-length": "Độ dài hậu tố"
         }
       },
       "masking-level": {
@@ -1954,8 +1964,11 @@
         "no-protection-rule-configured": "Không có quy tắc bảo vệ nào được cấu hình.",
         "only-apply-to-main-branches": "Chỉ áp dụng cho chi nhánh chính"
       },
-      "issue-labels": "Nhãn phát hành",
-      "configure-labels": "Định cấu hình nhãn"
+      "labels": {
+        "issue-labels": "Nhãn phát hành",
+        "configure-labels": "Định cấu hình nhãn",
+        "force-issue-labels": "Buộc phải có nhãn cho các vấn đề"
+      }
     },
     "members": {
       "description": "Các thành viên dự án xác định quyền vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ dự án, Quản trị viên Workspace và DBA Workspace đều có đầy đủ quyền đối với dự án.",
@@ -3502,6 +3515,9 @@
     "table-partition": {
       "drop-partition-confirm": "Bỏ phân vùng bảng?",
       "drop-partition-with-subpartitions-confirm": "Cũng sẽ bỏ tất cả các phân vùng của nó."
+    },
+    "last-update": {
+      "self": "Cập nhật cuối cùng"
     }
   }
 }

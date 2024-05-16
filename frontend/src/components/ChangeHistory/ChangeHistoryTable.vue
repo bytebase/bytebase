@@ -74,10 +74,12 @@ const props = defineProps<{
   databaseSectionList: ComposedDatabase[];
   historySectionList: BBTableSectionDataSource<ChangeHistory>[];
   selectedChangeHistoryNames?: string[];
+  customClick?: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "update:selected-change-history-names", value: string[]): void;
+  (event: "row-click", id: string): void;
 }>();
 
 const containerRef = ref<HTMLDivElement>();
@@ -247,6 +249,10 @@ const rowProps = (history: ChangeHistory) => {
   return {
     onClick: (e: MouseEvent) => {
       if (isDescendantOf(e.target as HTMLElement, ".n-checkbox, a")) {
+        return;
+      }
+      if (props.customClick) {
+        emit("row-click", history.uid);
         return;
       }
       const url = changeHistoryLink(history);

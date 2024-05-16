@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { issueServiceClient } from "@/grpcweb";
-import type { ActivityIssueCommentCreatePayload } from "@/types";
 import type {
   IssueComment,
   ListIssueCommentsRequest,
@@ -61,17 +60,14 @@ export const useIssueCommentStore = defineStore("issue_comment", () => {
   const createIssueComment = async ({
     issueName,
     comment,
-    payload,
   }: {
     issueName: string;
     comment: string;
-    payload?: ActivityIssueCommentCreatePayload;
   }) => {
     const issueComment = await issueServiceClient.createIssueComment({
       parent: issueName,
       issueComment: {
         comment,
-        payload: JSON.stringify(payload ?? {}),
       },
     });
     issueCommentMap.set(issueName, [

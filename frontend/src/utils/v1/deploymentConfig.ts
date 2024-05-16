@@ -63,7 +63,8 @@ export const validateDeploymentSpecV1 = (
       return "deployment-config.error.key-required";
     }
     if (
-      rule.operator === OperatorType.OPERATOR_TYPE_IN &&
+      (rule.operator === OperatorType.OPERATOR_TYPE_IN ||
+        rule.operator === OperatorType.OPERATOR_TYPE_NOT_IN) &&
       rule.values.length === 0
     ) {
       return "deployment-config.error.values-required";
@@ -124,6 +125,8 @@ export const isDatabaseMatchesSelectorV1 = (
     switch (rule.operator) {
       case OperatorType.OPERATOR_TYPE_IN:
         return checkLabelIn(database, rule);
+      case OperatorType.OPERATOR_TYPE_NOT_IN:
+        return !checkLabelIn(database, rule);
       case OperatorType.OPERATOR_TYPE_EXISTS:
         return checkLabelExists(database, rule);
       default:

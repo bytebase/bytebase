@@ -114,6 +114,10 @@ ruleList:
     level: WARNING
   - type: statement.prior-backup-check
     level: ERROR
+  - type: statement.add-column-without-position
+    level: WARNING
+  - type: statement.disallow-offline-ddl
+    level: WARNING
   - type: naming.fully-qualified
     level: WARNING
   - type: naming.table
@@ -189,6 +193,8 @@ ruleList:
     level: WARNING
   - type: column.disallow-change-type
     level: ERROR
+  - type: column.disallow-drop
+    level: WARNING
   - type: column.disallow-drop-in-index
     level: ERROR
   - type: column.set-default-for-not-null

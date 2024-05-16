@@ -34,7 +34,7 @@ const me = useCurrentUserV1();
 
 // For database data export issue, the stageList should always be only 1 stage.
 const stageList = computed(() => {
-  return issue.value.rolloutEntity.stages;
+  return issue.value.rolloutEntity?.stages || [];
 });
 
 const database = computed(() => {

@@ -343,20 +343,18 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with id %d not found", sheet.ProjectUID))
 	}
-	var v1SheetPayload *v1pb.SheetPayload
-	if sheet.Payload != nil {
-		payload := sheet.Payload
-		if payload.DatabaseConfig != nil && payload.BaselineDatabaseConfig != nil {
-			v1SheetPayload = &v1pb.SheetPayload{
-				DatabaseConfig:         convertStoreDatabaseConfig(payload.DatabaseConfig, nil /* filter */),
-				BaselineDatabaseConfig: convertStoreDatabaseConfig(payload.BaselineDatabaseConfig, nil /* filter */),
-			}
+	v1SheetPayload := &v1pb.SheetPayload{}
+	if len(sheet.Payload.GetCommands()) > 0 {
+		v1SheetPayload.Commands = convertToSheetCommands(sheet.Payload.GetCommands())
+	} else {
+		v1SheetPayload.Commands = []*v1pb.SheetCommand{
+			{Start: 0, End: int32(sheet.Size)},
 		}
-		if len(payload.Commands) > 0 {
-			if v1SheetPayload == nil {
-				v1SheetPayload = &v1pb.SheetPayload{}
-			}
-			v1SheetPayload.Commands = convertToSheetCommands(payload.Commands)
+	}
+	if payload := sheet.Payload; payload != nil {
+		if payload.DatabaseConfig != nil && payload.BaselineDatabaseConfig != nil {
+			v1SheetPayload.DatabaseConfig = convertStoreDatabaseConfig(payload.DatabaseConfig, nil /* filter */)
+			v1SheetPayload.BaselineDatabaseConfig = convertStoreDatabaseConfig(payload.BaselineDatabaseConfig, nil /* filter */)
 		}
 	}
 

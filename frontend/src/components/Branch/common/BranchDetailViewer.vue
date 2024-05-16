@@ -25,6 +25,7 @@
         :readonly="true"
         :branch="branch ?? Branch.fromPartial({})"
         :loading="loading"
+        :show-last-updater="true"
       />
     </div>
     <div

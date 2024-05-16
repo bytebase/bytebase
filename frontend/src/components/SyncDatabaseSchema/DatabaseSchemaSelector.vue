@@ -169,6 +169,7 @@ const allowedEngineTypeList: Engine[] = [
   Engine.POSTGRES,
   Engine.TIDB,
   Engine.ORACLE,
+  Engine.MSSQL,
 ];
 
 const isValidId = (id: any): id is string => {

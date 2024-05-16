@@ -197,6 +197,10 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			}
 			projectSettings.IssueLabels = issueLabels
 			patch.Setting = projectSettings
+		case "force_issue_labels":
+			projectSettings := project.Setting
+			projectSettings.ForceIssueLabels = request.Project.ForceIssueLabels
+			patch.Setting = projectSettings
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1858,6 +1862,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
 		IssueLabels:                issueLabels,
+		ForceIssueLabels:           projectMessage.Setting.ForceIssueLabels,
 	}
 }
 
@@ -2011,6 +2016,8 @@ func convertToLabelSelectorOperator(operator store.OperatorType) v1pb.OperatorTy
 	switch operator {
 	case store.InOperatorType:
 		return v1pb.OperatorType_OPERATOR_TYPE_IN
+	case store.NotInOperatorType:
+		return v1pb.OperatorType_OPERATOR_TYPE_NOT_IN
 	case store.ExistsOperatorType:
 		return v1pb.OperatorType_OPERATOR_TYPE_EXISTS
 	}
@@ -2021,6 +2028,8 @@ func convertToStoreLabelSelectorOperator(operator v1pb.OperatorType) (store.Oper
 	switch operator {
 	case v1pb.OperatorType_OPERATOR_TYPE_IN:
 		return store.InOperatorType, nil
+	case v1pb.OperatorType_OPERATOR_TYPE_NOT_IN:
+		return store.NotInOperatorType, nil
 	case v1pb.OperatorType_OPERATOR_TYPE_EXISTS:
 		return store.ExistsOperatorType, nil
 	}

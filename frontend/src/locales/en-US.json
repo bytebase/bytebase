@@ -800,6 +800,16 @@
           "self": "MD5 mask",
           "salt": "Salt",
           "salt-label": "Salt is used to generate a hash from the original value."
+        },
+        "inner-outer-mask": {
+          "self": "Inner / Outer mask",
+          "type": "Mask Type",
+          "inner-label": "Inner mask masks the interior part of a string. The prefix and suffix represent the unmasked parts of the data.",
+          "inner-mask": "Inner Mask",
+          "outer-label": "Outer mask masks the left and right ends of a string. The prefix and suffix represent the masked parts of the data.",
+          "outer-mask": "Outer Mask",
+          "prefix-length": "Prefix Length",
+          "suffix-length": "Suffix Length"
         }
       },
       "masking-level": {
@@ -1943,7 +1953,7 @@
       "select-schema-change-type-sdl": "Declarative - Specify the desired schema. Only use CREATE TABLE/INDEX.",
       "schema-path-template-sdl-description": "The schema file describes the database's full schema.",
       "branch-protection-rules": {
-        "self": "Branch protection rules",
+        "self": "Branch Protection Rules",
         "add-rule": "Add Rule",
         "branch-name-pattern": {
           "self": "Branch name pattern",
@@ -1954,8 +1964,11 @@
         "no-protection-rule-configured": "No protection rule configured.",
         "only-apply-to-main-branches": "Only apply to main branches"
       },
-      "issue-labels": "Issue Labels",
-      "configure-labels": "Configure labels"
+      "labels": {
+        "issue-labels": "Issue Labels",
+        "configure-labels": "Configure labels",
+        "force-issue-labels": "Force to have labels for issues"
+      }
     },
     "members": {
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
@@ -3502,6 +3515,9 @@
     "table-partition": {
       "drop-partition-confirm": "Drop table partition?",
       "drop-partition-with-subpartitions-confirm": "Will also drop all its subpartitions."
+    },
+    "last-update": {
+      "self": "Last update"
     }
   }
 }

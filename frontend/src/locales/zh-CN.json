@@ -800,6 +800,16 @@
           "self": "MD5 哈希",
           "salt": "盐值 (Salt)",
           "salt-label": "盐值 (Salt) 用于通过原始值生成哈希值。"
+        },
+        "inner-outer-mask": {
+          "self": "内/外遮掩",
+          "type": "遮掩类型",
+          "inner-label": "内遮掩遮蔽字符串的内部部分。前缀和后缀代表数据的未遮蔽部分。",
+          "inner-mask": "内遮掩",
+          "outer-label": "外遮掩遮蔽字符串的左右两端。前缀和后缀代表数据的遮蔽部分。",
+          "outer-mask": "外遮掩",
+          "prefix-length": "前缀长度",
+          "suffix-length": "后缀长度"
         }
       },
       "masking-level": {
@@ -1954,8 +1964,11 @@
         "no-protection-rule-configured": "没有配置分支保护规则。",
         "only-apply-to-main-branches": "只对主分支生效"
       },
-      "issue-labels": "工单标签",
-      "configure-labels": "配置标签"
+      "labels": {
+        "issue-labels": "工单标签",
+        "configure-labels": "配置标签",
+        "force-issue-labels": "强制给问题贴上标签"
+      }
     },
     "members": {
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
@@ -3502,6 +3515,9 @@
     "table-partition": {
       "drop-partition-confirm": "删除表分区？",
       "drop-partition-with-subpartitions-confirm": "将会同时删除其所有子分区。"
+    },
+    "last-update": {
+      "self": "最后更新"
     }
   }
 }

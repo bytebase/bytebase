@@ -368,35 +368,32 @@ message DataSource {
   string ssl_key = 7 [(google.api.field_behavior) = INPUT_ONLY];
   string host = 8;
   string port = 9;
-  repeated string additional_hosts = 10;
-  repeated string additional_ports = 11;
-  string database = 12;
+  string database = 10;
   // srv, authentication_database and replica_set are used for MongoDB.
-  bool srv = 13;
-  string authentication_database = 14;
-  string replica_set = 15;
+  bool srv = 11;
+  string authentication_database = 12;
   // sid and service_name are used for Oracle.
-  string sid = 16;
-  string service_name = 17;
+  string sid = 13;
+  string service_name = 14;
   // Connection over SSH.
   // The hostname of the SSH server agent.
   // Required.
-  string ssh_host = 18;
+  string ssh_host = 15;
   // The port of the SSH server agent. It's 22 typically.
   // Required.
-  string ssh_port = 19;
+  string ssh_port = 16;
   // The user to login the server.
   // Required.
-  string ssh_user = 20;
+  string ssh_user = 17;
   // The password to login the server. If it's empty string, no password is required.
-  string ssh_password = 21 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssh_password = 18 [(google.api.field_behavior) = INPUT_ONLY];
   // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
-  string ssh_private_key = 22 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssh_private_key = 19 [(google.api.field_behavior) = INPUT_ONLY];
   // PKCS#8 private key in PEM format. If it's empty string, no private key is required.
   // Used for authentication when connecting to the data source.
-  string authentication_private_key = 23 [(google.api.field_behavior) = INPUT_ONLY];
+  string authentication_private_key = 20 [(google.api.field_behavior) = INPUT_ONLY];
 
-  DataSourceExternalSecret external_secret = 24;
+  DataSourceExternalSecret external_secret = 21;
 
   enum AuthenticationType {
     AUTHENTICATION_UNSPECIFIED = 0;
@@ -405,9 +402,18 @@ message DataSource {
     AWS_RDS_IAM = 3;
   }
 
-  AuthenticationType authentication_type = 25;
+  AuthenticationType authentication_type = 22;
 
-  SASLConfig sasl_config = 26;
+  SASLConfig sasl_config = 23;
+
+  message Address {
+    string host = 1;
+    string port = 2;
+  }
+  // additional_addresses is used for MongoDB replica set.
+  repeated Address additional_addresses = 24 [(google.api.field_behavior) = OPTIONAL];
+  // replica_set is used for MongoDB replica set.
+  string replica_set = 25;
 }
 
 enum DataSourceType {
