@@ -278,6 +278,10 @@
       "title": "Prohibit changing the order of columns in a table",
       "description": "Modifying the order of columns may cause some applications or views that depend on the default order of the original table to produce unexpected results, such as \"select *\". Suggested error level: Warning"
     },
+    "column-disallow-drop": {
+      "title": "Prohibit dropping columns",
+      "description": "Prohibit dropping columns. Suggested error level: Warning"
+    },
     "column-disallow-drop-in-index": {
       "title": "Prohibit dropping columns in index",
       "description": "Prohibit dropping columns in index. Suggested error level: Error"
