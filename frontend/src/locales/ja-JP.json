@@ -1064,7 +1064,7 @@
       "assignee": "被指名者"
     },
     "stage-select": {
-      "active": "{name} (アクティブ)"
+      "current": "{name} (現在)"
     },
     "not-allowed-to-operate-unassigned-database": "未割り当てのデータベースは {operation} できません。\nまずプロジェクトに転送する必要があります。",
     "migration-mode": {
@@ -1853,11 +1853,6 @@
       "success-prompt": "{name} が正常に作成されました。"
     },
     "overview": {
-      "view-all": "すべて見る",
-      "view-all-closed": "終了した作業指示書をすべて表示する",
-      "recent-activity": "最近の@.lower:{'common.activities'}",
-      "in-progress": "進行中",
-      "recently-closed": "最近終了しました",
       "info-slot-content": "Bytebase はインスタンスのスキーマを定期的に同期します。新しく同期されたデータベースは最初にここに配置され、その後、それらを適切なプロジェクトに転送できます。",
       "no-db-prompt": "現在のプロジェクトに属しているデータベースはありません。上のメニュー バーの {newDb} または {transferInDb} をクリックすると、データベースを追加できます。"
     },
