@@ -3515,6 +3515,9 @@
     "table-partition": {
       "drop-partition-confirm": "テーブルパーティションを削除しますか?",
       "drop-partition-with-subpartitions-confirm": "すべてのサブパーティションが同時に削除されます。"
+    },
+    "last-update": {
+      "self": "最後の更新"
     }
   }
 }
