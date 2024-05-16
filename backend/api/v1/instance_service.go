@@ -853,6 +853,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			authType := convertToAuthenticationType(request.DataSource.AuthenticationType)
 			dataSource.AuthenticationType = authType
 			patch.AuthenticationType = &authType
+		case "additional_addresses":
+			// TODO(zp): handle additional addresses.
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}

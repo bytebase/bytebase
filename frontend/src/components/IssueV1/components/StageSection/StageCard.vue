@@ -141,7 +141,7 @@ const stageClass = computed(() => {
 const stageTitle = computed(() => {
   const { stage } = props;
   return !isCreating.value && isActiveStage.value
-    ? t("issue.stage-select.active", { name: stage.title })
+    ? t("issue.stage-select.current", { name: stage.title })
     : stage.title;
 });
 

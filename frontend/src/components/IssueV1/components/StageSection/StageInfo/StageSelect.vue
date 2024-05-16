@@ -47,7 +47,7 @@ const renderLabel = (option: SelectOption) => {
 
   const text =
     !isCreating.value && stage === activeStage.value
-      ? t("issue.stage-select.active", { name: stage.title })
+      ? t("issue.stage-select.current", { name: stage.title })
       : stage.title;
   return h("div", { class: "flex items-center gap-x-1" }, [
     h("span", {}, text),
