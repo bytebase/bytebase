@@ -35,6 +35,7 @@
           </template>
         </template>
       </div>
+      <slot name="header-suffix" />
     </div>
     <MonacoEditor
       :content="state.code"

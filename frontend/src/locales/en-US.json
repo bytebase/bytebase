@@ -3515,6 +3515,9 @@
     "table-partition": {
       "drop-partition-confirm": "Drop table partition?",
       "drop-partition-with-subpartitions-confirm": "Will also drop all its subpartitions."
+    },
+    "last-update": {
+      "self": "Last update"
     }
   }
 }

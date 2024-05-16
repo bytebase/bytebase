@@ -3515,6 +3515,9 @@
     "table-partition": {
       "drop-partition-confirm": "Bỏ phân vùng bảng?",
       "drop-partition-with-subpartitions-confirm": "Cũng sẽ bỏ tất cả các phân vùng của nó."
+    },
+    "last-update": {
+      "self": "Cập nhật cuối cùng"
     }
   }
 }

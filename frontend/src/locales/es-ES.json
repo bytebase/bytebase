@@ -3515,6 +3515,9 @@
     "table-partition": {
       "drop-partition-confirm": "¿Eliminar partición de mesa?",
       "drop-partition-with-subpartitions-confirm": "También eliminará todas sus subparticiones."
+    },
+    "last-update": {
+      "self": "Última actualización"
     }
   }
 }
