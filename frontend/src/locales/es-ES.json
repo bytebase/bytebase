@@ -1064,7 +1064,7 @@
       "assignee": "Asignado"
     },
     "stage-select": {
-      "active": "{name} (activo)"
+      "current": "{name} (actual)"
     },
     "not-allowed-to-operate-unassigned-database": "No se puede {operation} a bases de datos no asignadas.\nPrimero deben ser transferidas a un proyecto.",
     "migration-mode": {
@@ -1853,11 +1853,6 @@
       "success-prompt": "Proyecto {name} creado exitosamente."
     },
     "overview": {
-      "view-all": "Ver todo",
-      "view-all-closed": "Ver todos los cerrados",
-      "recent-activity": "Actividades recientes @.lower:{'common.activities'}",
-      "in-progress": "En curso",
-      "recently-closed": "Recientemente cerrado",
       "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado.",
       "no-db-prompt": "No hay bases de datos que pertenezcan a este proyecto. Puedes agregar bases de datos haciendo clic en {newDb} o {transferInDb} desde la barra de acciones superior."
     },

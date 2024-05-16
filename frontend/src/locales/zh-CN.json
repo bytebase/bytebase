@@ -1064,7 +1064,7 @@
       "assignee": "指派人"
     },
     "stage-select": {
-      "active": "{name}（活动中）"
+      "current": "{name}（当前）"
     },
     "not-allowed-to-operate-unassigned-database": "未分配的数据库无法{operation}。\n需要先将它转移到项目里。",
     "migration-mode": {
@@ -1853,11 +1853,6 @@
       "success-prompt": "成功创建 {name}."
     },
     "overview": {
-      "view-all": "查看所有",
-      "view-all-closed": "查看所有结束的工单",
-      "recent-activity": "近期@.lower:{'common.activities'}",
-      "in-progress": "进行中",
-      "recently-closed": "近期结束",
       "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。",
       "no-db-prompt": "没有数据库属于当前项目。您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库。"
     },
