@@ -12,7 +12,7 @@
           </p>
           <div class="relative flex flex-row justify-between items-center mt-1">
             <DropdownInput
-              v-model:value="state.category"
+              v-model:value="editing.category"
               :options="categoryOptions"
               :placeholder="$t('schema-template.form.unclassified')"
               :disabled="readonly"
@@ -27,7 +27,7 @@
             {{ $t("database.engine") }}
           </label>
           <InstanceEngineRadioGrid
-            v-model:engine="state.engine"
+            v-model:engine="editing.engine"
             :engine-list="engineList"
             :disabled="readonly"
             class="grid-cols-4 gap-2"
@@ -40,13 +40,13 @@
           </label>
           <div class="flex items-center gap-x-2 mt-1">
             <ClassificationLevelBadge
-              :classification="state.table?.config.classificationId"
+              :classification="tableClassificationId"
               :classification-config="classificationConfig"
             />
             <div v-if="!readonly" class="flex">
               <MiniActionButton
-                v-if="state.table?.config.classificationId"
-                @click.prevent="state.table!.config.classificationId = ''"
+                v-if="tableClassificationId"
+                @click.prevent="tableClassificationId = ''"
               >
                 <XIcon class="w-4 h-4" />
               </MiniActionButton>
@@ -68,9 +68,10 @@
               <span class="text-red-600 mr-2">*</span>
             </label>
             <NInput
-              v-model:value="state.table!.name"
-              placeholder="table name"
+              :value="editing.table.name"
               :disabled="readonly"
+              placeholder="table name"
+              @update:value="handleUpdateTableName"
             />
           </div>
 
@@ -80,7 +81,7 @@
               {{ $t("schema-template.form.comment") }}
             </label>
             <NInput
-              v-model:value="state.table!.userComment"
+              v-model:value="editing.table.userComment"
               type="textarea"
               :autosize="{ minRows: 3, maxRows: 3 }"
               :disabled="readonly"
@@ -113,13 +114,16 @@
             <TableColumnEditor
               :readonly="!!readonly"
               :show-foreign-key="false"
-              :table="state.table"
-              :engine="state.engine"
+              :db="editing.db"
+              :database="editing.database"
+              :schema="editing.schema"
+              :table="editing.table"
+              :engine="editing.engine"
               :classification-config-id="classificationConfig?.id"
               :allow-change-primary-keys="true"
               :allow-reorder-columns="allowReorderColumns"
               :max-body-height="640"
-              @drop="onColumnDrop"
+              @drop="handleDropColumn"
               @reorder="handleReorderColumn"
               @primary-key-set="setColumnPrimaryKey"
             />
@@ -154,7 +158,7 @@
     <DrawerContent :title="$t('schema-template.field-template.self')">
       <div class="w-[calc(100vw-36rem)] min-w-[64rem] max-w-[calc(100vw-8rem)]">
         <FieldTemplates
-          :engine="state.engine"
+          :engine="editing.engine"
           :readonly="false"
           @apply="handleApplyColumnTemplate"
         />
@@ -167,39 +171,59 @@
     :show="state.showClassificationDrawer"
     :classification-config="classificationConfig"
     @dismiss="state.showClassificationDrawer = false"
-    @apply="onClassificationSelect"
+    @apply="(id) => (tableClassificationId = id)"
   />
 </template>
 
 <script lang="ts" setup>
-import { isEqual, cloneDeep } from "lodash-es";
+import { isEqual, cloneDeep, pull } from "lodash-es";
 import { PlusIcon, XIcon, PencilIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
 import { NButton, NInput } from "naive-ui";
-import { computed, nextTick, reactive } from "vue";
+import { computed, reactive, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
-import TableColumnEditor from "@/components/SchemaEditorV1/Panels/TableColumnEditor";
-import { transformTableEditToMetadata } from "@/components/SchemaEditorV1/utils";
+import {
+  TableColumnEditor,
+  provideSchemaEditorContext,
+  upsertColumnPrimaryKey,
+  removeColumnPrimaryKey,
+  removeColumnFromAllForeignKeys,
+  type EditTarget,
+  type EditStatus,
+} from "@/components/SchemaEditorLite";
 import {
   Drawer,
   DrawerContent,
   InstanceEngineRadioGrid,
 } from "@/components/v2";
-import { useSettingV1Store, useNotificationStore } from "@/store";
-import type { Engine } from "@/types/proto/v1/common";
-import { ColumnMetadata, TableConfig } from "@/types/proto/v1/database_service";
-import type {
-  SchemaTemplateSetting_FieldTemplate,
+import {
+  useSettingV1Store,
+  useNotificationStore,
+  pushNotification,
+} from "@/store";
+import { unknownProject } from "@/types";
+import {
+  ColumnMetadata,
+  SchemaConfig,
+  TableConfig,
+} from "@/types/proto/v1/database_service";
+import {
   SchemaTemplateSetting_TableTemplate,
+  type SchemaTemplateSetting_FieldTemplate,
 } from "@/types/proto/v1/setting_service";
 import { SchemaTemplateSetting } from "@/types/proto/v1/setting_service";
-import { convertTableMetadataToTable } from "@/types/v1/schemaEditor";
-import type { Column, Table } from "@/types/v1/schemaEditor";
-import { convertColumnMetadataToColumn } from "@/types/v1/schemaEditor";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
-import { engineList, categoryList, classificationConfig } from "./utils";
+import ClassificationLevelBadge from "./ClassificationLevelBadge.vue";
+import SelectClassificationDrawer from "./SelectClassificationDrawer.vue";
+import {
+  engineList,
+  categoryList,
+  classificationConfig,
+  mockMetadataFromTableTemplate,
+  rebuildTableTemplateFromMetadata,
+} from "./utils";
 
 const props = defineProps<{
   create: boolean;
@@ -210,28 +234,98 @@ const props = defineProps<{
 const emit = defineEmits(["dismiss"]);
 
 interface LocalState {
-  id: string;
-  engine: Engine;
-  category: string;
-  table: Table;
   showClassificationDrawer: boolean;
   showFieldTemplateDrawer: boolean;
 }
 
+const editing = computed(() => {
+  return mockMetadataFromTableTemplate(props.template);
+});
+
+const targets = computed(() => {
+  const target: EditTarget = {
+    database: editing.value.db,
+    metadata: editing.value.database,
+    baselineMetadata: editing.value.database,
+  };
+  return [target];
+});
+
+const context = provideSchemaEditorContext({
+  targets,
+  project: ref(unknownProject()),
+  resourceType: ref("branch"),
+  readonly: toRef(props, "readonly"),
+  selectedRolloutObjects: ref(undefined),
+  showLastUpdater: ref(false),
+  disableDiffColoring: ref(true),
+});
+
 const state = reactive<LocalState>({
-  id: props.template.id,
-  engine: props.template.engine,
-  category: props.template.category,
-  table: convertTableMetadataToTable(
-    Object.assign({}, props.template.table),
-    "normal",
-    props.template.config
-  ),
   showClassificationDrawer: false,
   showFieldTemplateDrawer: false,
 });
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
+
+const tableConfig = computed(() => {
+  const { database, schema, table } = editing.value;
+  const schemaConfig = database.schemaConfigs.find(
+    (sc) => sc.name === schema.name
+  );
+  if (!schemaConfig) return undefined;
+  return schemaConfig.tableConfigs.find((tc) => tc.name === table.name);
+});
+
+const tableClassificationId = computed({
+  get() {
+    return tableConfig.value?.classificationId;
+  },
+  set(id) {
+    const { database, schema, table } = editing.value;
+    let schemaConfig = database.schemaConfigs.find(
+      (sc) => sc.name === schema.name
+    );
+    if (!schemaConfig) {
+      schemaConfig = SchemaConfig.fromPartial({
+        name: schema.name,
+        tableConfigs: [],
+      });
+    }
+    if (!schemaConfig.tableConfigs) {
+      schemaConfig.tableConfigs = [];
+    }
+    let tableConfig = schemaConfig.tableConfigs.find(
+      (tc) => tc.name === table.name
+    );
+    if (!tableConfig) {
+      tableConfig = TableConfig.fromPartial({
+        name: table.name,
+        classificationId: id,
+      });
+      schemaConfig.tableConfigs.push(tableConfig);
+    }
+    tableConfig.classificationId = id ?? "";
+  },
+});
+
+const metadataForColumn = (column: ColumnMetadata) => {
+  const { database, schema, table } = editing.value;
+  return {
+    database,
+    schema,
+    table,
+    column,
+  };
+};
+
+const statusForColumn = (column: ColumnMetadata) => {
+  return context.getColumnStatus(editing.value.db, metadataForColumn(column));
+};
+
+const markColumnStatus = (column: ColumnMetadata, status: EditStatus) => {
+  context.markEditStatus(editing.value.db, metadataForColumn(column), status);
+};
 
 const categoryOptions = computed(() => {
   return categoryList.value.map<SelectOption>((category) => ({
@@ -241,26 +335,22 @@ const categoryOptions = computed(() => {
 });
 
 const allowReorderColumns = computed(() => {
-  return instanceV1AllowsReorderColumns(state.engine);
+  return instanceV1AllowsReorderColumns(editing.value.engine);
 });
 
 const submitDisabled = computed(() => {
-  if (!state.table.name || state.table.columnList.length === 0) {
+  const { table, category } = editing.value;
+  if (!table.name || table.columns.length === 0) {
     return true;
   }
-  if (state.table.columnList.some((col) => !col.name || !col.type)) {
+  if (table.columns.some((col) => !col.name || !col.type)) {
     return true;
   }
   if (
     !props.create &&
-    isEqual(
-      convertTableMetadataToTable(
-        props.template.table!,
-        "normal",
-        props.template.config
-      ),
-      state.table
-    )
+    isEqual(props.template.table, table) &&
+    isEqual(props.template.config, tableConfig.value) &&
+    props.template.category === category
   ) {
     return true;
   }
@@ -268,20 +358,7 @@ const submitDisabled = computed(() => {
 });
 
 const onSubmit = async () => {
-  const template: SchemaTemplateSetting_TableTemplate = {
-    id: state.id,
-    engine: state.engine,
-    category: state.category,
-    table: transformTableEditToMetadata(state.table),
-    config: TableConfig.fromPartial({
-      ...state.table.config,
-      name: state.table.name,
-      columnConfigs: state.table.columnList.map((col) => ({
-        ...col.config,
-        name: col.name,
-      })),
-    }),
-  };
+  const template = rebuildTableTemplateFromMetadata(editing.value);
   const setting = await settingStore.fetchSettingByName(
     "bb.workspace.schema-template"
   );
@@ -320,69 +397,100 @@ const onSubmit = async () => {
 };
 
 const onColumnAdd = () => {
-  const column = convertColumnMetadataToColumn(
-    ColumnMetadata.fromPartial({}),
-    "created"
-  );
-  state.table.columnList.push(column);
-  nextTick(() => {
-    const container = document.querySelector("#table-editor-container");
-    (
-      container?.querySelector(
-        `.column-${column.id} .column-name-input`
-      ) as HTMLInputElement
-    )?.focus();
+  const { db, database, schema, table } = editing.value;
+  const column = ColumnMetadata.fromPartial({});
+  table.columns.push(column);
+  markColumnStatus(column, "created");
+
+  context.queuePendingScrollToColumn({
+    db,
+    metadata: {
+      database,
+      schema,
+      table,
+      column,
+    },
   });
 };
 
-const onColumnDrop = (column: Column) => {
-  state.table.columnList = state.table.columnList.filter(
-    (item) => item.id !== column.id
-  );
-  state.table.primaryKey.columnIdList =
-    state.table.primaryKey.columnIdList.filter(
-      (columnId) => columnId !== column.id
-    );
+const handleDropColumn = (column: ColumnMetadata) => {
+  const { table } = editing.value;
+  // Disallow to drop the last column.
+  const nonDroppedColumns = table.columns.filter((column) => {
+    return statusForColumn(column) !== "dropped";
+  });
+  if (nonDroppedColumns.length === 1) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("schema-editor.message.cannot-drop-the-last-column"),
+    });
+    return;
+  }
+  const status = statusForColumn(column);
+  if (status === "created") {
+    pull(table.columns, column);
+    table.columns = table.columns.filter((col) => col !== column);
+
+    removeColumnPrimaryKey(table, column.name);
+    removeColumnFromAllForeignKeys(table, column.name);
+  } else {
+    markColumnStatus(column, "dropped");
+  }
 };
 
-const setColumnPrimaryKey = (column: Column, isPrimaryKey: boolean) => {
+const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
   if (isPrimaryKey) {
     column.nullable = false;
-    state.table.primaryKey.columnIdList.push(column.id);
+    upsertColumnPrimaryKey(editing.value.table, column.name);
   } else {
-    state.table.primaryKey.columnIdList =
-      state.table.primaryKey.columnIdList.filter(
-        (columnId) => columnId !== column.id
-      );
+    removeColumnPrimaryKey(editing.value.table, column.name);
   }
+  markColumnStatus(column, "updated");
 };
 
 const handleApplyColumnTemplate = (
   template: SchemaTemplateSetting_FieldTemplate
 ) => {
   state.showFieldTemplateDrawer = false;
-
-  if (template.engine !== state.engine || !template.column) {
+  if (!template.column) {
     return;
   }
-  const column = convertColumnMetadataToColumn(
-    template.column,
-    "created",
-    template.config
-  );
-  state.table.columnList.push(column);
+  const { db, table, engine } = editing.value;
+  if (template.engine !== engine) {
+    return;
+  }
+  const column = cloneDeep(template.column);
+  table.columns.push(column);
+  if (template.config) {
+    context.upsertColumnConfig(db, metadataForColumn(column), (config) => {
+      Object.assign(config, template.config);
+    });
+  }
+  markColumnStatus(column, "created");
+  context.queuePendingScrollToColumn({
+    db: db,
+    metadata: metadataForColumn(column),
+  });
 };
 
-const onClassificationSelect = (id: string) => {
-  state.table.config.classificationId = id;
-};
-
-const handleReorderColumn = (column: Column, index: number, delta: -1 | 1) => {
+const handleReorderColumn = (
+  column: ColumnMetadata,
+  index: number,
+  delta: -1 | 1
+) => {
   const target = index + delta;
-  const { columnList } = state.table;
+  const { columns } = editing.value.table;
   if (target < 0) return;
-  if (target >= columnList.length) return;
+  if (target >= columns.length) return;
+  arraySwap(columns, index, target);
+};
 
-  arraySwap(columnList, index, target);
+const handleUpdateTableName = (name: string) => {
+  editing.value.table.name = name;
+  const tc = tableConfig.value;
+  if (tc) {
+    tc.name = name;
+  }
 };
 </script>

@@ -344,6 +344,14 @@ ruleList:
       - MYSQL
       - POSTGRES
       - TIDB
+  - type: statement.add-column-without-position
+    category: STATEMENT
+    engineList:
+      - OCEANBASE
+  - type: statement.disallow-offline-ddl
+    category: STATEMENT
+    engineList:
+      - OCEANBASE
   - type: naming.fully-qualified
     category: NAMING
     engineList:
@@ -590,6 +598,10 @@ ruleList:
       - TIDB
       - OCEANBASE
       - MARIADB
+  - type: column.disallow-drop
+    category: COLUMN
+    engineList:
+      - OCEANBASE
   - type: column.disallow-drop-in-index
     category: COLUMN
     engineList:

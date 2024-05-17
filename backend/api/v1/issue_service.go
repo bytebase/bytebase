@@ -282,6 +282,17 @@ func (s *IssueService) getIssueFind(ctx context.Context, permissionFilter *store
 				issueLabel := label
 				issueFind.LabelList = append(issueFind.LabelList, issueLabel)
 			}
+		case "has_pipeline":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%s" filter`, spec.key)
+			}
+			switch spec.value {
+			case "false":
+				issueFind.NoPipeline = true
+			case "true":
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for has_pipeline", spec.value))
+			}
 		}
 	}
 

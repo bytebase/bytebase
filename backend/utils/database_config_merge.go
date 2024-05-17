@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"sort"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -81,14 +83,83 @@ func mergeSchemaConfig(target, baseline, current *storepb.SchemaConfig) *storepb
 		delete(currentMap, tableName)
 	}
 
+	targetProcedureMap, baselineProcedureMap, currentProcedureMap := buildProcedureMap(target), buildProcedureMap(baseline), buildProcedureMap(current)
+	for procedureName, targetProcedure := range targetProcedureMap {
+		currentProcedure, hasCurrent := currentProcedureMap[procedureName]
+		baselineProcedure := baselineProcedureMap[procedureName]
+		if hasCurrent {
+			currentProcedureMap[procedureName] = mergeProcedureConfig(targetProcedure, baselineProcedure, currentProcedure)
+		} else {
+			currentProcedureMap[procedureName] = targetProcedure
+		}
+	}
+
+	targetFunctionMap, baselineFunctionMap, currentFunctionMap := buildFunctionMap(target), buildFunctionMap(baseline), buildFunctionMap(current)
+	for functionName, targetFunction := range targetFunctionMap {
+		currentFunction, hasCurrent := currentFunctionMap[functionName]
+		baselineFunction := baselineFunctionMap[functionName]
+		if hasCurrent {
+			currentFunctionMap[functionName] = mergeFunctionConfig(targetFunction, baselineFunction, currentFunction)
+		} else {
+			currentFunctionMap[functionName] = targetFunction
+		}
+	}
+
+	targetViewMap, baselineViewMap, currentViewMap := buildViewMap(target), buildViewMap(baseline), buildViewMap(current)
+	for viewName, targetView := range targetViewMap {
+		currentView, hasCurrent := currentViewMap[viewName]
+		baselineView := baselineViewMap[viewName]
+		if hasCurrent {
+			currentViewMap[viewName] = mergeViewConfig(targetView, baselineView, currentView)
+		} else {
+			currentViewMap[viewName] = targetView
+		}
+	}
+
 	result := &storepb.SchemaConfig{Name: current.Name}
 	for _, v := range currentMap {
 		result.TableConfigs = append(result.TableConfigs, v)
+	}
+	for _, v := range currentProcedureMap {
+		result.ProcedureConfigs = append(result.ProcedureConfigs, v)
+	}
+	for _, v := range currentFunctionMap {
+		result.FunctionConfigs = append(result.FunctionConfigs, v)
+	}
+	for _, v := range currentViewMap {
+		result.ViewConfigs = append(result.ViewConfigs, v)
 	}
 	sort.Slice(result.TableConfigs, func(i, j int) bool {
 		return result.TableConfigs[i].Name < result.TableConfigs[j].Name
 	})
 	return result
+}
+
+func mergeFunctionConfig(target, baseline, current *storepb.FunctionConfig) *storepb.FunctionConfig {
+	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, baseline.UpdateTime, current.Updater, current.UpdateTime)
+	return &storepb.FunctionConfig{
+		Name:       current.Name,
+		Updater:    lastUpdater,
+		UpdateTime: lastUpdateTime,
+	}
+}
+
+func mergeProcedureConfig(target, baseline, current *storepb.ProcedureConfig) *storepb.ProcedureConfig {
+	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, baseline.UpdateTime, current.Updater, current.UpdateTime)
+	return &storepb.ProcedureConfig{
+		Name:       current.Name,
+		Updater:    lastUpdater,
+		UpdateTime: lastUpdateTime,
+	}
+}
+
+func mergeViewConfig(target, baseline, current *storepb.ViewConfig) *storepb.ViewConfig {
+	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, baseline.UpdateTime, current.Updater, current.UpdateTime)
+	return &storepb.ViewConfig{
+		Name:       current.Name,
+		Updater:    lastUpdater,
+		UpdateTime: lastUpdateTime,
+	}
 }
 
 func mergeTableConfig(target, baseline, current *storepb.TableConfig) *storepb.TableConfig {
@@ -123,6 +194,9 @@ func mergeTableConfig(target, baseline, current *storepb.TableConfig) *storepb.T
 	}
 
 	result := &storepb.TableConfig{Name: current.Name, ClassificationId: current.ClassificationId}
+	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, baseline.UpdateTime, current.Updater, current.UpdateTime)
+	result.Updater = lastUpdater
+	result.UpdateTime = lastUpdateTime
 	for _, v := range currentMap {
 		result.ColumnConfigs = append(result.ColumnConfigs, v)
 	}
@@ -170,10 +244,45 @@ func buildTableMap(config *storepb.SchemaConfig) map[string]*storepb.TableConfig
 	return m
 }
 
+func buildProcedureMap(config *storepb.SchemaConfig) map[string]*storepb.ProcedureConfig {
+	m := make(map[string]*storepb.ProcedureConfig)
+	for _, v := range config.ProcedureConfigs {
+		m[v.Name] = v
+	}
+	return m
+}
+
+func buildFunctionMap(config *storepb.SchemaConfig) map[string]*storepb.FunctionConfig {
+	m := make(map[string]*storepb.FunctionConfig)
+	for _, v := range config.FunctionConfigs {
+		m[v.Name] = v
+	}
+	return m
+}
+
+func buildViewMap(config *storepb.SchemaConfig) map[string]*storepb.ViewConfig {
+	m := make(map[string]*storepb.ViewConfig)
+	for _, v := range config.ViewConfigs {
+		m[v.Name] = v
+	}
+	return m
+}
+
 func buildColumnMap(config *storepb.TableConfig) map[string]*storepb.ColumnConfig {
 	m := make(map[string]*storepb.ColumnConfig)
 	for _, v := range config.ColumnConfigs {
 		m[v.Name] = v
 	}
 	return m
+}
+
+func getLastUpdater(updaterA string, updateTimeA *timestamppb.Timestamp, updaterB string, updateTimeB *timestamppb.Timestamp, updaterC string, updateTimeC *timestamppb.Timestamp) (string, *timestamppb.Timestamp) {
+	lastUpdater, lastUpdateTime := updaterA, updateTimeA
+	if lastUpdateTime == nil || (updateTimeB != nil && updateTimeB.AsTime().After(lastUpdateTime.AsTime())) {
+		lastUpdater, lastUpdateTime = updaterB, updateTimeB
+	}
+	if lastUpdateTime == nil || (updateTimeC != nil && updateTimeC.AsTime().After(lastUpdateTime.AsTime())) {
+		lastUpdater, lastUpdateTime = updaterC, updateTimeC
+	}
+	return lastUpdater, lastUpdateTime
 }

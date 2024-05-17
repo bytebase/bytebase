@@ -5,7 +5,16 @@
     :readonly="disallowChangeProcedure"
     :status="status"
     @update:code="handleUpdateDefinition"
-  />
+  >
+    <template v-if="showLastUpdater && procedureConfig" #header-suffix>
+      <div class="flex justify-end items-center h-[28px]">
+        <LastUpdater
+          :updater="procedureConfig.updater"
+          :update-time="procedureConfig.updateTime"
+        />
+      </div>
+    </template>
+  </CommonCodeEditor>
 </template>
 
 <script setup lang="ts">
@@ -19,6 +28,7 @@ import type {
 import { useSchemaEditorContext } from "../context";
 import type { EditStatus } from "../types";
 import CommonCodeEditor from "./CommonCodeEditor.vue";
+import { LastUpdater } from "./common";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -27,8 +37,13 @@ const props = defineProps<{
   procedure: ProcedureMetadata;
 }>();
 
-const { readonly, markEditStatus, getSchemaStatus, getProcedureStatus } =
-  useSchemaEditorContext();
+const {
+  readonly,
+  showLastUpdater,
+  markEditStatus,
+  getSchemaStatus,
+  getProcedureStatus,
+} = useSchemaEditorContext();
 
 const statusForSchema = () => {
   return getSchemaStatus(props.db, {
@@ -60,6 +75,14 @@ const disallowChangeProcedure = computed(() => {
     return true;
   }
   return statusForSchema() === "dropped" || status.value === "dropped";
+});
+
+const procedureConfig = computed(() => {
+  const sc = props.database.schemaConfigs.find(
+    (sc) => sc.name === props.schema.name
+  );
+  if (!sc) return undefined;
+  return sc.procedureConfigs.find((pc) => pc.name === props.procedure.name);
 });
 
 const handleUpdateDefinition = (code: string) => {

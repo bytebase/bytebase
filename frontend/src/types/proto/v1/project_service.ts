@@ -122,6 +122,8 @@ export enum OperatorType {
   OPERATOR_TYPE_IN = "OPERATOR_TYPE_IN",
   /** OPERATOR_TYPE_EXISTS - The operator is "Exists". */
   OPERATOR_TYPE_EXISTS = "OPERATOR_TYPE_EXISTS",
+  /** OPERATOR_TYPE_NOT_IN - The operator is "Not In". */
+  OPERATOR_TYPE_NOT_IN = "OPERATOR_TYPE_NOT_IN",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -136,6 +138,9 @@ export function operatorTypeFromJSON(object: any): OperatorType {
     case 2:
     case "OPERATOR_TYPE_EXISTS":
       return OperatorType.OPERATOR_TYPE_EXISTS;
+    case 3:
+    case "OPERATOR_TYPE_NOT_IN":
+      return OperatorType.OPERATOR_TYPE_NOT_IN;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -151,6 +156,8 @@ export function operatorTypeToJSON(object: OperatorType): string {
       return "OPERATOR_TYPE_IN";
     case OperatorType.OPERATOR_TYPE_EXISTS:
       return "OPERATOR_TYPE_EXISTS";
+    case OperatorType.OPERATOR_TYPE_NOT_IN:
+      return "OPERATOR_TYPE_NOT_IN";
     case OperatorType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -165,6 +172,8 @@ export function operatorTypeToNumber(object: OperatorType): number {
       return 1;
     case OperatorType.OPERATOR_TYPE_EXISTS:
       return 2;
+    case OperatorType.OPERATOR_TYPE_NOT_IN:
+      return 3;
     case OperatorType.UNRECOGNIZED:
     default:
       return -1;

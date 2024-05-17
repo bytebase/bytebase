@@ -1614,7 +1614,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | host | [string](#string) |  |  |
 | port | [string](#string) |  |  |
 | database | [string](#string) |  |  |
-| srv | [bool](#bool) |  | srv and authentication_database are used for MongoDB. |
+| srv | [bool](#bool) |  | srv, authentication_database and replica_set are used for MongoDB. |
 | authentication_database | [string](#string) |  |  |
 | sid | [string](#string) |  | sid and service_name are used for Oracle. |
 | service_name | [string](#string) |  |  |
@@ -6963,6 +6963,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | OPERATOR_TYPE_UNSPECIFIED | 0 | The operator is not specified. |
 | OPERATOR_TYPE_IN | 1 | The operator is &#34;In&#34;. |
 | OPERATOR_TYPE_EXISTS | 2 | The operator is &#34;Exists&#34;. |
+| OPERATOR_TYPE_NOT_IN | 3 | The operator is &#34;Not In&#34;. |
 
 
 

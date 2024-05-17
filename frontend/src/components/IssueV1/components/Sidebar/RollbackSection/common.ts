@@ -95,13 +95,6 @@ export const useRollbackContext = () => {
     if (rollbackUIType.value === "NONE") {
       return false;
     }
-    if (
-      ![Task_Status.NOT_STARTED, Task_Status.PENDING].includes(
-        task.value.status
-      )
-    ) {
-      return false;
-    }
 
     if (isCreating.value) {
       return true;
@@ -176,9 +169,6 @@ export const useRollbackContext = () => {
         await useIssueCommentStore().createIssueComment({
           issueName: issue.value.name,
           comment: `${action} SQL rollback log for task [${issue.value.title}].`,
-          payload: {
-            issueName: issue.value.title,
-          },
         });
       } catch {
         // fail to comment won't be too bad

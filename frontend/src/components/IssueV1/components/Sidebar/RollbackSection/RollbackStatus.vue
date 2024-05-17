@@ -91,15 +91,6 @@ const allowPreviewRollback = computed(() => {
 });
 
 const tryRollbackTask = async () => {
-  // const navigateToRollbackIssue = () => {
-  //   if (!state.rollbackIssue) return;
-  //   router.push(`/issue/${state.rollbackIssue.uid}`);
-  // };
-
-  // if (state.rollbackIssue) {
-  //   return navigateToRollbackIssue();
-  // }
-
   if (!config.value) return;
   try {
     state.loading = true;
@@ -116,7 +107,9 @@ const tryRollbackTask = async () => {
     );
     const description = [
       "The original SQL statement:",
+      "```",
       `${new TextDecoder().decode(originalSheet?.content)}`,
+      "```",
     ].join("\n");
 
     router.push({

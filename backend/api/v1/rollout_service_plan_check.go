@@ -202,19 +202,14 @@ func getPlanCheckRunsFromChangeDatabaseConfigDeploymentConfigTarget(ctx context.
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get deployment config")
 	}
-	apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert deployment config to api deployment config")
-	}
-	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
-	if err != nil {
+	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
 		return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
 	}
 	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list databases")
 	}
-	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, allDatabases)
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, allDatabases)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
 	}

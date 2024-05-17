@@ -119,6 +119,9 @@ const (
 	// MySQLColumnDisallowChanging is an advisor type for MySQL disallow CHANGE COLUMN statement.
 	MySQLColumnDisallowChanging Type = "bb.plugin.advisor.mysql.column.disallow-change"
 
+	// MySQLColumnDisallowDrop is an advisor type for MySQL disallow DROP COLUMN statement.
+	MySQLColumnDisallowDrop Type = "bb.plugin.advisor.mysql.column.disallow-drop"
+
 	// MySQLColumnDisallowDropInIndex is an advisor type for MySQL disallow DROP COLUMN in index.
 	MySQLColumnDisallowDropInIndex Type = "bb.plugin.advisor.mysql.column.disallow-drop-in-index"
 
@@ -284,6 +287,9 @@ const (
 	// MySQLStatementPriorBackupCheck is an advisor type for MySQL prior backup check.
 	MySQLStatementPriorBackupCheck Type = "bb.plugin.advisor.mysql.statement.prior-backup-check"
 
+	// MySQLStatementAddColumnWithoutPosition is an advisor type for MySQL checking no position in ADD COLUMN clause.
+	MySQLStatementAddColumnWithoutPosition Type = "bb.plugin.advisor.mysql.statement.add-column-without-position"
+
 	// MySQLProcedureDisallowCreate is an advisor type for MySQL disallow create procedure.
 	MySQLProcedureDisallowCreate Type = "bb.plugin.advisor.mysql.procedure.disallow-create"
 
@@ -298,6 +304,9 @@ const (
 
 	// MySQLFunctionDisallowedList is an advisor type for MySQL disallowed function list.
 	MySQLFunctionDisallowedList Type = "bb.plugin.advisor.mysql.function.disallowed-list"
+
+	// MySQLDisallowOfflineDDL is an advisor type for MySQL disallow Offline DDL.
+	MySQLDisallowOfflineDDL Type = "bb.plugin.advisor.mysql.disallow-offline-ddl"
 
 	// PostgreSQL Advisor.
 

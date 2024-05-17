@@ -54,10 +54,36 @@ export const cleanupUnusedConfigs = (metadata: DatabaseMetadata) => {
     // Recursively cleanup column configs
     schemaConfig.tableConfigs.forEach((tc) => {
       cleanupColumnConfigs(tableMap.get(tc.name)!, tc);
-    });
-    // Cleanup empty table configs
-    schemaConfig.tableConfigs = schemaConfig.tableConfigs.filter(
-      (tc) => tc.columnConfigs.length > 0 || tc.classificationId
+    })
+  };
+  const cleanupViewConfigs = (
+    schema: SchemaMetadata,
+    schemaConfig: SchemaConfig
+  ) => {
+    const viewMap = keyBy(schema.views, (view) => view.name);
+    // Remove unused view configs
+    schemaConfig.viewConfigs = schemaConfig.viewConfigs.filter((tc) =>
+      viewMap.has(tc.name)
+    );
+  };
+  const cleanupFunctionConfigs = (
+    schema: SchemaMetadata,
+    schemaConfig: SchemaConfig
+  ) => {
+    const functionMap = keyBy(schema.functions, (func) => func.name);
+    // Remove unused function configs
+    schemaConfig.functionConfigs = schemaConfig.functionConfigs.filter((tc) =>
+      functionMap.has(tc.name)
+    );
+  };
+  const cleanupProcedureConfigs = (
+    schema: SchemaMetadata,
+    schemaConfig: SchemaConfig
+  ) => {
+    const procedureMap = keyBy(schema.procedures, (p) => p.name);
+    // Remove unused procedure configs
+    schemaConfig.procedureConfigs = schemaConfig.procedureConfigs.filter((tc) =>
+      procedureMap.has(tc.name)
     );
   };
   const cleanupSchemaConfigs = (metadata: DatabaseMetadata) => {
@@ -68,11 +94,19 @@ export const cleanupUnusedConfigs = (metadata: DatabaseMetadata) => {
     );
     // Recursively cleanup table configs
     metadata.schemaConfigs.forEach((sc) => {
-      cleanupTableConfigs(schemaMap.get(sc.name)!, sc);
+      const schema = schemaMap.get(sc.name)!;
+      cleanupTableConfigs(schema, sc);
+      cleanupViewConfigs(schema, sc);
+      cleanupFunctionConfigs(schema, sc);
+      cleanupProcedureConfigs(schema, sc);
     });
     // Cleanup empty schema configs
     metadata.schemaConfigs = metadata.schemaConfigs.filter(
-      (sc) => sc.tableConfigs.length > 0
+      (sc) =>
+        sc.tableConfigs.length > 0 ||
+        sc.viewConfigs.length > 0 ||
+        sc.functionConfigs.length > 0 ||
+        sc.procedureConfigs.length > 0
     );
   };
 
