@@ -86,7 +86,11 @@ export interface IssueFilter {
   statusList?: IssueStatus[];
   createdTsAfter?: number;
   createdTsBefore?: number;
-  type?: string;
+  // type is the issue type, for example: GRANT_REQUEST, DATABASE_DATA_EXPORT
+  type?: Issue_Type;
+  // taskType is the task type, for example: DDL, DML
+  taskType?: string;
   // filter by labels, for example: labels = "feature & bug"
   labels?: string[];
+  hasPipeline?: boolean;
 }

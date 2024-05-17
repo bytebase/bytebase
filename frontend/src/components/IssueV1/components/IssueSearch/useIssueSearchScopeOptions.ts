@@ -163,7 +163,7 @@ export const useIssueSearchScopeOptions = (
         options: principalSearchValueOptions.value,
       },
       {
-        id: "type",
+        id: "taskType",
         title: t("issue.advanced-search.scope.type.title"),
         description: t("issue.advanced-search.scope.type.description"),
         options: [
