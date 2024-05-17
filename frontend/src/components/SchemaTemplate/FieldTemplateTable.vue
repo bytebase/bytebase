@@ -63,7 +63,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridColumn } from "@/bbkit";
 import { BBGrid } from "@/bbkit";
-import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
+import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import { MiniActionButton } from "@/components/v2";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { useSettingV1Store } from "@/store";

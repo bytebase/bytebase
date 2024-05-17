@@ -116,7 +116,7 @@ import {
 import {
   isArchivedDatabaseV1,
   instanceV1HasAlterSchema,
-  allowUsingSchemaEditorV1,
+  allowUsingSchemaEditor,
   generateIssueName,
   hasProjectPermissionV2,
   extractProjectResourceName,
@@ -293,7 +293,7 @@ const generateMultiDb = async (
 ) => {
   if (
     type === "bb.issue.database.schema.update" &&
-    allowUsingSchemaEditorV1(props.databases) &&
+    allowUsingSchemaEditor(props.databases) &&
     !isStandaloneMode.value
   ) {
     schemaEditorContext.value.databaseIdList = [
