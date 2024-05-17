@@ -762,6 +762,10 @@
       },
       "algorithms": {
         "self": "Algoritmo De Enmascaramiento",
+        "upload": "Subir algoritmo",
+        "override-title": "Anulación de datos de algoritmo",
+        "override-desc": "Los algoritmos existentes se anularán; deberá volver a configurar el algoritmo para tipos semánticos.",
+        "override-confirm": "Aún subiendo",
         "default": "Por defecto",
         "default-desc": "Utilice *** como máscara de datos",
         "table": {

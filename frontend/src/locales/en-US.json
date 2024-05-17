@@ -762,6 +762,10 @@
       },
       "algorithms": {
         "self": "Masking Algorithm",
+        "upload": "Upload Algorithm",
+        "override-title": "Algorithm data override",
+        "override-desc": "Existed algorithms will be overridden, you have to re-configure the algorithm for semantic types.",
+        "override-confirm": "Still upload",
         "default": "Default",
         "default-desc": "Use *** as data mask",
         "table": {
