@@ -57,8 +57,10 @@ type CreateIssueParams = {
   branch?: string;
 };
 
-export const createIssueSkeleton = async (query: Record<string, string>) => {
-  const route = useRoute();
+export const createIssueSkeleton = async (
+  route: ReturnType<typeof useRoute>,
+  query: Record<string, string>
+) => {
   const projectName = route.params.projectId as string;
   const project = await useProjectV1Store().getOrFetchProjectByName(
     `${projectNamePrefix}${projectName}`
