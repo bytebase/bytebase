@@ -95,15 +95,6 @@ export const useRollbackContext = () => {
     if (rollbackUIType.value === "NONE") {
       return false;
     }
-    if (
-      ![
-        Task_Status.NOT_STARTED,
-        Task_Status.PENDING,
-        Task_Status.STATUS_UNSPECIFIED,
-      ].includes(task.value.status)
-    ) {
-      return false;
-    }
 
     if (isCreating.value) {
       return true;
