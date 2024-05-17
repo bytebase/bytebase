@@ -112,13 +112,13 @@ const rowProps = (changelist: Changelist) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
-      const url = router.resolve({
+      const route = router.resolve({
         path: `changelists/${extractChangelistResourceName(changelist.name)}`,
-      }).fullPath;
+      });
       if (e.ctrlKey || e.metaKey) {
-        window.open(url, "_blank");
+        window.open(route.fullPath, "_blank");
       } else {
-        window.location.href = url;
+        router.push(route);
       }
     },
   };
