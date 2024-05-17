@@ -227,6 +227,15 @@ func (s *IssueService) getIssueFind(ctx context.Context, permissionFilter *store
 			if spec.operator != comparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "type" filter`)
 			}
+			issueType, err := convertToAPIIssueType(v1pb.Issue_Type(v1pb.Issue_Type_value[spec.value]))
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to convert to issue type, err: %v", err)
+			}
+			issueFind.Types = &[]api.IssueType{issueType}
+		case "task_type":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "task_type" filter`)
+			}
 			switch spec.value {
 			case "DDL":
 				issueFind.TaskTypes = &[]api.TaskType{
@@ -242,6 +251,11 @@ func (s *IssueService) getIssueFind(ctx context.Context, permissionFilter *store
 			case "DATA_EXPORT":
 				issueFind.TaskTypes = &[]api.TaskType{
 					api.TaskDatabaseDataExport,
+				}
+			case "SQL_REVIEW":
+				issueFind.TaskTypes = &[]api.TaskType{
+					api.TaskDatabaseSchemaUpdate,
+					api.TaskDatabaseDataUpdate,
 				}
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, `unknown value %q`, spec.value)
