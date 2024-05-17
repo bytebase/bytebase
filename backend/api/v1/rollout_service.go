@@ -1226,6 +1226,20 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		}
 	}
 
+	// For the plan without pipeline, we need to check if the sheet is updated in related specs.
+	if oldPlan.PipelineUID == nil {
+		for _, specPatch := range updated {
+			oldSpec := oldSpecsByID[specPatch.Id]
+			if oldSpec.GetChangeDatabaseConfig() != nil && specPatch.GetChangeDatabaseConfig() != nil {
+				oldConfig, newConfig := oldSpec.GetChangeDatabaseConfig(), specPatch.GetChangeDatabaseConfig()
+				if oldConfig.Sheet != newConfig.Sheet {
+					doUpdateSheet = true
+					break
+				}
+			}
+		}
+	}
+
 	for _, taskPatch := range taskPatchList {
 		task := tasksMap[taskPatch.ID]
 		if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
