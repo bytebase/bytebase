@@ -21,7 +21,6 @@ export * from "./vcs_connector";
 export * from "./changeHistory";
 export * from "./dbSchema";
 export * from "./anomaly";
-export * from "./schemaEditor";
 export * from "./changelist";
 export * from "./issueComment";
 export * from "./auditLog";
