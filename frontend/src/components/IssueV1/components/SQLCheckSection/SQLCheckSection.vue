@@ -38,30 +38,47 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useTaskSheet } from "@/components/IssueV1/components/StatementSection/useTaskSheet";
-import { useIssueContext, databaseForTask ,specForTask} from "@/components/IssueV1/logic";
+import { useRoute } from "vue-router";
+import {
+  useIssueContext,
+  databaseForTask,
+  specForTask,
+  databaseForSpec,
+} from "@/components/IssueV1/logic";
 import { SQLCheckButton } from "@/components/SQLCheck";
+import type { TemplateType } from "@/plugins";
 import { TaskTypeListWithStatement } from "@/types";
-import { Plan_ChangeDatabaseConfig_Type, Task_Type } from "@/types/proto/v1/rollout_service";
+import {
+  Plan_ChangeDatabaseConfig_Type,
+  Task_Type,
+} from "@/types/proto/v1/rollout_service";
 import { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils/util";
+import { useEditSheet } from "../StatementSection/useEditSheet";
 import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
 
-const { issue, selectedTask, events } = useIssueContext();
-const { sheetStatement } = useTaskSheet();
+const route = useRoute();
+const { issue, selectedTask, selectedSpec, events } = useIssueContext();
+const { sheetStatement } = useEditSheet();
+
+const rolloutMode = computed(() => !!issue.value.rollout);
+
 const database = computed(() => {
-  return databaseForTask(issue.value, selectedTask.value);
+  return rolloutMode.value
+    ? databaseForTask(issue.value, selectedTask.value)
+    : databaseForSpec(issue.value, selectedSpec.value);
 });
 
-const getStatement = async () => {
-  return {
-    statement: sheetStatement.value,
-    errors: [],
-  };
-};
+const issueTemplate = computed(() => {
+  return route.query.template as TemplateType;
+});
 
 const show = computed(() => {
+  if (issueTemplate.value === "bb.issue.sql-review") {
+    return true;
+  }
+
   const type = selectedTask.value.type;
   if (type === Task_Type.DATABASE_SCHEMA_BASELINE) {
     return false;
@@ -71,6 +88,13 @@ const show = computed(() => {
   }
   return false;
 });
+
+const getStatement = async () => {
+  return {
+    statement: sheetStatement.value,
+    errors: [],
+  };
+};
 
 const handleToggleOnlineMigration = (on: boolean, confirm: Defer<boolean>) => {
   if (on) {

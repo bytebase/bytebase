@@ -274,7 +274,8 @@
     "project-member": "项目成员",
     "leave-without-saving": "不保存变动？",
     "configure-now": "现在配置",
-    "connection": "连接"
+    "connection": "连接",
+    "permission-denied": "没有权限"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1217,6 +1218,9 @@
         },
         "affected-rows-n": "影响行数：{n}"
       }
+    },
+    "sql-review": {
+      "statement-type": "语句类型"
     }
   },
   "alter-schema": {
@@ -3309,6 +3313,10 @@
   "export-center": {
     "self": "导出中心",
     "permission-denied": "您没有权限执行此操作"
+  },
+  "review-center": {
+    "self": "SQL 审核中心",
+    "review-sql": "审核 SQL"
   },
   "schema-designer": {
     "self": "Schema 设计器",

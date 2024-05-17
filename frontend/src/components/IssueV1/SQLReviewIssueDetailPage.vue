@@ -3,24 +3,18 @@
     <div class="border-b">
       <div class="issue-debug">phase: {{ phase }}</div>
       <BannerSection v-if="!isCreating" />
+
       <HeaderSection />
     </div>
-
     <div class="flex-1 flex flex-row">
       <div
-        class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden py-2"
+        class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden"
       >
-        <div class="w-full px-4">
-          <GrantRequestExporterForm
-            v-if="requestRole === PresetRoleType.PROJECT_EXPORTER"
-          />
-          <GrantRequestQuerierForm
-            v-if="requestRole === PresetRoleType.PROJECT_QUERIER"
-          />
-        </div>
-
+        <ReviewIssueSpecSection />
+        <SQLCheckSection v-if="isCreating" />
+        <PlanCheckSection v-if="!isCreating" />
+        <StatementSection />
         <DescriptionSection />
-
         <IssueCommentSection v-if="!isCreating" />
       </div>
 
@@ -47,7 +41,7 @@
           padding: 0.5rem 0;
         "
       >
-        <Sidebar />
+        <Sidebar v-if="sidebarMode === 'MOBILE'" />
       </div>
     </Drawer>
   </template>
@@ -67,18 +61,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { PresetRoleType } from "@/types";
+import { ref } from "vue";
+import { provideSQLCheckContext } from "../SQLCheck";
+import { Drawer } from "../v2";
 import {
   BannerSection,
   HeaderSection,
+  PlanCheckSection,
+  StatementSection,
   DescriptionSection,
   IssueCommentSection,
+  Sidebar,
   IssueReviewActionPanel,
   IssueStatusActionPanel,
-  GrantRequestExporterForm,
-  GrantRequestQuerierForm,
+  SQLCheckSection,
+  ReviewIssueSpecSection,
 } from "./components";
 import type { IssueReviewAction, IssueStatusAction } from "./logic";
 import {
@@ -97,31 +94,21 @@ const ongoingIssueStatusAction = ref<{
   action: IssueStatusAction;
 }>();
 
-const requestRole = computed(() => {
-  return issue.value.grantRequest?.role;
-});
-
 usePollIssue();
 
-useEmitteryEventListener(
-  events,
-  "perform-issue-review-action",
-  ({ action }) => {
-    ongoingIssueReviewAction.value = {
-      action,
-    };
-  }
-);
+events.on("perform-issue-review-action", ({ action }) => {
+  ongoingIssueReviewAction.value = {
+    action,
+  };
+});
 
-useEmitteryEventListener(
-  events,
-  "perform-issue-status-action",
-  ({ action }) => {
-    ongoingIssueStatusAction.value = {
-      action,
-    };
-  }
-);
+events.on("perform-issue-status-action", ({ action }) => {
+  ongoingIssueStatusAction.value = {
+    action,
+  };
+});
+
+provideSQLCheckContext();
 
 const {
   mode: sidebarMode,

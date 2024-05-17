@@ -274,7 +274,8 @@
     "project-member": "Project member",
     "leave-without-saving": "Leave without saving?",
     "configure-now": "Configure now",
-    "connection": "Connection"
+    "connection": "Connection",
+    "permission-denied": "Permission denied"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1217,6 +1218,9 @@
         },
         "affected-rows-n": "Affected rows: {n}"
       }
+    },
+    "sql-review": {
+      "statement-type": "Statement type"
     }
   },
   "alter-schema": {
@@ -3309,6 +3313,10 @@
   "export-center": {
     "self": "Export Center",
     "permission-denied": "Permission denied"
+  },
+  "review-center": {
+    "self": "Review Center",
+    "review-sql": "Review SQL"
   },
   "schema-designer": {
     "self": "Schema Designer",
