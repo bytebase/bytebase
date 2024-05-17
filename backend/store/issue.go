@@ -114,6 +114,8 @@ type FindIssueMessage struct {
 	PermissionFilter *FindIssueMessagePermissionFilter
 
 	LabelList []string
+
+	NoPipeline bool
 }
 
 // GetIssueV2 gets issue by issue UID.
@@ -463,6 +465,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if len(find.LabelList) != 0 {
 		where = append(where, fmt.Sprintf("payload->'labels' ?& $%d::TEXT[]", len(args)+1))
 		args = append(args, find.LabelList)
+	}
+	if find.NoPipeline {
+		where = append(where, "issue.pipeline_id IS NULL")
 	}
 
 	var issues []*IssueMessage
