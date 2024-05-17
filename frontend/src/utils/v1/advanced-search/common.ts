@@ -21,12 +21,12 @@ export const SearchScopeIdList = [
   "database",
   "creator",
   "created",
-  "type",
   "status",
   // issue related search scopes.
   "assignee",
   "subscriber",
   "label",
+  "taskType",
   // auditLog related search scopes.
   "method",
   "level",
