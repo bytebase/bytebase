@@ -298,7 +298,7 @@ import { State } from "@/types/proto/v1/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import type { SearchParams } from "@/utils";
 import {
-  allowUsingSchemaEditorV1,
+  allowUsingSchemaEditor,
   instanceV1HasAlterSchema,
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
@@ -590,7 +590,7 @@ const generateMultiDb = async () => {
     (id) => selectableDatabaseList.value.find((db) => db.uid === id)!
   );
 
-  if (isEditSchema.value && allowUsingSchemaEditorV1(selectedDatabaseList)) {
+  if (isEditSchema.value && allowUsingSchemaEditor(selectedDatabaseList)) {
     schemaEditorContext.value.databaseIdList = [
       ...flattenSelectedDatabaseUidList.value,
     ];
@@ -694,7 +694,7 @@ const generateTenant = async () => {
     const databaseList = databaseV1Store.databaseListByProject(
       selectedProject.value.name
     );
-    if (isEditSchema.value && allowUsingSchemaEditorV1(databaseList)) {
+    if (isEditSchema.value && allowUsingSchemaEditor(databaseList)) {
       schemaEditorContext.value.databaseIdList = databaseList
         .filter((database) => database.syncState === State.ACTIVE)
         .map((database) => database.uid);
@@ -717,7 +717,7 @@ const generateTenant = async () => {
         databaseList.push(database);
       }
     }
-    if (isEditSchema.value && allowUsingSchemaEditorV1(databaseList)) {
+    if (isEditSchema.value && allowUsingSchemaEditor(databaseList)) {
       schemaEditorContext.value.databaseIdList = [
         ...flattenSelectedDatabaseUidList.value,
       ];

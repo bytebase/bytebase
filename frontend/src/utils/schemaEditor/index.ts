@@ -1,14 +1,7 @@
-import type { ComposedDatabase, Database } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 
 export * from "./filter";
-
-// Only allow using Schema Editor with MySQL.
-export const allowUsingSchemaEditor = (databaseList: Database[]): boolean => {
-  return databaseList.every((db) => {
-    return db.instance.engine === "MYSQL" || db.instance.engine === "POSTGRES";
-  });
-};
 
 export const engineSupportsSchemaEditor = (engine: Engine) => {
   if ([Engine.MYSQL, Engine.TIDB].includes(engine)) {
@@ -20,7 +13,7 @@ export const engineSupportsSchemaEditor = (engine: Engine) => {
   return false;
 };
 
-export const allowUsingSchemaEditorV1 = (
+export const allowUsingSchemaEditor = (
   databaseList: ComposedDatabase[]
 ): boolean => {
   return databaseList.every((db) => {

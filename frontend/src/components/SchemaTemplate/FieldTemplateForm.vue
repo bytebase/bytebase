@@ -249,7 +249,9 @@ import {
   getDefaultValueByKey,
   getColumnDefaultValueOptions,
   isTextOfColumnType,
-} from "@/components/SchemaEditorV1/utils/columnDefaultValue";
+} from "@/components/SchemaEditorLite";
+import { ColumnDefaultValueExpressionModal } from "@/components/SchemaEditorLite";
+import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import {
   DrawerContent,
   DropdownInput,
@@ -270,8 +272,6 @@ import {
   convertKVListToLabels,
   convertLabelsToKVList,
 } from "@/utils";
-import ColumnDefaultValueExpressionModal from "../SchemaEditorV1/Modals/ColumnDefaultValueExpressionModal.vue";
-import SemanticTypesDrawer from "../SensitiveData/components/SemanticTypesDrawer.vue";
 import { engineList, categoryList, classificationConfig } from "./utils";
 
 const props = defineProps<{
