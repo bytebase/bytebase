@@ -357,7 +357,7 @@
     "skip": "飛び越える",
     "skip-modal-title": "タスク [{name}] をスキップしますか?",
     "task-checks": "タスクのチェック項目",
-    "prior-backup": "事前にデータをバックアップしておくこと",
+    "prior-backup": "影響を受けるデータの事前バックアップ",
     "rollback": {
       "sql-rollback": "SQLロールバック",
       "failed": "失敗",
@@ -762,6 +762,10 @@
       },
       "algorithms": {
         "self": "減感アルゴリズム",
+        "upload": "インポートアルゴリズム",
+        "override-title": "カバーアルゴリズムデータ",
+        "override-desc": "既存のアルゴリズムは上書きされるため、セマンティック タイプに合わせてアルゴリズムを再構成する必要があります。",
+        "override-confirm": "インポートを続行する",
         "default": "デフォルト",
         "default-desc": "*** を使用してデータをマスクする",
         "table": {
@@ -875,7 +879,7 @@
       "pipeline-stage-status-update": "作業指示書のステージステータスを更新する",
       "pipeline-task-status-update": "作業指示タスクのステータスを更新する",
       "pipeline-task-statement-update": "SQLを更新する",
-      "pipeline-task-prior-backup": "事前にデータをバックアップしておくこと",
+      "pipeline-task-prior-backup": "影響を受けるデータの事前バックアップ",
       "member-create": "メンバーの作成",
       "member-role-update": "役割を更新する",
       "member-activate": "メンバーをアクティブ化する",

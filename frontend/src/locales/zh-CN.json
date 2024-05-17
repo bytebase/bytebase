@@ -357,7 +357,7 @@
     "skip": "跳过",
     "skip-modal-title": "跳过任务[{name}]？",
     "task-checks": "任务检查项",
-    "prior-backup": "数据预前备份",
+    "prior-backup": "受影响数据预备份",
     "rollback": {
       "sql-rollback": "SQL 回滚",
       "failed": "失败",
@@ -762,6 +762,10 @@
       },
       "algorithms": {
         "self": "脱敏算法",
+        "upload": "导入算法",
+        "override-title": "覆盖算法数据",
+        "override-desc": "现有的算法将被覆盖，您必须重新配置语义类型的算法。",
+        "override-confirm": "继续导入",
         "default": "默认",
         "default-desc": "使用 *** 为数据遮挡",
         "table": {
@@ -875,7 +879,7 @@
       "pipeline-stage-status-update": "更新工单阶段状态",
       "pipeline-task-status-update": "更新工单任务状态",
       "pipeline-task-statement-update": "更新 SQL",
-      "pipeline-task-prior-backup": "数据预前备份",
+      "pipeline-task-prior-backup": "受影响数据预备份",
       "member-create": "创建成员",
       "member-role-update": "更新角色",
       "member-activate": "激活成员",
