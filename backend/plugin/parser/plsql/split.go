@@ -22,11 +22,19 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 		return nil, err
 	}
 
+	byteOffsetStart := 0
+	prevStopTokenIndex := -1
 	var result []base.SingleSQL
 	for _, item := range tree.GetChildren() {
 		if stmt, ok := item.(parser.IUnit_statementContext); ok {
 			text := ""
 			lastLine := 0
+			// tokens looks like
+			if startTokenIndex := stmt.GetStart().GetTokenIndex(); startTokenIndex-1 >= 0 && prevStopTokenIndex+1 <= startTokenIndex-1 {
+				byteOffsetStart += len(tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(stmt.GetStart().GetTokenIndex()-1)))
+			}
+			byteOffsetEnd := byteOffsetStart + len(tokens.GetTextFromTokens(stmt.GetStart(), stmt.GetStop()))
+
 			// The go-ora driver requires semicolon for anonymous block,
 			// but does not support semicolon for other statements.
 			if needSemicolon(stmt) {
@@ -48,10 +56,14 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 			}
 
 			result = append(result, base.SingleSQL{
-				Text:     text,
-				LastLine: lastLine,
-				Empty:    false,
+				Text:            text,
+				LastLine:        lastLine,
+				Empty:           false,
+				ByteOffsetStart: byteOffsetStart,
+				ByteOffsetEnd:   byteOffsetEnd,
 			})
+			byteOffsetStart = byteOffsetEnd
+			prevStopTokenIndex = stmt.GetStop().GetTokenIndex()
 		}
 	}
 	return result, nil
