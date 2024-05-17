@@ -6,7 +6,7 @@
   </div>
 
   <button
-    class="inline-flex items-center px-3 py-0.5 rounded-full text-sm border border-control-border"
+    class="inline-flex items-center px-3 leading-6 rounded-full text-sm border"
     :class="buttonClasses"
     @click="clickable && $emit('click')"
   >
@@ -81,39 +81,32 @@ const resultStatus = computed(() => {
 
 const buttonClasses = computed(() => {
   let bgColor = "";
-  let bgHoverColor = "";
   let textColor = "";
   switch (status.value) {
     case PlanCheckRun_Status.RUNNING:
       bgColor = "bg-blue-100";
-      bgHoverColor = "bg-blue-300";
       textColor = "text-blue-800";
       break;
     case PlanCheckRun_Status.FAILED:
       bgColor = "bg-red-100";
-      bgHoverColor = "bg-red-300";
       textColor = "text-red-800";
       break;
     case PlanCheckRun_Status.CANCELED:
       bgColor = "bg-yellow-100";
-      bgHoverColor = "bg-yellow-300";
       textColor = "text-yellow-800";
       break;
     case PlanCheckRun_Status.DONE:
       switch (resultStatus.value) {
         case PlanCheckRun_Result_Status.SUCCESS:
           bgColor = "bg-gray-100";
-          bgHoverColor = "bg-gray-300";
           textColor = "text-gray-800";
           break;
         case PlanCheckRun_Result_Status.WARNING:
           bgColor = "bg-yellow-100";
-          bgHoverColor = "bg-yellow-300";
           textColor = "text-yellow-800";
           break;
         case PlanCheckRun_Result_Status.ERROR:
           bgColor = "bg-red-100";
-          bgHoverColor = "bg-red-300";
           textColor = "text-red-800";
           break;
       }
@@ -122,17 +115,17 @@ const buttonClasses = computed(() => {
 
   const styleList: string[] = [textColor];
   if (props.clickable) {
-    styleList.push("cursor-pointer", `hover:${bgHoverColor}`);
+    styleList.push("cursor-pointer");
     if (props.selected) {
-      styleList.push(bgHoverColor);
+      styleList.push("shadow", "font-medium", "border-control-border");
     } else {
-      styleList.push(bgColor);
+      styleList.push(bgColor, "hover:opacity-80", "border-transparent");
     }
   } else {
     styleList.push(bgColor);
     styleList.push("cursor-default");
   }
-  styleList.push("cursor-pointer", `hover:${bgHoverColor}`);
+  styleList.push("cursor-pointer");
   styleList.push(bgColor);
 
   return styleList.join(" ");
