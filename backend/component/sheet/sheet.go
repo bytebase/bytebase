@@ -9,6 +9,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	tsqlbatch "github.com/bytebase/bytebase/backend/plugin/parser/tsql/batch"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -36,6 +38,8 @@ func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetC
 	}
 
 	switch engine {
+	case storepb.Engine_ORACLE:
+		return getSheetCommandsForOracle(statement)
 	case storepb.Engine_MSSQL:
 		return getSheetCommandsForMSSQL(statement)
 	default:
@@ -65,13 +69,32 @@ func getSheetCommandsGeneral(engine storepb.Engine, statement string) []*storepb
 	return sheetCommands
 }
 
+func getSheetCommandsForOracle(statement string) []*storepb.SheetCommand {
+	singleSQLs, err := plsql.SplitSQL(statement)
+	if err != nil {
+		if !strings.Contains(err.Error(), "not supported") {
+			slog.Warn("failed to get sheet command for oracle", "statement", statement)
+		}
+		return nil
+	}
+
+	var sheetCommands []*storepb.SheetCommand
+	for _, s := range singleSQLs {
+		sheetCommands = append(sheetCommands, &storepb.SheetCommand{
+			Start: int32(s.ByteOffsetStart),
+			End:   int32(s.ByteOffsetEnd),
+		})
+	}
+	return sheetCommands
+}
+
 func getSheetCommandsForMSSQL(statement string) []*storepb.SheetCommand {
 	var sheetCommands []*storepb.SheetCommand
 	p := 0
 
 	batch := mssql.NewBatch(statement)
 	for {
-		_, err := batch.Next()
+		command, err := batch.Next()
 		if err == io.EOF {
 			np := p + len(batch.String())
 			sheetCommands = append(sheetCommands, &storepb.SheetCommand{
@@ -84,12 +107,19 @@ func getSheetCommandsForMSSQL(statement string) []*storepb.SheetCommand {
 			slog.Warn("failed to get sheet commands for mssql", "statement", statement)
 			return nil
 		}
-		np := p + len(batch.String())
-		sheetCommands = append(sheetCommands, &storepb.SheetCommand{
-			Start: int32(p),
-			End:   int32(np),
-		})
-		p = np
+		if command == nil {
+			continue
+		}
+		switch command.(type) {
+		case *tsqlbatch.GoCommand:
+			np := p + len(batch.String())
+			sheetCommands = append(sheetCommands, &storepb.SheetCommand{
+				Start: int32(p),
+				End:   int32(np),
+			})
+			p = np
+		default:
+		}
 	}
 	return sheetCommands
 }
