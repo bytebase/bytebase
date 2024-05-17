@@ -96,9 +96,11 @@ export const useRollbackContext = () => {
       return false;
     }
     if (
-      ![Task_Status.NOT_STARTED, Task_Status.PENDING].includes(
-        task.value.status
-      )
+      ![
+        Task_Status.NOT_STARTED,
+        Task_Status.PENDING,
+        Task_Status.STATUS_UNSPECIFIED,
+      ].includes(task.value.status)
     ) {
       return false;
     }
