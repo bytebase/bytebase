@@ -19,6 +19,7 @@ import {
   Settings,
   RefreshCcw,
   PencilRuler,
+  SearchCodeIcon,
   DownloadIcon,
 } from "lucide-vue-next";
 import { computed, h } from "vue";
@@ -44,6 +45,7 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
   PROJECT_V1_ROUTE_EXPORT_CENTER,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
+  PROJECT_V1_ROUTE_REVIEW_CENTER,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -199,6 +201,13 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       title: t("common.issues"),
       path: PROJECT_V1_ROUTE_ISSUES,
       icon: h(CircleDot),
+      type: "div",
+      hide: isDefaultProject.value,
+    },
+    {
+      title: t("review-center.self"),
+      icon: h(SearchCodeIcon),
+      path: PROJECT_V1_ROUTE_REVIEW_CENTER,
       type: "div",
       hide: isDefaultProject.value,
     },
