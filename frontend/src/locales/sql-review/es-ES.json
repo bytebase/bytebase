@@ -100,11 +100,11 @@
       }
     },
     "table-limit-size": {
-      "title": "Limite las operaciones DDL en tablas con grandes volúmenes de datos",
-      "description": "Configure el tamaño máximo de datos de las tablas para las que se puede ejecutar DDL. Nivel de error recomendado: advertencia",
+      "title": "Limitar operaciones DDL en tablas con gran número de filas",
+      "description": "Configurar el número máximo de filas en tablas para las cuales se puede ejecutar DDL. Nivel de error recomendado: advertencia",
       "component": {
         "number": {
-          "title": "Tamaño máximo de datos"
+          "title": "Recuento máximo de filas"
         }
       }
     },
