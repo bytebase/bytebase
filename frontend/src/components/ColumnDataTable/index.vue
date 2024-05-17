@@ -16,7 +16,7 @@ import type { PropType } from "vue";
 import { computed } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
-import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
+import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import {
   useCurrentUserV1,
   useSubscriptionV1Store,
@@ -40,6 +40,10 @@ import {
   updateColumnConfig,
   supportSetClassificationFromComment,
 } from "./utils";
+
+defineOptions({
+  name: "ColumnDataTable",
+});
 
 const props = defineProps({
   database: {
