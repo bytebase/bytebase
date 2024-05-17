@@ -109,7 +109,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 	batch := NewBatch(statement)
 
-	for idx := 0; ; idx++ {
+	for idx := 0; ; {
 		command, err := batch.Next()
 		if err != nil {
 			if err == io.EOF {
@@ -117,6 +117,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				v := batch.String()
 				if v != "" {
 					indexes := []int32{int32(idx)}
+					idx++
 					opts.LogCommandExecute(indexes)
 					rowsAffected, err := execute(ctx, tx, v)
 					if err != nil {
@@ -139,6 +140,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			// Try send the batch to server.
 
 			indexes := []int32{int32(idx)}
+			idx++
 			for i := uint(0); i < v.Count; i++ {
 				opts.LogCommandExecute(indexes)
 				rowsAffected, err := execute(ctx, tx, stmt)
