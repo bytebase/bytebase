@@ -34,6 +34,7 @@ export const PROJECT_V1_ROUTE_WEBHOOK_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.we
 export const PROJECT_V1_ROUTE_MEMBERS = `${PROJECT_V1_ROUTE_DASHBOARD}.members`;
 export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE_DASHBOARD}.settings`;
 export const PROJECT_V1_ROUTE_EXPORT_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.export-center`;
+export const PROJECT_V1_ROUTE_REVIEW_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.review-center`;
 
 const projectV1Routes: RouteRecordRaw[] = [
   {
@@ -469,6 +470,19 @@ const projectV1Routes: RouteRecordRaw[] = [
           ],
         },
         component: () => import("@/views/ExportCenter/index.vue"),
+        props: true,
+      },
+      {
+        path: "review-center",
+        name: PROJECT_V1_ROUTE_REVIEW_CENTER,
+        meta: {
+          overrideTitle: true,
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.issues.list",
+          ],
+        },
+        component: () => import("@/views/ReviewCenter/index.vue"),
         props: true,
       },
     ],

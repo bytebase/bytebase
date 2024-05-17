@@ -52,13 +52,13 @@
           <template v-if="!state.isEditing">
             <template v-if="shouldShowEditButton">
               <!-- for small size sheets, show full featured UI editing button group -->
-              <NTooltip :disabled="denyEditTaskReasons.length === 0">
+              <NTooltip :disabled="denyEditStatementReasons.length === 0">
                 <template #trigger>
                   <NButton
-                    v-if="!isTaskSheetOversize"
+                    v-if="!isSheetOversize"
                     size="tiny"
                     tag="div"
-                    :disabled="denyEditTaskReasons.length > 0"
+                    :disabled="denyEditStatementReasons.length > 0"
                     @click.prevent="beginEdit"
                   >
                     {{ $t("common.edit") }}
@@ -74,7 +74,7 @@
                   </SQLUploadButton>
                 </template>
                 <template #default>
-                  <ErrorList :errors="denyEditTaskReasons" />
+                  <ErrorList :errors="denyEditStatementReasons" />
                 </template>
               </NTooltip>
             </template>
@@ -113,7 +113,7 @@
     </div>
 
     <BBAttention
-      v-if="isTaskSheetOversize"
+      v-if="isSheetOversize"
       type="warning"
       :title="$t('issue.statement-from-sheet-warning')"
     >
@@ -208,7 +208,7 @@
     <div>sheetStatement.length: {{ sheetStatement.length }}</div>
     <div>sheet.title: {{ sheet?.title }}</div>
     <div>sheet.content.length: {{ sheet?.content?.length }}</div>
-    <div>isTaskSheetOversize: {{ isTaskSheetOversize }}</div>
+    <div>isTaskSheetOversize: {{ isSheetOversize }}</div>
     <div>isEditorReadonly: {{ isEditorReadonly }}</div>
     <div>state.isEditing: {{ state.isEditing }}</div>
   </div>
@@ -237,6 +237,7 @@ import {
   isDeploymentConfigChangeTaskV1,
   isGroupingChangeTaskV1,
   databaseEngineForSpec,
+  databaseForSpec,
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
@@ -251,9 +252,14 @@ import {
   useSheetV1Store,
 } from "@/store";
 import type { SQLDialect } from "@/types";
-import { TaskTypeListWithStatement, dialectOfEngineV1 } from "@/types";
+import {
+  EMPTY_ID,
+  TaskTypeListWithStatement,
+  dialectOfEngineV1,
+} from "@/types";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import type { Plan_Spec, Task } from "@/types/proto/v1/rollout_service";
+import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
@@ -264,8 +270,6 @@ import {
   sheetNameOfTaskV1,
   useInstanceV1EditorLanguage,
   getStatementSize,
-  isDatabaseChangeRelatedIssue,
-  isDatabaseDataExportIssue,
 } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
@@ -281,7 +285,7 @@ type LocalState = EditState & {
 const { t } = useI18n();
 const route = useRoute();
 const currentUser = useCurrentUserV1();
-const { events, isCreating, issue, selectedTask, formatOnSave } =
+const { events, isCreating, issue, selectedTask, selectedSpec, formatOnSave } =
   useIssueContext();
 const project = computed(() => issue.value.projectEntity);
 const dialog = useDialog();
@@ -297,15 +301,19 @@ const state = reactive<LocalState>({
   isUploadingFile: false,
 });
 
+const rolloutMode = computed(() => !!issue.value.rollout);
+
 const database = computed(() => {
-  return databaseForTask(issue.value, selectedTask.value);
+  return rolloutMode.value
+    ? databaseForTask(issue.value, selectedTask.value)
+    : databaseForSpec(issue.value, selectedSpec.value);
 });
 
 const language = useInstanceV1EditorLanguage(
   computed(() => database.value.instanceEntity)
 );
 const filename = computed(() => {
-  const name = selectedTask.value.name || uuidv1();
+  const name = (rolloutMode.value && selectedTask.value.name) || uuidv1();
   const ext = extensionNameOfLanguage(language.value);
   return `${name}.${ext}`;
 });
@@ -353,7 +361,7 @@ const isEditorReadonly = computed(() => {
   return (
     !state.isEditing ||
     // !allowEditStatement.value || // TODO
-    isTaskSheetOversize.value ||
+    isSheetOversize.value ||
     // isGroupingChangeIssue(issue.value as Issue) || // TODO
     false // TODO
   );
@@ -367,7 +375,7 @@ const {
   reset: resetTempEditState,
 } = useTempEditState(state);
 
-const isTaskSheetOversize = computed(() => {
+const isSheetOversize = computed(() => {
   if (isCreating.value) return false;
   if (state.isEditing) return false;
   if (!sheetReady.value) return false;
@@ -377,12 +385,14 @@ const isTaskSheetOversize = computed(() => {
   );
 });
 
-const denyEditTaskReasons = computed(() => {
-  return allowUserToEditStatementForTask(
-    issue.value,
-    selectedTask.value,
-    currentUser.value
-  );
+const denyEditStatementReasons = computed(() => {
+  return rolloutMode.value
+    ? allowUserToEditStatementForTask(
+        issue.value,
+        selectedTask.value,
+        currentUser.value
+      )
+    : [];
 });
 
 const shouldShowEditButton = computed(() => {
@@ -390,17 +400,23 @@ const shouldShowEditButton = computed(() => {
   if (isCreating.value) {
     return false;
   }
+  // If the issue is not open, don't show the edit button.
+  if (issue.value.status !== IssueStatus.OPEN) {
+    return false;
+  }
   // Will show another button group as [Upload][Cancel][Save]
   // while editing
   if (state.isEditing) {
     return false;
   }
-
   return true;
 });
 
 const allowApplyTaskStateToOthers = computed(() => {
   if (!isCreating.value) {
+    return false;
+  }
+  if (!rolloutMode.value) {
     return false;
   }
   if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
@@ -644,43 +660,54 @@ const applyTaskStateToOthers = async () => {
 };
 
 const updateStatement = async (statement: string) => {
-  // - find the task related plan/step/spec
-  // - create a new sheet
-  // - update sheet id in the spec
-
-  // Find the target editing task(s)
-  // default to selectedTask
-  // also ask whether to apply the change to all tasks in the stage.
-  const { target, tasks } = await chooseUpdateStatementTarget();
-
-  if (target === "CANCELED" || tasks.length === 0) {
-    cancelEdit();
-    return;
-  }
-
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) {
     notifyNotEditableLegacyIssue();
     return;
   }
 
-  const specs: Plan_Spec[] = [];
-  tasks.forEach((task) => {
-    const spec = specForTask(planPatch, task);
-    if (spec) {
-      specs.push(spec);
+  const specsIdList: string[] = [];
+  if (rolloutMode.value) {
+    // - find the task related plan/step/spec
+    // - create a new sheet
+    // - update sheet id in the spec
+
+    // Find the target editing task(s)
+    // default to selectedTask
+    // also ask whether to apply the change to all tasks in the stage.
+    const { target, tasks } = await chooseUpdateStatementTarget();
+
+    if (target === "CANCELED" || tasks.length === 0) {
+      cancelEdit();
+      return;
     }
-  });
-  const distinctSpecIds = new Set(specs.map((s) => s.id));
-  if (distinctSpecIds.size === 0) {
+
+    tasks.forEach((task) => {
+      const spec = specForTask(planPatch, task);
+      if (spec) {
+        specsIdList.push(spec.id);
+      }
+    });
+  } else {
+    const spec = selectedSpec.value;
+    if (!spec) {
+      notifyNotEditableLegacyIssue();
+      return;
+    }
+    specsIdList.push(spec.id);
+  }
+
+  const distinctSpecsIds = new Set(
+    specsIdList.filter((id) => id && id !== String(EMPTY_ID))
+  );
+  if (distinctSpecsIds.size === 0) {
     notifyNotEditableLegacyIssue();
     return;
   }
 
   const specsToPatch = planPatch.steps
     .flatMap((step) => step.specs)
-    .filter((spec) => distinctSpecIds.has(spec.id));
-
+    .filter((spec) => distinctSpecsIds.has(spec.id));
   const sheet = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
     title: issue.value.title,
@@ -695,9 +722,9 @@ const updateStatement = async (statement: string) => {
   for (let i = 0; i < specsToPatch.length; i++) {
     const spec = specsToPatch[i];
     let config = undefined;
-    if (isDatabaseChangeRelatedIssue(issue.value)) {
+    if (spec.changeDatabaseConfig) {
       config = spec.changeDatabaseConfig;
-    } else if (isDatabaseDataExportIssue(issue.value)) {
+    } else if (spec.exportDataConfig) {
       config = spec.exportDataConfig;
     }
     if (!config) continue;
