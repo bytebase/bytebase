@@ -117,7 +117,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				v := batch.String()
 				if v != "" {
 					indexes := []int32{int32(idx)}
-					idx++
 					opts.LogCommandExecute(indexes)
 					rowsAffected, err := execute(ctx, tx, v)
 					if err != nil {
