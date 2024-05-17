@@ -39,6 +39,7 @@ export function useInitializeIssue(
     const issue =
       uid === String(EMPTY_ID)
         ? await createIssueSkeleton(
+            route,
             convertRouterQuery(router.resolve(url).query)
           )
         : await experimentalFetchIssueByUID(uid, project);
@@ -73,7 +74,10 @@ export function useInitializeIssue(
     const url = route.fullPath;
     const query = convertRouterQuery(router.resolve(url).query);
     try {
-      const updated = await createIssueSkeleton({ ...query, ...overrides });
+      const updated = await createIssueSkeleton(route, {
+        ...query,
+        ...overrides,
+      });
       issue.value = updated;
     } catch {
       // Nothing
