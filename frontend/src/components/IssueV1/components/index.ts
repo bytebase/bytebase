@@ -5,6 +5,7 @@ import HeaderSection from "./HeaderSection";
 import IssueCommentSection from "./IssueCommentSection";
 import IssueSearch from "./IssueSearch";
 import PlanCheckSection from "./PlanCheckSection";
+import ReviewIssueSpecSection from "./ReviewIssueSpecSection";
 import SQLCheckSection from "./SQLCheckSection";
 import Sidebar from "./Sidebar";
 import StageSection from "./StageSection";
@@ -28,4 +29,5 @@ export {
   SQLCheckSection,
   DataExportSection,
   IssueCommentSection,
+  ReviewIssueSpecSection,
 };

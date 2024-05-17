@@ -20,11 +20,14 @@ type IssueTypeDatabase =
 
 type IssueTypeGrantRequest = "bb.issue.grant.request";
 
+type IssueTypeSQLReview = "bb.issue.sql-review";
+
 export type IssueType =
   | IssueTypeGeneral
   | IssueTypeDataSource
   | IssueTypeDatabase
-  | IssueTypeGrantRequest;
+  | IssueTypeGrantRequest
+  | IssueTypeSQLReview;
 
 export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
 

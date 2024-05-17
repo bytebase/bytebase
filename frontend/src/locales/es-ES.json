@@ -1217,6 +1217,9 @@
         },
         "affected-rows-n": "Filas afectadas: {n}"
       }
+    },
+    "sql-review": {
+      "statement-type": "Tipo de declaración"
     }
   },
   "alter-schema": {

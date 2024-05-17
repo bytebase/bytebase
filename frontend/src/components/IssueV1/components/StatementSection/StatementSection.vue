@@ -10,13 +10,13 @@ import { computed } from "vue";
 import { ref } from "vue";
 import { nextTick } from "vue";
 import { useRouter } from "vue-router";
-import { TaskTypeListWithStatement } from "@/types";
+import { EMPTY_ID, TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { useIssueContext } from "../../logic";
 import EditorView from "./EditorView";
 import SDLView from "./SDLView";
 
-const { isCreating, selectedTask } = useIssueContext();
+const { isCreating, selectedTask, selectedSpec } = useIssueContext();
 
 const editorViewRef = ref<InstanceType<typeof EditorView>>();
 const router = useRouter();
@@ -24,15 +24,20 @@ const router = useRouter();
 type ViewMode = "NONE" | "EDITOR" | "SDL";
 
 const viewMode = computed((): ViewMode => {
-  const task = selectedTask.value;
-  const { type } = task;
-  if (type === Task_Type.DATABASE_SCHEMA_UPDATE_SDL) {
-    return "SDL";
+  if (selectedTask.value.uid !== String(EMPTY_ID)) {
+    const task = selectedTask.value;
+    const { type } = task;
+    if (type === Task_Type.DATABASE_SCHEMA_UPDATE_SDL) {
+      return "SDL";
+    }
+    if (type === Task_Type.DATABASE_SCHEMA_BASELINE) {
+      return isCreating.value ? "EDITOR" : "NONE";
+    }
+    if (TaskTypeListWithStatement.includes(type)) {
+      return "EDITOR";
+    }
   }
-  if (type === Task_Type.DATABASE_SCHEMA_BASELINE) {
-    return isCreating.value ? "EDITOR" : "NONE";
-  }
-  if (TaskTypeListWithStatement.includes(type)) {
+  if (selectedSpec.value.id !== String(EMPTY_ID)) {
     return "EDITOR";
   }
 

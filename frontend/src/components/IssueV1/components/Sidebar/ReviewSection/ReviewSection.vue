@@ -1,7 +1,7 @@
 <template>
   <div v-if="!isCreating" class="flex flex-col gap-y-2">
     <div class="w-full flex flex-row justify-between items-center gap-2">
-      <NTooltip :disabled="!showApprovalTooltip" placement="bottom">
+      <NTooltip placement="bottom">
         <template #trigger>
           <div>
             <div class="textlabel flex items-center gap-x-1">
@@ -20,7 +20,7 @@
       <RiskLevelTag />
     </div>
 
-    <div class="flex-1" :class="showApprovalTooltip && 'min-w-[14rem]'">
+    <div class="flex-1 min-w-[14rem]">
       <div
         v-if="!ready"
         class="flex items-center gap-x-2 text-sm text-control-placeholder"
@@ -107,14 +107,6 @@ const retryFindingApprovalFlow = async () => {
     retrying.value = false;
   }
 };
-
-const showApprovalTooltip = computed(() => {
-  // Don't show the tooltip if the issue type is grant request.
-  if (isGrantRequestIssue(issue.value)) {
-    return false;
-  }
-  return true;
-});
 
 defineExpose({
   shown: computed(() => {

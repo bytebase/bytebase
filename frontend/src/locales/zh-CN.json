@@ -1217,6 +1217,9 @@
         },
         "affected-rows-n": "影响行数：{n}"
       }
+    },
+    "sql-review": {
+      "statement-type": "语句类型"
     }
   },
   "alter-schema": {

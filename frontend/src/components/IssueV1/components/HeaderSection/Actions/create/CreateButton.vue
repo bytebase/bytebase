@@ -32,13 +32,14 @@ import { NTooltip, NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref, toRaw } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { getValidIssueLabels } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   databaseEngineForSpec,
   databaseForTask,
   getLocalSheetByName,
+  isValidSpec,
   isValidStage,
   specForTask,
   useIssueContext,
@@ -46,7 +47,7 @@ import {
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useSQLCheckContext } from "@/components/SQLCheck";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
-import { emitWindowEvent } from "@/plugins";
+import { emitWindowEvent, type TemplateType } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useDatabaseV1Store, useSheetV1Store } from "@/store";
 import type { ComposedIssue } from "@/types";
@@ -70,6 +71,7 @@ import {
 const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
 const { t } = useI18n();
+const route = useRoute();
 const router = useRouter();
 const { issue, formatOnSave } = useIssueContext();
 const { runSQLCheck } = useSQLCheckContext();
@@ -90,10 +92,22 @@ const issueCreateErrorList = computed(() => {
   if (!issue.value.title.trim()) {
     errorList.push("Missing issue title");
   }
-  if (
-    !issue.value.rolloutEntity?.stages.every((stage) => isValidStage(stage))
-  ) {
-    errorList.push("Missing SQL statement in some stages");
+  if (issue.value.rollout) {
+    if (
+      !issue.value.rolloutEntity?.stages.every((stage) => isValidStage(stage))
+    ) {
+      errorList.push("Missing SQL statement in some stages");
+    }
+  } else {
+    if (issue.value.planEntity) {
+      if (
+        !issue.value.planEntity.steps.every((step) =>
+          step.specs.every((spec) => isValidSpec(spec))
+        )
+      ) {
+        errorList.push("Missing SQL statement in some specs");
+      }
+    }
   }
   if (
     issue.value.projectEntity.forceIssueLabels &&
@@ -131,22 +145,24 @@ const doCreateIssue = async () => {
       parent: issue.value.project,
       issue: issueCreate,
     });
-
-    const createdRollout = await rolloutServiceClient.createRollout({
-      parent: issue.value.project,
-      rollout: {
-        plan: createdPlan.name,
-      },
-    });
-
-    createdIssue.rollout = createdRollout.name;
-
     const composedIssue: ComposedIssue = {
       ...issue.value,
       ...createdIssue,
       planEntity: createdPlan,
-      rolloutEntity: createdRollout,
     };
+
+    // Don't create rollout for review issue template.
+    if ((route.query.template as TemplateType) !== "bb.issue.sql-review") {
+      const createdRollout = await rolloutServiceClient.createRollout({
+        parent: issue.value.project,
+        rollout: {
+          plan: createdPlan.name,
+        },
+      });
+
+      composedIssue.rollout = createdRollout.name;
+      composedIssue.rolloutEntity = createdRollout;
+    }
 
     await emitIssueCreateWindowEvent(composedIssue);
     nextTick(() => {

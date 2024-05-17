@@ -1217,6 +1217,9 @@
         },
         "affected-rows-n": "Affected rows: {n}"
       }
+    },
+    "sql-review": {
+      "statement-type": "Statement type"
     }
   },
   "alter-schema": {
