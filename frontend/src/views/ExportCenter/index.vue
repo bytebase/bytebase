@@ -34,7 +34,6 @@
         v-model:loading-more="state.loadingMore"
         :session-key="'export-center'"
         :issue-filter="mergedIssueFilter"
-        :ui-issue-filter="mergedUIIssueFilter"
         :page-size="50"
         :compose-issue-config="{ withRollout: true }"
       >
@@ -71,9 +70,9 @@ import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1
 import { Drawer } from "@/components/v2";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { Issue_Type } from "@/types/proto/v1/issue_service";
 import {
   buildIssueFilterBySearchParams,
-  buildUIIssueFilterBySearchParams,
   extractProjectResourceName,
   hasPermissionToCreateDataExportIssueInProject,
   type SearchParams,
@@ -81,14 +80,12 @@ import {
   type SearchScopeId,
 } from "@/utils";
 import DataExportIssueDataTable from "./DataExportIssueDataTable";
-import type { ExportRecord } from "./types";
 
 const props = defineProps<{
   projectId?: string;
 }>();
 
 interface LocalState {
-  exportRecords: ExportRecord[];
   showRequestExportPanel: boolean;
   params: SearchParams;
   loading: boolean;
@@ -124,7 +121,6 @@ const defaultSearchParams = () => {
 const currentUser = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const state = reactive<LocalState>({
-  exportRecords: [],
   showRequestExportPanel: false,
   params: defaultSearchParams(),
   loading: false,
@@ -134,10 +130,6 @@ const state = reactive<LocalState>({
 const dataExportIssueSearchParams = computed(() => {
   // Default scopes with type and creator.
   const defaultScopes = [
-    {
-      id: "type",
-      value: "DATA_EXPORT",
-    },
     {
       id: "creator",
       value: currentUser.value.email,
@@ -170,11 +162,9 @@ const overideSearchScopeIdList = computed(() => {
 });
 
 const mergedIssueFilter = computed(() => {
-  return buildIssueFilterBySearchParams(dataExportIssueSearchParams.value);
-});
-
-const mergedUIIssueFilter = computed(() => {
-  return buildUIIssueFilterBySearchParams(dataExportIssueSearchParams.value);
+  return buildIssueFilterBySearchParams(dataExportIssueSearchParams.value, {
+    type: Issue_Type.DATABASE_DATA_EXPORT,
+  });
 });
 
 const allowExportData = computed(() => {
