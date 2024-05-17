@@ -170,7 +170,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 
 func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store) func(t time.Time, e *storepb.TaskRunLog) error {
 	return func(t time.Time, e *storepb.TaskRunLog) error {
-		return s.CreateTaskRunLog(ctx, taskRunUID, t, e)
+		return s.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), e)
 	}
 }
 
