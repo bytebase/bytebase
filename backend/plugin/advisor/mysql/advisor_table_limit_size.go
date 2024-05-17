@@ -72,13 +72,13 @@ func (*MaximumTableSizeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.
 			if ctx.DBSchema != nil && len(ctx.DBSchema.Schemas) != 0 {
 				// Check all table size.
 				for _, tabName := range tableSizeChecker.affectedTabNames {
-					dataSize := getTabSizeByName(tabName, ctx.DBSchema.Schemas[0].Tables)
-					if dataSize >= int64(payload.Number) {
+					tableRows := getTabRowsByName(tabName, ctx.DBSchema.Schemas[0].Tables)
+					if tableRows >= int64(payload.Number) {
 						adviceList = append(adviceList, advisor.Advice{
 							Status:  status,
 							Code:    advisor.TableExceedLimitSize,
 							Title:   ctx.Rule.Type,
-							Content: fmt.Sprintf("Apply DDL on large table '%s' ( %d bytes ) will lock table for a long time", tabName, dataSize),
+							Content: fmt.Sprintf("Apply DDL on large table '%s' ( %d rows ) will lock table for a long time", tabName, tableRows),
 							Line:    statementBaseLine + tableSizeChecker.baseLine,
 						})
 					}
@@ -118,10 +118,10 @@ func (checker *MaximumTableSizeChecker) EnterDropTable(ctx *mysql.DropTableConte
 	}
 }
 
-func getTabSizeByName(targetTabName string, tables []*store.TableMetadata) int64 {
+func getTabRowsByName(targetTabName string, tables []*store.TableMetadata) int64 {
 	for _, table := range tables {
 		if table.Name == targetTabName {
-			return table.DataSize
+			return table.RowCount
 		}
 	}
 	return 0

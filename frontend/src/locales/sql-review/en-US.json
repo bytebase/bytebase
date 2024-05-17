@@ -100,11 +100,11 @@
       }
     },
     "table-limit-size": {
-      "title": "Limit DDL operations on tables with large data volumes",
-      "description": "Configure the maximum data size of tables for which DDL can be executed. Recommended error level: warning",
+      "title": "Limit DDL operations on tables with a large number of rows",
+      "description": "Configure the maximum number of rows in tables for which DDL can be executed. Recommended error level: warning",
       "component": {
         "number": {
-          "title": "Max data size"
+          "title": "Max row count"
         }
       }
     },
