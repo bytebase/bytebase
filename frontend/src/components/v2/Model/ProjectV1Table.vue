@@ -114,7 +114,7 @@ const rowProps = (project: ComposedProject) => {
       if (e.ctrlKey || e.metaKey) {
         window.open(route.fullPath, "_blank");
       } else {
-        window.location.href = route.fullPath;
+        router.push(route);
       }
       emit("row-click");
     },
