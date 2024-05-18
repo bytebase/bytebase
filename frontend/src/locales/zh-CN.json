@@ -274,8 +274,7 @@
     "project-member": "项目成员",
     "leave-without-saving": "不保存变动？",
     "configure-now": "现在配置",
-    "connection": "连接",
-    "permission-denied": "没有权限"
+    "connection": "连接"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -763,6 +762,7 @@
       "algorithms": {
         "self": "脱敏算法",
         "upload": "导入算法",
+        "upload-label": "您可以上传 JSON 格式的算法文件。",
         "override-title": "覆盖算法数据",
         "override-desc": "现有的算法将被覆盖，您必须重新配置语义类型的算法。",
         "override-confirm": "继续导入",
@@ -835,14 +835,14 @@
         "upload": "导入分类分级",
         "upload-succeed": "导入成功",
         "search": "搜索分类分级",
-        "label": "您可以上传数据分类分级的 JSON 格式文件。",
-        "view-example": "查看样例",
-        "json-format-example": "分类分级 JSON 格式样例",
+        "upload-label": "您可以上传数据分类分级的 JSON 格式文件。",
         "copy-succeed": "样例已复制",
         "override-title": "覆盖分类分级数据",
         "override-desc": "已有的分类分级数据将会被覆盖，涉及到的项目都会受到影响。",
         "override-confirm": "继续导入"
-      }
+      },
+      "json-format-example": "JSON 格式样例",
+      "view-example": "查看样例"
     },
     "release": {
       "new-version-available": "有新版本可更新",
@@ -1222,9 +1222,6 @@
         },
         "affected-rows-n": "影响行数：{n}"
       }
-    },
-    "sql-review": {
-      "statement-type": "语句类型"
     }
   },
   "alter-schema": {
@@ -3317,10 +3314,6 @@
   "export-center": {
     "self": "导出中心",
     "permission-denied": "您没有权限执行此操作"
-  },
-  "review-center": {
-    "self": "SQL 审核中心",
-    "review-sql": "审核 SQL"
   },
   "schema-designer": {
     "self": "Schema 设计器",

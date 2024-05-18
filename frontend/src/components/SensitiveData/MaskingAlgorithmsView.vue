@@ -24,6 +24,15 @@
         {{ $t("common.add") }}
       </NButton>
     </div>
+    <div class="textinfolabel">
+      {{ $t("settings.sensitive-data.algorithms.upload-label") }}
+      <span
+        class="normal-link cursor-pointer hover:underline"
+        @click="state.showExampleModal = true"
+      >
+        {{ $t("settings.sensitive-data.view-example") }}
+      </span>
+    </div>
     <div class="space-y-5 divide-y-2 pb-10 divide-gray-100">
       <MaskingAlgorithmsTable
         :readonly="!hasPermission || !hasSensitiveDataFeature"
@@ -38,6 +47,11 @@
     :readonly="!hasPermission || !hasSensitiveDataFeature"
     @dismiss="onDrawerDismiss"
   />
+  <DataExampleModal
+    v-if="state.showExampleModal"
+    :example="JSON.stringify(example, null, 2)"
+    @dismiss="state.showExampleModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -51,7 +65,10 @@ import {
   useSettingV1Store,
   pushNotification,
 } from "@/store";
-import { MaskingAlgorithmSetting_Algorithm as Algorithm } from "@/types/proto/v1/setting_service";
+import {
+  MaskingAlgorithmSetting_Algorithm as Algorithm,
+  MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType,
+} from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import MaskingAlgorithmsCreateDrawer from "./components/MaskingAlgorithmsCreateDrawer.vue";
 import MaskingAlgorithmsTable from "./components/MaskingAlgorithmsTable.vue";
@@ -63,6 +80,7 @@ interface LocalState {
   showCreateDrawer: boolean;
   pendingEditData: Algorithm;
   processing: boolean;
+  showExampleModal: boolean;
 }
 
 const state = reactive<LocalState>({
@@ -71,6 +89,7 @@ const state = reactive<LocalState>({
     id: uuidv4(),
   }),
   processing: false,
+  showExampleModal: false,
 });
 
 const { t } = useI18n();
@@ -188,4 +207,66 @@ const onFileSelect = async (file: File) => {
   };
   fr.readAsText(file);
 };
+
+const example: Algorithm[] = [
+  {
+    id: "5d625aee-2628-4515-a4b6-6c494499a829",
+    title: "Full mask",
+    description: "Use substitution to replace the full data.",
+    category: "MASK",
+    fullMask: {
+      substitution: "****",
+    },
+  },
+  {
+    id: "240ea8b6-0dd1-409f-abd3-380a35e4f52b",
+    title: "Range mask",
+    description: "Use substitution to replace the range data.",
+    category: "MASK",
+    rangeMask: {
+      slices: [
+        {
+          start: 1,
+          end: 2,
+          substitution: "****",
+        },
+      ],
+    },
+  },
+  {
+    id: "d530cb90-45d6-4916-99ef-c6dde5b88651",
+    title: "MD5 hash",
+    description: "Hasing the full data with the salt.",
+    category: "HASH",
+    md5Mask: {
+      salt: "the hash salt",
+    },
+  },
+  {
+    id: "d8faf746-7d4a-4291-8e66-dbe547a7f7fc",
+    title: "Inner mask",
+    description:
+      "Masking the interior of its string argument, leaving the ends unmasked. Other arguments specify the sizes of the unmasked ends.",
+    category: "MASK",
+    innerOuterMask: {
+      prefixLen: 1,
+      suffixLen: 2,
+      substitution: "***",
+      type: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER,
+    },
+  },
+  {
+    id: "112f49cf-1347-4834-ab8a-fe7db5ed1dba",
+    title: "Outer mask",
+    description:
+      "Masking the ends of its string argument, leaving the interior unmasked. Other arguments specify the sizes of the masked ends.",
+    category: "MASK",
+    innerOuterMask: {
+      prefixLen: 1,
+      suffixLen: 2,
+      substitution: "***",
+      type: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.OUTER,
+    },
+  },
+];
 </script>
