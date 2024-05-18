@@ -274,8 +274,7 @@
     "project-member": "プロジェクトメンバー",
     "leave-without-saving": "変更を保存していませんか?",
     "configure-now": "今すぐ設定する",
-    "connection": "接続する",
-    "permission-denied": "許可が拒否されました"
+    "connection": "接続する"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -763,6 +762,7 @@
       "algorithms": {
         "self": "減感アルゴリズム",
         "upload": "インポートアルゴリズム",
+        "upload-label": "アルゴリズム ファイルを JSON 形式でアップロードできます。",
         "override-title": "カバーアルゴリズムデータ",
         "override-desc": "既存のアルゴリズムは上書きされるため、セマンティック タイプに合わせてアルゴリズムを再構成する必要があります。",
         "override-confirm": "インポートを続行する",
@@ -835,14 +835,14 @@
         "upload": "輸入分類と格付け",
         "upload-succeed": "インポート成功",
         "search": "検索分類の評価",
-        "label": "データを分類・分類したJSON形式ファイルをアップロードできます。",
-        "view-example": "サンプルを見る",
-        "json-format-example": "分類と格付けの JSON 形式の例",
+        "upload-label": "データを分類・分類したJSON形式ファイルをアップロードできます。",
         "copy-succeed": "サンプルをコピーしました",
         "override-title": "カバレッジの分類および等級付けされたデータ",
         "override-desc": "既存の分類およびグレーディング データは上書きされ、関連するすべてのプロジェクトが影響を受けます。",
         "override-confirm": "インポートを続行する"
-      }
+      },
+      "json-format-example": "JSON形式の例",
+      "view-example": "サンプルを見る"
     },
     "release": {
       "new-version-available": "更新する新しいバージョンがあります",
@@ -1222,9 +1222,6 @@
         },
         "affected-rows-n": "影響を受ける行: {n}"
       }
-    },
-    "sql-review": {
-      "statement-type": "ステートメントタイプ"
     }
   },
   "alter-schema": {
@@ -3317,10 +3314,6 @@
   "export-center": {
     "self": "輸出センター",
     "permission-denied": "この操作を実行する権限がありません"
-  },
-  "review-center": {
-    "self": "レビューセンター",
-    "review-sql": "SQLを確認する"
   },
   "schema-designer": {
     "self": "スキーマデザイナー",
