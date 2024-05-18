@@ -274,8 +274,7 @@
     "project-member": "Miembro del proyecto",
     "leave-without-saving": "¿Salir sin ahorrar?",
     "configure-now": "Configurar ahora",
-    "connection": "Conexión",
-    "permission-denied": "Permiso denegado"
+    "connection": "Conexión"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -763,6 +762,7 @@
       "algorithms": {
         "self": "Algoritmo De Enmascaramiento",
         "upload": "Subir algoritmo",
+        "upload-label": "Puede cargar un archivo de algoritmo con formato JSON.",
         "override-title": "Anulación de datos de algoritmo",
         "override-desc": "Los algoritmos existentes se anularán; deberá volver a configurar el algoritmo para tipos semánticos.",
         "override-confirm": "Aún subiendo",
@@ -835,14 +835,14 @@
         "upload": "Subir clasificación",
         "upload-succeed": "Subida exitosa",
         "search": "Clasificación de búsqueda",
-        "label": "Puede cargar un archivo de clasificación con formato JSON.",
-        "view-example": "Ver ejemplo",
-        "json-format-example": "Ejemplo de formato JSON de clasificación",
+        "upload-label": "Puede cargar un archivo de clasificación con formato JSON.",
         "copy-succeed": "Copiar ejemplo correctamente",
         "override-title": "Anulación de datos de clasificación",
         "override-desc": "Los datos de clasificación existentes se anularán y afectarán a todos los proyectos.",
         "override-confirm": "Aún subiendo"
-      }
+      },
+      "json-format-example": "Ejemplo de formato JSON",
+      "view-example": "Ver ejemplo"
     },
     "release": {
       "new-version-available": "Nueva versión disponible",
@@ -1222,9 +1222,6 @@
         },
         "affected-rows-n": "Filas afectadas: {n}"
       }
-    },
-    "sql-review": {
-      "statement-type": "Tipo de declaración"
     }
   },
   "alter-schema": {
@@ -3317,10 +3314,6 @@
   "export-center": {
     "self": "centro de exportacion",
     "permission-denied": "Permiso denegado"
-  },
-  "review-center": {
-    "self": "Centro de revisión",
-    "review-sql": "Revisar SQL"
   },
   "schema-designer": {
     "self": "Diseñador de esquemas",
