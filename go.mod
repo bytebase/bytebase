@@ -1,6 +1,6 @@
 module github.com/bytebase/bytebase
 
-go 1.21.6
+go 1.22.3
 
 require (
 	cloud.google.com/go/cloudsqlconn v1.9.0
