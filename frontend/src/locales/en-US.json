@@ -761,7 +761,8 @@
       },
       "algorithms": {
         "self": "Masking Algorithm",
-        "upload": "Upload Algorithm",
+        "upload": "Upload algorithm",
+        "upload-label": "You can upload algorithm file with JSON format.",
         "override-title": "Algorithm data override",
         "override-desc": "Existed algorithms will be overridden, you have to re-configure the algorithm for semantic types.",
         "override-confirm": "Still upload",
@@ -834,14 +835,14 @@
         "upload": "Upload classification",
         "upload-succeed": "Upload succeed",
         "search": "Search classification",
-        "label": "You can upload classification file with JSON format.",
-        "view-example": "View example",
-        "json-format-example": "Classification JSON format example",
+        "upload-label": "You can upload classification file with JSON format.",
         "copy-succeed": "Copy example succeed",
         "override-title": "Classification data override",
         "override-desc": "Existed classification data will be overridden and affect all projects.",
         "override-confirm": "Still upload"
-      }
+      },
+      "json-format-example": "JSON format example",
+      "view-example": "View example"
     },
     "release": {
       "new-version-available": "New version is available",
