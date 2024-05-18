@@ -31,12 +31,16 @@ func TestOracleSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     `select * from t`,
-						LastLine: 2,
+						Text:            `select * from t`,
+						LastLine:        2,
+						ByteOffsetStart: 5,
+						ByteOffsetEnd:   20,
 					},
 					{
-						Text:     `create table table$1 (id int)`,
-						LastLine: 3,
+						Text:            `create table table$1 (id int)`,
+						LastLine:        3,
+						ByteOffsetStart: 26,
+						ByteOffsetEnd:   56,
 					},
 				},
 			},

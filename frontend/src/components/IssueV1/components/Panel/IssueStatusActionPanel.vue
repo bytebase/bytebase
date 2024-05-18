@@ -66,7 +66,7 @@
             <NButton
               :disabled="confirmErrors.length > 0"
               v-bind="confirmButtonProps"
-              @click="handleConfirm(action, comment)"
+              @click="handleConfirm(action!, comment)"
             >
               {{ $t("common.confirm") }}
             </NButton>

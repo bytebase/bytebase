@@ -86,9 +86,16 @@ export const createIssueSkeleton = async (
   issue.plan = plan.name;
   issue.planEntity = plan;
 
-  const rollout = await previewPlan(plan, params);
-  issue.rollout = rollout.name;
-  issue.rolloutEntity = rollout;
+  const issueTemplate = query.template as TemplateType | undefined;
+  // Don't initial rollout for SQL review issue.
+  if (issueTemplate === "bb.issue.sql-review") {
+    issue.rollout = "";
+    issue.rolloutEntity = undefined;
+  } else {
+    const rollout = await previewPlan(plan, params);
+    issue.rollout = rollout.name;
+    issue.rolloutEntity = rollout;
+  }
 
   const description = query.description;
   if (description) {
@@ -390,6 +397,15 @@ export const buildSpecForTarget = async (
       sheet,
     });
   }
+  if (template === "bb.issue.sql-review") {
+    // SQL review issues is reusing the same plan config type as changing database.
+    spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
+      target,
+      sheet,
+      // TODO(steven): let user choose type in UI.
+      type: Plan_ChangeDatabaseConfig_Type.DATA,
+    });
+  }
 
   return spec;
 };
@@ -594,6 +610,31 @@ export const isValidStage = (stage: Stage): boolean => {
         if (getSheetStatement(sheet).length === 0) {
           return false;
         }
+      }
+    }
+  }
+  return true;
+};
+
+export const isValidSpec = (spec: Plan_Spec): boolean => {
+  if (spec.changeDatabaseConfig || spec.exportDataConfig) {
+    const sheetName = sheetNameForSpec(spec);
+    if (!sheetName) {
+      return false;
+    }
+    const uid = extractSheetUID(sheetName);
+    if (uid.startsWith("-")) {
+      const sheet = getLocalSheetByName(sheetName);
+      if (getSheetStatement(sheet).length === 0) {
+        return false;
+      }
+    } else {
+      const sheet = useSheetV1Store().getSheetByName(sheetName);
+      if (!sheet) {
+        return false;
+      }
+      if (getSheetStatement(sheet).length === 0) {
+        return false;
       }
     }
   }

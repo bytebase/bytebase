@@ -89,7 +89,7 @@ withDefaults(
 
 const { issue, events } = useIssueContext();
 const state = reactive<LocalState>({
-  showPlanCheckDetail: false,
+  showPlanCheckDetail: !issue.value.rollout, // Show plan check detail by default if there is no rollout.
 });
 const selectedType = ref<PlanCheckRun_Type>();
 

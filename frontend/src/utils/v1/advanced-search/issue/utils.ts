@@ -3,12 +3,18 @@ import type { IssueFilter } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { SearchParams, SemanticIssueStatus } from "../common";
-import { getTsRangeFromSearchParams, getValueFromSearchParams } from "../common";
+import {
+  getTsRangeFromSearchParams,
+  getValueFromSearchParams,
+} from "../common";
 
-export const buildIssueFilterBySearchParams = (params: SearchParams) => {
+export const buildIssueFilterBySearchParams = (
+  params: SearchParams,
+  defaultFilter?: Partial<IssueFilter>
+) => {
   const { query, scopes } = params;
   const projectScope = scopes.find((s) => s.id === "project");
-  const typeScope = scopes.find((s) => s.id === "type");
+  const taskTypeScope = scopes.find((s) => s.id === "taskType");
   const databaseScope = scopes.find((s) => s.id === "database");
 
   let database = "";
@@ -25,13 +31,14 @@ export const buildIssueFilterBySearchParams = (params: SearchParams) => {
   const label = getValueFromSearchParams(params, "label");
 
   const filter: IssueFilter = {
+    ...defaultFilter,
     query,
     instance: getValueFromSearchParams(params, "instance", "instances/"),
     database,
     project: `projects/${projectScope?.value ?? "-"}`,
     createdTsAfter: createdTsRange?.[0],
     createdTsBefore: createdTsRange?.[1],
-    type: typeScope?.value,
+    taskType: taskTypeScope?.value,
     creator: getValueFromSearchParams(params, "creator", "users/"),
     assignee: getValueFromSearchParams(params, "assignee", "users/"),
     subscriber: getValueFromSearchParams(params, "subscriber", "users/"),

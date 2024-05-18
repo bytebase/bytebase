@@ -172,6 +172,19 @@ func convertToIssueType(t api.IssueType) v1pb.Issue_Type {
 	}
 }
 
+func convertToAPIIssueType(t v1pb.Issue_Type) (api.IssueType, error) {
+	switch t {
+	case v1pb.Issue_DATABASE_CHANGE:
+		return api.IssueDatabaseGeneral, nil
+	case v1pb.Issue_GRANT_REQUEST:
+		return api.IssueGrantRequest, nil
+	case v1pb.Issue_DATABASE_DATA_EXPORT:
+		return api.IssueDatabaseDataExport, nil
+	default:
+		return api.IssueType(""), errors.Errorf("invalid issue type %v", t)
+	}
+}
+
 func convertToAPIIssueStatus(status v1pb.IssueStatus) (api.IssueStatus, error) {
 	switch status {
 	case v1pb.IssueStatus_OPEN:

@@ -26,6 +26,15 @@ type SingleSQL struct {
 	LastColumn int
 	// The sql is empty, such as `/* comments */;` or just `;`.
 	Empty bool
+
+	// ByteOffsetStart is the start position of the sql.
+	// This field may not be present for every engine.
+	// ByteOffsetStart is intended for sql execution log display. It may not represent the actual sql that is sent to the database.
+	ByteOffsetStart int
+	// ByteOffsetEnd is the end position of the sql.
+	// This field may not be present for every engine.
+	// ByteOffsetEnd is intended for sql execution log display. It may not represent the actual sql that is sent to the database.
+	ByteOffsetEnd int
 }
 
 // SyntaxError is a syntax error.

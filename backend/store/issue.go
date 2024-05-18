@@ -98,6 +98,7 @@ type FindIssueMessage struct {
 	SubscriberID    *int
 	CreatedTsBefore *int64
 	CreatedTsAfter  *int64
+	Types           *[]api.IssueType
 
 	StatusList []api.IssueStatus
 	TaskTypes  *[]api.TaskType
@@ -434,6 +435,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.SubscriberID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id AND issue_subscriber.subscriber_id = $%d)", len(args)+1)), append(args, *v)
+	}
+	if v := find.Types; v != nil {
+		where = append(where, fmt.Sprintf("issue.type = ANY($%d)", len(args)+1))
+		args = append(args, *v)
 	}
 	if v := find.Query; v != nil && *v != "" {
 		if tsQuery := getTsQuery(*v); tsQuery != "" {
