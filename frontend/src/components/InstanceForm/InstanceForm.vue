@@ -222,6 +222,7 @@
             <div class="grid grid-cols-1 gap-y-1 gap-x-4 sm:grid-cols-12">
               <template
                 v-for="(_, index) in adminDataSource.additionalAddresses"
+                :key="index"
               >
                 <div class="sm:col-span-8 sm:col-start-1">
                   <label
