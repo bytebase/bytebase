@@ -548,6 +548,8 @@ export interface DataSource {
   additionalAddresses: DataSource_Address[];
   /** replica_set is used for MongoDB replica set. */
   replicaSet: string;
+  /** direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. */
+  directConnection: boolean;
 }
 
 export enum DataSource_AuthenticationType {
@@ -2462,6 +2464,7 @@ function createBaseDataSource(): DataSource {
     saslConfig: undefined,
     additionalAddresses: [],
     replicaSet: "",
+    directConnection: false,
   };
 }
 
@@ -2541,6 +2544,9 @@ export const DataSource = {
     }
     if (message.replicaSet !== "") {
       writer.uint32(202).string(message.replicaSet);
+    }
+    if (message.directConnection === true) {
+      writer.uint32(208).bool(message.directConnection);
     }
     return writer;
   },
@@ -2727,6 +2733,13 @@ export const DataSource = {
 
           message.replicaSet = reader.string();
           continue;
+        case 26:
+          if (tag !== 208) {
+            break;
+          }
+
+          message.directConnection = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2773,6 +2786,7 @@ export const DataSource = {
         ? object.additionalAddresses.map((e: any) => DataSource_Address.fromJSON(e))
         : [],
       replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
+      directConnection: isSet(object.directConnection) ? globalThis.Boolean(object.directConnection) : false,
     };
   },
 
@@ -2853,6 +2867,9 @@ export const DataSource = {
     if (message.replicaSet !== "") {
       obj.replicaSet = message.replicaSet;
     }
+    if (message.directConnection === true) {
+      obj.directConnection = message.directConnection;
+    }
     return obj;
   },
 
@@ -2890,6 +2907,7 @@ export const DataSource = {
       : undefined;
     message.additionalAddresses = object.additionalAddresses?.map((e) => DataSource_Address.fromPartial(e)) || [];
     message.replicaSet = object.replicaSet ?? "";
+    message.directConnection = object.directConnection ?? false;
     return message;
   },
 };
