@@ -583,7 +583,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromSubquery(ctx parser.I
 }
 
 func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_table_nameContext) (base.TableSource, error) {
-	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(fullTableName, "" /* Linked Server Name */, "", "")
+	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableNameFallback(fullTableName, "" /* Linked Server Name */, "", "")
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
 		return nil, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
@@ -600,7 +600,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 		}
 	}
 
-	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeFullTableName(fullTableName, "" /* Linked Server Name */, q.connectedDB, q.connectedSchema)
+	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeFullTableNameFallback(fullTableName, "" /* Linked Server Name */, q.connectedDB, q.connectedSchema)
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
 		return nil, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
@@ -726,7 +726,7 @@ func (q *querySpanExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedD
 }
 
 func (q *querySpanExtractor) tsqlIsFullColumnNameSensitive(ctx parser.IFull_column_nameContext) (base.QuerySpanResult, error) {
-	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(ctx.Full_table_name(), "", "", "")
+	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableNameFallback(ctx.Full_table_name(), "", "", "")
 	if normalizedLinkedServer != "" {
 		return base.QuerySpanResult{}, errors.Errorf("linked server is not supported yet, but found %q", ctx.GetText())
 	}
@@ -3486,8 +3486,8 @@ func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (str
 	return database, schema, table
 }
 
-// normalizeFullTableName normalizes the each part of the full table name, returns (linkedServer, database, schema, table).
-func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string, string) {
+// normalizeFullTableNameFallback normalizes the each part of the full table name, returns (linkedServer, database, schema, table).
+func normalizeFullTableNameFallback(fullTableName parser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string, string) {
 	if fullTableName == nil {
 		return "", "", "", ""
 	}
