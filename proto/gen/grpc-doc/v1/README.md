@@ -1629,6 +1629,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | sasl_config | [SASLConfig](#bytebase-v1-SASLConfig) |  |  |
 | additional_addresses | [DataSource.Address](#bytebase-v1-DataSource-Address) | repeated | additional_addresses is used for MongoDB replica set. |
 | replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
+| direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
 
 
 

@@ -1578,6 +1578,7 @@ Used internally for obfuscating the page token.
 | sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
 | additional_addresses | [DataSourceOptions.Address](#bytebase-store-DataSourceOptions-Address) | repeated | additional_addresses is used for MongoDB replica set. |
 | replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
+| direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
 
 
 

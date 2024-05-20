@@ -242,6 +242,8 @@ export interface DataSourceOptions {
   additionalAddresses: DataSourceOptions_Address[];
   /** replica_set is used for MongoDB replica set. */
   replicaSet: string;
+  /** direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. */
+  directConnection: boolean;
 }
 
 export enum DataSourceOptions_AuthenticationType {
@@ -633,6 +635,7 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     saslConfig: undefined,
     additionalAddresses: [],
     replicaSet: "",
+    directConnection: false,
   };
 }
 
@@ -682,6 +685,9 @@ export const DataSourceOptions = {
     }
     if (message.replicaSet !== "") {
       writer.uint32(122).string(message.replicaSet);
+    }
+    if (message.directConnection === true) {
+      writer.uint32(128).bool(message.directConnection);
     }
     return writer;
   },
@@ -798,6 +804,13 @@ export const DataSourceOptions = {
 
           message.replicaSet = reader.string();
           continue;
+        case 16:
+          if (tag !== 128) {
+            break;
+          }
+
+          message.directConnection = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -836,6 +849,7 @@ export const DataSourceOptions = {
         ? object.additionalAddresses.map((e: any) => DataSourceOptions_Address.fromJSON(e))
         : [],
       replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
+      directConnection: isSet(object.directConnection) ? globalThis.Boolean(object.directConnection) : false,
     };
   },
 
@@ -886,6 +900,9 @@ export const DataSourceOptions = {
     if (message.replicaSet !== "") {
       obj.replicaSet = message.replicaSet;
     }
+    if (message.directConnection === true) {
+      obj.directConnection = message.directConnection;
+    }
     return obj;
   },
 
@@ -915,6 +932,7 @@ export const DataSourceOptions = {
     message.additionalAddresses = object.additionalAddresses?.map((e) => DataSourceOptions_Address.fromPartial(e)) ||
       [];
     message.replicaSet = object.replicaSet ?? "";
+    message.directConnection = object.directConnection ?? false;
     return message;
   },
 };
