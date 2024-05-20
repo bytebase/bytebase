@@ -158,18 +158,22 @@ func convertToAuditLogs(ctx context.Context, stores *store.Store, auditLogs []*s
 }
 
 func convertToAuditLog(ctx context.Context, stores *store.Store, l *store.AuditLog) (*v1pb.AuditLog, error) {
-	uid, err := common.GetUserID(l.Payload.User)
-	if err != nil {
-		return nil, err
-	}
-	user, err := stores.GetUserByID(ctx, uid)
-	if err != nil {
-		return nil, err
+	var user string
+	if l.Payload.User != "" {
+		uid, err := common.GetUserID(l.Payload.User)
+		if err != nil {
+			return nil, err
+		}
+		u, err := stores.GetUserByID(ctx, uid)
+		if err != nil {
+			return nil, err
+		}
+		user = common.FormatUserEmail(u.Email)
 	}
 	return &v1pb.AuditLog{
 		Name:       fmt.Sprintf("%s/%s%d", l.Payload.Parent, common.AuditLogPrefix, l.ID),
 		CreateTime: timestamppb.New(time.Unix(l.CreatedTs, 0)),
-		User:       common.FormatUserEmail(user.Email),
+		User:       user,
 		Method:     l.Payload.Method,
 		Severity:   convertToAuditLogSeverity(l.Payload.Severity),
 		Resource:   l.Payload.Resource,
