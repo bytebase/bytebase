@@ -20,7 +20,7 @@ message AuditLog {
   // projects/{project}
   string resource = 3;
 
-  // Format: users/d@d.com
+  // Format: users/{userUID}.
   string user = 4;
 
   Severity severity = 5;
