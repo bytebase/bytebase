@@ -1222,6 +1222,9 @@
         },
         "affected-rows-n": "影響を受ける行: {n}"
       }
+    },
+    "sql-review": {
+      "statement-type": "ステートメントタイプ"
     }
   },
   "alter-schema": {
