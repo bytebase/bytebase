@@ -548,7 +548,7 @@ export interface DataSource {
   additionalAddresses: DataSource_Address[];
   /** replica_set is used for MongoDB replica set. */
   replicaSet: string;
-  /** direct_connection is used for MongoDB to dispatch all the operations to the node specify in the connection string. */
+  /** direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. */
   directConnection: boolean;
 }
 

@@ -392,7 +392,7 @@ type DataSourceOptions struct {
 	AdditionalAddresses []*DataSourceOptions_Address `protobuf:"bytes,14,rep,name=additional_addresses,json=additionalAddresses,proto3" json:"additional_addresses,omitempty"`
 	// replica_set is used for MongoDB replica set.
 	ReplicaSet string `protobuf:"bytes,15,opt,name=replica_set,json=replicaSet,proto3" json:"replica_set,omitempty"`
-	// direct_connection is used for MongoDB to dispatch all the operations to the node specify in the connection string.
+	// direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
 	DirectConnection bool `protobuf:"varint,16,opt,name=direct_connection,json=directConnection,proto3" json:"direct_connection,omitempty"`
 }
 
