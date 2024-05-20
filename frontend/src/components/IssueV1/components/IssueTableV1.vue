@@ -9,7 +9,7 @@
     <NDataTable
       size="small"
       :columns="columnList"
-      :data="issueList"
+      :data="sortedIssueList"
       :striped="true"
       :bordered="bordered"
       :loading="loading"
@@ -39,6 +39,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
+import { orderBy } from "lodash-es";
 import type { DataTableColumn } from "naive-ui";
 import { NPerformantEllipsis, NDataTable } from "naive-ui";
 import { reactive, computed, watch, ref, h } from "vue";
@@ -246,6 +247,24 @@ const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
 const { width: tableWidth } = useElementSize(tableRef);
 const showExtendedColumns = computed(() => {
   return tableWidth.value > 800;
+});
+
+const sortedIssueList = computed(() => {
+  if (!props.highlightText) {
+    return props.issueList;
+  }
+
+  return orderBy(
+    props.issueList,
+    [
+      (issue) =>
+        `${issue.title} ${issue.description}`.includes(props.highlightText)
+          ? 1
+          : 0,
+      (issue) => parseInt(issue.uid),
+    ],
+    ["desc", "desc"]
+  );
 });
 
 const selectedIssueList = computed(() => {
