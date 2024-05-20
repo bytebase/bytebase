@@ -169,8 +169,6 @@
     - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
   
 - [store/policy.proto](#store_policy-proto)
-    - [Binding](#bytebase-store-Binding)
-    - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskData](#bytebase-store-MaskData)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
     - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
@@ -2682,40 +2680,6 @@ Type is the database change type.
 <p align="right"><a href="#top">Top</a></p>
 
 ## store/policy.proto
-
-
-
-<a name="bytebase-store-Binding"></a>
-
-### Binding
-Reference: https://cloud.google.com/pubsub/docs/reference/rpc/google.iam.v1#binding
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | Role that is assigned to the list of members. Format: roles/{role} |
-| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. `members` can have the following values:
-
-* `allUsers`: A special identifier that represents anyone. * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
-
-
-
-
-
-
-<a name="bytebase-store-IamPolicy"></a>
-
-### IamPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| bindings | [Binding](#bytebase-store-Binding) | repeated | Collection of binding. |
-
-
-
 
 
 
