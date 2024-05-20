@@ -67,9 +67,6 @@ export const useRollbackContext = () => {
           return "NONE";
         }
         break;
-      case Engine.ORACLE:
-        // We don't have a check for oracle similar to the MySQL version check.
-        break;
       default:
         return "NONE";
     }
