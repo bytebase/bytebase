@@ -18,7 +18,7 @@ import { computed, ref, watch } from "vue";
 import type {
   PlanCheckRun,
   PlanCheckRun_Type,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
 import PlanCheckPanel from "./PlanCheckPanel.vue";
 
 const props = defineProps<{

@@ -11,9 +11,9 @@ import {
   emptyTask,
   TaskTypeListWithStatement,
 } from "@/types";
+import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import type { Plan_Spec, Stage, Task } from "@/types/proto/v1/rollout_service";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Task_Type, Stage, Task } from "@/types/proto/v1/rollout_service";
 import { emptyPlanSpec } from "@/types/v1/issue/plan";
 import {
   activeStageInRollout,

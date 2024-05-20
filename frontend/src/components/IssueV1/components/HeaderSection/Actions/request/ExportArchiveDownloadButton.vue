@@ -35,8 +35,8 @@ import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   Plan_ExportDataConfig,
   Plan_Spec,
-  TaskRun_ExportArchiveStatus,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
+import { TaskRun_ExportArchiveStatus } from "@/types/proto/v1/rollout_service";
 import { ExportRequest } from "@/types/proto/v1/sql_service";
 
 interface LocalState {

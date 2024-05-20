@@ -13,7 +13,7 @@ import {
 } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import { InstanceResource } from "@/types/proto/v1/instance_service";
-import type { Plan_Spec } from "@/types/proto/v1/rollout_service";
+import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import {
   extractDatabaseResourceName,
   extractDatabaseGroupName,

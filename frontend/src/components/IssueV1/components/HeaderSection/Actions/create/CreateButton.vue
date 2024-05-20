@@ -46,15 +46,19 @@ import {
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useSQLCheckContext } from "@/components/SQLCheck";
-import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
+import {
+  issueServiceClient,
+  planServiceClient,
+  rolloutServiceClient,
+} from "@/grpcweb";
 import { emitWindowEvent, type TemplateType } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useDatabaseV1Store, useSheetV1Store } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
-import type { Plan_ExportDataConfig } from "@/types/proto/v1/rollout_service";
-import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
+import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
+import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   extractDeploymentConfigName,
@@ -242,7 +246,7 @@ const createSheets = async () => {
 const createPlan = async () => {
   const plan = issue.value.planEntity;
   if (!plan) return;
-  const createdPlan = await rolloutServiceClient.createPlan({
+  const createdPlan = await planServiceClient.createPlan({
     parent: issue.value.project,
     plan,
   });
