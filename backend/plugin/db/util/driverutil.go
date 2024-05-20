@@ -199,7 +199,7 @@ func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, c
 				scanArgs[i] = new(sql.NullBool)
 			case "INT", "INTEGER":
 				scanArgs[i] = new(sql.NullInt64)
-			case "FLOAT":
+			case "FLOAT", "DOUBLE":
 				scanArgs[i] = new(sql.NullFloat64)
 			case "BIT", "VARBIT":
 				wantBytesValue[i] = true
