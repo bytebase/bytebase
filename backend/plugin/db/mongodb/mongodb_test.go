@@ -29,6 +29,16 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 		},
 		{
 			connConfig: db.ConnectionConfig{
+				Host:             "localhost",
+				Port:             "27017",
+				Username:         "",
+				Password:         "",
+				DirectConnection: true,
+			},
+			want: "mongodb://localhost:27017/?authSource=admin&directConnection=true",
+		},
+		{
+			connConfig: db.ConnectionConfig{
 				Host:     "localhost",
 				Port:     "27017",
 				Username: "",
