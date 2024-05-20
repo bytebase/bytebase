@@ -198,6 +198,15 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	if connConfig.ReplicaSet != "" {
 		values.Add("replicaSet", connConfig.ReplicaSet)
 	}
+	// Add SSL options if provided
+	if connConfig.TLSConfig.SslCA != "" {
+		values.Add("tlsCAFile", connConfig.TLSConfig.SslCA)
+		if connConfig.TLSConfig.SslCert != "" && connConfig.TLSConfig.SslKey != "" {
+			values.Add("tlsCertificateKeyFile", connConfig.TLSConfig.SslCert)
+			values.Add("tlsCertificateKeyFilePassword", connConfig.TLSConfig.SslKey)
+		}
+		values.Add("tlsAllowInvalidHostnames", "true")
+	}
 	u.RawQuery = values.Encode()
 
 	return u.String()
