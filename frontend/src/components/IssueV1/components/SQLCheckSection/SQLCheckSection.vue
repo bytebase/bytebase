@@ -48,10 +48,8 @@ import {
 import { SQLCheckButton } from "@/components/SQLCheck";
 import type { TemplateType } from "@/plugins";
 import { TaskTypeListWithStatement } from "@/types";
-import {
-  Plan_ChangeDatabaseConfig_Type,
-  Task_Type,
-} from "@/types/proto/v1/rollout_service";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
+import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils/util";
 import { useEditSheet } from "../StatementSection/useEditSheet";

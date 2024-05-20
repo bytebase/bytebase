@@ -7,7 +7,7 @@ import {
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -121,7 +121,7 @@ export const usePreBackupContext = () => {
         spec.changeDatabaseConfig.preUpdateBackupDetail = undefined;
       }
 
-      const updatedPlan = await rolloutServiceClient.updatePlan({
+      const updatedPlan = await planServiceClient.updatePlan({
         plan: planPatch,
         updateMask: ["steps"],
       });

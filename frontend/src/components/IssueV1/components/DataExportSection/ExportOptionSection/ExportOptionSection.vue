@@ -67,13 +67,13 @@ import {
   notifyNotEditableLegacyIssue,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import { pushNotification, useCurrentUserV1 } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   Plan_Spec,
   Plan_ExportDataConfig,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
 import ExportFormatSelector from "./ExportFormatSelector.vue";
 import ExportPasswordInputer from "./ExportPasswordInputer.vue";
 
@@ -142,7 +142,7 @@ const handleSaveEdit = async () => {
     config.password = state.config.password || undefined;
   }
 
-  const updatedPlan = await rolloutServiceClient.updatePlan({
+  const updatedPlan = await planServiceClient.updatePlan({
     plan: planPatch,
     updateMask: ["steps"],
   });

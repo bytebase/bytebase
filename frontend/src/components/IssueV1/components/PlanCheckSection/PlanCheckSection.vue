@@ -26,7 +26,7 @@ import {
   planSpecHasPlanChecks,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
 import { EMPTY_ID } from "@/types";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
@@ -87,7 +87,7 @@ const runPlanChecks = async () => {
   if (!plan) return;
 
   try {
-    await rolloutServiceClient.runPlanChecks({
+    await planServiceClient.runPlanChecks({
       name: plan.name,
     });
   } catch (ex) {

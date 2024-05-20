@@ -7,16 +7,11 @@ import {
   emptyUser,
   unknownUser,
 } from "@/types";
+import type { Rollout, TaskRun } from "@/types//proto/v1/rollout_service";
 import type { User } from "@/types/proto/v1/auth_service";
+import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
+import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
-import type { IssueStatus } from "../../proto/v1/issue_service";
-import { Issue, Issue_Type } from "../../proto/v1/issue_service";
-import type {
-  Plan,
-  PlanCheckRun,
-  Rollout,
-  TaskRun,
-} from "../../proto/v1/rollout_service";
 import { EMPTY_ROLLOUT_NAME, UNKNOWN_ROLLOUT_NAME } from "./rollout";
 
 // For grant request issue, it has no plan and rollout.

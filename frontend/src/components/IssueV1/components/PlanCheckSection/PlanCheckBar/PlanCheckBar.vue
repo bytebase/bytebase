@@ -59,11 +59,11 @@ import {
   notifyNotEditableLegacyIssue,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import type {
   PlanCheckRun,
   PlanCheckRun_Type,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
 import type { VueClass } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckModal from "./PlanCheckModal.vue";
@@ -100,7 +100,7 @@ const runChecks = () => {
     return;
   }
 
-  rolloutServiceClient.runPlanChecks({
+  planServiceClient.runPlanChecks({
     name: plan,
   });
   events.emit("status-changed", { eager: true });

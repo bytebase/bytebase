@@ -5385,8 +5385,8 @@ paths:
     /v1/projects/{project}/plans:
         get:
             tags:
-                - RolloutService
-            operationId: RolloutService_ListPlans
+                - PlanService
+            operationId: PlanService_ListPlans
             parameters:
                 - name: project
                   in: path
@@ -5429,8 +5429,8 @@ paths:
                                 $ref: '#/components/schemas/Status'
         post:
             tags:
-                - RolloutService
-            operationId: RolloutService_CreatePlan
+                - PlanService
+            operationId: PlanService_CreatePlan
             parameters:
                 - name: project
                   in: path
@@ -5460,8 +5460,8 @@ paths:
     /v1/projects/{project}/plans/{plan}:
         get:
             tags:
-                - RolloutService
-            operationId: RolloutService_GetPlan
+                - PlanService
+            operationId: PlanService_GetPlan
             parameters:
                 - name: project
                   in: path
@@ -5490,8 +5490,8 @@ paths:
                                 $ref: '#/components/schemas/Status'
         patch:
             tags:
-                - RolloutService
-            operationId: RolloutService_UpdatePlan
+                - PlanService
+            operationId: PlanService_UpdatePlan
             parameters:
                 - name: project
                   in: path
@@ -5533,8 +5533,8 @@ paths:
     /v1/projects/{project}/plans/{plan}/planCheckRuns:
         get:
             tags:
-                - RolloutService
-            operationId: RolloutService_ListPlanCheckRuns
+                - PlanService
+            operationId: PlanService_ListPlanCheckRuns
             parameters:
                 - name: project
                   in: path
@@ -5584,8 +5584,8 @@ paths:
     /v1/projects/{project}/plans/{plan}:runPlanChecks:
         post:
             tags:
-                - RolloutService
-            operationId: RolloutService_RunPlanChecks
+                - PlanService
+            operationId: PlanService_RunPlanChecks
             parameters:
                 - name: project
                   in: path
@@ -14349,6 +14349,7 @@ tags:
     - name: IssueService
     - name: LoggingService
     - name: OrgPolicyService
+    - name: PlanService
     - name: ProjectService
     - name: RiskService
     - name: RoleService
