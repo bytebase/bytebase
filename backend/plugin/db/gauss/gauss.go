@@ -82,7 +82,6 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
         if config.Database != "" {
                 dsn = fmt.Sprintf("%s/%s", dsn, config.Database)
         }
-	//slog.Debug("ready to open==" + dsn)
         db, err := sql.Open(driverName, dsn)
         if err != nil {
                 return nil, err
@@ -189,7 +188,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		}
 		defer tx.Rollback()
 		// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET SESSION AUTHORIZATION '%s'", owner)); err != nil {
+		//if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET SESSION AUTHORIZATION '%s';", owner)); err != nil {
+		if _, err := tx.ExecContext(ctx, "SET SESSION AUTHORIZATION DEFAULT;"); err != nil {
 			return 0, err
 		}
 
@@ -243,7 +243,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		}
 
 		// Restore the current transaction role to the current user.
-		if _, err := tx.ExecContext(ctx, "SET SESSION AUTHORIZATION DEFAULT"); err != nil {
+		if _, err := tx.ExecContext(ctx, "SET SESSION AUTHORIZATION DEFAULT;"); err != nil {
 			slog.Warn("Failed to restore the current transaction role to the current user", log.BBError(err))
 		}
 
