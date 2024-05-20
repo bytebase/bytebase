@@ -2173,7 +2173,8 @@
     "additional-node-addresses": "Additional Node Addresses",
     "replica-set": "Replica Set",
     "admin": "Admin",
-    "read-only": "RO"
+    "read-only": "RO",
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {
