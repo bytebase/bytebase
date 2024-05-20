@@ -3,6 +3,7 @@ package tsql
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"unicode"
 
@@ -374,11 +375,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSources(ctx pars
 	}
 
 	var allTableSources []parser.ITable_sourceContext
-	if v := ctx.Non_ansi_join(); v != nil {
-		allTableSources = v.GetSource()
-	} else if len(ctx.AllTable_source()) != 0 {
-		allTableSources = ctx.GetSource()
-	}
+	allTableSources = ctx.GetSource()
 
 	var result []base.TableSource
 	// If there are multiple table sources, the default join type is CROSS JOIN.
@@ -3389,33 +3386,29 @@ type accessTableListener struct {
 // EnterTable_source_item is called when the parser enters the table_source_item production.
 func (l *accessTableListener) EnterTable_source_item(ctx *parser.Table_source_itemContext) {
 	if fullTableName := ctx.Full_table_name(); fullTableName != nil {
+		name, err := NormalizeFullTableName(fullTableName)
+		if err != nil {
+			slog.Debug("Failed to normalize full table name", "error", err)
+			return
+		}
 		var linkedServer string
-		if server := fullTableName.GetLinkedServer(); server != nil {
-			linkedServer, _ = NormalizeTSQLIdentifier(server)
+		if name.LinkedServer != "" {
+			linkedServer = name.LinkedServer
 		}
 
 		database := l.currentDatabase
-		if d := fullTableName.GetDatabase(); d != nil {
-			normalizedD, _ := NormalizeTSQLIdentifier(d)
-			if normalizedD != "" {
-				database = normalizedD
-			}
+		if name.Database != "" {
+			database = name.Database
 		}
 
 		schema := l.currentSchema
-		if s := fullTableName.GetSchema(); s != nil {
-			normalizedS, _ := NormalizeTSQLIdentifier(s)
-			if normalizedS != "" {
-				schema = normalizedS
-			}
+		if name.Schema != "" {
+			schema = name.Schema
 		}
 
 		var table string
-		if t := fullTableName.GetTable(); t != nil {
-			normalizedT, _ := NormalizeTSQLIdentifier(t)
-			if normalizedT != "" {
-				table = normalizedT
-			}
+		if name.Table != "" {
+			table = name.Table
 		}
 
 		l.resourceMap[base.ColumnResource{
@@ -3499,33 +3492,28 @@ func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normal
 		return "", "", "", ""
 	}
 	// TODO(zp): unify here and the related code in sql_service.go
+	name, err := NormalizeFullTableName(fullTableName)
+	if err != nil {
+		slog.Debug("Failed to normalize full table name", "error", err)
+	}
 	linkedServer := normalizedFallbackLinkedServerName
-	if server := fullTableName.GetLinkedServer(); server != nil {
-		linkedServer, _ = NormalizeTSQLIdentifier(server)
+	if name.LinkedServer != "" {
+		linkedServer = name.LinkedServer
 	}
 
 	database := normalizedFallbackDatabaseName
-	if d := fullTableName.GetDatabase(); d != nil {
-		originalD, _ := NormalizeTSQLIdentifier(d)
-		if originalD != "" {
-			database = originalD
-		}
+	if name.Database != "" {
+		database = name.Database
 	}
 
 	schema := normalizedFallbackSchemaName
-	if s := fullTableName.GetSchema(); s != nil {
-		originalS, _ := NormalizeTSQLIdentifier(s)
-		if originalS != "" {
-			schema = originalS
-		}
+	if name.Schema != "" {
+		schema = name.Schema
 	}
 
 	var table string
-	if t := fullTableName.GetTable(); t != nil {
-		originalT, _ := NormalizeTSQLIdentifier(t)
-		if originalT != "" {
-			table = originalT
-		}
+	if name.Table != "" {
+		table = name.Table
 	}
 
 	return linkedServer, database, schema, table
