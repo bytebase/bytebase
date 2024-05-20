@@ -39,6 +39,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
+import { orderBy } from "lodash-es";
 import type { DataTableColumn } from "naive-ui";
 import { NPerformantEllipsis, NDataTable } from "naive-ui";
 import { reactive, computed, watch, ref, h } from "vue";
@@ -252,24 +253,18 @@ const sortedIssueList = computed(() => {
   if (!props.highlightText) {
     return props.issueList;
   }
-  return props.issueList.sort((issue1, issue2) => {
-    const fullMatch1 = `${issue1.title} ${issue1.description}`.includes(
-      props.highlightText
-    )
-      ? 1
-      : 0;
-    const fullMatch2 = `${issue2.title} ${issue2.description}`.includes(
-      props.highlightText
-    )
-      ? 1
-      : 0;
-    if (fullMatch1 & fullMatch2) {
-      return parseInt(issue2.uid) - parseInt(issue1.uid, 100);
-    } else if (fullMatch1) {
-      return -1;
-    }
-    return 1;
-  });
+
+  return orderBy(
+    props.issueList,
+    [
+      (issue) =>
+        `${issue.title} ${issue.description}`.includes(props.highlightText)
+          ? 1
+          : 0,
+      (issue) => parseInt(issue.uid),
+    ],
+    ["desc", "desc"]
+  );
 });
 
 const selectedIssueList = computed(() => {
