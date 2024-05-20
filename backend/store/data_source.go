@@ -44,8 +44,10 @@ type DataSourceMessage struct {
 	// (deprecated) Output only.
 	UID int
 	// external secret
-	ExternalSecret     *storepb.DataSourceExternalSecret
-	AuthenticationType storepb.DataSourceOptions_AuthenticationType
+	ExternalSecret      *storepb.DataSourceExternalSecret
+	AuthenticationType  storepb.DataSourceOptions_AuthenticationType
+	AdditionalAddresses []*storepb.DataSourceOptions_Address
+	ReplicaSet          string
 }
 
 // Copy returns a copy of the data source message.
@@ -111,8 +113,10 @@ type UpdateDataSourceMessage struct {
 	RemoveExternalSecret bool
 	AuthenticationType   *storepb.DataSourceOptions_AuthenticationType
 	// SASLConfig.
-	SASLConfig       *storepb.SASLConfig
-	RemoveSASLConfig bool
+	SASLConfig        *storepb.SASLConfig
+	AdditionalAddress *[]*storepb.DataSourceOptions_Address
+	ReplicaSet        *string
+	RemoveSASLConfig  bool
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -177,6 +181,8 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		dataSourceMessage.ExternalSecret = dataSourceOptions.ExternalSecret
 		dataSourceMessage.SASLConfig = dataSourceOptions.SaslConfig
 		dataSourceMessage.AuthenticationType = dataSourceOptions.AuthenticationType
+		dataSourceMessage.AdditionalAddresses = dataSourceOptions.AdditionalAddresses
+		dataSourceMessage.ReplicaSet = dataSourceOptions.ReplicaSet
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -322,6 +328,19 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	} else if patch.RemoveSASLConfig {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('saslConfig', $%d::JSONB)", len(args)+1)), append(args, nil)
 	}
+	if v := patch.AdditionalAddress; v != nil {
+		partialDataSourceOptions := &storepb.DataSourceOptions{
+			AdditionalAddresses: *v,
+		}
+		protoBytes, err := protojson.Marshal(partialDataSourceOptions)
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal additional address")
+		}
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('additionalAddresses', ($%d::JSONB)->'additionalAddresses')", len(args)+1)), append(args, protoBytes)
+	}
+	if v := patch.ReplicaSet; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('replicaSet', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
 	}
@@ -374,6 +393,8 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		ExternalSecret:                     dataSource.ExternalSecret,
 		AuthenticationType:                 dataSource.AuthenticationType,
 		SaslConfig:                         dataSource.SASLConfig,
+		AdditionalAddresses:                dataSource.AdditionalAddresses,
+		ReplicaSet:                         dataSource.ReplicaSet,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {

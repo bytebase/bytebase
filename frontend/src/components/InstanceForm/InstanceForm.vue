@@ -209,6 +209,93 @@
             </NRadioGroup>
           </div>
 
+          <div
+            v-if="basicInfo.engine === Engine.MONGODB && !adminDataSource.srv"
+            class="sm:col-span-4 sm:col-start-1"
+          >
+            <label
+              for="additionalAddresses"
+              class="textlabel flex flex-row items-center"
+            >
+              {{ $t("data-source.additional-node-addresses") }}
+            </label>
+            <div class="grid grid-cols-1 gap-y-1 gap-x-4 sm:grid-cols-12">
+              <template
+                v-for="(_, index) in adminDataSource.additionalAddresses"
+                :key="index"
+              >
+                <div class="sm:col-span-8 sm:col-start-1">
+                  <label
+                    v-if="index === 0"
+                    for="additionalAddressesHost"
+                    class="textlabel flex flex-row items-center"
+                  >
+                    {{ $t("instance.host-or-socket") }}
+                  </label>
+                  <NInput
+                    v-model:value="
+                      adminDataSource.additionalAddresses[index].host
+                    "
+                    required
+                    :placeholder="$t('instance.sentence.host.snowflake')"
+                    class="mt-1 w-full"
+                    :disabled="!allowEdit"
+                  />
+                </div>
+                <div class="sm:col-span-3">
+                  <label
+                    v-if="index === 0"
+                    for="additionalAddressesPort"
+                    class="textlabel flex flex-row items-center"
+                  >
+                    {{ $t("instance.port") }}
+                  </label>
+                  <NInput
+                    v-model:value="
+                      adminDataSource.additionalAddresses[index].port
+                    "
+                    class="mt-1 w-full"
+                    :placeholder="defaultPort"
+                    :disabled="!allowEdit || !allowEditPort"
+                    :allow-input="onlyAllowNumber"
+                  />
+                </div>
+                <div class="h-[34px] flex flex-row items-center self-end">
+                  <MiniActionButton
+                    :disabled="!allowEdit"
+                    @click.stop="removeDSAdditionalAddress(index)"
+                  >
+                    <TrashIcon class="w-4 h-4" />
+                  </MiniActionButton>
+                </div>
+              </template>
+              <div class="sm:col-span-12 sm:col-start-1">
+                <NButton
+                  class="ml-auto !w-12"
+                  size="small"
+                  @click.prevent="addDSAdditionalAddress"
+                >
+                  {{ $t("common.add") }}
+                </NButton>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-if="basicInfo.engine === Engine.MONGODB && !adminDataSource.srv"
+            class="sm:col-span-2 sm:col-start-1"
+          >
+            <label for="replicaSet" class="textlabel">
+              {{ $t("data-source.replica-set") }}
+            </label>
+            <NInput
+              v-model:value="adminDataSource.replicaSet"
+              required
+              class="mt-1 w-full"
+              :disabled="!allowEdit"
+            />
+          </div>
+
           <ScanIntervalInput
             v-if="!isCreating"
             ref="scanIntervalInputRef"
@@ -366,6 +453,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual, omit } from "lodash-es";
+import { TrashIcon } from "lucide-vue-next";
 import { NButton, NInput, NSwitch, NRadioGroup, NRadio } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, watch, onMounted, toRef } from "vue";
@@ -377,6 +465,7 @@ import {
   EnvironmentSelect,
   InstanceEngineRadioGrid,
   InstanceV1EngineIcon,
+  MiniActionButton,
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { instanceServiceClient } from "@/grpcweb";
@@ -692,11 +781,24 @@ const handleMongodbConnectionStringSchemaChange = (type: string) => {
     case MongoDBConnectionStringSchemaList[1]:
       // MongoDB doesn't support specify port if using srv record.
       ds.port = "";
+      ds.additionalAddresses = [];
+      ds.replicaSet = "";
       ds.srv = true;
       break;
     default:
       ds.srv = false;
   }
+};
+
+const removeDSAdditionalAddress = (i: number) => {
+  adminDataSource.value.additionalAddresses.splice(i, 1);
+};
+
+const addDSAdditionalAddress = () => {
+  editingDataSource.value?.additionalAddresses.push({
+    host: "",
+    port: "",
+  });
 };
 
 const validateResourceId = async (
