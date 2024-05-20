@@ -1351,7 +1351,7 @@ func (l *tableRefListener) ExitFull_table_name(ctx *tsqlparser.Full_table_nameCo
 
 	if !l.fromClauseMode || l.level == 0 {
 		reference := &base.PhysicalTableReference{}
-		_ /* Linked Server */, database, schema, table := normalizeFullTableName(ctx, "", "", "")
+		_ /* Linked Server */, database, schema, table := normalizeFullTableNameFallback(ctx, "", "", "")
 		reference.Database = database
 		reference.Schema = schema
 		reference.Table = table
