@@ -103,6 +103,9 @@ message DataSourceOptions {
   repeated Address additional_addresses = 14;
   // replica_set is used for MongoDB replica set.
   string replica_set = 15;
+
+  // direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
+  bool direct_connection = 16;
 }
 
 message SASLConfig {
