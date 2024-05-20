@@ -374,8 +374,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSources(ctx pars
 		return nil, nil
 	}
 
-	var allTableSources []parser.ITable_sourceContext
-	allTableSources = ctx.GetSource()
+	allTableSources := ctx.GetSource()
 
 	var result []base.TableSource
 	// If there are multiple table sources, the default join type is CROSS JOIN.
