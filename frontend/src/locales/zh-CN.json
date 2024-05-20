@@ -2173,7 +2173,8 @@
     "admin": "主库",
     "read-only": "从库",
     "additional-node-addresses": "附加节点地址",
-    "replica-set": "副本集"
+    "replica-set": "副本集",
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {

@@ -858,8 +858,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.AdditionalAddresses = additionalAddresses
 			patch.AdditionalAddress = &additionalAddresses
 		case "replica_set":
-			replicaSet := request.DataSource.ReplicaSet
-			dataSource.ReplicaSet = replicaSet
+			dataSource.ReplicaSet = request.DataSource.ReplicaSet
+		case "direct_connection":
+			dataSource.DirectConnection = request.DataSource.DirectConnection
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1166,6 +1167,7 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			SaslConfig:             convertToV1DataSourceSaslConfig(ds.SASLConfig),
 			AdditionalAddresses:    convertToV1DataSourceAddresses(ds.AdditionalAddresses),
 			ReplicaSet:             ds.ReplicaSet,
+			DirectConnection:       ds.DirectConnection,
 		})
 	}
 
@@ -1335,6 +1337,7 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		AuthenticationType:                 convertToAuthenticationType(dataSource.AuthenticationType),
 		AdditionalAddresses:                convertToStoreAdditionalAddresses(dataSource.AdditionalAddresses),
 		ReplicaSet:                         dataSource.ReplicaSet,
+		DirectConnection:                   dataSource.DirectConnection,
 	}, nil
 }
 
