@@ -3315,6 +3315,10 @@
     "self": "輸出センター",
     "permission-denied": "この操作を実行する権限がありません"
   },
+  "review-center": {
+    "self": "レビューセンター",
+    "review-sql": "SQLを確認する"
+  },
   "schema-designer": {
     "self": "スキーマデザイナー",
     "schema-design": "スキーマ設計",

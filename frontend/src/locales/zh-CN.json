@@ -3315,6 +3315,10 @@
     "self": "导出中心",
     "permission-denied": "您没有权限执行此操作"
   },
+  "review-center": {
+    "self": "SQL 审核中心",
+    "review-sql": "审核 SQL"
+  },
   "schema-designer": {
     "self": "Schema 设计器",
     "schema-design": "Schema 设计",

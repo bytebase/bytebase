@@ -3315,6 +3315,10 @@
     "self": "Export Center",
     "permission-denied": "Permission denied"
   },
+  "review-center": {
+    "self": "Review Center",
+    "review-sql": "Review SQL"
+  },
   "schema-designer": {
     "self": "Schema Designer",
     "schema-design": "Schema Design",
