@@ -3,7 +3,7 @@
     <div class="w-full flex flex-row justify-between items-center mb-1">
       <span class="textlabel mr-4">{{ $t("issue.data-export.options") }}</span>
       <div
-        v-if="!isCreating"
+        v-if="showEditButtons"
         class="flex flex-row justify-end items-center gap-2"
       >
         <NTooltip
@@ -69,6 +69,7 @@ import {
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification, useCurrentUserV1 } from "@/store";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   Plan_Spec,
   Plan_ExportDataConfig,
@@ -97,16 +98,20 @@ const state = reactive<LocalState>({
   isEditing: false,
 });
 
+const showEditButtons = computed(() => {
+  return !isCreating.value && issue.value.status === IssueStatus.OPEN;
+});
+
+const optionsEditable = computed(() => {
+  return isCreating.value || (showEditButtons.value && state.isEditing);
+});
+
 const denyEditTaskReasons = computed(() => {
   return allowUserToEditStatementForTask(
     issue.value,
     selectedTask.value,
     currentUser.value
   );
-});
-
-const optionsEditable = computed(() => {
-  return isCreating.value || state.isEditing;
 });
 
 const handleCancelEdit = () => {

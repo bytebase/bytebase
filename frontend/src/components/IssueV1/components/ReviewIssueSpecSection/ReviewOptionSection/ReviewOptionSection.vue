@@ -3,25 +3,25 @@
     <div class="w-full flex flex-row justify-between items-center mb-1">
       <span class="textlabel mr-4">{{ $t("issue.data-export.options") }}</span>
       <div
-        v-if="!isCreating"
+        v-if="showEditButtons"
         class="flex flex-row justify-end items-center gap-2"
       >
         <NTooltip
           v-if="!state.isEditing"
-          :disabled="denyEditTaskReasons.length === 0"
+          :disabled="denyEditReasons.length === 0"
         >
           <template #trigger>
             <NButton
               size="tiny"
               tag="div"
-              :disabled="denyEditTaskReasons.length > 0"
+              :disabled="denyEditReasons.length > 0"
               @click="state.isEditing = true"
             >
               {{ $t("common.edit") }}
             </NButton>
           </template>
           <template #default>
-            <ErrorList :errors="denyEditTaskReasons" />
+            <ErrorList :errors="denyEditReasons" />
           </template>
         </NTooltip>
         <template v-else>
@@ -84,11 +84,16 @@ const state = reactive<LocalState>({
   isEditing: false,
 });
 
-const denyEditTaskReasons = computed(() => {
+const showEditButtons = computed(() => {
+  return !isCreating.value && issue.value.status === IssueStatus.OPEN;
+});
+
+const optionsEditable = computed(() => {
+  return isCreating.value || (showEditButtons.value && state.isEditing);
+});
+
+const denyEditReasons = computed(() => {
   const reasons: string[] = [];
-  if (issue.value.status !== IssueStatus.OPEN) {
-    reasons.push("Issue is not open");
-  }
   if (
     !hasProjectPermissionV2(
       issue.value.projectEntity,
@@ -99,10 +104,6 @@ const denyEditTaskReasons = computed(() => {
     reasons.push("Permission denied");
   }
   return reasons;
-});
-
-const optionsEditable = computed(() => {
-  return isCreating.value || state.isEditing;
 });
 
 const handleCancelEdit = () => {
