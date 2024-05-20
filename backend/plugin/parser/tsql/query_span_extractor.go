@@ -3,6 +3,7 @@ package tsql
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"unicode"
 
@@ -373,12 +374,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSources(ctx pars
 		return nil, nil
 	}
 
-	var allTableSources []parser.ITable_sourceContext
-	if v := ctx.Non_ansi_join(); v != nil {
-		allTableSources = v.GetSource()
-	} else if len(ctx.AllTable_source()) != 0 {
-		allTableSources = ctx.GetSource()
-	}
+	allTableSources := ctx.GetSource()
 
 	var result []base.TableSource
 	// If there are multiple table sources, the default join type is CROSS JOIN.
@@ -586,7 +582,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromSubquery(ctx parser.I
 }
 
 func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_table_nameContext) (base.TableSource, error) {
-	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(fullTableName, "" /* Linked Server Name */, "", "")
+	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableNameFallback(fullTableName, "" /* Linked Server Name */, "", "")
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
 		return nil, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
@@ -603,7 +599,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 		}
 	}
 
-	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeFullTableName(fullTableName, "" /* Linked Server Name */, q.connectedDB, q.connectedSchema)
+	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeFullTableNameFallback(fullTableName, "" /* Linked Server Name */, q.connectedDB, q.connectedSchema)
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
 		return nil, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
@@ -729,7 +725,7 @@ func (q *querySpanExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedD
 }
 
 func (q *querySpanExtractor) tsqlIsFullColumnNameSensitive(ctx parser.IFull_column_nameContext) (base.QuerySpanResult, error) {
-	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(ctx.Full_table_name(), "", "", "")
+	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableNameFallback(ctx.Full_table_name(), "", "", "")
 	if normalizedLinkedServer != "" {
 		return base.QuerySpanResult{}, errors.Errorf("linked server is not supported yet, but found %q", ctx.GetText())
 	}
@@ -3389,33 +3385,29 @@ type accessTableListener struct {
 // EnterTable_source_item is called when the parser enters the table_source_item production.
 func (l *accessTableListener) EnterTable_source_item(ctx *parser.Table_source_itemContext) {
 	if fullTableName := ctx.Full_table_name(); fullTableName != nil {
+		name, err := NormalizeFullTableName(fullTableName)
+		if err != nil {
+			slog.Debug("Failed to normalize full table name", "error", err)
+			return
+		}
 		var linkedServer string
-		if server := fullTableName.GetLinkedServer(); server != nil {
-			linkedServer, _ = NormalizeTSQLIdentifier(server)
+		if name.LinkedServer != "" {
+			linkedServer = name.LinkedServer
 		}
 
 		database := l.currentDatabase
-		if d := fullTableName.GetDatabase(); d != nil {
-			normalizedD, _ := NormalizeTSQLIdentifier(d)
-			if normalizedD != "" {
-				database = normalizedD
-			}
+		if name.Database != "" {
+			database = name.Database
 		}
 
 		schema := l.currentSchema
-		if s := fullTableName.GetSchema(); s != nil {
-			normalizedS, _ := NormalizeTSQLIdentifier(s)
-			if normalizedS != "" {
-				schema = normalizedS
-			}
+		if name.Schema != "" {
+			schema = name.Schema
 		}
 
 		var table string
-		if t := fullTableName.GetTable(); t != nil {
-			normalizedT, _ := NormalizeTSQLIdentifier(t)
-			if normalizedT != "" {
-				table = normalizedT
-			}
+		if name.Table != "" {
+			table = name.Table
 		}
 
 		l.resourceMap[base.ColumnResource{
@@ -3493,39 +3485,34 @@ func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (str
 	return database, schema, table
 }
 
-// normalizeFullTableName normalizes the each part of the full table name, returns (linkedServer, database, schema, table).
-func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string, string) {
+// normalizeFullTableNameFallback normalizes the each part of the full table name, returns (linkedServer, database, schema, table).
+func normalizeFullTableNameFallback(fullTableName parser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string, string) {
 	if fullTableName == nil {
 		return "", "", "", ""
 	}
 	// TODO(zp): unify here and the related code in sql_service.go
+	name, err := NormalizeFullTableName(fullTableName)
+	if err != nil {
+		slog.Debug("Failed to normalize full table name", "error", err)
+	}
 	linkedServer := normalizedFallbackLinkedServerName
-	if server := fullTableName.GetLinkedServer(); server != nil {
-		linkedServer, _ = NormalizeTSQLIdentifier(server)
+	if name.LinkedServer != "" {
+		linkedServer = name.LinkedServer
 	}
 
 	database := normalizedFallbackDatabaseName
-	if d := fullTableName.GetDatabase(); d != nil {
-		originalD, _ := NormalizeTSQLIdentifier(d)
-		if originalD != "" {
-			database = originalD
-		}
+	if name.Database != "" {
+		database = name.Database
 	}
 
 	schema := normalizedFallbackSchemaName
-	if s := fullTableName.GetSchema(); s != nil {
-		originalS, _ := NormalizeTSQLIdentifier(s)
-		if originalS != "" {
-			schema = originalS
-		}
+	if name.Schema != "" {
+		schema = name.Schema
 	}
 
 	var table string
-	if t := fullTableName.GetTable(); t != nil {
-		originalT, _ := NormalizeTSQLIdentifier(t)
-		if originalT != "" {
-			table = originalT
-		}
+	if name.Table != "" {
+		table = name.Table
 	}
 
 	return linkedServer, database, schema, table
