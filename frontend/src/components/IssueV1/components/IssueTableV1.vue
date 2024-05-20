@@ -249,6 +249,9 @@ const showExtendedColumns = computed(() => {
 });
 
 const sortedIssueList = computed(() => {
+  if (!props.highlightText) {
+    return props.issueList;
+  }
   return props.issueList.sort((issue1, issue2) => {
     const fullMatch1 = `${issue1.title} ${issue1.description}`.includes(
       props.highlightText
