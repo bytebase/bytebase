@@ -296,6 +296,28 @@
             />
           </div>
 
+          <div
+            v-if="
+              basicInfo.engine === Engine.MONGODB &&
+              !adminDataSource.srv &&
+              adminDataSource.additionalAddresses.length === 0
+            "
+            class="sm:col-span-4 sm:col-start-1"
+          >
+            <NCheckbox
+              :checked="adminDataSource.directConnection"
+              :disabled="!allowEdit"
+              style="--n-label-padding: 0 0 0 1rem"
+              @update:checked="
+                (on: boolean) => {
+                  adminDataSource.directConnection = on;
+                }
+              "
+            >
+              {{ $t("data-source.direct-connection") }}
+            </NCheckbox>
+          </div>
+
           <ScanIntervalInput
             v-if="!isCreating"
             ref="scanIntervalInputRef"
@@ -454,7 +476,14 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import { TrashIcon } from "lucide-vue-next";
-import { NButton, NInput, NSwitch, NRadioGroup, NRadio } from "naive-ui";
+import {
+  NButton,
+  NInput,
+  NSwitch,
+  NRadioGroup,
+  NRadio,
+  NCheckbox,
+} from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, watch, onMounted, toRef } from "vue";
 import { useI18n } from "vue-i18n";
@@ -783,6 +812,7 @@ const handleMongodbConnectionStringSchemaChange = (type: string) => {
       ds.port = "";
       ds.additionalAddresses = [];
       ds.replicaSet = "";
+      ds.directConnection = false;
       ds.srv = true;
       break;
     default:
@@ -792,6 +822,9 @@ const handleMongodbConnectionStringSchemaChange = (type: string) => {
 
 const removeDSAdditionalAddress = (i: number) => {
   adminDataSource.value.additionalAddresses.splice(i, 1);
+  if (adminDataSource.value.additionalAddresses.length === 0) {
+    adminDataSource.value.directConnection = false;
+  }
 };
 
 const addDSAdditionalAddress = () => {
@@ -799,6 +832,9 @@ const addDSAdditionalAddress = () => {
     host: "",
     port: "",
   });
+  if (adminDataSource.value.additionalAddresses.length !== 0) {
+    adminDataSource.value.directConnection = false;
+  }
 };
 
 const validateResourceId = async (

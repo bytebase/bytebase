@@ -190,6 +190,7 @@ type ConnectionConfig struct {
 	// AdditionalAddresses and ReplicaSet name are used for MongoDB.
 	AdditionalAddresses []*storepb.DataSourceOptions_Address
 	ReplicaSet          string
+	DirectConnection    bool
 }
 
 // SSHConfig is the configuration for connection over SSH.
