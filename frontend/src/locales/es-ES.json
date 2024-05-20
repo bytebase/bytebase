@@ -1222,6 +1222,9 @@
         },
         "affected-rows-n": "Filas afectadas: {n}"
       }
+    },
+    "sql-review": {
+      "statement-type": "Tipo de declaración"
     }
   },
   "alter-schema": {
@@ -3314,6 +3317,10 @@
   "export-center": {
     "self": "centro de exportacion",
     "permission-denied": "Permiso denegado"
+  },
+  "review-center": {
+    "self": "Centro de revisión",
+    "review-sql": "Revisar SQL"
   },
   "schema-designer": {
     "self": "Diseñador de esquemas",
