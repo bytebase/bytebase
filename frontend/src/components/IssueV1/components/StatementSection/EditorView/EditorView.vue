@@ -243,7 +243,7 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import {
   hasFeature,
@@ -731,7 +731,7 @@ const updateStatement = async (statement: string) => {
     config.sheet = createdSheet.name;
   }
 
-  const updatedPlan = await rolloutServiceClient.updatePlan({
+  const updatedPlan = await planServiceClient.updatePlan({
     plan: planPatch,
     updateMask: ["steps"],
   });

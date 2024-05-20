@@ -70,12 +70,12 @@ import {
   useIssueContext,
 } from "@/components/IssueV1";
 import ErrorList from "@/components/misc/ErrorList.vue";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
+import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import {
-  type Plan_Spec,
   type Task,
   TaskRun_Status,
   Task_Status,
@@ -334,7 +334,7 @@ const handleUpdateEarliestAllowedTime = async (timestampMS: number | null) => {
         }
       }
 
-      const updatedPlan = await rolloutServiceClient.updatePlan({
+      const updatedPlan = await planServiceClient.updatePlan({
         plan: planPatch,
         updateMask: ["steps"],
       });

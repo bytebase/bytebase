@@ -47,7 +47,7 @@ import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Result_SqlReviewReport,
   PlanCheckRun_Status,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils";

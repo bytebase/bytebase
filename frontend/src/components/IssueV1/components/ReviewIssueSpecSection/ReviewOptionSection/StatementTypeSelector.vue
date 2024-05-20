@@ -20,7 +20,7 @@
 import { NRadioGroup, NRadio } from "naive-ui";
 import { computed } from "vue";
 import { onMounted } from "vue";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/rollout_service";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import type { StatementType } from "./types";
 
 const props = defineProps<{

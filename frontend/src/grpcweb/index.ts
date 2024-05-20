@@ -19,6 +19,7 @@ import { InstanceRoleServiceDefinition } from "@/types/proto/v1/instance_role_se
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
 import { OrgPolicyServiceDefinition } from "@/types/proto/v1/org_policy_service";
+import { PlanServiceDefinition } from "@/types/proto/v1/plan_service";
 import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
@@ -136,6 +137,11 @@ export const issueServiceClient = clientFactory.create(
 
 export const rolloutServiceClient = clientFactory.create(
   RolloutServiceDefinition,
+  channel
+);
+
+export const planServiceClient = clientFactory.create(
+  PlanServiceDefinition,
   channel
 );
 
