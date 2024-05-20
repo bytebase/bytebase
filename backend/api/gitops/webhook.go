@@ -227,7 +227,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
 	childCtx = context.WithValue(childCtx, common.UserContextKey, user)
 	childCtx = context.WithValue(childCtx, common.LoopbackContextKey, true)
-	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
+	plan, err := s.planService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
 		Plan: &v1pb.Plan{
 			Title: prInfo.title,

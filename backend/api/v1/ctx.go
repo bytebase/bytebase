@@ -158,13 +158,16 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.RolloutService_GetRollout_FullMethodName,
 		v1pb.RolloutService_CreateRollout_FullMethodName,
 		v1pb.RolloutService_PreviewRollout_FullMethodName,
-		v1pb.RolloutService_GetPlan_FullMethodName,
-		v1pb.RolloutService_CreatePlan_FullMethodName,
 		v1pb.RolloutService_ListTaskRuns_FullMethodName,
-		v1pb.RolloutService_GetTaskRunLog_FullMethodName,
-		v1pb.RolloutService_ListPlanCheckRuns_FullMethodName,
-		v1pb.RolloutService_RunPlanChecks_FullMethodName:
+		v1pb.RolloutService_GetTaskRunLog_FullMethodName:
 		return p.getProjectIDsForRolloutService(ctx, req)
+
+	case
+		v1pb.PlanService_GetPlan_FullMethodName,
+		v1pb.PlanService_CreatePlan_FullMethodName,
+		v1pb.PlanService_ListPlanCheckRuns_FullMethodName,
+		v1pb.PlanService_RunPlanChecks_FullMethodName:
+		return p.getProjectIDsForPlanService(ctx, req)
 
 	case
 		v1pb.ProjectService_GetProject_FullMethodName,
@@ -315,6 +318,38 @@ func (*ContextProvider) getProjectIDsForRolloutService(_ context.Context, req an
 		projectID, _, _, _, _, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse taskRun %q", taskRun)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+
+	return uniq(projectIDs), nil
+}
+
+func (*ContextProvider) getProjectIDsForPlanService(_ context.Context, req any) ([]string, error) {
+	var projects, plans []string
+	switch r := req.(type) {
+	case *v1pb.GetPlanRequest:
+		plans = append(plans, r.GetName())
+	case *v1pb.CreatePlanRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.ListPlanCheckRunsRequest:
+		plans = append(plans, r.GetParent())
+	case *v1pb.RunPlanChecksRequest:
+		plans = append(plans, r.GetName())
+	}
+
+	var projectIDs []string
+	for _, plan := range plans {
+		projectID, _, err := common.GetProjectIDPlanID(plan)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse plan %q", plan)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, project := range projects {
+		projectID, err := common.GetProjectID(project)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse project %q", project)
 		}
 		projectIDs = append(projectIDs, projectID)
 	}

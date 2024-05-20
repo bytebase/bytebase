@@ -258,7 +258,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 			spec.GetChangeDatabaseConfig().RollbackEnabled = true
 		}
 	}
-	_, err = ctl.rolloutServiceClient.UpdatePlan(ctx, &v1pb.UpdatePlanRequest{
+	_, err = ctl.planServiceClient.UpdatePlan(ctx, &v1pb.UpdatePlanRequest{
 		Plan:       plan,
 		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"steps"}},
 	})
@@ -419,7 +419,7 @@ func TestRollbackCanceled(t *testing.T) {
 			spec.GetChangeDatabaseConfig().RollbackEnabled = false
 		}
 	}
-	_, err = ctl.rolloutServiceClient.UpdatePlan(ctx, &v1pb.UpdatePlanRequest{
+	_, err = ctl.planServiceClient.UpdatePlan(ctx, &v1pb.UpdatePlanRequest{
 		Plan:       plan,
 		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"steps"}},
 	})

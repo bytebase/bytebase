@@ -129,12 +129,12 @@ import {
   getRuleLocalization,
   ruleTemplateMap,
 } from "@/types";
-import type { PlanCheckRun } from "@/types/proto/v1/rollout_service";
 import {
+  PlanCheckRun,
   PlanCheckRun_Result,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
 import PlanCheckResultDefinitionModal from "./PlanCheckResultDefinitionModal.vue";
 
 interface ErrorCodeLink {

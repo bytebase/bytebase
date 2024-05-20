@@ -1,4 +1,8 @@
-import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
+import {
+  issueServiceClient,
+  planServiceClient,
+  rolloutServiceClient,
+} from "@/grpcweb";
 import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
 import type { ComposedIssue, ComposedProject } from "@/types";
 import {
@@ -12,7 +16,8 @@ import {
   UNKNOWN_ISSUE_NAME,
 } from "@/types";
 import type { Issue } from "@/types/proto/v1/issue_service";
-import type { Plan, Rollout } from "@/types/proto/v1/rollout_service";
+import type { Plan } from "@/types/proto/v1/plan_service";
+import type { Rollout } from "@/types/proto/v1/rollout_service";
 import {
   extractProjectResourceName,
   extractUserResourceName,
@@ -53,7 +58,7 @@ export const composeIssue = async (
   if (config.withPlan && issue.plan) {
     if (issue.plan) {
       if (hasProjectPermissionV2(projectEntity, me.value, "bb.plans.get")) {
-        const plan = await rolloutServiceClient.getPlan({
+        const plan = await planServiceClient.getPlan({
           name: issue.plan,
         });
         issue.planEntity = plan;
@@ -61,7 +66,7 @@ export const composeIssue = async (
       if (
         hasProjectPermissionV2(projectEntity, me.value, "bb.planCheckRuns.list")
       ) {
-        const { planCheckRuns } = await rolloutServiceClient.listPlanCheckRuns({
+        const { planCheckRuns } = await planServiceClient.listPlanCheckRuns({
           parent: issue.plan,
         });
         issue.planCheckRunList = planCheckRuns;
@@ -145,7 +150,7 @@ export const experimentalCreateIssueByPlan = async (
   planCreate: Plan,
   hooks?: Partial<CreateIssueHooks>
 ) => {
-  const createdPlan = await rolloutServiceClient.createPlan({
+  const createdPlan = await planServiceClient.createPlan({
     parent: project.name,
     plan: planCreate,
   });

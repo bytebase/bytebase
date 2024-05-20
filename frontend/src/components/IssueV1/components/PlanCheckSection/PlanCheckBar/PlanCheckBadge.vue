@@ -46,12 +46,12 @@ import { maxBy } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { planCheckRunResultStatus } from "@/components/IssueV1/logic";
-import type { PlanCheckRun } from "@/types/proto/v1/rollout_service";
+import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
 import { TaskSpinner } from "../../common";
 
 const props = defineProps<{

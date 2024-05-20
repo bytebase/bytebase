@@ -18,7 +18,6 @@ import type { ComposedProject } from "@/types";
 import { emptyIssue, TaskTypeListWithStatement, UNKNOWN_ID } from "@/types";
 import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Stage } from "@/types/proto/v1/rollout_service";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
@@ -26,9 +25,9 @@ import {
   Plan_ExportDataConfig,
   Plan_Spec,
   Plan_Step,
-  Rollout,
-  Task_Type,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
+import type { Stage } from "@/types/proto/v1/rollout_service";
+import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
 import { Sheet, SheetPayload } from "@/types/proto/v1/sheet_service";
 import {
   extractProjectResourceName,

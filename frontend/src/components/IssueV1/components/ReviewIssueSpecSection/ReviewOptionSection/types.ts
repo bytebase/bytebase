@@ -1,4 +1,4 @@
-import type { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/rollout_service";
+import type { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 
 export type StatementType =
   | Plan_ChangeDatabaseConfig_Type.MIGRATE

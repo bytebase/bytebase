@@ -68,11 +68,9 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
+import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
-import {
-  PlanCheckRun_Result_Status,
-  Task_Status,
-} from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { planCheckStatusForTask, useIssueContext } from "../logic";
 
 const props = defineProps<{
