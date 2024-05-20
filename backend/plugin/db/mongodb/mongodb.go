@@ -207,6 +207,9 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 		}
 		values.Add("tlsAllowInvalidHostnames", "true")
 	}
+	if connConfig.DirectConnection {
+		values.Add("directConnection", "true")
+	}
 	u.RawQuery = values.Encode()
 
 	return u.String()

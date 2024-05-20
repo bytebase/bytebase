@@ -48,6 +48,7 @@ type DataSourceMessage struct {
 	AuthenticationType  storepb.DataSourceOptions_AuthenticationType
 	AdditionalAddresses []*storepb.DataSourceOptions_Address
 	ReplicaSet          string
+	DirectConnection    bool
 }
 
 // Copy returns a copy of the data source message.
@@ -117,6 +118,7 @@ type UpdateDataSourceMessage struct {
 	AdditionalAddress *[]*storepb.DataSourceOptions_Address
 	ReplicaSet        *string
 	RemoveSASLConfig  bool
+	DirectConnection  *bool
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -183,6 +185,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		dataSourceMessage.AuthenticationType = dataSourceOptions.AuthenticationType
 		dataSourceMessage.AdditionalAddresses = dataSourceOptions.AdditionalAddresses
 		dataSourceMessage.ReplicaSet = dataSourceOptions.ReplicaSet
+		dataSourceMessage.DirectConnection = dataSourceOptions.DirectConnection
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -341,6 +344,9 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	if v := patch.ReplicaSet; v != nil {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('replicaSet', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
+	if v := patch.DirectConnection; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('directConnection', $%d::BOOLEAN)", len(args)+1)), append(args, *v)
+	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
 	}
@@ -395,6 +401,7 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		SaslConfig:                         dataSource.SASLConfig,
 		AdditionalAddresses:                dataSource.AdditionalAddresses,
 		ReplicaSet:                         dataSource.ReplicaSet,
+		DirectConnection:                   dataSource.DirectConnection,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {

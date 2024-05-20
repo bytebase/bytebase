@@ -2173,7 +2173,8 @@
     "admin": "メインライブラリ",
     "read-only": "図書館から",
     "additional-node-addresses": "追加のノードアドレス",
-    "replica-set": "レプリカセット"
+    "replica-set": "レプリカセット",
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {
