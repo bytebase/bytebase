@@ -1222,6 +1222,9 @@
         },
         "affected-rows-n": "影響を受ける行: {n}"
       }
+    },
+    "sql-review": {
+      "statement-type": "ステートメントタイプ"
     }
   },
   "alter-schema": {
@@ -3314,6 +3317,10 @@
   "export-center": {
     "self": "輸出センター",
     "permission-denied": "この操作を実行する権限がありません"
+  },
+  "review-center": {
+    "self": "レビューセンター",
+    "review-sql": "SQLを確認する"
   },
   "schema-designer": {
     "self": "スキーマデザイナー",
