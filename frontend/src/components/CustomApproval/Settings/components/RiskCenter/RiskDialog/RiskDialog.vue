@@ -77,7 +77,7 @@ const beforeClose = async () => {
     return true;
   }
   const d = defer<boolean>();
-  nDialog.info({
+  nDialog.warning({
     title: t("common.close"),
     content: t("common.will-lose-unsaved-data"),
     maskClosable: false,
