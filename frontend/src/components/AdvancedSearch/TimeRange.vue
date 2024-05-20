@@ -40,9 +40,11 @@ const isDateDisabled = (ts: number) => {
 };
 
 const handleUpdate = (values: [number, number] | null) => {
+  const from = values ? dayjs(values[0]).startOf("day") : null;
+  const to = values ? dayjs(values[1]).endOf("day") : null;
   const updated = upsertScope(props.params, {
     id: "created",
-    value: values ? values.join(",") : "",
+    value: from && to ? `${from.valueOf()},${to.valueOf()}` : "",
   });
   emit("update:params", updated);
 };
