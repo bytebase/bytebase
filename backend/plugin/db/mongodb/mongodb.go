@@ -227,7 +227,8 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 
 	mongoshArgs := []string{
 		mongoutil.GetMongoshPath(driver.dbBinDir),
-		connectionURI,
+		// quote the connectionURI because we execute the mongosh via sh, and the multi-queries part contains '&', which will be translated to the background process.
+		fmt.Sprintf(`"%s"`, connectionURI),
 		"--quiet",
 		"--eval",
 		evalArg,
