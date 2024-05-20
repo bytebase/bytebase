@@ -178,6 +178,13 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	if connConfig.Port != "" {
 		u.Host = fmt.Sprintf("%s:%s", u.Host, connConfig.Port)
 	}
+	for _, additionalAddress := range connConfig.AdditionalAddresses {
+		address := additionalAddress.Host
+		if additionalAddress.Port != "" {
+			address = fmt.Sprintf("%s:%s", address, additionalAddress.Port)
+		}
+		u.Host = fmt.Sprintf("%s,%s", u.Host, address)
+	}
 	if connConfig.Database != "" {
 		u.Path = connConfig.Database
 	}
@@ -186,7 +193,25 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 		authDatabase = connConfig.AuthenticationDatabase
 	}
 
-	u.RawQuery = fmt.Sprintf("authSource=%s", authDatabase)
+	values := u.Query()
+	values.Add("authSource", authDatabase)
+	if connConfig.ReplicaSet != "" {
+		values.Add("replicaSet", connConfig.ReplicaSet)
+	}
+	// Add SSL options if provided
+	if connConfig.TLSConfig.SslCA != "" {
+		values.Add("tlsCAFile", connConfig.TLSConfig.SslCA)
+		if connConfig.TLSConfig.SslCert != "" && connConfig.TLSConfig.SslKey != "" {
+			values.Add("tlsCertificateKeyFile", connConfig.TLSConfig.SslCert)
+			values.Add("tlsCertificateKeyFilePassword", connConfig.TLSConfig.SslKey)
+		}
+		values.Add("tlsAllowInvalidHostnames", "true")
+	}
+	if connConfig.DirectConnection {
+		values.Add("directConnection", "true")
+	}
+	u.RawQuery = values.Encode()
+
 	return u.String()
 }
 
@@ -214,7 +239,8 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 
 	mongoshArgs := []string{
 		mongoutil.GetMongoshPath(driver.dbBinDir),
-		connectionURI,
+		// quote the connectionURI because we execute the mongosh via sh, and the multi-queries part contains '&', which will be translated to the background process.
+		fmt.Sprintf(`"%s"`, connectionURI),
 		"--quiet",
 		"--eval",
 		evalArg,

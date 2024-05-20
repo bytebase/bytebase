@@ -9290,6 +9290,9 @@ components:
                 replicaSet:
                     type: string
                     description: replica_set is used for MongoDB replica set.
+                directConnection:
+                    type: boolean
+                    description: direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
         DataSourceExternalSecret:
             type: object
             properties:

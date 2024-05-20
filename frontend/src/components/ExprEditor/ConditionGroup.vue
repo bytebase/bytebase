@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bb-risk-expr-editor-group w-full overflow-hidden space-y-2 py-0.5"
+    class="w-full overflow-hidden space-y-2 py-0.5"
     :class="[root ? '' : 'border rounded-[3px] bg-gray-50']"
   >
     <div v-if="!root" class="pl-2.5 pr-1 text-gray-500 flex items-center">
@@ -26,15 +26,6 @@
         </template>
       </div>
       <div v-if="allowAdmin" class="flex items-center justify-end">
-        <NButton
-          size="tiny"
-          quaternary
-          type="default"
-          :style="`flex-shrink: 0; padding-left: 0; padding-right: 0; --n-width: 22px`"
-          @click="addCondition"
-        >
-          <heroicons:plus class="w-4 h-4" />
-        </NButton>
         <NButton
           size="tiny"
           quaternary
@@ -85,7 +76,17 @@
         />
       </div>
     </div>
-    <div v-if="root && allowAdmin" class="space-x-1">
+
+    <div v-if="!root && allowAdmin" class="pl-1.5 pb-1">
+      <NButton size="small" quaternary @click="addCondition">
+        <template #icon
+          ><heroicons:plus class="w-4 h-4 text-gray-500"
+        /></template>
+        <span class="text-gray-500">{{ $t("cel.condition.add") }}</span>
+      </NButton>
+    </div>
+
+    <div v-if="root && allowAdmin" class="space-x-1 pt-3">
       <NButton size="small" quaternary @click="addCondition">
         <template #icon><heroicons:plus class="w-4 h-4" /></template>
         <span>{{ $t("cel.condition.add") }}</span>

@@ -223,6 +223,9 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			AuthenticationPrivateKey: authenticationPrivateKey,
 			AuthenticationType:       dataSource.AuthenticationType,
 			SASLConfig:               dbSaslConfig,
+			AdditionalAddresses:      dataSource.AdditionalAddresses,
+			ReplicaSet:               dataSource.ReplicaSet,
+			DirectConnection:         dataSource.DirectConnection,
 		},
 	)
 	if err != nil {
