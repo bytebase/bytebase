@@ -186,6 +186,10 @@ type ConnectionConfig struct {
 
 	// AuthenticationType is for the database connection, we support normal username & password or Google IAM.
 	AuthenticationType storepb.DataSourceOptions_AuthenticationType
+
+	// AdditionalAddresses and ReplicaSet name are used for MongoDB.
+	AdditionalAddresses []*storepb.DataSourceOptions_Address
+	ReplicaSet          string
 }
 
 // SSHConfig is the configuration for connection over SSH.

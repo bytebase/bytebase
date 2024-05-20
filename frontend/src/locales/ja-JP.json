@@ -2171,7 +2171,9 @@
     "delete-read-only-data-source": "読み取り専用データソースを削除する",
     "connection-string-schema": "接続文字列モード",
     "admin": "メインライブラリ",
-    "read-only": "図書館から"
+    "read-only": "図書館から",
+    "additional-node-addresses": "追加のノードアドレス",
+    "replica-set": "レプリカセット"
   },
   "setting": {
     "project": {

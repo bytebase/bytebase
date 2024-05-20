@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -67,6 +68,23 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				SRV:                    true,
 			},
 			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?authSource=admin",
+		},
+		{
+			connConfig: db.ConnectionConfig{
+				Host:                   "node1.cluster0.sample.mongodb.net",
+				Port:                   "27017",
+				Username:               "bytebase",
+				Password:               "passwd",
+				Database:               "sampleDB",
+				AuthenticationDatabase: "admin",
+				SRV:                    false,
+				AdditionalAddresses: []*storepb.DataSourceOptions_Address{
+					{Host: "node2.cluster0.sample.mongodb.net", Port: "27017"},
+					{Host: "node3.cluster0.sample.mongodb.net", Port: "27017"},
+				},
+				ReplicaSet: "rs0",
+			},
+			want: "mongodb://bytebase:passwd@node1.cluster0.sample.mongodb.net:27017,node2.cluster0.sample.mongodb.net:27017,node3.cluster0.sample.mongodb.net:27017/sampleDB?authSource=admin&replicaSet=rs0",
 		},
 	}
 
