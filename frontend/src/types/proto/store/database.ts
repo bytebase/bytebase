@@ -660,7 +660,7 @@ export interface TableConfig {
   classificationId: string;
   /**
    * The last updater of the table in branch.
-   * Format: users/{email}
+   * Format: users/{userUID}.
    */
   updater: string;
   /** The timestamp when the table is updated in branch. */
@@ -672,7 +672,7 @@ export interface FunctionConfig {
   name: string;
   /**
    * The last updater of the function in branch.
-   * Format: users/{email}
+   * Format: users/{userUID}.
    */
   updater: string;
   /** The timestamp when the function is updated in branch. */
@@ -684,7 +684,7 @@ export interface ProcedureConfig {
   name: string;
   /**
    * The last updater of the procedure in branch.
-   * Format: users/{email}
+   * Format: users/{userUID}.
    */
   updater: string;
   /** The timestamp when the procedure is updated in branch. */
@@ -696,7 +696,7 @@ export interface ViewConfig {
   name: string;
   /**
    * The last updater of the view in branch.
-   * Format: users/{email}
+   * Format: users/{userUID}.
    */
   updater: string;
   /** The timestamp when the view is updated in branch. */

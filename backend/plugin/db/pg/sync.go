@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
@@ -419,7 +420,7 @@ func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMe
 	rows, err := txn.Query(query)
 	if err != nil {
 		// Experimental feature, log error and return.
-		slog.Error("failed to query foreign table: %v", err)
+		slog.Error("failed to query foreign table: %v", log.BBError(err))
 		return nil, nil
 	}
 	defer rows.Close()
@@ -429,7 +430,7 @@ func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMe
 	for rows.Next() {
 		var schemaName, tableName, foreignServerCatalog, foreignServerName string
 		if err := rows.Scan(&schemaName, &tableName, &foreignServerCatalog, &foreignServerName); err != nil {
-			slog.Error("failed to scan foreign table: %v", err)
+			slog.Error("failed to scan foreign table: %v", log.BBError(err))
 			return nil, nil
 		}
 		externalTable := &storepb.ExternalTableMetadata{
@@ -444,7 +445,7 @@ func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMe
 	}
 
 	if err := rows.Err(); err != nil {
-		slog.Error("failed to scan foreign table: %v", err)
+		slog.Error("failed to scan foreign table: %v", log.BBError(err))
 		return nil, nil
 	}
 
