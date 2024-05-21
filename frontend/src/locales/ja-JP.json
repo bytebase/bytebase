@@ -1066,7 +1066,8 @@
       "updated": "に更新されました",
       "approver": "承認者",
       "creator": "創設者",
-      "assignee": "被指名者"
+      "assignee": "被指名者",
+      "current-approver": "現在の承認者"
     },
     "stage-select": {
       "current": "{name} (現在)"

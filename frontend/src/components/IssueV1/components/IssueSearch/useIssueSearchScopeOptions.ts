@@ -143,12 +143,6 @@ export const useIssueSearchScopeOptions = (
         options: principalSearchValueOptions.value,
       },
       {
-        id: "assignee",
-        title: t("issue.advanced-search.scope.assignee.title"),
-        description: t("issue.advanced-search.scope.assignee.description"),
-        options: principalSearchValueOptions.value,
-      },
-      {
         id: "approver",
         title: t("issue.advanced-search.scope.approver.title"),
         description: t("issue.advanced-search.scope.approver.description"),
