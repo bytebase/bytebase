@@ -51,10 +51,7 @@ import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentUserV1 } from "@/store";
 import { type ComposedIssue } from "@/types";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { Workflow } from "@/types/proto/v1/project_service";
 import {
   getHighlightHTMLByRegExp,
   issueSlug,
@@ -111,9 +108,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
           h(
             NPerformantEllipsis,
             {
-              class: `flex-1 truncate ${
-                isAssigneeAttentionOn(issue) ? "font-semibold" : ""
-              }`,
+              class: "flex-1 truncate",
             },
             {
               default: () => h("span", { innerHTML: highlight(issue.title) }),
@@ -163,33 +158,9 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       key: "approver",
       width: 150,
       resizable: true,
-      title: t("issue.table.approver"),
+      title: t("issue.table.current-approver"),
       hide: !showExtendedColumns.value,
       render: (issue) => h(CurrentApproverV1, { issue }),
-    },
-    {
-      key: "assignee",
-      resizable: true,
-      title: t("issue.table.assignee"),
-      width: 150,
-      hide: !showExtendedColumns.value,
-      render: (issue) => {
-        if (issue.assigneeEntity) {
-          return h(
-            "div",
-            { class: "flex flex-row items-center overflow-hidden gap-x-2" },
-            [
-              h(BBAvatar, {
-                size: "SMALL",
-                username: issue.assigneeEntity.title,
-              }),
-              h("span", { class: "truncate" }, issue.assigneeEntity.title),
-            ]
-          );
-        } else {
-          return h("span", {}, "-");
-        }
-      },
     },
     {
       key: "creator",
@@ -240,7 +211,6 @@ const router = useRouter();
 const state = reactive<LocalState>({
   selectedIssueIdList: new Set(),
 });
-const currentUserV1 = useCurrentUserV1();
 
 const tableRef = ref<HTMLDivElement>();
 const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
@@ -272,21 +242,6 @@ const selectedIssueList = computed(() => {
     state.selectedIssueIdList.has(issue.uid)
   );
 });
-
-const isAssigneeAttentionOn = (issue: ComposedIssue) => {
-  if (issue.projectEntity.workflow === Workflow.VCS) {
-    return false;
-  }
-  if (issue.status !== IssueStatus.OPEN) {
-    return false;
-  }
-  if (currentUserV1.value.name === issue.assignee) {
-    // True if current user is the assignee
-    return issue.assigneeAttention;
-  }
-
-  return false;
-};
 
 const rowProps = (issue: ComposedIssue) => {
   return {
