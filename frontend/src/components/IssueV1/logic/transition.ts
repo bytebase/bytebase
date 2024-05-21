@@ -109,11 +109,8 @@ const allowUserToApplyIssueStatusTransition = (
     return true;
   }
 
-  // The creator and the assignee can apply issue status transition
+  // The creator can apply issue status transition
   if (user.name === issue.creatorEntity.name) {
-    return true;
-  }
-  if (user.name === issue.assigneeEntity?.name) {
     return true;
   }
 

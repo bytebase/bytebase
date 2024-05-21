@@ -40,7 +40,6 @@ export const buildIssueFilterBySearchParams = (
     createdTsBefore: createdTsRange?.[1],
     taskType: taskTypeScope?.value,
     creator: getValueFromSearchParams(params, "creator", "users/"),
-    assignee: getValueFromSearchParams(params, "assignee", "users/"),
     subscriber: getValueFromSearchParams(params, "subscriber", "users/"),
     statusList:
       status === "OPEN"

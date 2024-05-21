@@ -48,13 +48,9 @@ const show = computed(() => {
 const allowRunChecks = computed(() => {
   // Allowing below users to run plan checks
   // - the creator of the issue
-  // - the assignee of the issue
   // - ones who have bb.planCheckRuns.run permission in the project
   const me = currentUser.value;
   if (extractUserResourceName(issue.value.creator) === me.email) {
-    return true;
-  }
-  if (extractUserResourceName(issue.value.assignee) === me.email) {
     return true;
   }
   if (

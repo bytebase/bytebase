@@ -76,7 +76,6 @@
     "role": {
       "self": "役割"
     },
-    "assignee": "被指名者",
     "revert": "回復する",
     "apply": "応用",
     "reorder": "選別",
@@ -336,7 +335,6 @@
       "warn": "警告する",
       "error": "間違い"
     },
-    "earliest-allowed-time-no-modify": "チケットのレビュー担当者ではないか、チケットが保留中ではないため、このフィールドは変更できません。",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "同期データ",
       "bb-task-database-schema-update-ghost-cutover": "スイッチテーブル",
@@ -896,10 +894,6 @@
     "sentence": {
       "created-issue": "作業指示書を作成する",
       "commented": "コメント",
-      "reassigned-issue": "作業指示書を {oldName} から {newName} に再割り当てします",
-      "assigned-issue": "作業指示書を {newName} に割り当てます",
-      "unassigned-issue": "{oldName} からの作業指示の割り当てを解除する",
-      "invalid-assignee-update": "無効な代入操作",
       "changed-description": "説明の変更",
       "changed-from-to": "{name} を「{oldValue}」から「{newValue}」に変更します",
       "unset-from": "{name} の値を元に戻します (「{oldValue}」から)",
@@ -1015,10 +1009,6 @@
           "title": "創設者",
           "description": "チケット作成者で検索"
         },
-        "assignee": {
-          "title": "被指名者",
-          "description": "作業指示の担当者で検索"
-        },
         "subscriber": {
           "title": "購読者",
           "description": "チケット購入者から探す"
@@ -1066,7 +1056,6 @@
       "updated": "に更新されました",
       "approver": "承認者",
       "creator": "創設者",
-      "assignee": "被指名者",
       "current-approver": "現在の承認者"
     },
     "stage-select": {
@@ -1113,19 +1102,12 @@
     },
     "will-rollback": "現在のタスクはロールバックされます {link}",
     "issue-link-with-task": "チケット {issue} - タスク {task}",
-    "assignee-attention": {
-      "send-approval-request-successfully": "{im}承認リクエストは正常に送信されました",
-      "send-attention-request-successfully": "レビューアー {principal} がフォローリクエストを受け取りました",
-      "needs-attention": "注意が必要です",
-      "click-to-mark": "クリックして査読者の注意をリクエストします"
-    },
     "sdl": {
       "schema-change": "スキーマの変更",
       "generated-ddl-statements": "生成されたDDLステートメント",
       "full-schema": "完全なスキーマ",
       "left-schema-may-change": "左側のスキーマは、チケットが実行される前に変更される可能性があります。"
     },
-    "assignee-tooltip": "担当者は、問題に取り組む責任のある人であり、問題が割り当てられると、その担当者の [割り当て済み問題] リストに表示されます。",
     "approval-flow": {
       "self": "承認の流れ",
       "tooltip": "承認者は、承認フローで指定された順序で作業指示書を確認し、承認する必要があります。作業指示は、承認フローのすべてのステップが承認された後にのみ実行できます。リスクレベルごとに承認をカスタマイズできます。",
@@ -1191,14 +1173,6 @@
       "you-are-not-allowed-to-perform-this-action": "このアクションを実行する権限がありません"
     },
     "approval-requested": "承認リクエスト",
-    "assignee": {
-      "current-assignee": "現在の譲受人",
-      "workspace-admins": "バイトベースワークスペース管理者",
-      "workspace-dbas": "DBA",
-      "project-owners": "プロジェクトオーナー",
-      "releasers-of-current-stage": "現在のステージの発行元",
-      "approvers-of-current-step": "現在のステップの承認者"
-    },
     "unfinished-resolved-issue-tips": "作業指示書は「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "some-tasks-are-not-executed-successfully": "(一部のタスクは正常に実行されませんでした)",
     "preview": "作業指示のプレビュー",
@@ -1911,7 +1885,7 @@
         },
         "issue-info-change": {
           "title": "作業指示情報の変更",
-          "label": "作業指示書の情報 (例: 担当者、タイトル、説明) が変更されたとき"
+          "label": "作業指示書の情報 (例: タイトル、説明) が変更されたとき"
         },
         "issue-comment-creation": {
           "title": "作業指示のコメント付き",
