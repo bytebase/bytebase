@@ -89,13 +89,6 @@ export const composeIssue = async (
     }
   }
 
-  if (issue.assignee) {
-    const assigneeEntity = userStore.getUserByEmail(
-      extractUserResourceName(rawIssue.assignee)
-    );
-    issue.assigneeEntity = assigneeEntity;
-  }
-
   return issue;
 };
 

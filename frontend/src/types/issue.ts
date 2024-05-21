@@ -59,8 +59,6 @@ export type Issue = {
   status: IssueStatus;
   type: IssueType;
   description: string;
-  assignee: Principal;
-  assigneeNeedAttention: boolean;
   subscriberList: Principal[];
   payload: IssuePayload;
 };

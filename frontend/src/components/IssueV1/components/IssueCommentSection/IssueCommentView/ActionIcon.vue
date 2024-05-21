@@ -196,13 +196,10 @@ const icon = computed((): ActionIconType => {
     }
     return action;
   } else if (issueComment.type === IssueCommentType.ISSUE_UPDATE) {
-    const { toTitle, toDescription, toAssignee } =
-      IssueComment_IssueUpdate.fromPartial(issueComment.issueUpdate || {});
-    if (
-      toAssignee !== undefined ||
-      toTitle !== undefined ||
-      toDescription !== undefined
-    ) {
+    const { toTitle, toDescription } = IssueComment_IssueUpdate.fromPartial(
+      issueComment.issueUpdate || {}
+    );
+    if (toTitle !== undefined || toDescription !== undefined) {
       return "update";
     }
     // Otherwise, show avatar icon based on the creator.

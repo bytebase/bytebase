@@ -23,7 +23,6 @@ export const SearchScopeIdList = [
   "created",
   "status",
   // issue related search scopes.
-  "assignee",
   "subscriber",
   "label",
   "taskType",
