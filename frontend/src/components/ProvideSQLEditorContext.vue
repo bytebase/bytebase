@@ -186,7 +186,7 @@ const connect = (connection: SQLEditorConnection) => {
   tabStore.selectOrAddSimilarNewTab(
     {
       connection,
-      sheet: "",
+      worksheet: "",
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
     },
     /* beside */ false,
@@ -214,11 +214,11 @@ const prepareSheetLegacy = async () => {
 
   const sheetName = worksheetNameFromSlug(sheetSlug);
   const openingSheetTab = tabStore.tabList.find(
-    (tab) => tab.sheet == sheetName
+    (tab) => tab.worksheet == sheetName
   );
 
   isFetchingWorksheet.value = true;
-  const sheet = await worksheetStore.getOrFetchSheetByName(sheetName);
+  const sheet = await worksheetStore.getOrFetchWorksheetByName(sheetName);
   isFetchingWorksheet.value = false;
 
   if (!sheet) {
@@ -226,7 +226,7 @@ const prepareSheetLegacy = async () => {
       // If a sheet is open in a tab but it returns 404 NOT_FOUND
       // that means the sheet has been deleted somewhere else.
       // We need to turn the sheet to an unsaved tab.
-      openingSheetTab.sheet = "";
+      openingSheetTab.worksheet = "";
       openingSheetTab.status = "DIRTY";
     }
     return false;
@@ -250,7 +250,7 @@ const prepareSheetLegacy = async () => {
   // Open the sheet in a new tab otherwise.
   tabStore.addTab({
     connection: extractWorksheetConnection(sheet),
-    sheet: sheet.name,
+    worksheet: sheet.name,
     title: sheet.title,
     statement: getSheetStatement(sheet),
     status: "CLEAN",
@@ -278,11 +278,11 @@ const prepareSheet = async () => {
   await maybeSwitchProject(projectName);
 
   const openingSheetTab = tabStore.tabList.find(
-    (tab) => tab.sheet == sheetName
+    (tab) => tab.worksheet == sheetName
   );
 
   isFetchingWorksheet.value = true;
-  const sheet = await worksheetStore.getOrFetchSheetByName(sheetName);
+  const sheet = await worksheetStore.getOrFetchWorksheetByName(sheetName);
   isFetchingWorksheet.value = false;
 
   if (!sheet) {
@@ -290,7 +290,7 @@ const prepareSheet = async () => {
       // If a sheet is open in a tab but it returns 404 NOT_FOUND
       // that means the sheet has been deleted somewhere else.
       // We need to turn the sheet to an unsaved tab.
-      openingSheetTab.sheet = "";
+      openingSheetTab.worksheet = "";
       openingSheetTab.status = "DIRTY";
     }
     return false;
@@ -314,7 +314,7 @@ const prepareSheet = async () => {
   // Open the sheet in a new tab otherwise.
   tabStore.addTab({
     connection: extractWorksheetConnection(sheet),
-    sheet: sheet.name,
+    worksheet: sheet.name,
     title: sheet.title,
     statement: getSheetStatement(sheet),
     status: "CLEAN",
@@ -477,7 +477,7 @@ const syncURLWithConnection = () => {
   watch(
     [
       () => editorStore.project,
-      () => tabStore.currentTab?.sheet,
+      () => tabStore.currentTab?.worksheet,
       () => connection.value?.instance,
       () => connection.value?.database,
       () => connection.value?.schema,
@@ -500,7 +500,7 @@ const syncURLWithConnection = () => {
         query.strict = null;
       }
       if (sheetName) {
-        const sheet = worksheetStore.getSheetByName(sheetName);
+        const sheet = worksheetStore.getWorksheetByName(sheetName);
         if (sheet) {
           router.replace({
             name: SQL_EDITOR_WORKSHEET_MODULE,
@@ -514,7 +514,7 @@ const syncURLWithConnection = () => {
         } else {
           const tab = tabStore.currentTab;
           if (tab) {
-            tab.sheet = "";
+            tab.worksheet = "";
             tab.status = "DIRTY";
           }
         }

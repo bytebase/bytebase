@@ -76,7 +76,6 @@
     "role": {
       "self": "Rol"
     },
-    "assignee": "Asignado",
     "revert": "Revertir",
     "apply": "Aplicar",
     "reorder": "Reordenar",
@@ -141,8 +140,7 @@
     "connecting": "Conectando...",
     "creating": "Creando...",
     "updating": "Actualizando...",
-    "Address": "Dirección",
-    "User": "Usuario",
+    "address": "Dirección",
     "assigned": "Asignado",
     "subscribed": "Subscrito",
     "created": "Creado",
@@ -337,7 +335,6 @@
       "warn": "Advertencia",
       "error": "Error"
     },
-    "earliest-allowed-time-no-modify": "No puedes modificar este campo porque no eres el asignado a la incidencia o no está pendiente por ejecutar.",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "Sincronizar datos",
       "bb-task-database-schema-update-ghost-cutover": "Cambiar de tabla",
@@ -762,6 +759,11 @@
       },
       "algorithms": {
         "self": "Algoritmo De Enmascaramiento",
+        "upload": "Subir algoritmo",
+        "upload-label": "Puede cargar un archivo de algoritmo con formato JSON.",
+        "override-title": "Anulación de datos de algoritmo",
+        "override-desc": "Los algoritmos existentes se anularán; deberá volver a configurar el algoritmo para tipos semánticos.",
+        "override-confirm": "Aún subiendo",
         "default": "Por defecto",
         "default-desc": "Utilice *** como máscara de datos",
         "table": {
@@ -789,7 +791,7 @@
         },
         "range-mask": {
           "self": "Máscara de rango",
-          "label": "La máscara de rango reemplazará el valor original desde el índice inicial hasta el índice final (final no incluido) con la sustitución.",
+          "label": "La máscara de rango reemplazará el valor original desde el índice inicial hasta el índice final (final no incluido) con la sustitución. El índice comienza desde 0.",
           "slice-start": "Inicio de corte",
           "slice-start-label": "El inicio del segmento es el índice de inicio del valor original, comienza desde 0 y debe ser menor que detener.",
           "slice-end": "Fin del corte",
@@ -801,6 +803,16 @@
           "self": "Máscara MD5",
           "salt": "Sal (Salt)",
           "salt-label": "La sal (Salt) se utiliza para generar un hash a partir del valor original."
+        },
+        "inner-outer-mask": {
+          "self": "Máscara interna / externa",
+          "type": "Tipo de máscara",
+          "inner-label": "La máscara interna enmascara la parte interior de una cadena. El prefijo y el sufijo representan las partes no enmascaradas de los datos.",
+          "inner-mask": "Mascarilla interior",
+          "outer-label": "La máscara externa enmascara los extremos izquierdo y derecho de una cadena. El prefijo y el sufijo representan las partes enmascaradas de los datos.",
+          "outer-mask": "Mascarilla exterior",
+          "prefix-length": "Longitud del prefijo",
+          "suffix-length": "Longitud del sufijo"
         }
       },
       "masking-level": {
@@ -821,14 +833,14 @@
         "upload": "Subir clasificación",
         "upload-succeed": "Subida exitosa",
         "search": "Clasificación de búsqueda",
-        "label": "Puede cargar un archivo de clasificación con formato JSON.",
-        "view-example": "Ver ejemplo",
-        "json-format-example": "Ejemplo de formato JSON de clasificación",
+        "upload-label": "Puede cargar un archivo de clasificación con formato JSON.",
         "copy-succeed": "Copiar ejemplo correctamente",
         "override-title": "Anulación de datos de clasificación",
         "override-desc": "Los datos de clasificación existentes se anularán y afectarán a todos los proyectos.",
         "override-confirm": "Aún subiendo"
-      }
+      },
+      "json-format-example": "Ejemplo de formato JSON",
+      "view-example": "Ver ejemplo"
     },
     "release": {
       "new-version-available": "Nueva versión disponible",
@@ -882,10 +894,6 @@
     "sentence": {
       "created-issue": "incidencia creado",
       "commented": "comentado",
-      "reassigned-issue": "incidencia reasignada de {oldName} a {newName}",
-      "assigned-issue": "incidencia asignada a {newName}",
-      "unassigned-issue": "incidencia desasignada de {oldName}",
-      "invalid-assignee-update": "actualización de asignatario no válida",
       "changed-description": "cambio de descripción",
       "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
       "unset-from": "eliminación de {name} de \"{oldValue}\"",
@@ -1001,10 +1009,6 @@
           "title": "Creador",
           "description": "Búsqueda por tema creador"
         },
-        "assignee": {
-          "title": "Cesionario",
-          "description": "Buscar por el responsable del problema"
-        },
         "subscriber": {
           "title": "Abonado",
           "description": "Buscar por suscriptor del problema"
@@ -1032,6 +1036,10 @@
             "yes": "yes",
             "no": "no"
           }
+        },
+        "label": {
+          "title": "Etiqueta",
+          "description": "Filtrar por etiqueta de problema"
         }
       },
       "hide": "Ocultar búsqueda avanzada"
@@ -1048,10 +1056,10 @@
       "updated": "Actualizado",
       "approver": "Aprobador",
       "creator": "Creador",
-      "assignee": "Asignado"
+      "current-approver": "Aprobador actual"
     },
     "stage-select": {
-      "active": "{name} (activo)"
+      "current": "{name} (actual)"
     },
     "not-allowed-to-operate-unassigned-database": "No se puede {operation} a bases de datos no asignadas.\nPrimero deben ser transferidas a un proyecto.",
     "migration-mode": {
@@ -1094,19 +1102,12 @@
     },
     "will-rollback": "Esta tarea revertirá {link}",
     "issue-link-with-task": "Incidencia {issue} - tarea {task}",
-    "assignee-attention": {
-      "send-approval-request-successfully": "Enviar una solicitud de aprobación de {im} correctamente",
-      "send-attention-request-successfully": "Solicitar la atención del asignado {principal} con éxito",
-      "needs-attention": "Necesita atención",
-      "click-to-mark": "Haga clic para solicitar la atención del asignado"
-    },
     "sdl": {
       "schema-change": "Cambio de esquema",
       "generated-ddl-statements": "Declaraciones DDL generadas",
       "full-schema": "Esquema completo",
       "left-schema-may-change": "El esquema del lado izquierdo puede cambiar antes de que se aplique la incidencia."
     },
-    "assignee-tooltip": "Los asignados son responsables de un problema y cuando se les asigna un problema, aparece en su lista de problemas asignados.",
     "approval-flow": {
       "self": "Flujo de aprobación",
       "tooltip": "Los aprobadores revisarán y aprobarán el problema en el orden especificado en el flujo. \nLa emisión solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. \nPuede configurar un flujo de aprobación personalizado para cada riesgo.",
@@ -1172,14 +1173,6 @@
       "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción."
     },
     "approval-requested": "Aprobación solicitada",
-    "assignee": {
-      "current-assignee": "Asignatario actual",
-      "workspace-admins": "Administrador del espacio de trabajo",
-      "workspace-dbas": "DBA",
-      "project-owners": "Propietarios del proyecto",
-      "releasers-of-current-stage": "Liberadores de la etapa actual.",
-      "approvers-of-current-step": "Aprobadores del paso actual"
-    },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "preview": "Problema de vista previa",
@@ -1193,6 +1186,20 @@
     },
     "update-rollout-time": {
       "self": "Hora de implementación de la actualización"
+    },
+    "task-run": {
+      "task-run-log": {
+        "batch": "Lote",
+        "affected-rows": "Filas afectadas",
+        "entry-type": {
+          "command-execute": "ejecutar comando",
+          "schema-dump": "Volcado de esquema"
+        },
+        "affected-rows-n": "Filas afectadas: {n}"
+      }
+    },
+    "sql-review": {
+      "statement-type": "Tipo de declaración"
     }
   },
   "alter-schema": {
@@ -1334,6 +1341,14 @@
           "template": "Cree una cuenta de servicio llamada {user} y luego agréguela en su Google Cloud SQL como usuario de IAM {user}{'@'}project-id.iam. Otorgue al usuario los privilegios necesarios."
         }
       },
+      "aws-rds": {
+        "mysql": {
+          "template": "A continuación se muestra un ejemplo para crear el usuario {user}{'@'}% y otorgarle los privilegios necesarios."
+        },
+        "postgresql": {
+          "template": "A continuación se muestra un ejemplo para crear el usuario '{user}' y otorgarle los privilegios necesarios."
+        }
+      },
       "create-user-example": {
         "snowflake": {
           "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {password} para {warehouse} y otorgar al usuario los privilegios necesarios."
@@ -1361,7 +1376,8 @@
     "password-type": {
       "password": "Contraseña",
       "password-tip": "También puede especificar un punto final de gestión de secreto externo",
-      "google-iam": "Google CloudSQL IAM",
+      "google-iam": "Google Cloud SQL IAM",
+      "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
@@ -1734,7 +1750,11 @@
     "transfer-database-to": "Transferir bases de datos al proyecto de destino",
     "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino",
     "classification": {
-      "self": "Clasificación"
+      "self": "Clasificación",
+      "sync-from-comment": "Sincronizar clasificación desde comentario",
+      "sync-from-comment-tip": "Una vez habilitada, la clasificación se sincronizará desde el comentario de tabla/columna. El comentario debe seguir el formato \"{format}\".",
+      "sync-from-comment-enable-warning": "La clasificación cambiará con el DDL y se sincronizará con el comentario original.",
+      "sync-from-comment-disable-warning": "La clasificación no cambiará con el DDL; puede cambiarla en cualquier momento en la página de detalles de la base de datos."
     },
     "recent": "Reciente",
     "partitioned": "Particionado",
@@ -1816,11 +1836,6 @@
       "success-prompt": "Proyecto {name} creado exitosamente."
     },
     "overview": {
-      "view-all": "Ver todo",
-      "view-all-closed": "Ver todos los cerrados",
-      "recent-activity": "Actividades recientes @.lower:{'common.activities'}",
-      "in-progress": "En curso",
-      "recently-closed": "Recientemente cerrado",
       "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado.",
       "no-db-prompt": "No hay bases de datos que pertenezcan a este proyecto. Puedes agregar bases de datos haciendo clic en {newDb} o {transferInDb} desde la barra de acciones superior."
     },
@@ -1870,7 +1885,7 @@
         },
         "issue-info-change": {
           "title": "Cambio de información de incidencia",
-          "label": "Cuando cambia la información de la incidencia (por ejemplo, asignación, título, descripción)"
+          "label": "Cuando cambia la información de la incidencia (por ejemplo, título, descripción)"
         },
         "issue-comment-creation": {
           "title": "Creación de comentario de incidencia",
@@ -1916,7 +1931,7 @@
       "select-schema-change-type-sdl": "Declarativo: especifique el esquema deseado. Utilice únicamente CREAR TABLA/ÍNDICE.",
       "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos.",
       "branch-protection-rules": {
-        "self": "Branch protection rules",
+        "self": "Branch Protection Rules",
         "add-rule": "Agregar Regla",
         "branch-name-pattern": {
           "self": "Patrón de nombre de rama",
@@ -1926,6 +1941,11 @@
         "only-allow-specified-roles-to-create-branch": "Sólo permitir roles especificados para crear rama",
         "no-protection-rule-configured": "No hay regla de protección configurada",
         "only-apply-to-main-branches": "Sólo aplica en sucursales principales"
+      },
+      "labels": {
+        "issue-labels": "Etiquetas de problemas",
+        "configure-labels": "Configurar etiquetas",
+        "force-issue-labels": "Requerir etiquetas para todos los incidencias"
       }
     },
     "members": {
@@ -2126,7 +2146,10 @@
     "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
     "connection-string-schema": "Esquema de cadena de conexión",
     "admin": "Admin",
-    "read-only": "Solo lectura"
+    "read-only": "Solo lectura",
+    "additional-node-addresses": "Direcciones de nodos adicionales",
+    "replica-set": "Conjunto de réplicas",
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {
@@ -2261,7 +2284,13 @@
     "sync-in-progress": "Sincronización en progreso",
     "create-a-worksheet": "Crear una hoja de trabajo",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
-    "select-encoding": "Seleccionar codificación"
+    "select-encoding": "Seleccionar codificación",
+    "result-limit": {
+      "n-rows": "{n} filas",
+      "rows": "filas"
+    },
+    "n-per-page": "{n} / página",
+    "customize-tree-structure": "Personalizar la estructura del árbol"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2284,7 +2313,10 @@
       "drop-column": "Eliminar columna",
       "sql-preview": "Vista previa SQL",
       "reset": "Restablecer",
-      "save": "Guardar"
+      "save": "Guardar",
+      "create-procedure": "Crear procedimiento",
+      "create-function": "Crear función",
+      "drop": "Gota"
     },
     "database": {
       "name": "Nombre",
@@ -2337,7 +2369,11 @@
       "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos",
       "invalid-schema": "Esquema no válido",
       "cannot-drop-the-last-column": "No se puede eliminar la última columna",
-      "cannot-change-config": "La configuración de la base de datos debe cambiarse con el esquema"
+      "cannot-change-config": "La configuración de la base de datos debe cambiarse con el esquema",
+      "duplicated-procedure-name": "Nombre del procedimiento duplicado",
+      "invalid-procedure-name": "Nombre de procedimiento no válido",
+      "duplicated-function-name": "Nombre de función duplicado",
+      "invalid-function-name": "Nombre de función no válido"
     },
     "confirm-to-close": {
       "title": "Confirmar para cerrar",
@@ -2361,7 +2397,10 @@
       "value": "Valor",
       "add-sub-partition": "Agregar subpartición",
       "type": "Tipo"
-    }
+    },
+    "views": "Puntos de vista",
+    "procedures": "Trámites",
+    "functions": "Funciones"
   },
   "label": {
     "empty-label-value": "Valor",
@@ -2747,7 +2786,10 @@
       "payload": "Datos",
       "empty": "<Vacío>",
       "view-details": "Ver detalles",
-      "select-type": "Seleccionar tipo"
+      "select-type": "Seleccionar tipo",
+      "method": "Método",
+      "request": "Pedido",
+      "response": "Respuesta"
     },
     "type": {
       "workspace": {
@@ -2762,6 +2804,22 @@
       },
       "sql-editor-query": "Consulta del editor de SQL",
       "sql-export": "Exportar SQL"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "Actor",
+          "description": "Búsqueda por actor del registro de auditoría"
+        },
+        "method": {
+          "title": "Método",
+          "description": "Buscar por el método de registro de auditoría"
+        },
+        "level": {
+          "title": "Nivel",
+          "description": "Buscar por nivel de registro de auditoría"
+        }
+      }
     }
   },
   "onboarding-guide": {
@@ -3238,6 +3296,10 @@
     "self": "centro de exportacion",
     "permission-denied": "Permiso denegado"
   },
+  "review-center": {
+    "self": "Centro de revisión",
+    "review-sql": "Revisar SQL"
+  },
   "schema-designer": {
     "self": "Diseñador de esquemas",
     "schema-design": "Esquema diseñar",
@@ -3360,7 +3422,12 @@
     },
     "confirm-remove-change": "¿Eliminar este cambio?",
     "delete-this-changelist": "Eliminar esta lista de cambios",
-    "confirm-delete-changelist": "¿Eliminar esta lista de cambios?"
+    "confirm-delete-changelist": "¿Eliminar esta lista de cambios?",
+    "import": {
+      "no-file-to-upload": "No hay archivos para subir",
+      "upload-sql-or-zip-file": "Cargue el archivo .sql o .zip",
+      "optional-upload-sql-or-zip-file": "(Opcional) Cargue el archivo .sql o .zip"
+    }
   },
   "export-data": {
     "export-rows": "Exportar filas",
@@ -3433,6 +3500,9 @@
     "table-partition": {
       "drop-partition-confirm": "¿Eliminar partición de mesa?",
       "drop-partition-with-subpartitions-confirm": "También eliminará todas sus subparticiones."
+    },
+    "last-update": {
+      "self": "Última actualización"
     }
   }
 }

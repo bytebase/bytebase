@@ -1,11 +1,11 @@
 import { maxBy } from "lodash-es";
 import { computed } from "vue";
 import type { AdviceOption } from "@/components/MonacoEditor";
-import type { PlanCheckRun } from "@/types/proto/v1/rollout_service";
 import {
+  PlanCheckRun,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
 import { planCheckRunListForTask, useIssueContext } from "../../logic";
 
 export const useSQLAdviceMarkers = () => {

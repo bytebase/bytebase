@@ -700,16 +700,20 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 
 		evaluator := newEmptyMaskingLevelEvaluator().withDataClassificationSetting(dataClassificationSetting).withMaskingRulePolicy(maskingRulePolicy)
+		dbModelConfig := dbSchema.GetInternalConfig()
 		for _, schema := range v1pbMetadata.Schemas {
 			if filter.schema != schema.Name {
 				continue
 			}
+			schemaConfig := dbModelConfig.CreateOrGetSchemaConfig(schema.Name)
 			for _, table := range schema.Tables {
 				if filter.table != table.Name {
 					continue
 				}
+				tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
 				for _, column := range table.Columns {
-					maskingLevel, err := evaluator.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, nil /* Exceptions*/)
+					colConfig := tableConfig.CreateOrGetColumnConfig(column.Name)
+					maskingLevel, err := evaluator.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, colConfig.ClassificationId, project.DataClassificationConfigID, maskingPolicyMap, nil /* Exceptions*/)
 					if err != nil {
 						return nil, status.Errorf(codes.Internal, "failed to evaluate masking level of column %q, error: %v", column.Name, err)
 					}
@@ -771,9 +775,11 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 
 	for _, path := range request.UpdateMask.Paths {
 		if path == "schema_configs" {
+			databaseMetadata := request.GetDatabaseMetadata()
 			databaseConfig := convertV1DatabaseConfig(&v1pb.DatabaseConfig{
-				Name:          databaseName,
-				SchemaConfigs: request.GetDatabaseMetadata().GetSchemaConfigs(),
+				Name:                     databaseName,
+				SchemaConfigs:            databaseMetadata.GetSchemaConfigs(),
+				ClassificationFromConfig: databaseMetadata.ClassificationFromConfig,
 			})
 			if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}, principalID); err != nil {
 				return nil, err
@@ -1171,6 +1177,8 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 		engine = storepb.Engine_ORACLE
 	case storepb.Engine_GAUSSDB:
 		engine = storepb.Engine_GAUSSDB
+	case storepb.Engine_MSSQL:
+		engine = storepb.Engine_MSSQL
 	default:
 		return engine, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid engine type %v", instance.Engine))
 	}

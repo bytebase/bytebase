@@ -358,8 +358,7 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, organizer *Workshe
 		)
 		VALUES ($1, $2, $3)
 		ON CONFLICT(worksheet_id, principal_id) DO UPDATE SET
-			starred = EXCLUDED.starred,
-			updated_ts = extract(epoch from now())
+			starred = EXCLUDED.starred
 		RETURNING id, worksheet_id, principal_id, starred
 	`
 	var worksheetOrganizer WorksheetOrganizerMessage

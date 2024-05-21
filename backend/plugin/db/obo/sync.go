@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,10 +17,19 @@ import (
 
 const systemSchemas = "'DWEXP','OMC','ORAAUDITOR','LBACSYS','SYS'"
 
+var semVersionRegex = regexp.MustCompile(`[0-9]+(\.[0-9])*`)
+
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	var version string
-	if err := driver.db.QueryRowContext(ctx, "SELECT OB_VERSION() FROM DUAL").Scan(&version); err != nil {
+	var fullVersion string
+	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version").Scan(&fullVersion); err != nil {
 		return nil, errors.Wrapf(err, "failed to get version")
+	}
+	version := fullVersion
+	for _, token := range strings.Fields(fullVersion) {
+		if semVersionRegex.MatchString(token) {
+			version = token
+			break
+		}
 	}
 
 	query := fmt.Sprintf(`

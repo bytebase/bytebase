@@ -13,17 +13,21 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { useElementSize } from "@vueuse/core";
 import { head } from "lodash-es";
 import type { DataTableColumn } from "naive-ui";
 import { NPerformantEllipsis, NDataTable } from "naive-ui";
-import { computed, watch, ref, h } from "vue";
+import { computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { databaseForTask } from "@/components/IssueV1";
+import IssueLabelSelector, {
+  getValidIssueLabels,
+} from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "@/components/IssueV1/components/IssueStatusIconWithTaskSummary.vue";
+import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store } from "@/store";
@@ -32,7 +36,6 @@ import {
   issueSlug,
   extractProjectResourceName,
   humanizeTs,
-  getHighlightHTMLByRegExp,
   flattenTaskV1List,
 } from "@/utils";
 
@@ -44,30 +47,60 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       key: "title",
       title: t("issue.table.name"),
       resizable: true,
-      render: (issue) =>
-        h("div", { class: "flex items-center overflow-hidden space-x-2" }, [
-          h(IssueStatusIconWithTaskSummary, { issue }),
-          h(
-            "div",
-            { class: "whitespace-nowrap text-control" },
-            `${issue.projectEntity.key}-${issue.uid}`
-          ),
-          h(
-            NPerformantEllipsis,
-            {
-              class: `flex-1 truncate`,
-            },
-            {
-              default: () => h("span", { innerHTML: highlight(issue.title) }),
-              tooltip: () =>
-                h(
-                  "div",
-                  { class: "whitespace-pre-wrap break-words break-all" },
-                  issue.title
+      render: (issue) => {
+        return (
+          <div class="flex items-center overflow-hidden space-x-2">
+            <IssueStatusIconWithTaskSummary issue={issue} />
+            <div class="whitespace-nowrap text-control">
+              {issue.projectEntity.key}-{issue.uid}
+            </div>
+            <NPerformantEllipsis class="flex-1 truncate">
+              {{
+                default: () => <span>{issue.title}</span>,
+                tooltip: () => (
+                  <div class="whitespace-pre-wrap break-words break-all">
+                    {issue.title}
+                  </div>
                 ),
-            }
-          ),
-        ]),
+              }}
+            </NPerformantEllipsis>
+          </div>
+        );
+      },
+    },
+    {
+      key: "project",
+      title: t("common.project"),
+      width: 144,
+      resizable: true,
+      hide: !props.showProject,
+      render: (issue) => (
+        <ProjectNameCell project={issue.projectEntity} mode={"ALL_SHORT"} />
+      ),
+    },
+    {
+      key: "labels",
+      title: t("common.labels"),
+      width: 144,
+      resizable: true,
+      render: (issue) => {
+        const labels = getValidIssueLabels(
+          issue.labels,
+          issue.projectEntity.issueLabels
+        );
+        if (labels.length === 0) {
+          return "-";
+        }
+        return (
+          <IssueLabelSelector
+            disabled={true}
+            selected={labels}
+            size="small"
+            maxTagCount="responsive"
+            project={issue.projectEntity}
+          />
+        );
+      },
     },
     {
       key: "database",
@@ -80,7 +113,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
         if (!database) {
           return "-";
         }
-        return h(DatabaseInfo, { database });
+        return <DatabaseInfo database={database} />;
       },
     },
     {
@@ -109,12 +142,12 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
 const props = withDefaults(
   defineProps<{
     issueList: ComposedIssue[];
-    highlightText?: string;
     loading?: boolean;
+    showProject: boolean;
   }>(),
   {
-    highlightText: "",
     loading: true,
+    showProject: true,
   }
 );
 
@@ -187,20 +220,15 @@ watch(
     }
   }
 );
-
-const highlights = computed(() => {
-  if (!props.highlightText) {
-    return [];
-  }
-  return props.highlightText.toLowerCase().split(" ");
-});
-
-const highlight = (content: string) => {
-  return getHighlightHTMLByRegExp(
-    content,
-    highlights.value,
-    /* !caseSensitive */ false,
-    /* className */ "bg-yellow-100"
-  );
-};
 </script>
+
+<style scoped lang="postcss">
+:deep(.n-base-selection-tags) {
+  @apply !bg-transparent !p-0;
+}
+:deep(.n-base-suffix),
+:deep(.n-base-selection__border),
+:deep(.n-base-selection__state-border) {
+  @apply !hidden;
+}
+</style>

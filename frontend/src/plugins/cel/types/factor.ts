@@ -3,7 +3,6 @@ export const NumberFactorList = [
   "affected_rows",
   "table_rows",
   "level",
-  "source",
 
   // Grant request issue related factors
   "request.row_limit",
@@ -16,6 +15,7 @@ export type NumberFactor = (typeof NumberFactorList)[number];
 
 export const StringFactorList = [
   // Risk related factors
+  "source",
   "environment_id", // using `environment.resource_id`
   "project_id", // using `project.resource_id`
   "database_name",

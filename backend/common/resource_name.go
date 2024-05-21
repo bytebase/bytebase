@@ -47,6 +47,7 @@ const (
 	DeploymentConfigPrefix     = "deploymentConfigs/"
 	ChangelistsPrefix          = "changelists/"
 	VCSConnectorPrefix         = "vcsConnectors/"
+	AuditLogPrefix             = "auditLogs/"
 
 	SchemaSuffix          = "/schema"
 	MetadataSuffix        = "/metadata"
@@ -581,6 +582,10 @@ func FormatRole(role string) string {
 
 func FormatSheet(projectID string, sheetUID int) string {
 	return fmt.Sprintf("%s%s/%s%d", ProjectNamePrefix, projectID, SheetIDPrefix, sheetUID)
+}
+
+func FormatIssue(projectID string, issueUID int) string {
+	return fmt.Sprintf("%s%s/%s%d", ProjectNamePrefix, projectID, IssueNamePrefix, issueUID)
 }
 
 func FormatTask(projectID string, pipelineUID, stageUID, taskUID int) string {

@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message TaskRunLog {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    SCHEMA_DUMP_START = 1;
+    SCHEMA_DUMP_END = 2;
+    COMMAND_EXECUTE = 3;
+    COMMAND_RESPONSE = 4;
+  }
+  Type type = 1;
+  SchemaDumpStart schema_dump_start = 2;
+  SchemaDumpEnd schema_dump_end = 3;
+  CommandExecute command_execute = 4;
+  CommandResponse command_response = 5;
+
+  message SchemaDumpStart {}
+  message SchemaDumpEnd {
+    string error = 1;
+  }
+  message CommandExecute {
+    // The indexes of the executed commands.
+    repeated int32 command_indexes = 1;
+  }
+  message CommandResponse {
+    // The indexes of the executed commands.
+    repeated int32 command_indexes = 1;
+    string error = 2;
+    int32 affected_rows = 3;
+    // `all_affected_rows` is the affected rows of each command.
+    // `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
+    repeated int32 all_affected_rows = 4;
+  }
+}

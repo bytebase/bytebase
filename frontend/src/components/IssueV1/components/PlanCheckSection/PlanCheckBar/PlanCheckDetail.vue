@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-5 divide-y pb-5 px-2">
+  <div class="space-y-3 divide-y pb-4 px-2">
     <div
       v-for="(row, i) in tableRows"
       :key="i"
-      class="pt-5 first:pt-2 space-y-2"
+      class="pt-3 first:pt-2 space-y-2"
     >
       <div class="flex items-center space-x-3">
         <div
@@ -30,7 +30,7 @@
             </span>
           </template>
         </div>
-        <div v-if="showCategoryColumn">
+        <div v-if="showCategoryColumn" class="shrink-0">
           {{ row.category }}
         </div>
         <div class="font-semibold">{{ row.title }}</div>
@@ -42,7 +42,7 @@
             class="ml-1 normal-link"
             @click="
               state.activeResultDefinition =
-                row.checkResult.sqlReviewReport.detail
+                row.checkResult.sqlReviewReport!.detail
             "
             >{{ $t("sql-review.view-definition") }}</span
           >
@@ -65,14 +65,31 @@
           {{ row.checkResult.sqlSummaryReport.affectedRows }}
         </template>
 
-        <a
-          v-if="row.link"
-          class="ml-1 normal-link"
-          :href="row.link.url"
-          :target="row.link.target"
-        >
-          {{ row.link.title }}
-        </a>
+        <HideInStandaloneMode>
+          <a
+            v-if="row.link"
+            class="ml-1 normal-link"
+            :href="row.link.url"
+            :target="row.link.target"
+          >
+            {{ row.link.title }}
+          </a>
+        </HideInStandaloneMode>
+
+        <!-- Only show the error line for latest plan check run -->
+        <template v-if="isLatest && row.checkResult.sqlReviewReport?.line">
+          <span class="border-r border-control-border ml-1"></span>
+          <span
+            class="ml-1 normal-link"
+            @click="
+              handleClickPlanCheckDetailLine(
+                row.checkResult.sqlReviewReport!.line
+              )
+            "
+          >
+            L{{ row.checkResult.sqlReviewReport.line }}
+          </span>
+        </template>
 
         <slot name="row-extra" :row="row" />
       </div>
@@ -112,12 +129,12 @@ import {
   getRuleLocalization,
   ruleTemplateMap,
 } from "@/types";
-import type { PlanCheckRun } from "@/types/proto/v1/rollout_service";
 import {
+  PlanCheckRun,
   PlanCheckRun_Result,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
 import PlanCheckResultDefinitionModal from "./PlanCheckResultDefinitionModal.vue";
 
 interface ErrorCodeLink {
@@ -125,7 +142,6 @@ interface ErrorCodeLink {
   target: string;
   url: string;
 }
-
 type PreviewSQLReviewRule = {
   rule: RuleTemplate;
   payload: PayloadValueType[];
@@ -146,6 +162,7 @@ type LocalState = {
 const props = defineProps<{
   planCheckRun: PlanCheckRun;
   environment?: string;
+  isLatest?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -154,6 +171,10 @@ const state = reactive<LocalState>({
   activeRule: undefined,
   activeResultDefinition: undefined,
 });
+
+const emit = defineEmits<{
+  (event: "close"): void;
+}>();
 
 const statusIconClass = (status: PlanCheckRun_Result_Status) => {
   switch (status) {
@@ -308,5 +329,10 @@ const getActiveRule = (type: string): PreviewSQLReviewRule | undefined => {
 };
 const setActiveRule = (type: string) => {
   state.activeRule = getActiveRule(type);
+};
+
+const handleClickPlanCheckDetailLine = (line: number) => {
+  window.location.hash = `L${line}`;
+  emit("close");
 };
 </script>

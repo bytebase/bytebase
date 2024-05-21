@@ -31,7 +31,7 @@ export type SQLEditorTab = {
   // basic fields
   id: string; // uuid
   title: string; // display title, should be synced with sheet's title once saved
-  sheet: string; // if ref to a local or remote sheet
+  worksheet: string; // if ref to a local or remote sheet
   connection: SQLEditorConnection;
   status: SQLEditorTabStatus;
   statement: string; // local editing statement, might be out-of-sync to ref sheet's statement
@@ -47,5 +47,5 @@ export type SQLEditorTab = {
 
 export type CoreSQLEditorTab = Pick<
   SQLEditorTab,
-  "sheet" | "connection" | "mode"
+  "worksheet" | "connection" | "mode"
 >;

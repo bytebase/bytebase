@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
@@ -180,9 +181,6 @@ message TableMetadata {
   // classification and user_comment is parsed from the comment.
   string comment = 11;
 
-  // The classification is the classification of a table parsed from the comment.
-  string classification = 13;
-
   // The user_comment is the user comment of a table parsed from the comment.
   string user_comment = 14;
 
@@ -292,9 +290,6 @@ message ColumnMetadata {
   // The comment is the comment of a column.
   // classification and user_comment is parsed from the comment.
   string comment = 10;
-
-  // The classification is the classification of a table parsed from the comment.
-  string classification = 11;
 
   // The user_comment is the user comment of a table parsed from the comment.
   string user_comment = 12;
@@ -467,6 +462,11 @@ message DatabaseConfig {
 
   // The schema_configs is the list of configs for schemas in a database.
   repeated SchemaConfig schema_configs = 2;
+
+  // If true, we will only store the classification in the config.
+  // Otherwise we will get the classification from table/column comment,
+  // and write back to the schema metadata.
+  bool classification_from_config = 3;
 }
 
 message SchemaConfig {
@@ -476,6 +476,12 @@ message SchemaConfig {
 
   // The table_configs is the list of configs for tables in a schema.
   repeated TableConfig table_configs = 2;
+
+  repeated FunctionConfig function_configs = 3;
+
+  repeated ProcedureConfig procedure_configs = 4;
+
+  repeated ViewConfig view_configs = 5;
 }
 
 message TableConfig {
@@ -484,6 +490,51 @@ message TableConfig {
 
   // The column_configs is the ordered list of configs for columns in a table.
   repeated ColumnConfig column_configs = 2;
+
+  string classification_id = 3;
+
+  // The last updater of the table in branch.
+  // Format: users/{email}
+  string updater = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the table is updated in branch.
+  google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message FunctionConfig {
+  // The name is the name of a function.
+  string name = 1;
+
+  // The last updater of the function in branch.
+  // Format: users/{email}
+  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the function is updated in branch.
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message ProcedureConfig {
+  // The name is the name of a procedure.
+  string name = 1;
+
+  // The last updater of the procedure in branch.
+  // Format: users/{email}
+  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the procedure is updated in branch.
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message ViewConfig {
+  // The name is the name of a view.
+  string name = 1;
+
+  // The last updater of the view in branch.
+  // Format: users/{email}
+  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the view is updated in branch.
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message ColumnConfig {
@@ -494,4 +545,6 @@ message ColumnConfig {
 
   // The user labels for a column.
   map<string, string> labels = 3;
+
+  string classification_id = 4;
 }

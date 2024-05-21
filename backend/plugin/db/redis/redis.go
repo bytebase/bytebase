@@ -16,8 +16,10 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -182,11 +184,6 @@ func (*Driver) Dump(_ context.Context, _ io.Writer, schemaOnly bool) (string, er
 	return "", nil
 }
 
-// Restore the database from src, which is a full backup.
-func (*Driver) Restore(context.Context, io.Reader) error {
-	return errors.New("redis: not supported")
-}
-
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	startTime := time.Now()
@@ -238,31 +235,34 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 		}
 
 		// RowValue cannot handle interface{} type
-		data := getResult(cmd)
-		queryResult = append(queryResult, &v1pb.QueryResult{
+		result := &v1pb.QueryResult{
 			ColumnNames:     []string{"#", "Value"},
 			ColumnTypeNames: []string{"INT", "TEXT"},
-			Rows:            data,
-			Latency:         durationpb.New(time.Since(startTime)),
 			Statement:       lines[i],
-		})
+		}
+		setQueryResultRows(result, cmd)
+		result.Latency = durationpb.New(time.Since(startTime))
+
+		queryResult = append(queryResult, result)
 	}
 
 	return queryResult, nil
 }
 
-func getResult(cmd *redis.Cmd) []*v1pb.QueryRow {
-	var result []*v1pb.QueryRow
+func setQueryResultRows(result *v1pb.QueryResult, cmd *redis.Cmd) {
 	val := cmd.Val()
 	l, ok := val.([]any)
 	if ok {
 		for i, v := range l {
-			result = append(result, getResultRow(i+1, v))
+			result.Rows = append(result.Rows, getResultRow(i+1, v))
+			if proto.Size(result) > common.MaximumSQLResultSize {
+				result.Error = common.MaximumSQLResultSizeExceeded
+				return
+			}
 		}
 	} else {
-		result = append(result, getResultRow(1, val))
+		result.Rows = append(result.Rows, getResultRow(1, val))
 	}
-	return result
 }
 
 func getResultRow(i int, v any) *v1pb.QueryRow {

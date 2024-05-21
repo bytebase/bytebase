@@ -2,7 +2,10 @@ import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import type { ComposedIssue } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import {
+  IssueStatus,
+  Issue_Approver_Status,
+} from "@/types/proto/v1/issue_service";
 import {
   extractUserResourceName,
   flattenTaskV1List,
@@ -38,7 +41,8 @@ export const PossibleIssueStatusActionMap: Record<
 };
 
 export const getApplicableIssueStatusActionList = (
-  issue: ComposedIssue
+  issue: ComposedIssue,
+  reviewStatus?: Issue_Approver_Status
 ): IssueStatusAction[] => {
   const list = PossibleIssueStatusActionMap[issue.status];
   return list.filter((action) => {
@@ -52,6 +56,15 @@ export const getApplicableIssueStatusActionList = (
       const tasks = flattenTaskV1List(issue.rolloutEntity);
       // Ths issue cannot be resolved if some tasks are not finished yet.
       if (tasks.some((task) => !isTaskFinished(task))) {
+        return false;
+      }
+    }
+    // For SQL review issues, only allow RESOLVE when the review is approved.
+    if (!issue.rollout) {
+      if (
+        action === "RESOLVE" &&
+        reviewStatus !== Issue_Approver_Status.APPROVED
+      ) {
         return false;
       }
     }
@@ -98,11 +111,8 @@ export const allowUserToApplyIssueStatusAction = (
     return true;
   }
 
-  // The creator and the assignee are allowed.
+  // The creator is allowed.
   if (extractUserResourceName(issue.creator) === user.email) {
-    return true;
-  }
-  if (extractUserResourceName(issue.assignee) === user.email) {
     return true;
   }
 

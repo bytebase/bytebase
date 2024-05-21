@@ -26,11 +26,16 @@ import type { PropType } from "vue";
 import { computed, reactive, onMounted, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
-import { useSettingV1Store } from "@/store/modules";
+import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
+import {
+  updateTableConfig,
+  supportSetClassificationFromComment,
+} from "@/components/ColumnDataTable/utils";
+import { useSettingV1Store, useDBSchemaV1Store } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { TableMetadata } from "@/types/proto/v1/database_service";
+import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { bytesToString, isGhostTable } from "@/utils";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 
@@ -62,6 +67,7 @@ const route = useRoute();
 const router = useRouter();
 const state = reactive<LocalState>({});
 const settingStore = useSettingV1Store();
+const dbSchemaStore = useDBSchemaV1Store();
 
 onMounted(() => {
   const table = route.query.table as string;
@@ -104,12 +110,20 @@ const hasSchemaProperty = computed(() => {
   );
 });
 
-const hasClassificationProperty = computed(() => {
-  return (
-    (engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES) &&
-    classificationConfig.value
-  );
+const databaseSchemaMetadata = computed(() => {
+  return dbSchemaStore.getDatabaseMetadata(props.database.name);
 });
+
+const hasClassificationProperty = computed(() => {
+  return !!classificationConfig.value;
+});
+
+const setClassificationFromComment = computed(() =>
+  supportSetClassificationFromComment(
+    engine.value,
+    databaseSchemaMetadata.value.classificationFromConfig
+  )
+);
 
 const hasEngineProperty = computed(() => {
   return !isPostgres.value;
@@ -157,10 +171,21 @@ const columns = computed(() => {
       key: "classification",
       title: t("database.classification.self"),
       hide: !hasClassificationProperty.value,
+      resizable: true,
+      minWidth: 140,
       render: (table) => {
-        return h(ClassificationLevelBadge, {
-          classification: table.classification,
-          classificationConfig: classificationConfig.value,
+        const tableConfig = dbSchemaStore.getTableConfig(
+          props.database.name,
+          props.schemaName,
+          table.name
+        );
+        return h(ClassificationCell, {
+          classification: tableConfig.classificationId,
+          classificationConfig:
+            classificationConfig.value ??
+            DataClassificationConfig.fromPartial({}),
+          readonly: setClassificationFromComment.value,
+          onApply: (id: string) => onClassificationIdApply(table.name, id),
         });
       },
     },
@@ -233,4 +258,13 @@ const mixedTableList = computed(() => {
   }
   return tableList;
 });
+
+const onClassificationIdApply = async (
+  table: string,
+  classificationId: string
+) => {
+  await updateTableConfig(props.database.name, props.schemaName, table, {
+    classificationId,
+  });
+};
 </script>

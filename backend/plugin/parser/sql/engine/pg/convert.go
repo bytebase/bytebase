@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	pgquery "github.com/pganalyze/pg_query_go/v4"
+	pgquery "github.com/pganalyze/pg_query_go/v5"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -1323,6 +1323,13 @@ func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
 			return nil, err
 		}
 		selectStmt.SubqueryList = append(selectStmt.SubqueryList, subqueryList...)
+	}
+
+	if in.LimitCount != nil {
+		limitConst := in.LimitCount.GetAConst()
+		if limitConst != nil && limitConst.GetIval() != nil {
+			selectStmt.Limit = &limitConst.GetIval().Ival
+		}
 	}
 
 	// Convert ORDER BY clause.

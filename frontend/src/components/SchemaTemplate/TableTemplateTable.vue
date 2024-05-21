@@ -16,7 +16,7 @@
       </div>
       <div v-if="classificationConfig" class="bb-grid-cell flex gap-x-1">
         <ClassificationLevelBadge
-          :classification="item.table?.classification"
+          :classification="item.config?.classificationId"
           :classification-config="classificationConfig"
         />
       </div>

@@ -186,11 +186,12 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			Realm: db.Realm{
 				Name:                 t.KrbConfig.Realm,
 				KDCHost:              t.KrbConfig.KdcHost,
+				KDCPort:              t.KrbConfig.KdcPort,
 				KDCTransportProtocol: t.KrbConfig.KdcTransportProtocol,
 			},
 		}
-	case *storepb.SASLConfig_PlainConfig:
-		dbSaslConfig = &db.PlainSASLConfig{}
+	default:
+		dbSaslConfig = nil
 	}
 	connectionContext.InstanceID = instance.ResourceID
 	connectionContext.EngineVersion = instance.EngineVersion
@@ -222,6 +223,9 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			AuthenticationPrivateKey: authenticationPrivateKey,
 			AuthenticationType:       dataSource.AuthenticationType,
 			SASLConfig:               dbSaslConfig,
+			AdditionalAddresses:      dataSource.AdditionalAddresses,
+			ReplicaSet:               dataSource.ReplicaSet,
+			DirectConnection:         dataSource.DirectConnection,
 		},
 	)
 	if err != nil {

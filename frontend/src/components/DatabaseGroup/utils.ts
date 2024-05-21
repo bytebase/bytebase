@@ -59,7 +59,7 @@ const getInstanceIdOptions = () => {
     const instanceId = extractInstanceResourceName(instance.name);
     return {
       label: instanceId,
-      value: instance.name,
+      value: instanceId,
     };
   });
 };

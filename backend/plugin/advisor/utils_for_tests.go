@@ -134,7 +134,7 @@ func (c *testCatalog) GetFinder() *catalog.Finder {
 }
 
 // RunSQLReviewRuleTest helps to test the SQL review rule.
-func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.Engine, record bool) {
+func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.Engine, schemaMetadata *storepb.DatabaseSchemaMetadata, record bool) {
 	var tests []TestCase
 
 	fileName := strings.Map(func(r rune) rune {
@@ -180,8 +180,8 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			Catalog:         &testCatalog{finder: finder},
 			Driver:          nil,
 			Context:         context.Background(),
-			CurrentSchema:   "SYS",
 			CurrentDatabase: "TEST_DB",
+			DBSchema:        schemaMetadata,
 		}
 
 		adviceList, err := SQLReviewCheck(tc.Statement, ruleList, ctx)
@@ -270,11 +270,6 @@ func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) 
 	return "", nil
 }
 
-// Restore implements the Driver interface.
-func (*MockDriver) Restore(_ context.Context, _ io.Reader) error {
-	return nil
-}
-
 // CreateRole creates the role.
 func (*MockDriver) CreateRole(_ context.Context, _ *database.DatabaseRoleUpsertMessage) (*database.DatabaseRoleMessage, error) {
 	return nil, nil
@@ -316,10 +311,12 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 	var err error
 	switch ruleTp {
 	case SchemaRuleMySQLEngine,
+		SchemaRuleFullyQualifiedObjectName,
 		SchemaRuleStatementNoSelectAll,
 		SchemaRuleStatementRequireWhere,
 		SchemaRuleStatementNoLeadingWildcardLike,
-		SchemaRuleStatementDisallowCascade,
+		SchemaRuleStatementDisallowOnDelCascade,
+		SchemaRuleStatementDisallowRemoveTblCascade,
 		SchemaRuleStatementDisallowCommit,
 		SchemaRuleStatementDisallowLimit,
 		SchemaRuleStatementDisallowOrderBy,

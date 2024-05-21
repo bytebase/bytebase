@@ -56,7 +56,7 @@ import FeatureBadgeForInstanceLicense from "@/components/FeatureGuard/FeatureBad
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import { featureToRef } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { flattenTaskV1List } from "@/utils";
+import { flattenTaskV1List, isDatabaseChangeRelatedIssue } from "@/utils";
 import GhostConfigButton from "./GhostConfigButton.vue";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
 import GhostSwitch from "./GhostSwitch.vue";
@@ -68,6 +68,10 @@ const { viewType, showFeatureModal, showMissingInstanceLicense } =
   provideIssueGhostContext();
 
 const shouldShowGhostSection = computed(() => {
+  if (!isDatabaseChangeRelatedIssue(issue.value)) {
+    return false;
+  }
+
   // We need all tasks and specs to be gh-ost-able to enable gh-ost mode.
   const tasks = flattenTaskV1List(issue.value.rolloutEntity);
   if (isCreating.value) {

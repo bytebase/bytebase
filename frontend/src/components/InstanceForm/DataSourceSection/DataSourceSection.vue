@@ -14,6 +14,7 @@
 </template>
 
 <script setup lang="ts">
+import { DATASOURCE_READONLY_USER_NAME } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { wrapEditDataSource } from "../common";
@@ -41,6 +42,7 @@ const handleCreateRODataSource = () => {
     host: adminDataSource.value.host,
     port: adminDataSource.value.port,
     database: adminDataSource.value.database,
+    username: DATASOURCE_READONLY_USER_NAME,
   };
   if (basicInfo.value.engine === Engine.SPANNER) {
     ds.host = adminDataSource.value.host;

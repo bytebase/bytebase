@@ -43,6 +43,8 @@ const (
 	// SchemaRuleMySQLEngine require InnoDB as the storage engine.
 	SchemaRuleMySQLEngine SQLReviewRuleType = "engine.mysql.use-innodb"
 
+	// SchemaRuleFullyQualifiedObjectName enforces using fully qualified object name.
+	SchemaRuleFullyQualifiedObjectName SQLReviewRuleType = "naming.fully-qualified"
 	// SchemaRuleTableNaming enforce the table name format.
 	SchemaRuleTableNaming SQLReviewRuleType = "naming.table"
 	// SchemaRuleColumnNaming enforce the column name format.
@@ -70,8 +72,10 @@ const (
 	SchemaRuleStatementRequireWhere SQLReviewRuleType = "statement.where.require"
 	// SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
 	SchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "statement.where.no-leading-wildcard-like"
-	// SchemaRuleStatementDisallowCascade disallow using cascade in the issue.
-	SchemaRuleStatementDisallowCascade SQLReviewRuleType = "statement.disallow-cascade"
+	// SchemaRuleStatementDisallowOnDelCascade disallows ON DELETE CASCADE clauses.
+	SchemaRuleStatementDisallowOnDelCascade SQLReviewRuleType = "statement.disallow-on-del-cascade"
+	// SchemaRuleStatementDisallowRemoveTblCascade disallows CASCADE when removing a table.
+	SchemaRuleStatementDisallowRemoveTblCascade SQLReviewRuleType = "statement.disallow-rm-tbl-cascade"
 	// SchemaRuleStatementDisallowCommit disallow using commit in the issue.
 	SchemaRuleStatementDisallowCommit SQLReviewRuleType = "statement.disallow-commit"
 	// SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT, DELETE and UPDATE statements.
@@ -131,6 +135,10 @@ const (
 	SchemaRuleStatementPriorBackupCheck = "statement.prior-backup-check"
 	// SchemaRuleStatementNonTransactional checks for non-transactional statements.
 	SchemaRuleStatementNonTransactional = "statement.non-transactional"
+	// SchemaRuleStatementAddColumnWithoutPosition check no position in ADD COLUMN clause.
+	SchemaRuleStatementAddColumnWithoutPosition = "statement.add-column-without-position"
+	// SchemaRuleStatementDisallowOfflineDDL disallow offline ddl.
+	SchemaRuleStatementDisallowOfflineDDL = "statement.disallow-offline-ddl"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -154,7 +162,8 @@ const (
 	SchemaRuleTableDisallowDDL SQLReviewRuleType = "table.disallow-ddl"
 	// SchemaRuleTableDisallowDML disallow executing DML on specific tables.
 	SchemaRuleTableDisallowDML SQLReviewRuleType = "table.disallow-dml"
-
+	// SchemaRuleTableLimitSize  restrict access to tables based on size.
+	SchemaRuleTableLimitSize SQLReviewRuleType = "table.limit-size"
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
 	// SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
@@ -167,7 +176,9 @@ const (
 	SchemaRuleColumnDisallowChange SQLReviewRuleType = "column.disallow-change"
 	// SchemaRuleColumnDisallowChangingOrder disallow changing column order.
 	SchemaRuleColumnDisallowChangingOrder SQLReviewRuleType = "column.disallow-changing-order"
-	// SchemaRuleColumnDisallowDropInIndex disallow index column.
+	// SchemaRuleColumnDisallowDrop disallow drop column.
+	SchemaRuleColumnDisallowDrop SQLReviewRuleType = "column.disallow-drop"
+	// SchemaRuleColumnDisallowDropInIndex disallow drop index column.
 	SchemaRuleColumnDisallowDropInIndex SQLReviewRuleType = "column.disallow-drop-in-index"
 	// SchemaRuleColumnCommentConvention enforce the column comment convention.
 	SchemaRuleColumnCommentConvention SQLReviewRuleType = "column.comment"
@@ -477,8 +488,6 @@ type SQLReviewCheckContext struct {
 
 	// Snowflake specific fields
 	CurrentDatabase string
-	// Oracle specific fields
-	CurrentSchema string
 }
 
 func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []Advice) {
@@ -810,7 +819,6 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 				Catalog:               finder,
 				Driver:                checkContext.Driver,
 				Context:               checkContext.Context,
-				CurrentSchema:         checkContext.CurrentSchema,
 				CurrentDatabase:       checkContext.CurrentDatabase,
 			},
 			statements,
@@ -1140,6 +1148,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		case storepb.Engine_MSSQL:
 			return MSSQLMigrationCompatibility, nil
 		}
+	case SchemaRuleFullyQualifiedObjectName:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLNamingFullyQualifiedObjectName, nil
+		}
 	case SchemaRuleTableNaming:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
@@ -1264,6 +1276,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnDisallowChangingOrder, nil
+		}
+	case SchemaRuleColumnDisallowDrop:
+		if engine == storepb.Engine_OCEANBASE {
+			return MySQLColumnDisallowDrop, nil
 		}
 	case SchemaRuleColumnDisallowDropInIndex:
 		switch engine {
@@ -1417,6 +1433,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MSSQL {
 			return MSSQLTableDisallowDML, nil
 		}
+	case SchemaRuleTableLimitSize:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableLimitSize, nil
+		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
@@ -1450,9 +1470,13 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLIndexTotalNumberLimit, nil
 		}
-	case SchemaRuleStatementDisallowCascade:
+	case SchemaRuleStatementDisallowRemoveTblCascade:
 		if engine == storepb.Engine_POSTGRES {
-			return PostgreSQLStatementDisallowCascade, nil
+			return PostgreSQLStatementDisallowRemoveTblCascade, nil
+		}
+	case SchemaRuleStatementDisallowOnDelCascade:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLStatementDisallowOnDelCascade, nil
 		}
 	case SchemaRuleStatementDisallowCommit:
 		switch engine {
@@ -1482,6 +1506,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLStatementPriorBackupCheck, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLStatementPriorBackupCheck, nil
+		}
+	case SchemaRuleStatementAddColumnWithoutPosition:
+		if engine == storepb.Engine_OCEANBASE {
+			return MySQLStatementAddColumnWithoutPosition, nil
 		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {
@@ -1622,8 +1650,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLStatementWhereMaximumLogicalOperatorCount, nil
 		}
 	case SchemaRuleStatementMaximumLimitValue:
-		if engine == storepb.Engine_MYSQL {
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_TIDB:
 			return MySQLStatementMaximumLimitValue, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLStatementMaximumLimitValue, nil
 		}
 	case SchemaRuleStatementMaximumJoinTableCount:
 		if engine == storepb.Engine_MYSQL {
@@ -1668,6 +1699,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementNonTransactional:
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLNonTransactional, nil
+		}
+	case SchemaRuleStatementDisallowOfflineDDL:
+		if engine == storepb.Engine_OCEANBASE {
+			return MySQLDisallowOfflineDDL, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

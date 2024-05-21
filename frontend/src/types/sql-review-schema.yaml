@@ -110,6 +110,15 @@ ruleList:
         payload:
           type: STRING_ARRAY
           default: []
+  - type: table.limit-size
+    category: TABLE
+    engineList:
+      - MYSQL
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 10000000
   - type: statement.select.no-select-all
     category: STATEMENT
     engineList:
@@ -146,8 +155,12 @@ ruleList:
       - OCEANBASE_ORACLE
       - OCEANBASE
       - MARIADB
-      - GAUSSDB 
-  - type: statement.disallow-cascade
+      - GAUSSDB
+  - type: statement.disallow-on-del-cascade
+    category: STATEMENT
+    engineList:
+      - POSTGRES
+  - type: statement.disallow-rm-tbl-cascade
     category: STATEMENT
     engineList:
       - POSTGRES
@@ -159,7 +172,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
-      - GAUSSDB 
+      - GAUSSDB
   - type: statement.disallow-limit
     category: STATEMENT
     engineList:
@@ -302,6 +315,10 @@ ruleList:
     category: STATEMENT
     engineList:
       - MYSQL
+      - OCEANBASE
+      - MARIADB
+      - TIDB
+      - POSTGRES
     componentList:
       - key: number
         payload:
@@ -341,6 +358,18 @@ ruleList:
       - MYSQL
       - POSTGRES
       - TIDB
+  - type: statement.add-column-without-position
+    category: STATEMENT
+    engineList:
+      - OCEANBASE
+  - type: statement.disallow-offline-ddl
+    category: STATEMENT
+    engineList:
+      - OCEANBASE
+  - type: naming.fully-qualified
+    category: NAMING
+    engineList:
+      - POSTGRES
   - type: naming.table
     category: NAMING
     engineList:
@@ -591,6 +620,10 @@ ruleList:
       - TIDB
       - OCEANBASE
       - MARIADB
+  - type: column.disallow-drop
+    category: COLUMN
+    engineList:
+      - OCEANBASE
   - type: column.disallow-drop-in-index
     category: COLUMN
     engineList:

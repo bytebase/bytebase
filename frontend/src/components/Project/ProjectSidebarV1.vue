@@ -19,6 +19,7 @@ import {
   Settings,
   RefreshCcw,
   PencilRuler,
+  SearchCodeIcon,
   DownloadIcon,
 } from "lucide-vue-next";
 import { computed, h } from "vue";
@@ -30,10 +31,10 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_CHANGE_HISTORIES,
+  PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
   PROJECT_V1_ROUTE_SLOW_QUERIES,
   PROJECT_V1_ROUTE_ANOMALIES,
-  PROJECT_V1_ROUTE_ACTIVITIES,
   PROJECT_V1_ROUTE_GITOPS,
   PROJECT_V1_ROUTE_MEMBERS,
   PROJECT_V1_ROUTE_SETTINGS,
@@ -43,6 +44,8 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
   PROJECT_V1_ROUTE_EXPORT_CENTER,
+  PROJECT_V1_ROUTE_AUDIT_LOGS,
+  PROJECT_V1_ROUTE_REVIEW_CENTER,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -202,6 +205,13 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       hide: isDefaultProject.value,
     },
     {
+      title: t("review-center.self"),
+      icon: h(SearchCodeIcon),
+      path: PROJECT_V1_ROUTE_REVIEW_CENTER,
+      type: "div",
+      hide: isDefaultProject.value,
+    },
+    {
       title: t("export-center.self"),
       icon: h(DownloadIcon),
       path: PROJECT_V1_ROUTE_EXPORT_CENTER,
@@ -261,8 +271,8 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
           type: "div",
         },
         {
-          title: t("common.activities"),
-          path: PROJECT_V1_ROUTE_ACTIVITIES,
+          title: t("settings.sidebar.audit-log"),
+          path: PROJECT_V1_ROUTE_AUDIT_LOGS,
           type: "div",
         },
       ],
@@ -282,6 +292,13 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
 const getItemClass = (item: SidebarItem) => {
   const list = ["outline-item"];
   const { name: current } = route;
+
+  if (current?.toString() === PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL) {
+    if (item.path === PROJECT_V1_ROUTE_CHANGE_HISTORIES) {
+      list.push("router-link-active", "bg-link-hover");
+    }
+    return list;
+  }
 
   const isActiveRoute =
     item.path === current?.toString() ||

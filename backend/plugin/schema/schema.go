@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -52,21 +51,9 @@ func ParseToMetadata(engine storepb.Engine, defaultSchemaName, schema string) (*
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	metadata, err := f(defaultSchemaName, schema)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, schema := range metadata.Schemas {
-		for _, table := range schema.Tables {
-			table.Classification, table.UserComment = common.GetClassificationAndUserComment(table.Comment)
-			for _, col := range table.Columns {
-				col.Classification, col.UserComment = common.GetClassificationAndUserComment(col.Comment)
-			}
-		}
-	}
-	return metadata, nil
+	return f(defaultSchemaName, schema)
 }
+
 func RegisterCheckColumnType(engine storepb.Engine, f checkColumnType) {
 	mux.Lock()
 	defer mux.Unlock()

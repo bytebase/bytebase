@@ -31,6 +31,10 @@ ruleList:
     level: WARNING
   - type: table.disallow-dml
     level: WARNING
+  - type: table.limit-size
+    level: WARNING
+    payload:
+      number: 10000000
   - type: statement.select.no-select-all
     level: ERROR
   - type: statement.where.require
@@ -39,10 +43,12 @@ ruleList:
     level: ERROR
   - type: statement.disallow-commit
     level: ERROR
-  - type: statement.disallow-cascade
+  - type: statement.disallow-on-del-cascade
+    level: ERROR
+  - type: statement.disallow-rm-tbl-cascade
     level: ERROR
   - type: statement.disallow-limit
-    level: ERROR
+    level: WARNING
   - type: statement.disallow-order-by
     level: ERROR
   - type: statement.merge-alter-table
@@ -108,6 +114,12 @@ ruleList:
     level: WARNING
   - type: statement.prior-backup-check
     level: ERROR
+  - type: statement.add-column-without-position
+    level: WARNING
+  - type: statement.disallow-offline-ddl
+    level: WARNING
+  - type: naming.fully-qualified
+    level: WARNING
   - type: naming.table
     level: WARNING
     payload:
@@ -181,6 +193,8 @@ ruleList:
     level: WARNING
   - type: column.disallow-change-type
     level: ERROR
+  - type: column.disallow-drop
+    level: WARNING
   - type: column.disallow-drop-in-index
     level: ERROR
   - type: column.set-default-for-not-null

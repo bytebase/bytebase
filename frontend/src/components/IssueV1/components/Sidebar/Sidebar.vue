@@ -3,7 +3,7 @@
     <VCSInfo ref="vcsInfoRef" />
     <RollbackFromTips ref="rollbackFromTipsRef" />
     <ReviewSection ref="reviewSectionRef" />
-    <Assignee ref="assigneeRef" />
+    <IssueLabels />
 
     <div v-if="isFirstSectionShown" class="border-t -mx-3" />
 
@@ -16,9 +16,9 @@
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
-import Assignee from "./Assignee";
 import EarliestAllowedTime from "./EarliestAllowedTime.vue";
 import GhostSection from "./GhostSection";
+import IssueLabels from "./IssueLabels.vue";
 import PreBackupSection from "./PreBackupSection";
 import ReviewSection from "./ReviewSection";
 import RollbackFromTips from "./RollbackFromTips.vue";
@@ -28,10 +28,9 @@ import VCSInfo from "./VCSInfo.vue";
 const vcsInfoRef = ref<InstanceType<typeof VCSInfo>>();
 const rollbackFromTipsRef = ref<InstanceType<typeof RollbackFromTips>>();
 const reviewSectionRef = ref<InstanceType<typeof ReviewSection>>();
-const assigneeRef = ref<InstanceType<typeof Assignee>>();
 
 const isFirstSectionShown = computed(() => {
-  return [vcsInfoRef, rollbackFromTipsRef, reviewSectionRef, assigneeRef].some(
+  return [vcsInfoRef, rollbackFromTipsRef, reviewSectionRef].some(
     (elemRef) => elemRef.value?.shown
   );
 });

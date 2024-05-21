@@ -167,8 +167,8 @@
           <template
             v-if="
               basicInfo.engine !== Engine.SPANNER &&
-              adminDataSource.authenticationType ===
-                DataSource_AuthenticationType.PASSWORD
+              adminDataSource.authenticationType !==
+                DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
             "
           >
             <div class="sm:col-span-1">
@@ -207,6 +207,115 @@
                 <span class="textlabel">{{ type }}</span>
               </NRadio>
             </NRadioGroup>
+          </div>
+
+          <div
+            v-if="basicInfo.engine === Engine.MONGODB && !adminDataSource.srv"
+            class="sm:col-span-4 sm:col-start-1"
+          >
+            <label
+              for="additionalAddresses"
+              class="textlabel flex flex-row items-center"
+            >
+              {{ $t("data-source.additional-node-addresses") }}
+            </label>
+            <div class="grid grid-cols-1 gap-y-1 gap-x-4 sm:grid-cols-12">
+              <template
+                v-for="(_, index) in adminDataSource.additionalAddresses"
+                :key="index"
+              >
+                <div class="sm:col-span-8 sm:col-start-1">
+                  <label
+                    v-if="index === 0"
+                    for="additionalAddressesHost"
+                    class="textlabel flex flex-row items-center"
+                  >
+                    {{ $t("instance.host-or-socket") }}
+                  </label>
+                  <NInput
+                    v-model:value="
+                      adminDataSource.additionalAddresses[index].host
+                    "
+                    required
+                    :placeholder="$t('instance.sentence.host.snowflake')"
+                    class="mt-1 w-full"
+                    :disabled="!allowEdit"
+                  />
+                </div>
+                <div class="sm:col-span-3">
+                  <label
+                    v-if="index === 0"
+                    for="additionalAddressesPort"
+                    class="textlabel flex flex-row items-center"
+                  >
+                    {{ $t("instance.port") }}
+                  </label>
+                  <NInput
+                    v-model:value="
+                      adminDataSource.additionalAddresses[index].port
+                    "
+                    class="mt-1 w-full"
+                    :placeholder="defaultPort"
+                    :disabled="!allowEdit || !allowEditPort"
+                    :allow-input="onlyAllowNumber"
+                  />
+                </div>
+                <div class="h-[34px] flex flex-row items-center self-end">
+                  <MiniActionButton
+                    :disabled="!allowEdit"
+                    @click.stop="removeDSAdditionalAddress(index)"
+                  >
+                    <TrashIcon class="w-4 h-4" />
+                  </MiniActionButton>
+                </div>
+              </template>
+              <div class="sm:col-span-12 sm:col-start-1">
+                <NButton
+                  class="ml-auto !w-12"
+                  size="small"
+                  @click.prevent="addDSAdditionalAddress"
+                >
+                  {{ $t("common.add") }}
+                </NButton>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-if="basicInfo.engine === Engine.MONGODB && !adminDataSource.srv"
+            class="sm:col-span-2 sm:col-start-1"
+          >
+            <label for="replicaSet" class="textlabel">
+              {{ $t("data-source.replica-set") }}
+            </label>
+            <NInput
+              v-model:value="adminDataSource.replicaSet"
+              required
+              class="mt-1 w-full"
+              :disabled="!allowEdit"
+            />
+          </div>
+
+          <div
+            v-if="
+              basicInfo.engine === Engine.MONGODB &&
+              !adminDataSource.srv &&
+              adminDataSource.additionalAddresses.length === 0
+            "
+            class="sm:col-span-4 sm:col-start-1"
+          >
+            <NCheckbox
+              :checked="adminDataSource.directConnection"
+              :disabled="!allowEdit"
+              style="--n-label-padding: 0 0 0 1rem"
+              @update:checked="
+                (on: boolean) => {
+                  adminDataSource.directConnection = on;
+                }
+              "
+            >
+              {{ $t("data-source.direct-connection") }}
+            </NCheckbox>
           </div>
 
           <ScanIntervalInput
@@ -366,7 +475,15 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual, omit } from "lodash-es";
-import { NButton, NInput, NSwitch, NRadioGroup, NRadio } from "naive-ui";
+import { TrashIcon } from "lucide-vue-next";
+import {
+  NButton,
+  NInput,
+  NSwitch,
+  NRadioGroup,
+  NRadio,
+  NCheckbox,
+} from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, watch, onMounted, toRef } from "vue";
 import { useI18n } from "vue-i18n";
@@ -377,6 +494,7 @@ import {
   EnvironmentSelect,
   InstanceEngineRadioGrid,
   InstanceV1EngineIcon,
+  MiniActionButton,
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { instanceServiceClient } from "@/grpcweb";
@@ -390,6 +508,7 @@ import {
   useSubscriptionV1Store,
   useGracefulRequest,
   useCurrentUserV1,
+  useDatabaseV1Store,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
@@ -691,10 +810,30 @@ const handleMongodbConnectionStringSchemaChange = (type: string) => {
     case MongoDBConnectionStringSchemaList[1]:
       // MongoDB doesn't support specify port if using srv record.
       ds.port = "";
+      ds.additionalAddresses = [];
+      ds.replicaSet = "";
+      ds.directConnection = false;
       ds.srv = true;
       break;
     default:
       ds.srv = false;
+  }
+};
+
+const removeDSAdditionalAddress = (i: number) => {
+  adminDataSource.value.additionalAddresses.splice(i, 1);
+  if (adminDataSource.value.additionalAddresses.length === 0) {
+    adminDataSource.value.directConnection = false;
+  }
+};
+
+const addDSAdditionalAddress = () => {
+  editingDataSource.value?.additionalAddresses.push({
+    host: "",
+    port: "",
+  });
+  if (adminDataSource.value.additionalAddresses.length !== 0) {
+    adminDataSource.value.directConnection = false;
   }
 };
 
@@ -786,7 +925,7 @@ const doCreate = async () => {
   );
   instanceCreate.dataSources = [adminDataSourceCreate];
 
-  if (!checkExternalSecretFeature(instanceCreate)) {
+  if (!checkExternalSecretFeature(instanceCreate.dataSources)) {
     missingFeature.value = "bb.feature.external-secret-manager";
     return;
   }
@@ -796,6 +935,9 @@ const doCreate = async () => {
     await useGracefulRequest(async () => {
       const createdInstance =
         await instanceV1Store.createInstance(instanceCreate);
+      useDatabaseV1Store().searchDatabases({
+        filter: `instance = "${createdInstance.name}"`,
+      });
       router.push(`/${createdInstance.name}`);
       pushNotification({
         module: "bytebase",
@@ -821,10 +963,22 @@ const doUpdate = async () => {
     missingFeature.value = "bb.feature.read-replica-connection";
     return;
   }
-  if (!checkExternalSecretFeature(instance)) {
+
+  if (!checkExternalSecretFeature([adminDataSource.value])) {
     missingFeature.value = "bb.feature.external-secret-manager";
     return;
   }
+
+  if (
+    !checkExternalSecretFeature([
+      adminDataSource.value,
+      ...readonlyDataSourceList.value,
+    ])
+  ) {
+    missingFeature.value = "bb.feature.external-secret-manager";
+    return;
+  }
+
   // When clicking **Update** we may have more than one thing to do (if needed)
   // 1. Patch the instance itself.
   // 2. Update the admin datasource.
@@ -1145,12 +1299,12 @@ const extractDataSourceFromEdit = (
   return ds;
 };
 
-const checkExternalSecretFeature = (instance: Instance) => {
+const checkExternalSecretFeature = (dataSources: DataSource[]) => {
   if (hasExternalSecretFeature.value) {
     return true;
   }
 
-  return instance.dataSources.every((ds) => {
+  return dataSources.every((ds) => {
     return !ds.externalSecret && !/^{{.+}}$/.test(ds.password);
   });
 };
@@ -1167,6 +1321,17 @@ const checkDataSource = (dataSources: DataSource[]) => {
 
     if (basicInfo.value.engine === Engine.ORACLE) {
       if (!ds.sid && !ds.serviceName) {
+        return false;
+      }
+    }
+
+    if (ds.saslConfig?.krbConfig) {
+      if (
+        !ds.saslConfig.krbConfig.primary ||
+        !ds.saslConfig.krbConfig.realm ||
+        !ds.saslConfig.krbConfig.kdcHost ||
+        !ds.saslConfig.krbConfig.keytab
+      ) {
         return false;
       }
     }

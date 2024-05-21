@@ -75,6 +75,7 @@
         :resource-type="'branch'"
         :branch="virtualBranch"
         :loading="isLoadingVirtualBranch"
+        :show-last-updater="true"
       />
 
       <!-- used as a placeholder -->
@@ -312,6 +313,7 @@ const handlePreviewIssue = async () => {
   if (!target) return;
   if (!db) return;
   if (!editor) return;
+
   editor.applySelectedMetadataEdit(
     db,
     source,
@@ -336,6 +338,7 @@ const handlePreviewIssue = async () => {
   }
   const sheet = Sheet.fromPartial({
     database: db.name,
+    engine: db.instanceEntity.engine,
     payload: {
       type: SheetPayload_Type.SCHEMA_DESIGN,
       baselineDatabaseConfig: {
@@ -353,15 +356,14 @@ const handlePreviewIssue = async () => {
   );
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: props.project.uid,
-    databaseList: db.uid,
+    databaseList: db.name,
     sheetId: extractSheetUID(createdSheet.name),
     name: generateIssueName(db.databaseName),
   };
   const routeInfo = {
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      project: extractProjectResourceName(props.project.name),
+      projectId: extractProjectResourceName(props.project.name),
       issueSlug: "create",
     },
     query,

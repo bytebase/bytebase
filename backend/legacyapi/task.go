@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 
+	"github.com/pkg/errors"
+
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -274,4 +276,17 @@ type TaskPatch struct {
 
 	// Flags for gh-ost.
 	Flags *map[string]string
+}
+
+func GetSheetUIDFromTaskPayload(payload string) (*int, error) {
+	var taskPayload struct {
+		SheetID int `json:"sheetId"`
+	}
+	if err := json.Unmarshal([]byte(payload), &taskPayload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
+	}
+	if taskPayload.SheetID == 0 {
+		return nil, nil
+	}
+	return &taskPayload.SheetID, nil
 }

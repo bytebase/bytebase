@@ -47,7 +47,6 @@ import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import type { AffectedTable } from "@/types/changeHistory";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   ChangeHistory_Status,
@@ -63,6 +62,7 @@ import {
   extractProjectResourceName,
   humanizeDurationV1,
   isDescendantOf,
+  getAffectedTableDisplayName,
 } from "@/utils";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
@@ -74,10 +74,12 @@ const props = defineProps<{
   databaseSectionList: ComposedDatabase[];
   historySectionList: BBTableSectionDataSource<ChangeHistory>[];
   selectedChangeHistoryNames?: string[];
+  customClick?: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "update:selected-change-history-names", value: string[]): void;
+  (event: "row-click", id: string): void;
 }>();
 
 const containerRef = ref<HTMLDivElement>();
@@ -249,6 +251,10 @@ const rowProps = (history: ChangeHistory) => {
       if (isDescendantOf(e.target as HTMLElement, ".n-checkbox, a")) {
         return;
       }
+      if (props.customClick) {
+        emit("row-click", history.uid);
+        return;
+      }
       const url = changeHistoryLink(history);
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
@@ -262,18 +268,6 @@ const rowProps = (history: ChangeHistory) => {
 const creatorOfChangeHistory = (history: ChangeHistory) => {
   const email = extractUserResourceName(history.creator);
   return useUserStore().getUserByEmail(email);
-};
-
-const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
-  const { schema, table, dropped } = affectedTable;
-  let name = table;
-  if (schema !== "") {
-    name = `${schema}.${table}`;
-  }
-  if (dropped) {
-    name = `${name} (deleted)`;
-  }
-  return name;
 };
 
 const allowToSelectChangeHistory = (history: ChangeHistory) => {

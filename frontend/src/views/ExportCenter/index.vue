@@ -4,25 +4,28 @@
       class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
     >
       <div class="flex flex-1 max-w-full items-center gap-x-2">
-        <AdvancedSearchBox
+        <IssueSearch
           v-model:params="state.params"
-          :autofocus="false"
-          :placeholder="''"
-          :support-option-id-list="supportOptionIdList"
-        />
+          class="flex-1"
+          :readonly-scopes="readonlyScopes"
+          :override-scope-id-list="overideSearchScopeIdList"
+        >
+          <template #searchbox-suffix>
+            <NTooltip :disabled="allowExportData">
+              <template #trigger>
+                <NButton
+                  type="primary"
+                  :disabled="!allowExportData"
+                  @click="state.showRequestExportPanel = true"
+                >
+                  {{ $t("quick-action.request-export-data") }}
+                </NButton>
+              </template>
+              {{ $t("export-center.permission-denied") }}
+            </NTooltip>
+          </template>
+        </IssueSearch>
       </div>
-      <NTooltip :disabled="allowExportData">
-        <template #trigger>
-          <NButton
-            type="primary"
-            :disabled="!allowExportData"
-            @click="state.showRequestExportPanel = true"
-          >
-            {{ $t("quick-action.request-export-data") }}
-          </NButton>
-        </template>
-        {{ $t("export-center.permission-denied") }}
-      </NTooltip>
     </div>
 
     <div class="relative w-full mt-4 min-h-[20rem]">
@@ -31,7 +34,6 @@
         v-model:loading-more="state.loadingMore"
         :session-key="'export-center'"
         :issue-filter="mergedIssueFilter"
-        :ui-issue-filter="mergedUIIssueFilter"
         :page-size="50"
         :compose-issue-config="{ withRollout: true }"
       >
@@ -40,6 +42,7 @@
             :loading="loading"
             :issue-list="issueList"
             :highlight-text="state.params.query"
+            :show-project="!specificProject"
           />
         </template>
       </PagedIssueTableV1>
@@ -62,50 +65,32 @@
 import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import DataExportPrepForm from "@/components/DataExportPrepForm";
+import IssueSearch from "@/components/IssueV1/components/IssueSearch/IssueSearch.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { Drawer } from "@/components/v2";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { Issue_Type } from "@/types/proto/v1/issue_service";
 import {
   buildIssueFilterBySearchParams,
-  buildUIIssueFilterBySearchParams,
   extractProjectResourceName,
   hasPermissionToCreateDataExportIssueInProject,
   type SearchParams,
+  type SearchScope,
   type SearchScopeId,
 } from "@/utils";
 import DataExportIssueDataTable from "./DataExportIssueDataTable";
-import type { ExportRecord } from "./types";
 
 const props = defineProps<{
   projectId?: string;
 }>();
 
 interface LocalState {
-  exportRecords: ExportRecord[];
   showRequestExportPanel: boolean;
   params: SearchParams;
   loading: boolean;
   loadingMore: boolean;
 }
-
-const currentUser = useCurrentUserV1();
-const projectV1Store = useProjectV1Store();
-const state = reactive<LocalState>({
-  exportRecords: [],
-  showRequestExportPanel: false,
-  params: {
-    query: "",
-    scopes: [
-      {
-        id: "status",
-        value: "OPEN",
-      },
-    ],
-  },
-  loading: false,
-  loadingMore: false,
-});
 
 const specificProject = computed(() => {
   return props.projectId
@@ -113,13 +98,38 @@ const specificProject = computed(() => {
     : undefined;
 });
 
+const readonlyScopes = computed((): SearchScope[] => {
+  if (!specificProject.value) {
+    return [];
+  }
+  return [
+    {
+      id: "project",
+      value: extractProjectResourceName(specificProject.value.name),
+    },
+  ];
+});
+
+const defaultSearchParams = () => {
+  const params: SearchParams = {
+    query: "",
+    scopes: [...readonlyScopes.value, { id: "status", value: "OPEN" }],
+  };
+  return params;
+};
+
+const currentUser = useCurrentUserV1();
+const projectV1Store = useProjectV1Store();
+const state = reactive<LocalState>({
+  showRequestExportPanel: false,
+  params: defaultSearchParams(),
+  loading: false,
+  loadingMore: false,
+});
+
 const dataExportIssueSearchParams = computed(() => {
   // Default scopes with type and creator.
   const defaultScopes = [
-    {
-      id: "type",
-      value: "DATA_EXPORT",
-    },
     {
       id: "creator",
       value: currentUser.value.email,
@@ -138,20 +148,23 @@ const dataExportIssueSearchParams = computed(() => {
   } as SearchParams;
 });
 
-const mergedIssueFilter = computed(() => {
-  return buildIssueFilterBySearchParams(dataExportIssueSearchParams.value);
-});
-
-const mergedUIIssueFilter = computed(() => {
-  return buildUIIssueFilterBySearchParams(dataExportIssueSearchParams.value);
-});
-
-const supportOptionIdList = computed((): SearchScopeId[] => {
-  const scopes: SearchScopeId[] = ["instance", "database", "status"];
+const overideSearchScopeIdList = computed(() => {
+  const defaultScopeIdList: SearchScopeId[] = [
+    "status",
+    "instance",
+    "database",
+    "label",
+  ];
   if (!specificProject.value) {
-    scopes.unshift("project");
+    defaultScopeIdList.push("project");
   }
-  return scopes;
+  return defaultScopeIdList;
+});
+
+const mergedIssueFilter = computed(() => {
+  return buildIssueFilterBySearchParams(dataExportIssueSearchParams.value, {
+    type: Issue_Type.DATABASE_DATA_EXPORT,
+  });
 });
 
 const allowExportData = computed(() => {

@@ -31,7 +31,7 @@ defineProps<{
 const { t } = useI18n();
 const columnList = computed((): BBGridColumn[] => [
   {
-    title: t("common.User"),
+    title: t("common.user"),
     width: "minmax(auto, 12rem)",
   },
   {

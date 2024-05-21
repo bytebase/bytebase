@@ -389,7 +389,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		return nil, err
 	}
 
-	if patch.Email != nil && patch.Phone != nil {
+	if patch.Email != nil || patch.Phone != nil {
 		s.projectIDPolicyCache.Purge()
 		s.projectPolicyCache.Purge()
 	}

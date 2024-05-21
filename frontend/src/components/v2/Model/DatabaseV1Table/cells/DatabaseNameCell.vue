@@ -12,7 +12,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps } from "vue";
 import SQLEditorButtonV1 from "@/components/DatabaseDetail/SQLEditorButtonV1.vue";
 import { DatabaseV1Name } from "@/components/v2";
 import { pushNotification, useCurrentUserV1 } from "@/store";

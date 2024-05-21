@@ -7,14 +7,9 @@ import dayjs from "dayjs";
 import type { h } from "vue";
 import { defineComponent } from "vue";
 import { Translation, useI18n } from "vue-i18n";
-import {
-  IssueCommentType,
-  useUserStore,
-  type ComposedIssueComment,
-} from "@/store";
+import { IssueCommentType, type ComposedIssueComment } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { SYSTEM_BOT_EMAIL } from "@/types";
-import { unknownUser } from "@/types";
 import {
   IssueComment_Approval,
   IssueComment_Approval_Status,
@@ -45,7 +40,6 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const userStore = useUserStore();
 
 const renderActionSentence = () => {
   const { issueComment, issue } = props;
@@ -72,8 +66,6 @@ const renderActionSentence = () => {
       toDescription,
       fromStatus,
       toStatus,
-      fromAssignee,
-      toAssignee,
     } = IssueComment_IssueUpdate.fromPartial(issueComment.issueUpdate || {});
     if (fromTitle !== undefined && toTitle !== undefined) {
       return t("activity.sentence.changed-from-to", {
@@ -91,33 +83,6 @@ const renderActionSentence = () => {
         return t("activity.sentence.canceled-issue");
       } else if (toStatus === IssueStatus.OPEN) {
         return t("activity.sentence.reopened-issue");
-      }
-    } else if (fromAssignee !== undefined || toAssignee !== undefined) {
-      if (fromAssignee && toAssignee) {
-        const oldName = (
-          userStore.getUserByIdentifier(fromAssignee) ?? unknownUser()
-        ).title;
-        const newName = (
-          userStore.getUserByIdentifier(toAssignee) ?? unknownUser()
-        ).title;
-        return t("activity.sentence.reassigned-issue", {
-          oldName,
-          newName,
-        });
-      } else if (!fromAssignee && toAssignee) {
-        const newName = (
-          userStore.getUserByIdentifier(toAssignee) ?? unknownUser()
-        ).title;
-        return t("activity.sentence.assigned-issue", { newName });
-      } else if (fromAssignee && !toAssignee) {
-        const oldName = (
-          userStore.getUserByIdentifier(fromAssignee) ?? unknownUser()
-        ).title;
-        return t("activity.sentence.unassigned-issue", {
-          oldName,
-        });
-      } else {
-        return t("activity.sentence.invalid-assignee-update");
       }
     }
   } else if (issueComment.type === IssueCommentType.STAGE_END) {

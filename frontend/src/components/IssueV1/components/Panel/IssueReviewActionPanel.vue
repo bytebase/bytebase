@@ -19,9 +19,10 @@
 
         <PlanCheckBar
           v-if="issue.planCheckRunList.length > 0"
-          :allow-run-checks="false"
           class="shrink-0 flex-col gap-y-1"
           label-class="!text-base"
+          :allow-run-checks="false"
+          :plan-check-run-list="issue.planCheckRunList"
         />
 
         <div v-if="planCheckErrors.length > 0" class="flex flex-col">
@@ -70,10 +71,10 @@
           <template #trigger>
             <NButton
               :disabled="confirmErrors.length > 0"
-              v-bind="issueReviewActionButtonProps(action)"
+              v-bind="confirmButtonProps"
               @click="handleClickConfirm"
             >
-              {{ issueReviewActionDisplayName(action) }}
+              {{ $t("common.confirm") }}
             </NButton>
           </template>
           <template #default>
@@ -174,6 +175,15 @@ const confirmErrors = computed(() => {
     errors.push(...planCheckErrors.value);
   }
   return errors;
+});
+
+const confirmButtonProps = computed(() => {
+  if (!props.action) return {};
+  const p = issueReviewActionButtonProps(props.action);
+  if (p.type === "default") {
+    p.type = "primary";
+  }
+  return p;
 });
 
 const handleClickConfirm = (e: MouseEvent) => {

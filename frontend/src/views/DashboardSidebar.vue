@@ -15,6 +15,7 @@ import {
   HomeIcon,
   DatabaseIcon,
   DownloadIcon,
+  SearchCodeIcon,
   ShieldAlertIcon,
   GalleryHorizontalEndIcon,
   LayersIcon,
@@ -47,6 +48,7 @@ import {
   WORKSPACE_ROUTE_GITOPS,
   WORKSPACE_ROUTE_SSO,
   WORKSPACE_ROUTE_MAIL_DELIVERY,
+  WORKSPACE_ROUTE_REVIEW_CENTER,
 } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1 } from "@/store";
 import type { WorkspacePermission } from "@/types";
@@ -185,6 +187,19 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
     {
       type: "divider",
       name: "",
+    },
+    {
+      navigationId: "bb.navigation.review-center",
+      title: t("review-center.self"),
+      icon: h(SearchCodeIcon),
+      name: WORKSPACE_ROUTE_REVIEW_CENTER,
+      type: "route",
+      shortcuts: ["g", "r", "c"],
+      hide: !hasProjectPermissionV2(
+        undefined,
+        currentUserV1.value,
+        "bb.projects.getIamPolicy"
+      ),
     },
     {
       navigationId: "bb.navigation.export-center",

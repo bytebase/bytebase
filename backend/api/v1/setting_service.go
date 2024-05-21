@@ -652,8 +652,9 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		}, nil
 	case api.SettingSchemaTemplate:
+		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
 		value := new(storepb.SchemaTemplateSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), value); err != nil {
+		if err := decoder.Unmarshal([]byte(setting.Value), value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 
@@ -731,7 +732,8 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	}
 
 	value := new(storepb.SchemaTemplateSetting)
-	if err := protojson.Unmarshal([]byte(settingValue), value); err != nil {
+	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err := decoder.Unmarshal([]byte(settingValue), value); err != nil {
 		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", settingName, err)
 	}
 	v1Value := convertSchemaTemplateSetting(value)
@@ -1070,22 +1072,38 @@ func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb
 		})
 	}
 	for _, v := range template.FieldTemplates {
-		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, &v1pb.SchemaTemplateSetting_FieldTemplate{
+		if v == nil {
+			continue
+		}
+		t := &v1pb.SchemaTemplateSetting_FieldTemplate{
 			Id:       v.Id,
 			Engine:   convertToEngine(v.Engine),
 			Category: v.Category,
-			Column:   convertStoreColumnMetadata(v.Column),
-			Config:   convertStoreColumnConfig(v.Config),
-		})
+		}
+		if v.Column != nil {
+			t.Column = convertStoreColumnMetadata(v.Column)
+		}
+		if v.Config != nil {
+			t.Config = convertStoreColumnConfig(v.Config)
+		}
+		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, t)
 	}
 	for _, v := range template.TableTemplates {
-		v1Setting.TableTemplates = append(v1Setting.TableTemplates, &v1pb.SchemaTemplateSetting_TableTemplate{
+		if v == nil {
+			continue
+		}
+		t := &v1pb.SchemaTemplateSetting_TableTemplate{
 			Id:       v.Id,
 			Engine:   convertToEngine(v.Engine),
 			Category: v.Category,
-			Table:    convertStoreTableMetadata(v.Table),
-			Config:   convertStoreTableConfig(v.Config),
-		})
+		}
+		if v.Table != nil {
+			t.Table = convertStoreTableMetadata(v.Table)
+		}
+		if v.Config != nil {
+			t.Config = convertStoreTableConfig(v.Config)
+		}
+		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}
 
 	return v1Setting
@@ -1101,22 +1119,38 @@ func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *store
 		})
 	}
 	for _, v := range template.FieldTemplates {
-		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, &storepb.SchemaTemplateSetting_FieldTemplate{
+		if v == nil {
+			continue
+		}
+		t := &storepb.SchemaTemplateSetting_FieldTemplate{
 			Id:       v.Id,
 			Engine:   convertEngine(v.Engine),
 			Category: v.Category,
-			Column:   convertV1ColumnMetadata(v.Column),
-			Config:   convertV1ColumnConfig(v.Config),
-		})
+		}
+		if v.Column != nil {
+			t.Column = convertV1ColumnMetadata(v.Column)
+		}
+		if v.Config != nil {
+			t.Config = convertV1ColumnConfig(v.Config)
+		}
+		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, t)
 	}
 	for _, v := range template.TableTemplates {
-		v1Setting.TableTemplates = append(v1Setting.TableTemplates, &storepb.SchemaTemplateSetting_TableTemplate{
+		if v == nil {
+			continue
+		}
+		t := &storepb.SchemaTemplateSetting_TableTemplate{
 			Id:       v.Id,
 			Engine:   convertEngine(v.Engine),
 			Category: v.Category,
-			Table:    convertV1TableMetadata(v.Table),
-			Config:   convertV1TableConfig(v.Config),
-		})
+		}
+		if v.Table != nil {
+			t.Table = convertV1TableMetadata(v.Table)
+		}
+		if v.Config != nil {
+			t.Config = convertV1TableConfig(v.Config)
+		}
+		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}
 
 	return v1Setting
@@ -1140,11 +1174,8 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 		}
 		switch m := algorithm.Mask.(type) {
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_FullMask_:
-			if m.FullMask.Substitution == "" {
-				return status.Errorf(codes.InvalidArgument, "the substitution for full mask is required")
-			}
-			if len(m.FullMask.Substitution) > 16 {
-				return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
+			if err := checkSubstitution(m.FullMask.Substitution); err != nil {
+				return err
 			}
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
 			for i, slice := range m.RangeMask.Slices {
@@ -1154,9 +1185,6 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 				if len(slice.Substitution) > 16 {
 					return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
 				}
-				if slice.Start >= slice.End {
-					return status.Errorf(codes.InvalidArgument, "the slice end must smaller than the start: [%d,%d)", slice.Start, slice.End)
-				}
 				for j := 0; j < i; j++ {
 					pre := m.RangeMask.Slices[j]
 					if slice.Start >= pre.End || pre.Start >= slice.End {
@@ -1164,6 +1192,10 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 					}
 					return status.Errorf(codes.InvalidArgument, "the slice range cannot overlap: [%d,%d) and [%d,%d)", pre.Start, pre.End, slice.Start, slice.End)
 				}
+			}
+		case *v1pb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_:
+			if err := checkSubstitution(m.InnerOuterMask.Substitution); err != nil {
+				return err
 			}
 		default:
 			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
@@ -1181,5 +1213,15 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm category: %s", algorithm.Category)
 	}
 
+	return nil
+}
+
+func checkSubstitution(substitution string) error {
+	if substitution == "" {
+		return status.Errorf(codes.InvalidArgument, "the substitution for inner or outer masks is required")
+	}
+	if len(substitution) > 16 {
+		return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
+	}
 	return nil
 }

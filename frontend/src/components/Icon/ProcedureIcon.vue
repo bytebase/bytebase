@@ -1,5 +1,5 @@
 <template>
-  <ParenthesesIcon class="opacity-75" />
+  <ParenthesesIcon class="text-gray-400" />
 </template>
 
 <script setup lang="ts">

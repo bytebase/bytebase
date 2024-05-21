@@ -2,7 +2,9 @@ import {
   ColumnMetadata,
   DatabaseMetadata,
   ForeignKeyMetadata,
+  FunctionMetadata,
   IndexMetadata,
+  ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
   TablePartitionMetadata,
@@ -19,6 +21,10 @@ export const filterDatabaseMetadata = (metadata: DatabaseMetadata) => {
       return SchemaMetadata.fromPartial({
         name: schema.name,
         tables: schema.tables.map((table) => filterTableMetadata(table)),
+        procedures: schema.procedures.map((procedure) =>
+          filterProcedureMetadata(procedure)
+        ),
+        functions: schema.functions.map((func) => filterFunctionMetadata(func)),
       });
     }),
   });
@@ -29,7 +35,6 @@ export const filterColumnMetadata = (column: ColumnMetadata) => {
     name: column.name,
     comment: column.comment,
     userComment: column.userComment,
-    classification: column.classification,
     type: column.type,
     hasDefault: column.hasDefault,
     defaultExpression: column.defaultExpression,
@@ -80,7 +85,6 @@ export const filterTablePartitionMetadata = (
 export const filterTableMetadata = (table: TableMetadata) => {
   return TableMetadata.fromPartial({
     name: table.name,
-    classification: table.classification,
     comment: table.comment,
     userComment: table.userComment,
     collation: table.collation,
@@ -94,9 +98,22 @@ export const filterTableMetadata = (table: TableMetadata) => {
   });
 };
 
+export const filterProcedureMetadata = (procedure: ProcedureMetadata) => {
+  return ProcedureMetadata.fromPartial({
+    name: procedure.name,
+    definition: procedure.definition,
+  });
+};
+
+export const filterFunctionMetadata = (func: FunctionMetadata) => {
+  return FunctionMetadata.fromPartial({
+    name: func.name,
+    definition: func.definition,
+  });
+};
+
 export const ComparableTableFields: (keyof TableMetadata)[] = [
   "name",
-  "classification",
   "comment",
   "userComment",
   "collation",
@@ -123,7 +140,6 @@ export const ComparableColumnFields: (keyof ColumnMetadata)[] = [
   "name",
   "comment",
   "userComment",
-  "classification",
   "type",
   "hasDefault",
   "defaultExpression",

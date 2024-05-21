@@ -7,6 +7,7 @@ import {
 } from "nice-grpc-web";
 import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
 import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
+import { AuditLogServiceDefinition } from "@/types/proto/v1/audit_log_service";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
 import { BranchServiceDefinition } from "@/types/proto/v1/branch_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
@@ -17,8 +18,8 @@ import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service"
 import { InstanceRoleServiceDefinition } from "@/types/proto/v1/instance_role_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
-import { LoggingServiceDefinition } from "@/types/proto/v1/logging_service";
 import { OrgPolicyServiceDefinition } from "@/types/proto/v1/org_policy_service";
+import { PlanServiceDefinition } from "@/types/proto/v1/plan_service";
 import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
@@ -139,6 +140,11 @@ export const rolloutServiceClient = clientFactory.create(
   channel
 );
 
+export const planServiceClient = clientFactory.create(
+  PlanServiceDefinition,
+  channel
+);
+
 export const sqlServiceClient = clientFactory.create(
   SQLServiceDefinition,
   channel
@@ -174,11 +180,6 @@ export const vcsConnectorServiceClient = clientFactory.create(
   channel
 );
 
-export const loggingServiceClient = clientFactory.create(
-  LoggingServiceDefinition,
-  channel
-);
-
 export const anomalyServiceClient = clientFactory.create(
   AnomalyServiceDefinition,
   channel
@@ -191,6 +192,11 @@ export const branchServiceClient = clientFactory.create(
 
 export const changelistServiceClient = clientFactory.create(
   ChangelistServiceDefinition,
+  channel
+);
+
+export const auditLogServiceClient = clientFactory.create(
+  AuditLogServiceDefinition,
   channel
 );
 

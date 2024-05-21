@@ -9,7 +9,7 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import type { PropType } from "vue";
@@ -18,6 +18,7 @@ import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { ViewMetadata } from "@/types/proto/v1/database_service";
+import EllipsisSQLView from "./EllipsisSQLView.vue";
 
 const props = defineProps({
   database: {
@@ -59,7 +60,7 @@ const columns = computed(() => {
       key: "name",
       title: t("common.definition"),
       render: (row) => {
-        return row.definition;
+        return <EllipsisSQLView sql={row.definition} />;
       },
     },
     {

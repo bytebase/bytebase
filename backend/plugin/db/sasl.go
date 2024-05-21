@@ -19,14 +19,14 @@ type SASLConfig interface {
 type Realm struct {
 	Name                 string
 	KDCHost              string
+	KDCPort              string
 	KDCTransportProtocol string
 }
 type KerberosConfig struct {
-	Primary              string
-	Instance             string
-	Realm                Realm
-	KeytabPath           string
-	KDCTransportProtocol string
+	Primary    string
+	Instance   string
+	Realm      Realm
+	KeytabPath string
 }
 
 type KerberosEnv struct {
@@ -40,13 +40,24 @@ var (
 	singletonEnv            = KerberosEnv{
 		DefaultKrbConfPath: "/etc/krb5.conf",
 	}
-	KinitCmdFmt     = "kinit -kt %s %s/%s@%s"
-	KrbConfRealmFmt = "%s = {\n\tkdc = %s/%s\n}"
+	// KinitCmdFmt is the cmd for kinit, should be
+	// kinit -kt {keytab file path} {principal}
+	// The principal is in {primary}/{instance}@{realm} or {primary}@{realm} format
+	// example: 'root/admin@EXAMPLE.COM' or 'root@EXAMPLE.COM'.
+	KinitCmdFmt = "kinit -kt %s %s@%s"
+	// KrbConfRealmFmt is the config content for /etc/krb5.conf, it should like
+	// [realms] {realm} = { kdc = [service/]host[:port]
+	// example:
+	// [realm]
+	//   EXAMPLE.COM = {
+	//	   kdc = tcp/192.168.31.2:88
+	// 	 }
+	KrbConfRealmFmt = "%s = {\n\tkdc = %s/%s:%s\n}"
 )
 
 func (krbConfig *KerberosConfig) InitEnv() error {
-	if krbConfig.KDCTransportProtocol != "udp" && krbConfig.KDCTransportProtocol != "tcp" {
-		return errors.Errorf("invalid transport protocol for KDC connection: %s", krbConfig.KDCTransportProtocol)
+	if krbConfig.Realm.KDCTransportProtocol != "udp" && krbConfig.Realm.KDCTransportProtocol != "tcp" {
+		return errors.Errorf("invalid transport protocol for KDC connection: %s", krbConfig.Realm.KDCTransportProtocol)
 	}
 
 	singletonEnv.krbEnvMutex.Lock()
@@ -56,7 +67,15 @@ func (krbConfig *KerberosConfig) InitEnv() error {
 		return err
 	}
 
-	cmd := exec.Command(fmt.Sprintf(KinitCmdFmt, krbConfig.KeytabPath, krbConfig.Primary, krbConfig.Instance, krbConfig.Realm))
+	var cmdString string
+	if krbConfig.Instance != "" {
+		cmdString = fmt.Sprintf(KinitCmdFmt, krbConfig.KeytabPath, krbConfig.Primary, krbConfig.Realm.Name)
+	} else {
+		primaryAndInstance := fmt.Sprintf("%s/%s", krbConfig.Primary, krbConfig.Instance)
+		cmdString = fmt.Sprintf(KinitCmdFmt, krbConfig.KeytabPath, primaryAndInstance, krbConfig.Realm.Name)
+	}
+
+	cmd := exec.Command(cmdString)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "failed to execute command kinit")
 	}
@@ -82,7 +101,7 @@ func (env *KerberosEnv) AddRealm(realm Realm) error {
 			return err
 		}
 		for _, realm := range env.realms {
-			text := fmt.Sprintf(KrbConfRealmFmt, realm.Name, realm.KDCTransportProtocol, realm.KDCHost)
+			text := fmt.Sprintf(KrbConfRealmFmt, realm.Name, realm.KDCTransportProtocol, realm.KDCHost, realm.KDCPort)
 			if _, err = file.WriteString(text); err != nil {
 				return err
 			}
@@ -97,7 +116,7 @@ func (env *KerberosEnv) AddRealm(realm Realm) error {
 
 // check whether Kerberos is enabled and its settings are valid.
 func (krbConfig *KerberosConfig) Check() bool {
-	if krbConfig.Primary == "" || krbConfig.Instance == "" || krbConfig.Realm.Name == "" || krbConfig.KeytabPath == "" || krbConfig.KDCTransportProtocol == "" {
+	if krbConfig.Primary == "" || krbConfig.Instance == "" || krbConfig.Realm.Name == "" || krbConfig.KeytabPath == "" || krbConfig.Realm.KDCTransportProtocol == "" {
 		return false
 	}
 	return true

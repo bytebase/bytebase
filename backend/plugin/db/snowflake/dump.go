@@ -128,8 +128,3 @@ func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.W
 
 	return nil
 }
-
-// Restore restores a database.
-func (*Driver) Restore(_ context.Context, _ io.Reader) (err error) {
-	return errors.Errorf("Snowflake restore is unsupported")
-}

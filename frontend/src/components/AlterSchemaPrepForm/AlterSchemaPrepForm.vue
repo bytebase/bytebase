@@ -137,11 +137,11 @@
             <NTabPane :tab="$t('common.database')" name="DATABASE">
               <div class="space-y-3">
                 <div class="w-full flex items-center space-x-2">
-                  <AdvancedSearchBox
+                  <AdvancedSearch
                     v-model:params="state.params"
                     :autofocus="false"
                     :placeholder="$t('database.filter-database')"
-                    :support-option-id-list="supportOptionIdList"
+                    :scope-options="scopeOptions"
                   />
                   <DatabaseLabelFilter
                     v-model:selected="state.selectedLabels"
@@ -164,11 +164,11 @@
             </NTabPane>
             <NTabPane :tab="renderDatabaseGroupTabTitle" name="DATABASE_GROUP">
               <div class="space-y-3">
-                <AdvancedSearchBox
+                <AdvancedSearch
                   v-model:params="state.params"
                   :autofocus="false"
                   :placeholder="$t('database.filter-database')"
-                  :support-option-id-list="supportOptionIdList"
+                  :scope-options="scopeOptions"
                 />
                 <DatabaseGroupDataTable
                   :database-group-list="filteredDatabaseGroupList"
@@ -296,9 +296,9 @@ import type {
 import { UNKNOWN_ID, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import type { SearchScopeId, SearchParams } from "@/utils";
+import type { SearchParams } from "@/utils";
 import {
-  allowUsingSchemaEditorV1,
+  allowUsingSchemaEditor,
   instanceV1HasAlterSchema,
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
@@ -307,6 +307,8 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
 } from "@/utils";
+import AdvancedSearch from "../AdvancedSearch";
+import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchScopeOptions";
 import { DatabaseLabelFilter, DrawerContent } from "../v2";
 import DatabaseGroupPrevEditorModal from "./DatabaseGroupPrevEditorModal.vue";
 import ProjectStandardView from "./ProjectStandardView.vue";
@@ -373,6 +375,15 @@ const state = reactive<LocalState>({
     scopes: [],
   },
 });
+
+const scopeOptions = useCommonSearchScopeOptions(
+  computed(() => state.params),
+  computed(() =>
+    state.databaseSelectedTab === "DATABASE"
+      ? ["project", "instance", "environment"]
+      : ["project", "environment"]
+  )
+);
 
 const hasDatabaseGroupFeature = computed(() => {
   return hasFeature("bb.feature.database-grouping");
@@ -579,7 +590,7 @@ const generateMultiDb = async () => {
     (id) => selectableDatabaseList.value.find((db) => db.uid === id)!
   );
 
-  if (isEditSchema.value && allowUsingSchemaEditorV1(selectedDatabaseList)) {
+  if (isEditSchema.value && allowUsingSchemaEditor(selectedDatabaseList)) {
     schemaEditorContext.value.databaseIdList = [
       ...flattenSelectedDatabaseUidList.value,
     ];
@@ -598,10 +609,7 @@ const generateMultiDb = async () => {
       props.type,
       selectedDatabaseList.map((db) => db.databaseName)
     ),
-    project: project.uid,
-    // The server-side will sort the databases by environment.
-    // So we need not to sort them here.
-    databaseList: flattenSelectedDatabaseUidList.value.join(","),
+    databaseList: selectedDatabaseList.map((db) => db.name).join(","),
   };
   router.push({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -680,14 +688,13 @@ const generateTenant = async () => {
 
   const query: Record<string, any> = {
     template: props.type,
-    project: selectedProject.value.uid,
     batch: "1",
   };
   if (state.alterType === "TENANT") {
     const databaseList = databaseV1Store.databaseListByProject(
       selectedProject.value.name
     );
-    if (isEditSchema.value && allowUsingSchemaEditorV1(databaseList)) {
+    if (isEditSchema.value && allowUsingSchemaEditor(databaseList)) {
       schemaEditorContext.value.databaseIdList = databaseList
         .filter((database) => database.syncState === State.ACTIVE)
         .map((database) => database.uid);
@@ -710,7 +717,7 @@ const generateTenant = async () => {
         databaseList.push(database);
       }
     }
-    if (isEditSchema.value && allowUsingSchemaEditorV1(databaseList)) {
+    if (isEditSchema.value && allowUsingSchemaEditor(databaseList)) {
       schemaEditorContext.value.databaseIdList = [
         ...flattenSelectedDatabaseUidList.value,
       ];
@@ -723,7 +730,7 @@ const generateTenant = async () => {
       databaseList.map((database) => database.databaseName),
       false
     );
-    query.databaseList = flattenSelectedDatabaseUidList.value.join(",");
+    query.databaseList = databaseList.map((db) => db.name).join(",");
   }
 
   emit("dismiss");
@@ -741,12 +748,4 @@ const generateTenant = async () => {
 const cancel = () => {
   emit("dismiss");
 };
-
-const supportOptionIdList = computed((): SearchScopeId[] => {
-  if (state.databaseSelectedTab === "DATABASE") {
-    return ["project", "instance", "environment"];
-  }
-
-  return ["project", "environment"];
-});
 </script>

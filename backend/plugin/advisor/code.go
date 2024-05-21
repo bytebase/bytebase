@@ -55,6 +55,8 @@ const (
 	StatementPriorBackupCheck                 Code = 228
 	StatementAddFKWithValidation              Code = 229
 	StatementNonTransactional                 Code = 230
+	StatementAddColumnWithPosition            Code = 231
+	StatementOfflineDDL                       Code = 232
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
@@ -75,6 +77,8 @@ const (
 	NameIsKeywordIdentifier Code = 308
 	// 309 naming case mismatch advisor error code.
 	NamingCaseMismatch Code = 309
+	// 310 not fully qualified object name error code.
+	NamingNotFullyQualifiedName = 310
 
 	// 401 ~ 499 column error code.
 	NoRequiredColumn                           Code = 401
@@ -101,6 +105,7 @@ const (
 	VarcharLengthExceedsLimit                  Code = 422
 	InvalidColumnDefault                       Code = 423
 	DropIndexColumn                            Code = 424
+	DropColumn                                 Code = 425
 
 	// 501 engine error code.
 	NotInnoDBEngine Code = 501
@@ -120,6 +125,7 @@ const (
 	DisallowSetCharset                Code = 612
 	TableDisallowDDL                  Code = 613
 	TableDisallowDML                  Code = 614
+	TableExceedLimitSize              Code = 615
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701

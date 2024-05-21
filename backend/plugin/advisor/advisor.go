@@ -119,6 +119,9 @@ const (
 	// MySQLColumnDisallowChanging is an advisor type for MySQL disallow CHANGE COLUMN statement.
 	MySQLColumnDisallowChanging Type = "bb.plugin.advisor.mysql.column.disallow-change"
 
+	// MySQLColumnDisallowDrop is an advisor type for MySQL disallow DROP COLUMN statement.
+	MySQLColumnDisallowDrop Type = "bb.plugin.advisor.mysql.column.disallow-drop"
+
 	// MySQLColumnDisallowDropInIndex is an advisor type for MySQL disallow DROP COLUMN in index.
 	MySQLColumnDisallowDropInIndex Type = "bb.plugin.advisor.mysql.column.disallow-drop-in-index"
 
@@ -184,6 +187,9 @@ const (
 
 	// MySQLTableFieldsMaximumCount is an advisor type for MySQL table fields maximum count.
 	MySQLTableDisallowSetCharset Type = "bb.plugin.advisor.mysql.table.disallow-set-charset"
+
+	// MySQLTableFieldsMaximumCount is an advisor type for limiting MySQL table size.
+	MySQLTableLimitSize Type = "bb.plugin.advisor.mysql.table.limit-size"
 
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
@@ -281,6 +287,9 @@ const (
 	// MySQLStatementPriorBackupCheck is an advisor type for MySQL prior backup check.
 	MySQLStatementPriorBackupCheck Type = "bb.plugin.advisor.mysql.statement.prior-backup-check"
 
+	// MySQLStatementAddColumnWithoutPosition is an advisor type for MySQL checking no position in ADD COLUMN clause.
+	MySQLStatementAddColumnWithoutPosition Type = "bb.plugin.advisor.mysql.statement.add-column-without-position"
+
 	// MySQLProcedureDisallowCreate is an advisor type for MySQL disallow create procedure.
 	MySQLProcedureDisallowCreate Type = "bb.plugin.advisor.mysql.procedure.disallow-create"
 
@@ -296,10 +305,16 @@ const (
 	// MySQLFunctionDisallowedList is an advisor type for MySQL disallowed function list.
 	MySQLFunctionDisallowedList Type = "bb.plugin.advisor.mysql.function.disallowed-list"
 
+	// MySQLDisallowOfflineDDL is an advisor type for MySQL disallow Offline DDL.
+	MySQLDisallowOfflineDDL Type = "bb.plugin.advisor.mysql.disallow-offline-ddl"
+
 	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
 	PostgreSQLSyntax Type = "bb.plugin.advisor.postgresql.syntax"
+
+	// PostgreSQLNamingFullyQualifiedObjectName is an advisor type for enforing full qualified object name.
+	PostgreSQLNamingFullyQualifiedObjectName Type = "bb.plugin.advisor.postgresql.naming.fully-qualified"
 
 	// PostgreSQLNamingTableConvention is an advisor type for PostgreSQL table naming convention.
 	PostgreSQLNamingTableConvention Type = "bb.plugin.advisor.postgresql.naming.table"
@@ -421,8 +436,11 @@ const (
 	// PostgreSQLCollationAllowlist is an advisor type for PostgreSQL collation allowlist.
 	PostgreSQLCollationAllowlist Type = "bb.plugin.advisor.postgresql.collation.allowlist"
 
-	// PostgreSQLStatementDisallowCascade is an advisor type for PostgreSQL to disallow cascade.
-	PostgreSQLStatementDisallowCascade Type = "bb.plugin.advisor.postgresql.statement.disallow-cascade"
+	// PostgreSQLStatementDisallowRemoveTblCascade is an advisor type for PostgreSQL to disallow CASCADE when removing a table.
+	PostgreSQLStatementDisallowRemoveTblCascade Type = "bb.plugin.advisor.postgresql.statement.disallow-rm-tbl-cascade"
+
+	// PostgreSQLStatementDisallowOnDelCascade is an advisor type for PostgreSQL to disallow ON DELETE CASCADE clauses.
+	PostgreSQLStatementDisallowOnDelCascade Type = "bb.plugin.advisor.postgresql.statement.disallow-on-del-cascade"
 
 	// PostgreSQLStatementCreateSpecifySchema is an advisor type for PostgreSQL to specify schema when creating.
 	PostgreSQLStatementCreateSpecifySchema Type = "bb.plugin.advisor.postgresql.statement.create-specify-schema"
@@ -435,6 +453,9 @@ const (
 
 	// PostgreSQLStatementPriorBackupCheck is an advisor type for PostgreSQL do prior backup check.
 	PostgreSQLStatementPriorBackupCheck Type = "bb.plugin.advisor.postgresql.statement.prior-backup-check"
+
+	// PostgreSQLStatementMaximumLimitValue is an advisor type for PostgreSQL statement maximum limit value.
+	PostgreSQLStatementMaximumLimitValue Type = "bb.plugin.advisor.postgresql.statement.maximum-limit-value"
 
 	// Oracle Advisor.
 
@@ -631,8 +652,6 @@ type Context struct {
 
 	// CurrentDatabase is the current database. Special for Snowflake.
 	CurrentDatabase string
-	// CurrentSchema is the current schema. Special for Oracle.
-	CurrentSchema string
 	// Statement is the original statement of AST, it is used for some PostgreSQL
 	// advisors which need to check the token stream.
 	Statements string

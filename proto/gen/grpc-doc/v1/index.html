@@ -273,37 +273,6 @@
         
           
           <li>
-            <a href="#v1%2faudit_log_service.proto">v1/audit_log_service.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.v1.AuditLog"><span class="badge">M</span>AuditLog</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SearchAuditLogsRequest"><span class="badge">M</span>SearchAuditLogsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SearchAuditLogsResponse"><span class="badge">M</span>SearchAuditLogsResponse</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.v1.AuditLog.Severity"><span class="badge">E</span>AuditLog.Severity</a>
-                </li>
-              
-              
-              
-                <li>
-                  <a href="#bytebase.v1.AuditLogService"><span class="badge">S</span>AuditLogService</a>
-                </li>
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#v1%2fcommon.proto">v1/common.proto</a>
             <ul>
               
@@ -329,6 +298,45 @@
                 </li>
               
               
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#v1%2faudit_log_service.proto">v1/audit_log_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.AuditLog"><span class="badge">M</span>AuditLog</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ExportAuditLogsRequest"><span class="badge">M</span>ExportAuditLogsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ExportAuditLogsResponse"><span class="badge">M</span>ExportAuditLogsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchAuditLogsRequest"><span class="badge">M</span>SearchAuditLogsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchAuditLogsResponse"><span class="badge">M</span>SearchAuditLogsResponse</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.AuditLog.Severity"><span class="badge">E</span>AuditLog.Severity</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.AuditLogService"><span class="badge">S</span>AuditLogService</a>
+                </li>
               
             </ul>
           </li>
@@ -434,6 +442,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSource.Address"><span class="badge">M</span>DataSource.Address</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSourceExternalSecret"><span class="badge">M</span>DataSourceExternalSecret</a>
                 </li>
               
@@ -471,10 +483,6 @@
               
                 <li>
                   <a href="#bytebase.v1.ListInstancesResponse"><span class="badge">M</span>ListInstancesResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.PlainSASLConfig"><span class="badge">M</span>PlainSASLConfig</a>
                 </li>
               
                 <li>
@@ -649,6 +657,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.FunctionConfig"><span class="badge">M</span>FunctionConfig</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.FunctionMetadata"><span class="badge">M</span>FunctionMetadata</a>
                 </li>
               
@@ -706,6 +718,10 @@
               
                 <li>
                   <a href="#bytebase.v1.MaterializedViewMetadata"><span class="badge">M</span>MaterializedViewMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ProcedureConfig"><span class="badge">M</span>ProcedureConfig</a>
                 </li>
               
                 <li>
@@ -782,6 +798,10 @@
               
                 <li>
                   <a href="#bytebase.v1.UpdateSecretRequest"><span class="badge">M</span>UpdateSecretRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ViewConfig"><span class="badge">M</span>ViewConfig</a>
                 </li>
               
                 <li>
@@ -1522,6 +1542,133 @@
         
           
           <li>
+            <a href="#v1%2fplan_service.proto">v1/plan_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.CreatePlanRequest"><span class="badge">M</span>CreatePlanRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetPlanRequest"><span class="badge">M</span>GetPlanRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListPlanCheckRunsRequest"><span class="badge">M</span>ListPlanCheckRunsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListPlanCheckRunsResponse"><span class="badge">M</span>ListPlanCheckRunsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListPlansRequest"><span class="badge">M</span>ListPlansRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListPlansResponse"><span class="badge">M</span>ListPlansResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan"><span class="badge">M</span>Plan</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig"><span class="badge">M</span>Plan.ChangeDatabaseConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry"><span class="badge">M</span>Plan.ChangeDatabaseConfig.GhostFlagsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail"><span class="badge">M</span>Plan.ChangeDatabaseConfig.PreUpdateBackupDetail</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail"><span class="badge">M</span>Plan.ChangeDatabaseConfig.RollbackDetail</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.CreateDatabaseConfig"><span class="badge">M</span>Plan.CreateDatabaseConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry"><span class="badge">M</span>Plan.CreateDatabaseConfig.LabelsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.ExportDataConfig"><span class="badge">M</span>Plan.ExportDataConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.Spec"><span class="badge">M</span>Plan.Spec</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.Step"><span class="badge">M</span>Plan.Step</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.VCSSource"><span class="badge">M</span>Plan.VCSSource</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PlanCheckRun"><span class="badge">M</span>PlanCheckRun</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PlanCheckRun.Result"><span class="badge">M</span>PlanCheckRun.Result</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PlanCheckRun.Result.SqlReviewReport"><span class="badge">M</span>PlanCheckRun.Result.SqlReviewReport</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PlanCheckRun.Result.SqlSummaryReport"><span class="badge">M</span>PlanCheckRun.Result.SqlSummaryReport</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RunPlanChecksRequest"><span class="badge">M</span>RunPlanChecksRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RunPlanChecksResponse"><span class="badge">M</span>RunPlanChecksResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdatePlanRequest"><span class="badge">M</span>UpdatePlanRequest</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig.Type"><span class="badge">E</span>Plan.ChangeDatabaseConfig.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PlanCheckRun.Result.Status"><span class="badge">E</span>PlanCheckRun.Result.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PlanCheckRun.Status"><span class="badge">E</span>PlanCheckRun.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PlanCheckRun.Type"><span class="badge">E</span>PlanCheckRun.Type</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.PlanService"><span class="badge">S</span>PlanService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2fproject_service.proto">v1/project_service.proto</a>
             <ul>
               
@@ -1607,6 +1754,10 @@
               
                 <li>
                   <a href="#bytebase.v1.GetSchemaGroupRequest"><span class="badge">M</span>GetSchemaGroupRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Label"><span class="badge">M</span>Label</a>
                 </li>
               
                 <li>
@@ -1883,15 +2034,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.CreatePlanRequest"><span class="badge">M</span>CreatePlanRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.CreateRolloutRequest"><span class="badge">M</span>CreateRolloutRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GetPlanRequest"><span class="badge">M</span>GetPlanRequest</a>
                 </li>
               
                 <li>
@@ -1899,19 +2042,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListPlanCheckRunsRequest"><span class="badge">M</span>ListPlanCheckRunsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListPlanCheckRunsResponse"><span class="badge">M</span>ListPlanCheckRunsResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListPlansRequest"><span class="badge">M</span>ListPlansRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListPlansResponse"><span class="badge">M</span>ListPlansResponse</a>
+                  <a href="#bytebase.v1.GetTaskRunLogRequest"><span class="badge">M</span>GetTaskRunLogRequest</a>
                 </li>
               
                 <li>
@@ -1923,79 +2054,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Plan"><span class="badge">M</span>Plan</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig"><span class="badge">M</span>Plan.ChangeDatabaseConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry"><span class="badge">M</span>Plan.ChangeDatabaseConfig.GhostFlagsEntry</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail"><span class="badge">M</span>Plan.ChangeDatabaseConfig.PreUpdateBackupDetail</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail"><span class="badge">M</span>Plan.ChangeDatabaseConfig.RollbackDetail</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.CreateDatabaseConfig"><span class="badge">M</span>Plan.CreateDatabaseConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry"><span class="badge">M</span>Plan.CreateDatabaseConfig.LabelsEntry</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.ExportDataConfig"><span class="badge">M</span>Plan.ExportDataConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.Spec"><span class="badge">M</span>Plan.Spec</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.Step"><span class="badge">M</span>Plan.Step</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.VCSSource"><span class="badge">M</span>Plan.VCSSource</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.PlanCheckRun"><span class="badge">M</span>PlanCheckRun</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.PlanCheckRun.Result"><span class="badge">M</span>PlanCheckRun.Result</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.PlanCheckRun.Result.SqlReviewReport"><span class="badge">M</span>PlanCheckRun.Result.SqlReviewReport</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.PlanCheckRun.Result.SqlSummaryReport"><span class="badge">M</span>PlanCheckRun.Result.SqlSummaryReport</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.PreviewRolloutRequest"><span class="badge">M</span>PreviewRolloutRequest</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.Rollout"><span class="badge">M</span>Rollout</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.RunPlanChecksRequest"><span class="badge">M</span>RunPlanChecksRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.RunPlanChecksResponse"><span class="badge">M</span>RunPlanChecksResponse</a>
                 </li>
               
                 <li>
@@ -2043,25 +2106,25 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.UpdatePlanRequest"><span class="badge">M</span>UpdatePlanRequest</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig.Type"><span class="badge">E</span>Plan.ChangeDatabaseConfig.Type</a>
+                  <a href="#bytebase.v1.TaskRunLog"><span class="badge">M</span>TaskRunLog</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.PlanCheckRun.Result.Status"><span class="badge">E</span>PlanCheckRun.Result.Status</a>
+                  <a href="#bytebase.v1.TaskRunLogEntry"><span class="badge">M</span>TaskRunLogEntry</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.PlanCheckRun.Status"><span class="badge">E</span>PlanCheckRun.Status</a>
+                  <a href="#bytebase.v1.TaskRunLogEntry.CommandExecute"><span class="badge">M</span>TaskRunLogEntry.CommandExecute</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.PlanCheckRun.Type"><span class="badge">E</span>PlanCheckRun.Type</a>
+                  <a href="#bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse"><span class="badge">M</span>TaskRunLogEntry.CommandExecute.CommandResponse</a>
                 </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.SchemaDump"><span class="badge">M</span>TaskRunLogEntry.SchemaDump</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.v1.Task.DatabaseDataUpdate.RollbackSqlStatus"><span class="badge">E</span>Task.DatabaseDataUpdate.RollbackSqlStatus</a>
@@ -2085,6 +2148,10 @@
               
                 <li>
                   <a href="#bytebase.v1.TaskRun.Status"><span class="badge">E</span>TaskRun.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.Type"><span class="badge">E</span>TaskRunLogEntry.Type</a>
                 </li>
               
               
@@ -2225,6 +2292,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.InnerOuterMask</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.MD5Mask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.MD5Mask</a>
                 </li>
               
@@ -2302,6 +2373,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SMTPMailDeliverySettingValue.Authentication"><span class="badge">E</span>SMTPMailDeliverySettingValue.Authentication</a>
                 </li>
               
@@ -2333,6 +2408,10 @@
               
                 <li>
                   <a href="#bytebase.v1.Sheet"><span class="badge">M</span>Sheet</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SheetCommand"><span class="badge">M</span>SheetCommand</a>
                 </li>
               
                 <li>
@@ -3515,302 +3594,6 @@ e.g. the database schema had been changed without bytebase migration.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="v1/audit_log_service.proto">v1/audit_log_service.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.v1.AuditLog">AuditLog</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the log.
-Formats:
-- projects/{project}/auditLogs/{uid}
-- workspaces/{workspace}/auditLogs/{uid} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>user</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: users/d@d.com </p></td>
-                </tr>
-              
-                <tr>
-                  <td>method</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>e.g. `/bytebase.v1.SQLService/Query`, `bb.project.repository.push` </p></td>
-                </tr>
-              
-                <tr>
-                  <td>severity</td>
-                  <td><a href="#bytebase.v1.AuditLog.Severity">AuditLog.Severity</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>resource</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The associated resource. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>request</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>JSON-encoded request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>response</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>JSON-encoded response.
-Some fields are omitted because they are too large or contain sensitive information. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#google.rpc.Status">google.rpc.Status</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SearchAuditLogsRequest">SearchAuditLogsRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>order_by</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The order by of the log.
-Only support order by create_time.
-For example:
- - order_by = &#34;create_time asc&#34;
- - order_by = &#34;create_time desc&#34; </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of logs to return.
-The service may return fewer than this value.
-If unspecified, at most 100 log entries will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `SearchLogs` call.
-Provide this to retrieve the subsequent page. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SearchAuditLogsResponse">SearchAuditLogsResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>audit_logs</td>
-                  <td><a href="#bytebase.v1.AuditLog">AuditLog</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token to retrieve next page of log entities.
-Pass this value in the page_token field in the subsequent call
-to retrieve the next page of log entities. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.v1.AuditLog.Severity">AuditLog.Severity</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DEFAULT</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DEBUG</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>INFO</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>NOTICE</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>WARNING</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ERROR</td>
-                <td>5</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CRITICAL</td>
-                <td>6</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ALERT</td>
-                <td>7</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>EMERGENCY</td>
-                <td>8</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-
-      
-
-      
-        <h3 id="bytebase.v1.AuditLogService">AuditLogService</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>SearchAuditLogs</td>
-                <td><a href="#bytebase.v1.SearchAuditLogsRequest">SearchAuditLogsRequest</a></td>
-                <td><a href="#bytebase.v1.SearchAuditLogsResponse">SearchAuditLogsResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-
-        
-          
-          
-          <h4>Methods with HTTP bindings</h4>
-          <table>
-            <thead>
-              <tr>
-                <td>Method Name</td>
-                <td>Method</td>
-                <td>Pattern</td>
-                <td>Body</td>
-              </tr>
-            </thead>
-            <tbody>
-            
-              
-              
-              <tr>
-                <td>SearchAuditLogs</td>
-                <td>GET</td>
-                <td>/v1/logs:search</td>
-                <td></td>
-              </tr>
-              
-            
-            </tbody>
-          </table>
-          
-        
-    
-      
-      <div class="file-heading">
         <h2 id="v1/common.proto">v1/common.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -4117,6 +3900,395 @@ to retrieve the next page of log entities. </p></td>
       
 
       
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/audit_log_service.proto">v1/audit_log_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.AuditLog">AuditLog</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the log.
+Formats:
+- projects/{project}/auditLogs/{uid}
+- workspaces/{workspace}/auditLogs/{uid} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/d@d.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>method</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>e.g. `/bytebase.v1.SQLService/Query`, `bb.project.repository.push` </p></td>
+                </tr>
+              
+                <tr>
+                  <td>severity</td>
+                  <td><a href="#bytebase.v1.AuditLog.Severity">AuditLog.Severity</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>resource</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The associated resource. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>request</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>JSON-encoded request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>response</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>JSON-encoded response.
+Some fields are omitted because they are too large or contain sensitive information. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#google.rpc.Status">google.rpc.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ExportAuditLogsRequest">ExportAuditLogsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The filter of the log. It should be a valid CEL expression.
+For example:
+ - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34;
+ - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34;
+ - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34;
+ - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; </p></td>
+                </tr>
+              
+                <tr>
+                  <td>order_by</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The order by of the log.
+Only support order by create_time.
+For example:
+ - order_by = &#34;create_time asc&#34;
+ - order_by = &#34;create_time desc&#34; </p></td>
+                </tr>
+              
+                <tr>
+                  <td>format</td>
+                  <td><a href="#bytebase.v1.ExportFormat">ExportFormat</a></td>
+                  <td></td>
+                  <td><p>The export format. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ExportAuditLogsResponse">ExportAuditLogsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchAuditLogsRequest">SearchAuditLogsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The filter of the log. It should be a valid CEL expression.
+For example:
+ - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34;
+ - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34;
+ - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34;
+ - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; </p></td>
+                </tr>
+              
+                <tr>
+                  <td>order_by</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The order by of the log.
+Only support order by create_time.
+For example:
+ - order_by = &#34;create_time asc&#34;
+ - order_by = &#34;create_time desc&#34; </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of logs to return.
+The service may return fewer than this value.
+If unspecified, at most 100 log entries will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `SearchLogs` call.
+Provide this to retrieve the subsequent page. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchAuditLogsResponse">SearchAuditLogsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>audit_logs</td>
+                  <td><a href="#bytebase.v1.AuditLog">AuditLog</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token to retrieve next page of log entities.
+Pass this value in the page_token field in the subsequent call
+to retrieve the next page of log entities. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.AuditLog.Severity">AuditLog.Severity</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>DEFAULT</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DEBUG</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>INFO</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NOTICE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WARNING</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CRITICAL</td>
+                <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALERT</td>
+                <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EMERGENCY</td>
+                <td>8</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.AuditLogService">AuditLogService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SearchAuditLogs</td>
+                <td><a href="#bytebase.v1.SearchAuditLogsRequest">SearchAuditLogsRequest</a></td>
+                <td><a href="#bytebase.v1.SearchAuditLogsResponse">SearchAuditLogsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ExportAuditLogs</td>
+                <td><a href="#bytebase.v1.ExportAuditLogsRequest">ExportAuditLogsRequest</a></td>
+                <td><a href="#bytebase.v1.ExportAuditLogsResponse">ExportAuditLogsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>SearchAuditLogs</td>
+                <td>GET</td>
+                <td>/v1/auditLogs:search</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ExportAuditLogs</td>
+                <td>POST</td>
+                <td>/v1/auditLogs:export</td>
+                <td>*</td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
     
       
       <div class="file-heading">
@@ -5048,7 +5220,7 @@ are /[a-z][0-9]-/. </p></td>
                   <td>srv</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>srv and authentication_database are used for MongoDB. </p></td>
+                  <td><p>srv, authentication_database and replica_set are used for MongoDB. </p></td>
                 </tr>
               
                 <tr>
@@ -5136,6 +5308,58 @@ Used for authentication when connecting to the data source. </p></td>
                 <tr>
                   <td>sasl_config</td>
                   <td><a href="#bytebase.v1.SASLConfig">SASLConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>additional_addresses</td>
+                  <td><a href="#bytebase.v1.DataSource.Address">DataSource.Address</a></td>
+                  <td>repeated</td>
+                  <td><p>additional_addresses is used for MongoDB replica set. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>replica_set</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>replica_set is used for MongoDB replica set. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>direct_connection</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DataSource.Address">DataSource.Address</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>port</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -5548,6 +5772,13 @@ The default is 10 if the value is unset or zero. </p></td>
                 </tr>
               
                 <tr>
+                  <td>kdc_port</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>kdc_transport_protocol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -5647,37 +5878,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.PlainSASLConfig">PlainSASLConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>username</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.RemoveDataSourceRequest">RemoveDataSourceRequest</h3>
         <p></p>
 
@@ -5724,13 +5924,6 @@ Only READ_ONLY data source can be removed. </p></td>
                 <tr>
                   <td>krb_config</td>
                   <td><a href="#bytebase.v1.KerberosConfig">KerberosConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>plain_config</td>
-                  <td><a href="#bytebase.v1.PlainSASLConfig">PlainSASLConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -5987,6 +6180,12 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>GOOGLE_CLOUD_SQL_IAM</td>
                 <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AWS_RDS_IAM</td>
+                <td>3</td>
                 <td><p></p></td>
               </tr>
             
@@ -6840,6 +7039,13 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><p>The user labels for a column. </p></td>
                 </tr>
               
+                <tr>
+                  <td>classification_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -6972,13 +7178,6 @@ For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CUR
                   <td></td>
                   <td><p>The comment is the comment of a column.
 classification and user_comment is parsed from the comment. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>classification</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The classification is the classification of a column parsed from the comment. </p></td>
                 </tr>
               
                 <tr>
@@ -7150,6 +7349,15 @@ Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-ove
                   <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
                 </tr>
               
+                <tr>
+                  <td>classification_from_config</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If true, we will only store the classification in the config.
+Otherwise we will get the classification from table/column comment,
+and write back to the schema metadata. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7209,6 +7417,13 @@ Format: instances/{instance}/databases/{database}/metadata </p></td>
                   <td><a href="#bytebase.v1.SchemaConfig">SchemaConfig</a></td>
                   <td>repeated</td>
                   <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_from_config</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -7536,6 +7751,45 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><p>The match_type is the match type of a foreign key.
 The match_type is the PostgreSQL specific field.
 It&#39;s empty string for other databases. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.FunctionConfig">FunctionConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a function. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the function in branch.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the function is updated in branch. </p></td>
                 </tr>
               
             </tbody>
@@ -8217,6 +8471,45 @@ Default: order by average_query_time desc. </p></td>
 
         
       
+        <h3 id="bytebase.v1.ProcedureConfig">ProcedureConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a procedure. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the procedure in branch.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the procedure is updated in branch. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ProcedureMetadata">ProcedureMetadata</h3>
         <p>ProcedureMetadata is the metadata for procedures.</p>
 
@@ -8271,6 +8564,27 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><a href="#bytebase.v1.TableConfig">TableConfig</a></td>
                   <td>repeated</td>
                   <td><p>The table_configs is the list of configs for tables in a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>function_configs</td>
+                  <td><a href="#bytebase.v1.FunctionConfig">FunctionConfig</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>procedure_configs</td>
+                  <td><a href="#bytebase.v1.ProcedureConfig">ProcedureConfig</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>view_configs</td>
+                  <td><a href="#bytebase.v1.ViewConfig">ViewConfig</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -8838,6 +9152,28 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p>The column_configs is the ordered list of configs for columns in a table. </p></td>
                 </tr>
               
+                <tr>
+                  <td>classification_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the table in branch.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the table is updated in branch. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8931,13 +9267,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td></td>
                   <td><p>The comment is the comment of a table.
 classification and user_comment is parsed from the comment. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>classification</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The classification is the classification of a table parsed from the comment. </p></td>
                 </tr>
               
                 <tr>
@@ -9224,6 +9553,45 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If true, the secret will be created if it does not exist. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ViewConfig">ViewConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a view. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the view in branch.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the view is updated in branch. </p></td>
                 </tr>
               
             </tbody>
@@ -13895,6 +14263,13 @@ Keys are the following:
 - CANCELED </p></td>
                 </tr>
               
+                <tr>
+                  <td>labels</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -14145,7 +14520,8 @@ Keys are the following:
                   <td>from_assignee</td>
                   <td><a href="#string">string</a></td>
                   <td>optional</td>
-                  <td><p>Format: users/{email} </p></td>
+                  <td><p>TODO(d): deprecate from_assignee and to_assignee.
+Format: users/{email} </p></td>
                 </tr>
               
                 <tr>
@@ -17093,6 +17469,1389 @@ In this situation, `update_mask` is ignored. </p></td>
     
       
       <div class="file-heading">
+        <h2 id="v1/plan_service.proto">v1/plan_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.CreatePlanRequest">CreatePlanRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent project where this plan will be created.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>plan</td>
+                  <td><a href="#bytebase.v1.Plan">Plan</a></td>
+                  <td></td>
+                  <td><p>The plan to create. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetPlanRequest">GetPlanRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the plan to retrieve.
+Format: projects/{project}/plans/{plan} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListPlanCheckRunsRequest">ListPlanCheckRunsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent, which owns this collection of plan check runs.
+Format: projects/{project}/plans/{plan} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of plan check runs to return. The service may return fewer than
+this value.
+If unspecified, at most 50 plans will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListPlanCheckRuns` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListPlanCheckRuns` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListPlanCheckRunsResponse">ListPlanCheckRunsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>plan_check_runs</td>
+                  <td><a href="#bytebase.v1.PlanCheckRun">PlanCheckRun</a></td>
+                  <td>repeated</td>
+                  <td><p>The plan check runs from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListPlansRequest">ListPlansRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent, which owns this collection of plans.
+Format: projects/{project}
+Use &#34;projects/-&#34; to list all plans from all projects. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of plans to return. The service may return fewer than
+this value.
+If unspecified, at most 50 plans will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListPlans` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListPlans` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListPlansResponse">ListPlansResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>plans</td>
+                  <td><a href="#bytebase.v1.Plan">Plan</a></td>
+                  <td>repeated</td>
+                  <td><p>The plans from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan">Plan</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the plan.
+`plan` is a system generated ID.
+Format: projects/{project}/plans/{plan} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>uid</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The system-assigned, unique identifier for a resource. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>issue</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the issue associated with this plan.
+Format: projects/{project}/issues/{issue} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>description</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>steps</td>
+                  <td><a href="#bytebase.v1.Plan.Step">Plan.Step</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vcs_source</td>
+                  <td><a href="#bytebase.v1.Plan.VCSSource">Plan.VCSSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creator</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/hello@world.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig">Plan.ChangeDatabaseConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>target</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the target.
+Format: instances/{instance-id}/databases/{database-name}.
+Format: projects/{project}/databaseGroups/{databaseGroup}.
+Format: projects/{project}/deploymentConfigs/default. The plan should
+have a single step and single spec for the deployment configuration type. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the sheet.
+Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.Type">Plan.ChangeDatabaseConfig.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema_version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>schema_version is parsed from VCS file name.
+It is automatically generated in the UI workflow. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rollback_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If RollbackEnabled, build the RollbackSheetID of the task after the task is completed. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rollback_detail</td>
+                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail">Plan.ChangeDatabaseConfig.RollbackDetail</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ghost_flags</td>
+                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry">Plan.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pre_update_backup_detail</td>
+                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail">Plan.ChangeDatabaseConfig.PreUpdateBackupDetail</a></td>
+                  <td>optional</td>
+                  <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry">Plan.ChangeDatabaseConfig.GhostFlagsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail">Plan.ChangeDatabaseConfig.PreUpdateBackupDetail</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The database for keeping the backup data.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail">Plan.ChangeDatabaseConfig.RollbackDetail</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>rollback_from_task</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>rollback_from_task is the task from which the rollback SQL statement is generated for this task.
+Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rollback_from_issue</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task.
+Format: projects/{project}/issues/{issue} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.CreateDatabaseConfig">Plan.CreateDatabaseConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>target</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the instance on which the database is created.
+Format: instances/{instance} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the database to create. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
+For example, in MongoDB, it only creates the database when we first store data in that database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>character_set</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>character_set is the character set of the database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>collation is the collation of the database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>cluster</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>owner</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>environment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The environment resource.
+Format: environments/prod where prod is the environment resource ID. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>labels</td>
+                  <td><a href="#bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry">Plan.CreateDatabaseConfig.LabelsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>labels of the database. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry">Plan.CreateDatabaseConfig.LabelsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.ExportDataConfig">Plan.ExportDataConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>target</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the target.
+Format: instances/{instance-id}/databases/{database-name} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the sheet.
+Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>format</td>
+                  <td><a href="#bytebase.v1.ExportFormat">ExportFormat</a></td>
+                  <td></td>
+                  <td><p>The format of the exported file. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The zip password provide by users.
+Leave it empty if no needs to encrypt the zip file. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.Spec">Plan.Spec</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>earliest_allowed_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>earliest_allowed_time the earliest execution time of the change. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A UUID4 string that uniquely identifies the Spec. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>depends_on_specs</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>IDs of the specs that this spec depends on.
+Must be a subset of the specs in the same step. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_database_config</td>
+                  <td><a href="#bytebase.v1.Plan.CreateDatabaseConfig">Plan.CreateDatabaseConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>change_database_config</td>
+                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig">Plan.ChangeDatabaseConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>export_data_config</td>
+                  <td><a href="#bytebase.v1.Plan.ExportDataConfig">Plan.ExportDataConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.Step">Plan.Step</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>TODO: implement </p></td>
+                </tr>
+              
+                <tr>
+                  <td>specs</td>
+                  <td><a href="#bytebase.v1.Plan.Spec">Plan.Spec</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.VCSSource">Plan.VCSSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>vcs_type</td>
+                  <td><a href="#bytebase.v1.VCSType">VCSType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vcs_connector</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Optional.
+If present, we will update the pull request for rollout status.
+Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pull_request_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PlanCheckRun">PlanCheckRun</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>uid</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The system-assigned, unique identifier for a resource. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.PlanCheckRun.Type">PlanCheckRun.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#bytebase.v1.PlanCheckRun.Status">PlanCheckRun.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>target</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: project/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>results</td>
+                  <td><a href="#bytebase.v1.PlanCheckRun.Result">PlanCheckRun.Result</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>error is set if the Status is FAILED. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PlanCheckRun.Result">PlanCheckRun.Result</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#bytebase.v1.PlanCheckRun.Result.Status">PlanCheckRun.Result.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>code</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_summary_report</td>
+                  <td><a href="#bytebase.v1.PlanCheckRun.Result.SqlSummaryReport">PlanCheckRun.Result.SqlSummaryReport</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_review_report</td>
+                  <td><a href="#bytebase.v1.PlanCheckRun.Result.SqlReviewReport">PlanCheckRun.Result.SqlReviewReport</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PlanCheckRun.Result.SqlReviewReport">PlanCheckRun.Result.SqlReviewReport</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>line</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>column</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>detail</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>code</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Code from sql review. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PlanCheckRun.Result.SqlSummaryReport">PlanCheckRun.Result.SqlSummaryReport</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>code</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement_types</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>statement_types are the types of statements that are found in the sql. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>affected_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>changed_resources</td>
+                  <td><a href="#bytebase.v1.ChangedResources">ChangedResources</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.RunPlanChecksRequest">RunPlanChecksRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The plan to run plan checks.
+Format: projects/{project}/plans/{plan} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.RunPlanChecksResponse">RunPlanChecksResponse</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="bytebase.v1.UpdatePlanRequest">UpdatePlanRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>plan</td>
+                  <td><a href="#bytebase.v1.Plan">Plan</a></td>
+                  <td></td>
+                  <td><p>The plan to update.
+
+The plan&#39;s `name` field is used to identify the plan to update.
+Format: projects/{project}/plans/{plan} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig.Type">Plan.ChangeDatabaseConfig.Type</h3>
+        <p>Type is the database change type.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BASELINE</td>
+                <td>1</td>
+                <td><p>Used for establishing schema baseline, this is used when
+1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
+2. Had schema drift and need to re-establish the baseline.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MIGRATE</td>
+                <td>2</td>
+                <td><p>Used for DDL changes including CREATE DATABASE.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MIGRATE_SDL</td>
+                <td>3</td>
+                <td><p>Used for schema changes via state-based schema migration including CREATE DATABASE.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MIGRATE_GHOST</td>
+                <td>4</td>
+                <td><p>Used for DDL changes using gh-ost.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DATA</td>
+                <td>6</td>
+                <td><p>Used for DML change.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.PlanCheckRun.Result.Status">PlanCheckRun.Result.Status</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WARNING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SUCCESS</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.PlanCheckRun.Status">PlanCheckRun.Status</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RUNNING</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DONE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FAILED</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CANCELED</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.PlanCheckRun.Type">PlanCheckRun.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_STATEMENT_FAKE_ADVISE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_STATEMENT_COMPATIBILITY</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_STATEMENT_ADVISE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_STATEMENT_TYPE</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_STATEMENT_SUMMARY_REPORT</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_CONNECT</td>
+                <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE_GHOST_SYNC</td>
+                <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.PlanService">PlanService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>GetPlan</td>
+                <td><a href="#bytebase.v1.GetPlanRequest">GetPlanRequest</a></td>
+                <td><a href="#bytebase.v1.Plan">Plan</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ListPlans</td>
+                <td><a href="#bytebase.v1.ListPlansRequest">ListPlansRequest</a></td>
+                <td><a href="#bytebase.v1.ListPlansResponse">ListPlansResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CreatePlan</td>
+                <td><a href="#bytebase.v1.CreatePlanRequest">CreatePlanRequest</a></td>
+                <td><a href="#bytebase.v1.Plan">Plan</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdatePlan</td>
+                <td><a href="#bytebase.v1.UpdatePlanRequest">UpdatePlanRequest</a></td>
+                <td><a href="#bytebase.v1.Plan">Plan</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ListPlanCheckRuns</td>
+                <td><a href="#bytebase.v1.ListPlanCheckRunsRequest">ListPlanCheckRunsRequest</a></td>
+                <td><a href="#bytebase.v1.ListPlanCheckRunsResponse">ListPlanCheckRunsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RunPlanChecks</td>
+                <td><a href="#bytebase.v1.RunPlanChecksRequest">RunPlanChecksRequest</a></td>
+                <td><a href="#bytebase.v1.RunPlanChecksResponse">RunPlanChecksResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>GetPlan</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/plans/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListPlans</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/plans</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>CreatePlan</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/plans</td>
+                <td>plan</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdatePlan</td>
+                <td>PATCH</td>
+                <td>/v1/{plan.name=projects/*/plans/*}</td>
+                <td>plan</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListPlanCheckRuns</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*/plans/*}/planCheckRuns</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>RunPlanChecks</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/plans/*}:runPlanChecks</td>
+                <td>*</td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
         <h2 id="v1/project_service.proto">v1/project_service.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -17746,6 +19505,44 @@ Format: projects/{project}/databaseGroups/{databaseGroup}/schemaGroups/{schemaGr
 
         
       
+        <h3 id="bytebase.v1.Label">Label</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>color</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>group</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.LabelSelector">LabelSelector</h3>
         <p></p>
 
@@ -18112,6 +19909,20 @@ Format: projects/{project} </p></td>
                 <tr>
                   <td>data_classification_config_id</td>
                   <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>issue_labels</td>
+                  <td><a href="#bytebase.v1.Label">Label</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>force_issue_labels</td>
+                  <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -18992,6 +20803,12 @@ The API will default to the BASIC view.</p></td>
                 <td>OPERATOR_TYPE_EXISTS</td>
                 <td>2</td>
                 <td><p>The operator is &#34;Exists&#34;.</p></td>
+              </tr>
+            
+              <tr>
+                <td>OPERATOR_TYPE_NOT_IN</td>
+                <td>3</td>
+                <td><p>The operator is &#34;Not In&#34;.</p></td>
               </tr>
             
           </tbody>
@@ -20557,38 +22374,6 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></
 
         
       
-        <h3 id="bytebase.v1.CreatePlanRequest">CreatePlanRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent project where this plan will be created.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>plan</td>
-                  <td><a href="#bytebase.v1.Plan">Plan</a></td>
-                  <td></td>
-                  <td><p>The plan to create. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.CreateRolloutRequest">CreateRolloutRequest</h3>
         <p></p>
 
@@ -20612,31 +22397,6 @@ Format: projects/{project} </p></td>
                   <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
                   <td></td>
                   <td><p>The rollout to create. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GetPlanRequest">GetPlanRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the plan to retrieve.
-Format: projects/{project}/plans/{plan} </p></td>
                 </tr>
               
             </tbody>
@@ -20671,7 +22431,7 @@ Format: projects/{project}/rollouts/{rollout} </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListPlanCheckRunsRequest">ListPlanCheckRunsRequest</h3>
+        <h3 id="bytebase.v1.GetTaskRunLogRequest">GetTaskRunLogRequest</h3>
         <p></p>
 
         
@@ -20685,140 +22445,7 @@ Format: projects/{project}/rollouts/{rollout} </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent, which owns this collection of plan check runs.
-Format: projects/{project}/plans/{plan} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of plan check runs to return. The service may return fewer than
-this value.
-If unspecified, at most 50 plans will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListPlanCheckRuns` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListPlanCheckRuns` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListPlanCheckRunsResponse">ListPlanCheckRunsResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>plan_check_runs</td>
-                  <td><a href="#bytebase.v1.PlanCheckRun">PlanCheckRun</a></td>
-                  <td>repeated</td>
-                  <td><p>The plan check runs from the specified request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListPlansRequest">ListPlansRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent, which owns this collection of plans.
-Format: projects/{project}
-Use &#34;projects/-&#34; to list all plans from all projects. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of plans to return. The service may return fewer than
-this value.
-If unspecified, at most 50 plans will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListPlans` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListPlans` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListPlansResponse">ListPlansResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>plans</td>
-                  <td><a href="#bytebase.v1.Plan">Plan</a></td>
-                  <td>repeated</td>
-                  <td><p>The plans from the specified request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
+                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
                 </tr>
               
             </tbody>
@@ -20898,779 +22525,6 @@ the call that provided the page token. </p></td>
                   <td></td>
                   <td><p>A token, which can be sent as `page_token` to retrieve the next page.
 If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan">Plan</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the plan.
-`plan` is a system generated ID.
-Format: projects/{project}/plans/{plan} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>uid</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The system-assigned, unique identifier for a resource. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>issue</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the issue associated with this plan.
-Format: projects/{project}/issues/{issue} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>description</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>steps</td>
-                  <td><a href="#bytebase.v1.Plan.Step">Plan.Step</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>vcs_source</td>
-                  <td><a href="#bytebase.v1.Plan.VCSSource">Plan.VCSSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>creator</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: users/hello@world.com </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig">Plan.ChangeDatabaseConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the target.
-Format: instances/{instance-id}/databases/{database-name}.
-Format: projects/{project}/databaseGroups/{databaseGroup}.
-Format: projects/{project}/deploymentConfigs/default. The plan should
-have a single step and single spec for the deployment configuration type. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the sheet.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.Type">Plan.ChangeDatabaseConfig.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>schema_version is parsed from VCS file name.
-It is automatically generated in the UI workflow. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollback_enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If RollbackEnabled, build the RollbackSheetID of the task after the task is completed. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollback_detail</td>
-                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail">Plan.ChangeDatabaseConfig.RollbackDetail</a></td>
-                  <td>optional</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ghost_flags</td>
-                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry">Plan.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>pre_update_backup_detail</td>
-                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail">Plan.ChangeDatabaseConfig.PreUpdateBackupDetail</a></td>
-                  <td>optional</td>
-                  <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry">Plan.ChangeDatabaseConfig.GhostFlagsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig.PreUpdateBackupDetail">Plan.ChangeDatabaseConfig.PreUpdateBackupDetail</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database for keeping the backup data.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail">Plan.ChangeDatabaseConfig.RollbackDetail</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>rollback_from_task</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>rollback_from_task is the task from which the rollback SQL statement is generated for this task.
-Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollback_from_issue</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>rollback_from_issue is the issue containing the original task from which the rollback SQL statement is generated for this task.
-Format: projects/{project}/issues/{issue} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.CreateDatabaseConfig">Plan.CreateDatabaseConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the instance on which the database is created.
-Format: instances/{instance} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the database to create. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
-For example, in MongoDB, it only creates the database when we first store data in that database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>character_set</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>character_set is the character set of the database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>collation</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>collation is the collation of the database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>cluster</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>owner</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>environment</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The environment resource.
-Format: environments/prod where prod is the environment resource ID. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>labels</td>
-                  <td><a href="#bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry">Plan.CreateDatabaseConfig.LabelsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p>labels of the database. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry">Plan.CreateDatabaseConfig.LabelsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.ExportDataConfig">Plan.ExportDataConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the target.
-Format: instances/{instance-id}/databases/{database-name} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the sheet.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>format</td>
-                  <td><a href="#bytebase.v1.ExportFormat">ExportFormat</a></td>
-                  <td></td>
-                  <td><p>The format of the exported file. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The zip password provide by users.
-Leave it empty if no needs to encrypt the zip file. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.Spec">Plan.Spec</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>earliest_allowed_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>earliest_allowed_time the earliest execution time of the change. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A UUID4 string that uniquely identifies the Spec. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>depends_on_specs</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>IDs of the specs that this spec depends on.
-Must be a subset of the specs in the same step. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_database_config</td>
-                  <td><a href="#bytebase.v1.Plan.CreateDatabaseConfig">Plan.CreateDatabaseConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>change_database_config</td>
-                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig">Plan.ChangeDatabaseConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>export_data_config</td>
-                  <td><a href="#bytebase.v1.Plan.ExportDataConfig">Plan.ExportDataConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.Step">Plan.Step</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>TODO: implement </p></td>
-                </tr>
-              
-                <tr>
-                  <td>specs</td>
-                  <td><a href="#bytebase.v1.Plan.Spec">Plan.Spec</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.VCSSource">Plan.VCSSource</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>vcs_type</td>
-                  <td><a href="#bytebase.v1.VCSType">VCSType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>vcs_connector</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Optional.
-If present, we will update the pull request for rollout status.
-Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>pull_request_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.PlanCheckRun">PlanCheckRun</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>uid</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The system-assigned, unique identifier for a resource. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.PlanCheckRun.Type">PlanCheckRun.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#bytebase.v1.PlanCheckRun.Status">PlanCheckRun.Status</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: project/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>results</td>
-                  <td><a href="#bytebase.v1.PlanCheckRun.Result">PlanCheckRun.Result</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>error</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>error is set if the Status is FAILED. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.PlanCheckRun.Result">PlanCheckRun.Result</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#bytebase.v1.PlanCheckRun.Result.Status">PlanCheckRun.Result.Status</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>content</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>code</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sql_summary_report</td>
-                  <td><a href="#bytebase.v1.PlanCheckRun.Result.SqlSummaryReport">PlanCheckRun.Result.SqlSummaryReport</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sql_review_report</td>
-                  <td><a href="#bytebase.v1.PlanCheckRun.Result.SqlReviewReport">PlanCheckRun.Result.SqlReviewReport</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.PlanCheckRun.Result.SqlReviewReport">PlanCheckRun.Result.SqlReviewReport</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>line</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>detail</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>code</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Code from sql review. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.PlanCheckRun.Result.SqlSummaryReport">PlanCheckRun.Result.SqlSummaryReport</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>code</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement_types</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>statement_types are the types of statements that are found in the sql. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>affected_rows</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>changed_resources</td>
-                  <td><a href="#bytebase.v1.ChangedResources">ChangedResources</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -21763,38 +22617,6 @@ Format: projects/{project}/plans/{plan} </p></td>
           </table>
 
           
-
-        
-      
-        <h3 id="bytebase.v1.RunPlanChecksRequest">RunPlanChecksRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The plan to run plan checks.
-Format: projects/{project}/plans/{plan} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.RunPlanChecksResponse">RunPlanChecksResponse</h3>
-        <p></p>
-
-        
 
         
       
@@ -22453,7 +23275,7 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
 
         
       
-        <h3 id="bytebase.v1.UpdatePlanRequest">UpdatePlanRequest</h3>
+        <h3 id="bytebase.v1.TaskRunLog">TaskRunLog</h3>
         <p></p>
 
         
@@ -22464,20 +23286,177 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
             <tbody>
               
                 <tr>
-                  <td>plan</td>
-                  <td><a href="#bytebase.v1.Plan">Plan</a></td>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The plan to update.
-
-The plan&#39;s `name` field is used to identify the plan to update.
-Format: projects/{project}/plans/{plan} </p></td>
+                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log </p></td>
                 </tr>
               
                 <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td>entries</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry">TaskRunLogEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry">TaskRunLogEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.Type">TaskRunLogEntry.Type</a></td>
                   <td></td>
-                  <td><p>The list of fields to update. </p></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema_dump</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.SchemaDump">TaskRunLogEntry.SchemaDump</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>command_execute</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.CommandExecute">TaskRunLogEntry.CommandExecute</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.CommandExecute">TaskRunLogEntry.CommandExecute</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>log_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>command_indexes</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>repeated</td>
+                  <td><p>The indexes of the executed commands. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>response</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse">TaskRunLogEntry.CommandExecute.CommandResponse</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse">TaskRunLogEntry.CommandExecute.CommandResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>log_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>affected_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>all_affected_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>repeated</td>
+                  <td><p>`all_affected_rows` is the affected rows of each command.
+`all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.SchemaDump">TaskRunLogEntry.SchemaDump</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -22488,190 +23467,6 @@ Format: projects/{project}/plans/{plan} </p></td>
         
       
 
-      
-        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig.Type">Plan.ChangeDatabaseConfig.Type</h3>
-        <p>Type is the database change type.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>BASELINE</td>
-                <td>1</td>
-                <td><p>Used for establishing schema baseline, this is used when
-1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
-2. Had schema drift and need to re-establish the baseline.</p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE</td>
-                <td>2</td>
-                <td><p>Used for DDL changes including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_SDL</td>
-                <td>3</td>
-                <td><p>Used for schema changes via state-based schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_GHOST</td>
-                <td>4</td>
-                <td><p>Used for DDL changes using gh-ost.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATA</td>
-                <td>6</td>
-                <td><p>Used for DML change.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.PlanCheckRun.Result.Status">PlanCheckRun.Result.Status</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ERROR</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>WARNING</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SUCCESS</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.PlanCheckRun.Status">PlanCheckRun.Status</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RUNNING</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FAILED</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CANCELED</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.PlanCheckRun.Type">PlanCheckRun.Type</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_STATEMENT_FAKE_ADVISE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_STATEMENT_COMPATIBILITY</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_STATEMENT_ADVISE</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_STATEMENT_TYPE</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_STATEMENT_SUMMARY_REPORT</td>
-                <td>5</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_CONNECT</td>
-                <td>6</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_GHOST_SYNC</td>
-                <td>7</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.v1.Task.DatabaseDataUpdate.RollbackSqlStatus">Task.DatabaseDataUpdate.RollbackSqlStatus</h3>
         <p></p>
@@ -22949,6 +23744,35 @@ Format: projects/{project}/plans/{plan} </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.TaskRunLogEntry.Type">TaskRunLogEntry.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SCHEMA_DUMP</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COMMAND_EXECUTE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
 
@@ -22960,34 +23784,6 @@ Format: projects/{project}/plans/{plan} </p></td>
             <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
           </thead>
           <tbody>
-            
-              <tr>
-                <td>GetPlan</td>
-                <td><a href="#bytebase.v1.GetPlanRequest">GetPlanRequest</a></td>
-                <td><a href="#bytebase.v1.Plan">Plan</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ListPlans</td>
-                <td><a href="#bytebase.v1.ListPlansRequest">ListPlansRequest</a></td>
-                <td><a href="#bytebase.v1.ListPlansResponse">ListPlansResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CreatePlan</td>
-                <td><a href="#bytebase.v1.CreatePlanRequest">CreatePlanRequest</a></td>
-                <td><a href="#bytebase.v1.Plan">Plan</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdatePlan</td>
-                <td><a href="#bytebase.v1.UpdatePlanRequest">UpdatePlanRequest</a></td>
-                <td><a href="#bytebase.v1.Plan">Plan</a></td>
-                <td><p></p></td>
-              </tr>
             
               <tr>
                 <td>GetRollout</td>
@@ -23018,16 +23814,9 @@ Format: projects/{project}/plans/{plan} </p></td>
               </tr>
             
               <tr>
-                <td>ListPlanCheckRuns</td>
-                <td><a href="#bytebase.v1.ListPlanCheckRunsRequest">ListPlanCheckRunsRequest</a></td>
-                <td><a href="#bytebase.v1.ListPlanCheckRunsResponse">ListPlanCheckRunsResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RunPlanChecks</td>
-                <td><a href="#bytebase.v1.RunPlanChecksRequest">RunPlanChecksRequest</a></td>
-                <td><a href="#bytebase.v1.RunPlanChecksResponse">RunPlanChecksResponse</a></td>
+                <td>GetTaskRunLog</td>
+                <td><a href="#bytebase.v1.GetTaskRunLogRequest">GetTaskRunLogRequest</a></td>
+                <td><a href="#bytebase.v1.TaskRunLog">TaskRunLog</a></td>
                 <td><p></p></td>
               </tr>
             
@@ -23073,46 +23862,6 @@ Format: projects/{project}/plans/{plan} </p></td>
               
               
               <tr>
-                <td>GetPlan</td>
-                <td>GET</td>
-                <td>/v1/{name=projects/*/plans/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListPlans</td>
-                <td>GET</td>
-                <td>/v1/{parent=projects/*}/plans</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>CreatePlan</td>
-                <td>POST</td>
-                <td>/v1/{parent=projects/*}/plans</td>
-                <td>plan</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdatePlan</td>
-                <td>PATCH</td>
-                <td>/v1/{plan.name=projects/*/plans/*}</td>
-                <td>plan</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
                 <td>GetRollout</td>
                 <td>GET</td>
                 <td>/v1/{name=projects/*/rollouts/*}</td>
@@ -23153,20 +23902,10 @@ Format: projects/{project}/plans/{plan} </p></td>
               
               
               <tr>
-                <td>ListPlanCheckRuns</td>
+                <td>GetTaskRunLog</td>
                 <td>GET</td>
-                <td>/v1/{parent=projects/*/plans/*}/planCheckRuns</td>
+                <td>/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/log</td>
                 <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>RunPlanChecks</td>
-                <td>POST</td>
-                <td>/v1/{name=projects/*/plans/*}:runPlanChecks</td>
-                <td>*</td>
               </tr>
               
             
@@ -24153,6 +24892,13 @@ HASH: MD5Mask </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>inner_outer_mask</td>
+                  <td><a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask">MaskingAlgorithmSetting.Algorithm.InnerOuterMask</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -24176,6 +24922,51 @@ HASH: MD5Mask </p></td>
                   <td></td>
                   <td><p>substitution is the string used to replace the original value, the
 max length of the string is 16 bytes. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask">MaskingAlgorithmSetting.Algorithm.InnerOuterMask</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>prefix_len</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>suffix_len</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType">MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>substitution</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -25041,6 +25832,35 @@ The external URL is used for:
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType">MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MASK_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>INNER</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OUTER</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.SMTPMailDeliverySettingValue.Authentication">SMTPMailDeliverySettingValue.Authentication</h3>
         <p>We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and CRAM-MD5.</p>
         <table class="enum-table">
@@ -25354,6 +26174,44 @@ set the `raw` to true in GetSheet request to retrieve the full content. </p></td
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>engine</td>
+                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
+                  <td></td>
+                  <td><p>The SQL dialect. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SheetCommand">SheetCommand</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -25390,6 +26248,13 @@ set the `raw` to true in GetSheet request to retrieve the full content. </p></td
                   <td><a href="#bytebase.v1.DatabaseConfig">DatabaseConfig</a></td>
                   <td></td>
                   <td><p>The snapshot of the baseline database config when creating the sheet. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commands</td>
+                  <td><a href="#bytebase.v1.SheetCommand">SheetCommand</a></td>
+                  <td>repeated</td>
+                  <td><p>The start and end position of each command in the sheet statement. </p></td>
                 </tr>
               
             </tbody>
@@ -25945,7 +26810,8 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name is the instance name to execute the query against.
-Format: instances/{instance}/databases/{databaseName} </p></td>
+Format: instances/{instance}/databases/{databaseName}
+Format: projects/{project}/issues/{issue} for data export issue. </p></td>
                 </tr>
               
                 <tr>

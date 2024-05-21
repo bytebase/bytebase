@@ -18,7 +18,6 @@
 </template>
 
 <script lang="ts">
-/* eslint-disable vue/no-mutating-props */
 import type { PropType } from "vue";
 import { defineComponent } from "vue";
 import type { ComposedDatabase } from "@/types";

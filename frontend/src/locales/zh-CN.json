@@ -76,7 +76,6 @@
     "role": {
       "self": "角色"
     },
-    "assignee": "指派人",
     "revert": "恢复",
     "apply": "应用",
     "reorder": "排序",
@@ -141,8 +140,7 @@
     "connecting": "连接中...",
     "creating": "创建中...",
     "updating": "更新中...",
-    "Address": "地址",
-    "User": "用户",
+    "address": "地址",
     "assigned": "已指派",
     "subscribed": "已订阅",
     "created": "已创建",
@@ -337,7 +335,6 @@
       "warn": "警告",
       "error": "错误"
     },
-    "earliest-allowed-time-no-modify": "您无法修改此字段，因为您不是该工单的审核人或者它不在待执行状态。",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "同步数据",
       "bb-task-database-schema-update-ghost-cutover": "切换表",
@@ -357,7 +354,7 @@
     "skip": "跳过",
     "skip-modal-title": "跳过任务[{name}]？",
     "task-checks": "任务检查项",
-    "prior-backup": "数据预前备份",
+    "prior-backup": "受影响数据预备份",
     "rollback": {
       "sql-rollback": "SQL 回滚",
       "failed": "失败",
@@ -762,6 +759,11 @@
       },
       "algorithms": {
         "self": "脱敏算法",
+        "upload": "导入算法",
+        "upload-label": "您可以上传 JSON 格式的算法文件。",
+        "override-title": "覆盖算法数据",
+        "override-desc": "现有的算法将被覆盖，您必须重新配置语义类型的算法。",
+        "override-confirm": "继续导入",
         "default": "默认",
         "default-desc": "使用 *** 为数据遮挡",
         "table": {
@@ -789,7 +791,7 @@
         },
         "range-mask": {
           "self": "范围遮掩",
-          "label": "范围遮掩使用遮掩字符串来替换从起始索引到结束索引（不包含结束索引）的原始值。",
+          "label": "范围遮掩使用遮掩字符串来替换从起始索引到结束索引（不包含结束索引）的原始值，索引从 0 开始。",
           "slice-start": "起始位置",
           "slice-start-label": "起始位置是原始值的起始索引，从 0 开始且小于结束位置。",
           "slice-end": "结束位置",
@@ -801,6 +803,16 @@
           "self": "MD5 哈希",
           "salt": "盐值 (Salt)",
           "salt-label": "盐值 (Salt) 用于通过原始值生成哈希值。"
+        },
+        "inner-outer-mask": {
+          "self": "内/外遮掩",
+          "type": "遮掩类型",
+          "inner-label": "内遮掩遮蔽字符串的内部部分。前缀和后缀代表数据的未遮蔽部分。",
+          "inner-mask": "内遮掩",
+          "outer-label": "外遮掩遮蔽字符串的左右两端。前缀和后缀代表数据的遮蔽部分。",
+          "outer-mask": "外遮掩",
+          "prefix-length": "前缀长度",
+          "suffix-length": "后缀长度"
         }
       },
       "masking-level": {
@@ -821,14 +833,14 @@
         "upload": "导入分类分级",
         "upload-succeed": "导入成功",
         "search": "搜索分类分级",
-        "label": "您可以上传数据分类分级的 JSON 格式文件。",
-        "view-example": "查看样例",
-        "json-format-example": "分类分级 JSON 格式样例",
+        "upload-label": "您可以上传数据分类分级的 JSON 格式文件。",
         "copy-succeed": "样例已复制",
         "override-title": "覆盖分类分级数据",
         "override-desc": "已有的分类分级数据将会被覆盖，涉及到的项目都会受到影响。",
         "override-confirm": "继续导入"
-      }
+      },
+      "json-format-example": "JSON 格式样例",
+      "view-example": "查看样例"
     },
     "release": {
       "new-version-available": "有新版本可更新",
@@ -865,7 +877,7 @@
       "pipeline-stage-status-update": "更新工单阶段状态",
       "pipeline-task-status-update": "更新工单任务状态",
       "pipeline-task-statement-update": "更新 SQL",
-      "pipeline-task-prior-backup": "数据预前备份",
+      "pipeline-task-prior-backup": "受影响数据预备份",
       "member-create": "创建成员",
       "member-role-update": "更新角色",
       "member-activate": "激活成员",
@@ -882,10 +894,6 @@
     "sentence": {
       "created-issue": "创建工单",
       "commented": "评论",
-      "reassigned-issue": "将工单由 {oldName} 重新指派给 {newName}",
-      "assigned-issue": "将工单指派给 {newName}",
-      "unassigned-issue": "将工单由 {oldName} 解除指派",
-      "invalid-assignee-update": "无效的指派操作",
       "changed-description": "修改描述",
       "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
       "unset-from": "撤销 {name} 的值 (从 \"{oldValue}\")",
@@ -1001,10 +1009,6 @@
           "title": "创建人",
           "description": "根据工单创建人搜索"
         },
-        "assignee": {
-          "title": "指派人",
-          "description": "根据工单指派人搜索"
-        },
         "subscriber": {
           "title": "订阅人",
           "description": "根据工单订阅人搜索"
@@ -1032,6 +1036,10 @@
             "yes": "是",
             "no": "否"
           }
+        },
+        "label": {
+          "title": "标签",
+          "description": "按工单标签过滤"
         }
       },
       "hide": "隐藏高级搜索"
@@ -1048,10 +1056,10 @@
       "updated": "更新于",
       "approver": "审批人",
       "creator": "创建人",
-      "assignee": "指派人"
+      "current-approver": "当前审批人"
     },
     "stage-select": {
-      "active": "{name}（活动中）"
+      "current": "{name}（当前）"
     },
     "not-allowed-to-operate-unassigned-database": "未分配的数据库无法{operation}。\n需要先将它转移到项目里。",
     "migration-mode": {
@@ -1094,19 +1102,12 @@
     },
     "will-rollback": "当前任务将会回滚 {link}",
     "issue-link-with-task": "工单 {issue} - 任务 {task}",
-    "assignee-attention": {
-      "send-approval-request-successfully": "{im}审批请求发送成功",
-      "send-attention-request-successfully": "审核人 {principal} 已收到关注请求",
-      "needs-attention": "需要关注",
-      "click-to-mark": "点击以请求审核人关注"
-    },
     "sdl": {
       "schema-change": "Schema 变化",
       "generated-ddl-statements": "生成的 DDL 语句",
       "full-schema": "完整 schema",
       "left-schema-may-change": "左边的 schema 在工单执行前可能会发生变化。"
     },
-    "assignee-tooltip": "被指派人是负责处理问题的人，当问题分配给他们时，它会显示在他们的已分配问题列表中。",
     "approval-flow": {
       "self": "审批流",
       "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批。",
@@ -1172,14 +1173,6 @@
       "you-are-not-allowed-to-perform-this-action": "您无权执行此操作"
     },
     "approval-requested": "审批请求",
-    "assignee": {
-      "current-assignee": "当前指派人",
-      "workspace-admins": "Bytebase 工作空间管理员",
-      "workspace-dbas": "DBA",
-      "project-owners": "项目所有者",
-      "releasers-of-current-stage": "当前阶段的发布人",
-      "approvers-of-current-step": "当前步骤的审批人"
-    },
     "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中某些任务并未成功执行。",
     "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）",
     "preview": "预览工单",
@@ -1193,6 +1186,20 @@
     },
     "update-rollout-time": {
       "self": "修改指定发布时间"
+    },
+    "task-run": {
+      "task-run-log": {
+        "batch": "批次",
+        "affected-rows": "影响行数",
+        "entry-type": {
+          "command-execute": "执行指令",
+          "schema-dump": "导出 schema"
+        },
+        "affected-rows-n": "影响行数：{n}"
+      }
+    },
+    "sql-review": {
+      "statement-type": "语句类型"
     }
   },
   "alter-schema": {
@@ -1334,6 +1341,14 @@
           "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}project-id.iam 添加到您的 Google Cloud SQL 中。授予用户所需的权限。"
         }
       },
+      "aws-rds": {
+        "mysql": {
+          "template": "下面是创建用户 {user}{'@'}% 并授予该用户所需权限的示例。"
+        },
+        "postgresql": {
+          "template": "下面是创建用户“{user}”并授予该用户所需权限的示例。"
+        }
+      },
       "create-user-example": {
         "snowflake": {
           "template": "创建用户 {user}，密码 {password}，warehouse 为{warehouse}，并授予必要权限的例子如下。"
@@ -1361,7 +1376,8 @@
     "password-type": {
       "password": "密码",
       "password-tip": "您也可以指定外部的密码管理服务 endpoint",
-      "google-iam": "Google CloudSQL IAM",
+      "google-iam": "Google Cloud SQL IAM",
+      "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
@@ -1734,7 +1750,11 @@
     "transfer-database-to": "将数据库转移到目标项目",
     "transfer-database-from-to": "将数据库从源项目转移到目标项目",
     "classification": {
-      "self": "分类分级"
+      "self": "分类分级",
+      "sync-from-comment": "从注释中同步分类分级",
+      "sync-from-comment-tip": "启用后，分类分级将从表或列的注释同步。注释应遵循“{format}”格式。",
+      "sync-from-comment-enable-warning": "分类分级将随着 DDL 而改变，并与原始注释同步。",
+      "sync-from-comment-disable-warning": "分类分级不会随着DDL而改变，您可以在数据库详细信息页面上随时更改它。"
     },
     "recent": "最近访问",
     "partitioned": "分区",
@@ -1816,11 +1836,6 @@
       "success-prompt": "成功创建 {name}."
     },
     "overview": {
-      "view-all": "查看所有",
-      "view-all-closed": "查看所有结束的工单",
-      "recent-activity": "近期@.lower:{'common.activities'}",
-      "in-progress": "进行中",
-      "recently-closed": "近期结束",
       "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。",
       "no-db-prompt": "没有数据库属于当前项目。您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库。"
     },
@@ -1870,7 +1885,7 @@
         },
         "issue-info-change": {
           "title": "工单信息变更",
-          "label": "当一个工单的信息 (比如: 指派人, 标题, 描述) 发生了变更"
+          "label": "当一个工单的信息 (比如: 标题, 描述) 发生了变更"
         },
         "issue-comment-creation": {
           "title": "工单被评论",
@@ -1926,6 +1941,11 @@
         "only-allow-specified-roles-to-create-branch": "只允许指定角色创建分支",
         "no-protection-rule-configured": "没有配置分支保护规则。",
         "only-apply-to-main-branches": "只对主分支生效"
+      },
+      "labels": {
+        "issue-labels": "工单标签",
+        "configure-labels": "配置标签",
+        "force-issue-labels": "要求所有工单都必须有标签"
       }
     },
     "members": {
@@ -2126,7 +2146,10 @@
     "delete-read-only-data-source": "删除只读数据源",
     "connection-string-schema": "连接串模式",
     "admin": "主库",
-    "read-only": "从库"
+    "read-only": "从库",
+    "additional-node-addresses": "附加节点地址",
+    "replica-set": "副本集",
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {
@@ -2261,7 +2284,13 @@
     "sync-in-progress": "正在同步",
     "create-a-worksheet": "新建工作表",
     "select-a-database-to-start": "选择数据库以开始",
-    "select-encoding": "选择编码"
+    "select-encoding": "选择编码",
+    "result-limit": {
+      "n-rows": "{n} 行",
+      "rows": "行"
+    },
+    "n-per-page": "{n} / 页",
+    "customize-tree-structure": "自定义树结构"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2284,7 +2313,10 @@
       "drop-column": "删除列",
       "sql-preview": "预览 SQL",
       "reset": "重置",
-      "save": "保存"
+      "save": "保存",
+      "create-procedure": "新建存储过程",
+      "create-function": "新建函数",
+      "drop": "删除"
     },
     "database": {
       "name": "名称",
@@ -2337,7 +2369,11 @@
       "failed-to-fetch-database-schema": "请求数据库 Schema 失败",
       "invalid-schema": "无效的 Schema",
       "cannot-drop-the-last-column": "不能删除最后一列",
-      "cannot-change-config": "数据库配置必须同 Schema 一起变更"
+      "cannot-change-config": "数据库配置必须同 Schema 一起变更",
+      "duplicated-procedure-name": "重复的存储过程名称",
+      "invalid-procedure-name": "无效的存储过程名称",
+      "duplicated-function-name": "重复的函数名称",
+      "invalid-function-name": "无效的函数名称"
     },
     "confirm-to-close": {
       "title": "确定关闭？",
@@ -2361,7 +2397,10 @@
       "value": "值",
       "add-sub-partition": "添加子分区",
       "type": "类型"
-    }
+    },
+    "views": "视图",
+    "procedures": "存储过程",
+    "functions": "函数"
   },
   "label": {
     "empty-label-value": "空",
@@ -2747,7 +2786,10 @@
       "payload": "Payload",
       "empty": "<空>",
       "view-details": "查看详情",
-      "select-type": "选择类型"
+      "select-type": "选择类型",
+      "method": "操作",
+      "request": "请求信息",
+      "response": "响应信息"
     },
     "type": {
       "workspace": {
@@ -2762,6 +2804,22 @@
       },
       "sql-editor-query": "SQL 编辑器查询",
       "sql-export": "SQL 导出"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "操作者",
+          "description": "按审计日志操作者搜索"
+        },
+        "method": {
+          "title": "操作",
+          "description": "按审计日志操作搜索"
+        },
+        "level": {
+          "title": "事件等级",
+          "description": "按审计日志事件等级搜索"
+        }
+      }
     }
   },
   "onboarding-guide": {
@@ -3238,6 +3296,10 @@
     "self": "导出中心",
     "permission-denied": "您没有权限执行此操作"
   },
+  "review-center": {
+    "self": "SQL 审核中心",
+    "review-sql": "审核 SQL"
+  },
   "schema-designer": {
     "self": "Schema 设计器",
     "schema-design": "Schema 设计",
@@ -3360,7 +3422,12 @@
     },
     "confirm-remove-change": "移除这项变更？",
     "delete-this-changelist": "删除这个变更列表",
-    "confirm-delete-changelist": "删除变更列表？"
+    "confirm-delete-changelist": "删除变更列表？",
+    "import": {
+      "no-file-to-upload": "没有可以上传的文件",
+      "upload-sql-or-zip-file": "上传 .sql 或 .zip 文件",
+      "optional-upload-sql-or-zip-file": "（可选）上传 .sql 或 .zip 文件"
+    }
   },
   "export-data": {
     "export-rows": "导出行数",
@@ -3433,6 +3500,9 @@
     "table-partition": {
       "drop-partition-confirm": "删除表分区？",
       "drop-partition-with-subpartitions-confirm": "将会同时删除其所有子分区。"
+    },
+    "last-update": {
+      "self": "最后更新"
     }
   }
 }

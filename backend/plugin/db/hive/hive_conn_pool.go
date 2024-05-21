@@ -49,13 +49,16 @@ func CreateHiveConnPool(
 
 	// SASL settings.
 	switch t := config.SASLConfig.(type) {
-	// Kerberos.
 	case *db.KerberosConfig:
-		hiveConfig.Hostname = t.Instance
+		// Kerberos.
+		hiveConfig.Hostname = config.Host
 		hiveConfig.Service = t.Primary
-	// Plain.
+	case *db.PlainSASLConfig:
+		// Plain.
+		hiveConfig.Username = t.Username
+		hiveConfig.Password = t.Password
 	default:
-		hiveConfig.Username = config.Username
+		return nil, errors.Errorf("invalid SASL config")
 	}
 
 	for i := 0; i < numMaxConn; i++ {
@@ -135,9 +138,12 @@ func (pool *FixedConnPool) Destroy() error {
 	}
 	pool.RWMutex.Unlock()
 
+	var errWhenClose error
 	for conn := range pool.Connections {
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			errWhenClose = err
+		}
 	}
 
-	return nil
+	return errWhenClose
 }

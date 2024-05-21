@@ -212,7 +212,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         // And ignore the fold/unfold arrow.
         if (type === "database") {
           setConnection(node, {
-            sheet: tabStore.currentTab?.sheet ?? "",
+            worksheet: tabStore.currentTab?.worksheet ?? "",
             mode: DEFAULT_SQL_EDITOR_TAB_MODE,
           });
           showConnectionPanel.value = false;
@@ -294,7 +294,6 @@ watch(
       expandNodesByType("instance", instance);
     }
     if (database.uid !== String(UNKNOWN_ID)) {
-      expandNodesByType("project", database.projectEntity);
       expandNodesByType("database", database);
     }
   },
@@ -350,6 +349,8 @@ const calcDefaultExpandKeys = async (override = false) => {
       }
     }
   }
+
+  await nextTick();
   expandedKeys.value = Array.from(keys);
 };
 

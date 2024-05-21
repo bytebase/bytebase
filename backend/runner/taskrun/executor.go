@@ -168,6 +168,12 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 	return mi, nil
 }
 
+func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store) func(t time.Time, e *storepb.TaskRunLog) error {
+	return func(t time.Time, e *storepb.TaskRunLog) error {
+		return s.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), e)
+	}
+}
+
 func executeMigration(
 	ctx context.Context,
 	driverCtx context.Context,
@@ -179,7 +185,8 @@ func executeMigration(
 	taskRunUID int,
 	statement string,
 	sheetID *int,
-	mi *db.MigrationInfo) (string, string, error) {
+	mi *db.MigrationInfo,
+) (string, string, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", "", err
@@ -225,7 +232,7 @@ func executeMigration(
 		switch task.Type {
 		case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate:
 			switch instance.Engine {
-			case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE, storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE, storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_GAUSSDB:
+			case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE, storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE, storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_GAUSSDB, storepb.Engine_MSSQL:
 				opts.ChunkedSubmission = true
 				opts.UpdateExecutionStatus = func(detail *v1pb.TaskRun_ExecutionDetail) {
 					stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
@@ -235,6 +242,7 @@ func executeMigration(
 							UpdateTime:      time.Now(),
 						})
 				}
+				opts.CreateTaskRunLog = getCreateTaskRunLog(ctx, taskRunUID, stores)
 			default:
 				// do nothing
 			}

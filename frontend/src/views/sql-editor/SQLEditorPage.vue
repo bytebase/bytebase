@@ -120,7 +120,7 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import {
-  allowUsingSchemaEditorV1,
+  allowUsingSchemaEditor,
   extractProjectResourceName,
   instanceV1HasReadonlyMode,
 } from "@/utils";
@@ -180,7 +180,7 @@ useEmitteryEventListener(
   "alter-schema",
   ({ databaseUID, schema, table }) => {
     const database = databaseStore.getDatabaseByUID(databaseUID);
-    if (allowUsingSchemaEditorV1([database])) {
+    if (allowUsingSchemaEditor([database])) {
       // TODO: support open selected database tab directly in Schema Editor.
       alterSchemaState.databaseIdList = [databaseUID];
       alterSchemaState.showModal = true;
@@ -195,9 +195,8 @@ useEmitteryEventListener(
       }
       const query = {
         template: "bb.issue.database.schema.update",
-        name: `[${database.name}] Alter schema`,
-        project: database.projectEntity.uid,
-        databaseList: databaseUID,
+        name: `[${database.databaseName}] Alter schema`,
+        databaseList: database.name,
         sql: exampleSQL.join(" "),
       };
       const route = router.resolve({

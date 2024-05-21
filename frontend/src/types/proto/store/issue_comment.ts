@@ -19,11 +19,11 @@ export interface IssueCommentPayload_Approval {
 }
 
 export enum IssueCommentPayload_Approval_Status {
-  STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  APPROVED = 2,
-  REJECTED = 3,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function issueCommentPayload_Approval_StatusFromJSON(object: any): IssueCommentPayload_Approval_Status {
@@ -63,29 +63,37 @@ export function issueCommentPayload_Approval_StatusToJSON(object: IssueCommentPa
   }
 }
 
+export function issueCommentPayload_Approval_StatusToNumber(object: IssueCommentPayload_Approval_Status): number {
+  switch (object) {
+    case IssueCommentPayload_Approval_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case IssueCommentPayload_Approval_Status.PENDING:
+      return 1;
+    case IssueCommentPayload_Approval_Status.APPROVED:
+      return 2;
+    case IssueCommentPayload_Approval_Status.REJECTED:
+      return 3;
+    case IssueCommentPayload_Approval_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface IssueCommentPayload_IssueUpdate {
   fromTitle?: string | undefined;
   toTitle?: string | undefined;
   fromDescription?: string | undefined;
   toDescription?: string | undefined;
   fromStatus?: IssueCommentPayload_IssueUpdate_IssueStatus | undefined;
-  toStatus?:
-    | IssueCommentPayload_IssueUpdate_IssueStatus
-    | undefined;
-  /** Format: users/{email} */
-  fromAssignee?:
-    | string
-    | undefined;
-  /** Format: users/{email} */
-  toAssignee?: string | undefined;
+  toStatus?: IssueCommentPayload_IssueUpdate_IssueStatus | undefined;
 }
 
 export enum IssueCommentPayload_IssueUpdate_IssueStatus {
-  ISSUE_STATUS_UNSPECIFIED = 0,
-  OPEN = 1,
-  DONE = 2,
-  CANCELED = 3,
-  UNRECOGNIZED = -1,
+  ISSUE_STATUS_UNSPECIFIED = "ISSUE_STATUS_UNSPECIFIED",
+  OPEN = "OPEN",
+  DONE = "DONE",
+  CANCELED = "CANCELED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function issueCommentPayload_IssueUpdate_IssueStatusFromJSON(
@@ -129,6 +137,24 @@ export function issueCommentPayload_IssueUpdate_IssueStatusToJSON(
   }
 }
 
+export function issueCommentPayload_IssueUpdate_IssueStatusToNumber(
+  object: IssueCommentPayload_IssueUpdate_IssueStatus,
+): number {
+  switch (object) {
+    case IssueCommentPayload_IssueUpdate_IssueStatus.ISSUE_STATUS_UNSPECIFIED:
+      return 0;
+    case IssueCommentPayload_IssueUpdate_IssueStatus.OPEN:
+      return 1;
+    case IssueCommentPayload_IssueUpdate_IssueStatus.DONE:
+      return 2;
+    case IssueCommentPayload_IssueUpdate_IssueStatus.CANCELED:
+      return 3;
+    case IssueCommentPayload_IssueUpdate_IssueStatus.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface IssueCommentPayload_StageEnd {
   stage: string;
 }
@@ -147,14 +173,14 @@ export interface IssueCommentPayload_TaskUpdate {
 }
 
 export enum IssueCommentPayload_TaskUpdate_Status {
-  STATUS_UNSPECIFIED = 0,
-  PENDING = 1,
-  RUNNING = 2,
-  DONE = 3,
-  FAILED = 4,
-  SKIPPED = 5,
-  CANCELED = 6,
-  UNRECOGNIZED = -1,
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  PENDING = "PENDING",
+  RUNNING = "RUNNING",
+  DONE = "DONE",
+  FAILED = "FAILED",
+  SKIPPED = "SKIPPED",
+  CANCELED = "CANCELED",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function issueCommentPayload_TaskUpdate_StatusFromJSON(object: any): IssueCommentPayload_TaskUpdate_Status {
@@ -206,6 +232,28 @@ export function issueCommentPayload_TaskUpdate_StatusToJSON(object: IssueComment
     case IssueCommentPayload_TaskUpdate_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function issueCommentPayload_TaskUpdate_StatusToNumber(object: IssueCommentPayload_TaskUpdate_Status): number {
+  switch (object) {
+    case IssueCommentPayload_TaskUpdate_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case IssueCommentPayload_TaskUpdate_Status.PENDING:
+      return 1;
+    case IssueCommentPayload_TaskUpdate_Status.RUNNING:
+      return 2;
+    case IssueCommentPayload_TaskUpdate_Status.DONE:
+      return 3;
+    case IssueCommentPayload_TaskUpdate_Status.FAILED:
+      return 4;
+    case IssueCommentPayload_TaskUpdate_Status.SKIPPED:
+      return 5;
+    case IssueCommentPayload_TaskUpdate_Status.CANCELED:
+      return 6;
+    case IssueCommentPayload_TaskUpdate_Status.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -375,13 +423,13 @@ export const IssueCommentPayload = {
 };
 
 function createBaseIssueCommentPayload_Approval(): IssueCommentPayload_Approval {
-  return { status: 0 };
+  return { status: IssueCommentPayload_Approval_Status.STATUS_UNSPECIFIED };
 }
 
 export const IssueCommentPayload_Approval = {
   encode(message: IssueCommentPayload_Approval, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.status !== 0) {
-      writer.uint32(8).int32(message.status);
+    if (message.status !== IssueCommentPayload_Approval_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(8).int32(issueCommentPayload_Approval_StatusToNumber(message.status));
     }
     return writer;
   },
@@ -398,7 +446,7 @@ export const IssueCommentPayload_Approval = {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.status = issueCommentPayload_Approval_StatusFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -410,12 +458,16 @@ export const IssueCommentPayload_Approval = {
   },
 
   fromJSON(object: any): IssueCommentPayload_Approval {
-    return { status: isSet(object.status) ? issueCommentPayload_Approval_StatusFromJSON(object.status) : 0 };
+    return {
+      status: isSet(object.status)
+        ? issueCommentPayload_Approval_StatusFromJSON(object.status)
+        : IssueCommentPayload_Approval_Status.STATUS_UNSPECIFIED,
+    };
   },
 
   toJSON(message: IssueCommentPayload_Approval): unknown {
     const obj: any = {};
-    if (message.status !== 0) {
+    if (message.status !== IssueCommentPayload_Approval_Status.STATUS_UNSPECIFIED) {
       obj.status = issueCommentPayload_Approval_StatusToJSON(message.status);
     }
     return obj;
@@ -426,7 +478,7 @@ export const IssueCommentPayload_Approval = {
   },
   fromPartial(object: DeepPartial<IssueCommentPayload_Approval>): IssueCommentPayload_Approval {
     const message = createBaseIssueCommentPayload_Approval();
-    message.status = object.status ?? 0;
+    message.status = object.status ?? IssueCommentPayload_Approval_Status.STATUS_UNSPECIFIED;
     return message;
   },
 };
@@ -439,8 +491,6 @@ function createBaseIssueCommentPayload_IssueUpdate(): IssueCommentPayload_IssueU
     toDescription: undefined,
     fromStatus: undefined,
     toStatus: undefined,
-    fromAssignee: undefined,
-    toAssignee: undefined,
   };
 }
 
@@ -459,16 +509,10 @@ export const IssueCommentPayload_IssueUpdate = {
       writer.uint32(34).string(message.toDescription);
     }
     if (message.fromStatus !== undefined) {
-      writer.uint32(40).int32(message.fromStatus);
+      writer.uint32(40).int32(issueCommentPayload_IssueUpdate_IssueStatusToNumber(message.fromStatus));
     }
     if (message.toStatus !== undefined) {
-      writer.uint32(48).int32(message.toStatus);
-    }
-    if (message.fromAssignee !== undefined) {
-      writer.uint32(58).string(message.fromAssignee);
-    }
-    if (message.toAssignee !== undefined) {
-      writer.uint32(66).string(message.toAssignee);
+      writer.uint32(48).int32(issueCommentPayload_IssueUpdate_IssueStatusToNumber(message.toStatus));
     }
     return writer;
   },
@@ -513,28 +557,14 @@ export const IssueCommentPayload_IssueUpdate = {
             break;
           }
 
-          message.fromStatus = reader.int32() as any;
+          message.fromStatus = issueCommentPayload_IssueUpdate_IssueStatusFromJSON(reader.int32());
           continue;
         case 6:
           if (tag !== 48) {
             break;
           }
 
-          message.toStatus = reader.int32() as any;
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.fromAssignee = reader.string();
-          continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.toAssignee = reader.string();
+          message.toStatus = issueCommentPayload_IssueUpdate_IssueStatusFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -557,8 +587,6 @@ export const IssueCommentPayload_IssueUpdate = {
       toStatus: isSet(object.toStatus)
         ? issueCommentPayload_IssueUpdate_IssueStatusFromJSON(object.toStatus)
         : undefined,
-      fromAssignee: isSet(object.fromAssignee) ? globalThis.String(object.fromAssignee) : undefined,
-      toAssignee: isSet(object.toAssignee) ? globalThis.String(object.toAssignee) : undefined,
     };
   },
 
@@ -582,12 +610,6 @@ export const IssueCommentPayload_IssueUpdate = {
     if (message.toStatus !== undefined) {
       obj.toStatus = issueCommentPayload_IssueUpdate_IssueStatusToJSON(message.toStatus);
     }
-    if (message.fromAssignee !== undefined) {
-      obj.fromAssignee = message.fromAssignee;
-    }
-    if (message.toAssignee !== undefined) {
-      obj.toAssignee = message.toAssignee;
-    }
     return obj;
   },
 
@@ -602,8 +624,6 @@ export const IssueCommentPayload_IssueUpdate = {
     message.toDescription = object.toDescription ?? undefined;
     message.fromStatus = object.fromStatus ?? undefined;
     message.toStatus = object.toStatus ?? undefined;
-    message.fromAssignee = object.fromAssignee ?? undefined;
-    message.toAssignee = object.toAssignee ?? undefined;
     return message;
   },
 };
@@ -694,7 +714,7 @@ export const IssueCommentPayload_TaskUpdate = {
       Timestamp.encode(toTimestamp(message.toEarliestAllowedTime), writer.uint32(42).fork()).ldelim();
     }
     if (message.toStatus !== undefined) {
-      writer.uint32(48).int32(message.toStatus);
+      writer.uint32(48).int32(issueCommentPayload_TaskUpdate_StatusToNumber(message.toStatus));
     }
     return writer;
   },
@@ -746,7 +766,7 @@ export const IssueCommentPayload_TaskUpdate = {
             break;
           }
 
-          message.toStatus = reader.int32() as any;
+          message.toStatus = issueCommentPayload_TaskUpdate_StatusFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {

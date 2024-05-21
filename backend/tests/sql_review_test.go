@@ -457,7 +457,7 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 	})
 	a.NoError(err)
 
-	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+	plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
 			Steps: []*v1pb.Plan_Step{

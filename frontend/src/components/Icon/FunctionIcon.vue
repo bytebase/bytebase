@@ -1,5 +1,5 @@
 <template>
-  <SquareFunctionIcon class="opacity-75" />
+  <SquareFunctionIcon class="text-gray-400" />
 </template>
 
 <script setup lang="ts">

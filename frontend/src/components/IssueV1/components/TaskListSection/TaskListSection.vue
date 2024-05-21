@@ -34,7 +34,7 @@ const taskList = computed(() => selectedStage.value.tasks);
 
 // Show the task bar when some of the stages have more than one tasks.
 const shouldShowTaskBar = computed(() => {
-  return rollout.value.stages.some((stage) => stage.tasks.length > 1);
+  return rollout.value?.stages.some((stage) => stage.tasks.length > 1);
 });
 </script>
 

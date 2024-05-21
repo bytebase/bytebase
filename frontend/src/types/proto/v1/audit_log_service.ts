@@ -3,10 +3,19 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Status } from "../google/rpc/status";
+import { ExportFormat, exportFormatFromJSON, exportFormatToJSON, exportFormatToNumber } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
 export interface SearchAuditLogsRequest {
+  /**
+   * The filter of the log. It should be a valid CEL expression.
+   * For example:
+   *  - filter = "method == '/bytebase.v1.SQLService/Query'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
+   */
   filter: string;
   /**
    * The order by of the log.
@@ -40,6 +49,32 @@ export interface SearchAuditLogsResponse {
   nextPageToken: string;
 }
 
+export interface ExportAuditLogsRequest {
+  /**
+   * The filter of the log. It should be a valid CEL expression.
+   * For example:
+   *  - filter = "method == '/bytebase.v1.SQLService/Query'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
+   */
+  filter: string;
+  /**
+   * The order by of the log.
+   * Only support order by create_time.
+   * For example:
+   *  - order_by = "create_time asc"
+   *  - order_by = "create_time desc"
+   */
+  orderBy: string;
+  /** The export format. */
+  format: ExportFormat;
+}
+
+export interface ExportAuditLogsResponse {
+  content: Uint8Array;
+}
+
 export interface AuditLog {
   /**
    * The name of the log.
@@ -69,16 +104,16 @@ export interface AuditLog {
 }
 
 export enum AuditLog_Severity {
-  DEFAULT = 0,
-  DEBUG = 1,
-  INFO = 2,
-  NOTICE = 3,
-  WARNING = 4,
-  ERROR = 5,
-  CRITICAL = 6,
-  ALERT = 7,
-  EMERGENCY = 8,
-  UNRECOGNIZED = -1,
+  DEFAULT = "DEFAULT",
+  DEBUG = "DEBUG",
+  INFO = "INFO",
+  NOTICE = "NOTICE",
+  WARNING = "WARNING",
+  ERROR = "ERROR",
+  CRITICAL = "CRITICAL",
+  ALERT = "ALERT",
+  EMERGENCY = "EMERGENCY",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function auditLog_SeverityFromJSON(object: any): AuditLog_Severity {
@@ -140,6 +175,32 @@ export function auditLog_SeverityToJSON(object: AuditLog_Severity): string {
     case AuditLog_Severity.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function auditLog_SeverityToNumber(object: AuditLog_Severity): number {
+  switch (object) {
+    case AuditLog_Severity.DEFAULT:
+      return 0;
+    case AuditLog_Severity.DEBUG:
+      return 1;
+    case AuditLog_Severity.INFO:
+      return 2;
+    case AuditLog_Severity.NOTICE:
+      return 3;
+    case AuditLog_Severity.WARNING:
+      return 4;
+    case AuditLog_Severity.ERROR:
+      return 5;
+    case AuditLog_Severity.CRITICAL:
+      return 6;
+    case AuditLog_Severity.ALERT:
+      return 7;
+    case AuditLog_Severity.EMERGENCY:
+      return 8;
+    case AuditLog_Severity.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -323,13 +384,159 @@ export const SearchAuditLogsResponse = {
   },
 };
 
+function createBaseExportAuditLogsRequest(): ExportAuditLogsRequest {
+  return { filter: "", orderBy: "", format: ExportFormat.FORMAT_UNSPECIFIED };
+}
+
+export const ExportAuditLogsRequest = {
+  encode(message: ExportAuditLogsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.filter !== "") {
+      writer.uint32(10).string(message.filter);
+    }
+    if (message.orderBy !== "") {
+      writer.uint32(18).string(message.orderBy);
+    }
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
+      writer.uint32(24).int32(exportFormatToNumber(message.format));
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExportAuditLogsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportAuditLogsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.orderBy = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.format = exportFormatFromJSON(reader.int32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportAuditLogsRequest {
+    return {
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      orderBy: isSet(object.orderBy) ? globalThis.String(object.orderBy) : "",
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
+    };
+  },
+
+  toJSON(message: ExportAuditLogsRequest): unknown {
+    const obj: any = {};
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.orderBy !== "") {
+      obj.orderBy = message.orderBy;
+    }
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
+      obj.format = exportFormatToJSON(message.format);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportAuditLogsRequest>): ExportAuditLogsRequest {
+    return ExportAuditLogsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportAuditLogsRequest>): ExportAuditLogsRequest {
+    const message = createBaseExportAuditLogsRequest();
+    message.filter = object.filter ?? "";
+    message.orderBy = object.orderBy ?? "";
+    message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
+    return message;
+  },
+};
+
+function createBaseExportAuditLogsResponse(): ExportAuditLogsResponse {
+  return { content: new Uint8Array(0) };
+}
+
+export const ExportAuditLogsResponse = {
+  encode(message: ExportAuditLogsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.content.length !== 0) {
+      writer.uint32(10).bytes(message.content);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExportAuditLogsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportAuditLogsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.content = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportAuditLogsResponse {
+    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0) };
+  },
+
+  toJSON(message: ExportAuditLogsResponse): unknown {
+    const obj: any = {};
+    if (message.content.length !== 0) {
+      obj.content = base64FromBytes(message.content);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportAuditLogsResponse>): ExportAuditLogsResponse {
+    return ExportAuditLogsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportAuditLogsResponse>): ExportAuditLogsResponse {
+    const message = createBaseExportAuditLogsResponse();
+    message.content = object.content ?? new Uint8Array(0);
+    return message;
+  },
+};
+
 function createBaseAuditLog(): AuditLog {
   return {
     name: "",
     createTime: undefined,
     user: "",
     method: "",
-    severity: 0,
+    severity: AuditLog_Severity.DEFAULT,
     resource: "",
     request: "",
     response: "",
@@ -351,8 +558,8 @@ export const AuditLog = {
     if (message.method !== "") {
       writer.uint32(34).string(message.method);
     }
-    if (message.severity !== 0) {
-      writer.uint32(40).int32(message.severity);
+    if (message.severity !== AuditLog_Severity.DEFAULT) {
+      writer.uint32(40).int32(auditLog_SeverityToNumber(message.severity));
     }
     if (message.resource !== "") {
       writer.uint32(50).string(message.resource);
@@ -409,7 +616,7 @@ export const AuditLog = {
             break;
           }
 
-          message.severity = reader.int32() as any;
+          message.severity = auditLog_SeverityFromJSON(reader.int32());
           continue;
         case 6:
           if (tag !== 50) {
@@ -454,7 +661,7 @@ export const AuditLog = {
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       user: isSet(object.user) ? globalThis.String(object.user) : "",
       method: isSet(object.method) ? globalThis.String(object.method) : "",
-      severity: isSet(object.severity) ? auditLog_SeverityFromJSON(object.severity) : 0,
+      severity: isSet(object.severity) ? auditLog_SeverityFromJSON(object.severity) : AuditLog_Severity.DEFAULT,
       resource: isSet(object.resource) ? globalThis.String(object.resource) : "",
       request: isSet(object.request) ? globalThis.String(object.request) : "",
       response: isSet(object.response) ? globalThis.String(object.response) : "",
@@ -476,7 +683,7 @@ export const AuditLog = {
     if (message.method !== "") {
       obj.method = message.method;
     }
-    if (message.severity !== 0) {
+    if (message.severity !== AuditLog_Severity.DEFAULT) {
       obj.severity = auditLog_SeverityToJSON(message.severity);
     }
     if (message.resource !== "") {
@@ -503,7 +710,7 @@ export const AuditLog = {
     message.createTime = object.createTime ?? undefined;
     message.user = object.user ?? "";
     message.method = object.method ?? "";
-    message.severity = object.severity ?? 0;
+    message.severity = object.severity ?? AuditLog_Severity.DEFAULT;
     message.resource = object.resource ?? "";
     message.request = object.request ?? "";
     message.response = object.response ?? "";
@@ -528,13 +735,103 @@ export const AuditLogServiceDefinition = {
       options: {
         _unknownFields: {
           578365826: [
-            new Uint8Array([17, 18, 15, 47, 118, 49, 47, 108, 111, 103, 115, 58, 115, 101, 97, 114, 99, 104]),
+            new Uint8Array([
+              22,
+              18,
+              20,
+              47,
+              118,
+              49,
+              47,
+              97,
+              117,
+              100,
+              105,
+              116,
+              76,
+              111,
+              103,
+              115,
+              58,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
+            ]),
+          ],
+        },
+      },
+    },
+    exportAuditLogs: {
+      name: "ExportAuditLogs",
+      requestType: ExportAuditLogsRequest,
+      requestStream: false,
+      responseType: ExportAuditLogsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              25,
+              58,
+              1,
+              42,
+              34,
+              20,
+              47,
+              118,
+              49,
+              47,
+              97,
+              117,
+              100,
+              105,
+              116,
+              76,
+              111,
+              103,
+              115,
+              58,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+            ]),
           ],
         },
       },
     },
   },
 } as const;
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if (globalThis.Buffer) {
+    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = globalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  if (globalThis.Buffer) {
+    return globalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(globalThis.String.fromCharCode(byte));
+    });
+    return globalThis.btoa(bin.join(""));
+  }
+}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

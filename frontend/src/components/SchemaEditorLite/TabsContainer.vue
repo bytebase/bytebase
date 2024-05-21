@@ -28,6 +28,14 @@
                 v-if="tab.type === 'table'"
                 class="w-4 h-4 text-gray-400"
               />
+              <ProcedureIcon
+                v-if="tab.type === 'procedure'"
+                class="w-4 h-4 text-gray-400"
+              />
+              <FunctionIcon
+                v-if="tab.type === 'function'"
+                class="w-4 h-4 text-gray-400"
+              />
             </span>
             <NEllipsis
               class="text-sm w-20 leading-4"
@@ -36,7 +44,7 @@
             >
           </div>
           <span class="tab-close-button shrink-0 flex">
-            <heroicons-outline:x
+            <XIcon
               class="rounded w-4 h-auto text-gray-400 hover:text-gray-600"
               @click.stop.prevent="handleCloseTab(tab)"
             />
@@ -60,11 +68,12 @@
 </template>
 
 <script lang="ts" setup>
+import { XIcon } from "lucide-vue-next";
 import { NEllipsis, NInput } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { DatabaseIcon, TableIcon } from "../Icon";
+import { DatabaseIcon, FunctionIcon, ProcedureIcon, TableIcon } from "../Icon";
 import { useSchemaEditorContext } from "./context";
 import type { TabContext } from "./types";
 
@@ -148,7 +157,8 @@ const getTabName = (tab: TabContext) => {
     }
     const { database } = tab;
     return database.databaseName;
-  } else if (tab.type === "table") {
+  }
+  if (tab.type === "table") {
     const {
       metadata: { schema, table },
     } = tab;
@@ -157,10 +167,29 @@ const getTabName = (tab: TabContext) => {
       parts.unshift(schema.name);
     }
     return parts.join(".");
-  } else {
-    // Should never reach here.
-    return "unknown tab";
   }
+  if (tab.type === "procedure") {
+    const {
+      metadata: { schema, procedure },
+    } = tab;
+    const parts = [procedure.name];
+    if (schema.name) {
+      parts.unshift(schema.name);
+    }
+    return parts.join(".");
+  }
+  if (tab.type === "function") {
+    const {
+      metadata: { schema, function: func },
+    } = tab;
+    const parts = [func.name];
+    if (schema.name) {
+      parts.unshift(schema.name);
+    }
+    return parts.join(".");
+  }
+  // Should never reach here.
+  return "unknown tab";
 };
 
 const handleSelectTab = (tab: TabContext) => {

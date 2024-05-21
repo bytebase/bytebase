@@ -77,7 +77,7 @@
       </div>
     </dl>
 
-    <div v-if="allowGetSchema" class="pt-6">
+    <div v-if="allowGetSchema" class="py-6">
       <div
         v-if="hasSchemaProperty"
         class="flex flex-row justify-start items-center mb-4"
@@ -150,7 +150,7 @@
           <DBExtensionDataTable :db-extension-list="dbExtensionList" />
         </template>
 
-        <template v-if="databaseEngine === Engine.POSTGRES">
+        <template v-if="databaseEngine === Engine.POSTGRES || databaseEngine === Engine.MSSQL">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.functions") }}
           </div>

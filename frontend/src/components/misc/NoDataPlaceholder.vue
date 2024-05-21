@@ -1,6 +1,9 @@
 <template>
   <div
-    class="border-4 border-dashed border-gray-200 rounded-lg flex flex-col justify-center items-center p-4"
+    :class="[
+      'flex flex-col justify-center items-center p-4',
+      border ? 'border-4 border-dashed border-gray-200 rounded-lg' : '',
+    ]"
   >
     <div class="text-center flex flex-col justify-center items-center">
       <slot name="image">
@@ -18,7 +21,14 @@
 <script lang="ts" setup>
 import type { HTMLAttributes } from "vue";
 
-defineProps<{
-  imgAttrs?: HTMLAttributes;
-}>();
+withDefaults(
+  defineProps<{
+    imgAttrs?: HTMLAttributes;
+    border?: boolean;
+  }>(),
+  {
+    imgAttrs: undefined,
+    border: true,
+  }
+);
 </script>
