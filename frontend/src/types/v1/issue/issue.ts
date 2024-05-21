@@ -23,7 +23,6 @@ export interface ComposedIssue extends Issue {
   rolloutTaskRunList: TaskRun[];
   project: string;
   projectEntity: ComposedProject;
-  assigneeEntity?: User;
   creatorEntity: User;
 }
 
@@ -76,7 +75,6 @@ export interface IssueFilter {
   query: string;
   principal?: string;
   creator?: string;
-  assignee?: string;
   subscriber?: string;
   statusList?: IssueStatus[];
   createdTsAfter?: number;
