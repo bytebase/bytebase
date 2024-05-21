@@ -994,7 +994,7 @@ func (s *OrgPolicyService) convertToStorePBMaskingExceptionPolicyPayload(ctx con
 	var exceptions []*storepb.MaskingExceptionPolicy_MaskingException
 	for _, exception := range policy.MaskingExceptions {
 		memberEmail := strings.TrimPrefix(exception.Member, "user:")
-		user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &memberEmail})
+		user, err := s.store.GetUserByEmail(ctx, memberEmail)
 		if err != nil {
 			return nil, err
 		}
