@@ -779,14 +779,11 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 	for _, path := range request.UpdateMask.Paths {
 		if path == "schema_configs" {
 			databaseMetadata := request.GetDatabaseMetadata()
-			databaseConfig, err := convertV1DatabaseConfig(ctx, &v1pb.DatabaseConfig{
+			databaseConfig := convertV1DatabaseConfig(ctx, &v1pb.DatabaseConfig{
 				Name:                     databaseName,
 				SchemaConfigs:            databaseMetadata.GetSchemaConfigs(),
 				ClassificationFromConfig: databaseMetadata.ClassificationFromConfig,
 			}, nil /* optionalStores */)
-			if err != nil {
-				return nil, err
-			}
 			if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}, principalID); err != nil {
 				return nil, err
 			}

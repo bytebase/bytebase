@@ -353,14 +353,8 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	}
 	if payload := sheet.Payload; payload != nil {
 		if payload.DatabaseConfig != nil && payload.BaselineDatabaseConfig != nil {
-			v1SheetPayload.DatabaseConfig, err = convertStoreDatabaseConfig(ctx, payload.DatabaseConfig, nil /* filter */, nil /* optionalStores */)
-			if err != nil {
-				return nil, err
-			}
-			v1SheetPayload.BaselineDatabaseConfig, err = convertStoreDatabaseConfig(ctx, payload.BaselineDatabaseConfig, nil /* filter */, nil /* optionalStores */)
-			if err != nil {
-				return nil, err
-			}
+			v1SheetPayload.DatabaseConfig = convertStoreDatabaseConfig(ctx, payload.DatabaseConfig, nil /* filter */, nil /* optionalStores */)
+			v1SheetPayload.BaselineDatabaseConfig = convertStoreDatabaseConfig(ctx, payload.BaselineDatabaseConfig, nil /* filter */, nil /* optionalStores */)
 		}
 	}
 
@@ -389,16 +383,8 @@ func convertToStoreSheetMessage(ctx context.Context, projectUID int, databaseUID
 	}
 	sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
 	if sheet.Payload != nil {
-		dc, err := convertV1DatabaseConfig(ctx, sheet.Payload.DatabaseConfig, nil /* optionalStores */)
-		if err != nil {
-			return nil, err
-		}
-		sheetMessage.Payload.DatabaseConfig = dc
-		bdc, err := convertV1DatabaseConfig(ctx, sheet.Payload.BaselineDatabaseConfig, nil /* optionalStores */)
-		if err != nil {
-			return nil, err
-		}
-		sheetMessage.Payload.BaselineDatabaseConfig = bdc
+		sheetMessage.Payload.DatabaseConfig = convertV1DatabaseConfig(ctx, sheet.Payload.DatabaseConfig, nil /* optionalStores */)
+		sheetMessage.Payload.BaselineDatabaseConfig = convertV1DatabaseConfig(ctx, sheet.Payload.BaselineDatabaseConfig, nil /* optionalStores */)
 	}
 
 	return sheetMessage, nil
