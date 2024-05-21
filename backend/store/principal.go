@@ -409,10 +409,9 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 		s.projectIDPolicyCache.Purge()
 		s.projectPolicyCache.Purge()
 	}
+	s.userEmailCache.Remove(currentUser.Email)
 	s.userIDCache.Add(currentUser.ID, user)
-	s.userEmailCache.Remove(user.Email)
 	s.userEmailCache.Add(user.Email, user)
-
 	return user, nil
 }
 
