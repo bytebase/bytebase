@@ -1066,7 +1066,8 @@
       "updated": "Actualizado",
       "approver": "Aprobador",
       "creator": "Creador",
-      "assignee": "Asignado"
+      "assignee": "Asignado",
+      "current-approver": "Aprobador actual"
     },
     "stage-select": {
       "current": "{name} (actual)"

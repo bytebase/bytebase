@@ -1066,7 +1066,8 @@
       "updated": "更新于",
       "approver": "审批人",
       "creator": "创建人",
-      "assignee": "指派人"
+      "assignee": "指派人",
+      "current-approver": "当前审批人"
     },
     "stage-select": {
       "current": "{name}（当前）"

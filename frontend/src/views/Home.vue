@@ -171,7 +171,6 @@ import {
 
 const TABS = [
   "CREATED",
-  "ASSIGNED",
   "APPROVAL_REQUESTED",
   "WAITING_ROLLOUT",
   "SUBSCRIBED",
@@ -214,7 +213,6 @@ const defaultScopeIds = computed(() => {
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   return [
     { value: "CREATED", label: t("common.created") },
-    { value: "ASSIGNED", label: t("common.assigned") },
     {
       value: "APPROVAL_REQUESTED",
       label: t("issue.approval-requested"),
@@ -241,7 +239,6 @@ const storedTab = useLocalStorage<TabValue>(
 );
 const keyForTab = (tab: TabValue) => {
   if (tab === "CREATED") return "my-issues-created";
-  if (tab === "ASSIGNED") return "my-issues-assigned";
   if (tab === "APPROVAL_REQUESTED") return "my-issues-approval-requested";
   if (tab === "WAITING_ROLLOUT") return "my-issues-waiting-rollout";
   if (tab === "SUBSCRIBED") return "my-issues-subscribed";
@@ -259,12 +256,6 @@ const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
   if (tab === "CREATED") {
     return upsertScope(common, {
       id: "creator",
-      value: myEmail,
-    });
-  }
-  if (tab === "ASSIGNED") {
-    return upsertScope(common, {
-      id: "assignee",
       value: myEmail,
     });
   }
@@ -324,12 +315,6 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
     getValueFromSearchParams(params, "creator") === myEmail
   ) {
     return "CREATED";
-  }
-  if (
-    verifyScopes(["assignee"]) &&
-    getValueFromSearchParams(params, "assignee") === myEmail
-  ) {
-    return "ASSIGNED";
   }
   if (
     verifyScopes(["subscriber"]) &&
