@@ -48,7 +48,7 @@ func (s *OrgPolicyService) GetPolicy(ctx context.Context, request *v1pb.GetPolic
 		return nil, err
 	}
 
-	response, err := convertToPolicy(parent, policy)
+	response, err := s.convertToPolicy(ctx, parent, policy)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -93,7 +93,7 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 			}
 			return nil, err
 		}
-		p, err := convertToPolicy(parentPath, policy)
+		p, err := s.convertToPolicy(ctx, parentPath, policy)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
@@ -157,7 +157,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 			if err := validatePolicyPayload(policy.Type, request.Policy); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid policy: %v", err)
 			}
-			payloadStr, err := s.convertPolicyPayloadToString(request.Policy)
+			payloadStr, err := s.convertPolicyPayloadToString(ctx, request.Policy)
 			if err != nil {
 				return nil, err
 			}
@@ -172,7 +172,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	response, err := convertToPolicy(parent, p)
+	response, err := s.convertToPolicy(ctx, parent, p)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -402,7 +402,7 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, creatorID in
 		return nil, status.Errorf(codes.InvalidArgument, "invalid policy: %v", err)
 	}
 
-	payloadStr, err := s.convertPolicyPayloadToString(policy)
+	payloadStr, err := s.convertPolicyPayloadToString(ctx, policy)
 	if err != nil {
 		return nil, err
 	}
@@ -420,7 +420,7 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, creatorID in
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	response, err := convertToPolicy(parent, p)
+	response, err := s.convertToPolicy(ctx, parent, p)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -537,7 +537,7 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 	return nil
 }
 
-func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
+func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
 	case v1pb.PolicyType_ROLLOUT_POLICY:
 		rolloutPolicy := convertToStorePBRolloutPolicy(policy.GetRolloutPolicy())
@@ -608,7 +608,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData); err != nil {
 			return "", status.Errorf(codes.PermissionDenied, err.Error())
 		}
-		payload, err := convertToStorePBMaskingExceptionPolicyPayload(policy.GetMaskingExceptionPolicy())
+		payload, err := s.convertToStorePBMaskingExceptionPolicyPayload(ctx, policy.GetMaskingExceptionPolicy())
 		if err != nil {
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -631,7 +631,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 	return "", status.Errorf(codes.InvalidArgument, "invalid policy %v", policy.Type)
 }
 
-func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1pb.Policy, error) {
+func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath string, policyMessage *store.PolicyMessage) (*v1pb.Policy, error) {
 	resourceType := v1pb.PolicyResourceType_RESOURCE_TYPE_UNSPECIFIED
 	switch policyMessage.ResourceType {
 	case api.PolicyResourceTypeWorkspace:
@@ -709,7 +709,7 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 		if err := protojson.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal masking exception policy")
 		}
-		payload, err := convertToV1PBMaskingExceptionPolicyPayload(maskingRulePolicy)
+		payload, err := s.convertToV1PBMaskingExceptionPolicyPayload(ctx, maskingRulePolicy)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to convert masking exception policy")
 		}
@@ -990,13 +990,18 @@ func convertToV1PBMaskingRulePolicy(policy *storepb.MaskingRulePolicy) (*v1pb.Ma
 	}, nil
 }
 
-func convertToStorePBMaskingExceptionPolicyPayload(policy *v1pb.MaskingExceptionPolicy) (*storepb.MaskingExceptionPolicy, error) {
+func (s *OrgPolicyService) convertToStorePBMaskingExceptionPolicyPayload(ctx context.Context, policy *v1pb.MaskingExceptionPolicy) (*storepb.MaskingExceptionPolicy, error) {
 	var exceptions []*storepb.MaskingExceptionPolicy_MaskingException
 	for _, exception := range policy.MaskingExceptions {
+		memberEmail := strings.TrimPrefix(exception.Member, "user:")
+		user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &memberEmail})
+		if err != nil {
+			return nil, err
+		}
 		exceptions = append(exceptions, &storepb.MaskingExceptionPolicy_MaskingException{
 			Action:       convertToStorePBAction(exception.Action),
 			MaskingLevel: convertToStorePBMaskingLevel(exception.MaskingLevel),
-			Member:       strings.TrimPrefix(exception.Member, "user:"),
+			Member:       common.FormatUserUID(user.ID),
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,
 				Expression:  exception.Condition.Expression,
@@ -1011,13 +1016,21 @@ func convertToStorePBMaskingExceptionPolicyPayload(policy *v1pb.MaskingException
 	}, nil
 }
 
-func convertToV1PBMaskingExceptionPolicyPayload(policy *storepb.MaskingExceptionPolicy) (*v1pb.MaskingExceptionPolicy, error) {
+func (s *OrgPolicyService) convertToV1PBMaskingExceptionPolicyPayload(ctx context.Context, policy *storepb.MaskingExceptionPolicy) (*v1pb.MaskingExceptionPolicy, error) {
 	var exceptions []*v1pb.MaskingExceptionPolicy_MaskingException
 	for _, exception := range policy.MaskingExceptions {
+		uid, err := common.GetUserID(exception.Member)
+		if err != nil {
+			return nil, err
+		}
+		user, err := s.store.GetUserByID(ctx, uid)
+		if err != nil {
+			return nil, err
+		}
 		exceptions = append(exceptions, &v1pb.MaskingExceptionPolicy_MaskingException{
 			Action:       convertToV1PBAction(exception.Action),
 			MaskingLevel: convertToV1PBMaskingLevel(exception.MaskingLevel),
-			Member:       fmt.Sprintf("user:%s", exception.Member),
+			Member:       fmt.Sprintf("user:%s", user.Email),
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,
 				Expression:  exception.Condition.Expression,

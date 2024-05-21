@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -605,7 +606,7 @@ func (m *MD5Masker) Mask(data *MaskData) *v1pb.RowValue {
 	f := func(s string) string {
 		h := md5.New()
 		if _, err := h.Write([]byte(s + m.salt)); err != nil {
-			slog.Error("Failed to write to md5 hash: %v", err)
+			slog.Error("Failed to write to md5 hash: %v", log.BBError(err))
 		}
 		return fmt.Sprintf("%x", h.Sum(nil))
 	}

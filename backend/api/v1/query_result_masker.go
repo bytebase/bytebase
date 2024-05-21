@@ -206,7 +206,11 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 			if maskingException.Action != action {
 				continue
 			}
-			if maskingException.Member == currentPrincipal.Email {
+			uid, err := common.GetUserID(maskingException.Member)
+			if err != nil {
+				continue
+			}
+			if uid == currentPrincipal.ID {
 				maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
 			}
 		}
