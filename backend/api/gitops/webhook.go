@@ -186,14 +186,14 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) (bool
 
 func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) (*v1pb.Issue, error) {
 	creatorID := api.SystemBotID
-	creatorName := common.FormatUserEmail(api.SystemBotEmail)
+	creatorName := common.FormatUserUID(api.SystemBotID)
 	user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &prInfo.email})
 	if err != nil {
 		slog.Error("failed to find user by email", slog.String("email", prInfo.email), log.BBError(err))
 	}
 	if user != nil {
 		creatorID = user.ID
-		creatorName = common.FormatUserEmail(user.Email)
+		creatorName = common.FormatUserUID(user.ID)
 	}
 
 	engine, err := s.getDatabaseEngineSample(ctx, project, vcsConnector)

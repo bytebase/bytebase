@@ -50,7 +50,7 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 
 		var user string
 		if u, ok := ctx.Value(common.UserContextKey).(*store.UserMessage); ok {
-			user = common.FormatUserEmail(u.Email)
+			user = common.FormatUserUID(u.ID)
 		}
 
 		st, _ := status.FromError(rerr)
