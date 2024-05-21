@@ -1,0 +1,67 @@
+import Emittery from "emittery";
+import { first } from "lodash-es";
+import { useDialog } from "naive-ui";
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
+import { useUIStateStore } from "@/store";
+import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+import { emptyPlanSpec } from "@/types/v1/issue/plan";
+import { flattenSpecList } from "@/utils";
+import type { PlanContext, PlanEvents } from "./context";
+import { stepForSpec } from "./utils";
+
+export const useBasePlanContext = (
+  context: Pick<PlanContext, "isCreating" | "ready" | "plan">
+): Partial<PlanContext> => {
+  const { plan } = context;
+  const uiStateStore = useUIStateStore();
+  const route = useRoute();
+  const router = useRouter();
+  const dialog = useDialog();
+
+  const events: PlanEvents = new Emittery();
+
+  // const project = computed(() => plan.value);
+  const specs = computed(() => flattenSpecList(plan.value));
+
+  const selectedSpec = computed((): Plan_Spec => {
+    // Check if spec is selected from URL. (Not use yet)
+    const specId = route.query.spec as string;
+    if (specId) {
+      const specFound = specs.value.find((spec) => spec.id === specId);
+      if (specFound) {
+        return specFound;
+      }
+    }
+
+    // Fallback to first spec.
+    return first(specs.value) || emptyPlanSpec();
+  });
+
+  const formatOnSave = computed({
+    get: () => uiStateStore.issueFormatStatementOnSave,
+    set: (value: boolean) => uiStateStore.setIssueFormatStatementOnSave(value),
+  });
+
+  events.on("select-spec", ({ spec }) => {
+    const step = stepForSpec(plan.value, spec);
+    if (!step) return;
+
+    router.replace({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      query: {
+        ...route.query,
+        spec: spec.id,
+      },
+      hash: route.hash,
+    });
+  });
+
+  return {
+    events,
+    selectedSpec,
+    formatOnSave,
+    dialog,
+  };
+};

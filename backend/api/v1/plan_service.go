@@ -229,11 +229,25 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", oldPlan.ProjectID)
 	}
+
+	planUpdate := &store.UpdatePlanMessage{
+		UID:       oldPlan.UID,
+		UpdaterID: user.ID,
+	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
+		case "title":
+			title := request.Plan.Title
+			planUpdate.Name = &title
+		case "description":
+			description := request.Plan.Description
+			planUpdate.Description = &description
 		case "steps":
 			if _, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, convertPlanSteps(request.Plan.GetSteps()), project); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
+			}
+			planUpdate.Config = &storepb.PlanConfig{
+				Steps: convertPlanSteps(request.Plan.Steps),
 			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid update_mask path %q", path)
@@ -638,13 +652,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		}
 	}
 
-	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:       oldPlan.UID,
-		UpdaterID: user.ID,
-		Config: &storepb.PlanConfig{
-			Steps: convertPlanSteps(request.Plan.Steps),
-		},
-	}); err != nil {
+	if err := s.store.UpdatePlan(ctx, planUpdate); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update plan %q: %v", request.Plan.Name, err)
 	}
 
