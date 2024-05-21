@@ -11128,7 +11128,7 @@ components:
                     description: |-
                         Member is the principal who bind to this exception policy instance.
 
-                         * `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
+                         Format: users/{userUID}.
                 condition:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
