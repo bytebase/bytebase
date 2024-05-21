@@ -10416,7 +10416,9 @@ components:
                     format: enum
                 fromAssignee:
                     type: string
-                    description: 'Format: users/{email}'
+                    description: |-
+                        TODO(d): deprecate from_assignee and to_assignee.
+                         Format: users/{email}
                 toAssignee:
                     type: string
                     description: 'Format: users/{email}'

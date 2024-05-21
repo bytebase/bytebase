@@ -874,7 +874,10 @@ export interface IssueComment_IssueUpdate {
   toStatus?:
     | IssueStatus
     | undefined;
-  /** Format: users/{email} */
+  /**
+   * TODO(d): deprecate from_assignee and to_assignee.
+   * Format: users/{email}
+   */
   fromAssignee?:
     | string
     | undefined;
