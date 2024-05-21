@@ -140,12 +140,6 @@ const disallowEditReasons = computed(() => {
   ) {
     allow = true;
   }
-  // Issue assignee is allowed to change the rollout time.
-  if (
-    extractUserResourceName(issue.value.assignee) === currentUser.value.email
-  ) {
-    allow = true;
-  }
   if (
     hasProjectPermissionV2(
       issue.value.projectEntity,

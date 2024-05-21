@@ -72,10 +72,9 @@ const allowEdit = computed(() => {
   }
 
   if (
-    extractUserResourceName(issue.value.assignee) === currentUser.value.email ||
     extractUserResourceName(issue.value.creator) === currentUser.value.email
   ) {
-    // Allowed if current user is the assignee or creator.
+    // Allowed if current user is the creator.
     return true;
   }
 
