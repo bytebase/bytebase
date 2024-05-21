@@ -503,6 +503,7 @@ message IssueComment {
     optional string to_description = 4;
     optional IssueStatus from_status = 5;
     optional IssueStatus to_status = 6;
+    // TODO(d): deprecate from_assignee and to_assignee.
     // Format: users/{email}
     optional string from_assignee = 7;
     // Format: users/{email}

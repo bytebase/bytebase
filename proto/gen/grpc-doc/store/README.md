@@ -2147,8 +2147,6 @@ InstanceOptions is the option for instances.
 | to_description | [string](#string) | optional |  |
 | from_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
 | to_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
-| from_assignee | [string](#string) | optional | Format: users/{email} |
-| to_assignee | [string](#string) | optional | Format: users/{email} |
 
 
 

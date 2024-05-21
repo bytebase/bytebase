@@ -1,0 +1,1 @@
+DELETE FROM issue_comment WHERE payload->'issueUpdate' ? 'toAssignee';

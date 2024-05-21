@@ -85,15 +85,7 @@ export interface IssueCommentPayload_IssueUpdate {
   fromDescription?: string | undefined;
   toDescription?: string | undefined;
   fromStatus?: IssueCommentPayload_IssueUpdate_IssueStatus | undefined;
-  toStatus?:
-    | IssueCommentPayload_IssueUpdate_IssueStatus
-    | undefined;
-  /** Format: users/{email} */
-  fromAssignee?:
-    | string
-    | undefined;
-  /** Format: users/{email} */
-  toAssignee?: string | undefined;
+  toStatus?: IssueCommentPayload_IssueUpdate_IssueStatus | undefined;
 }
 
 export enum IssueCommentPayload_IssueUpdate_IssueStatus {
@@ -499,8 +491,6 @@ function createBaseIssueCommentPayload_IssueUpdate(): IssueCommentPayload_IssueU
     toDescription: undefined,
     fromStatus: undefined,
     toStatus: undefined,
-    fromAssignee: undefined,
-    toAssignee: undefined,
   };
 }
 
@@ -523,12 +513,6 @@ export const IssueCommentPayload_IssueUpdate = {
     }
     if (message.toStatus !== undefined) {
       writer.uint32(48).int32(issueCommentPayload_IssueUpdate_IssueStatusToNumber(message.toStatus));
-    }
-    if (message.fromAssignee !== undefined) {
-      writer.uint32(58).string(message.fromAssignee);
-    }
-    if (message.toAssignee !== undefined) {
-      writer.uint32(66).string(message.toAssignee);
     }
     return writer;
   },
@@ -582,20 +566,6 @@ export const IssueCommentPayload_IssueUpdate = {
 
           message.toStatus = issueCommentPayload_IssueUpdate_IssueStatusFromJSON(reader.int32());
           continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.fromAssignee = reader.string();
-          continue;
-        case 8:
-          if (tag !== 66) {
-            break;
-          }
-
-          message.toAssignee = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -617,8 +587,6 @@ export const IssueCommentPayload_IssueUpdate = {
       toStatus: isSet(object.toStatus)
         ? issueCommentPayload_IssueUpdate_IssueStatusFromJSON(object.toStatus)
         : undefined,
-      fromAssignee: isSet(object.fromAssignee) ? globalThis.String(object.fromAssignee) : undefined,
-      toAssignee: isSet(object.toAssignee) ? globalThis.String(object.toAssignee) : undefined,
     };
   },
 
@@ -642,12 +610,6 @@ export const IssueCommentPayload_IssueUpdate = {
     if (message.toStatus !== undefined) {
       obj.toStatus = issueCommentPayload_IssueUpdate_IssueStatusToJSON(message.toStatus);
     }
-    if (message.fromAssignee !== undefined) {
-      obj.fromAssignee = message.fromAssignee;
-    }
-    if (message.toAssignee !== undefined) {
-      obj.toAssignee = message.toAssignee;
-    }
     return obj;
   },
 
@@ -662,8 +624,6 @@ export const IssueCommentPayload_IssueUpdate = {
     message.toDescription = object.toDescription ?? undefined;
     message.fromStatus = object.fromStatus ?? undefined;
     message.toStatus = object.toStatus ?? undefined;
-    message.fromAssignee = object.fromAssignee ?? undefined;
-    message.toAssignee = object.toAssignee ?? undefined;
     return message;
   },
 };
