@@ -179,9 +179,7 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 			if creatorEmail == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
 			}
-			user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-				Email: &creatorEmail,
-			})
+			user, err := s.store.GetUserByEmail(ctx, creatorEmail)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get user: %s", err.Error()))
 			}

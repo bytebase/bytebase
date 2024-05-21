@@ -147,10 +147,7 @@ func setActivityFindFilterAndOrder(ctx context.Context, stores *store.Store, act
 			if creatorEmail == "" {
 				return status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
 			}
-			user, err := stores.GetUser(ctx, &store.FindUserMessage{
-				Email:       &creatorEmail,
-				ShowDeleted: true,
-			})
+			user, err := stores.GetUserByEmail(ctx, creatorEmail)
 			if err != nil {
 				return status.Errorf(codes.Internal, `failed to find user "%s" with error: %v`, creatorEmail, err.Error())
 			}
@@ -176,10 +173,7 @@ func setActivityFindFilterAndOrder(ctx context.Context, stores *store.Store, act
 			}
 			switch fmt.Sprintf("%s/", sections[0]) {
 			case common.UserNamePrefix:
-				user, err := stores.GetUser(ctx, &store.FindUserMessage{
-					Email:       &sections[1],
-					ShowDeleted: true,
-				})
+				user, err := stores.GetUserByEmail(ctx, sections[1])
 				if err != nil {
 					return status.Errorf(codes.Internal, err.Error())
 				}

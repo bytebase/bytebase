@@ -320,7 +320,7 @@ func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantReque
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get user email from %q", v.User)
 	}
-	user, err := s.GetUser(ctx, &store.FindUserMessage{Email: &email})
+	user, err := s.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get user by email %q", email)
 	}
