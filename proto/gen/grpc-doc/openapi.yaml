@@ -12738,6 +12738,7 @@ components:
                         - DORIS
                         - HIVE
                         - ELASTICSEARCH
+                        - GAUSSDB
                     type: string
                     description: The SQL dialect.
                     format: enum
