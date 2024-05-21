@@ -44,11 +44,11 @@ func (*NamingTableAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advic
 	}
 
 	listener := &namingTableListener{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		currentSchema: ctx.CurrentSchema,
-		format:        format,
-		maxLength:     maxLength,
+		level:           level,
+		title:           string(ctx.Rule.Type),
+		currentDatabase: ctx.CurrentDatabase,
+		format:          format,
+		maxLength:       maxLength,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -60,11 +60,11 @@ func (*NamingTableAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advic
 type namingTableListener struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
-	title         string
-	currentSchema string
-	format        *regexp.Regexp
-	maxLength     int
+	level           advisor.Status
+	title           string
+	currentDatabase string
+	format          *regexp.Regexp
+	maxLength       int
 
 	adviceList []advisor.Advice
 }
@@ -83,7 +83,7 @@ func (l *namingTableListener) generateAdvice() ([]advisor.Advice, error) {
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *namingTableListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	tableName := normalizeIdentifier(ctx.Table_name(), l.currentSchema)
+	tableName := normalizeIdentifier(ctx.Table_name(), l.currentDatabase)
 	if !l.format.MatchString(tableName) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
@@ -109,7 +109,7 @@ func (l *namingTableListener) EnterAlter_table_properties(ctx *parser.Alter_tabl
 	if ctx.Tableview_name() == nil {
 		return
 	}
-	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentSchema))
+	tableName := lastIdentifier(normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase))
 	if tableName == "" {
 		return
 	}

@@ -64,11 +64,11 @@ export type SizeType = "small" | "normal";
 const props = defineProps({
   issueStatus: {
     required: true,
-    type: Number as PropType<IssueStatus>,
+    type: String as PropType<IssueStatus>,
   },
   // Specify taskStatus if we want to show the task specific status when issueStatus is OPEN.
   taskStatus: {
-    type: Number as PropType<Task_Status>,
+    type: String as PropType<Task_Status>,
     default: undefined,
   },
   size: {

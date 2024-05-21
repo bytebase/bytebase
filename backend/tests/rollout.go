@@ -35,7 +35,7 @@ func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project
 }
 
 func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1pb.Project, steps []*v1pb.Plan_Step) (*v1pb.Plan, *v1pb.Rollout, *v1pb.Issue, error) {
-	plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+	plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
 			Steps: steps,

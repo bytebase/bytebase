@@ -1,6 +1,7 @@
-import { cloneDeep, groupBy, orderBy } from "lodash-es";
+import { cloneDeep, groupBy, isNaN, isNumber, orderBy } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
+import { useRoute } from "vue-router";
 import { rolloutServiceClient } from "@/grpcweb";
 import type { TemplateType } from "@/plugins";
 import {
@@ -12,11 +13,11 @@ import {
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import { emptyIssue, TaskTypeListWithStatement, UNKNOWN_ID } from "@/types";
 import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
-import type { Stage } from "@/types/proto/v1/rollout_service";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
@@ -24,10 +25,10 @@ import {
   Plan_ExportDataConfig,
   Plan_Spec,
   Plan_Step,
-  Rollout,
-  Task_Type,
-} from "@/types/proto/v1/rollout_service";
-import { SheetPayload } from "@/types/proto/v1/sheet_service";
+} from "@/types/proto/v1/plan_service";
+import type { Stage } from "@/types/proto/v1/rollout_service";
+import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
+import { Sheet, SheetPayload } from "@/types/proto/v1/sheet_service";
 import {
   extractProjectResourceName,
   extractSheetUID,
@@ -39,7 +40,7 @@ import {
   sheetNameOfTaskV1,
 } from "@/utils";
 import { nextUID } from "../base";
-import { sheetNameForSpec } from "../plan";
+import { databaseEngineForSpec, sheetNameForSpec } from "../plan";
 import { createEmptyLocalSheet, getLocalSheetByName } from "../sheet";
 
 export type InitialSQL = {
@@ -55,13 +56,16 @@ type CreateIssueParams = {
   branch?: string;
 };
 
-export const createIssueSkeleton = async (query: Record<string, string>) => {
-  const project = await useProjectV1Store().getOrFetchProjectByUID(
-    query.project
+export const createIssueSkeleton = async (
+  route: ReturnType<typeof useRoute>,
+  query: Record<string, string>
+) => {
+  const projectName = route.params.projectId as string;
+  const project = await useProjectV1Store().getOrFetchProjectByName(
+    `${projectNamePrefix}${projectName}`
   );
-  const databaseUIDList = (query.databaseList ?? "")
-    .split(",")
-    .filter((uid) => uid && uid !== String(UNKNOWN_ID));
+  const databaseIdList = (query.databaseList ?? "").split(",");
+  const databaseUIDList = await prepareDatabaseUIDList(databaseIdList);
   await prepareDatabaseList(databaseUIDList, project.uid);
 
   const params: CreateIssueParams = {
@@ -81,9 +85,16 @@ export const createIssueSkeleton = async (query: Record<string, string>) => {
   issue.plan = plan.name;
   issue.planEntity = plan;
 
-  const rollout = await previewPlan(plan, params);
-  issue.rollout = rollout.name;
-  issue.rolloutEntity = rollout;
+  const issueTemplate = query.template as TemplateType | undefined;
+  // Don't initial rollout for SQL review issue.
+  if (issueTemplate === "bb.issue.sql-review") {
+    issue.rollout = "";
+    issue.rolloutEntity = undefined;
+  } else {
+    const rollout = await previewPlan(plan, params);
+    issue.rollout = rollout.name;
+    issue.rolloutEntity = rollout;
+  }
 
   const description = query.description;
   if (description) {
@@ -210,9 +221,10 @@ export const buildStepsForDatabaseGroup = async (
   // Create sheet from SQL template in URL query
   // The sheet will be used when previewing rollout
   const sql = params.initialSQL.sql ?? "";
-  const sheetCreate = {
+  const sheetCreate = Sheet.fromPartial({
     ...createEmptyLocalSheet(),
-  };
+    engine: await databaseEngineForSpec(params.project, databaseGroupName),
+  });
   setSheetStatement(sheetCreate, sql);
   const sheet = await useSheetV1Store().createSheet(
     params.project.name,
@@ -382,6 +394,15 @@ export const buildSpecForTarget = async (
     spec.exportDataConfig = Plan_ExportDataConfig.fromJSON({
       target,
       sheet,
+    });
+  }
+  if (template === "bb.issue.sql-review") {
+    // SQL review issues is reusing the same plan config type as changing database.
+    spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
+      target,
+      sheet,
+      // TODO(steven): let user choose type in UI.
+      type: Plan_ChangeDatabaseConfig_Type.DATA,
     });
   }
 
@@ -592,4 +613,54 @@ export const isValidStage = (stage: Stage): boolean => {
     }
   }
   return true;
+};
+
+export const isValidSpec = (spec: Plan_Spec): boolean => {
+  if (spec.changeDatabaseConfig || spec.exportDataConfig) {
+    const sheetName = sheetNameForSpec(spec);
+    if (!sheetName) {
+      return false;
+    }
+    const uid = extractSheetUID(sheetName);
+    if (uid.startsWith("-")) {
+      const sheet = getLocalSheetByName(sheetName);
+      if (getSheetStatement(sheet).length === 0) {
+        return false;
+      }
+    } else {
+      const sheet = useSheetV1Store().getSheetByName(sheetName);
+      if (!sheet) {
+        return false;
+      }
+      if (getSheetStatement(sheet).length === 0) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
+const prepareDatabaseUIDList = async (
+  // databaseIdList is a list of database identifiers. Including UID and resource id.
+  // e.g. ["103", "205", "instances/mysql/databases/employee"]
+  databaseIdList: string[]
+) => {
+  const databaseStore = useDatabaseV1Store();
+  const databaseUIDList = [];
+  for (const maybeUID of databaseIdList) {
+    if (!maybeUID || maybeUID === String(UNKNOWN_ID)) {
+      continue;
+    }
+    const uid = Number(maybeUID);
+    if (isNumber(uid) && !isNaN(uid)) {
+      databaseUIDList.push(maybeUID);
+      continue;
+    }
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      maybeUID,
+      true // silent
+    );
+    databaseUIDList.push(database.uid);
+  }
+  return databaseUIDList.filter((id) => id && id !== String(UNKNOWN_ID));
 };

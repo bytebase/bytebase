@@ -762,9 +762,6 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
 	}
-	if err := s.checkDataSource(instance, &dataSource); err != nil {
-		return nil, err
-	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
@@ -848,19 +845,29 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.ExternalSecret = externalSecret
 			patch.ExternalSecret = externalSecret
 			patch.RemoveExternalSecret = externalSecret == nil
-
 		case "sasl_config":
 			dataSource.SASLConfig = convertToStoreDataSourceSaslConfig(request.DataSource.SaslConfig)
 			patch.SASLConfig = dataSource.SASLConfig
-
+			patch.RemoveSASLConfig = dataSource.SASLConfig == nil
 		case "authentication_type":
 			authType := convertToAuthenticationType(request.DataSource.AuthenticationType)
 			dataSource.AuthenticationType = authType
 			patch.AuthenticationType = &authType
-
+		case "additional_addresses":
+			additionalAddresses := convertToStoreAdditionalAddresses(request.DataSource.AdditionalAddresses)
+			dataSource.AdditionalAddresses = additionalAddresses
+			patch.AdditionalAddress = &additionalAddresses
+		case "replica_set":
+			dataSource.ReplicaSet = request.DataSource.ReplicaSet
+		case "direct_connection":
+			dataSource.DirectConnection = request.DataSource.DirectConnection
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
+	}
+
+	if err := s.checkDataSource(instance, &dataSource); err != nil {
+		return nil, err
 	}
 
 	if patch.SSHHost != nil || patch.SSHPort != nil || patch.SSHUser != nil || patch.SSHObfuscatedPassword != nil || patch.SSHObfuscatedPrivateKey != nil {
@@ -1139,6 +1146,8 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			authenticationType = v1pb.DataSource_PASSWORD
 		case storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM:
 			authenticationType = v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM
+		case storepb.DataSourceOptions_AWS_RDS_IAM:
+			authenticationType = v1pb.DataSource_AWS_RDS_IAM
 		}
 
 		dataSourceList = append(dataSourceList, &v1pb.DataSource{
@@ -1155,6 +1164,10 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			ServiceName:            ds.ServiceName,
 			ExternalSecret:         externalSecret,
 			AuthenticationType:     authenticationType,
+			SaslConfig:             convertToV1DataSourceSaslConfig(ds.SASLConfig),
+			AdditionalAddresses:    convertToV1DataSourceAddresses(ds.AdditionalAddresses),
+			ReplicaSet:             ds.ReplicaSet,
+			DirectConnection:       ds.DirectConnection,
 		})
 	}
 
@@ -1218,18 +1231,60 @@ func convertToStoreDataSourceSaslConfig(saslConfig *v1pb.SASLConfig) *storepb.SA
 				Realm:                m.KrbConfig.Realm,
 				Keytab:               m.KrbConfig.Keytab,
 				KdcHost:              m.KrbConfig.KdcHost,
+				KdcPort:              m.KrbConfig.KdcPort,
 				KdcTransportProtocol: m.KrbConfig.KdcTransportProtocol,
 			},
 		}
-	case *v1pb.SASLConfig_PlainConfig:
-		storeSaslConfig.Mechanism = &storepb.SASLConfig_PlainConfig{
-			PlainConfig: &storepb.PlainSASLConfig{
-				Username: m.PlainConfig.Username,
-				Password: m.PlainConfig.Password,
-			},
-		}
+	default:
+		return nil
 	}
 	return storeSaslConfig
+}
+
+func convertToV1DataSourceSaslConfig(saslConfig *storepb.SASLConfig) *v1pb.SASLConfig {
+	if saslConfig == nil {
+		return nil
+	}
+	storeSaslConfig := &v1pb.SASLConfig{}
+	switch m := saslConfig.Mechanism.(type) {
+	case *storepb.SASLConfig_KrbConfig:
+		storeSaslConfig.Mechanism = &v1pb.SASLConfig_KrbConfig{
+			KrbConfig: &v1pb.KerberosConfig{
+				Primary:              m.KrbConfig.Primary,
+				Instance:             m.KrbConfig.Instance,
+				Realm:                m.KrbConfig.Realm,
+				Keytab:               m.KrbConfig.Keytab,
+				KdcHost:              m.KrbConfig.KdcHost,
+				KdcPort:              m.KrbConfig.KdcPort,
+				KdcTransportProtocol: m.KrbConfig.KdcTransportProtocol,
+			},
+		}
+	default:
+		return nil
+	}
+	return storeSaslConfig
+}
+
+func convertToV1DataSourceAddresses(addresses []*storepb.DataSourceOptions_Address) []*v1pb.DataSource_Address {
+	res := make([]*v1pb.DataSource_Address, 0, len(addresses))
+	for _, address := range addresses {
+		res = append(res, &v1pb.DataSource_Address{
+			Host: address.Host,
+			Port: address.Port,
+		})
+	}
+	return res
+}
+
+func convertToStoreAdditionalAddresses(addresses []*v1pb.DataSource_Address) []*storepb.DataSourceOptions_Address {
+	res := make([]*storepb.DataSourceOptions_Address, 0, len(addresses))
+	for _, address := range addresses {
+		res = append(res, &storepb.DataSourceOptions_Address{
+			Host: address.Host,
+			Port: address.Port,
+		})
+	}
+	return res
 }
 
 func convertToAuthenticationType(authType v1pb.DataSource_AuthenticationType) storepb.DataSourceOptions_AuthenticationType {
@@ -1239,6 +1294,8 @@ func convertToAuthenticationType(authType v1pb.DataSource_AuthenticationType) st
 		authenticationType = storepb.DataSourceOptions_PASSWORD
 	case v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM:
 		authenticationType = storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM
+	case v1pb.DataSource_AWS_RDS_IAM:
+		authenticationType = storepb.DataSourceOptions_AWS_RDS_IAM
 	}
 	return authenticationType
 }
@@ -1278,6 +1335,9 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		ExternalSecret:                     externalSecret,
 		SASLConfig:                         saslConfig,
 		AuthenticationType:                 convertToAuthenticationType(dataSource.AuthenticationType),
+		AdditionalAddresses:                convertToStoreAdditionalAddresses(dataSource.AdditionalAddresses),
+		ReplicaSet:                         dataSource.ReplicaSet,
+		DirectConnection:                   dataSource.DirectConnection,
 	}, nil
 }
 

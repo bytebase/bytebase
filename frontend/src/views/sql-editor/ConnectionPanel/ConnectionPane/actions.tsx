@@ -88,7 +88,7 @@ export const useDropdown = () => {
             onSelect: () => {
               setConnection(
                 node,
-                { sheet: "", mode: DEFAULT_SQL_EDITOR_TAB_MODE },
+                { worksheet: "", mode: DEFAULT_SQL_EDITOR_TAB_MODE },
                 /* newTab */ true
               );
               showConnectionPanel.value = false;
@@ -101,7 +101,7 @@ export const useDropdown = () => {
             label: t("sql-editor.connect-in-admin-mode"),
             icon: () => <WrenchIcon class="w-4 h-4" />,
             onSelect: () => {
-              setConnection(node, { sheet: "", mode: "ADMIN" });
+              setConnection(node, { worksheet: "", mode: "ADMIN" });
               showConnectionPanel.value = false;
             },
           });
@@ -167,8 +167,8 @@ export const useDropdown = () => {
 
 export const setConnection = (
   node: TreeNode<"database">,
-  extra: { sheet: string; mode: TabMode } = {
-    sheet: "",
+  extra: { worksheet: string; mode: TabMode } = {
+    worksheet: "",
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
   },
   newTab = false

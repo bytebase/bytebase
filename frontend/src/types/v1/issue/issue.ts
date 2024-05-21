@@ -7,31 +7,22 @@ import {
   emptyUser,
   unknownUser,
 } from "@/types";
+import type { Rollout, TaskRun } from "@/types//proto/v1/rollout_service";
 import type { User } from "@/types/proto/v1/auth_service";
+import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
+import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
-import type { IssueStatus } from "../../proto/v1/issue_service";
-import { Issue, Issue_Type } from "../../proto/v1/issue_service";
-import type {
-  Plan,
-  PlanCheckRun,
-  Rollout,
-  TaskRun,
-} from "../../proto/v1/rollout_service";
-import {
-  EMPTY_ROLLOUT_NAME,
-  UNKNOWN_ROLLOUT_NAME,
-  emptyRollout,
-  unknownRollout,
-} from "./rollout";
+import { EMPTY_ROLLOUT_NAME, UNKNOWN_ROLLOUT_NAME } from "./rollout";
 
+// For grant request issue, it has no plan and rollout.
+// For sql review issue, it has no rollout.
 export interface ComposedIssue extends Issue {
   planEntity: Plan | undefined;
   planCheckRunList: PlanCheckRun[];
-  rolloutEntity: Rollout;
+  rolloutEntity: Rollout | undefined;
   rolloutTaskRunList: TaskRun[];
   project: string;
   projectEntity: ComposedProject;
-  assigneeEntity?: User;
   creatorEntity: User;
 }
 
@@ -51,7 +42,7 @@ export const emptyIssue = (): ComposedIssue => {
     }),
     planEntity: undefined,
     planCheckRunList: [],
-    rolloutEntity: emptyRollout(),
+    rolloutEntity: undefined,
     rolloutTaskRunList: [],
     project: EMPTY_PROJECT_NAME,
     projectEntity: emptyProject(),
@@ -69,7 +60,7 @@ export const unknownIssue = (): ComposedIssue => {
     }),
     planEntity: undefined,
     planCheckRunList: [],
-    rolloutEntity: unknownRollout(),
+    rolloutEntity: undefined,
     rolloutTaskRunList: [],
     project: UNKNOWN_PROJECT_NAME,
     projectEntity: unknownProject(),
@@ -84,10 +75,15 @@ export interface IssueFilter {
   query: string;
   principal?: string;
   creator?: string;
-  assignee?: string;
   subscriber?: string;
   statusList?: IssueStatus[];
   createdTsAfter?: number;
   createdTsBefore?: number;
-  type?: string;
+  // type is the issue type, for example: GRANT_REQUEST, DATABASE_DATA_EXPORT
+  type?: Issue_Type;
+  // taskType is the task type, for example: DDL, DML
+  taskType?: string;
+  // filter by labels, for example: labels = "feature & bug"
+  labels?: string[];
+  hasPipeline?: boolean;
 }

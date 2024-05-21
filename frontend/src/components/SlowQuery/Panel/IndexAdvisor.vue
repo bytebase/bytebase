@@ -113,11 +113,10 @@ const showIndexAdvisor = computed(() => {
 const handleCreateIndex = () => {
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: database.value.projectEntity.uid,
     mode: "normal",
     ghost: undefined,
   };
-  query.databaseList = database.value.uid;
+  query.databaseList = database.value.name;
   query.sql = state.createIndexStatement;
   query.name = generateIssueName();
 

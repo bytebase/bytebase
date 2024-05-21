@@ -2,6 +2,8 @@ package v1
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -156,12 +158,16 @@ func (p *ContextProvider) do(ctx context.Context, fullMethod string, req any) ([
 		v1pb.RolloutService_GetRollout_FullMethodName,
 		v1pb.RolloutService_CreateRollout_FullMethodName,
 		v1pb.RolloutService_PreviewRollout_FullMethodName,
-		v1pb.RolloutService_GetPlan_FullMethodName,
-		v1pb.RolloutService_CreatePlan_FullMethodName,
 		v1pb.RolloutService_ListTaskRuns_FullMethodName,
-		v1pb.RolloutService_ListPlanCheckRuns_FullMethodName,
-		v1pb.RolloutService_RunPlanChecks_FullMethodName:
+		v1pb.RolloutService_GetTaskRunLog_FullMethodName:
 		return p.getProjectIDsForRolloutService(ctx, req)
+
+	case
+		v1pb.PlanService_GetPlan_FullMethodName,
+		v1pb.PlanService_CreatePlan_FullMethodName,
+		v1pb.PlanService_ListPlanCheckRuns_FullMethodName,
+		v1pb.PlanService_RunPlanChecks_FullMethodName:
+		return p.getProjectIDsForPlanService(ctx, req)
 
 	case
 		v1pb.ProjectService_GetProject_FullMethodName,
@@ -257,7 +263,7 @@ func (*ContextProvider) getProjectIDsForChangelistService(_ context.Context, req
 }
 
 func (*ContextProvider) getProjectIDsForRolloutService(_ context.Context, req any) ([]string, error) {
-	var projects, rollouts, plans, tasks []string
+	var projects, rollouts, plans, tasks, taskRuns []string
 	switch r := req.(type) {
 	case *v1pb.GetRolloutRequest:
 		rollouts = append(rollouts, r.GetName())
@@ -271,6 +277,8 @@ func (*ContextProvider) getProjectIDsForRolloutService(_ context.Context, req an
 		projects = append(projects, r.GetParent())
 	case *v1pb.ListTaskRunsRequest:
 		tasks = append(tasks, r.GetParent())
+	case *v1pb.GetTaskRunLogRequest:
+		taskRuns = append(taskRuns, r.GetParent())
 	case *v1pb.ListPlanCheckRunsRequest:
 		plans = append(plans, r.GetParent())
 	case *v1pb.RunPlanChecksRequest:
@@ -303,6 +311,45 @@ func (*ContextProvider) getProjectIDsForRolloutService(_ context.Context, req an
 		projectID, _, _, _, err := common.GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(task)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse task %q", task)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, taskRun := range taskRuns {
+		projectID, _, _, _, _, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse taskRun %q", taskRun)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+
+	return uniq(projectIDs), nil
+}
+
+func (*ContextProvider) getProjectIDsForPlanService(_ context.Context, req any) ([]string, error) {
+	var projects, plans []string
+	switch r := req.(type) {
+	case *v1pb.GetPlanRequest:
+		plans = append(plans, r.GetName())
+	case *v1pb.CreatePlanRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.ListPlanCheckRunsRequest:
+		plans = append(plans, r.GetParent())
+	case *v1pb.RunPlanChecksRequest:
+		plans = append(plans, r.GetName())
+	}
+
+	var projectIDs []string
+	for _, plan := range plans {
+		projectID, _, err := common.GetProjectIDPlanID(plan)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse plan %q", plan)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, project := range projects {
+		projectID, err := common.GetProjectID(project)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse project %q", project)
 		}
 		projectIDs = append(projectIDs, projectID)
 	}
@@ -440,9 +487,23 @@ func (p *ContextProvider) getProjectIDsForDatabase(ctx context.Context, req any)
 	var databaseNames []string
 	switch r := req.(type) {
 	case *v1pb.QueryRequest:
-		databaseNames = append(databaseNames, r.GetName())
+		if strings.Contains(r.GetName(), common.DatabaseIDPrefix) {
+			databaseNames = append(databaseNames, r.GetName())
+		} else if strings.HasPrefix(r.GetName(), common.InstanceNamePrefix) && r.GetConnectionDatabase() != "" {
+			databaseNames = append(databaseNames, fmt.Sprintf("%s/%s%s", r.GetName(), common.DatabaseIDPrefix, r.GetConnectionDatabase()))
+		}
 	case *v1pb.ExportRequest:
-		databaseNames = append(databaseNames, r.GetName())
+		if strings.HasPrefix(r.GetName(), common.ProjectNamePrefix) {
+			projectID, _, err := common.GetProjectIDIssueUID(r.GetName())
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get projectID from %q", r.GetName())
+			}
+			projectIDs = append(projectIDs, projectID)
+		} else if strings.Contains(r.GetName(), common.DatabaseIDPrefix) {
+			databaseNames = append(databaseNames, r.GetName())
+		} else if strings.HasPrefix(r.GetName(), common.InstanceNamePrefix) && r.GetConnectionDatabase() != "" {
+			databaseNames = append(databaseNames, fmt.Sprintf("%s/%s%s", r.GetName(), common.DatabaseIDPrefix, r.GetConnectionDatabase()))
+		}
 	case *v1pb.GetDatabaseRequest:
 		databaseNames = append(databaseNames, r.GetName())
 	case *v1pb.SyncDatabaseRequest:

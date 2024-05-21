@@ -74,7 +74,7 @@ func (l *namingTableNoKeywordChecker) generateAdvice() ([]advisor.Advice, error)
 func (l *namingTableNoKeywordChecker) EnterCreate_table(ctx *parser.Create_tableContext) {
 	tableName := ctx.Table_name().GetTable()
 	_, normalizedTableName := tsqlparser.NormalizeTSQLIdentifier(tableName)
-	if tsqlparser.IsTSQLKeyword(normalizedTableName, false) {
+	if tsqlparser.IsTSQLReservedKeyword(normalizedTableName, false) {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.NameIsKeywordIdentifier,

@@ -6,11 +6,13 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -184,6 +186,11 @@ type ConnectionConfig struct {
 
 	// AuthenticationType is for the database connection, we support normal username & password or Google IAM.
 	AuthenticationType storepb.DataSourceOptions_AuthenticationType
+
+	// AdditionalAddresses and ReplicaSet name are used for MongoDB.
+	AdditionalAddresses []*storepb.DataSourceOptions_Address
+	ReplicaSet          string
+	DirectConnection    bool
 }
 
 // SSHConfig is the configuration for connection over SSH.
@@ -294,8 +301,6 @@ type Driver interface {
 	// The returned string is the JSON encoded metadata for the logical dump.
 	// For MySQL, the payload contains the binlog filename and position when the dump is generated.
 	Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error)
-	// Restore the database from src, which is a full backup.
-	Restore(ctx context.Context, src io.Reader) error
 }
 
 // Register makes a database driver available by the provided type.
@@ -340,6 +345,68 @@ type ExecuteOptions struct {
 	// For both cases, we will use one transaction to wrap the statements.
 	ChunkedSubmission     bool
 	UpdateExecutionStatus func(*v1pb.TaskRun_ExecutionDetail)
+	CreateTaskRunLog      func(time.Time, *storepb.TaskRunLog) error
+}
+
+func (o *ExecuteOptions) LogSchemaDumpStart() {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type:            storepb.TaskRunLog_SCHEMA_DUMP_START,
+		SchemaDumpStart: &storepb.TaskRunLog_SchemaDumpStart{},
+	})
+	if err != nil {
+		slog.Warn("failed to log schema dump start", log.BBError(err))
+	}
+}
+
+func (o *ExecuteOptions) LogSchemaDumpEnd(derr string) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_SCHEMA_DUMP_END,
+		SchemaDumpEnd: &storepb.TaskRunLog_SchemaDumpEnd{
+			Error: derr,
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log schema dump end", log.BBError(err))
+	}
+}
+
+func (o *ExecuteOptions) LogCommandExecute(commandIndexes []int32) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_COMMAND_EXECUTE,
+		CommandExecute: &storepb.TaskRunLog_CommandExecute{
+			CommandIndexes: commandIndexes,
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log command execute", log.BBError(err))
+	}
+}
+
+func (o *ExecuteOptions) LogCommandResponse(commandIndexes []int32, affectedRows int32, allAffectedRows []int32, rerr string) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_COMMAND_RESPONSE,
+		CommandResponse: &storepb.TaskRunLog_CommandResponse{
+			CommandIndexes:  commandIndexes,
+			AffectedRows:    affectedRows,
+			AllAffectedRows: allAffectedRows,
+			Error:           rerr,
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log command response", log.BBError(err))
+	}
 }
 
 // ErrorWithPosition is the error with the position information.

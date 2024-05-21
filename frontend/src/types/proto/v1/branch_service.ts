@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
-import { Engine, engineFromJSON, engineToJSON } from "./common";
+import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
 import { DatabaseMetadata } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -14,12 +14,12 @@ export enum BranchView {
    * BRANCH_VIEW_UNSPECIFIED - The default / unset value.
    * The API will default to the BASIC view.
    */
-  BRANCH_VIEW_UNSPECIFIED = 0,
+  BRANCH_VIEW_UNSPECIFIED = "BRANCH_VIEW_UNSPECIFIED",
   /** BRANCH_VIEW_BASIC - Exclude schema, baseline_schema. */
-  BRANCH_VIEW_BASIC = 1,
+  BRANCH_VIEW_BASIC = "BRANCH_VIEW_BASIC",
   /** BRANCH_VIEW_FULL - Include everything. */
-  BRANCH_VIEW_FULL = 2,
-  UNRECOGNIZED = -1,
+  BRANCH_VIEW_FULL = "BRANCH_VIEW_FULL",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function branchViewFromJSON(object: any): BranchView {
@@ -51,6 +51,20 @@ export function branchViewToJSON(object: BranchView): string {
     case BranchView.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function branchViewToNumber(object: BranchView): number {
+  switch (object) {
+    case BranchView.BRANCH_VIEW_UNSPECIFIED:
+      return 0;
+    case BranchView.BRANCH_VIEW_BASIC:
+      return 1;
+    case BranchView.BRANCH_VIEW_FULL:
+      return 2;
+    case BranchView.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -327,7 +341,7 @@ function createBaseBranch(): Branch {
     schemaMetadata: undefined,
     baselineSchema: "",
     baselineSchemaMetadata: undefined,
-    engine: 0,
+    engine: Engine.ENGINE_UNSPECIFIED,
     baselineDatabase: "",
     parentBranch: "",
     etag: "",
@@ -358,8 +372,8 @@ export const Branch = {
     if (message.baselineSchemaMetadata !== undefined) {
       DatabaseMetadata.encode(message.baselineSchemaMetadata, writer.uint32(50).fork()).ldelim();
     }
-    if (message.engine !== 0) {
-      writer.uint32(56).int32(message.engine);
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(56).int32(engineToNumber(message.engine));
     }
     if (message.baselineDatabase !== "") {
       writer.uint32(66).string(message.baselineDatabase);
@@ -439,7 +453,7 @@ export const Branch = {
             break;
           }
 
-          message.engine = reader.int32() as any;
+          message.engine = engineFromJSON(reader.int32());
           continue;
         case 8:
           if (tag !== 66) {
@@ -509,7 +523,7 @@ export const Branch = {
       baselineSchemaMetadata: isSet(object.baselineSchemaMetadata)
         ? DatabaseMetadata.fromJSON(object.baselineSchemaMetadata)
         : undefined,
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       baselineDatabase: isSet(object.baselineDatabase) ? globalThis.String(object.baselineDatabase) : "",
       parentBranch: isSet(object.parentBranch) ? globalThis.String(object.parentBranch) : "",
       etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
@@ -540,7 +554,7 @@ export const Branch = {
     if (message.baselineSchemaMetadata !== undefined) {
       obj.baselineSchemaMetadata = DatabaseMetadata.toJSON(message.baselineSchemaMetadata);
     }
-    if (message.engine !== 0) {
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
     }
     if (message.baselineDatabase !== "") {
@@ -583,7 +597,7 @@ export const Branch = {
       (object.baselineSchemaMetadata !== undefined && object.baselineSchemaMetadata !== null)
         ? DatabaseMetadata.fromPartial(object.baselineSchemaMetadata)
         : undefined;
-    message.engine = object.engine ?? 0;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.baselineDatabase = object.baselineDatabase ?? "";
     message.parentBranch = object.parentBranch ?? "";
     message.etag = object.etag ?? "";
@@ -653,7 +667,7 @@ export const GetBranchRequest = {
 };
 
 function createBaseListBranchesRequest(): ListBranchesRequest {
-  return { parent: "", filter: "", pageSize: 0, pageToken: "", view: 0 };
+  return { parent: "", filter: "", pageSize: 0, pageToken: "", view: BranchView.BRANCH_VIEW_UNSPECIFIED };
 }
 
 export const ListBranchesRequest = {
@@ -670,8 +684,8 @@ export const ListBranchesRequest = {
     if (message.pageToken !== "") {
       writer.uint32(34).string(message.pageToken);
     }
-    if (message.view !== 0) {
-      writer.uint32(40).int32(message.view);
+    if (message.view !== BranchView.BRANCH_VIEW_UNSPECIFIED) {
+      writer.uint32(40).int32(branchViewToNumber(message.view));
     }
     return writer;
   },
@@ -716,7 +730,7 @@ export const ListBranchesRequest = {
             break;
           }
 
-          message.view = reader.int32() as any;
+          message.view = branchViewFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -733,7 +747,7 @@ export const ListBranchesRequest = {
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      view: isSet(object.view) ? branchViewFromJSON(object.view) : 0,
+      view: isSet(object.view) ? branchViewFromJSON(object.view) : BranchView.BRANCH_VIEW_UNSPECIFIED,
     };
   },
 
@@ -751,7 +765,7 @@ export const ListBranchesRequest = {
     if (message.pageToken !== "") {
       obj.pageToken = message.pageToken;
     }
-    if (message.view !== 0) {
+    if (message.view !== BranchView.BRANCH_VIEW_UNSPECIFIED) {
       obj.view = branchViewToJSON(message.view);
     }
     return obj;
@@ -766,7 +780,7 @@ export const ListBranchesRequest = {
     message.filter = object.filter ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
-    message.view = object.view ?? 0;
+    message.view = object.view ?? BranchView.BRANCH_VIEW_UNSPECIFIED;
     return message;
   },
 };
@@ -1579,7 +1593,7 @@ export const DiffDatabaseResponse = {
 };
 
 function createBaseDiffMetadataRequest(): DiffMetadataRequest {
-  return { sourceMetadata: undefined, targetMetadata: undefined, engine: 0 };
+  return { sourceMetadata: undefined, targetMetadata: undefined, engine: Engine.ENGINE_UNSPECIFIED };
 }
 
 export const DiffMetadataRequest = {
@@ -1590,8 +1604,8 @@ export const DiffMetadataRequest = {
     if (message.targetMetadata !== undefined) {
       DatabaseMetadata.encode(message.targetMetadata, writer.uint32(18).fork()).ldelim();
     }
-    if (message.engine !== 0) {
-      writer.uint32(24).int32(message.engine);
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(24).int32(engineToNumber(message.engine));
     }
     return writer;
   },
@@ -1622,7 +1636,7 @@ export const DiffMetadataRequest = {
             break;
           }
 
-          message.engine = reader.int32() as any;
+          message.engine = engineFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1637,7 +1651,7 @@ export const DiffMetadataRequest = {
     return {
       sourceMetadata: isSet(object.sourceMetadata) ? DatabaseMetadata.fromJSON(object.sourceMetadata) : undefined,
       targetMetadata: isSet(object.targetMetadata) ? DatabaseMetadata.fromJSON(object.targetMetadata) : undefined,
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
     };
   },
 
@@ -1649,7 +1663,7 @@ export const DiffMetadataRequest = {
     if (message.targetMetadata !== undefined) {
       obj.targetMetadata = DatabaseMetadata.toJSON(message.targetMetadata);
     }
-    if (message.engine !== 0) {
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
     }
     return obj;
@@ -1666,7 +1680,7 @@ export const DiffMetadataRequest = {
     message.targetMetadata = (object.targetMetadata !== undefined && object.targetMetadata !== null)
       ? DatabaseMetadata.fromPartial(object.targetMetadata)
       : undefined;
-    message.engine = object.engine ?? 0;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     return message;
   },
 };

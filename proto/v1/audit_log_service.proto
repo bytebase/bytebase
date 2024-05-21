@@ -6,16 +6,29 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "google/rpc/status.proto";
+import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
 service AuditLogService {
   rpc SearchAuditLogs(SearchAuditLogsRequest) returns (SearchAuditLogsResponse) {
-    option (google.api.http) = {get: "/v1/logs:search"};
+    option (google.api.http) = {get: "/v1/auditLogs:search"};
+  }
+  rpc ExportAuditLogs(ExportAuditLogsRequest) returns (ExportAuditLogsResponse) {
+    option (google.api.http) = {
+      post: "/v1/auditLogs:export"
+      body: "*"
+    };
   }
 }
 
 message SearchAuditLogsRequest {
+  // The filter of the log. It should be a valid CEL expression.
+  // For example:
+  //  - filter = "method == '/bytebase.v1.SQLService/Query'"
+  //  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+  //  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+  //  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
   string filter = 1;
 
   // The order by of the log.
@@ -43,6 +56,30 @@ message SearchAuditLogsResponse {
   // Pass this value in the page_token field in the subsequent call
   // to retrieve the next page of log entities.
   string next_page_token = 2;
+}
+
+message ExportAuditLogsRequest {
+  // The filter of the log. It should be a valid CEL expression.
+  // For example:
+  //  - filter = "method == '/bytebase.v1.SQLService/Query'"
+  //  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+  //  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+  //  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
+  string filter = 1;
+
+  // The order by of the log.
+  // Only support order by create_time.
+  // For example:
+  //  - order_by = "create_time asc"
+  //  - order_by = "create_time desc"
+  string order_by = 2;
+
+  // The export format.
+  ExportFormat format = 3;
+}
+
+message ExportAuditLogsResponse {
+  bytes content = 1;
 }
 
 message AuditLog {

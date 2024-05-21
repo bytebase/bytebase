@@ -76,7 +76,6 @@
     "role": {
       "self": "Role"
     },
-    "assignee": "Assignee",
     "revert": "Revert",
     "apply": "Apply",
     "reorder": "Reorder",
@@ -141,8 +140,7 @@
     "connecting": "Connecting...",
     "creating": "Creating...",
     "updating": "Updating...",
-    "Address": "Address",
-    "User": "User",
+    "address": "Address",
     "assigned": "Assigned",
     "subscribed": "Subscribed",
     "created": "Created",
@@ -337,7 +335,6 @@
       "warn": "Warning",
       "error": "Error"
     },
-    "earliest-allowed-time-no-modify": "You cannot modify this field because you are not the issue assignee or it's not pending to run.",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "Sync data",
       "bb-task-database-schema-update-ghost-cutover": "Switch tables",
@@ -762,6 +759,11 @@
       },
       "algorithms": {
         "self": "Masking Algorithm",
+        "upload": "Upload algorithm",
+        "upload-label": "You can upload algorithm file with JSON format.",
+        "override-title": "Algorithm data override",
+        "override-desc": "Existed algorithms will be overridden, you have to re-configure the algorithm for semantic types.",
+        "override-confirm": "Still upload",
         "default": "Default",
         "default-desc": "Use *** as data mask",
         "table": {
@@ -789,7 +791,7 @@
         },
         "range-mask": {
           "self": "Range mask",
-          "label": "Range mask will replace the original value from start index to end index (end not included) with the substitution.",
+          "label": "Range mask will replace the original value from start index to end index (end not included) with the substitution. The index starts from 0.",
           "slice-start": "Slice start",
           "slice-start-label": "Slice start is the start index of the original value, start from 0 and should be less than stop.",
           "slice-end": "Slice end",
@@ -801,6 +803,16 @@
           "self": "MD5 mask",
           "salt": "Salt",
           "salt-label": "Salt is used to generate a hash from the original value."
+        },
+        "inner-outer-mask": {
+          "self": "Inner / Outer mask",
+          "type": "Mask Type",
+          "inner-label": "Inner mask masks the interior part of a string. The prefix and suffix represent the unmasked parts of the data.",
+          "inner-mask": "Inner Mask",
+          "outer-label": "Outer mask masks the left and right ends of a string. The prefix and suffix represent the masked parts of the data.",
+          "outer-mask": "Outer Mask",
+          "prefix-length": "Prefix Length",
+          "suffix-length": "Suffix Length"
         }
       },
       "masking-level": {
@@ -821,14 +833,14 @@
         "upload": "Upload classification",
         "upload-succeed": "Upload succeed",
         "search": "Search classification",
-        "label": "You can upload classification file with JSON format.",
-        "view-example": "View example",
-        "json-format-example": "Classification JSON format example",
+        "upload-label": "You can upload classification file with JSON format.",
         "copy-succeed": "Copy example succeed",
         "override-title": "Classification data override",
         "override-desc": "Existed classification data will be overridden and affect all projects.",
         "override-confirm": "Still upload"
-      }
+      },
+      "json-format-example": "JSON format example",
+      "view-example": "View example"
     },
     "release": {
       "new-version-available": "New version is available",
@@ -882,10 +894,6 @@
     "sentence": {
       "created-issue": "created issue",
       "commented": "commented",
-      "reassigned-issue": "reassigned issue from {oldName} to {newName}",
-      "assigned-issue": "assigned issue to {newName}",
-      "unassigned-issue": "unassigned issue from {oldName}",
-      "invalid-assignee-update": "invalid assignee update",
       "changed-description": "changed description",
       "changed-from-to": "changed {name} from \"{oldValue}\" to \"{newValue}\"",
       "unset-from": "unset {name} from \"{oldValue}\"",
@@ -1001,17 +1009,13 @@
           "title": "Creator",
           "description": "Search by the issue creator"
         },
-        "assignee": {
-          "title": "Assignee",
-          "description": "Search by the issue assignee"
-        },
         "subscriber": {
           "title": "Subscriber",
           "description": "Search by the issue subscriber"
         },
         "principal": {
           "title": "Related Principal",
-          "description": "Search by the issue creator, assignee or subscriber"
+          "description": "Search by the issue creator or subscriber"
         },
         "approver": {
           "title": "Approver",
@@ -1032,6 +1036,10 @@
             "yes": "yes",
             "no": "no"
           }
+        },
+        "label": {
+          "title": "Label",
+          "description": "Filter by issue label"
         }
       },
       "hide": "Hide advanced search"
@@ -1048,10 +1056,10 @@
       "updated": "Updated",
       "approver": "Approver",
       "creator": "Creator",
-      "assignee": "Assignee"
+      "current-approver": "Current approver"
     },
     "stage-select": {
-      "active": "{name} (active)"
+      "current": "{name} (current)"
     },
     "not-allowed-to-operate-unassigned-database": "Can't {operation} to unassigned databases.\nIt need to be transferred to a project first.",
     "migration-mode": {
@@ -1094,19 +1102,12 @@
     },
     "will-rollback": "This task will rollback {link}",
     "issue-link-with-task": "Issue {issue} - task {task}",
-    "assignee-attention": {
-      "send-approval-request-successfully": "Send a {im} approval request successfully",
-      "send-attention-request-successfully": "Request assignee {principal} attention successfully",
-      "needs-attention": "Attention needed",
-      "click-to-mark": "Click to request assignee attention"
-    },
     "sdl": {
       "schema-change": "Schema change",
       "generated-ddl-statements": "Generated DDL statements",
       "full-schema": "Full schema",
       "left-schema-may-change": "The schema on the left side may change before the issue is applied."
     },
-    "assignee-tooltip": "The assignees are those responsible for an issue, and when an issue is assigned to them, it shows up in their list of assigned issues.",
     "approval-flow": {
       "self": "Approval flow",
       "tooltip": "The approvers will review and approve the issue in the order specified in the flow. The issue can only be applied after all steps in the flow have been approved. You can configure a custom approval flow for each risk.",
@@ -1172,14 +1173,6 @@
       "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action"
     },
     "approval-requested": "Approval Requested",
-    "assignee": {
-      "current-assignee": "Current assignee",
-      "workspace-admins": "Workspace admins",
-      "workspace-dbas": "DBA",
-      "project-owners": "Project owners",
-      "releasers-of-current-stage": "Releasers of current stage",
-      "approvers-of-current-step": "Approvers of current step"
-    },
     "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
     "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
     "preview": "Preview issue",
@@ -1193,6 +1186,20 @@
     },
     "update-rollout-time": {
       "self": "Update rollout time"
+    },
+    "task-run": {
+      "task-run-log": {
+        "batch": "Batch",
+        "affected-rows": "Affected rows",
+        "entry-type": {
+          "command-execute": "Command execute",
+          "schema-dump": "Schema dump"
+        },
+        "affected-rows-n": "Affected rows: {n}"
+      }
+    },
+    "sql-review": {
+      "statement-type": "Statement type"
     }
   },
   "alter-schema": {
@@ -1334,6 +1341,14 @@
           "template": "Create a service account named {user}, then add it in your Google Cloud SQL as IAM user {user}{'@'}project-id.iam. Grant the user with the needed privileges."
         }
       },
+      "aws-rds": {
+        "mysql": {
+          "template": "Below is an example to create user {user}{'@'}% and grant the user with the needed privileges."
+        },
+        "postgresql": {
+          "template": "Below is an example to create user '{user}' and grant the user with the needed privileges."
+        }
+      },
       "create-user-example": {
         "snowflake": {
           "template": "Below is an example to create user '{user}' with password {password} for {warehouse} and grant the user with the needed privileges."
@@ -1361,7 +1376,8 @@
     "password-type": {
       "password": "Password",
       "password-tip": "You can also specify external secret manage endpoint",
-      "google-iam": "Google CloudSQL IAM",
+      "google-iam": "Google Cloud SQL IAM",
+      "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
@@ -1734,7 +1750,11 @@
     "transfer-database-to": "Transfer databases to target project",
     "transfer-database-from-to": "Transfer database from source project to target project",
     "classification": {
-      "self": "Classification"
+      "self": "Classification",
+      "sync-from-comment": "Sync classification from comment",
+      "sync-from-comment-tip": "Once enabled, the classification will sync from the table/column comment. The comment should follow \"{format}\" format.",
+      "sync-from-comment-enable-warning": "Classification will change with the DDL and sync from the original comment.",
+      "sync-from-comment-disable-warning": "Classification won't change with the DDL, you can change it anytime on the database detail page."
     },
     "recent": "Recent",
     "partitioned": "Partitioned",
@@ -1816,11 +1836,6 @@
       "success-prompt": "Successfully created project {name}."
     },
     "overview": {
-      "view-all": "View all",
-      "view-all-closed": "View all closed",
-      "recent-activity": "Recent @.lower:{'common.activities'}",
-      "in-progress": "In Progress",
-      "recently-closed": "Recently Closed",
       "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project.",
       "no-db-prompt": "No database belongs to this project. You can add database by clicking {newDb} or {transferInDb} from the top action bar."
     },
@@ -1870,7 +1885,7 @@
         },
         "issue-info-change": {
           "title": "Issue info change",
-          "label": "When issue info (e.g. assignee, title, description) has changed"
+          "label": "When issue info (e.g. title, description) has changed"
         },
         "issue-comment-creation": {
           "title": "Issue comment creation",
@@ -1916,7 +1931,7 @@
       "select-schema-change-type-sdl": "Declarative - Specify the desired schema. Only use CREATE TABLE/INDEX.",
       "schema-path-template-sdl-description": "The schema file describes the database's full schema.",
       "branch-protection-rules": {
-        "self": "Branch protection rules",
+        "self": "Branch Protection Rules",
         "add-rule": "Add Rule",
         "branch-name-pattern": {
           "self": "Branch name pattern",
@@ -1926,6 +1941,11 @@
         "only-allow-specified-roles-to-create-branch": "Only allow specified roles to create branch",
         "no-protection-rule-configured": "No protection rule configured.",
         "only-apply-to-main-branches": "Only apply to main branches"
+      },
+      "labels": {
+        "issue-labels": "Issue Labels",
+        "configure-labels": "Configure labels",
+        "force-issue-labels": "Require labels for all issues"
       }
     },
     "members": {
@@ -2125,8 +2145,11 @@
     "read-replica-port": "Read-replica Port",
     "delete-read-only-data-source": "Delete read-only data source",
     "connection-string-schema": "Connection String Schema",
+    "additional-node-addresses": "Additional Node Addresses",
+    "replica-set": "Replica Set",
     "admin": "Admin",
-    "read-only": "RO"
+    "read-only": "RO",
+    "direct-connection": "Direct Connection"
   },
   "setting": {
     "project": {
@@ -2261,7 +2284,13 @@
     "sync-in-progress": "Sync in progress",
     "create-a-worksheet": "Create a new worksheet",
     "select-a-database-to-start": "Select a database to start",
-    "select-encoding": "Select encoding"
+    "select-encoding": "Select encoding",
+    "result-limit": {
+      "n-rows": "{n} rows",
+      "rows": "rows"
+    },
+    "n-per-page": "{n} / page",
+    "customize-tree-structure": "Customize tree structure"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2284,7 +2313,10 @@
       "drop-column": "Drop column",
       "sql-preview": "SQL Preview",
       "reset": "Reset",
-      "save": "Save"
+      "save": "Save",
+      "create-procedure": "Create procedure",
+      "create-function": "Create function",
+      "drop": "Drop"
     },
     "database": {
       "name": "Name",
@@ -2337,7 +2369,11 @@
       "failed-to-fetch-database-schema": "Failed to fetch database schema",
       "invalid-schema": "Invalid schema",
       "cannot-drop-the-last-column": "Cannot drop the last column",
-      "cannot-change-config": "Database config must changed with the schema"
+      "cannot-change-config": "Database config must changed with the schema",
+      "duplicated-procedure-name": "Duplicated procedure name",
+      "invalid-procedure-name": "Invalid procedure name",
+      "duplicated-function-name": "Duplicated function name",
+      "invalid-function-name": "Invalid function name"
     },
     "confirm-to-close": {
       "title": "Confirm to close",
@@ -2361,7 +2397,10 @@
       "value": "Value",
       "add-sub-partition": "Add sub partition",
       "type": "Type"
-    }
+    },
+    "views": "Views",
+    "procedures": "Procedures",
+    "functions": "Functions"
   },
   "label": {
     "empty-label-value": "Empty",
@@ -2742,12 +2781,15 @@
       "updated-time": "Updated Time",
       "actor": "Actor",
       "type": "Audit Type",
-      "level": "Audit Level",
+      "level": "Level",
       "comment": "Comment",
       "payload": "Payload",
       "empty": "<Empty>",
       "view-details": "View Details",
-      "select-type": "Select Type"
+      "select-type": "Select Type",
+      "method": "Method",
+      "request": "Request",
+      "response": "Response"
     },
     "type": {
       "workspace": {
@@ -2762,6 +2804,22 @@
       },
       "sql-editor-query": "SQL Editor Query",
       "sql-export": "SQL Export"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "Actor",
+          "description": "Search by the audit log actor"
+        },
+        "method": {
+          "title": "Method",
+          "description": "Search by the method of audit log"
+        },
+        "level": {
+          "title": "Level",
+          "description": "Search by the level of audit log"
+        }
+      }
     }
   },
   "onboarding-guide": {
@@ -3238,6 +3296,10 @@
     "self": "Export Center",
     "permission-denied": "Permission denied"
   },
+  "review-center": {
+    "self": "Review Center",
+    "review-sql": "Review SQL"
+  },
   "schema-designer": {
     "self": "Schema Designer",
     "schema-design": "Schema Design",
@@ -3360,7 +3422,12 @@
     },
     "confirm-remove-change": "Remove this change?",
     "delete-this-changelist": "Delete this changelist",
-    "confirm-delete-changelist": "Delete this changelist?"
+    "confirm-delete-changelist": "Delete this changelist?",
+    "import": {
+      "no-file-to-upload": "No file to upload",
+      "upload-sql-or-zip-file": "Upload .sql or .zip file",
+      "optional-upload-sql-or-zip-file": "(Optional) Upload .sql or .zip file"
+    }
   },
   "export-data": {
     "export-rows": "Export rows",
@@ -3433,6 +3500,9 @@
     "table-partition": {
       "drop-partition-confirm": "Drop table partition?",
       "drop-partition-with-subpartitions-confirm": "Will also drop all its subpartitions."
+    },
+    "last-update": {
+      "self": "Last update"
     }
   }
 }

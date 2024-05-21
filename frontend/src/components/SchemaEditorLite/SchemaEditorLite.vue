@@ -43,6 +43,7 @@ const props = defineProps<{
   branch?: Branch;
   loading?: boolean;
   diffWhenReady?: boolean;
+  showLastUpdater?: boolean;
   disableDiffColoring?: boolean;
 }>();
 const emit = defineEmits<{
@@ -98,6 +99,7 @@ const context = provideSchemaEditorContext({
   resourceType: toRef(props, "resourceType"),
   readonly: toRef(props, "readonly"),
   selectedRolloutObjects: toRef(props, "selectedRolloutObjects"),
+  showLastUpdater: toRef(props, "showLastUpdater"),
   disableDiffColoring: toRef(props, "disableDiffColoring"),
 });
 const { rebuildMetadataEdit, applyMetadataEdit, applySelectedMetadataEdit } =

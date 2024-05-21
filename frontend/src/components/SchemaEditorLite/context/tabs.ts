@@ -81,6 +81,24 @@ export const useTabs = (events: SchemaEditorEvents) => {
           tab.metadata.table.name === target.metadata.table.name
         );
       }
+      if (tab.type === "view" && target.type === "view") {
+        return (
+          tab.metadata.schema.name === target.metadata.schema.name &&
+          tab.metadata.view.name === target.metadata.view.name
+        );
+      }
+      if (tab.type === "procedure" && target.type === "procedure") {
+        return (
+          tab.metadata.schema.name === target.metadata.schema.name &&
+          tab.metadata.procedure.name === target.metadata.procedure.name
+        );
+      }
+      if (tab.type === "function" && target.type === "function") {
+        return (
+          tab.metadata.schema.name === target.metadata.schema.name &&
+          tab.metadata.function.name === target.metadata.function.name
+        );
+      }
       return false;
     });
   };

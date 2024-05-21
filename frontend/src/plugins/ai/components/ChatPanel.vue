@@ -36,8 +36,12 @@ import { head } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { computed, reactive, watch } from "vue";
 import { useSQLEditorTabStore } from "@/store";
-import { engineNameV1 } from "@/utils";
-import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
+import {
+  databaseMetadataToText,
+  onConnectionChanged,
+  useAIContext,
+  useCurrentChat,
+} from "../logic";
 import { useConversationStore } from "../store";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
 import ActionBar from "./ActionBar.vue";
@@ -84,30 +88,7 @@ const requestAI = async (query: string) => {
     prompts.push(
       `### Your responses should be informative and terse. For example, "Find all the data in the table", you should only return query statements.`
     );
-    if (engine) {
-      if (databaseMetadata) {
-        prompts.push(
-          `### ${engineNameV1(engine)} tables, with their properties:`
-        );
-      } else {
-        prompts.push(`### ${engineNameV1(engine)} database`);
-      }
-    } else {
-      if (databaseMetadata) {
-        prompts.push(`### Giving a database`);
-      }
-    }
-    if (databaseMetadata) {
-      databaseMetadata.schemas.forEach((schema) => {
-        schema.tables.forEach((table) => {
-          const name = schema.name
-            ? `${schema.name}.${table.name}`
-            : table.name;
-          const columns = table.columns.map((column) => column.name).join(", ");
-          prompts.push(`# ${name}(${columns})`);
-        });
-      });
-    }
+    prompts.push(databaseMetadataToText(databaseMetadata, engine));
     prompts.push(`### Write a SQL statement to solve the question below`);
     prompts.push(`### ${query}`);
     prompts.push(`### PLEASE ADD NECESSARY QUOTES IN YOUR RESPONSE STATEMENT.`);

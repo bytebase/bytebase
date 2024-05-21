@@ -27,27 +27,27 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   );
 
   // Getters
-  const sheetList = computed(() => {
+  const worksheetList = computed(() => {
     const sheetList = Array.from(cacheByUID.entityCacheMap.values())
       .map((entry) => entry.entity)
       .filter((sheet): sheet is Worksheet => sheet !== undefined);
     return uniqBy(sheetList, (sheet) => sheet.name);
   });
-  const mySheetList = computed(() => {
+  const myWorksheetList = computed(() => {
     const me = useCurrentUserV1();
-    return sheetList.value.filter((sheet) => {
-      return sheet.creator === `users/${me.value.email}`;
+    return worksheetList.value.filter((worksheet) => {
+      return worksheet.creator === `users/${me.value.email}`;
     });
   });
-  const sharedSheetList = computed(() => {
+  const sharedWorksheetList = computed(() => {
     const me = useCurrentUserV1();
-    return sheetList.value.filter((sheet) => {
-      return sheet.creator !== `users/${me.value.email}`;
+    return worksheetList.value.filter((worksheet) => {
+      return worksheet.creator !== `users/${me.value.email}`;
     });
   });
-  const starredSheetList = computed(() => {
-    return sheetList.value.filter((sheet) => {
-      return sheet.starred;
+  const starredWorksheetList = computed(() => {
+    return worksheetList.value.filter((worksheet) => {
+      return worksheet.starred;
     });
   });
 
@@ -61,12 +61,12 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     }
     cacheByUID.setEntity([uid, view], worksheet);
   };
-  const setListCache = (sheets: Worksheet[]) => {
-    sheets.forEach((sheet) => setCache(sheet, "BASIC"));
+  const setListCache = (worksheets: Worksheet[]) => {
+    worksheets.forEach((worksheet) => setCache(worksheet, "BASIC"));
   };
 
   // CRUD
-  const createSheet = async (worksheet: Partial<Worksheet>) => {
+  const createWorksheet = async (worksheet: Partial<Worksheet>) => {
     const created = await worksheetServiceClient.createWorksheet({
       worksheet,
     });
@@ -80,7 +80,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
    * @param view undefined to any (FULL -> BASIC)
    * @returns
    */
-  const getSheetByName = (
+  const getWorksheetByName = (
     name: string,
     view: WorksheetView | undefined = undefined
   ) => {
@@ -96,21 +96,21 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     }
     return cacheByUID.getEntity([uid, view]);
   };
-  const fetchSheetByName = async (name: string) => {
+  const fetchWorksheetByName = async (name: string) => {
     const uid = extractWorksheetUID(name);
     if (uid.startsWith("-") || !uid) {
       return undefined;
     }
     try {
-      const sheet = await worksheetServiceClient.getWorksheet({
+      const worksheet = await worksheetServiceClient.getWorksheet({
         name,
       });
-      return sheet;
+      return worksheet;
     } catch {
       return undefined;
     }
   };
-  const getOrFetchSheetByName = async (name: string) => {
+  const getOrFetchWorksheetByName = async (name: string) => {
     const uid = extractWorksheetUID(name);
     if (uid.startsWith("-") || !uid) {
       return undefined;
@@ -124,10 +124,10 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
       return request;
     }
 
-    const promise = fetchSheetByName(name);
+    const promise = fetchWorksheetByName(name);
     cacheByUID.setRequest([uid, "FULL"], promise);
-    promise.then((sheet) => {
-      if (!sheet) {
+    promise.then((worksheet) => {
+      if (!worksheet) {
         // If the request failed
         // remove the request cache entry so we can retry when needed.
         cacheByUID.invalidateRequest([uid, "FULL"]);
@@ -136,7 +136,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     return promise;
   };
 
-  const fetchMySheetList = async () => {
+  const fetchMyWorksheetList = async () => {
     const me = useCurrentUserV1();
     const { worksheets } = await worksheetServiceClient.searchWorksheets({
       filter: `creator = users/${me.value.email}`,
@@ -144,7 +144,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     setListCache(worksheets);
     return worksheets;
   };
-  const fetchSharedSheetList = async () => {
+  const fetchSharedWorksheetList = async () => {
     const me = useCurrentUserV1();
     const { worksheets } = await worksheetServiceClient.searchWorksheets({
       filter: `creator != users/${me.value.email}`,
@@ -153,7 +153,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     return worksheets;
   };
 
-  const fetchStarredSheetList = async () => {
+  const fetchStarredWorksheetList = async () => {
     const { worksheets } = await worksheetServiceClient.searchWorksheets({
       filter: `starred = true`,
     });
@@ -161,7 +161,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     return worksheets;
   };
 
-  const patchSheet = async (
+  const patchWorksheet = async (
     worksheet: Partial<Worksheet>,
     updateMask: string[]
   ) => {
@@ -174,14 +174,14 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     return updated;
   };
 
-  const deleteSheetByName = async (name: string) => {
+  const deleteWorksheetByName = async (name: string) => {
     await worksheetServiceClient.deleteWorksheet({ name });
     const uid = extractWorksheetUID(name);
     cacheByUID.invalidateEntity([uid, "FULL"]);
     cacheByUID.invalidateEntity([uid, "BASIC"]);
   };
 
-  const upsertSheetOrganizer = async (
+  const upsertWorksheetOrganizer = async (
     organizer: Pick<WorksheetOrganizer, "worksheet" | "starred">
   ) => {
     await worksheetServiceClient.updateWorksheetOrganizer({
@@ -191,12 +191,12 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     });
 
     // Update local sheet values
-    const fullViewWorksheet = getSheetByName(organizer.worksheet, "FULL");
+    const fullViewWorksheet = getWorksheetByName(organizer.worksheet, "FULL");
     if (fullViewWorksheet) {
       fullViewWorksheet.starred = organizer.starred;
       setCache(fullViewWorksheet, "FULL");
     }
-    const basicViewWorksheet = getSheetByName(organizer.worksheet, "BASIC");
+    const basicViewWorksheet = getWorksheetByName(organizer.worksheet, "BASIC");
     if (basicViewWorksheet) {
       basicViewWorksheet.starred = organizer.starred;
       setCache(basicViewWorksheet, "BASIC");
@@ -204,60 +204,60 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   };
 
   return {
-    mySheetList,
-    sharedSheetList,
-    starredSheetList,
-    createSheet,
-    getSheetByName,
-    getOrFetchSheetByName,
-    fetchMySheetList,
-    fetchSharedSheetList,
-    fetchStarredSheetList,
-    patchSheet,
-    deleteSheetByName,
-    upsertSheetOrganizer,
+    myWorksheetList,
+    sharedWorksheetList,
+    starredWorksheetList,
+    createWorksheet,
+    getWorksheetByName,
+    getOrFetchWorksheetByName,
+    fetchMyWorksheetList,
+    fetchSharedWorksheetList,
+    fetchStarredWorksheetList,
+    patchWorksheet,
+    deleteWorksheetByName,
+    upsertWorksheetOrganizer,
   };
 });
 
 export const useWorkSheetAndTabStore = defineStore("worksheet_and_tab", () => {
   const tabStore = useSQLEditorTabStore();
-  const sheetStore = useWorkSheetStore();
+  const worksheetStore = useWorkSheetStore();
   const me = useCurrentUserV1();
 
-  const currentSheet = computed(() => {
+  const currentWorksheet = computed(() => {
     const tab = tabStore.currentTab;
     if (!tab) {
       return undefined;
     }
-    const { sheet } = tab;
-    if (!sheet) {
+    const { worksheet } = tab;
+    if (!worksheet) {
       return undefined;
     }
-    return sheetStore.getSheetByName(sheet);
+    return worksheetStore.getWorksheetByName(worksheet);
   });
 
   const isCreator = computed(() => {
-    const sheet = currentSheet.value;
-    if (!sheet) return false;
-    return getUserEmailFromIdentifier(sheet.creator) === me.value.email;
+    const worksheet = currentWorksheet.value;
+    if (!worksheet) return false;
+    return getUserEmailFromIdentifier(worksheet.creator) === me.value.email;
   });
 
   const isReadOnly = computed(() => {
-    const sheet = currentSheet.value;
+    const worksheet = currentWorksheet.value;
 
     // We don't have a selected sheet, we've got nothing to edit.
-    if (!sheet) {
+    if (!worksheet) {
       return false;
     }
 
     // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.、
-    const statement = getSheetStatement(sheet);
-    if (getStatementSize(statement).ne(sheet.contentSize)) {
+    const statement = getSheetStatement(worksheet);
+    if (getStatementSize(statement).ne(worksheet.contentSize)) {
       return true;
     }
 
-    return !isWorksheetReadableV1(sheet);
+    return !isWorksheetReadableV1(worksheet);
   });
 
-  return { currentSheet, isCreator, isReadOnly };
+  return { currentSheet: currentWorksheet, isCreator, isReadOnly };
 });

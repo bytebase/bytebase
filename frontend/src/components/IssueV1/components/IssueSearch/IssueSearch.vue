@@ -1,18 +1,22 @@
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col gap-y-1">
     <div
       v-if="components.includes('searchbox')"
       class="flex flex-row items-center gap-x-2"
     >
-      <AdvancedSearchBox
-        :params="params"
-        :autofocus="autofocus"
-        :readonly-scopes="readonlyScopes"
-        :support-option-id-list="supportOptionIdList"
+      <AdvancedSearch
         class="flex-1"
-        v-bind="componentProps?.searchbox"
+        :params="params"
+        :readonly-scopes="readonlyScopes"
+        :scope-options="scopeOptions"
         @update:params="$emit('update:params', $event)"
-        @select-unsupported-scope="handleSelectScope"
+      />
+      <TimeRange
+        v-if="components.includes('time-range')"
+        v-model:show="showTimeRange"
+        :params="params"
+        v-bind="componentProps?.['time-range']"
+        @update:params="$emit('update:params', $event)"
       />
       <slot name="searchbox-suffix" />
     </div>
@@ -28,54 +32,34 @@
         />
         <slot name="primary" />
       </div>
-      <div class="flex flex-row space-x-4">
-        <NInputGroup>
-          <TimeRange
-            v-if="components.includes('time-range')"
-            v-model:show="showTimeRange"
-            :params="params"
-            v-bind="componentProps?.['time-range']"
-            @update:params="$emit('update:params', $event)"
-          />
-          <slot name="secondary" />
-        </NInputGroup>
-      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed } from "vue";
+import AdvancedSearch from "@/components/AdvancedSearch";
+import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
 import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
 import { UIIssueFilterScopeIdList, SearchScopeIdList } from "@/utils";
-import AdvancedSearchBox from "./AdvancedSearchBox.vue";
 import Status from "./Status.vue";
-import TimeRange from "./TimeRange.vue";
+import { useIssueSearchScopeOptions } from "./useIssueSearchScopeOptions";
 
-export type SearchComponent =
-  | "searchbox"
-  | "status"
-  | "type"
-  | "time-range"
-  | "project"
-  | "instance"
-  | "database"
-  | "assignee"
-  | "creator"
-  | "approver"
-  | "approval";
+export type SearchComponent = "searchbox" | "status" | "time-range";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     params: SearchParams;
     readonlyScopes?: SearchScope[];
+    overrideScopeIdList?: SearchScopeId[];
     autofocus?: boolean;
     components?: SearchComponent[];
     componentProps?: Partial<Record<SearchComponent, any>>;
   }>(),
   {
     readonlyScopes: () => [],
-    components: () => ["searchbox", "status", "time-range"],
+    overrideScopeIdList: () => [],
+    components: () => ["searchbox", "time-range", "status"],
     componentProps: undefined,
   }
 );
@@ -85,14 +69,15 @@ defineEmits<{
 
 const showTimeRange = ref(false);
 
-const handleSelectScope = (id: SearchScopeId) => {
-  if (id === "created") {
-    showTimeRange.value = true;
+const allowedScopes = computed(() => {
+  if (props.overrideScopeIdList && props.overrideScopeIdList.length > 0) {
+    return props.overrideScopeIdList;
   }
-};
+  return [...UIIssueFilterScopeIdList, ...SearchScopeIdList];
+});
 
-const supportOptionIdList = computed(() => [
-  ...UIIssueFilterScopeIdList,
-  ...SearchScopeIdList,
-]);
+const scopeOptions = useIssueSearchScopeOptions(
+  computed(() => props.params),
+  allowedScopes
+);
 </script>

@@ -44,7 +44,7 @@ func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advi
 	listener := &columnNoNullListener{
 		level:           level,
 		title:           string(ctx.Rule.Type),
-		currentSchema:   ctx.CurrentSchema,
+		currentDatabase: ctx.CurrentDatabase,
 		nullableColumns: make(columnMap),
 	}
 
@@ -59,7 +59,7 @@ type columnNoNullListener struct {
 
 	level           advisor.Status
 	title           string
-	currentSchema   string
+	currentDatabase string
 	nullableColumns columnMap
 	tableName       string
 	columnID        string
@@ -97,9 +97,9 @@ func (l *columnNoNullListener) generateAdvice() ([]advisor.Advice, error) {
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *columnNoNullListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	schemaName := l.currentSchema
+	schemaName := l.currentDatabase
 	if ctx.Schema_name() != nil {
-		schemaName = normalizeIdentifier(ctx.Schema_name(), l.currentSchema)
+		schemaName = normalizeIdentifier(ctx.Schema_name(), l.currentDatabase)
 	}
 	l.tableName = fmt.Sprintf("%s.%s", schemaName, normalizeIdentifier(ctx.Table_name(), schemaName))
 }
@@ -114,7 +114,7 @@ func (l *columnNoNullListener) EnterColumn_definition(ctx *parser.Column_definit
 	if l.tableName == "" {
 		return
 	}
-	columnName := normalizeIdentifier(ctx.Column_name(), l.currentSchema)
+	columnName := normalizeIdentifier(ctx.Column_name(), l.currentDatabase)
 	l.columnID = fmt.Sprintf(`%s.%s`, l.tableName, columnName)
 	l.nullableColumns[l.columnID] = ctx.GetStart().GetLine()
 }
@@ -144,7 +144,7 @@ func (l *columnNoNullListener) EnterOut_of_line_constraint(ctx *parser.Out_of_li
 	}
 	if ctx.PRIMARY() != nil {
 		for _, column := range ctx.AllColumn_name() {
-			columnName := normalizeIdentifier(column, l.currentSchema)
+			columnName := normalizeIdentifier(column, l.currentDatabase)
 			columnID := fmt.Sprintf(`%s.%s`, l.tableName, columnName)
 			delete(l.nullableColumns, columnID)
 		}
@@ -153,7 +153,7 @@ func (l *columnNoNullListener) EnterOut_of_line_constraint(ctx *parser.Out_of_li
 
 // EnterAlter_table is called when production alter_table is entered.
 func (l *columnNoNullListener) EnterAlter_table(ctx *parser.Alter_tableContext) {
-	l.tableName = normalizeIdentifier(ctx.Tableview_name(), l.currentSchema)
+	l.tableName = normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase)
 }
 
 // ExitAlter_table is called when production alter_table is exited.
@@ -166,6 +166,6 @@ func (l *columnNoNullListener) EnterModify_col_properties(ctx *parser.Modify_col
 	if l.tableName == "" {
 		return
 	}
-	columnName := normalizeIdentifier(ctx.Column_name(), l.currentSchema)
+	columnName := normalizeIdentifier(ctx.Column_name(), l.currentDatabase)
 	l.columnID = fmt.Sprintf(`%s.%s`, l.tableName, columnName)
 }

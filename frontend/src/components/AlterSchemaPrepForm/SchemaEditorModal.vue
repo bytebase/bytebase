@@ -38,6 +38,7 @@
           :targets="state.targets"
           :loading="state.isPreparingMetadata"
           :diff-when-ready="false"
+          :hide-last-updater="true"
         />
       </NTabPane>
       <NTabPane
@@ -124,7 +125,7 @@ import type { PropType } from "vue";
 import { computed, onMounted, h, reactive, ref, watch } from "vue";
 import { I18nT, useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
+import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { databaseServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
@@ -373,6 +374,7 @@ const generateDiffDDLMap = async (silent: boolean) => {
       editing,
       /* !allowEmptyDiffDDLWithConfigChange */ false
     );
+
     if (result.fatal && !silent) {
       pushNotification({
         module: "bytebase",
@@ -410,7 +412,6 @@ const handlePreviewIssue = async () => {
 
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: project.value.uid,
   };
   if (isBatchMode.value) {
     if (props.databaseIdList.length > 1) {
@@ -421,13 +422,13 @@ const handlePreviewIssue = async () => {
       // A tenant pipeline with only 1 database will be downgraded to
       // a standard pipeline.
       // So we need to provide the databaseList parameter
-      query.databaseList = props.databaseIdList.join(",");
+      query.databaseList = databaseList.value.map((db) => db.name).join(",");
     }
   }
   if (props.alterType !== "TENANT") {
     // If we are not using tenant deployment config pipeline
     // we need to pass the databaseList explicitly.
-    query.databaseList = props.databaseIdList.join(",");
+    query.databaseList = databaseList.value.map((db) => db.name).join(",");
   }
 
   if (state.selectedTab === "raw-sql") {
@@ -445,8 +446,6 @@ const handlePreviewIssue = async () => {
 
     state.previewStatus = "Generating DDL";
     const statementMap = await generateDiffDDLMap(/* !silent */ false);
-
-    const databaseIdList = databaseList.value.map((db) => db.uid);
     const statementList: string[] = [];
     const emptyStatementDatabaseList: ComposedDatabase[] = [];
     for (const [database, result] of statementMap.entries()) {
@@ -474,11 +473,9 @@ const handlePreviewIssue = async () => {
         !!query.ghost
       );
     } else {
-      query.databaseList = databaseIdList.join(",");
+      query.databaseList = databaseList.value.map((db) => db.name).join(",");
       query.sqlList = JSON.stringify(statementList);
-      const databaseNameList = databaseList.value
-        .filter((database) => databaseIdList.includes(database.uid))
-        .map((db) => db.databaseName);
+      const databaseNameList = databaseList.value.map((db) => db.databaseName);
       query.name = generateIssueName(databaseNameList, !!query.ghost);
     }
   }
@@ -562,6 +559,11 @@ const confirmCreateIssueWithEmptyStatement = (
     style: "z-index: 100000",
     negativeText: t("common.cancel"),
     positiveText: t("common.continue-anyway"),
+    closeOnEsc: false,
+    maskClosable: false,
+    onClose: () => {
+      d.resolve(false);
+    },
     onNegativeClick: () => {
       d.resolve(false);
     },

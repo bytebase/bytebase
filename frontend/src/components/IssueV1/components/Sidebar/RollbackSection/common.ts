@@ -7,7 +7,7 @@ import {
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient } from "@/grpcweb";
 import {
   useCurrentUserV1,
   experimentalFetchIssueByName,
@@ -23,6 +23,7 @@ import {
   extractUserResourceName,
   flattenTaskV1List,
   hasProjectPermissionV2,
+  isDatabaseChangeRelatedIssue,
   semverCompare,
 } from "@/utils";
 
@@ -40,9 +41,19 @@ export const useRollbackContext = () => {
   const { isCreating, issue, selectedTask: task, events } = context;
   const project = computed(() => issue.value.projectEntity);
 
+  const showRollbackSection = computed((): boolean => {
+    if (!isDatabaseChangeRelatedIssue(issue.value)) {
+      return false;
+    }
+    if (task.value.type !== Task_Type.DATABASE_DATA_UPDATE) {
+      return false;
+    }
+    return true;
+  });
+
   // Decide with type of UI should be displayed.
   const rollbackUIType = computed((): RollbackUIType => {
-    if (task.value.type !== Task_Type.DATABASE_DATA_UPDATE) {
+    if (!showRollbackSection.value) {
       return "NONE";
     }
 
@@ -55,9 +66,6 @@ export const useRollbackContext = () => {
         ) {
           return "NONE";
         }
-        break;
-      case Engine.ORACLE:
-        // We don't have a check for oracle similar to the MySQL version check.
         break;
       default:
         return "NONE";
@@ -93,11 +101,6 @@ export const useRollbackContext = () => {
 
     if (user.email === extractUserResourceName(issue.value.creator)) {
       // Allowed to the issue creator
-      return true;
-    }
-
-    if (user.email === extractUserResourceName(issue.value.assignee)) {
-      // Allowed to the issue assignee
       return true;
     }
 
@@ -140,7 +143,7 @@ export const useRollbackContext = () => {
         task.value.databaseDataUpdate.rollbackEnabled = on;
       }
 
-      const updatedPlan = await rolloutServiceClient.updatePlan({
+      const updatedPlan = await planServiceClient.updatePlan({
         plan: planPatch,
         updateMask: ["steps"],
       });
@@ -158,9 +161,6 @@ export const useRollbackContext = () => {
         await useIssueCommentStore().createIssueComment({
           issueName: issue.value.name,
           comment: `${action} SQL rollback log for task [${issue.value.title}].`,
-          payload: {
-            issueName: issue.value.title,
-          },
         });
       } catch {
         // fail to comment won't be too bad
@@ -169,6 +169,7 @@ export const useRollbackContext = () => {
   };
 
   return {
+    showRollbackSection,
     rollbackUIType,
     allowRollback,
     rollbackEnabled,

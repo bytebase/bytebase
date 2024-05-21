@@ -55,7 +55,7 @@ func TestArchiveProject(t *testing.T) {
 	})
 
 	t.Run("ArchiveProjectWithOpenIssue", func(_ *testing.T) {
-		plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
+		plan, err := ctl.planServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 			Parent: ctl.project.Name,
 			Plan: &v1pb.Plan{
 				Steps: []*v1pb.Plan_Step{

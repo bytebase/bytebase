@@ -83,17 +83,21 @@ export const getAffectedTablesOfChangeHistory = (
   );
 };
 
+export const stringifyAffectedTable = (affectedTable: AffectedTable) => {
+  const { schema, table } = affectedTable;
+  if (schema !== "") {
+    return `${schema}.${table}`;
+  }
+  return table;
+};
+
 export const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
   if (isEqual(affectedTable, EmptyAffectedTable)) {
     return t("change-history.all-tables");
   }
 
-  const { schema, table, dropped } = affectedTable;
-  let name = table;
-  if (schema !== "") {
-    name = `${schema}.${table}`;
-  }
-  if (dropped) {
+  let name = stringifyAffectedTable(affectedTable);
+  if (affectedTable.dropped) {
     name = `${name} (deleted)`;
   }
   return name;

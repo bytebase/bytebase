@@ -14,7 +14,7 @@
         v-bind="$attrs"
       >
         <template #icon>
-          <heroicons:adjustments-horizontal
+          <ListTreeIcon
             class="w-6 h-6"
             :class="viewMode === 'CUSTOM' && 'text-accent'"
           />
@@ -28,6 +28,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ListTreeIcon } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
@@ -42,9 +43,12 @@ const treeStore = useSQLEditorTreeStore();
 const { factorList } = storeToRefs(treeStore);
 
 const viewMode = computed((): "PRESET" | "CUSTOM" => {
+  if (factorList.value.length === 0) {
+    return "PRESET";
+  }
   if (factorList.value.length === 1) {
     const factor = factorList.value[0].factor;
-    if (factor === "project" || factor === "instance") {
+    if (factor === "environment" || factor === "instance") {
       return "PRESET";
     }
   }

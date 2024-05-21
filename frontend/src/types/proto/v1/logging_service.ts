@@ -2,7 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
-import { ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
+import { ExportFormat, exportFormatFromJSON, exportFormatToJSON, exportFormatToNumber } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -142,70 +142,70 @@ export interface LogEntity {
 
 export enum LogEntity_Action {
   /** ACTION_UNSPECIFIED - In worksapce resource only. */
-  ACTION_UNSPECIFIED = 0,
+  ACTION_UNSPECIFIED = "ACTION_UNSPECIFIED",
   /**
    * ACTION_MEMBER_CREATE - Member related activity types.
    * Enum value 1 - 20
    *
    * ACTION_MEMBER_CREATE is the type for creating a new member.
    */
-  ACTION_MEMBER_CREATE = 1,
+  ACTION_MEMBER_CREATE = "ACTION_MEMBER_CREATE",
   /** ACTION_MEMBER_ROLE_UPDATE - ACTION_MEMBER_ROLE_UPDATE is the type for updating a member's role. */
-  ACTION_MEMBER_ROLE_UPDATE = 2,
+  ACTION_MEMBER_ROLE_UPDATE = "ACTION_MEMBER_ROLE_UPDATE",
   /** ACTION_MEMBER_ACTIVATE - ACTION_MEMBER_ACTIVATE_UPDATE is the type for activating members. */
-  ACTION_MEMBER_ACTIVATE = 3,
+  ACTION_MEMBER_ACTIVATE = "ACTION_MEMBER_ACTIVATE",
   /** ACTION_MEMBER_DEACTIVE - ACTION_MEMBER_DEACTIVE is the type for deactiving members. */
-  ACTION_MEMBER_DEACTIVE = 4,
+  ACTION_MEMBER_DEACTIVE = "ACTION_MEMBER_DEACTIVE",
   /**
    * ACTION_ISSUE_CREATE - Issue related activity types.
    * Enum value 21 - 40
    *
    * ACTION_ISSUE_CREATE is the type for creating a new issue.
    */
-  ACTION_ISSUE_CREATE = 21,
+  ACTION_ISSUE_CREATE = "ACTION_ISSUE_CREATE",
   /** ACTION_ISSUE_COMMENT_CREATE - ACTION_ISSUE_COMMENT_CREATE is the type for creating a new comment on an issue. */
-  ACTION_ISSUE_COMMENT_CREATE = 22,
+  ACTION_ISSUE_COMMENT_CREATE = "ACTION_ISSUE_COMMENT_CREATE",
   /** ACTION_ISSUE_FIELD_UPDATE - ACTION_ISSUE_FIELD_UPDATE is the type for updating an issue's field. */
-  ACTION_ISSUE_FIELD_UPDATE = 23,
+  ACTION_ISSUE_FIELD_UPDATE = "ACTION_ISSUE_FIELD_UPDATE",
   /** ACTION_ISSUE_STATUS_UPDATE - ACTION_ISSUE_STATUS_UPDATE is the type for updating an issue's status. */
-  ACTION_ISSUE_STATUS_UPDATE = 24,
+  ACTION_ISSUE_STATUS_UPDATE = "ACTION_ISSUE_STATUS_UPDATE",
   /** ACTION_ISSUE_APPROVAL_NOTIFY - ACTION_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. */
-  ACTION_ISSUE_APPROVAL_NOTIFY = 25,
+  ACTION_ISSUE_APPROVAL_NOTIFY = "ACTION_ISSUE_APPROVAL_NOTIFY",
   /** ACTION_PIPELINE_STAGE_STATUS_UPDATE - ACTION_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. */
-  ACTION_PIPELINE_STAGE_STATUS_UPDATE = 31,
+  ACTION_PIPELINE_STAGE_STATUS_UPDATE = "ACTION_PIPELINE_STAGE_STATUS_UPDATE",
   /** ACTION_PIPELINE_TASK_STATUS_UPDATE - ACTION_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. */
-  ACTION_PIPELINE_TASK_STATUS_UPDATE = 32,
+  ACTION_PIPELINE_TASK_STATUS_UPDATE = "ACTION_PIPELINE_TASK_STATUS_UPDATE",
   /** ACTION_PIPELINE_TASK_STATEMENT_UPDATE - ACTION_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. */
-  ACTION_PIPELINE_TASK_STATEMENT_UPDATE = 34,
+  ACTION_PIPELINE_TASK_STATEMENT_UPDATE = "ACTION_PIPELINE_TASK_STATEMENT_UPDATE",
   /** ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE - ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. */
-  ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = 35,
+  ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE = "ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE",
   /** ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE - ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, SUCCESS, FAILURE, CANCELED for now. */
-  ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE = 36,
+  ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE = "ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE",
   /** ACTION_PIPELINE_TASK_PRIOR_BACKUP - ACTION_PIPELINE_TASK_PRIOR_BACKUP represents the pipeline task prior backup activity. */
-  ACTION_PIPELINE_TASK_PRIOR_BACKUP = 37,
+  ACTION_PIPELINE_TASK_PRIOR_BACKUP = "ACTION_PIPELINE_TASK_PRIOR_BACKUP",
   /**
    * ACTION_PROJECT_REPOSITORY_PUSH - Project related activity types.
    * Enum value 41 - 60
    *
    * ACTION_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository.
    */
-  ACTION_PROJECT_REPOSITORY_PUSH = 41,
+  ACTION_PROJECT_REPOSITORY_PUSH = "ACTION_PROJECT_REPOSITORY_PUSH",
   /** ACTION_PROJECT_MEMBER_CREATE - ACTION_PROJECT_MEMBER_CREATE represents adding a member to the project. */
-  ACTION_PROJECT_MEMBER_CREATE = 42,
+  ACTION_PROJECT_MEMBER_CREATE = "ACTION_PROJECT_MEMBER_CREATE",
   /** ACTION_PROJECT_MEMBER_DELETE - ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project. */
-  ACTION_PROJECT_MEMBER_DELETE = 43,
+  ACTION_PROJECT_MEMBER_DELETE = "ACTION_PROJECT_MEMBER_DELETE",
   /** ACTION_PROJECT_DATABASE_TRANSFER - ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another. */
-  ACTION_PROJECT_DATABASE_TRANSFER = 45,
+  ACTION_PROJECT_DATABASE_TRANSFER = "ACTION_PROJECT_DATABASE_TRANSFER",
   /**
    * ACTION_DATABASE_SQL_EDITOR_QUERY - Database related activity types.
    * Enum value 61 - 80
    *
    * ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query.
    */
-  ACTION_DATABASE_SQL_EDITOR_QUERY = 61,
+  ACTION_DATABASE_SQL_EDITOR_QUERY = "ACTION_DATABASE_SQL_EDITOR_QUERY",
   /** ACTION_DATABASE_SQL_EXPORT - ACTION_DATABASE_SQL_EXPORT is the type for exporting SQL. */
-  ACTION_DATABASE_SQL_EXPORT = 62,
-  UNRECOGNIZED = -1,
+  ACTION_DATABASE_SQL_EXPORT = "ACTION_DATABASE_SQL_EXPORT",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function logEntity_ActionFromJSON(object: any): LogEntity_Action {
@@ -335,15 +335,67 @@ export function logEntity_ActionToJSON(object: LogEntity_Action): string {
   }
 }
 
+export function logEntity_ActionToNumber(object: LogEntity_Action): number {
+  switch (object) {
+    case LogEntity_Action.ACTION_UNSPECIFIED:
+      return 0;
+    case LogEntity_Action.ACTION_MEMBER_CREATE:
+      return 1;
+    case LogEntity_Action.ACTION_MEMBER_ROLE_UPDATE:
+      return 2;
+    case LogEntity_Action.ACTION_MEMBER_ACTIVATE:
+      return 3;
+    case LogEntity_Action.ACTION_MEMBER_DEACTIVE:
+      return 4;
+    case LogEntity_Action.ACTION_ISSUE_CREATE:
+      return 21;
+    case LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE:
+      return 22;
+    case LogEntity_Action.ACTION_ISSUE_FIELD_UPDATE:
+      return 23;
+    case LogEntity_Action.ACTION_ISSUE_STATUS_UPDATE:
+      return 24;
+    case LogEntity_Action.ACTION_ISSUE_APPROVAL_NOTIFY:
+      return 25;
+    case LogEntity_Action.ACTION_PIPELINE_STAGE_STATUS_UPDATE:
+      return 31;
+    case LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE:
+      return 32;
+    case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
+      return 34;
+    case LogEntity_Action.ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
+      return 35;
+    case LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
+      return 36;
+    case LogEntity_Action.ACTION_PIPELINE_TASK_PRIOR_BACKUP:
+      return 37;
+    case LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH:
+      return 41;
+    case LogEntity_Action.ACTION_PROJECT_MEMBER_CREATE:
+      return 42;
+    case LogEntity_Action.ACTION_PROJECT_MEMBER_DELETE:
+      return 43;
+    case LogEntity_Action.ACTION_PROJECT_DATABASE_TRANSFER:
+      return 45;
+    case LogEntity_Action.ACTION_DATABASE_SQL_EDITOR_QUERY:
+      return 61;
+    case LogEntity_Action.ACTION_DATABASE_SQL_EXPORT:
+      return 62;
+    case LogEntity_Action.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export enum LogEntity_Level {
-  LEVEL_UNSPECIFIED = 0,
+  LEVEL_UNSPECIFIED = "LEVEL_UNSPECIFIED",
   /** LEVEL_INFO - LEVEL_INFO is the type for information. */
-  LEVEL_INFO = 1,
+  LEVEL_INFO = "LEVEL_INFO",
   /** LEVEL_WARNING - LEVEL_WARNING is the type for warning. */
-  LEVEL_WARNING = 2,
+  LEVEL_WARNING = "LEVEL_WARNING",
   /** LEVEL_ERROR - LEVEL_ERROR is the type for error. */
-  LEVEL_ERROR = 3,
-  UNRECOGNIZED = -1,
+  LEVEL_ERROR = "LEVEL_ERROR",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function logEntity_LevelFromJSON(object: any): LogEntity_Level {
@@ -380,6 +432,22 @@ export function logEntity_LevelToJSON(object: LogEntity_Level): string {
     case LogEntity_Level.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function logEntity_LevelToNumber(object: LogEntity_Level): number {
+  switch (object) {
+    case LogEntity_Level.LEVEL_UNSPECIFIED:
+      return 0;
+    case LogEntity_Level.LEVEL_INFO:
+      return 1;
+    case LogEntity_Level.LEVEL_WARNING:
+      return 2;
+    case LogEntity_Level.LEVEL_ERROR:
+      return 3;
+    case LogEntity_Level.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -621,7 +689,7 @@ export const GetLogRequest = {
 };
 
 function createBaseExportLogsRequest(): ExportLogsRequest {
-  return { filter: "", orderBy: "", format: 0 };
+  return { filter: "", orderBy: "", format: ExportFormat.FORMAT_UNSPECIFIED };
 }
 
 export const ExportLogsRequest = {
@@ -632,8 +700,8 @@ export const ExportLogsRequest = {
     if (message.orderBy !== "") {
       writer.uint32(18).string(message.orderBy);
     }
-    if (message.format !== 0) {
-      writer.uint32(40).int32(message.format);
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
+      writer.uint32(40).int32(exportFormatToNumber(message.format));
     }
     return writer;
   },
@@ -664,7 +732,7 @@ export const ExportLogsRequest = {
             break;
           }
 
-          message.format = reader.int32() as any;
+          message.format = exportFormatFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -679,7 +747,7 @@ export const ExportLogsRequest = {
     return {
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
       orderBy: isSet(object.orderBy) ? globalThis.String(object.orderBy) : "",
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
     };
   },
 
@@ -691,7 +759,7 @@ export const ExportLogsRequest = {
     if (message.orderBy !== "") {
       obj.orderBy = message.orderBy;
     }
-    if (message.format !== 0) {
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
       obj.format = exportFormatToJSON(message.format);
     }
     return obj;
@@ -704,7 +772,7 @@ export const ExportLogsRequest = {
     const message = createBaseExportLogsRequest();
     message.filter = object.filter ?? "";
     message.orderBy = object.orderBy ?? "";
-    message.format = object.format ?? 0;
+    message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
     return message;
   },
 };
@@ -772,8 +840,8 @@ function createBaseLogEntity(): LogEntity {
     creator: "",
     createTime: undefined,
     updateTime: undefined,
-    action: 0,
-    level: 0,
+    action: LogEntity_Action.ACTION_UNSPECIFIED,
+    level: LogEntity_Level.LEVEL_UNSPECIFIED,
     resource: "",
     payload: "",
     comment: "",
@@ -794,11 +862,11 @@ export const LogEntity = {
     if (message.updateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(34).fork()).ldelim();
     }
-    if (message.action !== 0) {
-      writer.uint32(40).int32(message.action);
+    if (message.action !== LogEntity_Action.ACTION_UNSPECIFIED) {
+      writer.uint32(40).int32(logEntity_ActionToNumber(message.action));
     }
-    if (message.level !== 0) {
-      writer.uint32(48).int32(message.level);
+    if (message.level !== LogEntity_Level.LEVEL_UNSPECIFIED) {
+      writer.uint32(48).int32(logEntity_LevelToNumber(message.level));
     }
     if (message.resource !== "") {
       writer.uint32(58).string(message.resource);
@@ -852,14 +920,14 @@ export const LogEntity = {
             break;
           }
 
-          message.action = reader.int32() as any;
+          message.action = logEntity_ActionFromJSON(reader.int32());
           continue;
         case 6:
           if (tag !== 48) {
             break;
           }
 
-          message.level = reader.int32() as any;
+          message.level = logEntity_LevelFromJSON(reader.int32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -897,8 +965,8 @@ export const LogEntity = {
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
-      action: isSet(object.action) ? logEntity_ActionFromJSON(object.action) : 0,
-      level: isSet(object.level) ? logEntity_LevelFromJSON(object.level) : 0,
+      action: isSet(object.action) ? logEntity_ActionFromJSON(object.action) : LogEntity_Action.ACTION_UNSPECIFIED,
+      level: isSet(object.level) ? logEntity_LevelFromJSON(object.level) : LogEntity_Level.LEVEL_UNSPECIFIED,
       resource: isSet(object.resource) ? globalThis.String(object.resource) : "",
       payload: isSet(object.payload) ? globalThis.String(object.payload) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
@@ -919,10 +987,10 @@ export const LogEntity = {
     if (message.updateTime !== undefined) {
       obj.updateTime = message.updateTime.toISOString();
     }
-    if (message.action !== 0) {
+    if (message.action !== LogEntity_Action.ACTION_UNSPECIFIED) {
       obj.action = logEntity_ActionToJSON(message.action);
     }
-    if (message.level !== 0) {
+    if (message.level !== LogEntity_Level.LEVEL_UNSPECIFIED) {
       obj.level = logEntity_LevelToJSON(message.level);
     }
     if (message.resource !== "") {
@@ -946,8 +1014,8 @@ export const LogEntity = {
     message.creator = object.creator ?? "";
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
-    message.action = object.action ?? 0;
-    message.level = object.level ?? 0;
+    message.action = object.action ?? LogEntity_Action.ACTION_UNSPECIFIED;
+    message.level = object.level ?? LogEntity_Level.LEVEL_UNSPECIFIED;
     message.resource = object.resource ?? "";
     message.payload = object.payload ?? "";
     message.comment = object.comment ?? "";

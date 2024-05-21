@@ -95,6 +95,7 @@
         :readonly="true"
         :loading="isLoadingHeadBranch"
         :branch="headBranch ?? Branch.fromPartial({})"
+        :show-last-updater="true"
       />
       <MaskSpinner v-if="isLoadingHeadBranch" />
     </div>

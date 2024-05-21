@@ -39,10 +39,9 @@
                 {{ $t("deployment-config.add-stage") }}
               </NButton>
             </div>
-            <div class="flex items-center space-x-2">
+            <div v-if="allowEdit" class="flex items-center space-x-2">
               <NButton
-                v-if="allowEdit"
-                :disabled="!isDeploymentConfigDirty"
+                v-if="isDeploymentConfigDirty"
                 @click="revertDeploymentConfig"
               >
                 {{ $t("common.revert") }}

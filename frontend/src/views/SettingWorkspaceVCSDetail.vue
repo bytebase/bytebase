@@ -43,13 +43,15 @@
     </div>
   </div>
 
-  <div class="py-6">
+  <div class="py-6 space-y-4">
     <div class="text-lg leading-6 font-medium text-main">
       {{ $t("repository.linked") + ` (${connectorList.length})` }}
     </div>
-    <div class="mt-4">
-      <VCSConnectorTable :connector-list="connectorList" />
-    </div>
+    <VCSConnectorTable
+      v-if="hasListRepoPermission"
+      :connector-list="connectorList"
+    />
+    <NoPermissionPlaceholder v-else />
   </div>
 </template>
 
@@ -117,23 +119,17 @@ const hasDeleteVCSPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUser.value, "bb.vcsProviders.delete");
 });
 
+const hasListRepoPermission = computed(() => {
+  return hasWorkspacePermissionV2(
+    currentUser.value,
+    "bb.vcsProviders.listProjects"
+  );
+});
+
 watchEffect(async () => {
   await vcsV1Store.getOrFetchVCSList();
   resetState();
-  if (vcs.value) {
-    if (
-      !hasWorkspacePermissionV2(
-        currentUser.value,
-        "bb.vcsProviders.listProjects"
-      )
-    ) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: `You don't have permission to list projects in '${vcs.value.title}'`,
-      });
-      return;
-    }
+  if (vcs.value && hasListRepoPermission.value) {
     await vcsConnectorStore.fetchConnectorsInProvider(vcs.value.name);
   }
 });

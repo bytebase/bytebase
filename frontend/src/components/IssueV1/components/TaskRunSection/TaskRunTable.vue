@@ -5,6 +5,7 @@
     :row-clickable="false"
     row-key="uid"
     class="border"
+    v-bind="$attrs"
   >
     <template #item="{ item: taskRun }: TaskRunGridRow">
       <div class="bb-grid-cell block">
@@ -22,26 +23,51 @@
       <div class="bb-grid-cell">
         {{ humanizeDurationV1(executionDurationOfTaskRun(taskRun)) }}
       </div>
+      <div class="bb-grid-cell">
+        <NButton
+          v-if="shouldShowDetailButton(taskRun)"
+          size="tiny"
+          @click="showDetail(taskRun)"
+        >
+          {{ $t("common.detail") }}
+        </NButton>
+      </div>
     </template>
   </BBGrid>
+
+  <Drawer v-model:show="taskRunDetailContext.show">
+    <DrawerContent
+      :title="$t('common.detail')"
+      style="width: calc(100vw - 8rem)"
+    >
+      <TaskRunLogTable
+        v-if="taskRunDetailContext.taskRun"
+        :key="taskRunDetailContext.taskRun.name"
+        :task-run="taskRunDetailContext.taskRun"
+      />
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { NButton } from "naive-ui";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridColumn, BBGridRow } from "@/bbkit";
 import { BBGrid } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { Duration } from "@/types/proto/google/protobuf/duration";
-import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
+import type { TaskRun } from "@/types/proto/v1/rollout_service";
 import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import TaskRunComment from "./TaskRunComment.vue";
+import TaskRunLogTable from "./TaskRunLogTable";
 import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 
-export type MergedTaskRunItem = {
-  task: Task;
-  taskRun: TaskRun;
-};
+defineOptions({
+  inheritAttrs: false,
+});
+
 export type TaskRunGridRow = BBGridRow<TaskRun>;
 
 defineProps<{
@@ -49,6 +75,12 @@ defineProps<{
 }>();
 
 const { t } = useI18n();
+const taskRunDetailContext = ref<{
+  show: boolean;
+  taskRun?: TaskRun;
+}>({
+  show: false,
+});
 
 const columnList = computed((): BBGridColumn[] => {
   return [
@@ -70,6 +102,10 @@ const columnList = computed((): BBGridColumn[] => {
     },
     {
       title: t("task.execution-time"),
+      width: "auto",
+    },
+    {
+      title: "",
       width: "auto",
     },
   ];
@@ -100,5 +136,21 @@ const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
     seconds: Math.floor(elapsedMS / 1000),
     nanos: (elapsedMS % 1000) * 1e6,
   });
+};
+
+const shouldShowDetailButton = (taskRun: TaskRun) => {
+  return [
+    TaskRun_Status.RUNNING,
+    TaskRun_Status.DONE,
+    TaskRun_Status.FAILED,
+    TaskRun_Status.CANCELED,
+  ].includes(taskRun.status);
+};
+
+const showDetail = (taskRun: TaskRun) => {
+  taskRunDetailContext.value = {
+    show: true,
+    taskRun,
+  };
 };
 </script>

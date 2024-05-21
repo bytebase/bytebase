@@ -1,4 +1,4 @@
-import type { ComposedDatabase, ComposedProject } from "..";
+import type { ComposedDatabase } from "..";
 import type { Branch } from "../../proto/v1/branch_service";
 import type { Schema } from "./atomType";
 
@@ -40,18 +40,4 @@ export interface BranchSchema {
   branch: Branch;
   schemaList: Schema[];
   originSchemaList: Schema[];
-}
-
-export interface SchemaEditorV1State {
-  project: ComposedProject;
-  readonly: boolean;
-  resourceType: "database" | "branch";
-  resourceMap: {
-    database: Map<string, DatabaseSchema>;
-    branch: Map<string, BranchSchema>;
-  };
-  tabState: {
-    tabMap: Map<string, TabContext>;
-    currentTabId?: string;
-  };
 }

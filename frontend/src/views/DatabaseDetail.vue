@@ -236,7 +236,7 @@ import { State } from "@/types/proto/v1/common";
 import {
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
-  allowUsingSchemaEditorV1,
+  allowUsingSchemaEditor,
   extractProjectResourceName,
 } from "@/utils";
 
@@ -353,7 +353,7 @@ const createMigration = async (
   if (type === "bb.issue.database.schema.update") {
     if (
       database.value.syncState === State.ACTIVE &&
-      allowUsingSchemaEditorV1([database.value])
+      allowUsingSchemaEditor([database.value])
     ) {
       state.showSchemaEditorModal = true;
       return;
@@ -373,8 +373,7 @@ const createMigration = async (
   const query: Record<string, any> = {
     template: type,
     name: issueNameParts.join(" "),
-    project: project.value.uid,
-    databaseList: database.value.uid,
+    databaseList: database.value.name,
   };
 
   router.push({

@@ -2,7 +2,7 @@ import { useLocalStorage } from "@vueuse/core";
 import { createI18n } from "vue-i18n";
 import { mergedLocalMessage } from "./i18n-messages";
 
-const validLocaleList = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
+const validLocaleList = ["en-US", "zh-CN", "es-ES", "ja-JP"];
 
 const getValidLocale = () => {
   const storage = useLocalStorage("bytebase_options", {}) as any;
@@ -33,9 +33,6 @@ const getValidLocale = () => {
   }
   if (locale === "es") {
     locale = "es-ES";
-  }
-  if (locale === "vi") {
-    locale = "vi-VN";
   }
   if (validLocaleList.includes(locale)) {
     return locale;

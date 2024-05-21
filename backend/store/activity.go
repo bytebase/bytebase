@@ -255,7 +255,7 @@ type FindActivityMessage struct {
 	// If specified, sorts the returned list by id in <<ORDER>>
 	// Different use cases want different orders.
 	// e.g. Issue activity list wants ASC, while view recent activity list wants DESC.
-	Order *api.SortOrder
+	Order *SortOrder
 }
 
 // UpdateActivityMessage updates the activity.

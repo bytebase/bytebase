@@ -1,22 +1,13 @@
 import { groupBy, maxBy } from "lodash-es";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import type {
-  Issue,
   Task,
   TaskCheckStatus,
   TaskCheckType,
   TaskCreate,
   TaskDatabaseCreatePayload,
-  TaskStatus,
 } from "@/types";
 import { unknownDatabase } from "@/types";
-import { hasProjectPermissionV2 } from "./iam";
-import { activeTask } from "./pipeline";
-import { extractUserUID } from "./v1";
 
 export const extractDatabaseNameFromTask = (
   task: Task | TaskCreate
@@ -135,55 +126,6 @@ export const isTaskEntity = (task: Task | TaskCreate): task is Task => {
 
 export const isTaskCreate = (task: Task | TaskCreate): task is TaskCreate => {
   return !isTaskEntity(task);
-};
-
-/**
- *
- * @param task
- * @param issue
- * @param activeOnly if true, only "Active Task" can be skipped
- * @returns
- */
-export const canSkipTask = (
-  task: Task,
-  issue: Issue,
-  activeOnly = false,
-  failedOnly = false
-) => {
-  const pipeline = issue.pipeline;
-  const isActiveTask = task.id === activeTask(pipeline!).id;
-  if (activeOnly && !isActiveTask) {
-    return false;
-  }
-
-  const applicableStatusList: TaskStatus[] = failedOnly
-    ? ["FAILED"]
-    : ["PENDING_APPROVAL", "FAILED"];
-
-  if (!applicableStatusList.includes(task.status)) {
-    return false;
-  }
-
-  const currentUserV1 = useCurrentUserV1();
-  const composedProject = useProjectV1Store().getProjectByName(
-    issue.project.name
-  );
-
-  if (
-    hasProjectPermissionV2(
-      composedProject,
-      currentUserV1.value,
-      "bb.issues.update"
-    )
-  ) {
-    return true;
-  }
-
-  if (extractUserUID(currentUserV1.value.name) === String(issue.assignee.id)) {
-    return true;
-  }
-
-  return false;
 };
 
 export const checkStatusOfTask = (task: Task): TaskCheckStatus | undefined => {

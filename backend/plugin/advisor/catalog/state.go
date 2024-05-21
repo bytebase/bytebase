@@ -94,7 +94,7 @@ func newTableState(t *storepb.TableMetadata, context *FinderContext) *TableState
 	for i, column := range t.Columns {
 		columnName := column.Name
 		switch context.EngineType {
-		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			columnName = strings.ToLower(columnName)
 		}
 		table.columnSet[columnName] = newColumnState(column, i+1)
@@ -103,7 +103,7 @@ func newTableState(t *storepb.TableMetadata, context *FinderContext) *TableState
 	for _, index := range t.Indexes {
 		indexName := index.Name
 		switch context.EngineType {
-		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			indexName = strings.ToLower(indexName)
 		}
 		table.indexSet[indexName] = newIndexState(index)
@@ -213,7 +213,7 @@ type IndexFind struct {
 // FindIndex finds the index.
 func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
 	switch d.dbType {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		find.IndexName = strings.ToLower(find.IndexName)
 	}
 	// There are two cases to find a index:
@@ -316,7 +316,7 @@ type ColumnFind struct {
 // FindColumn finds the column.
 func (d *DatabaseState) FindColumn(find *ColumnFind) *ColumnState {
 	switch d.dbType {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		find.ColumnName = strings.ToLower(find.ColumnName)
 	}
 	schema, exists := d.schemaSet[find.SchemaName]

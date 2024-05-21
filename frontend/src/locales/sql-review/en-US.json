@@ -100,6 +100,15 @@
         }
       }
     },
+    "table-limit-size": {
+      "title": "Limit DDL operations on tables with a large number of rows",
+      "description": "Configure the maximum number of rows in tables for which DDL can be executed. Recommended error level: warning",
+      "component": {
+        "number": {
+          "title": "Max row count"
+        }
+      }
+    },
     "table-disallow-dml": {
       "title": "Disallow DML",
       "description": "Configure which tables are prohibited from executing DML. Suggestion error level: Warning",
@@ -108,6 +117,10 @@
           "title": "Table names"
         }
       }
+    },
+    "naming-fully-qualified": {
+      "title": "Fully qualified object name",
+      "description": "Enforce the use of fully qualified object names. For example, “schema.table”, suggested error level: Warning"
     },
     "naming-table": {
       "title": "Enforce table naming format",
@@ -266,6 +279,10 @@
       "title": "Prohibit changing the order of columns in a table",
       "description": "Modifying the order of columns may cause some applications or views that depend on the default order of the original table to produce unexpected results, such as \"select *\". Suggested error level: Warning"
     },
+    "column-disallow-drop": {
+      "title": "Prohibit dropping columns",
+      "description": "Prohibit dropping columns. Suggested error level: Warning"
+    },
     "column-disallow-drop-in-index": {
       "title": "Prohibit dropping columns in index",
       "description": "Prohibit dropping columns in index. Suggested error level: Error"
@@ -341,9 +358,13 @@
       "title": "Prohibit using leading wildcard in filter conditions",
       "description": "When using leading wildcard, such as \"LIKE '%ABC'\", the database optimizer cannot use fast index scan, and fallback to full table scan or full index scan, which may cause serious performance impact. Suggestion error level: Error"
     },
-    "statement-disallow-cascade": {
-      "title": "Prohibit using \"CASCADE\" option in DDL statements",
-      "description": "The \"CASCADE\" option can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error"
+    "statement-disallow-on-del-cascade": {
+      "title": "Prohibit using CASCADE option for ON DELETE clauses",
+      "description": "The \"CASCADE\" option in 'ON DELETE' can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error"
+    },
+    "statement-disallow-rm-tbl-cascade": {
+      "title": "Prohibit using CASCADE when removing a table",
+      "description": "Using the \"CASCADE\" option when removing a table can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error"
     },
     "statement-disallow-commit": {
       "title": "Prohibit explicit \"COMMIT\" statement",
@@ -401,7 +422,7 @@
     },
     "statement-disallow-add-not-null": {
       "title": "Restrict adding \"NOT NULL\" constraint to existing columns",
-      "description": "Before PostgreSQL 11, adding a NOT NULL constraint need to verify the existing data. This blocks read and write, which may cause business interruption. In PostgreSQL 11 and above, this issue has been optimized and there is no need to pay attention to this specification. Suggestion error level: Warning"
+      "description": "Adding NOT NULL constraint with default value before PostgreSQL 11 or adding NOT NULL constraint without default value requires to verify the existing data. This blocks read and write, which may cause business interruption. Suggestion error level: Warning"
     },
     "statement-select-full-table-scan": {
       "title": "Check full table scan for queries",
@@ -487,6 +508,14 @@
     "statement-prior-backup-check": {
       "title": "Check for prior backup before data change",
       "description": "This rule will check if a backup can be created before the data change. For more details, contains the backup target database exists and disallow the DDL statement."
+    },
+    "statement-add-column-without-position": {
+      "title": "Check no position in ADD COLUMN clause",
+      "description": "In some cases, using FIRST/AFTER to add columns will cause data reorganization (rewriting all data). Suggested error level: Warning"
+    },
+    "statement-disallow-offline-ddl": {
+      "title": "Disallow Offline DDL",
+      "description": "To prevent database changes from impacting your business, avoid using Offline DDL."
     },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",

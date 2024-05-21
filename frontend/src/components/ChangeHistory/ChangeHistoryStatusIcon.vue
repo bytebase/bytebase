@@ -30,7 +30,7 @@ import { ChangeHistory_Status } from "@/types/proto/v1/database_service";
 const props = defineProps({
   status: {
     required: true,
-    type: Number as PropType<ChangeHistory_Status>,
+    type: String as PropType<ChangeHistory_Status>,
   },
 });
 

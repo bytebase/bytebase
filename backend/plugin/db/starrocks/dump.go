@@ -1,20 +1,17 @@
 package starrocks
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
 	"io"
 	"log/slog"
-	"os/exec"
 	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 )
 
 // Dump and restore.
@@ -534,34 +531,4 @@ func getEventStmt(txn *sql.Tx, dbName, eventName string) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf(eventStmtFmt, eventName, charset, charset, collation, sqlmode, timezone, stmt), nil
-}
-
-// Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, backup io.Reader) error {
-	return driver.restoreImpl(ctx, backup, driver.connCfg.Database)
-}
-
-func (driver *Driver) restoreImpl(ctx context.Context, backup io.Reader, databaseName string) error {
-	mysqlArgs := []string{
-		"--host", driver.connCfg.Host,
-		"--user", driver.connCfg.Username,
-		"--database", databaseName,
-	}
-	if driver.connCfg.Port != "" {
-		mysqlArgs = append(mysqlArgs, "--port", driver.connCfg.Port)
-	}
-	if driver.connCfg.Password != "" {
-		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", driver.connCfg.Password))
-	}
-	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.dbBinDir), mysqlArgs...)
-
-	var stderr bytes.Buffer
-	mysqlCmd.Stdin = backup
-	mysqlCmd.Stderr = &stderr
-
-	if err := mysqlCmd.Run(); err != nil {
-		return errors.Wrapf(err, "mysql command fails: %s", stderr.String())
-	}
-
-	return nil
 }

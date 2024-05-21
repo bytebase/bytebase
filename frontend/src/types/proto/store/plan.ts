@@ -6,9 +6,11 @@ import {
   ExportFormat,
   exportFormatFromJSON,
   exportFormatToJSON,
+  exportFormatToNumber,
   VCSType,
   vCSTypeFromJSON,
   vCSTypeToJSON,
+  vCSTypeToNumber,
 } from "./common";
 
 export const protobufPackage = "bytebase.store";
@@ -114,24 +116,24 @@ export interface PlanConfig_ChangeDatabaseConfig {
 
 /** Type is the database change type. */
 export enum PlanConfig_ChangeDatabaseConfig_Type {
-  TYPE_UNSPECIFIED = 0,
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
   /**
    * BASELINE - Used for establishing schema baseline, this is used when
    * 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
    * 2. Had schema drift and need to re-establish the baseline.
    */
-  BASELINE = 1,
+  BASELINE = "BASELINE",
   /** MIGRATE - Used for DDL changes including CREATE DATABASE. */
-  MIGRATE = 2,
+  MIGRATE = "MIGRATE",
   /** MIGRATE_SDL - Used for schema changes via state-based schema migration including CREATE DATABASE. */
-  MIGRATE_SDL = 3,
+  MIGRATE_SDL = "MIGRATE_SDL",
   /** MIGRATE_GHOST - Used for DDL changes using gh-ost. */
-  MIGRATE_GHOST = 4,
+  MIGRATE_GHOST = "MIGRATE_GHOST",
   /** BRANCH - Used when restoring from a backup (the restored database branched from the original backup). */
-  BRANCH = 5,
+  BRANCH = "BRANCH",
   /** DATA - Used for DML change. */
-  DATA = 6,
-  UNRECOGNIZED = -1,
+  DATA = "DATA",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
 export function planConfig_ChangeDatabaseConfig_TypeFromJSON(object: any): PlanConfig_ChangeDatabaseConfig_Type {
@@ -183,6 +185,28 @@ export function planConfig_ChangeDatabaseConfig_TypeToJSON(object: PlanConfig_Ch
     case PlanConfig_ChangeDatabaseConfig_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
+  }
+}
+
+export function planConfig_ChangeDatabaseConfig_TypeToNumber(object: PlanConfig_ChangeDatabaseConfig_Type): number {
+  switch (object) {
+    case PlanConfig_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case PlanConfig_ChangeDatabaseConfig_Type.BASELINE:
+      return 1;
+    case PlanConfig_ChangeDatabaseConfig_Type.MIGRATE:
+      return 2;
+    case PlanConfig_ChangeDatabaseConfig_Type.MIGRATE_SDL:
+      return 3;
+    case PlanConfig_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
+      return 4;
+    case PlanConfig_ChangeDatabaseConfig_Type.BRANCH:
+      return 5;
+    case PlanConfig_ChangeDatabaseConfig_Type.DATA:
+      return 6;
+    case PlanConfig_ChangeDatabaseConfig_Type.UNRECOGNIZED:
+    default:
+      return -1;
   }
 }
 
@@ -854,7 +878,7 @@ function createBasePlanConfig_ChangeDatabaseConfig(): PlanConfig_ChangeDatabaseC
   return {
     target: "",
     sheet: "",
-    type: 0,
+    type: PlanConfig_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED,
     schemaVersion: "",
     rollbackEnabled: false,
     rollbackDetail: undefined,
@@ -871,8 +895,8 @@ export const PlanConfig_ChangeDatabaseConfig = {
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
     }
-    if (message.type !== 0) {
-      writer.uint32(24).int32(message.type);
+    if (message.type !== PlanConfig_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(24).int32(planConfig_ChangeDatabaseConfig_TypeToNumber(message.type));
     }
     if (message.schemaVersion !== "") {
       writer.uint32(34).string(message.schemaVersion);
@@ -922,7 +946,7 @@ export const PlanConfig_ChangeDatabaseConfig = {
             break;
           }
 
-          message.type = reader.int32() as any;
+          message.type = planConfig_ChangeDatabaseConfig_TypeFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -978,7 +1002,9 @@ export const PlanConfig_ChangeDatabaseConfig = {
     return {
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      type: isSet(object.type) ? planConfig_ChangeDatabaseConfig_TypeFromJSON(object.type) : 0,
+      type: isSet(object.type)
+        ? planConfig_ChangeDatabaseConfig_TypeFromJSON(object.type)
+        : PlanConfig_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED,
       schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
       rollbackEnabled: isSet(object.rollbackEnabled) ? globalThis.Boolean(object.rollbackEnabled) : false,
       rollbackDetail: isSet(object.rollbackDetail)
@@ -1004,7 +1030,7 @@ export const PlanConfig_ChangeDatabaseConfig = {
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
-    if (message.type !== 0) {
+    if (message.type !== PlanConfig_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED) {
       obj.type = planConfig_ChangeDatabaseConfig_TypeToJSON(message.type);
     }
     if (message.schemaVersion !== "") {
@@ -1040,7 +1066,7 @@ export const PlanConfig_ChangeDatabaseConfig = {
     const message = createBasePlanConfig_ChangeDatabaseConfig();
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
-    message.type = object.type ?? 0;
+    message.type = object.type ?? PlanConfig_ChangeDatabaseConfig_Type.TYPE_UNSPECIFIED;
     message.schemaVersion = object.schemaVersion ?? "";
     message.rollbackEnabled = object.rollbackEnabled ?? false;
     message.rollbackDetail = (object.rollbackDetail !== undefined && object.rollbackDetail !== null)
@@ -1290,7 +1316,7 @@ export const PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail = {
 };
 
 function createBasePlanConfig_ExportDataConfig(): PlanConfig_ExportDataConfig {
-  return { target: "", sheet: "", format: 0, password: undefined };
+  return { target: "", sheet: "", format: ExportFormat.FORMAT_UNSPECIFIED, password: undefined };
 }
 
 export const PlanConfig_ExportDataConfig = {
@@ -1301,8 +1327,8 @@ export const PlanConfig_ExportDataConfig = {
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
     }
-    if (message.format !== 0) {
-      writer.uint32(24).int32(message.format);
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
+      writer.uint32(24).int32(exportFormatToNumber(message.format));
     }
     if (message.password !== undefined) {
       writer.uint32(34).string(message.password);
@@ -1336,7 +1362,7 @@ export const PlanConfig_ExportDataConfig = {
             break;
           }
 
-          message.format = reader.int32() as any;
+          message.format = exportFormatFromJSON(reader.int32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -1358,7 +1384,7 @@ export const PlanConfig_ExportDataConfig = {
     return {
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
+      format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
       password: isSet(object.password) ? globalThis.String(object.password) : undefined,
     };
   },
@@ -1371,7 +1397,7 @@ export const PlanConfig_ExportDataConfig = {
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
-    if (message.format !== 0) {
+    if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
       obj.format = exportFormatToJSON(message.format);
     }
     if (message.password !== undefined) {
@@ -1387,20 +1413,20 @@ export const PlanConfig_ExportDataConfig = {
     const message = createBasePlanConfig_ExportDataConfig();
     message.target = object.target ?? "";
     message.sheet = object.sheet ?? "";
-    message.format = object.format ?? 0;
+    message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
     message.password = object.password ?? undefined;
     return message;
   },
 };
 
 function createBasePlanConfig_VCSSource(): PlanConfig_VCSSource {
-  return { vcsType: 0, vcsConnector: "", pullRequestUrl: "" };
+  return { vcsType: VCSType.VCS_TYPE_UNSPECIFIED, vcsConnector: "", pullRequestUrl: "" };
 }
 
 export const PlanConfig_VCSSource = {
   encode(message: PlanConfig_VCSSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.vcsType !== 0) {
-      writer.uint32(8).int32(message.vcsType);
+    if (message.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(vCSTypeToNumber(message.vcsType));
     }
     if (message.vcsConnector !== "") {
       writer.uint32(18).string(message.vcsConnector);
@@ -1423,7 +1449,7 @@ export const PlanConfig_VCSSource = {
             break;
           }
 
-          message.vcsType = reader.int32() as any;
+          message.vcsType = vCSTypeFromJSON(reader.int32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -1450,7 +1476,7 @@ export const PlanConfig_VCSSource = {
 
   fromJSON(object: any): PlanConfig_VCSSource {
     return {
-      vcsType: isSet(object.vcsType) ? vCSTypeFromJSON(object.vcsType) : 0,
+      vcsType: isSet(object.vcsType) ? vCSTypeFromJSON(object.vcsType) : VCSType.VCS_TYPE_UNSPECIFIED,
       vcsConnector: isSet(object.vcsConnector) ? globalThis.String(object.vcsConnector) : "",
       pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
     };
@@ -1458,7 +1484,7 @@ export const PlanConfig_VCSSource = {
 
   toJSON(message: PlanConfig_VCSSource): unknown {
     const obj: any = {};
-    if (message.vcsType !== 0) {
+    if (message.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED) {
       obj.vcsType = vCSTypeToJSON(message.vcsType);
     }
     if (message.vcsConnector !== "") {
@@ -1475,7 +1501,7 @@ export const PlanConfig_VCSSource = {
   },
   fromPartial(object: DeepPartial<PlanConfig_VCSSource>): PlanConfig_VCSSource {
     const message = createBasePlanConfig_VCSSource();
-    message.vcsType = object.vcsType ?? 0;
+    message.vcsType = object.vcsType ?? VCSType.VCS_TYPE_UNSPECIFIED;
     message.vcsConnector = object.vcsConnector ?? "";
     message.pullRequestUrl = object.pullRequestUrl ?? "";
     return message;

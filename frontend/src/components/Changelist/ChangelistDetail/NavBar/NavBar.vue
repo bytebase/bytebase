@@ -7,6 +7,7 @@
       <template v-if="!reorderMode">
         <ReorderButton v-if="allowEdit" @click="beginReorder" />
         <ExportButton />
+        <ImportButton v-if="allowEdit" />
         <AddChangeButton v-if="allowEdit" />
         <ApplyToDatabaseButton v-if="allowApply" />
       </template>
@@ -29,6 +30,7 @@ import { useChangelistDetailContext } from "../context";
 import AddChangeButton from "./AddChangeButton.vue";
 import ApplyToDatabaseButton from "./ApplyToDatabaseButton.vue";
 import ExportButton from "./ExportButton.vue";
+import ImportButton from "./ImportButton.vue";
 import ReorderButton from "./ReorderButton.vue";
 import TitleEditor from "./TitleEditor.vue";
 import { useReorderChangelist } from "./reorder";

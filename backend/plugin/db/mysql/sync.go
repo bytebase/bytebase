@@ -528,6 +528,7 @@ func (driver *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, f
 	if err != nil {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
+	defer rows.Close()
 
 	type ResultRow struct {
 		CreateFunction string
@@ -550,7 +551,6 @@ func (driver *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, f
 		return "", errors.Errorf("failed to find column Create Function")
 	}
 
-	defer rows.Close()
 	for rows.Next() {
 		dests := make([]any, len(columns))
 		for i := 0; i < len(columns); i++ {
@@ -579,6 +579,7 @@ func (driver *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, 
 	if err != nil {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
+	defer rows.Close()
 
 	type ResultRow struct {
 		CreateProcedure string
@@ -601,7 +602,6 @@ func (driver *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, 
 		return "", errors.Errorf("failed to find column Create Procedure")
 	}
 
-	defer rows.Close()
 	for rows.Next() {
 		dests := make([]any, len(columns))
 		for i := 0; i < len(columns); i++ {

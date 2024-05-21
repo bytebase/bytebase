@@ -2,6 +2,7 @@ package tsql
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -63,7 +64,7 @@ func generateSQL(statementInfoList []statementInfo, targetDatabase string, table
 	var result []base.BackupStatement
 	offsetLength := 1
 	if len(statementInfoList) > 1 {
-		offsetLength = getOffsetLength(statementInfoList[len(statementInfoList)-1].offset)
+		offsetLength = base.GetOffsetLength(statementInfoList[len(statementInfoList)-1].offset)
 	}
 	for _, statementInfo := range statementInfoList {
 		table := statementInfo.table
@@ -218,13 +219,13 @@ func (e *suffixSelectStatementExtractor) EnterDelete_statement(ctx *parser.Delet
 			e.err = errors.Wrap(err, "failed to write buffer")
 			return
 		}
-		if ctx.Table_sources() == nil {
+		if ctx.From_table_sources() == nil {
 			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Delete_statement_from())); err != nil {
 				e.err = errors.Wrap(err, "failed to write buffer")
 				return
 			}
 		} else {
-			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Table_sources())); err != nil {
+			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.From_table_sources().Table_sources())); err != nil {
 				e.err = errors.Wrap(err, "failed to write buffer")
 				return
 			}
@@ -260,17 +261,6 @@ func (e *suffixSelectStatementExtractor) EnterDelete_statement(ctx *parser.Delet
 	}
 }
 
-func getOffsetLength(total int) int {
-	length := 1
-	for {
-		if total < 10 {
-			return length
-		}
-		total /= 10
-		length++
-	}
-}
-
 func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
 	parseResult, err := ParseTSQL(statement)
 	if err != nil {
@@ -299,7 +289,7 @@ func isTopLevel(ctx antlr.Tree) bool {
 	switch ctx := ctx.(type) {
 	case *parser.Dml_clauseContext,
 		*parser.Sql_clausesContext,
-		*parser.BatchContext:
+		*parser.Batch_without_goContext:
 		return isTopLevel(ctx.GetParent())
 	case *parser.Tsql_fileContext:
 		return true
@@ -308,7 +298,7 @@ func isTopLevel(ctx antlr.Tree) bool {
 	}
 }
 
-func (e *dmlExtractor) ExitBatch(ctx *parser.BatchContext) {
+func (e *dmlExtractor) ExitBatch(ctx *parser.Batch_without_goContext) {
 	if len(ctx.AllSql_clauses()) == 0 {
 		e.offset++
 	}
@@ -349,8 +339,8 @@ func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext
 		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx.Delete_statement_from())
 
 		table := extractor.table
-		if extractor.table != nil && ctx.Table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
-			table = extractPhysicalTable(ctx.Table_sources(), extractor.table)
+		if extractor.table != nil && ctx.From_table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
+			table = extractPhysicalTable(ctx.From_table_sources().Table_sources(), extractor.table)
 		}
 
 		e.dmls = append(e.dmls, statementInfo{
@@ -419,24 +409,18 @@ func (e *tableExtractor) EnterFull_table_name(ctx *parser.Full_table_nameContext
 }
 
 func extractFullTableName(ctx parser.IFull_table_nameContext, defaultDatabase string, defaultSchema string) (string, string, string) {
-	tableName := unquote(ctx.GetTable().GetText())
+	name, err := NormalizeFullTableName(ctx)
+	if err != nil {
+		slog.Debug("Failed to normalize full table name", "error", err)
+		return defaultDatabase, defaultSchema, ""
+	}
 	schemaName := defaultSchema
-	if ctx.GetSchema() != nil {
-		schemaName = unquote(ctx.GetSchema().GetText())
+	if name.Schema != "" {
+		schemaName = name.Schema
 	}
 	databaseName := defaultDatabase
-	if ctx.GetDatabase() != nil {
-		databaseName = unquote(ctx.GetDatabase().GetText())
+	if name.Database != "" {
+		databaseName = name.Database
 	}
-	return databaseName, schemaName, tableName
-}
-
-func unquote(s string) string {
-	if len(s) < 2 {
-		return s
-	}
-	if s[0] == '"' && s[len(s)-1] == '"' {
-		return s[1 : len(s)-1]
-	}
-	return s
+	return databaseName, schemaName, name.Table
 }

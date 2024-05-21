@@ -39,9 +39,9 @@ func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _
 	}
 
 	listener := &columnAddNotNullColumnRequireDefaultListener{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		currentSchema: ctx.CurrentSchema,
+		level:           level,
+		title:           string(ctx.Rule.Type),
+		currentDatabase: ctx.CurrentDatabase,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -53,12 +53,12 @@ func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(ctx advisor.Context, _
 type columnAddNotNullColumnRequireDefaultListener struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
-	title         string
-	currentSchema string
-	tableName     string
-	isNotNull     bool
-	adviceList    []advisor.Advice
+	level           advisor.Status
+	title           string
+	currentDatabase string
+	tableName       string
+	isNotNull       bool
+	adviceList      []advisor.Advice
 }
 
 func (l *columnAddNotNullColumnRequireDefaultListener) generateAdvice() ([]advisor.Advice, error) {
@@ -75,7 +75,7 @@ func (l *columnAddNotNullColumnRequireDefaultListener) generateAdvice() ([]advis
 
 // EnterAlter_table is called when production alter_table is entered.
 func (l *columnAddNotNullColumnRequireDefaultListener) EnterAlter_table(ctx *parser.Alter_tableContext) {
-	l.tableName = normalizeIdentifier(ctx.Tableview_name(), l.currentSchema)
+	l.tableName = normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase)
 }
 
 // ExitAlter_table is called when production alter_table is exited.
@@ -106,7 +106,7 @@ func (l *columnAddNotNullColumnRequireDefaultListener) ExitColumn_definition(ctx
 			Status:  l.level,
 			Code:    advisor.NotNullColumnWithNoDefault,
 			Title:   l.title,
-			Content: fmt.Sprintf("Adding not null column %q requires default.", normalizeIdentifier(ctx.Column_name(), l.currentSchema)),
+			Content: fmt.Sprintf("Adding not null column %q requires default.", normalizeIdentifier(ctx.Column_name(), l.currentDatabase)),
 			Line:    ctx.GetStart().GetLine(),
 		})
 	}

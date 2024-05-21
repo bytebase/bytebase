@@ -327,7 +327,7 @@ func GetCharSetName(ctx parser.IDataTypeContext) string {
 	return charset
 }
 
-// IsTypeType check if the dataType is time type.
+// IsTimeType check if the dataType is time type.
 func IsTimeType(ctx parser.IDataTypeContext) bool {
 	if ctx.GetType_() == nil {
 		return false

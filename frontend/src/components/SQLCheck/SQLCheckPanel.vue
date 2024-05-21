@@ -8,7 +8,11 @@
     container-class="!pt-0 -mt-px"
     @close="$emit('close')"
   >
-    <PlanCheckDetail :plan-check-run="planCheckRun" :environment="environment">
+    <PlanCheckDetail
+      :plan-check-run="planCheckRun"
+      :environment="environment"
+      :is-latest="true"
+    >
       <template #row-extra="{ row }">
         <slot name="row-extra" :row="row" />
       </template>
@@ -18,13 +22,13 @@
       v-if="confirm"
       class="flex flex-row justify-end items-center gap-x-3 mt-4"
     >
-      <NButton @click="confirm.resolve(false)">
+      <NButton @click="confirm!.resolve(false)">
         {{ $t("issue.sql-check.back-to-edit") }}
       </NButton>
       <NButton
         v-if="!restrictIssueCreationForSQLReview"
         type="primary"
-        @click="confirm.resolve(true)"
+        @click="confirm!.resolve(true)"
       >
         {{ $t("issue.sql-check.continue-anyway") }}
       </NButton>
@@ -43,7 +47,7 @@ import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Result_SqlReviewReport,
   PlanCheckRun_Status,
-} from "@/types/proto/v1/rollout_service";
+} from "@/types/proto/v1/plan_service";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils";

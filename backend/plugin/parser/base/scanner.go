@@ -55,6 +55,21 @@ func (s *Scanner) GetPreviousTokenType(skipHidden bool) int {
 	return antlr.TokenInvalidType
 }
 
+// GetPreviousTokenText returns the text of the previous tok
+// If skipHidden is true, it will skip the hidden tokens.
+// It does not change the current index of the scanner.
+func (s *Scanner) GetPreviousTokenText(skipHidden bool) string {
+	index := s.index
+	for index > 0 {
+		index--
+		if s.tokens[index].GetChannel() == antlr.TokenDefaultChannel || !skipHidden {
+			return s.tokens[index].GetText()
+		}
+	}
+
+	return ""
+}
+
 // Push pushes the current index to the stack.
 func (s *Scanner) Push() {
 	s.tokenStack = append(s.tokenStack, s.index)

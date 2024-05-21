@@ -44,10 +44,9 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(ctx advisor.Context, _ string)
 	}
 
 	listener := &columnMaximumCharacterLengthListener{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		currentSchema: ctx.CurrentSchema,
-		maximum:       payload.Number,
+		level:   level,
+		title:   string(ctx.Rule.Type),
+		maximum: payload.Number,
 	}
 
 	if listener.maximum > 0 {
@@ -61,11 +60,10 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(ctx advisor.Context, _ string)
 type columnMaximumCharacterLengthListener struct {
 	*parser.BasePlSqlParserListener
 
-	level         advisor.Status
-	title         string
-	currentSchema string
-	maximum       int
-	adviceList    []advisor.Advice
+	level      advisor.Status
+	title      string
+	maximum    int
+	adviceList []advisor.Advice
 }
 
 func (l *columnMaximumCharacterLengthListener) generateAdvice() ([]advisor.Advice, error) {
