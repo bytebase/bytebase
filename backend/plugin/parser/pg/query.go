@@ -21,9 +21,11 @@ import (
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_POSTGRES, validateQuery)
 	base.RegisterQueryValidator(storepb.Engine_REDSHIFT, validateQuery)
+	base.RegisterQueryValidator(storepb.Engine_GAUSSDB, validateQuery)
 	base.RegisterQueryValidator(storepb.Engine_RISINGWAVE, validateQuery)
 	base.RegisterExtractResourceListFunc(storepb.Engine_POSTGRES, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_REDSHIFT, ExtractResourceList)
+	base.RegisterExtractResourceListFunc(storepb.Engine_GAUSSDB, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_RISINGWAVE, ExtractResourceList)
 }
 

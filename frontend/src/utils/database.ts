@@ -128,6 +128,7 @@ export const hasSchemaProperty = (databaseEngine: Engine) => {
     databaseEngine === Engine.ORACLE ||
     databaseEngine === Engine.MSSQL ||
     databaseEngine === Engine.REDSHIFT ||
+    databaseEngine === Engine.GAUSSDB ||
     databaseEngine === Engine.RISINGWAVE
   );
 };

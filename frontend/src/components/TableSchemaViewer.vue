@@ -112,6 +112,7 @@ const hasSchemaProperty = computed(() => {
     engine.value === Engine.DM ||
     engine.value === Engine.MSSQL ||
     engine.value === Engine.REDSHIFT ||
+    engine.value === Engine.GAUSSDB ||
     engine.value === Engine.RISINGWAVE
   );
 });

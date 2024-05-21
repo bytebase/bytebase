@@ -188,7 +188,7 @@ func convertValueToBytesInSQL(engine storepb.Engine, value *v1pb.RowValue) []byt
 
 func escapeSQLString(engine storepb.Engine, v []byte) []byte {
 	switch engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
+	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_GAUSSDB:
 		escapedStr := pq.QuoteLiteral(string(v))
 		return []byte(escapedStr)
 	default:

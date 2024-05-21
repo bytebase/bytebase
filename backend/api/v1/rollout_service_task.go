@@ -772,6 +772,10 @@ func checkCharacterSetCollationOwner(dbType storepb.Engine, characterSet, collat
 		if owner == "" {
 			return errors.Errorf("database owner is required for Redshift")
 		}
+	case storepb.Engine_GAUSSDB:
+		if owner == "" {
+			return errors.Errorf("database owner is required for GaussDB")
+		}
 	case storepb.Engine_RISINGWAVE:
 		if characterSet != "" {
 			return errors.Errorf("RisingWave does not support character set, but got %s", characterSet)

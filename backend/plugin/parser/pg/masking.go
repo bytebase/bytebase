@@ -16,6 +16,7 @@ import (
 func init() {
 	base.RegisterGetMaskedFieldsFunc(storepb.Engine_POSTGRES, GetMaskedFields)
 	base.RegisterGetMaskedFieldsFunc(storepb.Engine_REDSHIFT, GetMaskedFields)
+	base.RegisterGetMaskedFieldsFunc(storepb.Engine_GAUSSDB, GetMaskedFields)
 	base.RegisterGetMaskedFieldsFunc(storepb.Engine_RISINGWAVE, GetMaskedFields)
 }
 

@@ -15,6 +15,7 @@ import (
 func init() {
 	base.RegisterSplitterFunc(storepb.Engine_POSTGRES, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_REDSHIFT, SplitSQL)
+	base.RegisterSplitterFunc(storepb.Engine_GAUSSDB, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_RISINGWAVE, SplitSQL)
 }
 

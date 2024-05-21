@@ -119,7 +119,7 @@
         <label for="charset" class="textlabel">
           {{
             selectedInstance.engine === Engine.POSTGRES ||
-            selectedInstance.engine === Engine.REDSHIFT
+            selectedInstance.engine === Engine.REDSHIFT || selectedInstance.engine === Engine.GAUSSDB
               ? $t("db.encoding")
               : $t("db.character-set")
           }}</label
@@ -300,7 +300,7 @@ const requireDatabaseOwnerName = computed((): boolean => {
   if (instance.uid === String(UNKNOWN_ID)) {
     return false;
   }
-  return [Engine.POSTGRES, Engine.REDSHIFT].includes(instance.engine);
+  return [Engine.POSTGRES, Engine.REDSHIFT, Engine.GAUSSDB].includes(instance.engine);
 });
 
 const validDatabaseOwnerName = computed((): boolean => {

@@ -96,6 +96,7 @@ const showSensitiveColumn = computed(() => {
       engine.value === Engine.TIDB ||
       engine.value === Engine.POSTGRES ||
       engine.value === Engine.REDSHIFT ||
+      engine.value === Engine.GAUSSDB ||
       engine.value === Engine.ORACLE ||
       engine.value === Engine.SNOWFLAKE ||
       engine.value === Engine.MSSQL ||
