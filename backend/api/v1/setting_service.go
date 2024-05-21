@@ -1114,11 +1114,7 @@ func convertSchemaTemplateSetting(ctx context.Context, template *storepb.SchemaT
 			t.Table = convertStoreTableMetadata(v.Table)
 		}
 		if v.Config != nil {
-			c, err := convertStoreTableConfig(ctx, v.Config, nil /* optionalStores */)
-			if err != nil {
-				return nil, err
-			}
-			t.Config = c
+			t.Config = convertStoreTableConfig(ctx, v.Config, nil /* optionalStores */)
 		}
 		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}
@@ -1165,11 +1161,7 @@ func convertV1SchemaTemplateSetting(ctx context.Context, template *v1pb.SchemaTe
 			t.Table = convertV1TableMetadata(v.Table)
 		}
 		if v.Config != nil {
-			tc, err := convertV1TableConfig(ctx, v.Config, nil /* optionalStores */)
-			if err != nil {
-				return nil, err
-			}
-			t.Config = tc
+			t.Config = convertV1TableConfig(ctx, v.Config, nil /* optionalStores */)
 		}
 		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}
