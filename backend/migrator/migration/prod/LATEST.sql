@@ -506,7 +506,7 @@ ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 CREATE TABLE task_run_log (
     id BIGSERIAL PRIMARY KEY,
     task_run_id INTEGER NOT NULL REFERENCES task_run (id),
-    created_ts TIMESTAMP NOT NULL DEFAULT now(),
+    created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
