@@ -101,7 +101,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 
 	ruleList, err := advisor.MergeSQLReviewRules(ruleOverride)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot merge the config for template: %s", ruleOverride.Template)).SetInternal(err)
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot merge the config for template: %s, error: %v", ruleOverride.Template, err)).SetInternal(err)
 	}
 
 	adviceList, err := sqlCheck(
@@ -113,7 +113,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		newCatalogService(engineType),
 	)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run sql check with error: %v", err)).SetInternal(err)
 	}
 
 	s.metricReporter.Report(&metric.Metric{
