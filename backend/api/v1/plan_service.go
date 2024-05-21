@@ -230,6 +230,19 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		return nil, status.Errorf(codes.NotFound, "project %q not found", oldPlan.ProjectID)
 	}
 
+	ok, err = func() (bool, error) {
+		if oldPlan.CreatorUID == user.ID {
+			return true, nil
+		}
+		return s.iamManager.CheckPermission(ctx, iam.PermissionPlansUpdate, user, oldPlan.ProjectID)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to update plan")
+	}
+
 	planUpdate := &store.UpdatePlanMessage{
 		UID:       oldPlan.UID,
 		UpdaterID: user.ID,
@@ -249,21 +262,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 			}
 
-			ok, err = func() (bool, error) {
-				if oldPlan.CreatorUID == user.ID {
-					return true, nil
-				}
-				return s.iamManager.CheckPermission(ctx, iam.PermissionPlansUpdate, user, oldPlan.ProjectID)
-			}()
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
-			}
-			if !ok {
-				return nil, status.Errorf(codes.PermissionDenied, "permission denied to update plan")
-			}
-
 			oldSteps := convertToPlanSteps(oldPlan.Config.Steps)
-
 			issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to get issue: %v", err)
