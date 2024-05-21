@@ -35,10 +35,6 @@ message IssueCommentPayload {
     optional string to_description = 4;
     optional IssueStatus from_status = 5;
     optional IssueStatus to_status = 6;
-    // Format: users/{email}
-    optional string from_assignee = 7;
-    // Format: users/{email}
-    optional string to_assignee = 8;
 
     enum IssueStatus {
       ISSUE_STATUS_UNSPECIFIED = 0;
