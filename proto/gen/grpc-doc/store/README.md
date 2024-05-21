@@ -2728,7 +2728,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
 | member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
 
-* `user:{emailid}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. |
+Format: users/{userUID}. |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
 
 
