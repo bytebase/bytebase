@@ -670,7 +670,10 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 		filter = &metadataFilter{schema: schema, table: table}
 	}
-	v1pbMetadata := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), dbSchema.GetConfig(), filter)
+	v1pbMetadata, err := convertStoreDatabaseMetadata(ctx, dbSchema.GetMetadata(), dbSchema.GetConfig(), filter, nil /* optionalStores */)
+	if err != nil {
+		return nil, err
+	}
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 
 	// Set effective masking level only if filter is set for a table.
@@ -776,11 +779,14 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 	for _, path := range request.UpdateMask.Paths {
 		if path == "schema_configs" {
 			databaseMetadata := request.GetDatabaseMetadata()
-			databaseConfig := convertV1DatabaseConfig(&v1pb.DatabaseConfig{
+			databaseConfig, err := convertV1DatabaseConfig(ctx, &v1pb.DatabaseConfig{
 				Name:                     databaseName,
 				SchemaConfigs:            databaseMetadata.GetSchemaConfigs(),
 				ClassificationFromConfig: databaseMetadata.ClassificationFromConfig,
-			})
+			}, nil /* optionalStores */)
+			if err != nil {
+				return nil, err
+			}
 			if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}, principalID); err != nil {
 				return nil, err
 			}
@@ -795,7 +801,10 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
 
-	v1pbMetadata := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), dbSchema.GetConfig(), nil /* filter */)
+	v1pbMetadata, err := convertStoreDatabaseMetadata(ctx, dbSchema.GetMetadata(), dbSchema.GetConfig(), nil /* filter */, nil /* optionalStores */)
+	if err != nil {
+		return nil, err
+	}
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 	return v1pbMetadata, nil
 }

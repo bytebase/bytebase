@@ -107,7 +107,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 		}
 		databaseUID = &database.UID
 	}
-	storeSheetCreate, err := convertToStoreSheetMessage(project.UID, databaseUID, principalID, request.Sheet)
+	storeSheetCreate, err := convertToStoreSheetMessage(ctx, project.UID, databaseUID, principalID, request.Sheet)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert sheet: %v", err))
 	}
@@ -353,8 +353,14 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	}
 	if payload := sheet.Payload; payload != nil {
 		if payload.DatabaseConfig != nil && payload.BaselineDatabaseConfig != nil {
-			v1SheetPayload.DatabaseConfig = convertStoreDatabaseConfig(payload.DatabaseConfig, nil /* filter */)
-			v1SheetPayload.BaselineDatabaseConfig = convertStoreDatabaseConfig(payload.BaselineDatabaseConfig, nil /* filter */)
+			v1SheetPayload.DatabaseConfig, err = convertStoreDatabaseConfig(ctx, payload.DatabaseConfig, nil /* filter */, nil /* optionalStores */)
+			if err != nil {
+				return nil, err
+			}
+			v1SheetPayload.BaselineDatabaseConfig, err = convertStoreDatabaseConfig(ctx, payload.BaselineDatabaseConfig, nil /* filter */, nil /* optionalStores */)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -372,7 +378,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	}, nil
 }
 
-func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int, sheet *v1pb.Sheet) (*store.SheetMessage, error) {
+func convertToStoreSheetMessage(ctx context.Context, projectUID int, databaseUID *int, creatorID int, sheet *v1pb.Sheet) (*store.SheetMessage, error) {
 	sheetMessage := &store.SheetMessage{
 		ProjectUID:  projectUID,
 		DatabaseUID: databaseUID,
@@ -383,8 +389,16 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 	}
 	sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
 	if sheet.Payload != nil {
-		sheetMessage.Payload.DatabaseConfig = convertV1DatabaseConfig(sheet.Payload.DatabaseConfig)
-		sheetMessage.Payload.BaselineDatabaseConfig = convertV1DatabaseConfig(sheet.Payload.BaselineDatabaseConfig)
+		dc, err := convertV1DatabaseConfig(ctx, sheet.Payload.DatabaseConfig, nil /* optionalStores */)
+		if err != nil {
+			return nil, err
+		}
+		sheetMessage.Payload.DatabaseConfig = dc
+		bdc, err := convertV1DatabaseConfig(ctx, sheet.Payload.BaselineDatabaseConfig, nil /* optionalStores */)
+		if err != nil {
+			return nil, err
+		}
+		sheetMessage.Payload.BaselineDatabaseConfig = bdc
 	}
 
 	return sheetMessage, nil

@@ -2276,7 +2276,7 @@ type TableConfig struct {
 	ColumnConfigs    []*ColumnConfig `protobuf:"bytes,2,rep,name=column_configs,json=columnConfigs,proto3" json:"column_configs,omitempty"`
 	ClassificationId string          `protobuf:"bytes,3,opt,name=classification_id,json=classificationId,proto3" json:"classification_id,omitempty"`
 	// The last updater of the table in branch.
-	// Format: users/{email}
+	// Format: users/{userUID}.
 	Updater string `protobuf:"bytes,4,opt,name=updater,proto3" json:"updater,omitempty"`
 	// The timestamp when the table is updated in branch.
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
@@ -2357,7 +2357,7 @@ type FunctionConfig struct {
 	// The name is the name of a function.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The last updater of the function in branch.
-	// Format: users/{email}
+	// Format: users/{userUID}.
 	Updater string `protobuf:"bytes,2,opt,name=updater,proto3" json:"updater,omitempty"`
 	// The timestamp when the function is updated in branch.
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
@@ -2424,7 +2424,7 @@ type ProcedureConfig struct {
 	// The name is the name of a procedure.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The last updater of the procedure in branch.
-	// Format: users/{email}
+	// Format: users/{userUID}.
 	Updater string `protobuf:"bytes,2,opt,name=updater,proto3" json:"updater,omitempty"`
 	// The timestamp when the procedure is updated in branch.
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
@@ -2491,7 +2491,7 @@ type ViewConfig struct {
 	// The name is the name of a view.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The last updater of the view in branch.
-	// Format: users/{email}
+	// Format: users/{userUID}.
 	Updater string `protobuf:"bytes,2,opt,name=updater,proto3" json:"updater,omitempty"`
 	// The timestamp when the view is updated in branch.
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`

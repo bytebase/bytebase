@@ -494,7 +494,7 @@ message TableConfig {
   string classification_id = 3;
 
   // The last updater of the table in branch.
-  // Format: users/{email}
+  // Format: users/{userUID}.
   string updater = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the table is updated in branch.
@@ -506,7 +506,7 @@ message FunctionConfig {
   string name = 1;
 
   // The last updater of the function in branch.
-  // Format: users/{email}
+  // Format: users/{userUID}.
   string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the function is updated in branch.
@@ -518,7 +518,7 @@ message ProcedureConfig {
   string name = 1;
 
   // The last updater of the procedure in branch.
-  // Format: users/{email}
+  // Format: users/{userUID}.
   string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the procedure is updated in branch.
@@ -530,7 +530,7 @@ message ViewConfig {
   string name = 1;
 
   // The last updater of the view in branch.
-  // Format: users/{email}
+  // Format: users/{userUID}.
   string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the view is updated in branch.

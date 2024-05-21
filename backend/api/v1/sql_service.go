@@ -1305,7 +1305,10 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 
 	var overideMetadata *storepb.DatabaseSchemaMetadata
 	if request.Metadata != nil {
-		overideMetadata, _ = convertV1DatabaseMetadata(request.Metadata)
+		overideMetadata, _, err = convertV1DatabaseMetadata(ctx, request.Metadata, nil /* optionalStores */)
+		if err != nil {
+			return nil, err
+		}
 	}
 	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, request.ChangeType, environment, instance, database, overideMetadata)
 	if err != nil {
@@ -1493,8 +1496,11 @@ func (*SQLService) ParseMyBatisMapper(_ context.Context, request *v1pb.ParseMyBa
 }
 
 // DifferPreview returns the diff preview of the given SQL statement and metadata.
-func (*SQLService) DifferPreview(_ context.Context, request *v1pb.DifferPreviewRequest) (*v1pb.DifferPreviewResponse, error) {
-	storeSchemaMetadata, _ := convertV1DatabaseMetadata(request.NewMetadata)
+func (*SQLService) DifferPreview(ctx context.Context, request *v1pb.DifferPreviewRequest) (*v1pb.DifferPreviewResponse, error) {
+	storeSchemaMetadata, _, err := convertV1DatabaseMetadata(ctx, request.NewMetadata, nil /* optionalStores */)
+	if err != nil {
+		return nil, err
+	}
 	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeSchemaMetadata)
 	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), defaultSchema, request.OldSchema, storeSchemaMetadata)
 	if err != nil {
@@ -1507,7 +1513,7 @@ func (*SQLService) DifferPreview(_ context.Context, request *v1pb.DifferPreviewR
 }
 
 // StringifyMetadata returns the stringified schema of the given metadata.
-func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyMetadataRequest) (*v1pb.StringifyMetadataResponse, error) {
+func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.StringifyMetadataRequest) (*v1pb.StringifyMetadataResponse, error) {
 	switch request.Engine {
 	case v1pb.Engine_MYSQL, v1pb.Engine_OCEANBASE, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE:
 	default:
@@ -1517,7 +1523,10 @@ func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyM
 	if request.Metadata == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "metadata is required")
 	}
-	storeSchemaMetadata, config := convertV1DatabaseMetadata(request.Metadata)
+	storeSchemaMetadata, config, err := convertV1DatabaseMetadata(ctx, request.Metadata, nil /* optionalStores */)
+	if err != nil {
+		return nil, err
+	}
 	if !config.ClassificationFromConfig {
 		sanitizeCommentForSchemaMetadata(storeSchemaMetadata, model.NewDatabaseConfig(config))
 	}

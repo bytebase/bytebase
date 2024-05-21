@@ -9932,7 +9932,7 @@ components:
                     type: string
                     description: |-
                         The last updater of the function in branch.
-                         Format: users/{email}
+                         Format: users/{userUID}.
                 updateTime:
                     readOnly: true
                     type: string
@@ -11668,7 +11668,7 @@ components:
                     type: string
                     description: |-
                         The last updater of the procedure in branch.
-                         Format: users/{email}
+                         Format: users/{userUID}.
                 updateTime:
                     readOnly: true
                     type: string
@@ -13074,7 +13074,7 @@ components:
                     type: string
                     description: |-
                         The last updater of the table in branch.
-                         Format: users/{email}
+                         Format: users/{userUID}.
                 updateTime:
                     readOnly: true
                     type: string
@@ -13857,7 +13857,7 @@ components:
                     type: string
                     description: |-
                         The last updater of the view in branch.
-                         Format: users/{email}
+                         Format: users/{userUID}.
                 updateTime:
                     readOnly: true
                     type: string
