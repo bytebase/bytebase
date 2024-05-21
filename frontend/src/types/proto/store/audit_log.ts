@@ -20,7 +20,7 @@ export interface AuditLog {
    * projects/{project}
    */
   resource: string;
-  /** Format: users/d@d.com */
+  /** Format: users/{userUID}. */
   user: string;
   severity: AuditLog_Severity;
   /** Marshalled request. */

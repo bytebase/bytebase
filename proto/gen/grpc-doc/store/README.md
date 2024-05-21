@@ -633,7 +633,7 @@ convert to the expected struct there.
 | parent | [string](#string) |  | The project or workspace the audit log belongs to. Formats: - projects/{project} - workspaces/{workspace} |
 | method | [string](#string) |  | e.g. /bytebase.v1.SQLService/Query |
 | resource | [string](#string) |  | resource name projects/{project} |
-| user | [string](#string) |  | Format: users/d@d.com |
+| user | [string](#string) |  | Format: users/{userUID}. |
 | severity | [AuditLog.Severity](#bytebase-store-AuditLog-Severity) |  |  |
 | request | [string](#string) |  | Marshalled request. |
 | response | [string](#string) |  | Marshalled response. Some fields are omitted because they are too large or contain sensitive information. |
