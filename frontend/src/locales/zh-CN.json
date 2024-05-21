@@ -76,7 +76,6 @@
     "role": {
       "self": "角色"
     },
-    "assignee": "指派人",
     "revert": "恢复",
     "apply": "应用",
     "reorder": "排序",
@@ -336,7 +335,6 @@
       "warn": "警告",
       "error": "错误"
     },
-    "earliest-allowed-time-no-modify": "您无法修改此字段，因为您不是该工单的审核人或者它不在待执行状态。",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "同步数据",
       "bb-task-database-schema-update-ghost-cutover": "切换表",
@@ -896,10 +894,6 @@
     "sentence": {
       "created-issue": "创建工单",
       "commented": "评论",
-      "reassigned-issue": "将工单由 {oldName} 重新指派给 {newName}",
-      "assigned-issue": "将工单指派给 {newName}",
-      "unassigned-issue": "将工单由 {oldName} 解除指派",
-      "invalid-assignee-update": "无效的指派操作",
       "changed-description": "修改描述",
       "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
       "unset-from": "撤销 {name} 的值 (从 \"{oldValue}\")",
@@ -1015,10 +1009,6 @@
           "title": "创建人",
           "description": "根据工单创建人搜索"
         },
-        "assignee": {
-          "title": "指派人",
-          "description": "根据工单指派人搜索"
-        },
         "subscriber": {
           "title": "订阅人",
           "description": "根据工单订阅人搜索"
@@ -1066,7 +1056,6 @@
       "updated": "更新于",
       "approver": "审批人",
       "creator": "创建人",
-      "assignee": "指派人",
       "current-approver": "当前审批人"
     },
     "stage-select": {
@@ -1113,19 +1102,12 @@
     },
     "will-rollback": "当前任务将会回滚 {link}",
     "issue-link-with-task": "工单 {issue} - 任务 {task}",
-    "assignee-attention": {
-      "send-approval-request-successfully": "{im}审批请求发送成功",
-      "send-attention-request-successfully": "审核人 {principal} 已收到关注请求",
-      "needs-attention": "需要关注",
-      "click-to-mark": "点击以请求审核人关注"
-    },
     "sdl": {
       "schema-change": "Schema 变化",
       "generated-ddl-statements": "生成的 DDL 语句",
       "full-schema": "完整 schema",
       "left-schema-may-change": "左边的 schema 在工单执行前可能会发生变化。"
     },
-    "assignee-tooltip": "被指派人是负责处理问题的人，当问题分配给他们时，它会显示在他们的已分配问题列表中。",
     "approval-flow": {
       "self": "审批流",
       "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批。",
@@ -1191,14 +1173,6 @@
       "you-are-not-allowed-to-perform-this-action": "您无权执行此操作"
     },
     "approval-requested": "审批请求",
-    "assignee": {
-      "current-assignee": "当前指派人",
-      "workspace-admins": "Bytebase 工作空间管理员",
-      "workspace-dbas": "DBA",
-      "project-owners": "项目所有者",
-      "releasers-of-current-stage": "当前阶段的发布人",
-      "approvers-of-current-step": "当前步骤的审批人"
-    },
     "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中某些任务并未成功执行。",
     "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）",
     "preview": "预览工单",
@@ -1911,7 +1885,7 @@
         },
         "issue-info-change": {
           "title": "工单信息变更",
-          "label": "当一个工单的信息 (比如: 指派人, 标题, 描述) 发生了变更"
+          "label": "当一个工单的信息 (比如: 标题, 描述) 发生了变更"
         },
         "issue-comment-creation": {
           "title": "工单被评论",

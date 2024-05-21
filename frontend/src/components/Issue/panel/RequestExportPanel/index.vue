@@ -90,7 +90,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { head, isUndefined } from "lodash-es";
+import { isUndefined } from "lodash-es";
 import { NButton, NInput, NInputNumber } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -107,7 +107,7 @@ import {
   pushNotification,
 } from "@/store";
 import type { DatabaseResource, ComposedProject } from "@/types";
-import { SYSTEM_BOT_EMAIL, UNKNOWN_ID, PresetRoleType } from "@/types";
+import { UNKNOWN_ID, PresetRoleType } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
@@ -115,7 +115,6 @@ import {
   extractProjectResourceName,
   hasProjectPermissionV2,
   issueSlug,
-  memberListInProjectV1,
 } from "@/utils";
 import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
 
@@ -237,21 +236,10 @@ const doCreateIssue = async () => {
     title: generateIssueName(),
     description: state.description,
     type: Issue_Type.GRANT_REQUEST,
-    assignee: `users/${SYSTEM_BOT_EMAIL}`,
     grantRequest: {},
   });
 
-  // update issue's assignee to first project owner.
   const project = await projectStore.getOrFetchProjectByUID(state.projectId!);
-  const memberList = memberListInProjectV1(project, project.iamPolicy);
-  const ownerList = memberList.filter((member) =>
-    member.roleList.includes(PresetRoleType.PROJECT_OWNER)
-  );
-  const projectOwner = head(ownerList);
-  if (projectOwner) {
-    newIssue.assignee = `users/${projectOwner.user.email}`;
-  }
-
   const expression: string[] = [];
   const expireDays = state.expireDays;
   expression.push(
