@@ -10,7 +10,7 @@
     "dm": "DM",
     "mariadb": "MariaDB",
     "oceanbase_oracle": "OceanBase (Oracle)",
-    "gaussdb": "GaussDB",
+    "gaussdb": "GaussDB"
   },
   "category": {
     "engine": "引擎",
