@@ -72,20 +72,24 @@ func NewAuthService(store *store.Store, secret string, tokenDuration time.Durati
 
 // GetUser gets a user.
 func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest) (*v1pb.User, error) {
-	find := &store.FindUserMessage{ShowDeleted: true}
 	userID, err := common.GetUserID(request.Name)
+	var user *store.UserMessage
 	if err != nil {
 		email, err := common.GetUserEmail(request.Name)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
-		find.Email = &email
+		u, err := s.store.GetUserByEmail(ctx, email)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get user, error: %v", err)
+		}
+		user = u
 	} else {
-		find.ID = &userID
-	}
-	user, err := s.store.GetUser(ctx, find)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get user, error: %v", err)
+		u, err := s.store.GetUserByID(ctx, userID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get user, error: %v", err)
+		}
+		user = u
 	}
 	if user == nil {
 		return nil, status.Errorf(codes.NotFound, "user %d not found", userID)
@@ -159,10 +163,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if err := validateEmail(request.User.Email); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", request.User.Email, err)
 	}
-	existingUser, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		Email:       &request.User.Email,
-		ShowDeleted: true,
-	})
+	existingUser, err := s.store.GetUserByEmail(ctx, request.User.Email)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find user by email, error: %v", err)
 	}
@@ -304,14 +305,11 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			if err := validateEmail(request.User.Email); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid email %q format: %v", request.User.Email, err)
 			}
-			users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-				Email:       &request.User.Email,
-				ShowDeleted: true,
-			})
+			user, err := s.store.GetUserByEmail(ctx, request.User.Email)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to find user list, error: %v", err)
 			}
-			if len(users) != 0 {
+			if user != nil {
 				return nil, status.Errorf(codes.AlreadyExists, "email %s is already existed", request.User.Email)
 			}
 			patch.Email = &request.User.Email
@@ -435,7 +433,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		}
 	}
 
-	user, err = s.store.UpdateUser(ctx, userID, patch, principalID)
+	user, err = s.store.UpdateUser(ctx, user, patch, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update user, error: %v", err)
 	}
@@ -490,7 +488,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 		}
 	}
 
-	if _, err := s.store.UpdateUser(ctx, userID, &store.UpdateUserMessage{Delete: &deletePatch}, principalID); err != nil {
+	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &deletePatch}, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
@@ -529,7 +527,7 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can undelete the user %d", userID)
 	}
 
-	user, err = s.store.UpdateUser(ctx, userID, &store.UpdateUserMessage{Delete: &undeletePatch}, principalID)
+	user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch}, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -715,10 +713,7 @@ func (s *AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*empty
 }
 
 func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		Email:       &request.Email,
-		ShowDeleted: true,
-	})
+	user, err := s.store.GetUserByEmail(ctx, request.Email)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get user by email %q: %v", request.Email, err)
 	}
@@ -843,48 +838,42 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, domain))
 		}
 	}
+
 	// If the email is still invalid, we will return an error.
 	if err := validateEmail(email); err != nil {
 		return nil, status.Errorf(codes.NotFound, "unable to identify the user by provider user info")
 	}
-	users, err := s.store.ListUsers(ctx, &store.FindUserMessage{
-		Email:       &email,
-		ShowDeleted: true,
-	})
+	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list users by email %s: %v", email, err)
 	}
-
-	var user *store.UserMessage
-	if len(users) == 0 {
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, err.Error())
-		}
-		// Create new user from identity provider.
-		password, err := common.RandomString(20)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to generate random password")
-		}
-		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to generate password hash")
-		}
-		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
-			Name:         userInfo.DisplayName,
-			Email:        email,
-			Phone:        userInfo.Phone,
-			Type:         api.EndUser,
-			PasswordHash: string(passwordHash),
-		}, api.SystemBotID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
-		}
-		user = newUser
-	} else {
-		user = users[0]
+	if user != nil {
+		return user, nil
 	}
 
-	return user, nil
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
+		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+	}
+	// Create new user from identity provider.
+	password, err := common.RandomString(20)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate random password")
+	}
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate password hash")
+	}
+	newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
+		Name:         userInfo.DisplayName,
+		Email:        email,
+		Phone:        userInfo.Phone,
+		Type:         api.EndUser,
+		PasswordHash: string(passwordHash),
+	}, api.SystemBotID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
+	}
+	return newUser, nil
 }
 
 func challengeMFACode(user *store.UserMessage, mfaCode string) error {
@@ -899,7 +888,7 @@ func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.Use
 		if code == recoveryCode {
 			// If the recovery code is valid, delete it from the user's recovery code list.
 			user.MFAConfig.RecoveryCodes = slices.Delete(user.MFAConfig.RecoveryCodes, i, i+1)
-			_, err := s.store.UpdateUser(ctx, user.ID, &store.UpdateUserMessage{
+			_, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
 				MFAConfig: &storepb.MFAConfig{
 					OtpSecret:     user.MFAConfig.OtpSecret,
 					RecoveryCodes: user.MFAConfig.RecoveryCodes,

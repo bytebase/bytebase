@@ -1787,10 +1787,7 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 			} else {
 				email = strings.TrimPrefix(member, "user:")
 			}
-			user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-				Email:       &email,
-				ShowDeleted: true,
-			})
+			user, err := s.store.GetUserByEmail(ctx, email)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, err.Error())
 			}
