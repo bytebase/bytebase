@@ -111,11 +111,8 @@ export const allowUserToApplyIssueStatusAction = (
     return true;
   }
 
-  // The creator and the assignee are allowed.
+  // The creator is allowed.
   if (extractUserResourceName(issue.creator) === user.email) {
-    return true;
-  }
-  if (extractUserResourceName(issue.assignee) === user.email) {
     return true;
   }
 

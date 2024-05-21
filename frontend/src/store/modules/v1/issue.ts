@@ -35,9 +35,6 @@ export const buildIssueFilter = (find: IssueFilter): string => {
   if (find.creator) {
     filter.push(`creator = "${find.creator}"`);
   }
-  if (find.assignee) {
-    filter.push(`assignee = "${find.assignee}"`);
-  }
   if (find.subscriber) {
     filter.push(`subscriber = "${find.subscriber}"`);
   }

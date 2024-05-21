@@ -76,7 +76,6 @@
     "role": {
       "self": "Rol"
     },
-    "assignee": "Asignado",
     "revert": "Revertir",
     "apply": "Aplicar",
     "reorder": "Reordenar",
@@ -336,7 +335,6 @@
       "warn": "Advertencia",
       "error": "Error"
     },
-    "earliest-allowed-time-no-modify": "No puedes modificar este campo porque no eres el asignado a la incidencia o no está pendiente por ejecutar.",
     "type": {
       "bb-task-database-schema-update-ghost-sync": "Sincronizar datos",
       "bb-task-database-schema-update-ghost-cutover": "Cambiar de tabla",
@@ -896,10 +894,6 @@
     "sentence": {
       "created-issue": "incidencia creado",
       "commented": "comentado",
-      "reassigned-issue": "incidencia reasignada de {oldName} a {newName}",
-      "assigned-issue": "incidencia asignada a {newName}",
-      "unassigned-issue": "incidencia desasignada de {oldName}",
-      "invalid-assignee-update": "actualización de asignatario no válida",
       "changed-description": "cambio de descripción",
       "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
       "unset-from": "eliminación de {name} de \"{oldValue}\"",
@@ -1015,10 +1009,6 @@
           "title": "Creador",
           "description": "Búsqueda por tema creador"
         },
-        "assignee": {
-          "title": "Cesionario",
-          "description": "Buscar por el responsable del problema"
-        },
         "subscriber": {
           "title": "Abonado",
           "description": "Buscar por suscriptor del problema"
@@ -1066,7 +1056,6 @@
       "updated": "Actualizado",
       "approver": "Aprobador",
       "creator": "Creador",
-      "assignee": "Asignado",
       "current-approver": "Aprobador actual"
     },
     "stage-select": {
@@ -1113,19 +1102,12 @@
     },
     "will-rollback": "Esta tarea revertirá {link}",
     "issue-link-with-task": "Incidencia {issue} - tarea {task}",
-    "assignee-attention": {
-      "send-approval-request-successfully": "Enviar una solicitud de aprobación de {im} correctamente",
-      "send-attention-request-successfully": "Solicitar la atención del asignado {principal} con éxito",
-      "needs-attention": "Necesita atención",
-      "click-to-mark": "Haga clic para solicitar la atención del asignado"
-    },
     "sdl": {
       "schema-change": "Cambio de esquema",
       "generated-ddl-statements": "Declaraciones DDL generadas",
       "full-schema": "Esquema completo",
       "left-schema-may-change": "El esquema del lado izquierdo puede cambiar antes de que se aplique la incidencia."
     },
-    "assignee-tooltip": "Los asignados son responsables de un problema y cuando se les asigna un problema, aparece en su lista de problemas asignados.",
     "approval-flow": {
       "self": "Flujo de aprobación",
       "tooltip": "Los aprobadores revisarán y aprobarán el problema en el orden especificado en el flujo. \nLa emisión solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. \nPuede configurar un flujo de aprobación personalizado para cada riesgo.",
@@ -1191,14 +1173,6 @@
       "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción."
     },
     "approval-requested": "Aprobación solicitada",
-    "assignee": {
-      "current-assignee": "Asignatario actual",
-      "workspace-admins": "Administrador del espacio de trabajo",
-      "workspace-dbas": "DBA",
-      "project-owners": "Propietarios del proyecto",
-      "releasers-of-current-stage": "Liberadores de la etapa actual.",
-      "approvers-of-current-step": "Aprobadores del paso actual"
-    },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "preview": "Problema de vista previa",
@@ -1911,7 +1885,7 @@
         },
         "issue-info-change": {
           "title": "Cambio de información de incidencia",
-          "label": "Cuando cambia la información de la incidencia (por ejemplo, asignación, título, descripción)"
+          "label": "Cuando cambia la información de la incidencia (por ejemplo, título, descripción)"
         },
         "issue-comment-creation": {
           "title": "Creación de comentario de incidencia",
